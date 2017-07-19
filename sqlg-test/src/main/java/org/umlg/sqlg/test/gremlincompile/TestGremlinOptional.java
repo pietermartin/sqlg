@@ -34,7 +34,9 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out().hasLabel("B")).path();
+                .V(a1).optional(
+                        __.out().hasLabel("B")
+                ).path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -64,7 +66,11 @@ public class TestGremlinOptional extends BaseTest {
         b1.addEdge("bc", c2);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out().optional(__.out().hasLabel("C"))).path();
+                .V(a1).optional(
+                        __.out().optional(
+                                __.out().hasLabel("C")
+                        )
+                ).path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -85,15 +91,22 @@ public class TestGremlinOptional extends BaseTest {
     @Test
     public void testUnoptimizableChooseStep() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal)this.sqlgGraph.traversal()
-                .V(a1).choose(v -> v.label().equals("A"), __.out(), __.in());
-        Assert.assertEquals(2, traversal.getSteps().size());
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+                .V()
+                .hasLabel("A")
+                .choose(
+                        v -> v.label().equals("A"),
+                        __.out(),
+                        __.in()
+                );
+        Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(2, vertices.size());
@@ -108,7 +121,11 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out()).path();
+                .V(a1)
+                .optional(
+                        __.out()
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -137,7 +154,12 @@ public class TestGremlinOptional extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out().optional(__.out())).path();
+                .V(a1)
+                .optional(
+                        __.out().optional(
+                                __.out()
+                        )
+                ).path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -154,7 +176,13 @@ public class TestGremlinOptional extends BaseTest {
         Assert.assertTrue(paths.isEmpty());
 
         DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V().hasLabel("A").optional(__.out().optional(__.out())).path();
+                .V().hasLabel("A")
+                .optional(
+                        __.out().optional(
+                                __.out()
+                        )
+                )
+                .path();
         Assert.assertEquals(4, traversal1.getSteps().size());
         paths = traversal1.toList();
         Assert.assertEquals(2, traversal1.getSteps().size());
@@ -188,7 +216,11 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out("ab", "abb")).path();
+                .V(a1)
+                .optional(
+                        __.out("ab", "abb")
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -227,7 +259,13 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out("ab", "abb").optional(__.out("bc", "bbcc"))).path();
+                .V(a1)
+                .optional(
+                        __.out("ab", "abb").optional(
+                                __.out("bc", "bbcc")
+                        )
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -254,7 +292,11 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out("ab", "bb")).path();
+                .V(a1)
+                .optional(
+                        __.out("ab", "bb")
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -270,7 +312,11 @@ public class TestGremlinOptional extends BaseTest {
         Assert.assertTrue(paths.isEmpty());
 
         DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out("bb")).path();
+                .V(a1)
+                .optional(
+                        __.out("bb")
+                )
+                .path();
         Assert.assertEquals(3, traversal1.getSteps().size());
         paths = traversal1.toList();
         Assert.assertEquals(2, traversal1.getSteps().size());
@@ -356,7 +402,11 @@ public class TestGremlinOptional extends BaseTest {
         b1.addEdge("knows", a1);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out("knows")).path();
+                .V(a1)
+                .optional(
+                        __.out("knows")
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -377,7 +427,13 @@ public class TestGremlinOptional extends BaseTest {
 
         Object vadas = convertToVertexId(g, "vadas");
         Vertex vadasVertex = g.traversal().V(vadas).next();
-        List<Path> paths = g.traversal().V(vadasVertex).optional(__.out("knows")).path().toList();
+        List<Path> paths = g.traversal()
+                .V(vadasVertex)
+                .optional(
+                        __.out("knows")
+                )
+                .path()
+                .toList();
         Assert.assertEquals(1, paths.size());
 
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
@@ -390,12 +446,22 @@ public class TestGremlinOptional extends BaseTest {
         }
         Assert.assertTrue(paths.isEmpty());
 
-        List<Vertex> vertices = g.traversal().V(vadasVertex).optional(__.out("knows")).toList();
+        List<Vertex> vertices = g.traversal()
+                .V(vadasVertex)
+                .optional(
+                        __.out("knows")
+                )
+                .toList();
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(vadasVertex, vertices.get(0));
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) g.traversal()
-                .V().optional(__.out().optional(__.out())).path();
+                .V()
+                .optional(
+                        __.out().optional(
+                                __.out()
+                        )
+                ).path();
         Assert.assertEquals(3, traversal.getSteps().size());
         paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -430,7 +496,13 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V().optional(__.out().optional(__.out())).path();
+                .V()
+                .optional(
+                        __.out().optional(
+                                __.out()
+                        )
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -459,7 +531,13 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out().optional(__.out())).path();
+                .V(a1)
+                .optional(
+                        __.out().optional(
+                                __.out()
+                        )
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -488,7 +566,13 @@ public class TestGremlinOptional extends BaseTest {
         a1.addEdge("ab", b1);
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out().optional(__.out())).path();
+                .V(a1)
+                .optional(
+                        __.out().optional(
+                                __.out()
+                        )
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -530,7 +614,13 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1).optional(__.out().optional(__.out())).path();
+                .V(a1)
+                .optional(
+                        __.out().optional(
+                                __.out()
+                        )
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -556,7 +646,11 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(a1.id()).optional(__.toE(Direction.BOTH, "aa").otherV()).path();
+                .V(a1.id())
+                .optional(
+                        __.toE(Direction.BOTH, "aa").otherV()
+                )
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());

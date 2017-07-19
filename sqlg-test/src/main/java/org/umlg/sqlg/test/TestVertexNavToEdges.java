@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.Topology;
 
 import java.util.Iterator;
 import java.util.List;
@@ -25,8 +25,8 @@ public class TestVertexNavToEdges extends BaseTest {
         Vertex v2 = sqlgGraph.addVertex();
         Edge e = v1.addEdge("label1", v2, "name", "marko");
         sqlgGraph.tx().commit();
-        assertDb(SchemaManager.EDGE_PREFIX + "label1", 1);
-        assertDb(SchemaManager.VERTEX_PREFIX  +  "vertex", 2);
+        assertDb(Topology.EDGE_PREFIX + "label1", 1);
+        assertDb(Topology.VERTEX_PREFIX  +  "vertex", 2);
 
         Iterator<Edge> edges = v1.edges(Direction.BOTH, "label1");
         List<Edge> toList= IteratorUtils.toList(edges);

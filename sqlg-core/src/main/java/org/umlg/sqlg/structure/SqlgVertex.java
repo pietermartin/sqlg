@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -15,7 +14,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.sql.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_TABLE;
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2014/07/12
@@ -41,15 +40,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sqlgGraph.tx().add(this);
         }
     }
-
-    @Override
-    public String label() {
-        if (this.schema != null && this.schema.length() > 0 && !schema.equals(sqlgGraph.getSqlDialect().getPublicSchema())) {
-            return this.schema + "." + this.table;
-        }
-        return super.label();
-    }
-
 
     /**
      * Only called for streaming temporary vertices. {@link SqlgGraph#internalStreamTemporaryVertex(Object...)} (Object...)}
@@ -79,6 +69,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         super(sqlgGraph, id, schema, table);
     }
 
+    @Override
+    public String label() {
+        if (this.schema != null && this.schema.length() > 0 && !schema.equals(sqlgGraph.getSqlDialect().getPublicSchema())) {
+            return this.schema + "." + this.table;
+        }
+        return super.label();
+    }
+
+
     public Edge addEdgeWithMap(String label, Vertex inVertex, Map<String, Object> keyValues) {
         Object[] parameters = SqlgUtil.mapToStringKeyValues(keyValues);
         return addEdge(label, inVertex, parameters);
@@ -96,7 +95,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable().getTable() + " is in progress. Commit the transaction or call SqlgGraph.flush()");
         }
         SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
-        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
+        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(EDGE_PREFIX.length()).equals(label)) {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
@@ -110,7 +109,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         boolean streaming = this.sqlgGraph.tx().isInStreamingBatchMode() || this.sqlgGraph.tx().isInStreamingWithLockBatchMode();
         if (streaming) {
             SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
-            if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
+            if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(EDGE_PREFIX.length()).equals(label)) {
                 throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
             }
         }
@@ -153,9 +152,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @SuppressWarnings("unchecked")
     @Override
     protected <V> Map<String, VertexProperty<V>> internalGetProperties(final String... propertyKeys) {
-        this.sqlgGraph.tx().readWrite();
-        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetProperties(propertyKeys);
-        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
+        Map<String, ? extends Property<V>> propertiesMap = super.internalGetProperties(propertyKeys);
+        return (Map<String, VertexProperty<V>>) propertiesMap;
     }
 
     @SuppressWarnings("unchecked")
@@ -215,9 +213,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             this.sqlgGraph.tx().flush();
         }
         // need topology when we're a topology vertex
-        GraphTraversalSource gts=Topology.SQLG_SCHEMA.equals(schema)?
-        		this.sqlgGraph.topology()
-        		:this.sqlgGraph.traversal();
+        GraphTraversalSource gts = Topology.SQLG_SCHEMA.equals(schema) ?
+                this.sqlgGraph.topology()
+                : this.sqlgGraph.traversal();
         switch (direction) {
             case OUT:
                 return gts.V(this).outE(labels);
@@ -263,11 +261,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     private void deleteEdges(Direction direction, SchemaTable edgeSchemaTable) {
         StringBuilder sql = new StringBuilder("DELETE FROM ");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getSchema()));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getSchema()));
         sql.append(".");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getTable()));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getTable()));
         sql.append(WHERE);
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + (direction == Direction.OUT ? SchemaManager.OUT_VERTEX_COLUMN_END : SchemaManager.IN_VERTEX_COLUMN_END)));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
         sql.append(" = ?");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -302,9 +300,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {
         StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + this.table));
 
         Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = this.sqlgGraph.getTopology()
@@ -341,7 +339,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (generatedKeys.next()) {
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
             } else {
-                throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", SchemaManager.VERTICES));
+                throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", Topology.VERTICES));
             }
             insertGlobalUniqueIndex(keyValueMap, propertyColumns);
         } catch (SQLException e) {
@@ -349,89 +347,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-
-    private void retainLabels(Set<SchemaTable> vertexLabels, String... labels) {
-        Set<SchemaTable> toRemove = new HashSet<>();
-        for (SchemaTable schemaTable : vertexLabels) {
-            boolean retain = false;
-            for (String label : labels) {
-                if (label.startsWith(SchemaManager.EDGE_PREFIX)) {
-                    throw new IllegalStateException("labels may not start with " + SchemaManager.EDGE_PREFIX);
-                }
-                if (schemaTable.getTable().equals(SchemaManager.EDGE_PREFIX + label)) {
-                    retain = true;
-                    break;
-                }
-            }
-            if (!retain) {
-                toRemove.add(schemaTable);
-            }
-        }
-        vertexLabels.removeAll(toRemove);
-    }
-
-
-    /**
-     * filters the hasContainer on its key.
-     *
-     * @param hasContainers all HasContainers matching the key will be removed from this list
-     * @param key
-     * @return the HasContainers matching the key.
-     */
-    private List<HasContainer> filterHasContainerOnKey(List<HasContainer> hasContainers, String key) {
-        List<HasContainer> toRemove = new ArrayList<>();
-        for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(key)) {
-                toRemove.add(hasContainer);
-            }
-        }
-        hasContainers.removeAll(toRemove);
-        return toRemove;
-    }
-
-    private Set<SchemaTable> transformToOutSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
-        Set<SchemaTable> result = new HashSet<>();
-        for (String edgeForeignKey : edgeForeignKeys) {
-            String[] schemaTableArray = edgeForeignKey.split("\\.");
-            String schema = schemaTableArray[0];
-            String table = schemaTableArray[1];
-
-            if (table.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                table = table.substring(0, table.length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
-                if (labels.isEmpty() || labels.contains(table)) {
-                    result.add(SchemaTable.of(schema, table));
-                }
-            }
-
-        }
-        return result;
-    }
-
-    private Set<SchemaTable> transformToInSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
-        Set<SchemaTable> result = new HashSet<>();
-        for (String edgeForeignKey : edgeForeignKeys) {
-            String[] schemaTableArray = edgeForeignKey.split("\\.");
-            String schema = schemaTableArray[0];
-            String table = schemaTableArray[1];
-            if (table.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                table = table.substring(0, table.length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
-                if (labels.isEmpty() || labels.contains(table)) {
-                    result.add(SchemaTable.of(schema, table));
-                }
-            }
-        }
-        return result;
-    }
-
     @Override
     protected void load() {
         //if in batch mode, only load vertexes that are not new.
         //new vertexes have no id, impossible to load, but then all its properties are already cached.
-        if ((!this.sqlgGraph.tx().isInBatchMode() && this.properties.isEmpty()) ||
+        if ((this.properties.isEmpty() && !this.sqlgGraph.tx().isInBatchMode()) ||
                 (this.properties.isEmpty() && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() &&
                         !this.sqlgGraph.tx().getBatchManager().vertexIsCached(this))) {
 
-            if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
                 throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
             }
 
@@ -440,24 +364,23 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             @SuppressWarnings("OptionalGetWithoutIsPresent")
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).get().getVertexLabel(this.table).get();
             StringBuilder sql = new StringBuilder("SELECT\n\t");
-//            StringBuilder sql = new StringBuilder("SELECT * ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             for (PropertyColumn propertyColumn : vertexLabel.properties.values()) {
                 sql.append(", ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
                 // additional columns for time zone, etc.
-                String[] ps=propertyColumn.getPropertyType().getPostFixes();
-                if (ps!=null){
-	                for (String p:propertyColumn.getPropertyType().getPostFixes()){
-	                	sql.append(", ");
-	                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()+p));
-	                }
+                String[] ps = propertyColumn.getPropertyType().getPostFixes();
+                if (ps != null) {
+                    for (String p : propertyColumn.getPropertyType().getPostFixes()) {
+                        sql.append(", ");
+                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName() + p));
+                    }
                 }
             }
             sql.append("\nFROM\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + this.table));
             sql.append("\nWHERE\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
@@ -489,7 +412,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
             if (!columnName.equals("ID")
-                    && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
+                    && !columnName.equals(Topology.VERTEX_SCHEMA)
                     && !columnName.equals(VERTEX_TABLE)
                     && !this.sqlgGraph.getSqlDialect().columnsToIgnore().contains(columnName)) {
                 loadProperty(resultSet, columnName, i);
@@ -513,9 +436,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         // need topology when we're a topology vertex
-        GraphTraversalSource gts=Topology.SQLG_SCHEMA.equals(schema)?
+        GraphTraversalSource gts = Topology.SQLG_SCHEMA.equals(schema) ?
                 this.sqlgGraph.topology()
-                :this.sqlgGraph.traversal();
+                : this.sqlgGraph.traversal();
         //for some very bezaar reason not adding toList().iterator() return one extra element.
         switch (direction) {
             case OUT:
@@ -530,12 +453,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
-        SqlgVertex.this.sqlgGraph.tx().readWrite();
+//        SqlgVertex.this.sqlgGraph.tx().readWrite();
         return SqlgVertex.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
-    SchemaTable getSchemaTablePrefixed() {
-        return SchemaTable.of(this.getSchema(), SchemaManager.VERTEX_PREFIX + this.getTable());
+    public SchemaTable getSchemaTablePrefixed() {
+        return SchemaTable.of(this.getSchema(), VERTEX_PREFIX + this.getTable());
     }
 
     SchemaTable getSchemaTable() {

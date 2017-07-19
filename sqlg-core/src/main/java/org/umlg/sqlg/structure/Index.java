@@ -1,29 +1,18 @@
 package org.umlg.sqlg.structure;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
-
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.dialect.SqlDialect;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
+
+import java.sql.*;
+import java.util.*;
+
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2016/11/26
@@ -192,7 +181,7 @@ public class Index implements TopologyInf {
     }
 
     protected Optional<JsonNode> toNotifyJson() {
-        Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
+        Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         result.put("name", this.name);
         result.set("indexType", this.uncommittedIndexType.toNotifyJson());
@@ -260,7 +249,7 @@ public class Index implements TopologyInf {
     
     public List<PropertyColumn> getProperties() {
     	List<PropertyColumn> props=new ArrayList<>(properties);
-    	if (this.getParentLabel().getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+    	if (this.getParentLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
     		props.addAll(uncommittedProperties);
     	}
 		return Collections.unmodifiableList(props);

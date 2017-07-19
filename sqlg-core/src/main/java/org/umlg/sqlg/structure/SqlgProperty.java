@@ -5,6 +5,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -12,18 +14,22 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+
 /**
  * Date: 2014/07/12
  * Time: 5:43 AM
  */
 public class SqlgProperty<V> implements Property<V>, Serializable {
 
+    private Logger logger = LoggerFactory.getLogger(SqlgProperty.class.getName());
     private final String key;
     private V value;
     private SqlgElement element;
     protected SqlgGraph sqlgGraph;
 
-    public SqlgProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
+    SqlgProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
         this.sqlgGraph = sqlgGraph;
         this.element = element;
         this.key = key;
@@ -60,16 +66,19 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
 
         if (!elementInInsertedCache) {
             StringBuilder sql = new StringBuilder("UPDATE ");
-            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.schema));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.element.schema));
             sql.append(".");
-            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.table));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? VERTEX_PREFIX : EDGE_PREFIX) + this.element.table));
             sql.append(" SET ");
-            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.key));
             sql.append(" = ? WHERE ");
-            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
             }
             Connection conn = this.sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -90,6 +99,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
         return StringFactory.propertyString(this);
     }
 
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
     public boolean equals(final Object object) {
         return ElementHelper.areEqual(this, object);

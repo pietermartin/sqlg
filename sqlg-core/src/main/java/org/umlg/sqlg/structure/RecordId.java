@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
@@ -14,10 +15,7 @@ import org.apache.tinkerpop.shaded.kryo.io.Output;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Date: 2015/02/21
@@ -61,6 +59,12 @@ public class RecordId implements KryoSerializable, Comparable {
     }
 
     public static RecordId from(Object vertexId) {
+        if (vertexId instanceof Element) {
+            return (RecordId) ((SqlgElement)vertexId).id();
+        }
+        if (vertexId instanceof RecordId) {
+            return (RecordId)vertexId;
+        }
         if (!(vertexId instanceof String)) {
             throw SqlgExceptions.invalidId(vertexId.toString());
         }
@@ -109,7 +113,9 @@ public class RecordId implements KryoSerializable, Comparable {
 
     @Override
     public int hashCode() {
-        return (this.schemaTable + this.id.toString()).hashCode();
+        int result = this.schemaTable.hashCode();
+        return result ^ this.id.hashCode();
+//        return (this.schemaTable + this.id.toString()).hashCode();
     }
 
     @Override
@@ -176,7 +182,7 @@ public class RecordId implements KryoSerializable, Comparable {
             // to write it out with the type.  in this way, data-bind should be able to deserialize
             // it back when types are embedded.
             typeSerializer.writeTypePrefixForScalar(recordId, jsonGenerator);
-            final Map<String, Object> m = new HashMap<>();
+            final Map<String, Object> m = new LinkedHashMap<>();
             m.put("schemaTable", recordId.getSchemaTable());
             m.put("id", recordId.getId());
             jsonGenerator.writeObject(m);

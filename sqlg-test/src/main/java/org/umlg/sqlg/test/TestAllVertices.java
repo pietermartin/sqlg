@@ -12,7 +12,6 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/07/13
@@ -56,7 +55,7 @@ public class TestAllVertices extends BaseTest {
         try (SqlgGraph graph = SqlgGraph.open(configuration)) {
             try {
                 graph.vertices(oid).next();
-                fail("Vertex should not be found as close behavior was set to rollback");
+                Assert.fail("Vertex should not be found as close behavior was set to rollback");
             } catch (Exception ex) {
                 validateException(Graph.Exceptions.elementNotFound(Vertex.class, oid), ex);
             }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.map.HashedMap;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -19,12 +20,9 @@ import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 
 /**
  * Date: 2016/09/04
@@ -32,35 +30,56 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
  */
 public class Topology {
 
+    public static final String VERTEX_PREFIX = "V_";
+    public static final String EDGE_PREFIX = "E_";
+    public static final String VERTICES = "VERTICES";
+    public static final String ID = "ID";
+    public static final String VERTEX_SCHEMA = "VERTEX_SCHEMA";
+    public static final String VERTEX_TABLE = "VERTEX_TABLE";
+    public static final String LABEL_SEPARATOR = ":::";
+    public static final String IN_VERTEX_COLUMN_END = "__I";
+    public static final String OUT_VERTEX_COLUMN_END = "__O";
+    public static final String ZONEID = "~~~ZONEID";
+    public static final String MONTHS = "~~~MONTHS";
+    public static final String DAYS = "~~~DAYS";
+    public static final String DURATION_NANOS = "~~~NANOS";
+    public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
+
     private Logger logger = LoggerFactory.getLogger(Topology.class.getName());
     private SqlgGraph sqlgGraph;
     private boolean distributed;
-    private ReentrantReadWriteLock reentrantReadWriteLock;
+
+    //Used to ensure that only one thread can modify the topology.
+    private ReentrantLock topologySqlWriteLock;
+    //Used to protect the topology maps.
+    //The maps are only updated during afterCommit.
+    //afterCommit locks access to the map
+    //allTableCache, schemaTableForeignKeyCache, edgeForeignKeyCache, metaSchemas and schemas are protected by the topologyMapLock.
+    private ReentrantReadWriteLock topologyMapLock;
+
     private Map<String, Map<String, PropertyType>> allTableCache = new HashMap<>();
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
     private Map<String, Set<String>> edgeForeignKeyCache = new HashMap<>();
-
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     private Map<String, Schema> schemas = new HashMap<>();
+
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
     private Set<String> uncommittedRemovedSchemas = new HashSet<>();
     private Map<String, Schema> metaSchemas = new HashMap<>();
     //A cache of just the sqlg_schema's AbstractLabels
     private Set<TopologyInf> sqlgSchemaAbstractLabels = new HashSet<>();
-    //private Set<GlobalUniqueIndex> globalUniqueIndexes = new HashSet<>();
-    //private Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashSet<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public static final String SQLG_NOTIFICATION_CHANNEL = "SQLG_NOTIFY";
 
-    //temporary tables
-    private Map<String, Map<String, PropertyType>> temporaryTables = new ConcurrentHashMap<>();
+    //temporary table map. it is in a thread local as temporary tables are only valid per session/connection.
+    private final ThreadLocal<Map<String, Map<String, PropertyType>>> threadLocalTemporaryTables = ThreadLocal.withInitial(HashMap::new);
 
     //ownPids are the pids to ignore as it is what the graph sent a notification for.
-    private Set<Integer> ownPids = new HashSet<>();
+    private Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
 
     //every notification will have a unique timestamp.
     //This is so because modification happen one at a time via the lock.
@@ -69,8 +88,7 @@ public class Topology {
     private List<TopologyValidationError> validationErrors = new ArrayList<>();
     private List<TopologyListener> topologyListeners = new ArrayList<>();
 
-    private static final int LOCK_TIMEOUT = 100;
-
+    private static final int LOCK_TIMEOUT = 2;
 
     @SuppressWarnings("WeakerAccess")
     public static final String CREATED_ON = "createdOn";
@@ -225,10 +243,6 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE
     );
 
-    public static final List<String> SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_SCHEMA = Arrays.asList(
-            Schema.GLOBAL_UNIQUE_INDEX_SCHEMA
-    );
-
     /**
      * Topology is a singleton created when the {@link SqlgGraph} is opened.
      * As the topology, i.e. sqlg_schema is created upfront the meta topology is pre-loaded.
@@ -238,7 +252,8 @@ public class Topology {
     Topology(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
-        this.reentrantReadWriteLock = new ReentrantReadWriteLock();
+        this.topologySqlWriteLock = new ReentrantLock(true);
+        this.topologyMapLock = new ReentrantReadWriteLock(true);
 
         //Pre-create the meta topology.
         Schema sqlgSchema = Schema.instantiateSqlgSchema(this);
@@ -311,7 +326,7 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(logVertexLabel);
 
         //add the public schema
-        this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(sqlgGraph,this, sqlgGraph.getSqlDialect().getPublicSchema()));
+        this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(sqlgGraph, this, sqlgGraph.getSqlDialect().getPublicSchema()));
 
         //add the global unique index schema
         this.schemas.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));
@@ -346,18 +361,20 @@ public class Topology {
             }
         });
 
-        if (this.sqlgGraph.getSqlDialect().requiredPreparedStatementDeallocate()) {
-            registerListener((TopologyInf, String, TopologyChangeAction) -> deallocateAll());
+        if (this.sqlgGraph.getSqlDialect().isPostgresql()) {
+            registerListener((topologyInf, string, topologyChangeAction) -> deallocateAll());
         }
+
     }
 
-    SqlgGraph getSqlgGraph() {
+    public SqlgGraph getSqlgGraph() {
         return this.sqlgGraph;
     }
 
     void close() {
-        if (this.distributed)
+        if (this.distributed) {
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).unregisterListener();
+        }
     }
 
     public List<TopologyValidationError> getValidationErrors() {
@@ -370,67 +387,99 @@ public class Topology {
      */
     void lock() {
         //only lock if the lock is not already owned by this thread.
-        if (!isWriteLockHeldByCurrentThread()) {
-            try {
-                this.sqlgGraph.tx().readWrite();
-                if (!this.reentrantReadWriteLock.writeLock().tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
-                    throw new RuntimeException("timeout lapsed to acquire lock schema creation.");
-                }
-                if (this.distributed) {
-                    ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
-                    //load the log to see if the schema has not already been created.
-                    //the last loaded log
-                    if (!this.notificationTimestamps.isEmpty()) {
-                        LocalDateTime timestamp = this.notificationTimestamps.last();
-                        List<Vertex> logs = this.sqlgGraph.topology().V()
-                                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                                .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
-                                .toList();
-                        for (Vertex logVertex : logs) {
+        if (!isSqlWriteLockHeldByCurrentThread()) {
+            this.sqlgGraph.tx().readWrite();
+            z_internalSqlWriteLock();
+            if (this.distributed) {
+                ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
+                //load the log to see if the schema has not already been created.
+                //the last loaded log
+                if (!this.notificationTimestamps.isEmpty()) {
+                    LocalDateTime timestamp = this.notificationTimestamps.last();
+                    List<Vertex> logs = this.sqlgGraph.topology().V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                            .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
+                            .toList();
+                    for (Vertex logVertex : logs) {
+                        int pid = logVertex.value("pid");
+                        LocalDateTime timestamp2 = logVertex.value("timestamp");
+                        if (!ownPids.contains(new ImmutablePair<>(pid, timestamp2))) {
                             ObjectNode log = logVertex.value("log");
                             fromNotifyJson(timestamp, log);
                         }
                     }
                 }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
         }
     }
 
     /**
-     * Not for public consumption. Used for the notification.
+     * Called from {@link Topology#lock()} to attempt to take the lock.
+     * This ensures that only one thread at a time may execute schema change sql commands.
+     * Sql schema change commands takes table locks on the database and is prone to dead locks.
+     * One thread at a time reduces the dead lock risk.
      */
-    private void z_internalWriteLock() {
-        //only lock if the lock is not already owned by this thread.
-        if (!isWriteLockHeldByCurrentThread()) {
-            try {
-                this.sqlgGraph.tx().readWrite();
-                if (!this.reentrantReadWriteLock.writeLock().tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
-                    throw new RuntimeException("Timeout lapsed to acquire write lock for notification.");
-                }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+    private void z_internalSqlWriteLock() {
+        Preconditions.checkState(!isSqlWriteLockHeldByCurrentThread());
+        try {
+            if (!this.topologySqlWriteLock.tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES)) {
+                throw new RuntimeException("Timeout lapsed to acquire write lock for notification.");
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     /**
-     * Not for public consumption.
+     * Called from {@link Topology#afterCommit()} and {@link Topology#afterRollback()}
+     * Releases the lock.
      */
-    private void z_internalReadLock() {
-        this.reentrantReadWriteLock.readLock().lock();
+    private void z_internalSqlWriteUnlock() {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread());
+        this.topologySqlWriteLock.unlock();
     }
 
-    private void z_internalReadUnLock() {
-        this.reentrantReadWriteLock.readLock().unlock();
+    private void z_internalTopologyMapReadLock() {
+        try {
+            this.topologyMapLock.readLock().tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void z_internalTopologyMapReadUnLock() {
+        this.topologyMapLock.readLock().unlock();
     }
 
     /**
-     * @return true if the current thread owns the lock.
+     * Called from {@link Topology#afterCommit()} and {@link Topology#fromNotifyJson(LocalDateTime, ObjectNode)}
+     * These two methods are the only places where the topology maps are updated and therefore write locked.
      */
-    boolean isWriteLockHeldByCurrentThread() {
-        return this.reentrantReadWriteLock.isWriteLockedByCurrentThread();
+    private void z_internalTopologyMapWriteLock() {
+        try {
+            this.topologyMapLock.writeLock().tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Called from {@link Topology#afterCommit()} and {@link Topology#fromNotifyJson(LocalDateTime, ObjectNode)}
+     * These two methods are the only places where the topology maps are updated and therefore write unlocked.
+     */
+    private void z_internalInternalTopologyMapWriteUnLock() {
+        this.topologyMapLock.writeLock().unlock();
+    }
+
+    /**
+     * @return true if the current thread owns the sql write lock.
+     */
+    boolean isSqlWriteLockHeldByCurrentThread() {
+        return this.topologySqlWriteLock.isHeldByCurrentThread();
+    }
+
+    boolean isTopologyMapWriteLockHeldByCurrentThread() {
+        return this.topologyMapLock.writeLock().isHeldByCurrentThread();
     }
 
     /**
@@ -448,6 +497,7 @@ public class Topology {
             if (!schemaOptional.isPresent()) {
                 //create the schema and the vertex label.
                 schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
+                this.uncommittedRemovedSchemas.remove(schemaName);
                 this.uncommittedSchemas.put(schemaName, schema);
                 fire(schema, "", TopologyChangeAction.CREATE);
                 return schema;
@@ -539,10 +589,10 @@ public class Topology {
         Objects.requireNonNull(schema, "Given schema may not be null");
         Objects.requireNonNull(table, "Given table may not be null");
         final String prefixedTable = VERTEX_PREFIX + table;
-        if (!this.temporaryTables.containsKey(prefixedTable)) {
+        if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
             lock();
-            if (!this.temporaryTables.containsKey(prefixedTable)) {
-                this.temporaryTables.put(prefixedTable, columns);
+            if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
+                this.threadLocalTemporaryTables.get().put(prefixedTable, columns);
                 createTempTable(prefixedTable, columns);
             }
         }
@@ -650,7 +700,7 @@ public class Topology {
         }
     }
 
- 
+
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
         Schema globalUniqueIndexSchema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA).orElseThrow(() -> new IllegalStateException("BUG: Global unique index schema " + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + " must exist"));
@@ -687,127 +737,110 @@ public class Topology {
 
 
     private void beforeCommit() {
-        Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
-        if (jsonNodeOptional.isPresent() && this.distributed) {
-            SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
-            LocalDateTime timestamp = LocalDateTime.now();
-            int pid = sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get());
-            this.ownPids.add(pid);
+        if (this.distributed) {
+            Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
+            if (jsonNodeOptional.isPresent()) {
+                SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
+                LocalDateTime timestamp = LocalDateTime.now();
+                int pid = sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get());
+                this.ownPids.add(new ImmutablePair<>(pid, timestamp));
+            }
         }
     }
 
-    private Schema removeSchemaFromCaches(String schema){
-    	Schema s=this.schemas.remove(schema);
-    	for (Iterator<String> all=this.allTableCache.keySet().iterator();all.hasNext();){
-    		String schemaTable=all.next();
-    		if (schemaTable.startsWith(schema+".")){
-    			all.remove();
-    		}
-    	}
-    	for (Iterator<String> all=this.edgeForeignKeyCache.keySet().iterator();all.hasNext();){
-    		String schemaTable=all.next();
-    		if (schemaTable.startsWith(schema+".")){
-    			all.remove();
-    		}
-    	}
-    	for (Iterator<SchemaTable> all=this.schemaTableForeignKeyCache.keySet().iterator();all.hasNext();){
-    		SchemaTable schemaTable=all.next();
-    		if (schemaTable.getSchema().equals(schema)){
-    			all.remove();
-    		}
-    	}
-    	return s;
+    private Schema removeSchemaFromCaches(String schema) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
+        Schema s = this.schemas.remove(schema);
+        this.allTableCache.keySet().removeIf(schemaTable -> schemaTable.startsWith(schema + "."));
+        this.edgeForeignKeyCache.keySet().removeIf(schemaTable -> schemaTable.startsWith(schema + "."));
+        this.schemaTableForeignKeyCache.keySet().removeIf(schemaTable -> schemaTable.getSchema().equals(schema));
+        return s;
     }
-   
+
     private void afterCommit() {
-        this.temporaryTables.clear();
-        if (this.isWriteLockHeldByCurrentThread()) {
-            for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Schema> entry = it.next();
-                this.schemas.put(entry.getKey(), entry.getValue());
-                it.remove();
-            }
-            for (Iterator<String> it=this.uncommittedRemovedSchemas.iterator();it.hasNext();){
-            	String sch=it.next();
-            	removeSchemaFromCaches(sch);
-            	it.remove();
-            }
-            //merge the allTableCache and uncommittedAllTables
-            Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
-            for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
-                String uncommittedSchemaTable = stringMapEntry.getKey();
-                AbstractLabel abstractLabel = stringMapEntry.getValue();
-                // we replace the whole map since getPropertyTypeMap() gives the full map, and we may have removed properties
-                this.allTableCache.put(uncommittedSchemaTable, abstractLabel.getPropertyTypeMap());
-            }
-
-            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
-            for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedSchemaTableForeignKeys.entrySet()) {
-                Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTablePairEntry.getKey());
-                if (foreignKeys != null) {
-                    foreignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
-                    foreignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
-                } else {
-                    this.schemaTableForeignKeyCache.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
-                }
-            }
-
-            Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
-            for (Map.Entry<String, Set<String>> entry : uncommittedEdgeForeignKeys.entrySet()) {
-                Set<String> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
-                if (foreignKeys == null) {
-                    this.edgeForeignKeyCache.put(entry.getKey(), entry.getValue());
-                } else {
-                    foreignKeys.addAll(entry.getValue());
-                }
-            }
-
-            /*for (Iterator<GlobalUniqueIndex> it = this.uncommittedGlobalUniqueIndexes.iterator(); it.hasNext(); ) {
-                GlobalUniqueIndex globalUniqueIndex = it.next();
-                this.globalUniqueIndexes.add(globalUniqueIndex);
-                it.remove();
-            }*/
-            z_internalReadLock();
+        this.threadLocalTemporaryTables.remove();
+        if (this.isSqlWriteLockHeldByCurrentThread()) {
+            z_internalTopologyMapWriteLock();
             try {
+                for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
+                    Map.Entry<String, Schema> entry = it.next();
+                    this.schemas.put(entry.getKey(), entry.getValue());
+                    it.remove();
+                }
+                for (Iterator<String> it = this.uncommittedRemovedSchemas.iterator(); it.hasNext(); ) {
+                    String sch = it.next();
+                    removeSchemaFromCaches(sch);
+                    it.remove();
+                }
+                //merge the allTableCache and uncommittedAllTables
+                Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
+                for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
+                    String uncommittedSchemaTable = stringMapEntry.getKey();
+                    AbstractLabel abstractLabel = stringMapEntry.getValue();
+                    // we replace the whole map since getPropertyTypeMap() gives the full map, and we may have removed properties
+                    this.allTableCache.put(uncommittedSchemaTable, abstractLabel.getPropertyTypeMap());
+                }
+
+                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
+                for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedSchemaTableForeignKeys.entrySet()) {
+                    Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTablePairEntry.getKey());
+                    if (foreignKeys != null) {
+                        foreignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
+                        foreignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
+                    } else {
+                        this.schemaTableForeignKeyCache.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+                    }
+                }
+
+                Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+                for (Map.Entry<String, Set<String>> entry : uncommittedEdgeForeignKeys.entrySet()) {
+                    Set<String> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
+                    if (foreignKeys == null) {
+                        this.edgeForeignKeyCache.put(entry.getKey(), entry.getValue());
+                    } else {
+                        foreignKeys.addAll(entry.getValue());
+                    }
+                }
                 for (Schema schema : this.schemas.values()) {
                     schema.afterCommit();
                 }
             } finally {
-                z_internalReadUnLock();
+                z_internalInternalTopologyMapWriteUnLock();
+                z_internalSqlWriteUnlock();
             }
-            this.reentrantReadWriteLock.writeLock().unlock();
         }
     }
 
     private void afterRollback() {
-        this.temporaryTables.clear();
-        if (this.isWriteLockHeldByCurrentThread()) {
+        this.threadLocalTemporaryTables.remove();
+        if (this.isSqlWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Schema> entry = it.next();
                 entry.getValue().afterRollback();
                 it.remove();
             }
             this.uncommittedRemovedSchemas.clear();
-            z_internalReadLock();
-            try {
-                for (Schema schema : this.schemas.values()) {
-                    schema.afterRollback();
-                }
-            } finally {
-                z_internalReadUnLock();
+            for (Schema schema : this.schemas.values()) {
+                schema.afterRollback();
             }
-            //this.uncommittedGlobalUniqueIndexes.clear();
-            this.reentrantReadWriteLock.writeLock().unlock();
+            z_internalSqlWriteUnlock();
         }
     }
 
-    public void deallocateAll() {
+    /**
+     * This is only needed for Postgresql.
+     */
+    private void deallocateAll() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
             statement.execute("DEALLOCATE ALL");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        //Soft reset the pool will leave active connections running.
+        //All connections in the pool will be closed.
+        //Running connections will be closed when they reenter the pool.
+        this.sqlgGraph.getSqlgDataSource().softResetPool();
     }
 
     void cacheTopology() {
@@ -868,13 +901,12 @@ public class Topology {
         for (Vertex globalUniqueIndexVertex : globalUniqueIndexVertices) {
             String globalUniqueIndexName = globalUniqueIndexVertex.value("name");
             GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(this, globalUniqueIndexName);
-            getGlobalUniqueIndexSchema().globalUniqueIndexes.put(globalUniqueIndexName,globalUniqueIndex);
+            getGlobalUniqueIndexSchema().globalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
 
             Set<Vertex> globalUniqueIndexProperties = traversalSource.V(globalUniqueIndexVertex).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).toSet();
             Set<PropertyColumn> guiPropertyColumns = new HashSet<>();
             for (Vertex globalUniqueIndexPropertyVertex : globalUniqueIndexProperties) {
                 //get the path to the vertex
-                boolean isForVertex = true;
                 List<Map<String, Vertex>> vertexSchema = traversalSource
                         .V(globalUniqueIndexPropertyVertex)
                         .in(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).as("vertex")
@@ -942,7 +974,7 @@ public class Topology {
     }
 
     public JsonNode toJson() {
-        z_internalReadLock();
+        z_internalTopologyMapReadLock();
         try {
             ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
             ArrayNode schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
@@ -952,7 +984,7 @@ public class Topology {
             topologyNode.set("schemas", schemaArrayNode);
             return topologyNode;
         } finally {
-            z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
@@ -962,12 +994,12 @@ public class Topology {
     }
 
     /**
-     * Product the json that goes into the sqlg_schema.V_log table. Other graphs will read it to sync their schema.
+     * Produce the json that goes into the sqlg_schema.V_log table. Other graphs will read it to sync their schema.
      *
      * @return The json.
      */
     private Optional<JsonNode> toNotifyJson() {
-        z_internalReadLock();
+        z_internalTopologyMapReadLock();
         try {
             ArrayNode committedSchemaArrayNode = null;
             ObjectNode topologyNode = null;
@@ -986,7 +1018,7 @@ public class Topology {
                 topologyNode.set("schemas", committedSchemaArrayNode);
             }
             ArrayNode unCommittedSchemaArrayNode = null;
-            if (this.isWriteLockHeldByCurrentThread()) {
+            if (this.isSqlWriteLockHeldByCurrentThread()) {
                 for (Schema schema : this.uncommittedSchemas.values()) {
                     if (unCommittedSchemaArrayNode == null) {
                         unCommittedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
@@ -1000,56 +1032,37 @@ public class Topology {
                         unCommittedSchemaArrayNode.add(schemaNode);
                     }
                 }
-                ArrayNode removed=new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-                for(String schema:this.uncommittedRemovedSchemas){
-                	removed.add(schema);
+                ArrayNode removed = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                for (String schema : this.uncommittedRemovedSchemas) {
+                    removed.add(schema);
                 }
-                if (removed.size()>0){
-                	if (topologyNode == null) {
+                if (removed.size() > 0) {
+                    if (topologyNode == null) {
                         topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
                     }
-                	topologyNode.set("uncommittedRemovedSchemas", removed);
+                    topologyNode.set("uncommittedRemovedSchemas", removed);
                 }
             }
-            /*ArrayNode unCommittedGlobalUniqueIndexesArrayNode = null;
-            if (this.isWriteLockHeldByCurrentThread()) {
-                for (GlobalUniqueIndex globalUniqueIndex : this.uncommittedGlobalUniqueIndexes) {
-                    if (unCommittedGlobalUniqueIndexesArrayNode == null) {
-                        unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-                    }
-                    Optional<JsonNode> jsonNodeOptional = globalUniqueIndex.toNotifyJson();
-                    if (jsonNodeOptional.isPresent()) {
-                        unCommittedGlobalUniqueIndexesArrayNode.add(jsonNodeOptional.get());
-                    }
-                }
-            }*/
-
             if (unCommittedSchemaArrayNode != null) {
                 if (topologyNode == null) {
                     topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
                 }
                 topologyNode.set("uncommittedSchemas", unCommittedSchemaArrayNode);
             }
-            /*if (unCommittedGlobalUniqueIndexesArrayNode != null) {
-                if (topologyNode == null) {
-                    topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-                }
-                topologyNode.set("uncommittedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);
-            }*/
             if (topologyNode != null) {
                 return Optional.of(topologyNode);
             } else {
                 return Optional.empty();
             }
         } finally {
-            z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
     public void fromNotifyJson(int pid, LocalDateTime notifyTimestamp) {
-        z_internalWriteLock();
         try {
-            if (!this.ownPids.contains(pid)) {
+            ImmutablePair<Integer, LocalDateTime> p = new ImmutablePair<>(pid, notifyTimestamp);
+            if (!this.ownPids.contains(p)) {
                 List<Vertex> logs = this.sqlgGraph.topology().V()
                         .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
                         .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp)
@@ -1062,7 +1075,8 @@ public class Topology {
                 ObjectNode log = logs.get(0).value("log");
                 fromNotifyJson(timestamp, log);
             } else {
-                this.ownPids.remove(pid);
+                // why? we get notifications for our own things
+                //this.ownPids.remove(p);
             }
         } finally {
             this.sqlgGraph.tx().rollback();
@@ -1071,69 +1085,75 @@ public class Topology {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private void fromNotifyJson(LocalDateTime timestamp, ObjectNode log) {
-        //First do all the out edges. The in edge logic assumes the out edges are present.
-        for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
-            ArrayNode schemas = (ArrayNode) log.get(s);
-            if (schemas != null) {
-                //first load all the schema as they might be required later
-                for (JsonNode jsonSchema : schemas) {
-                    String schemaName = jsonSchema.get("name").asText();
-                    Optional<Schema> schemaOptional = getSchema(schemaName);
-                    Schema schema;
-                    if (!schemaOptional.isPresent()) {
-                        //add to map
-                        schema = Schema.instantiateSchema(this, schemaName);
-                        this.schemas.put(schemaName, schema);
-                        fire(schema, "", TopologyChangeAction.CREATE);
+        z_internalTopologyMapWriteLock();
+        try {
+            //First do all the out edges. The in edge logic assumes the out edges are present.
+            for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
+                ArrayNode schemas = (ArrayNode) log.get(s);
+                if (schemas != null) {
+                    //first load all the schema as they might be required later
+                    for (JsonNode jsonSchema : schemas) {
+                        String schemaName = jsonSchema.get("name").asText();
+                        Optional<Schema> schemaOptional = getSchema(schemaName);
+                        Schema schema;
+                        if (!schemaOptional.isPresent()) {
+                            //add to map
+                            schema = Schema.instantiateSchema(this, schemaName);
+                            this.schemas.put(schemaName, schema);
+                            fire(schema, "", TopologyChangeAction.CREATE);
+                        }
+                    }
+                    for (JsonNode jsonSchema : schemas) {
+                        String schemaName = jsonSchema.get("name").asText();
+                        Optional<Schema> schemaOptional = getSchema(schemaName);
+                        Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
+                        @SuppressWarnings("OptionalGetWithoutIsPresent")
+                        Schema schema = schemaOptional.get();
+                        schema.fromNotifyJsonOutEdges(jsonSchema);
                     }
                 }
-                for (JsonNode jsonSchema : schemas) {
-                    String schemaName = jsonSchema.get("name").asText();
-                    Optional<Schema> schemaOptional = getSchema(schemaName);
-                    Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
-                    @SuppressWarnings("OptionalGetWithoutIsPresent")
-                    Schema schema = schemaOptional.get();
-                    schema.fromNotifyJsonOutEdges(jsonSchema);
+            }
+            for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
+                ArrayNode schemas = (ArrayNode) log.get(s);
+                if (schemas != null) {
+                    for (JsonNode jsonSchema : schemas) {
+                        String schemaName = jsonSchema.get("name").asText();
+                        Optional<Schema> schemaOptional = getSchema(schemaName);
+                        Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
+                        @SuppressWarnings("OptionalGetWithoutIsPresent")
+                        Schema schema = schemaOptional.get();
+                        schema.fromNotifyJsonInEdges(jsonSchema);
+                    }
                 }
             }
-        }
-        for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
-            ArrayNode schemas = (ArrayNode) log.get(s);
-            if (schemas != null) {
-                for (JsonNode jsonSchema : schemas) {
-                    String schemaName = jsonSchema.get("name").asText();
-                    Optional<Schema> schemaOptional = getSchema(schemaName);
-                    Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
-                    @SuppressWarnings("OptionalGetWithoutIsPresent")
-                    Schema schema = schemaOptional.get();
-                    schema.fromNotifyJsonInEdges(jsonSchema);
+            ArrayNode rem = (ArrayNode) log.get("uncommittedRemovedSchemas");
+            if (rem != null) {
+                for (JsonNode jsonSchema : rem) {
+                    String name = jsonSchema.asText();
+                    Schema s = removeSchemaFromCaches(name);
+                    if (s != null) {
+                        fire(s, "", TopologyChangeAction.DELETE);
+                    }
                 }
             }
+
+            this.notificationTimestamps.add(timestamp);
+        } finally {
+            z_internalInternalTopologyMapWriteUnLock();
+
         }
-        ArrayNode rem=(ArrayNode)log.get("uncommittedRemovedSchemas");
-        if (rem!=null){
-        	for (JsonNode jsonSchema : rem){
-        		String name=jsonSchema.asText();
-        		Schema s=removeSchemaFromCaches(name);
-        		if (s!=null){
-        			fire(s,"",TopologyChangeAction.DELETE);
-        		}
-        	}
-        }
-        
-        this.notificationTimestamps.add(timestamp);
     }
 
     @Override
     public boolean equals(Object o) {
-        z_internalReadLock();
+        if (o == null) {
+            return false;
+        }
+        if (!(o instanceof Topology)) {
+            return false;
+        }
+        z_internalTopologyMapReadLock();
         try {
-            if (o == null) {
-                return false;
-            }
-            if (!(o instanceof Topology)) {
-                return false;
-            }
             Topology other = (Topology) o;
             if (this.schemas.equals(other.schemas)) {
                 //check each schema individually as schema equals does not check the VertexLabels
@@ -1149,7 +1169,7 @@ public class Topology {
                 return false;
             }
         } finally {
-            z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
@@ -1161,49 +1181,32 @@ public class Topology {
     }
 
     public Set<GlobalUniqueIndex> getGlobalUniqueIndexes() {
-        /*Set<GlobalUniqueIndex> result = new HashSet<>(this.globalUniqueIndexes);
-        if (this.isWriteLockHeldByCurrentThread()) {
-            result.addAll(this.uncommittedGlobalUniqueIndexes);
-        }
-        return result;*/
-    	return new HashSet<>(getGlobalUniqueIndexSchema().getGlobalUniqueIndexes().values());
-    			
+        return new HashSet<>(getGlobalUniqueIndexSchema().getGlobalUniqueIndexes().values());
     }
 
     public Optional<GlobalUniqueIndex> getGlobalUniqueIndexes(String name) {
-        /*for (GlobalUniqueIndex globalUniqueIndex : globalUniqueIndexes) {
-            if (globalUniqueIndex.getName().equals(name)) {
-                return Optional.of(globalUniqueIndex);
-            }
-        }
-        for (GlobalUniqueIndex globalUniqueIndex : uncommittedGlobalUniqueIndexes) {
-            if (globalUniqueIndex.getName().equals(name)) {
-                return Optional.of(globalUniqueIndex);
-            }
-        }
-        return Optional.empty();*/
-    	return getGlobalUniqueIndexSchema().getGlobalUniqueIndex(name);
+        return getGlobalUniqueIndexSchema().getGlobalUniqueIndex(name);
     }
 
     public Set<Schema> getSchemas() {
-        this.z_internalReadLock();
+        z_internalTopologyMapReadLock();
         try {
             Set<Schema> result = new HashSet<>();
             result.addAll(this.schemas.values());
-            if (this.isWriteLockHeldByCurrentThread()) {
+            if (this.isSqlWriteLockHeldByCurrentThread()) {
                 result.addAll(this.uncommittedSchemas.values());
-                if (uncommittedRemovedSchemas.size()>0){
-                	for (Iterator<Schema> it=result.iterator();it.hasNext();){
-                		Schema sch=it.next();
-                		if (uncommittedRemovedSchemas.contains(sch.getName())){
-                			it.remove();
-                		}
-                	}
+                if (uncommittedRemovedSchemas.size() > 0) {
+                    for (Iterator<Schema> it = result.iterator(); it.hasNext(); ) {
+                        Schema sch = it.next();
+                        if (uncommittedRemovedSchemas.contains(sch.getName())) {
+                            it.remove();
+                        }
+                    }
                 }
             }
             return Collections.unmodifiableSet(result);
         } finally {
-            this.z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
@@ -1222,14 +1225,14 @@ public class Topology {
     }
 
     public Optional<Schema> getSchema(String schema) {
-        this.z_internalReadLock();
+        if (isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedSchemas.contains(schema)) {
+            return Optional.empty();
+        }
+        z_internalTopologyMapReadLock();
         try {
-        	if (isWriteLockHeldByCurrentThread() && this.uncommittedRemovedSchemas.contains(schema)) {
-        		return Optional.empty();
-        	}
             Schema result = this.schemas.get(schema);
             if (result == null) {
-                if (isWriteLockHeldByCurrentThread()) {
+                if (isSqlWriteLockHeldByCurrentThread()) {
                     result = this.uncommittedSchemas.get(schema);
                 }
                 if (result == null) {
@@ -1238,7 +1241,7 @@ public class Topology {
             }
             return Optional.ofNullable(result);
         } finally {
-            this.z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
@@ -1269,45 +1272,60 @@ public class Topology {
     }
 
     private Map<String, AbstractLabel> getUncommittedAllTables() {
-        Preconditions.checkState(isWriteLockHeldByCurrentThread(), "getUncommittedAllTables must be called with the lock held");
-        Map<String, AbstractLabel> result = new HashMap<>();
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedLabels());
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread(), "getUncommittedAllTables must be called with the lock held");
+        z_internalTopologyMapReadLock();
+        try {
+            Map<String, AbstractLabel> result = new HashMap<>();
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedLabels());
+            }
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedLabels());
+            }
+            return result;
+        } finally {
+            z_internalTopologyMapReadUnLock();
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedLabels());
-        }
-        return result;
     }
 
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
-        Preconditions.checkState(isWriteLockHeldByCurrentThread(), "getUncommittedSchemaTableForeignKeys must be called with the lock held");
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread(), "getUncommittedSchemaTableForeignKeys must be called with the lock held");
+        z_internalTopologyMapReadLock();
+        try {
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+            }
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+            }
+            return result;
+        } finally {
+            z_internalTopologyMapReadUnLock();
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedSchemaTableForeignKeys());
-        }
-        return result;
     }
 
     private Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
-        Preconditions.checkState(isWriteLockHeldByCurrentThread(), "getUncommittedEdgeForeignKeys must be called with the lock held");
-        Map<String, Set<String>> result = new HashMap<>();
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedEdgeForeignKeys());
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread(), "getUncommittedEdgeForeignKeys must be called with the lock held");
+        z_internalTopologyMapReadLock();
+        try {
+            Map<String, Set<String>> result = new HashMap<>();
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedEdgeForeignKeys());
+            }
+            for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+                Schema schema = stringSchemaEntry.getValue();
+                result.putAll(schema.getUncommittedEdgeForeignKeys());
+            }
+            return result;
+        } finally {
+            z_internalTopologyMapReadUnLock();
         }
-        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
-            Schema schema = stringSchemaEntry.getValue();
-            result.putAll(schema.getUncommittedEdgeForeignKeys());
-        }
-        return result;
     }
 
     /**
@@ -1327,19 +1345,15 @@ public class Topology {
      * @return
      */
     public Map<String, Map<String, PropertyType>> getAllTables(boolean withSqlgSchema) {
-        this.z_internalReadLock();
+        z_internalTopologyMapReadLock();
         try {
             //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
             Map<String, Map<String, PropertyType>> result;
-            if (this.isWriteLockHeldByCurrentThread()) {
+            if (this.isSqlWriteLockHeldByCurrentThread()) {
                 result = new HashMap<>();
                 for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
                     result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
                 }
-            } else {
-                result = new HashMap<>(this.allTableCache);
-            }
-            if (this.isWriteLockHeldByCurrentThread()) {
                 Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
                 for (String table : uncommittedLabels.keySet()) {
                     if (result.containsKey(table)) {
@@ -1348,14 +1362,20 @@ public class Topology {
                         result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
                     }
                 }
-                for (Schema s:this.schemas.values()){
-                	for (String removed:s.uncommittedRemovedVertexLabels){
-                		result.remove(removed);
-                	}
-                	for (String removed:s.uncommittedRemovedEdgeLabels){
-                		result.remove(removed);
-                	}
-                	
+                for (Schema s : this.schemas.values()) {
+                    for (String removed : s.uncommittedRemovedVertexLabels) {
+                        result.remove(removed);
+                    }
+                    for (String removed : s.uncommittedRemovedEdgeLabels) {
+                        result.remove(removed);
+                    }
+
+                }
+            } else {
+                if (!withSqlgSchema) {
+                    result = new HashMap<>(this.allTableCache);
+                } else {
+                    result = this.allTableCache;
                 }
             }
             if (!withSqlgSchema) {
@@ -1363,10 +1383,9 @@ public class Topology {
                     result.remove(sqlgSchemaSchemaTable);
                 }
             }
-
             return Collections.unmodifiableMap(result);
         } finally {
-            z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
@@ -1377,102 +1396,77 @@ public class Topology {
      * @return A map without the filter elements present.
      */
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
-        this.z_internalReadLock();
-        try {
-            Map<String, Map<String, PropertyType>> result = new HashMap<>(getAllTables());
-            for (TopologyInf f : filter) {
-                if (f instanceof AbstractLabel) {
-                    AbstractLabel abstractLabel = (AbstractLabel) f;
-                    Schema schema = abstractLabel.getSchema();
-                    result.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel());
-                }
+        Map<String, Map<String, PropertyType>> result = new HashMap<>(getAllTables());
+        for (TopologyInf f : filter) {
+            if (f instanceof AbstractLabel) {
+                AbstractLabel abstractLabel = (AbstractLabel) f;
+                Schema schema = abstractLabel.getSchema();
+                result.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel());
             }
-            return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalReadUnLock();
         }
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, Map<String, PropertyType>> getAllTablesFrom(Set<TopologyInf> selectFrom) {
-        z_internalReadLock();
-        try {
-        	Map<String, Map<String, PropertyType>> tbls=getAllTables(true);
-            Map<String, Map<String, PropertyType>> result = new HashMap<>();
-            for (TopologyInf f : selectFrom) {
-                if (f instanceof AbstractLabel) {
-                    AbstractLabel abstractLabel = (AbstractLabel) f;
-                    if (abstractLabel.isValid()){
-	                    Schema schema = abstractLabel.getSchema();
-	                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
-	                    Map<String, PropertyType> tmp = tbls.get(key);
-	                    if (tmp!=null){
-	                    	result.put(key, tmp);
-	                    }
-                    }
-                } else if (f instanceof GlobalUniqueIndex) {
-                    GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
-                    String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + SchemaManager.VERTEX_PREFIX + globalUniqueIndex.getName();
+        Map<String, Map<String, PropertyType>> tbls = getAllTables(true);
+        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+        for (TopologyInf f : selectFrom) {
+            if (f instanceof AbstractLabel) {
+                AbstractLabel abstractLabel = (AbstractLabel) f;
+                if (abstractLabel.isValid()) {
+                    Schema schema = abstractLabel.getSchema();
+                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
                     Map<String, PropertyType> tmp = tbls.get(key);
-                    if (tmp!=null){
-                    	result.put(key, tmp);
+                    if (tmp != null) {
+                        result.put(key, tmp);
                     }
                 }
+            } else if (f instanceof GlobalUniqueIndex) {
+                GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
+                String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + VERTEX_PREFIX + globalUniqueIndex.getName();
+                Map<String, PropertyType> tmp = tbls.get(key);
+                if (tmp != null) {
+                    result.put(key, tmp);
+                }
             }
-            return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalReadUnLock();
         }
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
-        z_internalReadLock();
-        try {
-            Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-            if (schemaOptional.isPresent()) {
-                return Collections.unmodifiableMap(schemaOptional.get().getPropertiesFor(schemaTable));
-            }
-            return Collections.emptyMap();
-        } finally {
-            z_internalReadUnLock();
+        Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
+        if (schemaOptional.isPresent()) {
+            return Collections.unmodifiableMap(schemaOptional.get().getPropertiesFor(schemaTable));
         }
+        return Collections.emptyMap();
     }
 
     public Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
-        z_internalReadLock();
-        try {
-            Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-            if (schemaOptional.isPresent()) {
-                return Collections.unmodifiableMap(schemaOptional.get().getPropertiesWithGlobalUniqueIndexFor(schemaTable));
-            }
-            return Collections.emptyMap();
-        } finally {
-            z_internalReadUnLock();
+        Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
+        if (schemaOptional.isPresent()) {
+            return Collections.unmodifiableMap(schemaOptional.get().getPropertiesWithGlobalUniqueIndexFor(schemaTable));
         }
+        return Collections.emptyMap();
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        z_internalReadLock();
-        try {
-            Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-            if (schemaOptional.isPresent()) {
-                return schemaOptional.get().getTableFor(schemaTable);
-            }
-            if (isWriteLockHeldByCurrentThread()) {
-                Map<String, PropertyType> temporaryPropertyMap = this.temporaryTables.get(schemaTable.getTable());
-                if (temporaryPropertyMap != null) {
-                    return Collections.unmodifiableMap(temporaryPropertyMap);
-                }
-            }
-            return Collections.emptyMap();
-        } finally {
-            z_internalReadUnLock();
+        Map<String, PropertyType> result = getAllTables(true).get(schemaTable.toString());
+        if (result != null) {
+            return Collections.unmodifiableMap(result);
         }
+        if (isSqlWriteLockHeldByCurrentThread()) {
+            Map<String, PropertyType> temporaryPropertyMap = this.threadLocalTemporaryTables.get().get(schemaTable.getTable());
+            if (temporaryPropertyMap != null) {
+                return Collections.unmodifiableMap(temporaryPropertyMap);
+            }
+        }
+        return Collections.emptyMap();
     }
 
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
-        z_internalReadLock();
+        z_internalTopologyMapReadLock();
         try {
-            if (this.isWriteLockHeldByCurrentThread()) {
+            if (this.isSqlWriteLockHeldByCurrentThread()) {
                 Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
                 for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : this.schemaTableForeignKeyCache.entrySet()) {
                     Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = uncommittedSchemaTableForeignKeys.get(schemaTablePairEntry.getKey());
@@ -1488,22 +1482,18 @@ public class Topology {
                 return Collections.unmodifiableMap(this.schemaTableForeignKeyCache);
             }
         } finally {
-            z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> loadTableLabels() {
-        z_internalReadLock();
-        try {
-            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> map = new HashMap<>();
-            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
-                map.putAll(result);
-            }
-            return map;
-        } finally {
-            z_internalReadUnLock();
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread());
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> map = new HashMap<>();
+        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+            map.putAll(result);
         }
+        return map;
     }
 
     /**
@@ -1521,9 +1511,9 @@ public class Topology {
     }
 
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
-        z_internalReadLock();
+        z_internalTopologyMapReadLock();
         try {
-            if (this.isWriteLockHeldByCurrentThread()) {
+            if (this.isSqlWriteLockHeldByCurrentThread()) {
                 Map<String, Set<String>> committed = new HashMap<>(this.edgeForeignKeyCache);
                 Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
                 for (Map.Entry<String, Set<String>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
@@ -1541,24 +1531,21 @@ public class Topology {
                 return Collections.unmodifiableMap(this.edgeForeignKeyCache);
             }
         } finally {
-            z_internalReadUnLock();
+            z_internalTopologyMapReadUnLock();
         }
     }
 
     private Map<String, Set<String>> loadAllEdgeForeignKeys() {
-        z_internalReadLock();
-        try {
-            Map<String, Set<String>> result = new HashMap<>();
-            for (Schema schema : this.schemas.values()) {
-                result.putAll(schema.getAllEdgeForeignKeys());
-            }
-            return result;
-        } finally {
-            z_internalReadUnLock();
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread());
+        Map<String, Set<String>> result = new HashMap<>();
+        for (Schema schema : this.schemas.values()) {
+            result.putAll(schema.getAllEdgeForeignKeys());
         }
+        return result;
     }
 
     void addToEdgeForeignKeyCache(String name, String foreignKey) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
         if (foreignKeys == null) {
             foreignKeys = new HashSet<>();
@@ -1568,21 +1555,23 @@ public class Topology {
             foreignKeys.add(foreignKey);
         }
     }
-    
+
     void removeFromEdgeForeignKeyCache(String name, String foreignKey) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
         if (foreignKeys != null) {
             foreignKeys.remove(foreignKey);
         }
-        if (foreignKeys.isEmpty()){
-        	this.edgeForeignKeyCache.remove(name);
+        if (foreignKeys.isEmpty()) {
+            this.edgeForeignKeyCache.remove(name);
         }
     }
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         this.allTableCache.put(tableName, propertyTypeMap);
         SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, tableName);
-        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX) && !this.schemaTableForeignKeyCache.containsKey(schemaTable)) {
+        if (schemaTable.getTable().startsWith(VERTEX_PREFIX) && !this.schemaTableForeignKeyCache.containsKey(schemaTable)) {
             //This happens for VertexLabel that have no edges,
             //else the addOutForeignKeysToVertexLabel or addInForeignKeysToVertexLabel would have already added it to the cache.
             this.schemaTableForeignKeyCache.put(schemaTable, Pair.of(new HashSet<>(), new HashSet<>()));
@@ -1591,10 +1580,12 @@ public class Topology {
 
     /**
      * add out foreign key between a vertex label and a edge label
+     *
      * @param vertexLabel
      * @param edgeLabel
      */
     void addOutForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys == null) {
@@ -1607,10 +1598,12 @@ public class Topology {
 
     /**
      * add in foreign key between a vertex label and a edge label
+     *
      * @param vertexLabel
      * @param edgeLabel
      */
     void addInForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys == null) {
@@ -1622,50 +1615,56 @@ public class Topology {
 
     /**
      * remove out foreign key for a given vertex label and edge label
+     *
      * @param vertexLabel
      * @param edgeLabel
      */
     void removeOutForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys != null) {
-         	foreignKeys.getRight().remove(SchemaTable.of(vertexLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
+            foreignKeys.getRight().remove(SchemaTable.of(vertexLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
         }
     }
 
     /**
      * remove in foreign key for a given vertex label and edge label
+     *
      * @param vertexLabel
      * @param edgeLabel
      */
     void removeInForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys != null && edgeLabel.isValid()) {
             foreignKeys.getLeft().remove(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
         }
     }
-    
+
     /**
      * remove a given vertex label
+     *
      * @param vertexLabel
      */
-    void removeVertexLabel(VertexLabel vertexLabel){
-    	SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
-    	this.schemaTableForeignKeyCache.remove(schemaTable);
-    	this.allTableCache.remove(schemaTable.toString());
-    	for (EdgeLabel lbl:vertexLabel.getOutEdgeLabels().values()){
-    		removeFromEdgeForeignKeyCache(
-                lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
-    	}
-    	for (EdgeLabel lbl:vertexLabel.getInEdgeLabels().values()){
-    		if (lbl.isValid()){
-    			removeFromEdgeForeignKeyCache(
-    					lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-    					vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
-    		}
-    	}
+    void removeVertexLabel(VertexLabel vertexLabel) {
+        Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
+        this.schemaTableForeignKeyCache.remove(schemaTable);
+        this.allTableCache.remove(schemaTable.toString());
+        for (EdgeLabel lbl : vertexLabel.getOutEdgeLabels().values()) {
+            removeFromEdgeForeignKeyCache(
+                    lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
+                    vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + OUT_VERTEX_COLUMN_END);
+        }
+        for (EdgeLabel lbl : vertexLabel.getInEdgeLabels().values()) {
+            if (lbl.isValid()) {
+                removeFromEdgeForeignKeyCache(
+                        lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
+                        vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + IN_VERTEX_COLUMN_END);
+            }
+        }
     }
     
     /*void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
@@ -1684,28 +1683,29 @@ public class Topology {
 
     /**
      * remove a given schema
-     * @param schema the schema
+     *
+     * @param schema       the schema
      * @param preserveData should we preserve the SQL data?
      */
-    void removeSchema(Schema schema,boolean preserveData){
-    	lock();
-    	if(!this.uncommittedRemovedSchemas.contains(schema.getName())){
-    		// remove edge roles in other schemas pointing to vertex labels in removed schema
-    		for (VertexLabel vlbl:schema.getVertexLabels().values()){
-    			for (EdgeRole er:vlbl.getInEdgeRoles().values()){
-    				if (er.getEdgeLabel().getSchema()!=schema){
-    					er.remove(preserveData);
-    				}
-    			}
-    		}
-    		
-    		this.uncommittedRemovedSchemas.add(schema.getName());
-    		TopologyManager.removeSchema(sqlgGraph, schema.getName());
-    		if (!preserveData){
-    			schema.delete();
-    		}
-    		fire(schema,"",TopologyChangeAction.DELETE);
-    	}
+    void removeSchema(Schema schema, boolean preserveData) {
+        lock();
+        if (!this.uncommittedRemovedSchemas.contains(schema.getName())) {
+            // remove edge roles in other schemas pointing to vertex labels in removed schema
+            for (VertexLabel vlbl : schema.getVertexLabels().values()) {
+                for (EdgeRole er : vlbl.getInEdgeRoles().values()) {
+                    if (er.getEdgeLabel().getSchema() != schema) {
+                        er.remove(preserveData);
+                    }
+                }
+            }
+
+            this.uncommittedRemovedSchemas.add(schema.getName());
+            TopologyManager.removeSchema(sqlgGraph, schema.getName());
+            if (!preserveData) {
+                schema.delete();
+            }
+            fire(schema, "", TopologyChangeAction.DELETE);
+        }
     }
 
     static class TopologyValidationError {

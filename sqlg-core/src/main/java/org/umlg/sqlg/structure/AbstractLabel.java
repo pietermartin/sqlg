@@ -1,33 +1,19 @@
 package org.umlg.sqlg.structure;
 
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_NAME;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_TYPE;
-
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Preconditions;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2016/09/14
@@ -42,14 +28,17 @@ public abstract class AbstractLabel implements TopologyInf {
     protected Map<String, PropertyColumn> properties = new HashMap<>();
     Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
     Set<String> uncommittedRemovedProperties = new HashSet<>();
-    
-    protected Map<String, PropertyColumn> globalUniqueIndexProperties = new HashMap<>();
-    Map<String, PropertyColumn> uncommittedGlobalUniqueIndexProperties = new HashMap<>();
-    
+
+    private Map<String, PropertyColumn> globalUniqueIndexProperties = new HashMap<>();
+    private Map<String, PropertyColumn> uncommittedGlobalUniqueIndexProperties = new HashMap<>();
+
     private Map<String, Index> indexes = new HashMap<>();
     private Map<String, Index> uncommittedIndexes = new HashMap<>();
     private Set<String> uncommittedRemovedIndexes = new HashSet<>();
-    
+
+    //Yet another cache to speed meta data up.
+    private Map<String, PropertyType> propertyTypeMap;
+
     /**
      * Only called for a new vertex/edge label being added.
      *
@@ -77,7 +66,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public Index ensureIndexExists(final IndexType indexType, final List<PropertyColumn> properties) {
-        String prefix = this instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX;
+        String prefix = this instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
         SchemaTable schemaTable = SchemaTable.of(this.getSchema().getName(), this.getLabel());
         String indexName = this.sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
 
@@ -116,29 +105,29 @@ public abstract class AbstractLabel implements TopologyInf {
     public String getName() {
         return this.label;
     }
-    
-    
-    public String getFullName(){
-    	return getSchema().getName()+"."+getName();
+
+
+    public String getFullName() {
+        return getSchema().getName() + "." + getName();
     }
 
     public Map<String, PropertyColumn> getProperties() {
         Map<String, PropertyColumn> result = new HashMap<>();
         result.putAll(this.properties);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedProperties);
-            for(String s:this.uncommittedRemovedProperties){
-            	result.remove(s);
+            for (String s : this.uncommittedRemovedProperties) {
+                result.remove(s);
             }
         }
-       
+
         return result;
     }
 
     public Map<String, PropertyColumn> getGlobalUniqueIndexProperties() {
         Map<String, PropertyColumn> result = new HashMap<>();
         result.putAll(this.globalUniqueIndexProperties);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedGlobalUniqueIndexProperties);
         }
         return result;
@@ -156,10 +145,10 @@ public abstract class AbstractLabel implements TopologyInf {
     public Map<String, Index> getIndexes() {
         Map<String, Index> result = new HashMap<>();
         result.putAll(this.indexes);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedIndexes);
-            for(String i:this.uncommittedRemovedIndexes){
-            	result.remove(i);
+            for (String i : this.uncommittedRemovedIndexes) {
+                result.remove(i);
             }
         }
         return result;
@@ -176,26 +165,30 @@ public abstract class AbstractLabel implements TopologyInf {
 
     Map<String, PropertyType> getPropertyTypeMap() {
         Map<String, PropertyType> result = new HashMap<>();
-        this.properties.forEach((k, v) -> result.put(k, v.getPropertyType()));
-        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            this.uncommittedProperties.forEach((k, v) -> result.put(k, v.getPropertyType()));
-            for(String s:this.uncommittedRemovedProperties){
-            	result.remove(s);
+        for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
+            result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyType());
+        }
+        if (getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
+            for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
+                result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyType());
+            }
+            for (String s : this.uncommittedRemovedProperties) {
+                result.remove(s);
             }
         }
         return result;
     }
 
     Map<String, PropertyColumn> getUncommittedPropertyTypeMap() {
-        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             return this.uncommittedProperties;
         } else {
             return Collections.emptyMap();
         }
     }
-    
-    Set<String> getUncommittedRemovedProperties(){
-    	if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+
+    Set<String> getUncommittedRemovedProperties() {
+        if (getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             return this.uncommittedRemovedProperties;
         } else {
             return Collections.emptySet();
@@ -263,22 +256,31 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void addProperty(Vertex propertyVertex) {
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread());
         PropertyColumn property = new PropertyColumn(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "Abstract.afterCommit must hold the write lock");
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "Abstract.afterCommit must hold the write lock");
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
             this.properties.put(entry.getKey(), entry.getValue());
             entry.getValue().afterCommit();
             it.remove();
+            if (this.propertyTypeMap != null) {
+                this.propertyTypeMap.clear();
+                this.propertyTypeMap = null;
+            }
         }
-        for (Iterator<String> it=this.uncommittedRemovedProperties.iterator();it.hasNext();){
-        	String prop=it.next();
-        	this.properties.remove(prop);
-        	it.remove();
+        for (Iterator<String> it = this.uncommittedRemovedProperties.iterator(); it.hasNext(); ) {
+            String prop = it.next();
+            this.properties.remove(prop);
+            it.remove();
+            if (this.propertyTypeMap != null) {
+                this.propertyTypeMap.clear();
+                this.propertyTypeMap = null;
+            }
         }
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedGlobalUniqueIndexProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
@@ -292,10 +294,10 @@ public abstract class AbstractLabel implements TopologyInf {
             entry.getValue().afterCommit();
             it.remove();
         }
-        for (Iterator<String> it=this.uncommittedRemovedIndexes.iterator();it.hasNext();){
-        	String prop=it.next();
-        	this.indexes.remove(prop);
-        	it.remove();
+        for (Iterator<String> it = this.uncommittedRemovedIndexes.iterator(); it.hasNext(); ) {
+            String prop = it.next();
+            this.indexes.remove(prop);
+            it.remove();
         }
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
@@ -305,11 +307,15 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "Abstract.afterRollback must hold the write lock");
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "Abstract.afterRollback must hold the write lock");
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
             entry.getValue().afterRollback();
             it.remove();
+            if (this.propertyTypeMap != null) {
+                this.propertyTypeMap.clear();
+                this.propertyTypeMap = null;
+            }
         }
         this.uncommittedRemovedProperties.clear();
         this.uncommittedGlobalUniqueIndexProperties.clear();
@@ -334,7 +340,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     protected Optional<JsonNode> toNotifyJson() {
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
             ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (PropertyColumn property : this.uncommittedProperties.values()) {
@@ -342,7 +348,7 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             ArrayNode removedPropertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String property : this.uncommittedRemovedProperties) {
-            	removedPropertyArrayNode.add(property);
+                removedPropertyArrayNode.add(property);
             }
             ArrayNode indexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Index index : this.uncommittedIndexes.values()) {
@@ -354,14 +360,14 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             ArrayNode removedIndexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String property : this.uncommittedRemovedIndexes) {
-            	removedIndexArrayNode.add(property);
+                removedIndexArrayNode.add(property);
             }
             result.set("uncommittedProperties", propertyArrayNode);
             result.set("uncommittedRemovedProperties", removedPropertyArrayNode);
             result.set("uncommittedIndexes", indexArrayNode);
             result.set("uncommittedRemovedIndexes", removedIndexArrayNode);
-            if (propertyArrayNode.size()==0 && removedPropertyArrayNode.size()==0 && indexArrayNode.size()==0 && removedIndexArrayNode.size()==0){
-            	return Optional.empty();
+            if (propertyArrayNode.size() == 0 && removedPropertyArrayNode.size() == 0 && indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0) {
+                return Optional.empty();
             }
             return Optional.of(result);
         } else {
@@ -370,28 +376,27 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     /**
-     * 
      * @param vertexLabelJson
-     * @param fire should we fire topology events
+     * @param fire            should we fire topology events
      */
-    void fromPropertyNotifyJson(JsonNode vertexLabelJson,boolean fire) {
+    void fromPropertyNotifyJson(JsonNode vertexLabelJson, boolean fire) {
         ArrayNode propertiesNode = (ArrayNode) vertexLabelJson.get("uncommittedProperties");
         if (propertiesNode != null) {
             for (JsonNode propertyNode : propertiesNode) {
                 PropertyColumn propertyColumn = PropertyColumn.fromNotifyJson(this, propertyNode);
-                PropertyColumn old=this.properties.put(propertyColumn.getName(), propertyColumn);
-                if (fire && old==null){
-                	this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
+                PropertyColumn old = this.properties.put(propertyColumn.getName(), propertyColumn);
+                if (fire && old == null) {
+                    this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
                 }
             }
         }
         ArrayNode removedPropertyArrayNode = (ArrayNode) vertexLabelJson.get("uncommittedRemovedProperties");
         if (removedPropertyArrayNode != null) {
             for (JsonNode propertyNode : removedPropertyArrayNode) {
-            	String pName=propertyNode.asText();
-            	PropertyColumn old=this.properties.remove(pName);
-                if (fire && old!=null){
-                	this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
+                String pName = propertyNode.asText();
+                PropertyColumn old = this.properties.remove(pName);
+                if (fire && old != null) {
+                    this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }
             }
         }
@@ -406,10 +411,10 @@ public abstract class AbstractLabel implements TopologyInf {
         ArrayNode removedIndexArrayNode = (ArrayNode) vertexLabelJson.get("uncommittedRemovedIndexes");
         if (removedIndexArrayNode != null) {
             for (JsonNode indexNode : removedIndexArrayNode) {
-            	String iName=indexNode.asText();
-            	Index old=this.indexes.remove(iName);
-                if (fire && old!=null){
-                	this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
+                String iName = indexNode.asText();
+                Index old = this.indexes.remove(iName);
+                if (fire && old != null) {
+                    this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }
             }
         }
@@ -441,29 +446,31 @@ public abstract class AbstractLabel implements TopologyInf {
     protected abstract List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException;
 
     protected abstract String getPrefix();
-    
+
     /**
      * remove a given property
+     *
      * @param propertyColumn the property column
-     * @param preserveData should we preserve the SQL data?
+     * @param preserveData   should we preserve the SQL data?
      */
-    abstract void removeProperty(PropertyColumn propertyColumn,boolean preserveData);
+    abstract void removeProperty(PropertyColumn propertyColumn, boolean preserveData);
 
     /**
      * remove a column from the table
+     *
      * @param schema the schema
-     * @param table the table name
+     * @param table  the table name
      * @param column the column name
      */
-    void removeColumn(String schema, String table,String column){
-    	StringBuilder sql = new StringBuilder("ALTER TABLE ");
+    void removeColumn(String schema, String table, String column) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
         sql.append(".");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
         sql.append(" DROP COLUMN IF EXISTS ");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-        if (sqlgGraph.getSqlDialect().supportsCascade()){
-        	sql.append(" CASCADE");
+        if (sqlgGraph.getSqlDialect().supportsCascade()) {
+            sql.append(" CASCADE");
         }
         if (sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -478,31 +485,33 @@ public abstract class AbstractLabel implements TopologyInf {
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * remove a given index that was on this label
-     * @param idx  the index
+     *
+     * @param idx          the index
      * @param preserveData should we keep the SQL data
      */
-    void removeIndex(Index idx,boolean preserveData){
-    	this.getSchema().getTopology().lock();
-    	if (!uncommittedRemovedIndexes.contains(idx.getName())){
-    		uncommittedRemovedIndexes.add(idx.getName());
-    		TopologyManager.removeIndex(this.sqlgGraph, idx);
-    		if (!preserveData){
-    			idx.delete(sqlgGraph);
-    		}
-    		this.getSchema().getTopology().fire(idx, "", TopologyChangeAction.DELETE);
-    	}
+    void removeIndex(Index idx, boolean preserveData) {
+        this.getSchema().getTopology().lock();
+        if (!uncommittedRemovedIndexes.contains(idx.getName())) {
+            uncommittedRemovedIndexes.add(idx.getName());
+            TopologyManager.removeIndex(this.sqlgGraph, idx);
+            if (!preserveData) {
+                idx.delete(sqlgGraph);
+            }
+            this.getSchema().getTopology().fire(idx, "", TopologyChangeAction.DELETE);
+        }
     }
-    
+
     /**
      * check if we're valid (have a valid schema, for example)
      * this is used for edge labels that require at least one out vertex but sometimes don't (in the middle of deletion operations)
+     *
      * @return
      */
-    boolean isValid(){
-    	return true;
+    boolean isValid() {
+        return true;
     }
 
 }

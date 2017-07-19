@@ -14,7 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.strategy.SqlgGraphStepCompiled;
+import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class TestPathStep extends BaseTest {
                 .V().has(T.label, "person").as("a").local(__.out("created").as("b")).select("a", "b").by("name").by(T.id);
         Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertEquals(4, traversal.getSteps().size());
         int counter = 0;
         while (traversal.hasNext()) {
@@ -168,7 +168,7 @@ public class TestPathStep extends BaseTest {
                 .V().as("a").has("name", "a1").as("b").has("age", 1).as("c").path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(1, paths.size());
         Assert.assertEquals(1, paths.get(0).size());
@@ -189,7 +189,7 @@ public class TestPathStep extends BaseTest {
                 .V().as("a").has("name", "marko").as("b").has("age", 29).as("c").path();
         Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertEquals(3, traversal.getSteps().size());
         final Path path = traversal.next();
         Assert.assertFalse(traversal.hasNext());

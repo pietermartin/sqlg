@@ -1,6 +1,0 @@
-* Path.get(String label) throws an exception is the label is not found.
-    Why? Optional paths may or may not contain the label. Return an Optional instead?
-* .select(...) returns an empty list is a labels in the var args is not found.
-    Why n ot just return what is found as opposed to nothing is a particular label is not found.
-    Also because of Optional
-

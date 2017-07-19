@@ -11,9 +11,12 @@ import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/08/17
@@ -23,10 +26,6 @@ import java.util.Objects;
 public class SchemaTable implements Serializable, Comparable {
     private String schema;
     private String table;
-
-    //Needed for Hazelcast
-    public SchemaTable() {
-    }
 
     private SchemaTable(String schema, String table) {
         this.schema = schema;
@@ -56,7 +55,6 @@ public class SchemaTable implements Serializable, Comparable {
         } else {
             schema = label.substring(0, indexOfPeriod);
             table = label.substring(indexOfPeriod + 1);
-
         }
         sqlgGraph.getSqlDialect().validateSchemaName(schema);
         sqlgGraph.getSqlDialect().validateTableName(table);
@@ -70,7 +68,9 @@ public class SchemaTable implements Serializable, Comparable {
 
     @Override
     public int hashCode() {
-        return (this.schema + this.table).hashCode();
+        int result = this.schema.hashCode();
+        return result ^ this.table.hashCode();
+//        return (this.schema + this.table).hashCode();
     }
 
     @Override
@@ -86,7 +86,7 @@ public class SchemaTable implements Serializable, Comparable {
     }
 
     public boolean isVertexTable() {
-        return this.table.startsWith(SchemaManager.VERTEX_PREFIX);
+        return this.table.startsWith(VERTEX_PREFIX);
     }
 
     public boolean isEdgeTable() {
@@ -94,16 +94,16 @@ public class SchemaTable implements Serializable, Comparable {
     }
 
     public SchemaTable withOutPrefix() {
-        Preconditions.checkState(this.table.startsWith(SchemaManager.VERTEX_PREFIX) || this.table.startsWith(SchemaManager.EDGE_PREFIX));
-        if (this.table.startsWith(SchemaManager.VERTEX_PREFIX))
-            return SchemaTable.of(this.getSchema(), this.getTable().substring(SchemaManager.VERTEX_PREFIX.length()));
+        Preconditions.checkState(this.table.startsWith(VERTEX_PREFIX) || this.table.startsWith(EDGE_PREFIX));
+        if (this.table.startsWith(VERTEX_PREFIX))
+            return SchemaTable.of(this.getSchema(), this.getTable().substring(VERTEX_PREFIX.length()));
         else
-            return SchemaTable.of(this.getSchema(), this.getTable().substring(SchemaManager.EDGE_PREFIX.length()));
+            return SchemaTable.of(this.getSchema(), this.getTable().substring(EDGE_PREFIX.length()));
     }
 
     public SchemaTable withPrefix(String prefix) {
-        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "Prefix must be either " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX + " for " + prefix);
-        Preconditions.checkState(!this.table.startsWith(SchemaManager.VERTEX_PREFIX) && !this.table.startsWith(SchemaManager.EDGE_PREFIX), "SchemaTable is already prefixed.");
+        Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "Prefix must be either " + VERTEX_PREFIX + " or " + EDGE_PREFIX + " for " + prefix);
+        Preconditions.checkState(!this.table.startsWith(VERTEX_PREFIX) && !this.table.startsWith(EDGE_PREFIX), "SchemaTable is already prefixed.");
         return SchemaTable.of(this.getSchema(), prefix + this.getTable());
     }
 
@@ -138,7 +138,7 @@ public class SchemaTable implements Serializable, Comparable {
             // to write it out with the type.  in this way, data-bind should be able to deserialize
             // it back when types are embedded.
             typeSerializer.writeTypePrefixForScalar(schemaTable, jsonGenerator);
-            final Map<String, Object> m = new HashMap<>();
+            final Map<String, Object> m = new LinkedHashMap<>();
             m.put("schema", schemaTable.getSchema());
             m.put("table", schemaTable.getTable());
             jsonGenerator.writeObject(m);

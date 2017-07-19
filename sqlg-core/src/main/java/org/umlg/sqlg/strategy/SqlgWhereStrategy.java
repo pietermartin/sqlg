@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.*;
@@ -59,8 +60,8 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
 	        		if (wps.getStartKey().isPresent()){
 	        			referTo=stepsByLabel.get(wps.getStartKey().get());
 	        		}
-	        		if (referTo instanceof SqlgGraphStepCompiled<?, ?>){
-	        			SqlgGraphStepCompiled<?, ?> sgs=(SqlgGraphStepCompiled<?, ?>)referTo;
+	        		if (referTo instanceof SqlgGraphStep<?, ?>){
+	        			SqlgGraphStep<?, ?> sgs=(SqlgGraphStep<?, ?>)referTo;
 	        			if (sgs.getReplacedSteps().size()>0){
 	        				referTo=sgs.getReplacedSteps().get(sgs.getReplacedSteps().size()-1);
 	        			}
@@ -88,14 +89,14 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
         	stepsByLabel.put(s, step);
         }
         // labels on replaced steps are not bubbled up to the graphstep
-        if (step instanceof SqlgGraphStepCompiled<?, ?>){
-        	SqlgGraphStepCompiled<?, ?> sgs=(SqlgGraphStepCompiled<?, ?>)step;
+        if (step instanceof SqlgGraphStep<?, ?>){
+        	SqlgGraphStep<?, ?> sgs=(SqlgGraphStep<?, ?>)step;
         	for (ReplacedStep<?,?> rs:sgs.getReplacedSteps()){
         		for (String label:rs.getLabels()){
-        			 if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
-        				 stepsByLabel.put(label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length()),rs);
-                     } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
-                    	 stepsByLabel.put(label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length()),rs);
+        			 if (label.contains(BaseStrategy.PATH_LABEL_SUFFIX)) {
+        				 stepsByLabel.put(label.substring(label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX) + BaseStrategy.PATH_LABEL_SUFFIX.length()),rs);
+                     } else if (label.contains(BaseStrategy.EMIT_LABEL_SUFFIX)) {
+                    	 stepsByLabel.put(label.substring(label.indexOf(BaseStrategy.EMIT_LABEL_SUFFIX) + BaseStrategy.EMIT_LABEL_SUFFIX.length()),rs);
                      }
         		}
         	}

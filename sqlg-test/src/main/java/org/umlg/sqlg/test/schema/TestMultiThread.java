@@ -186,7 +186,7 @@ public class TestMultiThread extends BaseTest {
         executorService.shutdown();
         executorService.awaitTermination(6000, TimeUnit.SECONDS);
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
+            Assert.assertTrue(this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + String.valueOf(i)).isPresent());
             Assert.assertEquals(10, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
         }
     }
@@ -212,7 +212,7 @@ public class TestMultiThread extends BaseTest {
         executorService.shutdown();
         executorService.awaitTermination(60, TimeUnit.SECONDS);
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
+            Assert.assertTrue(this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + String.valueOf(i)).isPresent());
             Assert.assertEquals(10, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
             Assert.assertEquals(10, vertexTraversal(this.sqlgGraph, v1).out("test" + String.valueOf(i)).count().next().intValue());
         }
@@ -255,7 +255,7 @@ public class TestMultiThread extends BaseTest {
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
-        ExecutorService executorService = newFixedThreadPool(100);
+        ExecutorService executorService = newFixedThreadPool(50);
         int loop = 400;
         for (int i = 0; i < loop; i++) {
             String n = "person" + i;
