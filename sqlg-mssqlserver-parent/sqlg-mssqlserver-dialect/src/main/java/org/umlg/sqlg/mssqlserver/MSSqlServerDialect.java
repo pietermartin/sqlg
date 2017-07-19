@@ -43,6 +43,11 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean supportsCascade() {
+        return false;
+    }
+
+    @Override
     public Set<String> getDefaultSchemas() {
         return ImmutableSet.of("GRAPH");
     }
@@ -186,7 +191,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             case BYTE_ARRAY:
                 return new String[]{"BINARY"};
             case DOUBLE:
-                return new String[]{"DOUBLE"};
+                return new String[]{"DOUBLE PRECISION"};
             case DURATION:
                 return new String[]{"BIGINT", "INT"};
             case FLOAT:
@@ -479,7 +484,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsTransactionalSchema() {
-        return false;
+        return true;
     }
 
     @Override
