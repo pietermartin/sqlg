@@ -229,7 +229,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setCursorName("");
                 preparedStatement.setLong(1, this.recordId.getId());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {

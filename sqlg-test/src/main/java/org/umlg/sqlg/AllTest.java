@@ -26,7 +26,8 @@ import org.umlg.sqlg.test.labels.TestHasLabelAndId;
 import org.umlg.sqlg.test.labels.TestLabelLength;
 import org.umlg.sqlg.test.labels.TestLabelsSchema;
 import org.umlg.sqlg.test.labels.TestMultipleLabels;
-import org.umlg.sqlg.test.localdate.LocalDateTest;
+import org.umlg.sqlg.test.localdate.TestLocalDate;
+import org.umlg.sqlg.test.localdate.TestLocalDateArray;
 import org.umlg.sqlg.test.localvertexstep.*;
 import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
@@ -111,7 +112,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGraphStepOrderBy.class,
         TestVertexStepOrderBy.class,
         TestPathStep.class,
-        LocalDateTest.class,
+        TestLocalDate.class,
+        TestLocalDateArray.class,
         TestBatchStreamVertex.class,
         TestBatchStreamEdge.class,
         JsonTest.class,

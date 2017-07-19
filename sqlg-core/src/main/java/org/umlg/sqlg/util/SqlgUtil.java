@@ -823,39 +823,56 @@ public class SqlgUtil {
                     }
                 }
             } else {
-                //Drop tables one by one and then the schemas.
-                //HSQLDB dead locks when trying to drop the 'PUBLIC' schema, so alas drop tables first.
-                String catalog = null;
-                String schemaPattern = sqlDialect.getPublicSchema();
-                String tableNamePattern = "%";
-                String[] types = {"TABLE"};
-                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                while (result.next()) {
-                    String schema = result.getString(2);
-                    String table = result.getString(3);
-                    if (sqlDialect.getGisSchemas().contains(schema) || sqlDialect.getSpacialRefTable().contains(table)) {
-                        continue;
-                    }
-                    StringBuilder sql = new StringBuilder("DROP TABLE ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                    sql.append(".");
-                    sql.append(sqlDialect.maybeWrapInQoutes(table));
-                    sql.append(" CASCADE");
-                    if (sqlDialect.needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
+
+                //Drop all the edges
+                List<Triple<String, String, String>> edgeTables = sqlDialect.getEdgeTables(metadata);
+                for (Triple<String, String, String> edgeTable : edgeTables) {
+                    String db = edgeTable.getLeft();
+                    String schema = edgeTable.getMiddle();
+                    String table = edgeTable.getRight();
+                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
+                        StringBuilder sql = new StringBuilder("DROP TABLE ");
+                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                        sql.append(".");
+                        sql.append(sqlDialect.maybeWrapInQoutes(table));
+                        sql.append(" CASCADE");
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
                     }
                 }
-                catalog = null;
-                schemaPattern = null;
-                result = metadata.getSchemas(catalog, schemaPattern);
-                while (result.next()) {
-                    String schema = result.getString(1);
+                //Drop all the vertices
+                List<Triple<String, String, String>> vertexTables = sqlDialect.getVertexTables(metadata);
+                for (Triple<String, String, String> vertexTable : vertexTables) {
+                    String db = vertexTable.getLeft();
+                    String schema = vertexTable.getMiddle();
+                    String table = vertexTable.getRight();
+                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
+                        StringBuilder sql = new StringBuilder("DROP TABLE ");
+                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                        sql.append(".");
+                        sql.append(sqlDialect.maybeWrapInQoutes(table));
+                        sql.append(" CASCADE");
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
+                    }
+                }
+
+                List<String> schemaNames = sqlDialect.getSchemaNames(metadata);
+                for (String schema : schemaNames) {
                     if (!sqlDialect.getInternalSchemas().contains(schema) && !sqlDialect.getPublicSchema().equals(schema)) {
                         StringBuilder sql = new StringBuilder("DROP SCHEMA ");
                         sql.append(sqlDialect.maybeWrapInQoutes(schema));

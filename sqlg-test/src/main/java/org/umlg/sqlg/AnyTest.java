@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.labels.TestHasLabelAndId;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileGraphStep;
 
 /**
  * Date: 2014/07/16
@@ -14,7 +14,9 @@ import org.umlg.sqlg.test.labels.TestHasLabelAndId;
 //        TestDeadLock.class
 //        TestBatch.class
 //        TestLabelLength.class
-        TestHasLabelAndId.class
+//        TestHasLabelAndId.class,
+//        TestLocalDate.class,
+        TestGremlinCompileGraphStep.class
 })
 public class AnyTest {
 }

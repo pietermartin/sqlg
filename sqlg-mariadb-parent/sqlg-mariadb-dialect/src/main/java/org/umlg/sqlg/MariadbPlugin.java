@@ -19,7 +19,7 @@ public class MariadbPlugin implements SqlgPlugin{
 
     @Override
     public String getDriverFor(String connectionUrl) {
-        return connectionUrl.startsWith("jdbc:mysql") ? "com.mysql.jc.jdbc.Driver" : null;
+        return connectionUrl.startsWith("jdbc:mariadb") ? "org.mariadb.jdbc.Driver" : null;
     }
 
     @Override

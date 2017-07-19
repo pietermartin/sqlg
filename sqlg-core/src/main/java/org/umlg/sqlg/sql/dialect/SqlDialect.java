@@ -111,6 +111,22 @@ public interface SqlDialect {
         return true;
     }
 
+    default boolean supportsZonedDateTimeArrayValues() {
+        return true;
+    }
+
+    default boolean supportsLocalTimeArrayValues() {
+        return true;
+    }
+
+    default boolean supportsLocalDateArrayValues() {
+        return true;
+    }
+
+    default boolean supportsLocalDateTimeArrayValues() {
+        return true;
+    }
+
     default void assertTableName(String tableName) {
     }
 
@@ -472,7 +488,7 @@ public interface SqlDialect {
      * Get all the Vertex tables. i.e. all tables starting with 'V_'
      *
      * @param metaData JDBC meta data.
-     * @return A triple holding the catalog, thea schema and the table.
+     * @return A triple holding the catalog, schema and table.
      */
     List<Triple<String, String, String>> getVertexTables(DatabaseMetaData metaData);
 
@@ -526,5 +542,13 @@ public interface SqlDialect {
 
     default String sqlInsertEmptyValues() {
         return " DEFAULT VALUES";
+    }
+
+    /**
+     * MariaDb can not index the LONGTEXT type. It needs to know how many characters to index.
+     * @return Return true is the number of characters to index needs to be specified.
+     */
+    default boolean requiresIndexLengthLimit() {
+        return false;
     }
 }

@@ -715,12 +715,6 @@ public class SqlgGraph implements Graph {
         public class SqlGVertexPropertyFeatures implements VertexPropertyFeatures {
 
             @Override
-            @FeatureDescriptor(name = FEATURE_ADD_PROPERTY)
-            public boolean supportsAddProperty() {
-                return true;
-            }
-
-            @Override
             @FeatureDescriptor(name = FEATURE_REMOVE_PROPERTY)
             public boolean supportsRemoveProperty() {
                 return true;
@@ -1112,11 +1106,9 @@ public class SqlgGraph implements Graph {
             SchemaTable schemaTable = SchemaTable.from(this, table);
             if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
                 StringBuilder sql = new StringBuilder("SELECT COUNT(1) FROM ");
-                sql.append("\"");
-                sql.append(schemaTable.getSchema());
-                sql.append("\".\"");
-                sql.append(schemaTable.getTable());
-                sql.append("\"");
+                sql.append(getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+                sql.append(".");
+                sql.append(getSqlDialect().maybeWrapInQoutes(schemaTable.getTable()));
                 if (this.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
@@ -1172,16 +1164,17 @@ public class SqlgGraph implements Graph {
                 if (this.getTopology().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
                     List<Long> schemaTableIds = schemaTableListEntry.getValue();
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append("\"");
-                    sql.append(schemaTable.getSchema());
-                    sql.append("\".\"");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(".");
+                    String table = "";
                     if (returnVertices) {
-                        sql.append(VERTEX_PREFIX);
+                        table += VERTEX_PREFIX;
                     } else {
-                        sql.append(EDGE_PREFIX);
+                        table += EDGE_PREFIX;
                     }
-                    sql.append(schemaTable.getTable());
-                    sql.append("\" WHERE ");
+                    table += schemaTable.getTable();
+                    sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+                    sql.append(" WHERE ");
                     sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
                     sql.append(" IN (");
                     int count = 1;
@@ -1225,11 +1218,9 @@ public class SqlgGraph implements Graph {
                 SchemaTable schemaTable = SchemaTable.from(this, table);
                 if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append("\"");
-                    sql.append(schemaTable.getSchema());
-                    sql.append("\".\"");
-                    sql.append(schemaTable.getTable());
-                    sql.append("\"");
+                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(".");
+                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getTable()));
                     if (this.getSqlDialect().needsSemicolon()) {
                         sql.append(";");
                     }
