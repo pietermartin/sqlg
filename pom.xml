@@ -166,7 +166,7 @@
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
         <module>sqlg-mssqlserver-parent</module>
-        <module>sqlg-mysql-parent</module>
+        <!--<module>sqlg-mysql-parent</module>-->
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>

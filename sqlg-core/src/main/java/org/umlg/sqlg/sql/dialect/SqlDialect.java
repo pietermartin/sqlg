@@ -19,6 +19,8 @@ import java.util.*;
 
 public interface SqlDialect {
 
+    static final String INDEX_POSTFIX = "_sqlgIdx";
+
     default boolean supporstDistribution() {
         return false;
     }
@@ -312,7 +314,15 @@ public interface SqlDialect {
         return "public";
     }
 
+    default boolean requiresIndexName() {
+        return false;
+    }
+
     default String indexName(SchemaTable schemaTable, String prefix, List<String> columns) {
+        return indexName(schemaTable, prefix, INDEX_POSTFIX, columns);
+    }
+
+    default String indexName(SchemaTable schemaTable, String prefix, String postfix, List<String> columns) {
         Preconditions.checkState(!columns.isEmpty(), "SqlDialect.indexName may not be called with an empty list of columns");
         StringBuilder sb = new StringBuilder();
         sb.append(schemaTable.getSchema());
@@ -322,7 +332,7 @@ public interface SqlDialect {
         sb.append("_");
         //noinspection OptionalGetWithoutIsPresent
         sb.append(columns.stream().reduce((a, b) -> a + "_" + b).get());
-        sb.append("Idx");
+        sb.append(postfix);
         return sb.toString();
     }
 

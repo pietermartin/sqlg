@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.Range;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.structure.PropertyType;
@@ -19,8 +20,6 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.*;
 import java.util.*;
-import org.apache.commons.lang3.Range;
-import org.apache.commons.lang3.tuple.Triple;
 
 /**
  * @author Kevin Schmidt
@@ -33,8 +32,18 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean requiresIndexName() {
+        return true;
+    }
+
+    @Override
     public String dialectName() {
         return "MSSqlServerDialect";
+    }
+
+    @Override
+    public Set<String> getInternalSchemas() {
+        return null;
     }
 
     @Override
@@ -47,11 +56,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return false;
     }
 
-    @Override
-    public Set<String> getDefaultSchemas() {
-        return ImmutableSet.of("GRAPH");
-    }
-    
     @Override
     public String addColumnStatement(String schema, String table, String column, String typeDefinition) {
         StringBuilder sql = new StringBuilder();
