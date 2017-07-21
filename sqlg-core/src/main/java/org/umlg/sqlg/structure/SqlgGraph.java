@@ -124,38 +124,13 @@ import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "testProfileStrategyCallbackSideEffect",
         reason = "Assertions are TinkerGraph specific.")
-
 @Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "modern_V_out_out_profileXmetricsX",
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "g_V_whereXinXcreatedX_count_isX1XX_name_profile",
         reason = "Assertions are TinkerGraph specific.")
 @Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "grateful_V_out_out_profileXmetricsX",
-        reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "g_V_repeat_both_profileXmetricsX",
-        reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "grateful_V_out_out_profile",
-        reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "g_V_repeat_both_profile",
-        reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "modern_V_out_out_profile",
-        reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "testProfileStrategyCallback",
-        reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
-        method = "testProfileStrategyCallbackSideEffect",
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "g_V_whereXinXcreatedX_count_isX1XX_name_profileXmetricsX",
         reason = "Assertions are TinkerGraph specific.")
 
 @Graph.OptOut(
