@@ -16,7 +16,7 @@ import java.util.*;
 
 public interface SqlDialect {
 
-    boolean isPrimaryKeyForeignKey(String lastIndexName);
+    static final String INDEX_POSTFIX = "_sqlgIdx";
 
     default boolean supporstDistribution() {
         return false;
@@ -290,6 +290,30 @@ public interface SqlDialect {
     default String createSchemaStatement() {
         return "CREATE SCHEMA ";
     }
+    
+    /**
+     * Builds an add column statement.
+     * @param schema schema name
+     * @param table table name
+     * @param column new column name
+     * @param typeDefinition column definition
+     * @return the statement to add the column
+     */
+    default String addColumnStatement(String schema, String table, String column, String typeDefinition) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(table));
+        sql.append(" ADD COLUMN ");
+        sql.append(maybeWrapInQoutes(column));
+        sql.append(" ");
+        sql.append(typeDefinition);
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
+    }
 
     /**
      * @return the statement head to drop a schema
@@ -310,7 +334,15 @@ public interface SqlDialect {
         return "public";
     }
 
+    default boolean requiresIndexName() {
+        return false;
+    }
+
     default String indexName(SchemaTable schemaTable, String prefix, List<String> columns) {
+        return indexName(schemaTable, prefix, INDEX_POSTFIX, columns);
+    }
+
+    default String indexName(SchemaTable schemaTable, String prefix, String postfix, List<String> columns) {
         Preconditions.checkState(!columns.isEmpty(), "SqlDialect.indexName may not be called with an empty list of columns");
         StringBuilder sb = new StringBuilder();
         sb.append(schemaTable.getSchema());
@@ -320,7 +352,7 @@ public interface SqlDialect {
         sb.append("_");
         //noinspection OptionalGetWithoutIsPresent
         sb.append(columns.stream().reduce((a, b) -> a + "_" + b).get());
-        sb.append("Idx");
+        sb.append(postfix);
         return sb.toString();
     }
 
@@ -452,6 +484,18 @@ public interface SqlDialect {
     /**
      * range condition
      *
+     * @param r range
+     * @param printedOrderBy indicates if order by was already produced
+     * @return
+     */
+    default String getRangeClause(Range<Long> r, boolean printedOrderBy) {
+        return getRangeClause(r);
+    }
+
+    /**
+     * range condition
+     *
+     * @param r range
      * @return
      */
     default String getRangeClause(Range<Long> r) {
