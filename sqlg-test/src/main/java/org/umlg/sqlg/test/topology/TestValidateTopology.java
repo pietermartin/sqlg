@@ -138,7 +138,8 @@ public class TestValidateTopology extends BaseTest {
         this.sqlgGraph.tx().commit();
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("DROP INDEX \"A\".\"A_V_A_nameIdx\"");
+            String indexName = this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "A"), Topology.VERTEX_PREFIX, Collections.singletonList("name"));
+            statement.execute("DROP INDEX \"A\".\"" + indexName + "\"");
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
             fail(e.getMessage());
