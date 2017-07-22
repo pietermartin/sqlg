@@ -100,7 +100,6 @@ public class SchemaTableTree {
     private List<Pair<Long, Long>> parentIdsAndIndexes;
 
 
-
     public enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -518,7 +517,8 @@ public class SchemaTableTree {
 
                 //print the ID of the incoming element.
                 if (first && subQueryLinkedList.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-                    result += "a1." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("index") + " as index,\n\r";
+                    result += "a1." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index") + " as " +
+                            this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index") + ",\n\r";
                 }
                 first = false;
 
@@ -1852,7 +1852,7 @@ public class SchemaTableTree {
         if (schemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)) {
             hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), VERTEX_PREFIX + predicateSchemaTable.getTable());
         } else {
-            hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(),EDGE_PREFIX + predicateSchemaTable.getTable());
+            hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), EDGE_PREFIX + predicateSchemaTable.getTable());
         }
         return hasContainerLabelSchemaTable;
     }
