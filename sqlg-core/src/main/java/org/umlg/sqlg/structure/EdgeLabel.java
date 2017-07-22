@@ -35,8 +35,7 @@ public class EdgeLabel extends AbstractLabel {
 
     static EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         //edges are created in the out vertex's schema.
-        EdgeLabel edgeLabel = new EdgeLabel(true, edgeLabelName, outVertexLabel, inVertexLabel, properties);
-        return edgeLabel;
+        return new EdgeLabel(true, edgeLabelName, outVertexLabel, inVertexLabel, properties);
     }
 
     static EdgeLabel createEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
@@ -167,8 +166,6 @@ public class EdgeLabel extends AbstractLabel {
         }
 
         if (sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
-            sql.append("\nCREATE INDEX ON ");
-        if (sqlDialect.needForeignKeyIndex()) {
             sql.append("\nCREATE INDEX");
             if (sqlDialect.requiresIndexName()) {
                 sql.append(" ");
@@ -750,9 +747,9 @@ public class EdgeLabel extends AbstractLabel {
     /**
      * delete a given column from the table
      *
-     * @param column
+     * @param column The column to delete.
      */
-    void deleteColumn(String column) {
+    private void deleteColumn(String column) {
         removeColumn(getSchema().getName(), EDGE_PREFIX + getLabel(), column);
     }
 
