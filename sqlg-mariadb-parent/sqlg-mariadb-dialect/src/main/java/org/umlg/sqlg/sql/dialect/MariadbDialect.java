@@ -5,6 +5,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -104,11 +105,6 @@ public class MariadbDialect extends BaseSqlDialect {
     public String maybeWrapInQoutes(String field) {
         return getColumnEscapeKey() + field.replace(getColumnEscapeKey(), "\"" + getColumnEscapeKey()) + getColumnEscapeKey();
 //        return field.replace(getColumnEscapeKey(), "\"" + getColumnEscapeKey());
-    }
-
-    @Override
-    public boolean isPrimaryKeyForeignKey(String lastIndexName) {
-        return lastIndexName.startsWith("SYS_IDX") || lastIndexName.startsWith("SYS_FK");
     }
 
     @Override
@@ -326,7 +322,7 @@ public class MariadbDialect extends BaseSqlDialect {
             case boolean_ARRAY:
                 return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw SqlgExceptions.invalidPropertyType(propertyType);
         }
     }
 
@@ -775,11 +771,6 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String valueToString(PropertyType propertyType, Object value) {
-        throw new RuntimeException("Hsqldb.valueToString should not be called.");
-    }
-
-    @Override
     public  boolean supportsBooleanArrayValues() {
         return false;
     }
@@ -848,4 +839,15 @@ public class MariadbDialect extends BaseSqlDialect {
     public boolean requiresIndexLengthLimit() {
         return true;
     }
+
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public boolean supportsType(PropertyType propertyType) {
+        return false;
+    }
+
 }

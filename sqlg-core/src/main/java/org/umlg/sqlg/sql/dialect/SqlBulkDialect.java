@@ -5,7 +5,6 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.umlg.sqlg.structure.*;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Writer;
 import java.util.*;
 
@@ -97,12 +96,16 @@ public interface SqlBulkDialect extends SqlDialect {
         throw new UnsupportedOperationException(ERROR_MESSAGE + dialectName());
     }
 
-    default InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
-        throw SqlgExceptions.batchModeNotSupported(dialectName());
-    }
-
     default Writer streamSql(SqlgGraph sqlgGraph, String sql) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
+
+    /**
+     * This is used bulk loading values into the db.
+     * @param propertyType The type of the property.
+     * @param value
+     * @return The value to insert into the db.
+     */
+    String valueToStringForBulkLoad(PropertyType propertyType, Object value);
 
 }

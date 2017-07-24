@@ -3,6 +3,7 @@ package org.umlg.sqlg.structure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -398,6 +399,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgVertex internalStreamTemporaryVertex(Object... keyValues) {
+        Preconditions.checkState(this.sqlDialect.supportsBatchMode());
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);
 
@@ -415,6 +417,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
+        Preconditions.checkState(this.sqlDialect.supportsBatchMode());
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);
 
@@ -461,7 +464,7 @@ public class SqlgGraph implements Graph {
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
         this.tx().readWrite();
-        if (this.tx().getBatchManager().isStreaming()) {
+        if (this.sqlDialect.supportsBatchMode() && this.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         return createElementIterator(Vertex.class, vertexIds);
@@ -470,7 +473,7 @@ public class SqlgGraph implements Graph {
     @Override
     public Iterator<Edge> edges(Object... edgeIds) {
         this.tx().readWrite();
-        if (this.tx().getBatchManager().isStreaming()) {
+        if (this.getSqlDialect().supportsBatchMode() && this.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         return createElementIterator(Edge.class, edgeIds);

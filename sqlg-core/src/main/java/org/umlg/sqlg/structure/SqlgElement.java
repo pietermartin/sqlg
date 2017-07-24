@@ -236,7 +236,7 @@ public abstract class SqlgElement implements Element {
     private void updateRow(String key, Object value) {
 
         boolean elementInInsertedCache = false;
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             elementInInsertedCache = this.sqlgGraph.tx().getBatchManager().updateProperty(this, key, value);
         }
 

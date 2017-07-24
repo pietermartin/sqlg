@@ -1,12 +1,15 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.hsqldb.jdbc.JDBCArrayBasic;
+import org.hsqldb.lib.StringConverter;
 import org.hsqldb.types.Type;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -37,6 +40,150 @@ public class HsqldbDialect extends BaseSqlDialect {
     @Override
     public boolean supportsDropSchemas() {
         return false;
+    }
+
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
+        switch (propertyType) {
+            case STRING:
+                return "'" + value.toString() + "'";
+            case STRING_ARRAY:
+                return toValuesArray(true, value).toString();
+            case BYTE:
+                return value.toString();
+            case byte_ARRAY:
+                return StringConverter.byteArrayToSQLHexString((byte[]) value);
+            case BYTE_ARRAY:
+                return StringConverter.byteArrayToSQLHexString(
+                        SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value)
+                );
+            case BOOLEAN:
+                return value.toString();
+            case boolean_ARRAY:
+                return toValuesArray(false, value).toString();
+            case BOOLEAN_ARRAY:
+                return toValuesArray(false, value).toString();
+            case SHORT:
+                return value.toString();
+            case short_ARRAY:
+                return toValuesArray(false, value).toString();
+            case SHORT_ARRAY:
+                return toValuesArray(false, value).toString();
+            case INTEGER:
+                return value.toString();
+            case int_ARRAY:
+                return toValuesArray(false, value).toString();
+            case INTEGER_ARRAY:
+                return toValuesArray(false, value).toString();
+            case LONG:
+                return value.toString();
+            case long_ARRAY:
+                return toValuesArray(false, value).toString();
+            case LONG_ARRAY:
+                return toValuesArray(false, value).toString();
+            case DOUBLE:
+                return value.toString();
+            case double_ARRAY:
+                return toValuesArray(false, value).toString();
+            case DOUBLE_ARRAY:
+                return toValuesArray(false, value).toString();
+            case LOCALDATE:
+                return "'" + value.toString() + "'";
+            case LOCALDATE_ARRAY:
+                return toValuesArray(true, getArrayDriverType(propertyType), value).toString();
+            case LOCALDATETIME:
+                return  "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime)value).toString() + "'";
+            case LOCALDATETIME_ARRAY:
+                return toLocalDateTimeArray(true, getArrayDriverType(propertyType), value).toString();
+            case LOCALTIME:
+                return "TIME '" + Time.valueOf((LocalTime)value).toString() + "'";
+            case LOCALTIME_ARRAY:
+                return toLocalTimeArray(true, getArrayDriverType(propertyType), value).toString();
+            default:
+                throw SqlgExceptions.invalidPropertyType(propertyType);
+        }
+    }
+
+    private StringBuilder toValuesArray(boolean quote, Object value) {
+        return toValuesArray(quote, "", value);
+    }
+
+    private StringBuilder toValuesArray(boolean quote, String type, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("ARRAY [");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+            sb.append(type);
+            sb.append(" ");
+            if (quote) {
+                sb.append("'");
+            }
+            sb.append(valueOfArray);
+            if (quote) {
+                sb.append("'");
+            }
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb;
+    }
+
+    private StringBuilder toLocalDateTimeArray(boolean quote, String type, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("ARRAY [");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            LocalDateTime valueOfArray = (LocalDateTime)java.lang.reflect.Array.get(value, i);
+            sb.append(type);
+            sb.append(" ");
+            if (quote) {
+                sb.append("'");
+            }
+            sb.append(Timestamp.valueOf(valueOfArray).toString());
+            sb.append("+0:00");
+            if (quote) {
+                sb.append("'");
+            }
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb;
+    }
+
+    private StringBuilder toLocalTimeArray(boolean quote, String type, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("ARRAY [");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            LocalTime valueOfArray = (LocalTime)java.lang.reflect.Array.get(value, i);
+            sb.append(type);
+            sb.append(" ");
+            if (quote) {
+                sb.append("'");
+            }
+            sb.append(Time.valueOf(valueOfArray).toString());
+            sb.append("+0:00");
+            if (quote) {
+                sb.append("'");
+            }
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb;
     }
 
     @Override
@@ -540,7 +687,7 @@ public class HsqldbDialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsBulkWithinOut() {
-        return false;
+        return true;
     }
 
     @Override
@@ -707,7 +854,65 @@ public class HsqldbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String valueToString(PropertyType propertyType, Object value) {
-        throw new RuntimeException("Hsqldb.valueToString should not be called.");
+    public boolean supportsType(PropertyType propertyType) {
+        switch (propertyType) {
+            case BOOLEAN:
+                return true;
+            case BOOLEAN_ARRAY:
+                return true;
+            case boolean_ARRAY:
+                return true;
+            case BYTE:
+                return true;
+            case BYTE_ARRAY:
+                return true;
+            case byte_ARRAY:
+                return true;
+            case SHORT:
+                return true;
+            case short_ARRAY:
+                return true;
+            case SHORT_ARRAY:
+                return true;
+            case INTEGER:
+                return true;
+            case int_ARRAY:
+                return true;
+            case INTEGER_ARRAY:
+                return true;
+            case LONG:
+                return true;
+            case long_ARRAY:
+                return true;
+            case LONG_ARRAY:
+                return true;
+            case DOUBLE:
+                return true;
+            case DOUBLE_ARRAY:
+                return true;
+            case double_ARRAY:
+                return true;
+            case STRING:
+                return true;
+            case LOCALDATE:
+                return true;
+            case LOCALDATE_ARRAY:
+                return true;
+            case LOCALDATETIME:
+                return true;
+            case LOCALDATETIME_ARRAY:
+                return true;
+            case LOCALTIME:
+                return true;
+            case LOCALTIME_ARRAY:
+                return true;
+            case JSON:
+                return true;
+            case STRING_ARRAY:
+                return true;
+            default:
+                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        }
     }
+
 }

@@ -28,16 +28,28 @@ class TransactionCache {
         return new TransactionCache(cacheVertices, connection, batchManager,lazyQueries);
     }
 
+    static TransactionCache of(boolean cacheVertices, Connection connection,boolean lazyQueries) {
+        return new TransactionCache(cacheVertices, connection, lazyQueries);
+    }
+
+    private TransactionCache(
+            boolean cacheVertices,
+            Connection connection,
+            boolean lazyQueries) {
+
+        this.cacheVertices = cacheVertices;
+        this.connection = connection;
+        this.lazyQueries = lazyQueries;
+    }
+
     private TransactionCache(
             boolean cacheVertices,
             Connection connection,
             BatchManager batchManager,
             boolean lazyQueries) {
 
-        this.cacheVertices = cacheVertices;
-        this.connection = connection;
+	    this(cacheVertices, connection, lazyQueries);
         this.batchManager = batchManager;
-        this.lazyQueries = lazyQueries;
     }
 
     Connection getConnection() {
@@ -54,7 +66,9 @@ class TransactionCache {
 
     void clear() {
         this.elementPropertyRollbackFunctions.clear();
-        this.batchManager.clear();
+        if (this.batchManager != null) {
+            this.batchManager.clear();
+        }
         if (this.cacheVertices) {
             this.vertexCache.clear();
         }

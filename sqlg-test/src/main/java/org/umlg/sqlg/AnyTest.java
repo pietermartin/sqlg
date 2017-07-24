@@ -10,12 +10,8 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileGraphStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestMultiThread.class,
-//        TestDeadLock.class
-//        TestBatch.class
-//        TestLabelLength.class
-//        TestHasLabelAndId.class,
-//        TestLocalDate.class,
+//        TestEscapedValues.class,
+//        TestBulkWithin.class
         TestGremlinCompileGraphStep.class
 })
 public class AnyTest {

@@ -46,6 +46,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      */
     SqlgVertex(SqlgGraph sqlgGraph, String table, Map<String, Object> keyValueMap) {
         super(sqlgGraph, "", table);
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         this.sqlgGraph.tx().getBatchManager().addTemporaryVertex(this, keyValueMap);
     }
 
@@ -106,7 +107,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
         this.sqlgGraph.tx().readWrite();
-        boolean streaming = this.sqlgGraph.tx().isInStreamingBatchMode() || this.sqlgGraph.tx().isInStreamingWithLockBatchMode();
+        boolean streaming = this.sqlgGraph.getSqlDialect().supportsBatchMode() && (this.sqlgGraph.tx().isInStreamingBatchMode() || this.sqlgGraph.tx().isInStreamingWithLockBatchMode());
         if (streaming) {
             SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
             if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(EDGE_PREFIX.length()).equals(label)) {
@@ -209,7 +210,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     private Iterator<Edge> internalEdges(Direction direction, String... labels) {
         this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() && this.sqlgGraph.tx().getBatchManager().vertexIsCached(this)) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() && this.sqlgGraph.tx().getBatchManager().vertexIsCached(this)) {
             this.sqlgGraph.tx().flush();
         }
         // need topology when we're a topology vertex
@@ -234,7 +235,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (this.removed)
             throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
 
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeVertex(this.schema, this.table, this);
         } else {
             //Remove all internalEdges
@@ -285,7 +286,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     private void insertVertex(boolean complete, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
         Map<String, Object> keyAllValueMap = keyValueMapPair.getLeft();
         Map<String, Object> keyNotNullValueMap = keyValueMapPair.getRight();
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             internalBatchAddVertex(complete, keyAllValueMap);
         } else {
             internalAddVertex(keyNotNullValueMap);
@@ -295,6 +296,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     private void internalBatchAddVertex(boolean complete, Map<String, Object> keyValueMap) {
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         this.sqlgGraph.tx().getBatchManager().addVertex(complete, this, keyValueMap);
     }
 
@@ -352,10 +354,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         //if in batch mode, only load vertexes that are not new.
         //new vertexes have no id, impossible to load, but then all its properties are already cached.
         if ((this.properties.isEmpty() && !this.sqlgGraph.tx().isInBatchMode()) ||
-                (this.properties.isEmpty() && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() &&
+                (this.properties.isEmpty() && this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() &&
                         !this.sqlgGraph.tx().getBatchManager().vertexIsCached(this))) {
 
-            if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
                 throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
             }
 
@@ -423,7 +425,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         return internalEdges(direction, edgeLabels);
@@ -432,7 +434,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         // need topology when we're a topology vertex

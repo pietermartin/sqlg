@@ -873,23 +873,7 @@ public class SchemaTableTree {
                 }
                 sb.append("(");
                 PropertyType propertyType = PropertyType.from(withInOutValue);
-                if ((propertyType != PropertyType.BYTE) &&
-                        (propertyType != PropertyType.BOOLEAN) &&
-                        (propertyType != PropertyType.SHORT) &&
-                        (propertyType != PropertyType.INTEGER) &&
-                        (propertyType != PropertyType.LONG) &&
-                        (propertyType != PropertyType.DOUBLE)) {
-                    sb.append("'");
-                }
-                sb.append(sqlgGraph.getSqlDialect().valueToString(propertyType, withInOutValue));
-                if ((propertyType != PropertyType.BYTE) &&
-                        (propertyType != PropertyType.BOOLEAN) &&
-                        (propertyType != PropertyType.SHORT) &&
-                        (propertyType != PropertyType.INTEGER) &&
-                        (propertyType != PropertyType.LONG) &&
-                        (propertyType != PropertyType.DOUBLE)) {
-                    sb.append("'");
-                }
+                sb.append(sqlgGraph.getSqlDialect().valueToValuesString(propertyType, withInOutValue));
                 sb.append(")");
             }
             sb.append(") as tmp");

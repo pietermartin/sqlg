@@ -16,7 +16,6 @@ import org.postgis.*;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
 import org.postgresql.copy.CopyManager;
-import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
@@ -48,7 +47,7 @@ import static org.umlg.sqlg.structure.Topology.*;
  * Time: 1:42 PM
  */
 @SuppressWarnings("unused")
-public class PostgresDialect extends BaseSqlDialect {
+public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     private static final String BATCH_NULL = "";
     private static final String COPY_COMMAND_DELIMITER = "\t";
@@ -72,7 +71,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean supporstDistribution() {
+    public boolean supportDistribution() {
         return true;
     }
 
@@ -1445,7 +1444,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     private void valueToStreamBytes(Writer outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
-        String s = valueToString(propertyType, value);
+        String s = valueToStringForBulkLoad(propertyType, value);
         try {
             outputStream.write(s);
         } catch (IOException e) {
@@ -1454,7 +1453,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String valueToString(PropertyType propertyType, Object value) {
+    public String valueToStringForBulkLoad(PropertyType propertyType, Object value) {
         String result;
         if (value == null) {
             result = getBatchNull();
@@ -1599,7 +1598,6 @@ public class PostgresDialect extends BaseSqlDialect {
                         }
                         sb.append("}");
                         return sb.toString();
-//                        }
                     }
                     result = escapeSpecialCharacters(value.toString());
             }
@@ -1981,7 +1979,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             sb.append(valueOfArrayAsString);
                             break;
                         default:
-                            sb.append(valueToString(propertyType, value));
+                            sb.append(valueToStringForBulkLoad(propertyType, value));
                     }
                 }
             } else {
@@ -2008,9 +2006,6 @@ public class PostgresDialect extends BaseSqlDialect {
             for (String key : edgeCache.getLeft()) {
                 PropertyType propertyType = propertyTypeMap.get(key);
                 Object value = triple.getRight().get(key);
-//                if (value == null) {
-//                    sb.append(getBatchNull());
-//                }
                 switch (propertyType) {
                     case BYTE_ARRAY:
                         String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
@@ -2021,7 +2016,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         sb.append(valueOfArrayAsString);
                         break;
                     default:
-                        sb.append(valueToString(propertyType, value));
+                        sb.append(valueToStringForBulkLoad(propertyType, value));
                 }
                 if (countKeys < edgeCache.getLeft().size()) {
                     sb.append(COPY_COMMAND_DELIMITER);
@@ -2151,7 +2146,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case JSON_ARRAY:
                 return new String[]{"JSONB[]"};
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw SqlgExceptions.invalidPropertyType(propertyType);
         }
     }
 
@@ -2674,18 +2669,6 @@ public class PostgresDialect extends BaseSqlDialect {
             OutputStream out = new PGCopyOutputStream(pgConnection, sql);
             return new OutputStreamWriter(out, "UTF-8");
         } catch (SQLException | UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
-        Connection conn = sqlgGraph.tx().getConnection();
-        PGConnection pgConnection;
-        try {
-            pgConnection = conn.unwrap(PGConnection.class);
-            return new PGCopyInputStream(pgConnection, sql);
-        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -3246,7 +3229,7 @@ public class PostgresDialect extends BaseSqlDialect {
         try {
 
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            int pid=pgConnection.getBackendPID();
+            int pid = pgConnection.getBackendPID();
             if (sqlgGraph.tx().isInBatchMode()) {
                 BatchManager.BatchModeType batchModeType = sqlgGraph.tx().getBatchModeType();
                 sqlgGraph.tx().flush();
@@ -3476,5 +3459,245 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public boolean isSystemIndex(String indexName) {
         return indexName.endsWith("_pkey") || indexName.endsWith("_idx");
+    }
+
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
+        switch (propertyType) {
+            case BYTE_ARRAY:
+                return "'" + PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)) + "'::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case byte_ARRAY:
+                return "'" + PGbytea.toPGString((byte[]) value) + "'::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case BOOLEAN:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case boolean_ARRAY:
+                StringBuilder sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case BOOLEAN_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case SHORT:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case short_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case SHORT_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case INTEGER:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case int_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case INTEGER_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LONG:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case long_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LONG_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case FLOAT:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case float_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case FLOAT_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case DOUBLE:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case double_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case DOUBLE_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case STRING:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case STRING_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LOCALDATE:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LOCALDATE_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LOCALDATETIME:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LOCALDATETIME_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LOCALTIME:
+                LocalTime lt = (LocalTime) value;
+                return "'" + shiftDST(lt).toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LOCALTIME_ARRAY:
+                sb = new StringBuilder();
+                sb.append("'{");
+                int length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    LocalTime valueOfArray = (LocalTime) java.lang.reflect.Array.get(value, i);
+                    sb.append(shiftDST(valueOfArray).toString());
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}'::");
+                sb.append(this.propertyTypeToSqlDefinition(propertyType)[0]);
+                return sb.toString();
+            case ZONEDDATETIME:
+                throw new IllegalStateException("ZONEDDATETIME is not supported in within.");
+            case ZONEDDATETIME_ARRAY:
+                throw new IllegalStateException("ZONEDDATETIME_ARRAY is not supported in within.");
+            case PERIOD:
+                throw new IllegalStateException("PERIOD is not supported in within.");
+            case PERIOD_ARRAY:
+                throw new IllegalStateException("PERIOD_ARRAY is not supported in within.");
+            case DURATION:
+                throw new IllegalStateException("DURATION is not supported in within.");
+            case DURATION_ARRAY:
+                throw new IllegalStateException("DURATION_ARRAY is not supported in within.");
+            case JSON:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case JSON_ARRAY:
+                sb = new StringBuilder();
+                sb.append("'{");
+                length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                    sb.append("\"");
+                    sb.append(valueOfArray.replace("\"", "\\\""));
+                    sb.append("\"");
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}'::");
+                sb.append(this.propertyTypeToSqlDefinition(propertyType)[0]);
+                return sb.toString();
+            case POINT:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LINESTRING:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case POLYGON:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case GEOGRAPHY_POINT:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case GEOGRAPHY_POLYGON:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            default:
+                throw SqlgExceptions.invalidPropertyType(propertyType);
+        }
+    }
+
+    private StringBuilder toValuesArray(String str, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("'{");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+            sb.append(valueOfArray);
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("}'::");
+        sb.append(str);
+        return sb;
+    }
+
+    @Override
+    public boolean supportsType(PropertyType propertyType) {
+        switch (propertyType) {
+            case BOOLEAN:
+                return true;
+            case SHORT:
+                return true;
+            case INTEGER:
+                return true;
+            case LONG:
+                return true;
+            case FLOAT:
+                return true;
+            case DOUBLE:
+                return true;
+            case STRING:
+                return true;
+            case LOCALDATE:
+                return true;
+            case LOCALDATETIME:
+                return true;
+            case LOCALTIME:
+                return true;
+            case ZONEDDATETIME:
+                return true;
+            case PERIOD:
+                return true;
+            case DURATION:
+                return true;
+            case JSON:
+                return true;
+            case POINT:
+                return true;
+            case LINESTRING:
+                return true;
+            case POLYGON:
+                return true;
+            case GEOGRAPHY_POINT:
+                return true;
+            case GEOGRAPHY_POLYGON:
+                return true;
+            case boolean_ARRAY:
+                return true;
+            case BOOLEAN_ARRAY:
+                return true;
+            case byte_ARRAY:
+                return true;
+            case BYTE_ARRAY:
+                return true;
+            case short_ARRAY:
+                return true;
+            case SHORT_ARRAY:
+                return true;
+            case int_ARRAY:
+                return true;
+            case INTEGER_ARRAY:
+                return true;
+            case long_ARRAY:
+                return true;
+            case LONG_ARRAY:
+                return true;
+            case float_ARRAY:
+                return true;
+            case FLOAT_ARRAY:
+                return true;
+            case double_ARRAY:
+                return true;
+            case DOUBLE_ARRAY:
+                return true;
+            case STRING_ARRAY:
+                return true;
+            case LOCALDATETIME_ARRAY:
+                return true;
+            case LOCALDATE_ARRAY:
+                return true;
+            case LOCALTIME_ARRAY:
+                return true;
+            case ZONEDDATETIME_ARRAY:
+                return true;
+            case DURATION_ARRAY:
+                return true;
+            case PERIOD_ARRAY:
+                return true;
+            case JSON_ARRAY:
+                return true;
+        }
+        return false;
     }
 }

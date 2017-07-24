@@ -18,7 +18,7 @@ public interface SqlDialect {
 
     static final String INDEX_POSTFIX = "_sqlgIdx";
 
-    default boolean supporstDistribution() {
+    default boolean supportDistribution() {
         return false;
     }
 
@@ -290,12 +290,13 @@ public interface SqlDialect {
     default String createSchemaStatement() {
         return "CREATE SCHEMA ";
     }
-    
+
     /**
      * Builds an add column statement.
-     * @param schema schema name
-     * @param table table name
-     * @param column new column name
+     *
+     * @param schema         schema name
+     * @param table          table name
+     * @param column         new column name
      * @param typeDefinition column definition
      * @return the statement to add the column
      */
@@ -484,7 +485,7 @@ public interface SqlDialect {
     /**
      * range condition
      *
-     * @param r range
+     * @param r              range
      * @param printedOrderBy indicates if order by was already produced
      * @return
      */
@@ -524,6 +525,7 @@ public interface SqlDialect {
 
     /**
      * Returns all schemas. For some RDBMSes, like Cockroachdb and MariaDb, this is the database/catalog.
+     *
      * @return The list of schema names.
      */
     List<String> getSchemaNames(DatabaseMetaData metaData);
@@ -570,19 +572,30 @@ public interface SqlDialect {
         return true;
     }
 
+    /**
+     * Indicates if the rdbms supports 'VALUES (x,y)" table expressions.
+     * This is needed because Mariadb does not.
+     *
+     * @return true is 'VALUES' expression is supported else false.
+     */
+    default boolean supportsValuesExpression() {
+        return true;
+    }
+
+
     default boolean supportsDropSchemas() {
         return true;
     }
 
     /**
      * This is needed for Cockroachdb where the index needs to be specified as a part of the 'CREATE TABLE' statement.
+     *
      * @return true if the indices must be specified together with the 'CREATE TABLE' sql, else false.
      */
     default boolean isIndexPartOfCreateTable() {
         return false;
     }
 
-    String valueToString(PropertyType propertyType, Object value);
 
     default String sqlInsertEmptyValues() {
         return " DEFAULT VALUES";
@@ -590,9 +603,27 @@ public interface SqlDialect {
 
     /**
      * MariaDb can not index the LONGTEXT type. It needs to know how many characters to index.
+     *
      * @return Return true is the number of characters to index needs to be specified.
      */
     default boolean requiresIndexLengthLimit() {
         return false;
     }
+
+    /**
+     * Convert a value to insert into the db so that it can be used in a 'values' sql clause.
+     *
+     * @param propertyType The type of the property.
+     * @param value        The value of the property.
+     * @return The value that can be used in a sql 'from' clause.
+     */
+    String valueToValuesString(PropertyType propertyType, Object value);
+
+    /**
+     * An easy way to see if a dialect supports the given type of not.
+     *
+     * @param propertyType A {@link PropertyType} representing the type of the property.
+     * @return true if the PropertyType is supported else false.
+     */
+    boolean supportsType(PropertyType propertyType);
 }

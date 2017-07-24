@@ -601,4 +601,15 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     public boolean isSystemIndex(String indexName) {
         return false;
     }
+
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public boolean supportsType(PropertyType propertyType) {
+        return false;
+    }
+
 }

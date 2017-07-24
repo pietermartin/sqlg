@@ -60,7 +60,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     public void remove() {
         this.element.properties.remove(this.key);
         boolean elementInInsertedCache = false;
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             elementInInsertedCache = this.sqlgGraph.tx().getBatchManager().removeProperty(this, key);
         }
 

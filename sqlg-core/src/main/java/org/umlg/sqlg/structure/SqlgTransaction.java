@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -53,7 +54,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 }
                 // read default setting for laziness
                 boolean lazy=this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY,true);
-                this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy));
+                if (supportsBatchMode()) {
+                    this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy));
+                } else {
+                    this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, lazy));
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -66,7 +71,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             return;
         }
         try {
-            if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
+            if (supportsBatchMode() && this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 getBatchManager().flush();
             }
             Connection connection = this.threadLocalTx.get().getConnection();
@@ -102,7 +107,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             return;
         }
         try {
-            if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
+            if (supportsBatchMode() && this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 try {
                     this.threadLocalTx.get().getBatchManager().close();
                 } catch (Exception e) {
@@ -134,7 +139,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public void streamingWithLockBatchModeOn() {
-        if (this.sqlgGraph.features().supportsBatchMode()) {
+        if (supportsBatchMode()) {
             readWrite();
             this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_LOCK);
         } else {
@@ -143,7 +148,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public void streamingBatchModeOn() {
-        if (this.sqlgGraph.features().supportsBatchMode()) {
+        if (supportsBatchMode()) {
             readWrite();
             this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING);
         } else {
@@ -152,27 +157,29 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public void batchMode(BatchManager.BatchModeType batchModeType) {
-        switch (batchModeType) {
-            case NONE:
-                readWrite();
-                this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NONE);
-                break;
-            case NORMAL:
-                this.normalBatchModeOn();
-                break;
-            case STREAMING:
-                this.streamingBatchModeOn();
-                break;
-            case STREAMING_WITH_LOCK:
-                this.streamingWithLockBatchModeOn();
-                break;
-            default:
-                throw new IllegalStateException("unhandled BatchModeType " + batchModeType.name());
+        if (supportsBatchMode()) {
+            switch (batchModeType) {
+                case NONE:
+                    readWrite();
+                    this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NONE);
+                    break;
+                case NORMAL:
+                    this.normalBatchModeOn();
+                    break;
+                case STREAMING:
+                    this.streamingBatchModeOn();
+                    break;
+                case STREAMING_WITH_LOCK:
+                    this.streamingWithLockBatchModeOn();
+                    break;
+                default:
+                    throw new IllegalStateException("unhandled BatchModeType " + batchModeType.name());
+            }
         }
     }
 
     public void normalBatchModeOn() {
-        if (this.sqlgGraph.features().supportsBatchMode()) {
+        if (supportsBatchMode()) {
             readWrite();
             this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NORMAL);
         } else {
@@ -182,24 +189,32 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     @SuppressWarnings("WeakerAccess")
     public boolean isInBatchMode() {
-        return isInNormalBatchMode() || isInStreamingBatchMode() || isInStreamingWithLockBatchMode();
+        return supportsBatchMode() && isInNormalBatchMode() || isInStreamingBatchMode() || isInStreamingWithLockBatchMode();
     }
 
     public boolean isInNormalBatchMode() {
-        return isOpen() && this.threadLocalTx.get().getBatchManager().isInNormalMode();
+        return supportsBatchMode() && isOpen() && this.threadLocalTx.get().getBatchManager().isInNormalMode();
     }
 
     public boolean isInStreamingBatchMode() {
-        return isOpen() && this.threadLocalTx.get().getBatchManager().isInStreamingMode();
+        return supportsBatchMode() && isOpen() && this.threadLocalTx.get().getBatchManager().isInStreamingMode();
     }
 
     public boolean isInStreamingWithLockBatchMode() {
-        return isOpen() && this.threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
+        return supportsBatchMode() && isOpen() && this.threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
     }
 
     public BatchManager.BatchModeType getBatchModeType() {
-        assert isOpen() : "SqlgTransaction.getBatchModeType() must be called within a transaction.";
-        return this.threadLocalTx.get().getBatchManager().getBatchModeType();
+        Preconditions.checkState(isOpen(), "SqlgTransaction.getBatchModeType() must be called within a transaction.");
+        if (supportsBatchMode()) {
+            return this.threadLocalTx.get().getBatchManager().getBatchModeType();
+        } else {
+            return BatchManager.BatchModeType.NONE;
+        }
+    }
+
+    private boolean supportsBatchMode() {
+        return this.sqlgGraph.getSqlDialect().supportsBatchMode();
     }
 
     public BatchManager getBatchManager() {

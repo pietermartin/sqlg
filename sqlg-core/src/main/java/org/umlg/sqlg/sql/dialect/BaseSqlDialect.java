@@ -14,7 +14,7 @@ import java.util.List;
  * Date: 2014/08/21
  * Time: 6:52 PM
  */
-public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlSchemaChangeDialect {
+public abstract class BaseSqlDialect implements SqlDialect, SqlSchemaChangeDialect {
 
     public BaseSqlDialect() {
     }

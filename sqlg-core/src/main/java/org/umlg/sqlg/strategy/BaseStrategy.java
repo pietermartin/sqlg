@@ -300,7 +300,7 @@ public abstract class BaseStrategy {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
-                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
+//                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
                     toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
                     //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                     //i.e. for neq and without 'or' logic
@@ -323,7 +323,7 @@ public abstract class BaseStrategy {
                         iterator.remove();
                         countToGoPrevious--;
                     }
-                }
+//                }
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {

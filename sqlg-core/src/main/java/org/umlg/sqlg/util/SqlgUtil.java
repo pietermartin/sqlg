@@ -802,27 +802,27 @@ public class SqlgUtil {
     public static void dropDb(SqlDialect sqlDialect, Connection conn) {
         try {
             DatabaseMetaData metadata = conn.getMetaData();
-            if (sqlDialect.supportsDropSchemas()) {
-                List<String> schemas = sqlDialect.getSchemaNames(metadata);
-                for (String schema : schemas) {
-                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
-                        StringBuilder sql = new StringBuilder(sqlDialect.dropSchemaStatement());
-                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                        if (sqlDialect.needsSchemaDropCascade()) {
-                            sql.append(" CASCADE");
-                        }
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        }
-                    }
-                }
-            } else {
+//            if (sqlDialect.supportsDropSchemas()) {
+//                List<String> schemas = sqlDialect.getSchemaNames(metadata);
+//                for (String schema : schemas) {
+//                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
+//                        StringBuilder sql = new StringBuilder(sqlDialect.dropSchemaStatement());
+//                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+//                        if (sqlDialect.needsSchemaDropCascade()) {
+//                            sql.append(" CASCADE");
+//                        }
+//                        if (sqlDialect.needsSemicolon()) {
+//                            sql.append(";");
+//                        }
+//                        if (logger.isDebugEnabled()) {
+//                            logger.debug(sql.toString());
+//                        }
+//                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+//                            preparedStatement.executeUpdate();
+//                        }
+//                    }
+//                }
+//            } else {
 
                 //Drop all the edges
                 List<Triple<String, String, String>> edgeTables = sqlDialect.getEdgeTables(metadata);
@@ -890,7 +890,7 @@ public class SqlgUtil {
                         }
                     }
                 }
-            }
+//            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

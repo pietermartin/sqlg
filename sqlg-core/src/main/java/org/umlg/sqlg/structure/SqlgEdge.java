@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -71,7 +72,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (this.removed)
             throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
 
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeEdge(this.schema, this.table, this);
         } else {
             super.remove();
@@ -114,6 +115,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalBatchAddEdge(boolean streaming, Map<String, Object> keyValueMap) {
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         this.sqlgGraph.tx().getBatchManager().addEdge(streaming, this, this.outVertex, this.inVertex, keyValueMap);
     }
 
@@ -184,7 +186,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         //recordId can be null when in batchMode
         if (this.recordId != null && this.properties.isEmpty()) {
             this.sqlgGraph.tx().readWrite();
-            if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
                 throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
             }
 
