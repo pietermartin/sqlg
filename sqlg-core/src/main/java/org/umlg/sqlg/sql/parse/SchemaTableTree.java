@@ -659,7 +659,7 @@ public class SchemaTableTree {
                 singlePathSql.append(this.parentIdsAndIndexes.get(0).getRight());
                 singlePathSql.append(" as ");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
-            } else {
+            } else if (sqlgGraph.getSqlDialect().supportsValuesExpression()) {
                 //Hardcoding here for H2
                 if (sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
                     singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
@@ -668,6 +668,8 @@ public class SchemaTableTree {
                 }
                 singlePathSql.append(" as ");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+            } else {
+
             }
             singlePathSql.append(",\n\t");
         }
