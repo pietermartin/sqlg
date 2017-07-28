@@ -99,7 +99,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public Set<String> getSpacialRefTable() {
-        return ImmutableSet.copyOf(Collections.singletonList("spatial_ref_sys"));
+        return ImmutableSet.copyOf(Arrays.asList("spatial_ref_sys", "us_gaz", "us_lex", "us_rules"));
     }
 
     @Override
