@@ -126,7 +126,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + this.table));
         sql.append(" (");
 
-        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
+        Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = null;
         if (!keyValueMap.isEmpty()) {
             propertyColumns = this.sqlgGraph.getTopology()
@@ -137,11 +137,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
                 PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
-                Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
-                propertyColumnValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
+                Pair<PropertyType, Object> propertyColumnObjectPair = Pair.of(propertyColumn.getPropertyType(), keyValueEntry.getValue());
+                propertyTypeValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
             }
         }
-        writeColumnNames(propertyColumnValueMap, sql);
+        writeColumnNames(propertyTypeValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -149,7 +149,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(", ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + Topology.OUT_VERTEX_COLUMN_END));
         sql.append(") VALUES (");
-        writeColumnParameters(propertyColumnValueMap, sql);
+        writeColumnParameters(propertyTypeValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -164,7 +164,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyColumnValueMap);
+            i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
             preparedStatement.setLong(i++, this.inVertex.recordId.getId());
             preparedStatement.setLong(i, this.outVertex.recordId.getId());
             preparedStatement.executeUpdate();

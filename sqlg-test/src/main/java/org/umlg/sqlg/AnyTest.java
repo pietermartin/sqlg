@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileGraphStep;
+import org.umlg.sqlg.test.topology.TestValidateTopology;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,8 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileGraphStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestEscapedValues.class,
-//        TestBulkWithin.class
-        TestGremlinCompileGraphStep.class
+        TestValidateTopology.class,
+//        TestTopologyDelete.class
 })
 public class AnyTest {
 }

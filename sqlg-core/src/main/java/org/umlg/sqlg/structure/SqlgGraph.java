@@ -289,7 +289,7 @@ public class SqlgGraph implements Graph {
         //Instantiating Topology will create the 'public' schema if it does not exist.
         this.topology = new Topology(this);
         this.gremlinParser = new GremlinParser(this);
-        if (!this.sqlDialect.supportSchemas() && !this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isPresent()) {
+        if (!this.sqlDialect.supportsSchemas() && !this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isPresent()) {
             //This is for mariadb. Need to make sure a db called public exist
             this.getTopology().ensureSchemaExist(this.sqlDialect.getPublicSchema());
         }
@@ -356,8 +356,21 @@ public class SqlgGraph implements Graph {
             SchemaTable schemaTablePair = SchemaTable.from(this, label);
             this.tx().readWrite();
             this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-            return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
+            return new SqlgVertex(this, false, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
         }
+    }
+
+    public Vertex addTemporaryVertex(Object... keyValues) {
+        if (this.tx().isInStreamingBatchMode()) {
+            throw SqlgExceptions.invalidMode(String.format("Transaction is in %s, use streamVertex(Object ... keyValues)", this.tx().getBatchModeType().toString()));
+        }
+        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, true);
+        final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
+        this.getTopology().ensureTemporaryVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
+        final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
+        return new SqlgVertex(this, true, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
     }
 
     public void streamVertex(String label) {
@@ -412,12 +425,12 @@ public class SqlgGraph implements Graph {
         final Map<String, Object> allKeyValueMap = keyValuesTriple.getMiddle();
         final Map<String, PropertyType> columns = keyValuesTriple.getLeft();
         this.tx().readWrite();
-        getTopology().ensureVertexTemporaryTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
+        this.getTopology().ensureTemporaryVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         return new SqlgVertex(this, schemaTablePair.getTable(), allKeyValueMap);
     }
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
-        Preconditions.checkState(this.sqlDialect.supportsBatchMode());
+        Preconditions.checkState(this.sqlDialect.supportsStreamingBatchMode());
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);
 
@@ -431,8 +444,9 @@ public class SqlgGraph implements Graph {
         final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
         this.tx().readWrite();
         this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-        return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
+        return new SqlgVertex(this, false, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
     }
+
 
     public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
         if (!(this.sqlDialect instanceof SqlBulkDialect)) {

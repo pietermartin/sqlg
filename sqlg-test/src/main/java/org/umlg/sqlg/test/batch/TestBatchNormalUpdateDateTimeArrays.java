@@ -21,7 +21,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
         BaseTest.beforeClass();
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
+        if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
     }
@@ -33,6 +33,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
     @Test
     public void testUpdateLocalDateTimeArray() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime[] localDateTimeArray = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimeArray1", localDateTimeArray);
@@ -74,6 +75,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
     @Test
     public void testUpdateLocalDateArray() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDate[] localDateArray = new LocalDate[]{LocalDate.now(), LocalDate.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateArray1", localDateArray);
@@ -115,6 +117,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
     @Test
     public void testUpdateLocalTimeArray() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalTime[] localTimeArray = new LocalTime[]{LocalTime.now(), LocalTime.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localTimeArray1", localTimeArray);
@@ -157,6 +160,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
     @Test
     public void testUpdateZonedDateTimeArray() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime[] zonedDateTimeArray = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimeArray1", zonedDateTimeArray);
@@ -198,6 +202,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
     @Test
     public void testUpdateDurationArray() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Duration[] durationArray = new Duration[]{Duration.ofDays(1), Duration.ofDays(1)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "durationArray1", durationArray);
@@ -239,6 +244,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
     @Test
     public void testUpdatePeriodArray() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Period[] periodArray = new Period[]{Period.of(1, 1, 1), Period.of(1, 1, 1)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "periodArray1", periodArray);

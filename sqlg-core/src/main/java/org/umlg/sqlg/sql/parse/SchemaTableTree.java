@@ -21,6 +21,7 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -669,7 +670,9 @@ public class SchemaTableTree {
                 singlePathSql.append(" as ");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
             } else {
-
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(" as ");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
             }
             singlePathSql.append(",\n\t");
         }
@@ -714,7 +717,7 @@ public class SchemaTableTree {
 
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-            if (this.parentIdsAndIndexes.size() != 1) {
+            if (this.parentIdsAndIndexes.size() != 1 && sqlgGraph.getSqlDialect().supportsValuesExpression()) {
                 singlePathSql.append(" INNER JOIN\n\t(VALUES");
                 int count = 1;
                 for (Pair<Long, Long> parentIdAndIndex : this.parentIdsAndIndexes) {
@@ -753,6 +756,33 @@ public class SchemaTableTree {
                     singlePathSql.append(" = ");
                     singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C1"));
                 }
+            } else if (this.parentIdsAndIndexes.size() != 1 && !sqlgGraph.getSqlDialect().supportsValuesExpression()) {
+                //Mariadb lo and behold does not support VALUES
+                //Need to use a randomized name here else the temp table gets reused within the same transaction.
+                SecureRandom random = new SecureRandom();
+                byte bytes[] = new byte[6];
+                random.nextBytes(bytes);
+                String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+                sqlgGraph.tx().normalBatchModeOn();
+                for (Pair<Long, Long> parentIdsAndIndex : this.parentIdsAndIndexes) {
+                    sqlgGraph.addTemporaryVertex(T.label, tmpTableIdentified, "tmpId", parentIdsAndIndex.getLeft(), "index", parentIdsAndIndex.getRight());
+                }
+                sqlgGraph.tx().flush();
+
+                singlePathSql.append(" INNER JOIN\n\t");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
+                singlePathSql.append(".");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + tmpTableIdentified));
+                singlePathSql.append(" as tmp");
+                singlePathSql.append(" ON ");
+
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                singlePathSql.append(".");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                singlePathSql.append(".");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                singlePathSql.append(" = tmp.");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
             } else {
                 singlePathSql.append("\nWHERE\n\t");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));

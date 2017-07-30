@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.batch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -27,14 +26,14 @@ public class TestBatchJson extends BaseTest {
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
         BaseTest.beforeClass();
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
+        if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
     }
 
     @Before
     public void beforeTest() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.getSqlDialect().supportsJson());
     }
 
     @Test

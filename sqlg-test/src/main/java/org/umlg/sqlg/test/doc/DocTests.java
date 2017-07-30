@@ -28,7 +28,7 @@ public class DocTests extends BaseTest {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
-            Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+            Assume.assumeTrue(isPostgres());
             configuration.setProperty("implement.foreign.keys", false);
             if (!configuration.containsKey("jdbc.url"))
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));

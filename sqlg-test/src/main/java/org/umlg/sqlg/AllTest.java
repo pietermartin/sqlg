@@ -148,7 +148,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestBatchEdgeDateTime.class,
         TestBatchJson.class,
         TestMemoryUsage.class,
-        TestBatchTemporaryVertex.class,
+        TestBatchStreamTemporaryVertex.class,
         TestBatchNormalPrimitiveArrays.class,
         TestBatchNormalPrimitive.class,
         TestBatchNormalUpdatePrimitiveArrays.class,
@@ -200,7 +200,10 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestComplex.class,
         TestTopologyDeleteSpecific.class,
         TestDeadLock.class,
-        TestLabelLength.class
+        TestLabelLength.class,
+        TestAddTemporaryVertex.class,
+        TestBatchTemporaryVertex.class
+
 })
 public class AllTest {
 

@@ -37,16 +37,20 @@ public class Schema implements TopologyInf {
     private Map<String, VertexLabel> vertexLabels = new HashMap<>();
     private Map<String, VertexLabel> uncommittedVertexLabels = new HashMap<>();
     public Set<String> uncommittedRemovedVertexLabels = new HashSet<>();
-    
+
     private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
     Set<String> uncommittedRemovedEdgeLabels = new HashSet<>();
-    
+
+    public static final String SQLG_SCHEMA = "sqlg_schema";
     public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
     private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
     private Set<String> uncommittedRemovedGlobalUniqueIndexes = new HashSet<>();
     Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
     private static final String MARKER = "~gremlin.incidentToAdjacent";
+
+    //temporary table map. it is in a thread local as temporary tables are only valid per session/connection.
+    private final ThreadLocal<Map<String, Map<String, PropertyType>>> threadLocalTemporaryTables = ThreadLocal.withInitial(HashMap::new);
 
     /**
      * Creates the SqlgSchema. The sqlg_schema always exist and is created via sql in {@link SqlDialect#sqlgTopologyCreationScripts()}
@@ -66,7 +70,7 @@ public class Schema implements TopologyInf {
      * @return The Schema that represents 'public'
      */
     static Schema createPublicSchema(SqlgGraph sqlgGraph, Topology topology, String publicSchemaName) {
-        Schema schema= new Schema(topology, publicSchemaName);
+        Schema schema = new Schema(topology, publicSchemaName);
         if (!existPublicSchema(sqlgGraph)) {
             schema.createSchemaOnDb();
         }
@@ -77,12 +81,8 @@ public class Schema implements TopologyInf {
     private static boolean existPublicSchema(SqlgGraph sqlgGraph) {
         Connection conn = sqlgGraph.tx().getConnection();
         try {
-            if (sqlgGraph.getSqlDialect().supportSchemas()) {
-                DatabaseMetaData metadata = conn.getMetaData();
-                return sqlgGraph.getSqlDialect().schemaExists(metadata, null /*catalog*/, sqlgGraph.getSqlDialect().getPublicSchema());
-            } else {
-                throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
-            }
+            DatabaseMetaData metadata = conn.getMetaData();
+            return sqlgGraph.getSqlDialect().schemaExists(metadata, sqlgGraph.getSqlDialect().getPublicSchema());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -100,7 +100,7 @@ public class Schema implements TopologyInf {
 
     static Schema createSchema(SqlgGraph sqlgGraph, Topology topology, String name) {
         Schema schema = new Schema(topology, name);
-        Preconditions.checkArgument(!name.equals(SQLG_SCHEMA) && !sqlgGraph.getSqlDialect().getPublicSchema().equals(name) , "createSchema may not be called for 'sqlg_schema' or 'public'");
+        Preconditions.checkArgument(!name.equals(SQLG_SCHEMA) && !sqlgGraph.getSqlDialect().getPublicSchema().equals(name), "createSchema may not be called for 'sqlg_schema' or 'public'");
         schema.createSchemaOnDb();
         TopologyManager.addSchema(sqlgGraph, name);
         schema.committed = false;
@@ -136,6 +136,20 @@ public class Schema implements TopologyInf {
 
     public VertexLabel ensureVertexLabelExist(final String label) {
         return ensureVertexLabelExist(label, Collections.emptyMap());
+    }
+
+    void ensureTemporaryVertexTableExist(final String label, final Map<String, PropertyType> columns) {
+        Objects.requireNonNull(label, "Given table must not be null");
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
+
+        final String prefixedTable = VERTEX_PREFIX + label;
+        if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
+            this.topology.lock();
+            if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
+                this.threadLocalTemporaryTables.get().put(prefixedTable, columns);
+                createTempTable(prefixedTable, columns);
+            }
+        }
     }
 
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
@@ -253,8 +267,7 @@ public class Schema implements TopologyInf {
      */
     private void createSchemaOnDb() {
         StringBuilder sql = new StringBuilder();
-        sql.append(topology.getSqlgGraph().getSqlDialect().createSchemaStatement());
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
+        sql.append(topology.getSqlgGraph().getSqlDialect().createSchemaStatement(this.name));
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
@@ -296,8 +309,8 @@ public class Schema implements TopologyInf {
 
     public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", Topology.VERTEX_PREFIX);
-        if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)){
-        	return Optional.empty();
+        if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)) {
+            return Optional.empty();
         }
         VertexLabel result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         if (result == null && this.topology.isSqlWriteLockHeldByCurrentThread()) {
@@ -311,8 +324,8 @@ public class Schema implements TopologyInf {
         result.putAll(this.outEdgeLabels);
         if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
-            for (String e:uncommittedRemovedEdgeLabels){
-            	result.remove(e);
+            for (String e : uncommittedRemovedEdgeLabels) {
+                result.remove(e);
             }
         }
         return result;
@@ -327,8 +340,8 @@ public class Schema implements TopologyInf {
             for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
                 result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
             }
-            for (String e:uncommittedRemovedEdgeLabels){
-            	result.remove(e);
+            for (String e : uncommittedRemovedEdgeLabels) {
+                result.remove(e);
             }
         }
         return result;
@@ -336,8 +349,8 @@ public class Schema implements TopologyInf {
 
     public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(Topology.EDGE_PREFIX), "edge label may not start with \"%s\"", Topology.EDGE_PREFIX);
-        if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)){
-        	return Optional.empty();
+        if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)) {
+            return Optional.empty();
         }
         EdgeLabel edgeLabel = this.outEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
         if (edgeLabel != null) {
@@ -382,8 +395,8 @@ public class Schema implements TopologyInf {
         result.putAll(this.vertexLabels);
         if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedVertexLabels);
-            for (String e:uncommittedRemovedVertexLabels){
-            	result.remove(e);
+            for (String e : uncommittedRemovedVertexLabels) {
+                result.remove(e);
             }
         }
         return Collections.unmodifiableMap(result);
@@ -563,8 +576,8 @@ public class Schema implements TopologyInf {
         result.putAll(this.globalUniqueIndexes);
         if (this.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedGlobalUniqueIndexes);
-            for (String s:this.uncommittedRemovedGlobalUniqueIndexes){
-            	result.remove(s);
+            for (String s : this.uncommittedRemovedGlobalUniqueIndexes) {
+                result.remove(s);
             }
         }
         return Collections.unmodifiableMap(result);
@@ -584,13 +597,13 @@ public class Schema implements TopologyInf {
                 it.remove();
             }
         }
-        for (Iterator<String> it=uncommittedRemovedVertexLabels.iterator();it.hasNext();){
-        	String s=it.next();
-        	VertexLabel lbl=this.vertexLabels.remove(s);
-        	if (lbl!=null){
-        		this.getTopology().removeVertexLabel(lbl);
-        	}
-        	it.remove();
+        for (Iterator<String> it = uncommittedRemovedVertexLabels.iterator(); it.hasNext(); ) {
+            String s = it.next();
+            VertexLabel lbl = this.vertexLabels.remove(s);
+            if (lbl != null) {
+                this.getTopology().removeVertexLabel(lbl);
+            }
+            it.remove();
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterCommit();
@@ -599,18 +612,18 @@ public class Schema implements TopologyInf {
             for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
                 globalUniqueIndex.afterCommit();
             }
-            for (Iterator<String> it=uncommittedRemovedGlobalUniqueIndexes.iterator();it.hasNext();){
-            	String s=it.next();
-            	this.globalUniqueIndexes.remove(s);
-            	it.remove();
+            for (Iterator<String> it = uncommittedRemovedGlobalUniqueIndexes.iterator(); it.hasNext(); ) {
+                String s = it.next();
+                this.globalUniqueIndexes.remove(s);
+                it.remove();
             }
         }
-        for (Iterator<String> it=uncommittedRemovedEdgeLabels.iterator();it.hasNext();){
-        	String s=it.next();
-        	this.outEdgeLabels.remove(s);
-        	it.remove();
+        for (Iterator<String> it = uncommittedRemovedEdgeLabels.iterator(); it.hasNext(); ) {
+            String s = it.next();
+            this.outEdgeLabels.remove(s);
+            it.remove();
         }
-       
+
         this.uncommittedOutEdgeLabels.clear();
         this.committed = true;
     }
@@ -1026,42 +1039,42 @@ public class Schema implements TopologyInf {
             foundVertexLabels = true;
         }
         if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedVertexLabels.isEmpty()) {
-        	 ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-             for(String s:this.uncommittedRemovedVertexLabels){
-            	 vertexLabelArrayNode.add(s);
-             }
-             schemaNode.set("uncommittedRemovedVertexLabels", vertexLabelArrayNode);
-             foundVertexLabels = true;
+            ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (String s : this.uncommittedRemovedVertexLabels) {
+                vertexLabelArrayNode.add(s);
+            }
+            schemaNode.set("uncommittedRemovedVertexLabels", vertexLabelArrayNode);
+            foundVertexLabels = true;
         }
         if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedEdgeLabels.isEmpty()) {
-       	 	ArrayNode edgeLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for(String s:this.uncommittedRemovedEdgeLabels){
-           	 edgeLabelArrayNode.add(s);
+            ArrayNode edgeLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (String s : this.uncommittedRemovedEdgeLabels) {
+                edgeLabelArrayNode.add(s);
             }
             schemaNode.set("uncommittedRemovedEdgeLabels", edgeLabelArrayNode);
             foundVertexLabels = true;
-       }
+        }
         if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedGlobalUniqueIndexes.isEmpty()) {
-        	ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (GlobalUniqueIndex globalUniqueIndex : this.uncommittedGlobalUniqueIndexes.values()) {
 
                 Optional<JsonNode> jsonNodeOptional = globalUniqueIndex.toNotifyJson();
                 if (jsonNodeOptional.isPresent()) {
                     unCommittedGlobalUniqueIndexesArrayNode.add(jsonNodeOptional.get());
                 }
-            
+
             }
             schemaNode.set("uncommittedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);
         }
         if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedGlobalUniqueIndexes.isEmpty()) {
-        	ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (String globalUniqueIndex : this.uncommittedRemovedGlobalUniqueIndexes) {
-            		unCommittedGlobalUniqueIndexesArrayNode.add(globalUniqueIndex);
+                unCommittedGlobalUniqueIndexesArrayNode.add(globalUniqueIndex);
             }
-            
+
             schemaNode.set("uncommittedRemovedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);
         }
-        
+
         if (!this.getVertexLabelsOnly().isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getVertexLabelsOnly().values()) {
@@ -1072,9 +1085,9 @@ public class Schema implements TopologyInf {
                             notifyJson.get("uncommittedOutEdgeLabels") != null ||
                             notifyJson.get("uncommittedInEdgeLabels") != null ||
                             notifyJson.get("outEdgeLabels") != null ||
-                            notifyJson.get("inEdgeLabels") != null || 
-                            notifyJson.get("uncommittedRemovedOutEdgeLabels")!=null ||
-                            notifyJson.get("uncommittedRemovedInEdgeLabels")!=null
+                            notifyJson.get("inEdgeLabels") != null ||
+                            notifyJson.get("uncommittedRemovedOutEdgeLabels") != null ||
+                            notifyJson.get("uncommittedRemovedInEdgeLabels") != null
                             ) {
 
                         vertexLabelArrayNode.add(notifyJsonOptional.get());
@@ -1092,7 +1105,7 @@ public class Schema implements TopologyInf {
             return Optional.empty();
         }
     }
-    
+
     void fromNotifyJsonOutEdges(JsonNode jsonSchema) {
         for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
             JsonNode vertexLabels = jsonSchema.get(s);
@@ -1111,59 +1124,59 @@ public class Schema implements TopologyInf {
                     //The order of the next two statements matter.
                     //fromNotifyJsonOutEdge needs to happen first to ensure the properties are on the VertexLabel
                     // fire only if we didn't create the vertex label
-                    vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson,vertexLabelOptional.isPresent());
+                    vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson, vertexLabelOptional.isPresent());
                     this.getTopology().addToAllTables(this.getName() + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel.getPropertyTypeMap());
                 }
             }
         }
-        JsonNode rem=jsonSchema.get("uncommittedRemovedVertexLabels");
-        if (rem!=null && rem.isArray()){
-        	ArrayNode an=(ArrayNode)rem;
-        	for (int a=0;a<an.size();a++){
-        		String s=an.get(a).asText();
-        		VertexLabel lbl=this.vertexLabels.remove(s);
-        		if (lbl!=null){
-        			this.getTopology().removeVertexLabel(lbl);
-        			for(EdgeRole er:lbl.getOutEdgeRoles().values()){
-        				er.getEdgeLabel().outVertexLabels.remove(lbl);
-            		}
-            		for(EdgeRole er:lbl.getInEdgeRoles().values()){
-            			er.getEdgeLabel().inVertexLabels.remove(lbl);
-            		}
-        			this.getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
-        			
-        		}
-        	}
+        JsonNode rem = jsonSchema.get("uncommittedRemovedVertexLabels");
+        if (rem != null && rem.isArray()) {
+            ArrayNode an = (ArrayNode) rem;
+            for (int a = 0; a < an.size(); a++) {
+                String s = an.get(a).asText();
+                VertexLabel lbl = this.vertexLabels.remove(s);
+                if (lbl != null) {
+                    this.getTopology().removeVertexLabel(lbl);
+                    for (EdgeRole er : lbl.getOutEdgeRoles().values()) {
+                        er.getEdgeLabel().outVertexLabels.remove(lbl);
+                    }
+                    for (EdgeRole er : lbl.getInEdgeRoles().values()) {
+                        er.getEdgeLabel().inVertexLabels.remove(lbl);
+                    }
+                    this.getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
+
+                }
+            }
         }
-        
-        rem=jsonSchema.get("uncommittedRemovedEdgeLabels");
-        if (rem!=null && rem.isArray()){
-        	ArrayNode an=(ArrayNode)rem;
-        	for (int a=0;a<an.size();a++){
-        		String s=an.get(a).asText();
-        		EdgeLabel edgeLabel=this.outEdgeLabels.remove(s);
-        		if (edgeLabel!=null){
-        			for (VertexLabel lbl:edgeLabel.getOutVertexLabels()){
-        				if (edgeLabel.isValid()){
-        					lbl.outEdgeLabels.remove(edgeLabel.getFullName());
-        				}
-            		}
-            		for (VertexLabel lbl:edgeLabel.getInVertexLabels()){
-            			if (edgeLabel.isValid()){
-            				lbl.inEdgeLabels.remove(edgeLabel.getFullName());
-            			}
-            		}
-        			this.getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
-        		}
-        	}
+
+        rem = jsonSchema.get("uncommittedRemovedEdgeLabels");
+        if (rem != null && rem.isArray()) {
+            ArrayNode an = (ArrayNode) rem;
+            for (int a = 0; a < an.size(); a++) {
+                String s = an.get(a).asText();
+                EdgeLabel edgeLabel = this.outEdgeLabels.remove(s);
+                if (edgeLabel != null) {
+                    for (VertexLabel lbl : edgeLabel.getOutVertexLabels()) {
+                        if (edgeLabel.isValid()) {
+                            lbl.outEdgeLabels.remove(edgeLabel.getFullName());
+                        }
+                    }
+                    for (VertexLabel lbl : edgeLabel.getInVertexLabels()) {
+                        if (edgeLabel.isValid()) {
+                            lbl.inEdgeLabels.remove(edgeLabel.getFullName());
+                        }
+                    }
+                    this.getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
+                }
+            }
         }
-        
+
         ArrayNode globalUniqueIndexes = (ArrayNode) jsonSchema.get("uncommittedGlobalUniqueIndexes");
         if (globalUniqueIndexes != null) {
             for (JsonNode jsonGlobalUniqueIndex : globalUniqueIndexes) {
                 String globalUniqueIndexName = jsonGlobalUniqueIndex.get("name").asText();
                 GlobalUniqueIndex globalUniqueIndex = this.globalUniqueIndexes.get(globalUniqueIndexName);
-                if (globalUniqueIndex==null) {
+                if (globalUniqueIndex == null) {
                     globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(getTopology(), globalUniqueIndexName);
                     getTopology().fire(globalUniqueIndex, "", TopologyChangeAction.CREATE);
                 }
@@ -1191,7 +1204,7 @@ public class Schema implements TopologyInf {
                     properties.add(propertyColumnOptional.get());
                 }
                 globalUniqueIndex.addGlobalUniqueProperties(properties);
-                this.globalUniqueIndexes.put(globalUniqueIndexName,globalUniqueIndex);
+                this.globalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
             }
 
         }
@@ -1199,37 +1212,37 @@ public class Schema implements TopologyInf {
         if (remGlobalUniqueIndexes != null) {
             for (JsonNode jsonGlobalUniqueIndex : remGlobalUniqueIndexes) {
                 String globalUniqueIndexName = jsonGlobalUniqueIndex.asText();
-                GlobalUniqueIndex gui=this.globalUniqueIndexes.remove(globalUniqueIndexName);
-                if (gui!=null){
-                	this.getTopology().fire(gui, "", TopologyChangeAction.DELETE);
+                GlobalUniqueIndex gui = this.globalUniqueIndexes.remove(globalUniqueIndexName);
+                if (gui != null) {
+                    this.getTopology().fire(gui, "", TopologyChangeAction.DELETE);
                 }
             }
         }
-        
-    
+
+
     }
 
     void fromNotifyJsonInEdges(JsonNode jsonSchema) {
-        JsonNode rem=jsonSchema.get("uncommittedRemovedVertexLabels");
-        Set<String> removed=new HashSet<>();
-        if (rem!=null && rem.isArray()){
-        	ArrayNode an=(ArrayNode)rem;
-        	for (int a=0;a<an.size();a++){
-        		String s=an.get(a).asText();
-        		removed.add(s);
-        	}
+        JsonNode rem = jsonSchema.get("uncommittedRemovedVertexLabels");
+        Set<String> removed = new HashSet<>();
+        if (rem != null && rem.isArray()) {
+            ArrayNode an = (ArrayNode) rem;
+            for (int a = 0; a < an.size(); a++) {
+                String s = an.get(a).asText();
+                removed.add(s);
+            }
         }
         for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
             JsonNode vertexLabels = jsonSchema.get(s);
             if (vertexLabels != null) {
                 for (JsonNode vertexLabelJson : vertexLabels) {
                     String vertexLabelName = vertexLabelJson.get("label").asText();
-                    if (!removed.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)){
-	                    Optional<VertexLabel> vertexLabelOptional = getVertexLabel(vertexLabelName);
-	                    Preconditions.checkState(vertexLabelOptional.isPresent(), "VertexLabel "+vertexLabelName+" must be present");
-	                    @SuppressWarnings("OptionalGetWithoutIsPresent")
-	                    VertexLabel vertexLabel = vertexLabelOptional.get();
-	                    vertexLabel.fromNotifyJsonInEdge(vertexLabelJson);
+                    if (!removed.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)) {
+                        Optional<VertexLabel> vertexLabelOptional = getVertexLabel(vertexLabelName);
+                        Preconditions.checkState(vertexLabelOptional.isPresent(), "VertexLabel " + vertexLabelName + " must be present");
+                        @SuppressWarnings("OptionalGetWithoutIsPresent")
+                        VertexLabel vertexLabel = vertexLabelOptional.get();
+                        vertexLabel.fromNotifyJsonInEdge(vertexLabelJson);
                     }
                 }
             }
@@ -1314,94 +1327,97 @@ public class Schema implements TopologyInf {
         return validationErrors;
     }
 
-    
+
     @Override
     public void remove(boolean preserveData) {
-    	/*if (this.getName().equals(sqlgGraph.getSqlDialect().getPublicSchema()) && !preserveData){
-    		throw new IllegalArgumentException("Public schema cannot be deleted");
+        /*if (this.getName().equals(sqlgGraph.getSqlDialect().getPublicSchema()) && !preserveData){
+            throw new IllegalArgumentException("Public schema cannot be deleted");
     	}*/
-    	getTopology().removeSchema(this, preserveData);
+        getTopology().removeSchema(this, preserveData);
     }
-    
+
     /**
      * remove a given edge label
-     * @param edgeLabel the edge label
+     *
+     * @param edgeLabel    the edge label
      * @param preserveData should we keep the SQL data
      */
-    void removeEdgeLabel(EdgeLabel edgeLabel,boolean preserveData){
-    	getTopology().lock();
-    	String fn=this.name + "." + EDGE_PREFIX + edgeLabel.getName();
-    	
-    	if (!uncommittedRemovedEdgeLabels.contains(fn)){
-    		uncommittedRemovedEdgeLabels.add(fn);
-    		TopologyManager.removeEdgeLabel(this.sqlgGraph, edgeLabel);
-    		for (VertexLabel lbl:edgeLabel.getOutVertexLabels()){
-    			lbl.removeOutEdge(edgeLabel);
-    		}
-    		for (VertexLabel lbl:edgeLabel.getInVertexLabels()){
-    			lbl.removeInEdge(edgeLabel);
-    		}
-    		
-    		if (!preserveData){
-    			edgeLabel.delete();
-    		}
-    		getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
-    	}
+    void removeEdgeLabel(EdgeLabel edgeLabel, boolean preserveData) {
+        getTopology().lock();
+        String fn = this.name + "." + EDGE_PREFIX + edgeLabel.getName();
+
+        if (!uncommittedRemovedEdgeLabels.contains(fn)) {
+            uncommittedRemovedEdgeLabels.add(fn);
+            TopologyManager.removeEdgeLabel(this.sqlgGraph, edgeLabel);
+            for (VertexLabel lbl : edgeLabel.getOutVertexLabels()) {
+                lbl.removeOutEdge(edgeLabel);
+            }
+            for (VertexLabel lbl : edgeLabel.getInVertexLabels()) {
+                lbl.removeInEdge(edgeLabel);
+            }
+
+            if (!preserveData) {
+                edgeLabel.delete();
+            }
+            getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
+        }
     }
-    
+
     /**
      * remove a given vertex label
-     * @param vertexLabel the vertex label
+     *
+     * @param vertexLabel  the vertex label
      * @param preserveData should we keep the SQL data
      */
-    void removeVertexLabel(VertexLabel vertexLabel, boolean preserveData){
-    	getTopology().lock();
-    	String fn=this.name + "." + VERTEX_PREFIX + vertexLabel.getName();
-    	if (!uncommittedRemovedVertexLabels.contains(fn)){
-    		uncommittedRemovedVertexLabels.add(fn);
-    		TopologyManager.removeVertexLabel(this.sqlgGraph, vertexLabel);
-    		for(EdgeRole er:vertexLabel.getOutEdgeRoles().values()){
-    			er.remove(preserveData);
-    		}
-    		for(EdgeRole er:vertexLabel.getInEdgeRoles().values()){
-    			er.remove(preserveData);
-    		}
-    		if (!preserveData){
-    			vertexLabel.delete();
-    		}
-    		getTopology().fire(vertexLabel, "", TopologyChangeAction.DELETE);
-    	}
-    	
+    void removeVertexLabel(VertexLabel vertexLabel, boolean preserveData) {
+        getTopology().lock();
+        String fn = this.name + "." + VERTEX_PREFIX + vertexLabel.getName();
+        if (!uncommittedRemovedVertexLabels.contains(fn)) {
+            uncommittedRemovedVertexLabels.add(fn);
+            TopologyManager.removeVertexLabel(this.sqlgGraph, vertexLabel);
+            for (EdgeRole er : vertexLabel.getOutEdgeRoles().values()) {
+                er.remove(preserveData);
+            }
+            for (EdgeRole er : vertexLabel.getInEdgeRoles().values()) {
+                er.remove(preserveData);
+            }
+            if (!preserveData) {
+                vertexLabel.delete();
+            }
+            getTopology().fire(vertexLabel, "", TopologyChangeAction.DELETE);
+        }
+
     }
-    
+
     /**
      * remove the given global unique index
-     * @param index the index to remove
+     *
+     * @param index        the index to remove
      * @param preserveData should we keep the sql data?
      */
-    void removeGlobalUniqueIndex(GlobalUniqueIndex index,boolean preserveData){
-    	getTopology().lock();
-    	String fn=index.getName();
-    	if(!uncommittedRemovedGlobalUniqueIndexes.contains(fn)){
-    		uncommittedRemovedGlobalUniqueIndexes.add(fn);
-    		TopologyManager.removeGlobalUniqueIndex(sqlgGraph, fn);
-    		if (!preserveData){
-    			getVertexLabel(index.getName()).ifPresent(
-    					(VertexLabel vl) -> vl.remove(false));
-    		}
-    		getTopology().fire(index, "", TopologyChangeAction.DELETE);
-    	}
+    void removeGlobalUniqueIndex(GlobalUniqueIndex index, boolean preserveData) {
+        getTopology().lock();
+        String fn = index.getName();
+        if (!uncommittedRemovedGlobalUniqueIndexes.contains(fn)) {
+            uncommittedRemovedGlobalUniqueIndexes.add(fn);
+            TopologyManager.removeGlobalUniqueIndex(sqlgGraph, fn);
+            if (!preserveData) {
+                getVertexLabel(index.getName()).ifPresent(
+                        (VertexLabel vl) -> vl.remove(false));
+            }
+            getTopology().fire(index, "", TopologyChangeAction.DELETE);
+        }
     }
-    
+
     /**
      * delete schema in DB
      */
-    void delete(){
+    void delete() {
         StringBuilder sql = new StringBuilder();
         sql.append("DROP SCHEMA ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
-        if (this.sqlgGraph.getSqlDialect().supportsCascade()){
-        	sql.append(" CASCADE");
+        if (this.sqlgGraph.getSqlDialect().supportsCascade()) {
+            sql.append(" CASCADE");
         }
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -1416,5 +1432,59 @@ public class Schema implements TopologyInf {
             logger.error("schema deletion failed " + this.sqlgGraph.toString(), e);
             throw new RuntimeException(e);
         }
+    }
+
+    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
+        this.sqlgGraph.getSqlDialect().assertTableName(tableName);
+        StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTemporaryTableStatement());
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tableName));
+        sql.append("(");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" ");
+        sql.append(this.sqlgGraph.getSqlDialect().getAutoIncrementPrimaryKeyConstruct());
+        if (columns.size() > 0) {
+            sql.append(", ");
+        }
+        AbstractLabel.buildColumns(this.sqlgGraph, columns, sql);
+        sql.append(") ");
+        sql.append(this.sqlgGraph.getSqlDialect().afterCreateTemporaryTableStatement());
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void removeTemporaryTables() {
+        if (!this.sqlgGraph.getSqlDialect().supportsTemporaryTableOnCommitDrop()) {
+            for (Map.Entry<String, Map<String, PropertyType>> temporaryTableEntry : this.threadLocalTemporaryTables.get().entrySet()) {
+                String tableName = temporaryTableEntry.getKey();
+                Connection conn = this.sqlgGraph.tx().getConnection();
+                try (Statement stmt = conn.createStatement()) {
+                    String sql = "DROP TEMPORARY TABLE " +
+                            this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
+                            this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tableName);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql);
+                    }
+                    stmt.execute(sql);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+        }
+        this.threadLocalTemporaryTables.remove();
+    }
+
+    public Map<String, PropertyType> getTemporaryTable(String tableName) {
+        return this.threadLocalTemporaryTables.get().get(tableName);
     }
 }

@@ -31,7 +31,7 @@ public class TestTopologyDeleteSpecific extends BaseTest {
      */
     @Test
     public void testSchemaDelete() throws Exception {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportDistribution());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());
         String schema = "willDelete";
         Vertex v1 = sqlgGraph.addVertex(T.label, schema + ".t1", "name", "n1", "hello", "world");
         sqlgGraph.tx().commit();

@@ -21,7 +21,7 @@ import java.util.*;
  * Date: 2014/07/16
  * Time: 3:09 PM
  */
-public class HsqldbDialect extends BaseSqlDialect {
+public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     public HsqldbDialect() {
         super();
@@ -93,11 +93,11 @@ public class HsqldbDialect extends BaseSqlDialect {
             case LOCALDATE_ARRAY:
                 return toValuesArray(true, getArrayDriverType(propertyType), value).toString();
             case LOCALDATETIME:
-                return  "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime)value).toString() + "'";
+                return "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime) value).toString() + "'";
             case LOCALDATETIME_ARRAY:
                 return toLocalDateTimeArray(true, getArrayDriverType(propertyType), value).toString();
             case LOCALTIME:
-                return "TIME '" + Time.valueOf((LocalTime)value).toString() + "'";
+                return "TIME '" + Time.valueOf((LocalTime) value).toString() + "'";
             case LOCALTIME_ARRAY:
                 return toLocalTimeArray(true, getArrayDriverType(propertyType), value).toString();
             default:
@@ -141,7 +141,7 @@ public class HsqldbDialect extends BaseSqlDialect {
         sb.append("ARRAY [");
         length = java.lang.reflect.Array.getLength(value);
         for (int i = 0; i < length; i++) {
-            LocalDateTime valueOfArray = (LocalDateTime)java.lang.reflect.Array.get(value, i);
+            LocalDateTime valueOfArray = (LocalDateTime) java.lang.reflect.Array.get(value, i);
             sb.append(type);
             sb.append(" ");
             if (quote) {
@@ -167,7 +167,7 @@ public class HsqldbDialect extends BaseSqlDialect {
         sb.append("ARRAY [");
         length = java.lang.reflect.Array.getLength(value);
         for (int i = 0; i < length; i++) {
-            LocalTime valueOfArray = (LocalTime)java.lang.reflect.Array.get(value, i);
+            LocalTime valueOfArray = (LocalTime) java.lang.reflect.Array.get(value, i);
             sb.append(type);
             sb.append(" ");
             if (quote) {
@@ -419,47 +419,76 @@ public class HsqldbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+    public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return new int[]{Types.BOOLEAN};
             case BYTE:
-                return Types.TINYINT;
+                return new int[]{Types.TINYINT};
             case SHORT:
-                return Types.SMALLINT;
+                return new int[]{Types.SMALLINT};
             case INTEGER:
-                return Types.INTEGER;
+                return new int[]{Types.INTEGER};
             case LONG:
-                return Types.BIGINT;
+                return new int[]{Types.BIGINT};
             case DOUBLE:
-                return Types.DOUBLE;
+                return new int[]{Types.DOUBLE};
             case STRING:
-                return Types.CLOB;
+                return new int[]{Types.CLOB};
             case LOCALDATETIME:
-                return Types.TIMESTAMP;
+                return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
-                return Types.DATE;
+                return new int[]{Types.DATE};
             case LOCALTIME:
-                return Types.TIME;
-            case JSON:
-                //TODO support other others like Geometry...
-                return Types.OTHER;
+                return new int[]{Types.TIME};
+            case ZONEDDATETIME:
+                return new int[]{Types.TIMESTAMP, Types.CLOB};
+            case PERIOD:
+                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
+            case DURATION:
+                return new int[]{Types.BIGINT, Types.INTEGER};
+            case BYTE_ARRAY:
+                return new int[]{Types.ARRAY};
             case byte_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
             case boolean_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case BOOLEAN_ARRAY:
+                return new int[]{Types.ARRAY};
             case short_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case SHORT_ARRAY:
+                return new int[]{Types.ARRAY};
             case int_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case INTEGER_ARRAY:
+                return new int[]{Types.ARRAY};
             case long_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case LONG_ARRAY:
+                return new int[]{Types.ARRAY};
             case float_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case FLOAT_ARRAY:
+                return new int[]{Types.ARRAY};
             case double_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case DOUBLE_ARRAY:
+                return new int[]{Types.ARRAY};
             case STRING_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case LOCALDATETIME_ARRAY:
+                return new int[]{Types.ARRAY};
+            case LOCALDATE_ARRAY:
+                return new int[]{Types.ARRAY};
+            case LOCALTIME_ARRAY:
+                return new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -683,6 +712,11 @@ public class HsqldbDialect extends BaseSqlDialect {
     @Override
     public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
         throw new UnsupportedOperationException("Hsqldb does not support sequenceName!");
+    }
+
+    @Override
+    public boolean supportsBatchMode() {
+        return true;
     }
 
     @Override

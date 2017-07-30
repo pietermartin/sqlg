@@ -30,6 +30,11 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
     public String dialectName() {
         return "H2Dialect";
     }
@@ -45,9 +50,9 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
-    public String createSchemaStatement() {
+    public String createSchemaStatement(String schemaName) {
         // if ever schema is created outside of sqlg while the graph is already instantiated
-        return "CREATE SCHEMA IF NOT EXISTS ";
+        return "CREATE SCHEMA IF NOT EXISTS " + maybeWrapInQoutes(schemaName);
     }
 
     @Override
@@ -287,41 +292,46 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
-    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+    public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return new int[]{Types.BOOLEAN};
             case BYTE:
-                return Types.TINYINT;
+                return new int[]{Types.TINYINT};
             case SHORT:
-                return Types.SMALLINT;
+                return new int[]{Types.SMALLINT};
             case INTEGER:
-                return Types.INTEGER;
+                return new int[]{Types.INTEGER};
             case LONG:
-                return Types.BIGINT;
+                return new int[]{Types.BIGINT};
             case FLOAT:
-                return Types.REAL;
+                return new int[]{Types.REAL};
             case DOUBLE:
-                return Types.DOUBLE;
+                return new int[]{Types.DOUBLE};
             case STRING:
-                return Types.CLOB;
+                return new int[]{Types.CLOB};
             case LOCALDATETIME:
-                return Types.TIMESTAMP;
+                return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
-                return Types.DATE;
+                return new int[]{Types.DATE};
             case LOCALTIME:
-                return Types.TIME;
+                return new int[]{Types.TIME};
+            case ZONEDDATETIME:
+                return new int[]{Types.TIMESTAMP, Types.CLOB};
+            case DURATION:
+                return new int[]{Types.BIGINT, Types.INTEGER};
+            case PERIOD:
+                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
             case JSON:
-                return Types.VARCHAR;
+                return new int[]{Types.VARCHAR};
             case byte_ARRAY:
-                return Types.BINARY;
+                return new int[]{Types.BINARY};
             case BYTE_ARRAY:
-                return Types.BINARY;
+                return new int[]{Types.BINARY};
             case BOOLEAN_ARRAY:
             case boolean_ARRAY:
             case DOUBLE_ARRAY:
             case double_ARRAY:
-            case DURATION_ARRAY:
             case FLOAT_ARRAY:
             case float_ARRAY:
             case int_ARRAY:
@@ -334,7 +344,13 @@ public class H2Dialect extends BaseSqlDialect {
             case SHORT_ARRAY:
             case short_ARRAY:
             case STRING_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }

@@ -24,7 +24,7 @@ public class TestVertexEdges extends BaseTest {
         //This test only works on postgres.
         //it makes assumptions about iteration and query excution order.
 //        HSQLDB behaves differently.
-        Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+        Assume.assumeTrue(isPostgres());
     }
 
     @Test

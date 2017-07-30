@@ -30,7 +30,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
         BaseTest.beforeClass();
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
+        if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
     }
@@ -45,7 +45,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 
     @Test
     public void testDocExamples() throws SQLException {
-        assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+        assumeTrue(isPostgres());
         Vertex v0 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "a fat cat sat on a mat and ate a fat rat");
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "fatal error");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
@@ -88,7 +88,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 
     @Test
     public void testDocExamplesWhere() throws SQLException {
-        assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+        assumeTrue(isPostgres());
         Vertex v0 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "a fat cat sat on a mat and ate a fat rat");
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "fatal error");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
@@ -140,7 +140,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 
     @Test
     public void testConcat() throws SQLException {
-        assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+        assumeTrue(isPostgres());
         Vertex v0 = this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "a fat cat sat on a", "name2", "mat and ate a fat rat");
         this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "fatal error");
         this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "error is not fatal");
@@ -158,7 +158,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
     @Test
 //	@Ignore("check manually index is used")
     public void testPerfOneColumn() throws SQLException {
-        assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+        assumeTrue(isPostgres());
         Vertex v0 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "a fat cat sat on a mat and ate a fat rat");
 
         int LOOPS = 10000;
@@ -183,7 +183,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
     @Test
     @Ignore("check manually index is used")
     public void testPerfTwoColumns() throws SQLException {
-        assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+        assumeTrue(isPostgres());
         Vertex v0 = this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "a fat cat sat on a mat", "name2", "and ate a fat rat");
 
         int LOOPS = 10000;

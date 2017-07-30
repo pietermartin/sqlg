@@ -39,7 +39,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
-            Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+            Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
 //            configuration.addProperty("maxPoolSize", 3);
             if (!configuration.containsKey("jdbc.url"))

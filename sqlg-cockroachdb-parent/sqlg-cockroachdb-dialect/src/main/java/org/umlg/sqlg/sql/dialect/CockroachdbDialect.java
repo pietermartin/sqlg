@@ -67,18 +67,23 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean supportDistribution() {
+    public boolean supportsDistribution() {
         return true;
     }
 
+    @Override
+    public boolean supportsSchemas() {
+        return false;
+    }
+    
     @Override
     public String dialectName() {
         return "Postgresql";
     }
 
     @Override
-    public String createSchemaStatement() {
-        return "CREATE DATABASE IF NOT EXISTS ";
+    public String createSchemaStatement(String schemaName) {
+        return "CREATE DATABASE IF NOT EXISTS " + maybeWrapInQoutes(schemaName);
     }
 
     @Override
@@ -1122,47 +1127,59 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+    public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return new int[]{Types.BOOLEAN};
             case SHORT:
-                return Types.SMALLINT;
+                return new int[]{Types.SMALLINT};
             case INTEGER:
-                return Types.INTEGER;
+                return new int[]{Types.INTEGER};
             case LONG:
-                return Types.BIGINT;
+                return new int[]{Types.BIGINT};
             case FLOAT:
-                return Types.REAL;
+                return new int[]{Types.REAL};
             case DOUBLE:
-                return Types.DOUBLE;
+                return new int[]{Types.DOUBLE};
             case STRING:
-                return Types.CLOB;
+                return new int[]{Types.CLOB};
             case byte_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
             case LOCALDATETIME:
-                return Types.TIMESTAMP;
+                return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
-                return Types.DATE;
+                return new int[]{Types.DATE};
             case LOCALTIME:
-                return Types.TIME;
+                return new int[]{Types.TIME};
+            case ZONEDDATETIME:
+                return new int[]{Types.TIMESTAMP, Types.CLOB};
+            case DURATION:
+                return new int[]{Types.BIGINT, Types.INTEGER};
+            case PERIOD:
+                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
             case JSON:
                 //TODO support other others like Geometry...
-                return Types.OTHER;
+                return new int[]{Types.OTHER};
             case boolean_ARRAY:
-                return Types.ARRAY;
+            case BOOLEAN_ARRAY:
             case short_ARRAY:
-                return Types.ARRAY;
+            case SHORT_ARRAY:
             case int_ARRAY:
-                return Types.ARRAY;
+            case INTEGER_ARRAY:
             case long_ARRAY:
-                return Types.ARRAY;
+            case LONG_ARRAY:
             case float_ARRAY:
-                return Types.ARRAY;
+            case FLOAT_ARRAY:
             case double_ARRAY:
-                return Types.ARRAY;
+            case DOUBLE_ARRAY:
             case STRING_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }

@@ -66,7 +66,7 @@ public class TestTopologyDelete extends BaseTest {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
-            Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+            Assume.assumeTrue(isPostgres());
             configuration.addProperty(SqlgGraph.DISTRIBUTED, true);
             if (!configuration.containsKey(SqlgGraph.JDBC_URL))
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", SqlgGraph.JDBC_URL));
@@ -84,14 +84,6 @@ public class TestTopologyDelete extends BaseTest {
         }
     }
 
-    private boolean schemaExistsInSQL(String schema) throws SQLException {
-        try (ResultSet rs = this.sqlgGraph.tx().getConnection().getMetaData().getSchemas(null, schema)) {
-            return rs.next();
-        }
-
-    }
-
-
     private boolean tableExistsInSQL(String schema, String table) throws SQLException {
         try (ResultSet rs = this.sqlgGraph.tx().getConnection().getMetaData().getTables(null, schema, table, null)) {
             return rs.next();
@@ -100,10 +92,10 @@ public class TestTopologyDelete extends BaseTest {
     }
 
     private boolean columnExistsInSQL(String schema, String table, String column) throws SQLException {
-        try (ResultSet rs = this.sqlgGraph.tx().getConnection().getMetaData().getColumns(null, schema, table, column)) {
-            return rs.next();
-        }
-
+        return !this.sqlgGraph.getSqlDialect().getTableColumns(
+                this.sqlgGraph.tx().getConnection().getMetaData(),
+                null, schema, table, column
+        ).isEmpty();
     }
 
     private boolean indexExistsInSQL(String schema, String table, String index) throws SQLException {

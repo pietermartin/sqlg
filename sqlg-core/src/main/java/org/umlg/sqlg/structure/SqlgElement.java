@@ -391,11 +391,11 @@ public abstract class SqlgElement implements Element {
         return properties;
     }
 
-    protected void writeColumnNames(Map<String, Pair<PropertyColumn, Object>> keyValueMap, StringBuilder sql) {
+    protected void writeColumnNames(Map<String, Pair<PropertyType, Object>> keyValueMap, StringBuilder sql) {
         int i = 1;
         for (String column : keyValueMap.keySet()) {
-            Pair<PropertyColumn, Object> propertyColumnValue = keyValueMap.get(column);
-            PropertyType propertyType = propertyColumnValue.getLeft().getPropertyType();
+            Pair<PropertyType, Object> propertyColumnValue = keyValueMap.get(column);
+            PropertyType propertyType = propertyColumnValue.getLeft();
             String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             int count = 1;
             for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
@@ -414,10 +414,10 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    protected void writeColumnParameters(Map<String, Pair<PropertyColumn, Object>> keyValueMap, StringBuilder sql) {
+    protected void writeColumnParameters(Map<String, Pair<PropertyType, Object>> keyValueMap, StringBuilder sql) {
         int i = 1;
         for (String column : keyValueMap.keySet()) {
-            PropertyType propertyType = keyValueMap.get(column).getLeft().getPropertyType();
+            PropertyType propertyType = keyValueMap.get(column).getLeft();
             String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             int count = 1;
             for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {

@@ -271,7 +271,11 @@ public class TestTopologyUpgrade extends BaseTest {
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+            if (sqlgGraph.getSqlDialect().needsSchemaDropCascade()) {
+                statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+            } else {
+                statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema"));
+            }
         }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -455,6 +459,9 @@ public class TestTopologyUpgrade extends BaseTest {
 
     @Test
     public void testUpgradeArrayTypesWithMoreThanOneColumn() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
@@ -513,6 +520,8 @@ public class TestTopologyUpgrade extends BaseTest {
 
     @Test
     public void testUpgradeTypesWithMoreThanOneColumnOnEdgeArrays() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
@@ -640,6 +649,14 @@ public class TestTopologyUpgrade extends BaseTest {
 
     @Test
     public void testUpgradeArrays() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
+
         Byte[] bytes = new Byte[]{1, 2, 3};
         byte[] bytes2 = new byte[]{1, 2, 3};
         Short[] shorts = new Short[]{1, 2, 3};
@@ -791,11 +808,22 @@ public class TestTopologyUpgrade extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             topologyCheck(sqlgGraph1);
         }
-
     }
 
     @Test
     public void testNonEdgeNonVerticeTablesIgnored() throws Exception {
+        //Drop these tables in case they are hanging around, Sqlg only drops V_ and E_ tables.
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP TABLE IF EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
+            this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("EVENT"));
+        }
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP TABLE IF EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("VIKINGS"));
+        }
+        sqlgGraph.tx().commit();
+
         //with topology
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "john");
         Object idA1 = a1.id();
@@ -805,12 +833,14 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         // Create some user tables that should be ignored by sqlg
-        Connection conn = this.sqlgGraph.tx().getConnection();
+        conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE TABLE EVENT (ID INT)");
+            statement.execute("CREATE TABLE IF NOT EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("EVENT") + "(ID INT)");
         }
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE TABLE VIKINGS (ID INT)");
+            statement.execute("CREATE TABLE IF NOT EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("VIKINGS") + "(ID INT)");
         }
         //Delete the topology
         try (Statement statement = conn.createStatement()) {

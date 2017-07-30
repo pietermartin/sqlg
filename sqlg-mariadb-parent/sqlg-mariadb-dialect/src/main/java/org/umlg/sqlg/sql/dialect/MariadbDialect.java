@@ -3,10 +3,7 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgExceptions;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -15,10 +12,40 @@ import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/07/07
+ * Date: 2017/07/07
  */
 @SuppressWarnings("unused")
 public class MariadbDialect extends BaseSqlDialect {
+
+    @Override
+    public boolean supportsValuesExpression() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsSchemas() {
+        return false;
+    }
+
+    @Override
+    public String createSchemaStatement(String schemaName) {
+        return "CREATE DATABASE IF NOT EXISTS " + maybeWrapInQoutes(schemaName) + " DEFAULT CHARACTER SET latin1 COLLATE latin1_general_cs";
+    }
+
+    @Override
+    public boolean needsTemporaryTableSchema() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsTemporaryTableOnCommitDrop() {
+        return false;
+    }
 
     @Override
     public String sqlInsertEmptyValues() {
@@ -62,13 +89,50 @@ public class MariadbDialect extends BaseSqlDialect {
                     String edgCat = null;
                     String schema = edgeRs.getString(1);
                     String table = edgeRs.getString(3);
-                    edgeTables.add(Triple.of(edgCat, schema, table));
+                    if (table.startsWith(Topology.EDGE_PREFIX)) {
+                        edgeTables.add(Triple.of(edgCat, schema, table));
+                    }
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         return edgeTables;
+    }
+
+    @Override
+    public List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
+                                                                 String tableNamePattern, String columnNamePattern) {
+        List<Triple<String, Integer, String>> columns = new ArrayList<>();
+        try (ResultSet rs = metaData.getColumns(schemaPattern, schemaPattern, tableNamePattern, columnNamePattern)) {
+            while (rs.next()) {
+                String columnName = rs.getString(4);
+                int columnType = rs.getInt(5);
+                String typeName = rs.getString("TYPE_NAME");
+                columns.add(Triple.of(columnName, columnType, typeName));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return columns;
+    }
+
+    @Override
+    public List<Triple<String, Boolean, String>> getIndexInfo(DatabaseMetaData metaData, String catalog,
+                                                              String schema, String table, boolean unique, boolean approximate) {
+
+        List<Triple<String, Boolean, String>> indexes = new ArrayList<>();
+        try (ResultSet indexRs = metaData.getIndexInfo(schema, schema, table, false, true)) {
+            while (indexRs.next()) {
+                String indexName = indexRs.getString("INDEX_NAME");
+                boolean nonUnique = indexRs.getBoolean("NON_UNIQUE");
+                String columnName = indexRs.getString("COLUMN_NAME");
+                indexes.add(Triple.of(indexName, nonUnique, columnName));
+            }
+            return indexes;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -90,7 +154,7 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean schemaExists(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
+    public boolean schemaExists(DatabaseMetaData metadata, String schema) throws SQLException {
         ResultSet schemaRs = metadata.getCatalogs();
         while (schemaRs.next()) {
             String db = schemaRs.getString(1);
@@ -327,47 +391,40 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+    public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return new int[]{Types.BOOLEAN};
             case BYTE:
-                return Types.TINYINT;
+                return new int[]{Types.TINYINT};
             case SHORT:
-                return Types.SMALLINT;
+                return new int[]{Types.SMALLINT};
             case INTEGER:
-                return Types.INTEGER;
+                return new int[]{Types.INTEGER};
             case LONG:
-                return Types.BIGINT;
+                return new int[]{Types.BIGINT};
             case DOUBLE:
-                return Types.DOUBLE;
+                return new int[]{Types.DOUBLE};
             case STRING:
-                return Types.CLOB;
+                return new int[]{Types.CLOB};
             case LOCALDATETIME:
-                return Types.TIMESTAMP;
+                return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
-                return Types.DATE;
+                return new int[]{Types.DATE};
             case LOCALTIME:
-                return Types.TIME;
+                return new int[]{Types.TIME};
+            case ZONEDDATETIME:
+                return new int[]{Types.TIMESTAMP, Types.CLOB};
+            case PERIOD:
+                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
+            case DURATION:
+                return new int[]{Types.BIGINT, Types.INTEGER};
             case JSON:
-                //TODO support other others like Geometry...
-                return Types.OTHER;
+                return new int[]{Types.OTHER};
             case byte_ARRAY:
-                return Types.ARRAY;
-            case boolean_ARRAY:
-                return Types.ARRAY;
-            case short_ARRAY:
-                return Types.ARRAY;
-            case int_ARRAY:
-                return Types.ARRAY;
-            case long_ARRAY:
-                return Types.ARRAY;
-            case float_ARRAY:
-                return Types.ARRAY;
-            case double_ARRAY:
-                return Types.ARRAY;
-            case STRING_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case BYTE_ARRAY:
+                return new int[]{Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -388,9 +445,9 @@ public class MariadbDialect extends BaseSqlDialect {
                 return PropertyType.FLOAT;
             case Types.DOUBLE:
                 return PropertyType.DOUBLE;
-            case Types.VARCHAR:
+            case Types.LONGVARCHAR:
                 return PropertyType.STRING;
-            case Types.TIMESTAMP_WITH_TIMEZONE:
+            case Types.TIMESTAMP:
                 return PropertyType.LOCALDATETIME;
             case Types.DATE:
                 return PropertyType.LOCALDATE;
@@ -568,7 +625,7 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String createTemporaryTableStatement() {
-        return "DECLARE LOCAL TEMPORARY TABLE ";
+        return "CREATE TEMPORARY TABLE " + maybeWrapInQoutes(getPublicSchema()) + ".";
     }
 
     @Override
@@ -673,23 +730,10 @@ public class MariadbDialect extends BaseSqlDialect {
         return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" LONGVARCHAR DEFAULT 'NONE';";
     }
 
-    @Override
-    public Long getPrimaryKeyStartValue() {
-        return 0L;
-    }
-
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
             switch (propertyType) {
                 case LOCALTIME_ARRAY:
-//                    // shit DST for local time
-//                    if (data != null) {
-//                        int a = 0;
-//                        for (Object o : data) {
-//                            data[a++] = shiftDST(((Time) o).toLocalTime());
-//                        }
-//                    }
-                    // fall through
                 case STRING_ARRAY:
                 case long_ARRAY:
                 case LONG_ARRAY:
@@ -767,36 +811,37 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public boolean isSystemIndex(String indexName) {
-        return indexName.startsWith("SYS_IDX_") || indexName.startsWith("SYS_PK") || indexName.endsWith("SYS_FK");
+        return indexName.contains("_ibfk_") || indexName.equals("PRIMARY") ||
+                indexName.endsWith(Topology.IN_VERTEX_COLUMN_END) || indexName.endsWith(Topology.OUT_VERTEX_COLUMN_END);
     }
 
     @Override
-    public  boolean supportsBooleanArrayValues() {
+    public boolean supportsBooleanArrayValues() {
         return false;
     }
 
     @Override
-    public  boolean supportsDoubleArrayValues() {
+    public boolean supportsDoubleArrayValues() {
         return false;
     }
 
     @Override
-    public  boolean supportsFloatArrayValues() {
+    public boolean supportsFloatArrayValues() {
         return false;
     }
 
     @Override
-    public  boolean supportsIntegerArrayValues() {
+    public boolean supportsIntegerArrayValues() {
         return false;
     }
 
     @Override
-    public  boolean supportsShortArrayValues() {
+    public boolean supportsShortArrayValues() {
         return false;
     }
 
     @Override
-    public  boolean supportsLongArrayValues() {
+    public boolean supportsLongArrayValues() {
         return false;
     }
 
@@ -832,6 +877,16 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsZonedDateTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsPeriodArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsDurationArrayValues() {
         return false;
     }
 

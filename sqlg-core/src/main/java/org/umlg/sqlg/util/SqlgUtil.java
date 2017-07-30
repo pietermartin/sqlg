@@ -271,23 +271,16 @@ public class SqlgUtil {
 
 
     //This is called for inserts
-    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, int i, PreparedStatement preparedStatement, Map<String, Pair<PropertyColumn, Object>> properties) throws SQLException {
+    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, int i, PreparedStatement preparedStatement, Map<String, Pair<PropertyType, Object>> properties) throws SQLException {
         i = setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, properties.values());
         return i;
     }
 
-    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<Pair<PropertyColumn, Object>> typeAndValues) throws SQLException {
-        for (Pair<PropertyColumn, Object> pair : typeAndValues) {
-            parameterStartIndex = setKeyValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, ImmutablePair.of(pair.getLeft().getPropertyType(), pair.getRight()));
+    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<Pair<PropertyType, Object>> typeAndValues) throws SQLException {
+        for (Pair<PropertyType, Object> pair : typeAndValues) {
+            parameterStartIndex = setKeyValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, ImmutablePair.of(pair.getLeft(), pair.getRight()));
         }
         return parameterStartIndex;
-    }
-
-    //This is called for inserts
-    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
-        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
-        i = setKeyValuesAsParameter(sqlgGraph, true, i, preparedStatement, typeAndValues);
-        return i;
     }
 
     public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
@@ -298,175 +291,185 @@ public class SqlgUtil {
     }
 
     private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, ImmutablePair<PropertyType, Object> pair) throws SQLException {
-        switch (pair.left) {
-            case BOOLEAN:
-                preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
-                break;
-            case BYTE:
-                preparedStatement.setByte(parameterStartIndex++, (Byte) pair.right);
-                break;
-            case SHORT:
-                preparedStatement.setShort(parameterStartIndex++, (Short) pair.right);
-                break;
-            case INTEGER:
-                preparedStatement.setInt(parameterStartIndex++, (Integer) pair.right);
-                break;
-            case LONG:
-                preparedStatement.setLong(parameterStartIndex++, (Long) pair.right);
-                break;
-            case FLOAT:
-                preparedStatement.setFloat(parameterStartIndex++, (Float) pair.right);
-                break;
-            case DOUBLE:
-                preparedStatement.setDouble(parameterStartIndex++, (Double) pair.right);
-                break;
-            case STRING:
-                preparedStatement.setString(parameterStartIndex++, (String) pair.right);
-                break;
-            case LOCALDATE:
-                preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDate) pair.right).atStartOfDay()));
-                break;
-            case LOCALDATETIME:
-                preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDateTime) pair.right)));
-                break;
-            case ZONEDDATETIME:
-                if (sqlgGraph.getSqlDialect().needsTimeZone()) {
-                    //This is for postgresql that adjust the timestamp to the server's timezone
-                    preparedStatement.setTimestamp(
-                            parameterStartIndex++,
-                            Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()),
-                            Calendar.getInstance(TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone().getId()))
-                    );
-                } else {
-                    preparedStatement.setTimestamp(
-                            parameterStartIndex++,
-                            Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime())
-                    );
-                }
-                if (mod)
-                    preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
-                break;
-            case LOCALTIME:
-                //loses nano seconds
-                preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
-                break;
-            case PERIOD:
-                preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
-                preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getMonths());
-                preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getDays());
-                break;
-            case DURATION:
-                preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());
-                preparedStatement.setInt(parameterStartIndex++, ((Duration) pair.right).getNano());
-                break;
-            case JSON:
-                sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
-                parameterStartIndex++;
-                break;
-            case POINT:
-                sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
-                parameterStartIndex++;
-                break;
-            case LINESTRING:
-                sqlgGraph.getSqlDialect().setLineString(preparedStatement, parameterStartIndex, pair.getRight());
-                parameterStartIndex++;
-                break;
-            case POLYGON:
-                sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
-                parameterStartIndex++;
-                break;
-            case GEOGRAPHY_POINT:
-                sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
-                parameterStartIndex++;
-                break;
-            case GEOGRAPHY_POLYGON:
-                sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
-                parameterStartIndex++;
-                break;
-            case BOOLEAN_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case boolean_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.boolean_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case BYTE_ARRAY:
-                byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) pair.getRight());
-                preparedStatement.setBytes(parameterStartIndex++, byteArray);
-                break;
-            case byte_ARRAY:
-                preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
-                break;
-            case SHORT_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.SHORT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case short_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.short_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case INTEGER_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.INTEGER_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case int_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case LONG_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LONG_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case long_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case FLOAT_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.FLOAT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case float_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.float_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case DOUBLE_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.DOUBLE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case double_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.double_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case STRING_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case LOCALDATETIME_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case LOCALDATE_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case LOCALTIME_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALTIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                break;
-            case ZONEDDATETIME_ARRAY:
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                if (mod) {
-                    List<String> zones = (Arrays.asList((ZonedDateTime[]) pair.right)).stream().map(z -> z.getZone().getId()).collect(Collectors.toList());
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, zones.toArray()));
-                }
-                break;
-            case DURATION_ARRAY:
-                Duration[] durations = (Duration[]) pair.getRight();
-                List<Long> seconds = Arrays.stream(durations).map(Duration::getSeconds).collect(Collectors.toList());
-                List<Integer> nanos = Arrays.stream(durations).map(Duration::getNano).collect(Collectors.toList());
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
-                break;
-            case PERIOD_ARRAY:
-                Period[] periods = (Period[]) pair.getRight();
-                List<Integer> years = Arrays.stream(periods).map(Period::getYears).collect(Collectors.toList());
-                List<Integer> months = Arrays.stream(periods).map(Period::getMonths).collect(Collectors.toList());
-                List<Integer> days = Arrays.stream(periods).map(Period::getDays).collect(Collectors.toList());
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
-                break;
-            case JSON_ARRAY:
-                JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
-                sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
-                break;
-            default:
-                throw new IllegalStateException("Unhandled type " + pair.left.name());
+        if (pair.right == null) {
+            int[] sqlTypes = sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(pair.left);
+            for (int sqlType : sqlTypes) {
+                preparedStatement.setNull(parameterStartIndex++, sqlType);
+            }
+        } else {
+            switch (pair.left) {
+                case BOOLEAN:
+                    preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
+                    break;
+                case BYTE:
+                    preparedStatement.setByte(parameterStartIndex++, (Byte) pair.right);
+                    break;
+                case SHORT:
+                    preparedStatement.setShort(parameterStartIndex++, (Short) pair.right);
+                    break;
+                case INTEGER:
+                    preparedStatement.setInt(parameterStartIndex++, (Integer) pair.right);
+                    break;
+                case LONG:
+                    preparedStatement.setLong(parameterStartIndex++, (Long) pair.right);
+                    break;
+                case FLOAT:
+                    preparedStatement.setFloat(parameterStartIndex++, (Float) pair.right);
+                    break;
+                case DOUBLE:
+                    preparedStatement.setDouble(parameterStartIndex++, (Double) pair.right);
+                    break;
+                case STRING:
+                    preparedStatement.setString(parameterStartIndex++, (String) pair.right);
+                    break;
+                case LOCALDATE:
+                    preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDate) pair.right).atStartOfDay()));
+                    break;
+                case LOCALDATETIME:
+                    preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDateTime) pair.right)));
+                    break;
+                case ZONEDDATETIME:
+                    if (sqlgGraph.getSqlDialect().needsTimeZone()) {
+                        //This is for postgresql that adjust the timestamp to the server's timezone
+                        ZonedDateTime zonedDateTime = (ZonedDateTime) pair.right;
+                        preparedStatement.setTimestamp(
+                                parameterStartIndex++,
+                                Timestamp.valueOf(zonedDateTime.toLocalDateTime()),
+                                Calendar.getInstance(TimeZone.getTimeZone(zonedDateTime.getZone()))
+                        );
+                    } else {
+                        preparedStatement.setTimestamp(
+                                parameterStartIndex++,
+                                Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime())
+                        );
+                    }
+                    if (mod) {
+                        TimeZone tz = TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone());
+                        preparedStatement.setString(parameterStartIndex++, tz.getID());
+                    }
+                    break;
+                case LOCALTIME:
+                    //loses nano seconds
+                    preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
+                    break;
+                case PERIOD:
+                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
+                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getMonths());
+                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getDays());
+                    break;
+                case DURATION:
+                    preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());
+                    preparedStatement.setInt(parameterStartIndex++, ((Duration) pair.right).getNano());
+                    break;
+                case JSON:
+                    sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case POINT:
+                    sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case LINESTRING:
+                    sqlgGraph.getSqlDialect().setLineString(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case POLYGON:
+                    sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case GEOGRAPHY_POINT:
+                    sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case GEOGRAPHY_POLYGON:
+                    sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case BOOLEAN_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case boolean_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.boolean_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case BYTE_ARRAY:
+                    byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) pair.getRight());
+                    preparedStatement.setBytes(parameterStartIndex++, byteArray);
+                    break;
+                case byte_ARRAY:
+                    preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
+                    break;
+                case SHORT_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.SHORT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case short_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.short_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case INTEGER_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.INTEGER_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case int_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case LONG_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LONG_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case long_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case FLOAT_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.FLOAT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case float_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.float_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case DOUBLE_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.DOUBLE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case double_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.double_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case STRING_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case LOCALDATETIME_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case LOCALDATE_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case LOCALTIME_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALTIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    break;
+                case ZONEDDATETIME_ARRAY:
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    if (mod) {
+                        List<String> zones = (Arrays.asList((ZonedDateTime[]) pair.right)).stream().map(z -> z.getZone().getId()).collect(Collectors.toList());
+                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, zones.toArray()));
+                    }
+                    break;
+                case DURATION_ARRAY:
+                    Duration[] durations = (Duration[]) pair.getRight();
+                    List<Long> seconds = Arrays.stream(durations).map(Duration::getSeconds).collect(Collectors.toList());
+                    List<Integer> nanos = Arrays.stream(durations).map(Duration::getNano).collect(Collectors.toList());
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
+                    break;
+                case PERIOD_ARRAY:
+                    Period[] periods = (Period[]) pair.getRight();
+                    List<Integer> years = Arrays.stream(periods).map(Period::getYears).collect(Collectors.toList());
+                    List<Integer> months = Arrays.stream(periods).map(Period::getMonths).collect(Collectors.toList());
+                    List<Integer> days = Arrays.stream(periods).map(Period::getDays).collect(Collectors.toList());
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
+                    break;
+                case JSON_ARRAY:
+                    JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
+                    break;
+                default:
+                    throw new IllegalStateException("Unhandled type " + pair.left.name());
+            }
         }
         return parameterStartIndex;
     }
@@ -553,6 +556,16 @@ public class SqlgUtil {
         return result;
     }
 
+    /**
+     * Validates the key values and converts it into a Triple with three maps.
+     * The left  map is a map of keys together with their PropertyType.
+     * The middle map is a map of keys together with their values.
+     * The right map is a map of keys with values where the values are guaranteed not to be null.
+     *
+     * @param sqlDialect The dialect.
+     * @param keyValues  The key value pairs.
+     * @return A Triple with 3 maps.
+     */
     public static Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues) {
         Map<String, Object> resultAllValues = new LinkedHashMap<>();
         Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
@@ -824,72 +837,78 @@ public class SqlgUtil {
 //                }
 //            } else {
 
-                //Drop all the edges
-                List<Triple<String, String, String>> edgeTables = sqlDialect.getEdgeTables(metadata);
-                for (Triple<String, String, String> edgeTable : edgeTables) {
-                    String db = edgeTable.getLeft();
-                    String schema = edgeTable.getMiddle();
-                    String table = edgeTable.getRight();
-                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
-                        StringBuilder sql = new StringBuilder("DROP TABLE ");
-                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                        sql.append(".");
-                        sql.append(sqlDialect.maybeWrapInQoutes(table));
-                        sql.append(" CASCADE");
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        }
+            //Drop all the edges
+            List<Triple<String, String, String>> edgeTables = sqlDialect.getEdgeTables(metadata);
+            for (Triple<String, String, String> edgeTable : edgeTables) {
+                String db = edgeTable.getLeft();
+                String schema = edgeTable.getMiddle();
+                String table = edgeTable.getRight();
+                if (!sqlDialect.getInternalSchemas().contains(schema)) {
+                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                    sql.append(".");
+                    sql.append(sqlDialect.maybeWrapInQoutes(table));
+                    sql.append(" CASCADE");
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
                     }
                 }
-                //Drop all the vertices
-                List<Triple<String, String, String>> vertexTables = sqlDialect.getVertexTables(metadata);
-                for (Triple<String, String, String> vertexTable : vertexTables) {
-                    String db = vertexTable.getLeft();
-                    String schema = vertexTable.getMiddle();
-                    String table = vertexTable.getRight();
-                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
-                        StringBuilder sql = new StringBuilder("DROP TABLE ");
-                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                        sql.append(".");
-                        sql.append(sqlDialect.maybeWrapInQoutes(table));
-                        sql.append(" CASCADE");
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        }
+            }
+            //Drop all the vertices
+            List<Triple<String, String, String>> vertexTables = sqlDialect.getVertexTables(metadata);
+            for (Triple<String, String, String> vertexTable : vertexTables) {
+                String db = vertexTable.getLeft();
+                String schema = vertexTable.getMiddle();
+                String table = vertexTable.getRight();
+                if (!sqlDialect.getInternalSchemas().contains(schema)) {
+                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                    sql.append(".");
+                    sql.append(sqlDialect.maybeWrapInQoutes(table));
+                    sql.append(" CASCADE");
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
                     }
                 }
+            }
 
-                List<String> schemaNames = sqlDialect.getSchemaNames(metadata);
-                for (String schema : schemaNames) {
-                    if (!sqlDialect.getInternalSchemas().contains(schema) && !sqlDialect.getPublicSchema().equals(schema)) {
-                        StringBuilder sql = new StringBuilder("DROP SCHEMA ");
-                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                        if (sqlDialect.needsSchemaDropCascade()) {
-                            sql.append(" CASCADE");
-                        }
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        }
+            List<String> schemaNames = sqlDialect.getSchemaNames(metadata);
+            for (String schema : schemaNames) {
+                if (!sqlDialect.getInternalSchemas().contains(schema) && !sqlDialect.getPublicSchema().equals(schema)) {
+
+                    StringBuilder sql = new StringBuilder("DROP ");
+                    if (sqlDialect.supportsSchemas()) {
+                        sql.append("SCHEMA ");
+                    } else {
+                        sql.append("DATABASE ");
+                    }
+                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                    if (sqlDialect.needsSchemaDropCascade()) {
+                        sql.append(" CASCADE");
+                    }
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
                     }
                 }
+            }
 //            }
         } catch (Exception e) {
             throw new RuntimeException(e);

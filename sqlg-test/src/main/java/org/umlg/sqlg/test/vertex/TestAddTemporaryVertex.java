@@ -1,6 +1,5 @@
-package org.umlg.sqlg.test.batch;
+package org.umlg.sqlg.test.vertex;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,22 +12,15 @@ import java.sql.SQLException;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- * Date: 2017/07/27
+ * Date: 2017/07/26
  */
-public class TestBatchTemporaryVertex extends BaseTest {
+public class TestAddTemporaryVertex extends BaseTest {
 
     @Test
-    public void testBatchTempVertex() throws SQLException {
-        int INSERT_COUNT = 1_000_000;
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < INSERT_COUNT; i++) {
+    public void testAddTemporaryVertex() throws SQLException {
+        for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addTemporaryVertex(T.label, "A", "name", "halo");
         }
-        this.sqlgGraph.tx().flush();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
         int count = 0;
         Connection conn = this.sqlgGraph.tx().getConnection();
         String sql;
@@ -45,7 +37,8 @@ public class TestBatchTemporaryVertex extends BaseTest {
                 Assert.assertEquals("halo", resultSet.getString(2));
             }
         }
-        Assert.assertEquals(INSERT_COUNT, count);
+        Assert.assertEquals(10, count);
+        this.sqlgGraph.tx().commit();
     }
 
 }

@@ -18,7 +18,7 @@ public interface SqlDialect {
 
     static final String INDEX_POSTFIX = "_sqlgIdx";
 
-    default boolean supportDistribution() {
+    default boolean supportsDistribution() {
         return false;
     }
 
@@ -59,7 +59,7 @@ public interface SqlDialect {
 
     String[] propertyTypeToSqlDefinition(PropertyType propertyType);
 
-    int propertyTypeToJavaSqlType(PropertyType propertyType);
+    int[] propertyTypeToJavaSqlType(PropertyType propertyType);
 
     String getForeignKeyTypeDefinition();
 
@@ -124,6 +124,14 @@ public interface SqlDialect {
     }
 
     default boolean supportsLocalDateTimeArrayValues() {
+        return true;
+    }
+
+    default boolean supportsPeriodArrayValues() {
+        return true;
+    }
+
+    default boolean supportsDurationArrayValues() {
         return true;
     }
 
@@ -287,8 +295,8 @@ public interface SqlDialect {
     /**
      * @return the statement head to create a schema
      */
-    default String createSchemaStatement() {
-        return "CREATE SCHEMA ";
+    default String createSchemaStatement(String schemaName) {
+        return "CREATE SCHEMA " + maybeWrapInQoutes(schemaName);
     }
 
     /**
@@ -360,11 +368,20 @@ public interface SqlDialect {
     String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName);
 
     //This is needed for mariadb, which does not support schemas, so need to drop the database instead
-    default boolean supportSchemas() {
+    default boolean supportsSchemas() {
         return true;
     }
 
     default boolean supportsBatchMode() {
+        return false;
+    }
+
+    /**
+     * This is primarily for Postgresql's copy command.
+     *
+     * @return true if data can be streamed in via a socket.
+     */
+    default boolean supportsStreamingBatchMode() {
         return false;
     }
 
@@ -453,6 +470,24 @@ public interface SqlDialect {
     String afterCreateTemporaryTableStatement();
 
     /**
+     * For Postgresql/Hsqldb and H2 temporary tables have no schema.
+     * For Mariadb the schema/database must be specified.
+     * @return true is a schema/database must be specified.
+     */
+    default boolean needsTemporaryTableSchema() {
+        return false;
+    }
+
+    /**
+     * MariaDb does not drop the temporary table after a commit. It only drops it when the session ends.
+     * Sqlg will manually drop the temporary table for Mariadb as we need the same semantics across all dialects.
+     * @return true if temporary tables are dropped on commit.
+     */
+    default boolean supportsTemporaryTableOnCommitDrop() {
+        return true;
+    }
+
+    /**
      * These are internal columns used by sqlg that must be ignored when loading elements.
      * eg. '_copy_dummy' when doing using the copy command on postgresql.
      *
@@ -463,11 +498,11 @@ public interface SqlDialect {
     }
 
     default String sqlgSqlgSchemaCreationScript() {
-        return this.createSchemaStatement() + this.maybeWrapInQoutes("sqlg_schema");
+        return this.createSchemaStatement(Schema.SQLG_SCHEMA) + (needsSemicolon() ? ";" : "");
     }
 
     default String sqlgGuiSchemaCreationScript() {
-        return this.createSchemaStatement() + this.maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + (needsSemicolon() ? ";" : "");
+        return this.createSchemaStatement(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + (needsSemicolon() ? ";" : "");
     }
 
     List<String> sqlgTopologyCreationScripts();
@@ -518,8 +553,8 @@ public interface SqlDialect {
         throw new UnsupportedOperationException("FullText search is not supported on this database");
     }
 
-    default boolean schemaExists(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
-        ResultSet schemaRs = metadata.getSchemas(catalog, schema);
+    default boolean schemaExists(DatabaseMetaData metadata, String schema) throws SQLException {
+        ResultSet schemaRs = metadata.getSchemas(null, schema);
         return schemaRs.next();
     }
 
@@ -545,6 +580,17 @@ public interface SqlDialect {
      * @return A triple holding the catalog, thea schema and the table.
      */
     List<Triple<String, String, String>> getEdgeTables(DatabaseMetaData metaData);
+
+    /**
+     * Get the columns for a table.
+     * @param metaData JDBC meta data.
+     * @return The columns.
+     */
+    List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
+                         String tableNamePattern, String columnNamePattern);
+
+    List<Triple<String, Boolean, String>> getIndexInfo(DatabaseMetaData metaData, String catalog,
+                                                       String schema, String table, boolean unique, boolean approximate);
 
     /**
      * extract all indices in one go
@@ -626,4 +672,12 @@ public interface SqlDialect {
      * @return true if the PropertyType is supported else false.
      */
     boolean supportsType(PropertyType propertyType);
+
+    /**
+     * Returns the number of parameters that can be passed into a sql 'IN' statement.
+     *
+     * @return
+     */
+    int sqlInParameterLimit();
+
 }

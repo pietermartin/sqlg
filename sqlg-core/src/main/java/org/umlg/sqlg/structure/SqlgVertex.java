@@ -26,16 +26,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
     /**
-     * Called from SqlG.addVertex
-     *
-     * @param sqlgGraph
-     * @param schema
-     * @param table
-     * @param keyValueMapPair
+     * @param sqlgGraph       The graph.
+     * @param temporary       Indicates if it is a temporary vertex.
+     * @param streaming       Indicates if the vertex is being streamed in. This only works if the transaction is in streaming mode.
+     * @param schema          The database schema.
+     * @param table           The table name.
+     * @param keyValueMapPair The properties.
      */
-    public SqlgVertex(SqlgGraph sqlgGraph, boolean complete, String schema, String table, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+    public SqlgVertex(SqlgGraph sqlgGraph, boolean temporary, boolean streaming, String schema, String table, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
         super(sqlgGraph, schema, table);
-        insertVertex(complete, keyValueMapPair);
+        insertVertex(temporary, streaming, keyValueMapPair);
         if (!sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().add(this);
         }
@@ -61,10 +61,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     /**
      * This is the primary constructor to createVertexLabel a vertex that already exist
      *
-     * @param sqlgGraph
-     * @param id
-     * @param schema
-     * @param table
+     * @param sqlgGraph The graph.
+     * @param id        The vertex's id.
+     * @param schema    The schema the vertex is in.
+     * @param table     The vertex's table/label.
      */
     SqlgVertex(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
@@ -77,7 +77,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         return super.label();
     }
-
 
     public Edge addEdgeWithMap(String label, Vertex inVertex, Map<String, Object> keyValues) {
         Object[] parameters = SqlgUtil.mapToStringKeyValues(keyValues);
@@ -283,45 +282,59 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    private void insertVertex(boolean complete, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+    private void insertVertex(boolean temporary, boolean streaming, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
         Map<String, Object> keyAllValueMap = keyValueMapPair.getLeft();
         Map<String, Object> keyNotNullValueMap = keyValueMapPair.getRight();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddVertex(complete, keyAllValueMap);
+            internalBatchAddVertex(temporary, streaming, keyAllValueMap);
         } else {
-            internalAddVertex(keyNotNullValueMap);
+            internalAddVertex(temporary, keyNotNullValueMap);
         }
         //Cache the properties
         this.properties.putAll(keyNotNullValueMap);
     }
 
-    private void internalBatchAddVertex(boolean complete, Map<String, Object> keyValueMap) {
+    private void internalBatchAddVertex(boolean temporary, boolean streaming, Map<String, Object> keyValueMap) {
         Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
-        this.sqlgGraph.tx().getBatchManager().addVertex(complete, this, keyValueMap);
+        this.sqlgGraph.tx().getBatchManager().addVertex(temporary, streaming, this, keyValueMap);
     }
 
-    private void internalAddVertex(Map<String, Object> keyValueMap) {
+    private void internalAddVertex(boolean temporary, Map<String, Object> keyValueMap) {
         StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
-        sql.append(".");
+        //temporary tables have no schema
+        if (!temporary || this.sqlgGraph.getSqlDialect().needsTemporaryTableSchema()) {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
+            sql.append(".");
+        }
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + this.table));
 
-        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
-        Map<String, PropertyColumn> propertyColumns = this.sqlgGraph.getTopology()
-                .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
-                .getProperties();
+        Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
+        Map<String, PropertyColumn> propertyColumns = null;
         if (!keyValueMap.isEmpty()) {
-            //sync up the keyValueMap with its PropertyColumn
-            for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
-                PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
-                Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
-                propertyColumnValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
+            if (!temporary) {
+                propertyColumns = this.sqlgGraph.getTopology()
+                        .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                        .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
+                        .getProperties();
+                //sync up the keyValueMap with its PropertyColumn
+                for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
+                    PropertyType propertyType = propertyColumns.get(keyValueEntry.getKey()).getPropertyType();
+                    Pair<PropertyType, Object> propertyTypeObjectPair = Pair.of(propertyType, keyValueEntry.getValue());
+                    propertyTypeValueMap.put(keyValueEntry.getKey(), propertyTypeObjectPair);
+                }
+            } else {
+                Map<String, PropertyType> properties = this.sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + this.table);
+                //sync up the keyValueMap with its PropertyColumn
+                for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
+                    PropertyType propertyType = properties.get(keyValueEntry.getKey());
+                    Pair<PropertyType, Object> propertyTypeObjectPair = Pair.of(propertyType, keyValueEntry.getValue());
+                    propertyTypeValueMap.put(keyValueEntry.getKey(), propertyTypeObjectPair);
+                }
             }
-            sql.append(" ( ");
-            writeColumnNames(propertyColumnValueMap, sql);
-            sql.append(") VALUES ( ");
-            writeColumnParameters(propertyColumnValueMap, sql);
+            sql.append(" (");
+            writeColumnNames(propertyTypeValueMap, sql);
+            sql.append(") VALUES (");
+            writeColumnParameters(propertyTypeValueMap, sql);
             sql.append(")");
         } else {
             sql.append(this.sqlgGraph.getSqlDialect().sqlInsertEmptyValues());
@@ -335,7 +348,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyColumnValueMap);
+            SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
@@ -343,7 +356,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             } else {
                 throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", Topology.VERTICES));
             }
-            insertGlobalUniqueIndex(keyValueMap, propertyColumns);
+            if (propertyColumns != null) {
+                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

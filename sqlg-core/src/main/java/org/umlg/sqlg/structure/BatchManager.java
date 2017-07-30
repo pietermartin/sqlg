@@ -96,8 +96,8 @@ public class BatchManager {
 
     }
 
-    void addVertex(boolean streaming, SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
-        SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable());
+    void addVertex(boolean temporary, boolean streaming, SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
+        SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable(), temporary);
         if (!streaming) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> pairs = this.vertexCache.get(schemaTable);
             if (pairs == null) {
@@ -197,11 +197,11 @@ public class BatchManager {
         this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
         this.close();
         this.isBusyFlushing = false;
-        this.sqlDialect.flushVertexGlobalUniqueIndexes(this.sqlgGraph, this.vertexCache);
-        this.sqlDialect.flushEdgeGlobalUniqueIndexes(this.sqlgGraph, this.edgeCache);
-        this.sqlDialect.flushVertexGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
-        this.sqlDialect.flushEdgeGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.edgePropertyCache);
-        this.sqlDialect.flushRemovedGlobalUniqueIndexVertices(this.sqlgGraph, this.removeVertexCache);
+//        this.sqlDialect.flushVertexGlobalUniqueIndexes(this.sqlgGraph, this.vertexCache);
+//        this.sqlDialect.flushEdgeGlobalUniqueIndexes(this.sqlgGraph, this.edgeCache);
+//        this.sqlDialect.flushVertexGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
+//        this.sqlDialect.flushEdgeGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.edgePropertyCache);
+//        this.sqlDialect.flushRemovedGlobalUniqueIndexVertices(this.sqlgGraph, this.removeVertexCache);
         this.clear();
         return verticesRange;
     }
