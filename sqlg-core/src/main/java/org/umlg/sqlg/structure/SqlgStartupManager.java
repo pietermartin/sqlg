@@ -553,7 +553,7 @@ class SqlgStartupManager {
     private void createDefaultSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE SCHEMA IF NOT EXISTS " + this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()) + ";");
+            statement.execute(this.sqlDialect.createSchemaStatement(this.sqlDialect.getPublicSchema()));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

@@ -452,6 +452,9 @@ public interface SqlDialect {
     default boolean isPostgresql() {
         return false;
     }
+    default boolean isMariaDb() {
+        return false;
+    }
 
     <T> T getGis(SqlgGraph sqlgGraph);
 
@@ -679,5 +682,6 @@ public interface SqlDialect {
      * @return
      */
     int sqlInParameterLimit();
+
 
 }

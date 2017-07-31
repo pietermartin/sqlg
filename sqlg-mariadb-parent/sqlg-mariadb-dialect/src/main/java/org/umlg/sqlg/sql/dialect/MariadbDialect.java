@@ -18,6 +18,11 @@ import java.util.*;
 public class MariadbDialect extends BaseSqlDialect {
 
     @Override
+    public boolean isMariaDb() {
+        return true;
+    }
+
+    @Override
     public boolean supportsValuesExpression() {
         return false;
     }

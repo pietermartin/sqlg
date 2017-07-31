@@ -987,7 +987,10 @@ public class SchemaTableTree {
                     result.append(" AND (");
                 }
                 WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-                result.append(" " + whereClause.toSql(sqlgGraph, this, hasContainer) + ")");
+                result.append(" ").append(whereClause.toSql(sqlgGraph, this, hasContainer)).append(")");
+                if (sqlgGraph.getSqlDialect().isMariaDb()) {
+                    result.append(" COLLATE latin1_general_cs");
+                }
             }
         }
         return result.toString();
