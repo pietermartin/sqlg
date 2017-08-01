@@ -16,6 +16,26 @@ import java.util.*;
  */
 @SuppressWarnings("unused")
 public class MariadbDialect extends BaseSqlDialect {
+    
+    @Override
+    public int getMaximumSchemaNameLength() {
+        return 63;
+    }
+
+    @Override
+    public int getMaximumTableNameLength() {
+        return 63;
+    }
+
+    @Override
+    public int getMaximumColumnNameLength() {
+        return 63;
+    }
+
+    @Override
+    public int getMaximumIndexNameLength() {
+        return 63;
+    }
 
     @Override
     public boolean isMariaDb() {

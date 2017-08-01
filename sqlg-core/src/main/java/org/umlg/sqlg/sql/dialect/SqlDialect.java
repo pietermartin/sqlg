@@ -413,15 +413,19 @@ public interface SqlDialect {
     default void validateColumnName(String column) {
     }
 
-    default int getMinimumSchemaNameLength() {
+    default int getMaximumSchemaNameLength() {
         return Integer.MAX_VALUE;
     }
 
-    default int getMinimumTableNameLength() {
+    default int getMaximumTableNameLength() {
         return Integer.MAX_VALUE;
     }
 
-    default int getMinimumColumnNameLength() {
+    default int getMaximumColumnNameLength() {
+        return Integer.MAX_VALUE;
+    }
+
+    default int getMaximumIndexNameLength() {
         return Integer.MAX_VALUE;
     }
 

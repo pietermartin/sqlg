@@ -150,7 +150,6 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
-
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testGlobalUniqueIndexOnEdge() {

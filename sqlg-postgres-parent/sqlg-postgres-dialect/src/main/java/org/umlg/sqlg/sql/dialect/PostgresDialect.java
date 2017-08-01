@@ -2308,13 +2308,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     public void validateSchemaName(String schema) {
-        if (schema.length() > getMinimumSchemaNameLength()) {
+        if (schema.length() > getMaximumSchemaNameLength()) {
             throw SqlgExceptions.invalidSchemaName("Postgresql schema names can only be 63 characters. " + schema + " exceeds that");
         }
     }
 
     public void validateTableName(String table) {
-        if (table.length() > getMinimumTableNameLength()) {
+        if (table.length() > getMaximumTableNameLength()) {
             throw SqlgExceptions.invalidTableName("Postgresql table names can only be 63 characters. " + table + " exceeds that");
         }
     }
@@ -2322,20 +2322,28 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public void validateColumnName(String column) {
         super.validateColumnName(column);
-        if (column.length() > getMinimumColumnNameLength()) {
+        if (column.length() > getMaximumColumnNameLength()) {
             throw SqlgExceptions.invalidColumnName("Postgresql column names can only be 63 characters. " + column + " exceeds that");
         }
     }
 
-    public int getMinimumSchemaNameLength() {
+    @Override
+    public int getMaximumSchemaNameLength() {
         return 63;
     }
 
-    public int getMinimumTableNameLength() {
+    @Override
+    public int getMaximumTableNameLength() {
         return 63;
     }
 
-    public int getMinimumColumnNameLength() {
+    @Override
+    public int getMaximumColumnNameLength() {
+        return 63;
+    }
+
+    @Override
+    public int getMaximumIndexNameLength() {
         return 63;
     }
 

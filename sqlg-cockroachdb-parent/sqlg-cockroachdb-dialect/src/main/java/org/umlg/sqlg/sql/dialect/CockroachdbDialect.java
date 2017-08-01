@@ -1342,13 +1342,13 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     public void validateSchemaName(String schema) {
-        if (schema.length() > getMinimumSchemaNameLength()) {
+        if (schema.length() > getMaximumSchemaNameLength()) {
             throw SqlgExceptions.invalidSchemaName("Postgresql schema names can only be 63 characters. " + schema + " exceeds that");
         }
     }
 
     public void validateTableName(String table) {
-        if (table.length() > getMinimumTableNameLength()) {
+        if (table.length() > getMaximumTableNameLength()) {
             throw SqlgExceptions.invalidTableName("Postgresql table names can only be 63 characters. " + table + " exceeds that");
         }
     }
@@ -1356,20 +1356,20 @@ public class CockroachdbDialect extends BaseSqlDialect {
     @Override
     public void validateColumnName(String column) {
         super.validateColumnName(column);
-        if (column.length() > getMinimumColumnNameLength()) {
+        if (column.length() > getMaximumColumnNameLength()) {
             throw SqlgExceptions.invalidColumnName("Postgresql column names can only be 63 characters. " + column + " exceeds that");
         }
     }
 
-    public int getMinimumSchemaNameLength() {
+    public int getMaximumSchemaNameLength() {
         return 63;
     }
 
-    public int getMinimumTableNameLength() {
+    public int getMaximumTableNameLength() {
         return 63;
     }
 
-    public int getMinimumColumnNameLength() {
+    public int getMaximumColumnNameLength() {
         return 63;
     }
 
