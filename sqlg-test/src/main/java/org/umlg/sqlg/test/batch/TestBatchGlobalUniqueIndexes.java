@@ -42,7 +42,7 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 1; i < 1001; i++) {
-            this.sqlgGraph.addVertex(T.label, "A", "namea", "a" + i);
+            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "namea", "a" + i);
         }
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(3000, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
@@ -101,6 +101,7 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "namea", "a");
             this.sqlgGraph.tx().commit();
         } catch (Exception e) {
+            e.printStackTrace();
             Assert.fail("GlobalUniqueIndex should not fire");
         }
         testVertexUniqueConstraintUpdateNormalBatchMode_assert(this.sqlgGraph);
