@@ -883,7 +883,6 @@ public class SqlgUtil {
                     }
                 }
             }
-            conn.commit();
 
             List<String> schemaNames = sqlDialect.getSchemaNames(metadata);
             for (String schema : schemaNames) {
