@@ -40,11 +40,10 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     static EdgeLabel createEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties);
-        if (!inVertexLabel.getSchema().isSqlgSchema()) {
-            edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
-        }
+        edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
         edgeLabel.committed = false;
         return edgeLabel;
     }

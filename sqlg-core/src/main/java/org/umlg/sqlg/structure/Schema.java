@@ -220,6 +220,13 @@ public class Schema implements TopologyInf {
         SchemaTable foreignKeyIn = SchemaTable.of(inVertexSchema.name, inVertexLabel.getLabel());
 
         TopologyManager.addEdgeLabel(this.sqlgGraph, this.getName(), EDGE_PREFIX + edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
+        if (this.sqlgGraph.getSqlDialect().needsSchemaCreationPrecommit()) {
+            try {
+                this.sqlgGraph.tx().getConnection().commit();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return outVertexLabel.addEdgeLabel(edgeLabelName, inVertexLabel, columns);
     }
 

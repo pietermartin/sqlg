@@ -589,32 +589,7 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
-    }
-
-    @Override
-    public void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString) {
-        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
-    }
-
-    @Override
-    public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
-    }
-
-    @Override
-    public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
-    }
-
-    @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
-    }
-
-    @Override
-    public <T> T getGis(SqlgGraph sqlgGraph) {
         throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
     }
 

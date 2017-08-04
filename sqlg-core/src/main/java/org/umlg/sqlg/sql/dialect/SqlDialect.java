@@ -445,13 +445,21 @@ public interface SqlDialect {
 
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
 
-    void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    default void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.POINT);
+    }
 
-    void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString);
+    default void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.LINESTRING);
+    }
 
-    void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    default void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.POLYGON);
+    }
 
-    void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    default void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.GEOGRAPHY_POINT);
+    }
 
     default boolean isPostgresql() {
         return false;
@@ -460,7 +468,9 @@ public interface SqlDialect {
         return false;
     }
 
-    <T> T getGis(SqlgGraph sqlgGraph);
+    default <T> T getGis(SqlgGraph sqlgGraph) {
+        throw SqlgExceptions.gisNotSupportedException();
+    }
 
     void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
 
@@ -687,5 +697,14 @@ public interface SqlDialect {
      */
     int sqlInParameterLimit();
 
+    /**
+     * This is for Cockroachdb that only allows partial transactional schema creation.
+     * It to create schema elements if the transtion has already been written to.
+     *
+     * @return false if there is no need to force a commit before schema creation.
+     */
+    default boolean needsSchemaCreationPrecommit() {
+        return false;
+    }
 
 }

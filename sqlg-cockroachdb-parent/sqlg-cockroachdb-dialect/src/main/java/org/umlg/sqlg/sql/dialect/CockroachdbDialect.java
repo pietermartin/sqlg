@@ -8,10 +8,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.postgresql.PGConnection;
-import org.postgresql.PGNotification;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -24,12 +21,8 @@ import java.io.IOException;
 import java.sql.*;
 import java.sql.Date;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
 import static org.umlg.sqlg.structure.Topology.*;
 
@@ -40,22 +33,8 @@ import static org.umlg.sqlg.structure.Topology.*;
 @SuppressWarnings("unused")
 public class CockroachdbDialect extends BaseSqlDialect {
 
-    private static final String BATCH_NULL = "";
-    private static final String COPY_COMMAND_DELIMITER = "\t";
-    //this strange character is apparently an illegal json char so its good as a quote
-    private static final String COPY_COMMAND_QUOTE = "e'\\x01'";
-    private static final char QUOTE = 0x01;
-    private static final char ESCAPE = '\\';
     private static final int PARAMETER_LIMIT = 32767;
-    private static final String COPY_DUMMY = "_copy_dummy";
     private Logger logger = LoggerFactory.getLogger(CockroachdbDialect.class.getName());
-    private PropertyType postGisType;
-
-    private ScheduledFuture<?> future;
-    private Semaphore listeningSemaphore;
-    private ExecutorService executorService;
-    private ScheduledExecutorService scheduledExecutorService;
-    private TopologyChangeListener listener;
 
     public CockroachdbDialect() {
         super();
@@ -75,7 +54,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
     public boolean supportsSchemas() {
         return false;
     }
-    
+
     @Override
     public String dialectName() {
         return "Postgresql";
@@ -916,36 +895,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
         }
     }
 
-    /**
-     * this follows the PostgreSQL rules at https://www.postgresql.org/docs/current/static/sql-copy.html#AEN77663
-     * "If the value contains the delimiter character, the QUOTE character, the NULL string, a carriage return,
-     * or line feed character, then the whole value is prefixed and suffixed by the QUOTE character,
-     * and any occurrence within the value of a QUOTE character or the ESCAPE character is preceded
-     * by the escape character."
-     *
-     * @param s
-     * @return
-     */
-    private String escapeSpecialCharacters(String s) {
-        StringBuilder sb = new StringBuilder();
-        boolean needEscape = s.length() == 0; // escape empty strings
-        for (int a = 0; a < s.length(); a++) {
-            char c = s.charAt(a);
-            if (c == '\n' || c == '\r' || c == 0 || c == COPY_COMMAND_DELIMITER.charAt(0)) {
-                needEscape = true;
-            }
-            if (c == ESCAPE || c == QUOTE) {
-                needEscape = true;
-                sb.append(ESCAPE);
-            }
-            sb.append(c);
-        }
-        if (needEscape) {
-            return QUOTE + sb.toString() + QUOTE;
-        }
-        return s;
-    }
-
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
         switch (propertyType) {
@@ -1072,10 +1021,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
                 switch (typeName) {
                     case "jsonb":
                         return PropertyType.JSON;
-                    case "geometry":
-                        return getPostGisGeometryType(sqlgGraph, schema, table, column);
-                    case "geography":
-                        return getPostGisGeographyType(sqlgGraph, schema, table, column);
                     default:
                         throw new RuntimeException("Other type not supported " + typeName);
 
@@ -1561,11 +1506,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public List<String> columnsToIgnore() {
-        return Arrays.asList(COPY_DUMMY);
-    }
-
-    @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
@@ -1785,219 +1725,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
         statement.setArray(index, createArrayOf(statement.getConnection(), type, values));
     }
 
-    private PropertyType getPostGisGeometryType(SqlgGraph sqlgGraph, String schema, String table, String column) {
-        Connection connection = sqlgGraph.tx().getConnection();
-        try (PreparedStatement statement = connection.prepareStatement("SELECT type FROM geometry_columns WHERE f_table_schema = ? and f_table_name = ? and f_geometry_column = ?")) {
-            statement.setString(1, schema);
-            statement.setString(2, table);
-            statement.setString(3, column);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                String type = resultSet.getString(1);
-                return PropertyType.valueOf(type);
-            } else {
-                throw new IllegalStateException("PostGis property type for column " + column + " not found");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private PropertyType getPostGisGeographyType(SqlgGraph sqlgGraph, String schema, String table, String column) {
-        Connection connection = sqlgGraph.tx().getConnection();
-        try (PreparedStatement statement = connection.prepareStatement("SELECT type FROM geography_columns WHERE f_table_schema = ? and f_table_name = ? and f_geography_column = ?")) {
-            statement.setString(1, schema);
-            statement.setString(2, table);
-            statement.setString(3, column);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                String type = resultSet.getString(1);
-                switch (type) {
-                    case "Point":
-                        return PropertyType.GEOGRAPHY_POINT;
-                    case "Polygon":
-                        return PropertyType.GEOGRAPHY_POLYGON;
-                    default:
-                        throw new IllegalStateException("Unhandled geography type " + type);
-                }
-            } else {
-                throw new IllegalStateException("PostGis property type for column " + column + " not found");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void lock(SqlgGraph sqlgGraph) {
-        StringBuilder sql = new StringBuilder();
-        sql.append("LOCK TABLE \"");
-        sql.append(SQLG_SCHEMA);
-        sql.append("\".\"");
-        sql.append(VERTEX_PREFIX);
-        sql.append(SQLG_SCHEMA_LOG);
-        sql.append("\" IN EXCLUSIVE MODE");
-        if (this.needsSemicolon()) {
-            sql.append(";");
-        }
-        if (logger.isDebugEnabled()) {
-            logger.info(sql.toString());
-        }
-        Connection conn = sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void registerListener(SqlgGraph sqlgGraph) {
-        this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "Sqlg notification merge " + sqlgGraph.toString()));
-        this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-                r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
-        try {
-            this.listeningSemaphore = new Semaphore(1);
-            listener = new TopologyChangeListener(sqlgGraph, this.listeningSemaphore);
-            this.future = scheduledExecutorService.schedule(listener, 500, MILLISECONDS);
-            //block here to only return once the listener is listening.
-            this.listeningSemaphore.acquire();
-            this.listeningSemaphore.tryAcquire(5, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void unregisterListener() {
-        if (listener != null) {
-            listener.stop();
-            listener = null;
-        }
-        this.future.cancel(true);
-        this.scheduledExecutorService.shutdownNow();
-        this.executorService.shutdownNow();
-    }
-
-    @Override
-    public int notifyChange(SqlgGraph sqlgGraph, LocalDateTime timestamp, JsonNode jsonNode) {
-        Connection connection = sqlgGraph.tx().getConnection();
-        try {
-
-            PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            int pid = pgConnection.getBackendPID();
-            if (sqlgGraph.tx().isInBatchMode()) {
-                BatchManager.BatchModeType batchModeType = sqlgGraph.tx().getBatchModeType();
-                sqlgGraph.tx().flush();
-                sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NONE);
-                sqlgGraph.addVertex(
-                        T.label,
-                        SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
-                        "timestamp", timestamp,
-                        "pid", pid,
-                        "log", jsonNode
-                );
-                sqlgGraph.tx().batchMode(batchModeType);
-            } else {
-                sqlgGraph.addVertex(
-                        T.label,
-                        SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
-                        "timestamp", timestamp,
-                        "pid", pid,
-                        "log", jsonNode
-                );
-            }
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("NOTIFY " + SQLG_NOTIFICATION_CHANNEL + ", '" + timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'");
-            }
-            return pid;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Listens to topology changes notifications from the database and loads the changes into our own version of the schema
-     */
-    private class TopologyChangeListener implements Runnable {
-
-        private SqlgGraph sqlgGraph;
-        private Semaphore semaphore;
-        /**
-         * should we keep running?
-         */
-        private AtomicBoolean run = new AtomicBoolean(true);
-
-        TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
-            this.sqlgGraph = sqlgGraph;
-            this.semaphore = semaphore;
-        }
-
-        void stop() {
-            run.set(false);
-        }
-
-        @Override
-        public void run() {
-            try {
-                Connection connection = this.sqlgGraph.tx().getConnection();
-                while (run.get()) {
-                    PGConnection pgConnection = connection.unwrap(PGConnection.class);
-                    Statement stmt = connection.createStatement();
-                    stmt.execute("LISTEN " + SQLG_NOTIFICATION_CHANNEL);
-                    stmt.close();
-                    connection.commit();
-                    this.semaphore.release();
-                    // issue a dummy query to contact the backend
-                    // and receive any pending notifications.
-                    stmt = connection.createStatement();
-                    ResultSet rs = stmt.executeQuery("SELECT 1");
-                    rs.close();
-                    stmt.close();
-                    //Does not work while in a transaction.
-                    connection.rollback();
-                    PGNotification notifications[] = pgConnection.getNotifications();
-                    if (notifications != null) {
-                        for (int i = 0; i < notifications.length; i++) {
-                            int pid = notifications[i].getPID();
-                            String notify = notifications[i].getParameter();
-                            LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                            CockroachdbDialect.this.executorService.submit(() -> {
-                                try {
-                                    Topology topology = this.sqlgGraph.getTopology();
-                                    //It is possible for the topology to be null when a notification is received just
-                                    // after the connection pool is setup but before the topology is created.
-                                    if (topology != null) {
-                                        topology.fromNotifyJson(pid, timestamp);
-                                    }
-                                } catch (Exception e) {
-                                    // we may get InterruptedException when we shut down
-                                    if (run.get()) {
-                                        logger.error("Error in Postgresql notification", e);
-                                    }
-                                } finally {
-                                    this.sqlgGraph.tx().rollback();
-                                }
-                            });
-                        }
-                    }
-                    Thread.sleep(500);
-                }
-                this.sqlgGraph.tx().rollback();
-            } catch (SQLException e) {
-                logger.error(String.format("change listener on graph %s error", this.sqlgGraph.toString()), e);
-                this.sqlgGraph.tx().rollback();
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-                if (run.get()) {
-                    logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph.toString()));
-                }
-                this.sqlgGraph.tx().rollback();
-                //swallow
-            }
-        }
-    }
-
     /**
      * Postgres gets confused by DST, it sets the timezone badly and then reads the wrong value out, so we convert the value to "winter time"
      *
@@ -2037,28 +1764,82 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Cockroachdb does not support gis types, this should not have happened!");
+    public boolean needsSchemaCreationPrecommit() {
+        return true;
     }
 
     @Override
-    public void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString) {
-        throw new IllegalStateException("Cockroachdb does not support gis types, this should not have happened!");
+    public boolean supportsBooleanArrayValues() {
+        return false;
     }
 
     @Override
-    public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Cockroachdb does not support gis types, this should not have happened!");
+    public boolean supportsDoubleArrayValues() {
+        return false;
     }
 
     @Override
-    public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Cockroachdb does not support gis types, this should not have happened!");
+    public boolean supportsFloatArrayValues() {
+        return false;
     }
 
     @Override
-    public <T> T getGis(SqlgGraph sqlgGraph) {
-        throw new IllegalStateException("Cockroachdb does not support other types, this should not have happened!");
+    public boolean supportsIntegerArrayValues() {
+        return false;
     }
 
+    @Override
+    public boolean supportsShortArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLongArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsStringArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsFloatValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsByteValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalDateTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalDateArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsZonedDateTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsPeriodArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsDurationArrayValues() {
+        return false;
+    }
 }

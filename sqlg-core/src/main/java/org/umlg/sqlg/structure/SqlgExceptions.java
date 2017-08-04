@@ -43,6 +43,14 @@ public class SqlgExceptions {
         return new InvalidPropertyTypeException("Property of type " + propertyType.name() + " is not supported");
     }
 
+    public static GisNotSupportedException gisNotSupportedException(PropertyType propertyType) {
+        return new GisNotSupportedException("Gis property of type " + propertyType.name() + " is not supported");
+    }
+
+    public static GisNotSupportedException gisNotSupportedException() {
+        return new GisNotSupportedException("Gis is not supported");
+    }
+
     public static class InvalidIdException extends RuntimeException {
 
         InvalidIdException(String message) {
@@ -78,6 +86,14 @@ public class SqlgExceptions {
     public static class InvalidPropertyTypeException extends RuntimeException {
 
         InvalidPropertyTypeException(String message) {
+            super(message);
+        }
+
+    }
+
+    public static class GisNotSupportedException extends UnsupportedOperationException {
+
+        GisNotSupportedException(String message) {
             super(message);
         }
 

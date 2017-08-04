@@ -131,7 +131,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (!keyValueMap.isEmpty()) {
             propertyColumns = this.sqlgGraph.getTopology()
                     .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                    .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)))
+                    .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found in schema %s", this.table, this.schema)))
                     .getProperties();
 
             //sync up the keyValueMap with its PropertyColumn
