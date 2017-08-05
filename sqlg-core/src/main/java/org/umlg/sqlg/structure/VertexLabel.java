@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,10 +39,10 @@ public class VertexLabel extends AbstractLabel {
     private Map<String,EdgeRemoveType> uncommittedRemovedInEdgeLabels = new HashMap<>();
     private Map<String,EdgeRemoveType> uncommittedRemovedOutEdgeLabels = new HashMap<>();
     
-    private static enum EdgeRemoveType {
+    private enum EdgeRemoveType {
     	LABEL,
     	ROLE
-    };
+    }
     
     static VertexLabel createSqlgSchemaVertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(schema.isSqlgSchema(), "createSqlgSchemaVertexLabel may only be called for \"%s\"", SQLG_SCHEMA);
@@ -719,11 +720,15 @@ public class VertexLabel extends AbstractLabel {
     public List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException {
         List<Topology.TopologyValidationError> validationErrors = new ArrayList<>();
         for (PropertyColumn propertyColumn : getProperties().values()) {
-            try (ResultSet propertyRs = metadata.getColumns(null, this.getSchema().getName(), "V_" + this.getLabel(), propertyColumn.getName())) {
-                if (!propertyRs.next()) {
-                    validationErrors.add(new Topology.TopologyValidationError(propertyColumn));
-                }
+            List<Triple<String, Integer, String>> columns = this.sqlgGraph.getSqlDialect().getTableColumns(metadata, null, this.getSchema().getName(), "V_" + this.getLabel(), propertyColumn.getName());
+            if (columns.isEmpty()) {
+                validationErrors.add(new Topology.TopologyValidationError(propertyColumn));
             }
+//            try (ResultSet propertyRs = metadata.getColumns(null, this.getSchema().getName(), "V_" + this.getLabel(), propertyColumn.getName())) {
+//                if (!propertyRs.next()) {
+//                    validationErrors.add(new Topology.TopologyValidationError(propertyColumn));
+//                }
+//            }
         }
         for (Index index : getIndexes().values()) {
             validationErrors.addAll(index.validateTopology(metadata));

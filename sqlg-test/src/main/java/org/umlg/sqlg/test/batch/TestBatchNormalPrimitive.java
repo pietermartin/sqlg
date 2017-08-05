@@ -29,7 +29,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
         BaseTest.beforeClass();
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
+        if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
     }
@@ -525,6 +525,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
 
     @Test
     public void testFloat() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Set<Vertex> vertexSet = new HashSet<>();
         Set<Float> vertexNameSet = new HashSet<>();
@@ -550,6 +551,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
 
     @Test
     public void testFloatEdge() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Set<Edge> edgeSet = new HashSet<>();
         Set<Float> edgeNameSet = new HashSet<>();
@@ -577,6 +579,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
 
     @Test
     public void testFloatPrimitive() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         float[] vertexNameArray = new float[10];
         for (float i = 0; i < 10; i++) {
@@ -603,6 +606,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
 
     @Test
     public void testFloatPrimitiveEdge() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         float[] edgeNameArray = new float[10];
         for (float i = 0; i < 10; i++) {

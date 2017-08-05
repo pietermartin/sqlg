@@ -17,11 +17,19 @@ public class MetaEdge {
     }
 
     public static MetaEdge from(SchemaTable outSchemaTable, SqlgVertex outVertex, SqlgVertex inVertex) {
-        return new MetaEdge(outSchemaTable, outVertex.label(), inVertex.label());
+        return new MetaEdge(outSchemaTable, outVertex.schema + "." + outVertex.table, inVertex.schema + "." + inVertex.table);
     }
 
     public SchemaTable getSchemaTable() {
         return schemaTable;
+    }
+
+    public String getOutLabel() {
+        return outLabel;
+    }
+
+    public String getInLabel() {
+        return inLabel;
     }
 
     @Override

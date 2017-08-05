@@ -22,8 +22,8 @@ import java.util.Collection;
  */
 public class WhereClause {
 
-    public static final String LIKE = " like ?";
-    public static final String NOT_LIKE = " not like ?";
+    private static final String LIKE = " like ?";
+    private static final String NOT_LIKE = " not like ?";
     private P<?> p;
 
     private WhereClause(P<?> p) {
@@ -34,7 +34,7 @@ public class WhereClause {
         return new WhereClause(p);
     }
 
-    public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer) {
+    String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer) {
         String result = "";
 
         String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());

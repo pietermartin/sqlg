@@ -16,8 +16,7 @@ public class TestMemoryUsage extends BaseTest {
 
     @Before
     public void beforeTest() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
-    }
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode()); }
 
     //TODO, its failing
     @Test

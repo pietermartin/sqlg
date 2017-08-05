@@ -186,7 +186,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
 
     private Iterator<List<Emit<E>>> elements() {
         this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
@@ -268,7 +268,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
             for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
                 try {
                     //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
-                    if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+                    if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
                         throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
                     }
                     //Regular

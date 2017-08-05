@@ -192,7 +192,7 @@ public class TopologyManager {
                     .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", foreignKeyOut.getTable())
                     .toList();
-            Preconditions.checkState(!outVertices.isEmpty(), "Out vertex " + foreignKeyOut.toString() + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!outVertices.isEmpty(), "Schema %s does not contain vertex label %s ", schema,   foreignKeyOut.getTable());
             Preconditions.checkState(outVertices.size() == 1, "Multiple out vertices " + foreignKeyOut.toString() + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
             Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
             Vertex outVertex = outVertices.get(0);
@@ -265,7 +265,7 @@ public class TopologyManager {
          }
     }
     
-    public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
+    static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
@@ -295,7 +295,7 @@ public class TopologyManager {
                     .<Vertex>select("a")
                     .dedup()
                     .toList();
-            Preconditions.checkState(!edgeVertices.isEmpty(), "Edge vertex " + foreignKey.toString() + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!edgeVertices.isEmpty(), "Edge vertex '%s' does not exist in schema '%s'", prefixedTable.substring(EDGE_PREFIX.length()), schema);
             Preconditions.checkState(edgeVertices.size() == 1, "Multiple edge vertices " + foreignKey.toString() + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
             Vertex edgeVertex = edgeVertices.get(0);
 

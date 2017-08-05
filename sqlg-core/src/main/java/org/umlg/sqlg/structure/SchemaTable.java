@@ -26,10 +26,15 @@ import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 public class SchemaTable implements Serializable, Comparable {
     private String schema;
     private String table;
+    /**
+     * Indicates that this represents a temporary table.
+     */
+    private boolean temporary;
 
-    private SchemaTable(String schema, String table) {
+    private SchemaTable(String schema, String table, boolean temporary) {
         this.schema = schema;
         this.table = table;
+        this.temporary = temporary;
     }
 
     public String getSchema() {
@@ -41,10 +46,18 @@ public class SchemaTable implements Serializable, Comparable {
     }
 
     public static SchemaTable of(String schema, String table) {
-        return new SchemaTable(schema, table);
+        return of(schema, table, false);
+    }
+
+    public static SchemaTable of(String schema, String table, boolean temporary) {
+        return new SchemaTable(schema, table, temporary);
     }
 
     public static SchemaTable from(SqlgGraph sqlgGraph, final String label) {
+        return from(sqlgGraph, label, false);
+    }
+
+    public static SchemaTable from(SqlgGraph sqlgGraph, final String label, boolean temporary) {
         Objects.requireNonNull(label, "label may not be null!");
         int indexOfPeriod = label.indexOf(".");
         final String schema;
@@ -58,7 +71,7 @@ public class SchemaTable implements Serializable, Comparable {
         }
         sqlgGraph.getSqlDialect().validateSchemaName(schema);
         sqlgGraph.getSqlDialect().validateTableName(table);
-        return SchemaTable.of(schema, table);
+        return SchemaTable.of(schema, table, temporary);
     }
 
     @Override
@@ -70,7 +83,6 @@ public class SchemaTable implements Serializable, Comparable {
     public int hashCode() {
         int result = this.schema.hashCode();
         return result ^ this.table.hashCode();
-//        return (this.schema + this.table).hashCode();
     }
 
     @Override
@@ -91,6 +103,10 @@ public class SchemaTable implements Serializable, Comparable {
 
     public boolean isEdgeTable() {
         return !isVertexTable();
+    }
+
+    public boolean isTemporary() {
+        return this.temporary;
     }
 
     public SchemaTable withOutPrefix() {

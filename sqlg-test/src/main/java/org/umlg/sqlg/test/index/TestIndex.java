@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.index;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -8,8 +9,6 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -28,7 +27,6 @@ import static org.junit.Assert.assertTrue;
  * Time: 2:43 PM
  */
 public class TestIndex extends BaseTest {
-
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
@@ -220,7 +218,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.close();
-        this.sqlgGraph=SqlgGraph.open(configuration);
+        this.sqlgGraph= SqlgGraph.open(configuration);
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
 
 
@@ -318,11 +316,11 @@ public class TestIndex extends BaseTest {
     	Assert.assertEquals(IndexType.UNIQUE, it1);
     	IndexType it2=IndexType.fromNotifyJson(new ObjectMapper().readTree("\"UNIQUE\""));
     	Assert.assertEquals(IndexType.UNIQUE, it2);
-    	
+
     	it1=IndexType.fromNotifyJson(new ObjectMapper().readTree("{\"name\":\"NON_UNIQUE\"}"));
     	Assert.assertEquals(IndexType.NON_UNIQUE, it1);
     	it2=IndexType.fromNotifyJson(new ObjectMapper().readTree("\"NON_UNIQUE\""));
     	Assert.assertEquals(IndexType.NON_UNIQUE, it2);
-    	
+
     }
 }

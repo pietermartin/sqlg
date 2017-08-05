@@ -96,8 +96,8 @@ public class BatchManager {
 
     }
 
-    void addVertex(boolean streaming, SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
-        SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable());
+    void addVertex(boolean temporary, boolean streaming, SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
+        SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable(), temporary);
         if (!streaming) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> pairs = this.vertexCache.get(schemaTable);
             if (pairs == null) {

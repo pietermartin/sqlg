@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,21 +31,19 @@ public class EdgeLabel extends AbstractLabel {
     private Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedRemovedInVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedRemovedOutVertexLabels = new HashSet<>();
-
+    
     private Topology topology;
 
     static EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         //edges are created in the out vertex's schema.
-        EdgeLabel edgeLabel = new EdgeLabel(true, edgeLabelName, outVertexLabel, inVertexLabel, properties);
-        return edgeLabel;
+        return new EdgeLabel(true, edgeLabelName, outVertexLabel, inVertexLabel, properties);
     }
 
     static EdgeLabel createEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties);
-        if (!inVertexLabel.getSchema().isSqlgSchema()) {
-            edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
-        }
+        edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -150,6 +149,14 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(" (");
             sql.append(sqlDialect.maybeWrapInQoutes("ID"));
             sql.append(")");
+            if (sqlDialect.needForeignKeyIndex() && sqlDialect.isIndexPartOfCreateTable()) {
+                //This is true for Cockroachdb
+                sql.append(", INDEX (");
+                sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END));
+                sql.append("), INDEX (");
+                sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName() + "." + outVertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END));
+                sql.append(")");
+            }
         }
         //foreign key definition end
 
@@ -158,7 +165,7 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(";");
         }
 
-        if (sqlDialect.needForeignKeyIndex()) {
+        if (sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
             sql.append("\nCREATE INDEX");
             if (sqlDialect.requiresIndexName()) {
                 sql.append(" ");
@@ -675,11 +682,15 @@ public class EdgeLabel extends AbstractLabel {
     public List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException {
         List<Topology.TopologyValidationError> validationErrors = new ArrayList<>();
         for (PropertyColumn propertyColumn : getProperties().values()) {
-            try (ResultSet propertyRs = metadata.getColumns(null, this.getSchema().getName(), "E_" + this.getLabel(), propertyColumn.getName())) {
-                if (!propertyRs.next()) {
-                    validationErrors.add(new Topology.TopologyValidationError(propertyColumn));
-                }
+            List<Triple<String, Integer, String>> columns = this.sqlgGraph.getSqlDialect().getTableColumns(metadata, null, this.getSchema().getName(), "E_" + this.getLabel(), propertyColumn.getName());
+            if (columns.isEmpty()) {
+                validationErrors.add(new Topology.TopologyValidationError(propertyColumn));
             }
+//            try (ResultSet propertyRs = metadata.getColumns(null, this.getSchema().getName(), "E_" + this.getLabel(), propertyColumn.getName())) {
+//                if (!propertyRs.next()) {
+//                    validationErrors.add(new Topology.TopologyValidationError(propertyColumn));
+//                }
+//            }
         }
         return validationErrors;
     }
@@ -740,9 +751,9 @@ public class EdgeLabel extends AbstractLabel {
     /**
      * delete a given column from the table
      *
-     * @param column
+     * @param column The column to delete.
      */
-    void deleteColumn(String column) {
+    private void deleteColumn(String column) {
         removeColumn(getSchema().getName(), EDGE_PREFIX + getLabel(), column);
     }
 

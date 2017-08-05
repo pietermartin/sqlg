@@ -80,7 +80,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column,
-            int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+                                              int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -218,10 +218,22 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 return new String[]{"VARCHAR(255)"};
             case ZONEDDATETIME:
                 return new String[]{"DATETIME", "VARCHAR(255)"};
-            case BOOLEAN_ARRAY: case boolean_ARRAY: case DOUBLE_ARRAY: case double_ARRAY:
-            case FLOAT_ARRAY: case float_ARRAY: case int_ARRAY: case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY: case LOCALDATETIME_ARRAY: case LOCALTIME_ARRAY: case LONG_ARRAY:
-            case long_ARRAY: case SHORT_ARRAY: case short_ARRAY: case STRING_ARRAY:
+            case BOOLEAN_ARRAY:
+            case boolean_ARRAY:
+            case DOUBLE_ARRAY:
+            case double_ARRAY:
+            case FLOAT_ARRAY:
+            case float_ARRAY:
+            case int_ARRAY:
+            case INTEGER_ARRAY:
+            case LOCALDATE_ARRAY:
+            case LOCALDATETIME_ARRAY:
+            case LOCALTIME_ARRAY:
+            case LONG_ARRAY:
+            case long_ARRAY:
+            case SHORT_ARRAY:
+            case short_ARRAY:
+            case STRING_ARRAY:
                 return new String[]{"ARRAY"};
             case DURATION_ARRAY:
                 return new String[]{"ARRAY", "ARRAY"};
@@ -247,41 +259,65 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+    public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return new int[]{Types.BOOLEAN};
             case BYTE:
-                return Types.TINYINT;
+                return new int[]{Types.TINYINT};
             case SHORT:
-                return Types.SMALLINT;
+                return new int[]{Types.SMALLINT};
             case INTEGER:
-                return Types.INTEGER;
+                return new int[]{Types.INTEGER};
             case LONG:
-                return Types.BIGINT;
+                return new int[]{Types.BIGINT};
             case FLOAT:
-                return Types.REAL;
+                return new int[]{Types.REAL};
             case DOUBLE:
-                return Types.DOUBLE;
+                return new int[]{Types.DOUBLE};
             case STRING:
-                return Types.CLOB;
+                return new int[]{Types.CLOB};
             case LOCALDATETIME:
-                return Types.TIMESTAMP;
+                return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
-                return Types.DATE;
+                return new int[]{Types.DATE};
             case LOCALTIME:
-                return Types.TIME;
+                return new int[]{Types.TIME};
+            case ZONEDDATETIME:
+                return new int[]{Types.TIMESTAMP, Types.CLOB};
+            case DURATION:
+                return new int[]{Types.BIGINT, Types.INTEGER};
+            case PERIOD:
+                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
             case JSON:
-                return Types.VARCHAR;
+                return new int[]{Types.VARCHAR};
             case byte_ARRAY:
-                return Types.BINARY;
+                return new int[]{Types.BINARY};
             case BYTE_ARRAY:
-                return Types.BINARY;
-            case BOOLEAN_ARRAY: case boolean_ARRAY: case DOUBLE_ARRAY: case double_ARRAY:
-            case DURATION_ARRAY: case FLOAT_ARRAY: case float_ARRAY: case int_ARRAY: case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY: case LOCALDATETIME_ARRAY: case LOCALTIME_ARRAY: case LONG_ARRAY: case long_ARRAY:
-            case SHORT_ARRAY: case short_ARRAY: case STRING_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.BINARY};
+            case BOOLEAN_ARRAY:
+            case boolean_ARRAY:
+            case DOUBLE_ARRAY:
+            case double_ARRAY:
+            case FLOAT_ARRAY:
+            case float_ARRAY:
+            case int_ARRAY:
+            case INTEGER_ARRAY:
+            case LOCALDATE_ARRAY:
+            case LOCALDATETIME_ARRAY:
+            case LOCALTIME_ARRAY:
+            case LONG_ARRAY:
+            case long_ARRAY:
+            case SHORT_ARRAY:
+            case short_ARRAY:
+            case STRING_ARRAY:
+                return new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -351,7 +387,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public void putJsonMetaObject(ObjectMapper mapper, ArrayNode metaNodeArray, String columnName, int sqlType,
-            Object o) {
+                                  Object o) {
         switch (sqlType) {
             case Types.ARRAY:
                 try {
@@ -578,7 +614,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public void setArray(PreparedStatement statement, int index, PropertyType type,
-            Object[] values) throws SQLException {
+                         Object[] values) throws SQLException {
         statement.setObject(index, values);
     }
 
@@ -590,7 +626,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public String getRangeClause(Range<Long> r, boolean printedOrderBy) {
         StringBuilder sql = new StringBuilder();
-        if(!printedOrderBy) {
+        if (!printedOrderBy) {
             sql.append("\nORDER BY 1 ");
         }
         sql.append("OFFSET ").append(r.getMinimum()).append(" ROWS FETCH NEXT ").append(r.getMaximum() - r.getMinimum()).append(" ROWS ONLY");
@@ -601,4 +637,15 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     public boolean isSystemIndex(String indexName) {
         return false;
     }
+
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public boolean supportsType(PropertyType propertyType) {
+        return false;
+    }
+
 }

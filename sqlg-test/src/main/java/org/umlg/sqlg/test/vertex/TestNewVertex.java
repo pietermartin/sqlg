@@ -8,11 +8,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.test.BaseTest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.NoSuchElementException;
-
 /**
  * Date: 2014/10/04
  * Time: 10:17 AM
@@ -52,8 +47,8 @@ public class TestNewVertex extends BaseTest {
     public void testEmpty(){
     	Vertex person1 = this.sqlgGraph.addVertex(T.label, "Empty","empty","");
     	this.sqlgGraph.tx().commit();
-    	assertNotNull(person1.id());
+    	Assert.assertNotNull(person1.id());
     	Object o=this.sqlgGraph.traversal().V().hasLabel("Empty").values("empty").next();
-    	assertEquals("",o);
+    	Assert.assertEquals("",o);
     }
 }

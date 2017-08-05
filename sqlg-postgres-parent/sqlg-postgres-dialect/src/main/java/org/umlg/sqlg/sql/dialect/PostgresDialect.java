@@ -10,18 +10,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.postgis.*;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
-import org.postgresql.copy.CopyManager;
-import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
@@ -48,7 +43,7 @@ import static org.umlg.sqlg.structure.Topology.*;
  * Time: 1:42 PM
  */
 @SuppressWarnings("unused")
-public class PostgresDialect extends BaseSqlDialect {
+public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     private static final String BATCH_NULL = "";
     private static final String COPY_COMMAND_DELIMITER = "\t";
@@ -58,11 +53,9 @@ public class PostgresDialect extends BaseSqlDialect {
     private static final char ESCAPE = '\\';
     private static final int PARAMETER_LIMIT = 32767;
     private static final String COPY_DUMMY = "_copy_dummy";
-    private Logger logger = LoggerFactory.getLogger(PostgresDialect.class.getName());
     private PropertyType postGisType;
 
     private ScheduledFuture<?> future;
-    private Semaphore listeningSemaphore;
     private ExecutorService executorService;
     private ScheduledExecutorService scheduledExecutorService;
     private TopologyChangeListener listener;
@@ -72,7 +65,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean supporstDistribution() {
+    public boolean supportsDistribution() {
         return true;
     }
 
@@ -82,13 +75,18 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String createSchemaStatement() {
+    public String createSchemaStatement(String schemaName) {
         // if ever schema is created outside of sqlg while the graph is already instantiated
-        return "CREATE SCHEMA IF NOT EXISTS ";
+        return "CREATE SCHEMA IF NOT EXISTS " + maybeWrapInQoutes(schemaName);
     }
 
     @Override
     public boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsStreamingBatchMode() {
         return true;
     }
 
@@ -204,13 +202,11 @@ public class PostgresDialect extends BaseSqlDialect {
      */
     @Override
     public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
-
         Connection con = sqlgGraph.tx().getConnection();
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(VERTEX_PREFIX));
-            String sql = internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, false, schemaTable.getSchema(), schemaTable.getTable(), vertices.getLeft());
+            String sql = internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, schemaTable.isTemporary(), schemaTable.getSchema(), schemaTable.getTable(), vertices.getLeft());
             int numberInserted = 0;
             try (Writer writer = streamSql(sqlgGraph, sql)) {
                 for (Map<String, Object> keyValueMap : vertices.getRight().values()) {
@@ -225,7 +221,7 @@ public class PostgresDialect extends BaseSqlDialect {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            if (numberInserted > 0) {
+            if (!schemaTable.isTemporary() && numberInserted > 0) {
                 long endHigh;
                 try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
                     ResultSet resultSet = preparedStatement.executeQuery();
@@ -291,7 +287,6 @@ public class PostgresDialect extends BaseSqlDialect {
     public void flushVertexGlobalUniqueIndexes(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(VERTEX_PREFIX));
 
             Map<String, PropertyColumn> propertyColumnMap = sqlgGraph.getTopology().getPropertiesFor(schemaTable.withPrefix(VERTEX_PREFIX));
             for (Map.Entry<String, PropertyColumn> propertyColumnEntry : propertyColumnMap.entrySet()) {
@@ -335,8 +330,6 @@ public class PostgresDialect extends BaseSqlDialect {
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         Connection con = sqlgGraph.tx().getConnection();
         try {
-            PGConnection pgConnection = con.unwrap(PGConnection.class);
-            CopyManager copyManager = pgConnection.getCopyAPI();
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
@@ -1230,7 +1223,12 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, String schema, String table, Set<String> keys) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of((!isTemp ? schema : ""), VERTEX_PREFIX + table));
+        Map<String, PropertyType> propertyTypeMap;
+        if (isTemp) {
+            propertyTypeMap = sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + table);
+        } else {
+            propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(schema, VERTEX_PREFIX + table));
+        }
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         if (!isTemp) {
@@ -1445,7 +1443,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     private void valueToStreamBytes(Writer outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
-        String s = valueToStreamString(propertyType, value);
+        String s = valueToStringForBulkLoad(propertyType, value);
         try {
             outputStream.write(s);
         } catch (IOException e) {
@@ -1453,25 +1451,7 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
-//    private void valueToStreamBytes(OutputStream outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
-//        String encoding = "UTF-8";
-//        String s = valueToStreamString(propertyType, value);
-//        try (StringReader stringReader = new StringReader(s)) {
-//            int data;
-//            try {
-//                data = stringReader.read();
-//                while (data != -1) {
-//                    //do something with data...
-//                    outputStream.write(data);
-//                    data = stringReader.read();
-//                }
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//    }
-
-    private String valueToStreamString(PropertyType propertyType, Object value) {
+    private String valueToStringForBulkLoad(PropertyType propertyType, Object value) {
         String result;
         if (value == null) {
             result = getBatchNull();
@@ -1616,89 +1596,11 @@ public class PostgresDialect extends BaseSqlDialect {
                         }
                         sb.append("}");
                         return sb.toString();
-//                        }
                     }
                     result = escapeSpecialCharacters(value.toString());
             }
         }
         return result;
-    }
-
-    @Override
-    public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
-
-        if (!removeVertexCache.isEmpty()) {
-
-
-            //split the list of vertices, postgres existVertexLabel a 2 byte limit in the in clause
-            for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
-
-                SchemaTable schemaTable = schemaVertices.getKey();
-
-                Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = sqlgGraph.getTopology().getTableLabels(SchemaTable.of(schemaTable.getSchema(), VERTEX_PREFIX + schemaTable.getTable()));
-
-                //This is causing dead locks under load
-//                dropForeignKeys(sqlgGraph, schemaTable);
-
-                List<SqlgVertex> vertices = schemaVertices.getValue();
-                int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
-                int previous = 0;
-                for (int i = 1; i <= numberOfLoops + 1; i++) {
-
-                    int subListTo = i * PARAMETER_LIMIT;
-                    List<SqlgVertex> subVertices;
-                    if (i <= numberOfLoops) {
-                        subVertices = vertices.subList(previous, subListTo);
-                    } else {
-                        subVertices = vertices.subList(previous, vertices.size());
-                    }
-
-                    previous = subListTo;
-
-                    if (!subVertices.isEmpty()) {
-
-                        Set<SchemaTable> inLabels = tableLabels.getLeft();
-                        Set<SchemaTable> outLabels = tableLabels.getRight();
-
-                        deleteEdges(sqlgGraph, schemaTable, subVertices, inLabels, true);
-                        deleteEdges(sqlgGraph, schemaTable, subVertices, outLabels, false);
-
-                        StringBuilder sql = new StringBuilder("DELETE FROM ");
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-                        sql.append(".");
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes((VERTEX_PREFIX) + schemaTable.getTable()));
-                        sql.append(" WHERE ");
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-                        sql.append(" in (");
-                        int count = 1;
-                        for (SqlgVertex sqlgVertex : subVertices) {
-                            sql.append("?");
-                            if (count++ < subVertices.size()) {
-                                sql.append(",");
-                            }
-                        }
-                        sql.append(")");
-                        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        Connection conn = sqlgGraph.tx().getConnection();
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            count = 1;
-                            for (SqlgVertex sqlgVertex : subVertices) {
-                                preparedStatement.setLong(count++, ((RecordId) sqlgVertex.id()).getId());
-                            }
-                            preparedStatement.executeUpdate();
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-//                createForeignKeys(sqlgGraph, schemaTable);
-            }
-        }
     }
 
     @Override
@@ -1712,77 +1614,58 @@ public class PostgresDialect extends BaseSqlDialect {
 
             //split the list of vertices, postgres existVertexLabel a 2 byte limit in the in clause
             for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
-
                 SchemaTable schemaTable = schemaVertices.getKey();
                 Map<String, PropertyColumn> propertyColumns = sqlgGraph.getTopology().getPropertiesWithGlobalUniqueIndexFor(schemaTable.withPrefix(VERTEX_PREFIX));
                 for (PropertyColumn propertyColumn : propertyColumns.values()) {
                     for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
                         List<SqlgVertex> vertices = schemaVertices.getValue();
-                        int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
-                        int previous = 0;
-                        for (int i = 1; i <= numberOfLoops + 1; i++) {
-
-                            int subListTo = i * PARAMETER_LIMIT;
-                            List<SqlgVertex> subVertices;
-                            if (i <= numberOfLoops) {
-                                subVertices = vertices.subList(previous, subListTo);
-                            } else {
-                                subVertices = vertices.subList(previous, vertices.size());
+                        if (!vertices.isEmpty()) {
+                            SecureRandom random = new SecureRandom();
+                            byte bytes[] = new byte[6];
+                            random.nextBytes(bytes);
+                            String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+                            sqlgGraph.getTopology().getPublicSchema().createTempTable(VERTEX_PREFIX + tmpTableIdentified, tmpColumns);
+                            String copySql = ((SqlBulkDialect) sqlgGraph.getSqlDialect())
+                                    .temporaryTableCopyCommandSqlVertex(
+                                            sqlgGraph,
+                                            SchemaTable.of("public", tmpTableIdentified), tmpColumns.keySet());
+                            Writer writer = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(sqlgGraph, copySql);
+                            for (SqlgVertex sqlgVertex : vertices) {
+                                Map<String, Object> tmpMap = new HashMap<>();
+                                tmpMap.put("recordId", sqlgVertex.id().toString());
+                                tmpMap.put("property", propertyColumn.getName());
+                                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, tmpMap);
                             }
-
-                            previous = subListTo;
-
-                            if (!subVertices.isEmpty()) {
-
-                                SecureRandom random = new SecureRandom();
-                                byte bytes[] = new byte[6];
-                                random.nextBytes(bytes);
-                                String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
-                                sqlgGraph.getTopology().createTempTable(VERTEX_PREFIX + tmpTableIdentified, tmpColumns);
-                                String copySql = ((SqlBulkDialect) sqlgGraph.getSqlDialect())
-                                        .temporaryTableCopyCommandSqlVertex(
-                                                sqlgGraph,
-                                                SchemaTable.of("public", tmpTableIdentified), tmpColumns.keySet());
-                                Writer writer = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(sqlgGraph, copySql);
-                                for (SqlgVertex sqlgVertex : subVertices) {
-                                    Map<String, Object> tmpMap = new HashMap<>();
-                                    tmpMap.put("recordId", sqlgVertex.id().toString());
-                                    tmpMap.put("property", propertyColumn.getName());
-                                    ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, tmpMap);
-                                }
-                                try {
-                                    writer.close();
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                StringBuilder sql = new StringBuilder("WITH tmp as (SELECT * FROM " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + tmpTableIdentified) + ")\n");
-                                sql.append("DELETE FROM ");
-                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA));
-                                sql.append(".");
-                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName()));
-                                sql.append("as gui \nUSING tmp WHERE ");
-                                sql.append("tmp.\"recordId\" = gui.\"recordId\" AND tmp.property = gui.property");
-                                if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-                                    sql.append(";");
-                                }
-                                if (logger.isDebugEnabled()) {
-                                    logger.debug(sql.toString());
-                                }
-                                Connection conn = sqlgGraph.tx().getConnection();
-                                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                                    preparedStatement.executeUpdate();
-                                } catch (SQLException e) {
-                                    throw new RuntimeException(e);
-                                }
+                            try {
+                                writer.close();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            StringBuilder sql = new StringBuilder("WITH tmp as (SELECT * FROM " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + tmpTableIdentified) + ")\n");
+                            sql.append("DELETE FROM ");
+                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA));
+                            sql.append(".");
+                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName()));
+                            sql.append("as gui \nUSING tmp WHERE ");
+                            sql.append("tmp.\"recordId\" = gui.\"recordId\" AND tmp.property = gui.property");
+                            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+                                sql.append(";");
+                            }
+                            if (logger.isDebugEnabled()) {
+                                logger.debug(sql.toString());
+                            }
+                            Connection conn = sqlgGraph.tx().getConnection();
+                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                                preparedStatement.executeUpdate();
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
                             }
                         }
-
                     }
                 }
             }
         }
     }
-
 
     private void dropForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
 
@@ -1863,108 +1746,6 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
-    private void deleteEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<SqlgVertex> subVertices, Set<SchemaTable> labels, boolean inDirection) {
-        for (SchemaTable inLabel : labels) {
-
-            StringBuilder sql = new StringBuilder();
-            sql.append("DELETE FROM ");
-            sql.append(maybeWrapInQoutes(inLabel.getSchema()));
-            sql.append(".");
-            sql.append(maybeWrapInQoutes(inLabel.getTable()));
-            sql.append(" WHERE ");
-            sql.append(maybeWrapInQoutes(schemaTable.toString() + (inDirection ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END)));
-            sql.append(" IN (");
-            int count = 1;
-            for (Vertex vertexToDelete : subVertices) {
-                sql.append("?");
-                if (count++ < subVertices.size()) {
-                    sql.append(",");
-                }
-            }
-            sql.append(")");
-            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
-            }
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            Connection conn = sqlgGraph.tx().getConnection();
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                count = 1;
-                for (Vertex vertexToDelete : subVertices) {
-                    preparedStatement.setLong(count++, ((RecordId) vertexToDelete.id()).getId());
-                }
-                int deleted = preparedStatement.executeUpdate();
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Deleted " + deleted + " edges from " + inLabel.toString());
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    @Override
-    public void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
-
-        if (!removeEdgeCache.isEmpty()) {
-
-            //split the list of edges, postgres existVertexLabel a 2 byte limit in the in clause
-            for (Map.Entry<SchemaTable, List<SqlgEdge>> schemaEdges : removeEdgeCache.entrySet()) {
-
-                List<SqlgEdge> edges = schemaEdges.getValue();
-                int numberOfLoops = (edges.size() / PARAMETER_LIMIT);
-                int previous = 0;
-                for (int i = 1; i <= numberOfLoops + 1; i++) {
-
-                    List<SqlgEdge> flattenedEdges = new ArrayList<>();
-                    int subListTo = i * PARAMETER_LIMIT;
-                    List<SqlgEdge> subEdges;
-                    if (i <= numberOfLoops) {
-                        subEdges = edges.subList(previous, subListTo);
-                    } else {
-                        subEdges = edges.subList(previous, edges.size());
-                    }
-                    previous = subListTo;
-
-                    for (SchemaTable schemaTable : removeEdgeCache.keySet()) {
-                        StringBuilder sql = new StringBuilder("DELETE FROM ");
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-                        sql.append(".");
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes((EDGE_PREFIX) + schemaTable.getTable()));
-                        sql.append(" WHERE ");
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-                        sql.append(" in (");
-                        int count = 1;
-                        for (SqlgEdge sqlgEdge : subEdges) {
-                            flattenedEdges.add(sqlgEdge);
-                            sql.append("?");
-                            if (count++ < subEdges.size()) {
-                                sql.append(",");
-                            }
-                        }
-                        sql.append(")");
-                        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        Connection conn = sqlgGraph.tx().getConnection();
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            count = 1;
-                            for (SqlgEdge sqlgEdge : subEdges) {
-                                preparedStatement.setLong(count++, ((RecordId) sqlgEdge.id()).getId());
-                            }
-                            preparedStatement.executeUpdate();
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     @Override
     public String getBatchNull() {
@@ -1998,7 +1779,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             sb.append(valueOfArrayAsString);
                             break;
                         default:
-                            sb.append(valueToStreamString(propertyType, value));
+                            sb.append(valueToStringForBulkLoad(propertyType, value));
                     }
                 }
             } else {
@@ -2025,9 +1806,6 @@ public class PostgresDialect extends BaseSqlDialect {
             for (String key : edgeCache.getLeft()) {
                 PropertyType propertyType = propertyTypeMap.get(key);
                 Object value = triple.getRight().get(key);
-//                if (value == null) {
-//                    sb.append(getBatchNull());
-//                }
                 switch (propertyType) {
                     case BYTE_ARRAY:
                         String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
@@ -2038,7 +1816,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         sb.append(valueOfArrayAsString);
                         break;
                     default:
-                        sb.append(valueToStreamString(propertyType, value));
+                        sb.append(valueToStringForBulkLoad(propertyType, value));
                 }
                 if (countKeys < edgeCache.getLeft().size()) {
                     sb.append(COPY_COMMAND_DELIMITER);
@@ -2168,7 +1946,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case JSON_ARRAY:
                 return new String[]{"JSONB[]"};
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw SqlgExceptions.invalidPropertyType(propertyType);
         }
     }
 
@@ -2263,47 +2041,81 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+    public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
+            case BYTE:
+                return new int[]{Types.BOOLEAN};
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return new int[]{Types.BOOLEAN};
             case SHORT:
-                return Types.SMALLINT;
+                return new int[]{Types.SMALLINT};
             case INTEGER:
-                return Types.INTEGER;
+                return new int[]{Types.INTEGER};
             case LONG:
-                return Types.BIGINT;
+                return new int[]{Types.BIGINT};
             case FLOAT:
-                return Types.REAL;
+                return new int[]{Types.REAL};
             case DOUBLE:
-                return Types.DOUBLE;
+                return new int[]{Types.DOUBLE};
             case STRING:
-                return Types.CLOB;
-            case byte_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.CLOB};
             case LOCALDATETIME:
-                return Types.TIMESTAMP;
+                return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
-                return Types.DATE;
+                return new int[]{Types.DATE};
             case LOCALTIME:
-                return Types.TIME;
+                return new int[]{Types.TIME};
+            case ZONEDDATETIME:
+                return new int[]{Types.TIMESTAMP, Types.CLOB};
+            case PERIOD:
+                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
+            case DURATION:
+                return new int[]{Types.BIGINT, Types.INTEGER};
             case JSON:
                 //TODO support other others like Geometry...
-                return Types.OTHER;
+                return new int[]{Types.OTHER};
+            case byte_ARRAY:
+                return new int[]{Types.ARRAY};
             case boolean_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case BOOLEAN_ARRAY:
+                return new int[]{Types.ARRAY};
             case short_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case SHORT_ARRAY:
+                return new int[]{Types.ARRAY};
             case int_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case INTEGER_ARRAY:
+                return new int[]{Types.ARRAY};
             case long_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case LONG_ARRAY:
+                return new int[]{Types.ARRAY};
             case float_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case FLOAT_ARRAY:
+                return new int[]{Types.ARRAY};
             case double_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case DOUBLE_ARRAY:
+                return new int[]{Types.ARRAY};
             case STRING_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case LOCALDATETIME_ARRAY:
+                return new int[]{Types.ARRAY};
+            case LOCALDATE_ARRAY:
+                return new int[]{Types.ARRAY};
+            case LOCALTIME_ARRAY:
+                return new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case JSON_ARRAY:
+                return new int[]{Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -2475,13 +2287,13 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     public void validateSchemaName(String schema) {
-        if (schema.length() > getMinimumSchemaNameLength()) {
+        if (schema.length() > getMaximumSchemaNameLength()) {
             throw SqlgExceptions.invalidSchemaName("Postgresql schema names can only be 63 characters. " + schema + " exceeds that");
         }
     }
 
     public void validateTableName(String table) {
-        if (table.length() > getMinimumTableNameLength()) {
+        if (table.length() > getMaximumTableNameLength()) {
             throw SqlgExceptions.invalidTableName("Postgresql table names can only be 63 characters. " + table + " exceeds that");
         }
     }
@@ -2489,20 +2301,28 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public void validateColumnName(String column) {
         super.validateColumnName(column);
-        if (column.length() > getMinimumColumnNameLength()) {
+        if (column.length() > getMaximumColumnNameLength()) {
             throw SqlgExceptions.invalidColumnName("Postgresql column names can only be 63 characters. " + column + " exceeds that");
         }
     }
 
-    public int getMinimumSchemaNameLength() {
+    @Override
+    public int getMaximumSchemaNameLength() {
         return 63;
     }
 
-    public int getMinimumTableNameLength() {
+    @Override
+    public int getMaximumTableNameLength() {
         return 63;
     }
 
-    public int getMinimumColumnNameLength() {
+    @Override
+    public int getMaximumColumnNameLength() {
+        return 63;
+    }
+
+    @Override
+    public int getMaximumIndexNameLength() {
         return 63;
     }
 
@@ -2515,7 +2335,6 @@ public class PostgresDialect extends BaseSqlDialect {
     public boolean needsTimeZone() {
         return Boolean.TRUE;
     }
-
 
     @Override
     public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode json) {
@@ -2695,18 +2514,6 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
-    @Override
-    public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
-        Connection conn = sqlgGraph.tx().getConnection();
-        PGConnection pgConnection;
-        try {
-            pgConnection = conn.unwrap(PGConnection.class);
-            return new PGCopyInputStream(pgConnection, sql);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private <L, R> void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, Collection<Pair<L, R>> uids, PropertyType inPropertyType, PropertyType outPropertyType) {
         try {
             StringBuilder sql = new StringBuilder();
@@ -2770,7 +2577,7 @@ public class PostgresDialect extends BaseSqlDialect {
             random.nextBytes(bytes);
             String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
             tmpTableIdentified = Topology.BULK_TEMP_EDGE + tmpTableIdentified;
-            sqlgGraph.getTopology().createTempTable(tmpTableIdentified, columns);
+            sqlgGraph.getTopology().getPublicSchema().createTempTable(tmpTableIdentified, columns);
             this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(out.getSchema(), tmpTableIdentified), uids, outPropertyType, inPropertyType);
             //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
 
@@ -3235,12 +3042,12 @@ public class PostgresDialect extends BaseSqlDialect {
         this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
                 r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
         try {
-            this.listeningSemaphore = new Semaphore(1);
-            listener = new TopologyChangeListener(sqlgGraph, this.listeningSemaphore);
+            Semaphore listeningSemaphore = new Semaphore(1);
+            listener = new TopologyChangeListener(sqlgGraph, listeningSemaphore);
             this.future = scheduledExecutorService.schedule(listener, 500, MILLISECONDS);
             //block here to only return once the listener is listening.
-            this.listeningSemaphore.acquire();
-            this.listeningSemaphore.tryAcquire(5, TimeUnit.MINUTES);
+            listeningSemaphore.acquire();
+            listeningSemaphore.tryAcquire(5, TimeUnit.MINUTES);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -3263,7 +3070,7 @@ public class PostgresDialect extends BaseSqlDialect {
         try {
 
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            int pid=pgConnection.getBackendPID();
+            int pid = pgConnection.getBackendPID();
             if (sqlgGraph.tx().isInBatchMode()) {
                 BatchManager.BatchModeType batchModeType = sqlgGraph.tx().getBatchModeType();
                 sqlgGraph.tx().flush();
@@ -3493,5 +3300,250 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public boolean isSystemIndex(String indexName) {
         return indexName.endsWith("_pkey") || indexName.endsWith("_idx");
+    }
+
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
+        switch (propertyType) {
+            case BYTE_ARRAY:
+                return "'" + PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)) + "'::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case byte_ARRAY:
+                return "'" + PGbytea.toPGString((byte[]) value) + "'::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case BOOLEAN:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case boolean_ARRAY:
+                StringBuilder sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case BOOLEAN_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case SHORT:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case short_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case SHORT_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case INTEGER:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case int_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case INTEGER_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LONG:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case long_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LONG_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case FLOAT:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case float_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case FLOAT_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case DOUBLE:
+                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case double_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case DOUBLE_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case STRING:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case STRING_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LOCALDATE:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LOCALDATE_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LOCALDATETIME:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LOCALDATETIME_ARRAY:
+                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
+                return sb.toString();
+            case LOCALTIME:
+                LocalTime lt = (LocalTime) value;
+                return "'" + shiftDST(lt).toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LOCALTIME_ARRAY:
+                sb = new StringBuilder();
+                sb.append("'{");
+                int length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    LocalTime valueOfArray = (LocalTime) java.lang.reflect.Array.get(value, i);
+                    sb.append(shiftDST(valueOfArray).toString());
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}'::");
+                sb.append(this.propertyTypeToSqlDefinition(propertyType)[0]);
+                return sb.toString();
+            case ZONEDDATETIME:
+                throw new IllegalStateException("ZONEDDATETIME is not supported in within.");
+            case ZONEDDATETIME_ARRAY:
+                throw new IllegalStateException("ZONEDDATETIME_ARRAY is not supported in within.");
+            case PERIOD:
+                throw new IllegalStateException("PERIOD is not supported in within.");
+            case PERIOD_ARRAY:
+                throw new IllegalStateException("PERIOD_ARRAY is not supported in within.");
+            case DURATION:
+                throw new IllegalStateException("DURATION is not supported in within.");
+            case DURATION_ARRAY:
+                throw new IllegalStateException("DURATION_ARRAY is not supported in within.");
+            case JSON:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case JSON_ARRAY:
+                sb = new StringBuilder();
+                sb.append("'{");
+                length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                    sb.append("\"");
+                    sb.append(valueOfArray.replace("\"", "\\\""));
+                    sb.append("\"");
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}'::");
+                sb.append(this.propertyTypeToSqlDefinition(propertyType)[0]);
+                return sb.toString();
+            case POINT:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LINESTRING:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case POLYGON:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case GEOGRAPHY_POINT:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case GEOGRAPHY_POLYGON:
+                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            default:
+                throw SqlgExceptions.invalidPropertyType(propertyType);
+        }
+    }
+
+    private StringBuilder toValuesArray(String str, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("'{");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+            sb.append(valueOfArray);
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("}'::");
+        sb.append(str);
+        return sb;
+    }
+
+    @Override
+    public boolean supportsType(PropertyType propertyType) {
+        switch (propertyType) {
+            case BOOLEAN:
+                return true;
+            case SHORT:
+                return true;
+            case INTEGER:
+                return true;
+            case LONG:
+                return true;
+            case FLOAT:
+                return true;
+            case DOUBLE:
+                return true;
+            case STRING:
+                return true;
+            case LOCALDATE:
+                return true;
+            case LOCALDATETIME:
+                return true;
+            case LOCALTIME:
+                return true;
+            case ZONEDDATETIME:
+                return true;
+            case PERIOD:
+                return true;
+            case DURATION:
+                return true;
+            case JSON:
+                return true;
+            case POINT:
+                return true;
+            case LINESTRING:
+                return true;
+            case POLYGON:
+                return true;
+            case GEOGRAPHY_POINT:
+                return true;
+            case GEOGRAPHY_POLYGON:
+                return true;
+            case boolean_ARRAY:
+                return true;
+            case BOOLEAN_ARRAY:
+                return true;
+            case byte_ARRAY:
+                return true;
+            case BYTE_ARRAY:
+                return true;
+            case short_ARRAY:
+                return true;
+            case SHORT_ARRAY:
+                return true;
+            case int_ARRAY:
+                return true;
+            case INTEGER_ARRAY:
+                return true;
+            case long_ARRAY:
+                return true;
+            case LONG_ARRAY:
+                return true;
+            case float_ARRAY:
+                return true;
+            case FLOAT_ARRAY:
+                return true;
+            case double_ARRAY:
+                return true;
+            case DOUBLE_ARRAY:
+                return true;
+            case STRING_ARRAY:
+                return true;
+            case LOCALDATETIME_ARRAY:
+                return true;
+            case LOCALDATE_ARRAY:
+                return true;
+            case LOCALTIME_ARRAY:
+                return true;
+            case ZONEDDATETIME_ARRAY:
+                return true;
+            case DURATION_ARRAY:
+                return true;
+            case PERIOD_ARRAY:
+                return true;
+            case JSON_ARRAY:
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int sqlInParameterLimit() {
+        return PARAMETER_LIMIT;
     }
 }

@@ -226,7 +226,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
      */
     private ListIterator<List<Emit<E>>> elements(SchemaTable schemaTable, SchemaTableTree rootSchemaTableTree) {
         this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         rootSchemaTableTree.setParentIdsAndIndexes(this.schemaTableParentIds.get(schemaTable));

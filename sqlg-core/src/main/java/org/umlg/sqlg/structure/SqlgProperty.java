@@ -60,18 +60,27 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     public void remove() {
         this.element.properties.remove(this.key);
         boolean elementInInsertedCache = false;
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             elementInInsertedCache = this.sqlgGraph.tx().getBatchManager().removeProperty(this, key);
         }
 
         if (!elementInInsertedCache) {
+            PropertyType propertyType = PropertyType.from(value);
+            String[] postfixes = propertyType.getPostFixes();
+
             StringBuilder sql = new StringBuilder("UPDATE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.element.schema));
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? VERTEX_PREFIX : EDGE_PREFIX) + this.element.table));
             sql.append(" SET ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.key));
-            sql.append(" = ? WHERE ");
+            sql.append(" = ?");
+            for (String postfix : postfixes) {
+                sql.append(", ");
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key + postfix));
+                sql.append(" = ?");
+            }
+            sql.append(" WHERE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
@@ -82,9 +91,12 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
             }
             Connection conn = this.sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                PropertyType propertyType = PropertyType.from(value);
-                preparedStatement.setNull(1, this.sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType));
-                preparedStatement.setLong(2, ((RecordId) this.element.id()).getId());
+                int[] sqlTypes = this.sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType);
+                int parameterIndex = 1;
+                for (int sqlType : sqlTypes) {
+                    preparedStatement.setNull(parameterIndex++, sqlType);
+                }
+                preparedStatement.setLong(parameterIndex, ((RecordId) this.element.id()).getId());
                 int numberOfRowsUpdated = preparedStatement.executeUpdate();
                 if (numberOfRowsUpdated != 1) {
                     throw new IllegalStateException("Remove property failed!");

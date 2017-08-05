@@ -22,7 +22,7 @@ public class TestBatchModeMultipleGraphs extends BaseTest {
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
         BaseTest.beforeClass();
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
+        if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
     }
@@ -30,10 +30,12 @@ public class TestBatchModeMultipleGraphs extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());
     }
 
     @Test
     public void testStreamingBatchModeOnMultipleGraphs() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
         this.sqlgGraph.tx().streamingBatchModeOn();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.streamVertex(T.label, "Person", "name", "asdasd");

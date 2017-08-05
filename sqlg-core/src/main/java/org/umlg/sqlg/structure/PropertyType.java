@@ -99,4 +99,8 @@ public enum PropertyType {
     public boolean isArray() {
         return name().endsWith("_ARRAY");
     }
+
+    public boolean isString() {
+        return this == PropertyType.STRING;
+    }
 }

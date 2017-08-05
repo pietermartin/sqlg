@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -71,7 +72,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (this.removed)
             throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
 
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeEdge(this.schema, this.table, this);
         } else {
             super.remove();
@@ -114,6 +115,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalBatchAddEdge(boolean streaming, Map<String, Object> keyValueMap) {
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         this.sqlgGraph.tx().getBatchManager().addEdge(streaming, this, this.outVertex, this.inVertex, keyValueMap);
     }
 
@@ -124,22 +126,22 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + this.table));
         sql.append(" (");
 
-        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
+        Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = null;
         if (!keyValueMap.isEmpty()) {
             propertyColumns = this.sqlgGraph.getTopology()
                     .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                    .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)))
+                    .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found in schema %s", this.table, this.schema)))
                     .getProperties();
 
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
                 PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
-                Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
-                propertyColumnValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
+                Pair<PropertyType, Object> propertyColumnObjectPair = Pair.of(propertyColumn.getPropertyType(), keyValueEntry.getValue());
+                propertyTypeValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
             }
         }
-        writeColumnNames(propertyColumnValueMap, sql);
+        writeColumnNames(propertyTypeValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -147,7 +149,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(", ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + Topology.OUT_VERTEX_COLUMN_END));
         sql.append(") VALUES (");
-        writeColumnParameters(propertyColumnValueMap, sql);
+        writeColumnParameters(propertyTypeValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -162,7 +164,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyColumnValueMap);
+            i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
             preparedStatement.setLong(i++, this.inVertex.recordId.getId());
             preparedStatement.setLong(i, this.outVertex.recordId.getId());
             preparedStatement.executeUpdate();
@@ -184,7 +186,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         //recordId can be null when in batchMode
         if (this.recordId != null && this.properties.isEmpty()) {
             this.sqlgGraph.tx().readWrite();
-            if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
                 throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
             }
 
@@ -229,7 +231,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setCursorName("");
                 preparedStatement.setLong(1, this.recordId.getId());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {

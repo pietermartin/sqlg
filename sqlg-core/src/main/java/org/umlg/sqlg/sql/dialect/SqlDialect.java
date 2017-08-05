@@ -9,10 +9,7 @@ import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.structure.IndexRef;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 
 import java.sql.*;
 import java.util.*;
@@ -21,7 +18,7 @@ public interface SqlDialect {
 
     static final String INDEX_POSTFIX = "_sqlgIdx";
 
-    default boolean supporstDistribution() {
+    default boolean supportsDistribution() {
         return false;
     }
 
@@ -62,13 +59,12 @@ public interface SqlDialect {
 
     String[] propertyTypeToSqlDefinition(PropertyType propertyType);
 
-    int propertyTypeToJavaSqlType(PropertyType propertyType);
+    int[] propertyTypeToJavaSqlType(PropertyType propertyType);
 
     String getForeignKeyTypeDefinition();
 
     default String maybeWrapInQoutes(String field) {
         return getColumnEscapeKey() + field.replace(getColumnEscapeKey(), "\"" + getColumnEscapeKey()) + getColumnEscapeKey();
-//        return getColumnEscapeKey() + field + getColumnEscapeKey();
     }
 
     default boolean supportsFloatValues() {
@@ -112,6 +108,30 @@ public interface SqlDialect {
     }
 
     default boolean supportsStringArrayValues() {
+        return true;
+    }
+
+    default boolean supportsZonedDateTimeArrayValues() {
+        return true;
+    }
+
+    default boolean supportsLocalTimeArrayValues() {
+        return true;
+    }
+
+    default boolean supportsLocalDateArrayValues() {
+        return true;
+    }
+
+    default boolean supportsLocalDateTimeArrayValues() {
+        return true;
+    }
+
+    default boolean supportsPeriodArrayValues() {
+        return true;
+    }
+
+    default boolean supportsDurationArrayValues() {
         return true;
     }
 
@@ -275,15 +295,16 @@ public interface SqlDialect {
     /**
      * @return the statement head to create a schema
      */
-    default String createSchemaStatement() {
-        return "CREATE SCHEMA ";
+    default String createSchemaStatement(String schemaName) {
+        return "CREATE SCHEMA " + maybeWrapInQoutes(schemaName);
     }
-    
+
     /**
      * Builds an add column statement.
-     * @param schema schema name
-     * @param table table name
-     * @param column new column name
+     *
+     * @param schema         schema name
+     * @param table          table name
+     * @param column         new column name
      * @param typeDefinition column definition
      * @return the statement to add the column
      */
@@ -303,11 +324,19 @@ public interface SqlDialect {
         return sql.toString();
     }
 
+    /**
+     * @return the statement head to drop a schema
+     */
+    default String dropSchemaStatement() {
+        return "DROP SCHEMA IF EXISTS ";
+    }
+
     default void prepareDB(Connection conn) {
     }
 
     /**
      * A getter to return the "public" schema for the database. For postgresql it is "public" and for HSQLDB it is "PUBLIC"
+     *
      * @return the database's public schema.
      */
     default String getPublicSchema() {
@@ -339,11 +368,20 @@ public interface SqlDialect {
     String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName);
 
     //This is needed for mariadb, which does not support schemas, so need to drop the database instead
-    default boolean supportSchemas() {
+    default boolean supportsSchemas() {
         return true;
     }
 
     default boolean supportsBatchMode() {
+        return false;
+    }
+
+    /**
+     * This is primarily for Postgresql's copy command.
+     *
+     * @return true if data can be streamed in via a socket.
+     */
+    default boolean supportsStreamingBatchMode() {
         return false;
     }
 
@@ -375,15 +413,19 @@ public interface SqlDialect {
     default void validateColumnName(String column) {
     }
 
-    default int getMinimumSchemaNameLength() {
+    default int getMaximumSchemaNameLength() {
         return Integer.MAX_VALUE;
     }
 
-    default int getMinimumTableNameLength() {
+    default int getMaximumTableNameLength() {
         return Integer.MAX_VALUE;
     }
 
-    default int getMinimumColumnNameLength() {
+    default int getMaximumColumnNameLength() {
+        return Integer.MAX_VALUE;
+    }
+
+    default int getMaximumIndexNameLength() {
         return Integer.MAX_VALUE;
     }
 
@@ -403,19 +445,32 @@ public interface SqlDialect {
 
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
 
-    void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    default void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.POINT);
+    }
 
-    void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString);
+    default void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.LINESTRING);
+    }
 
-    void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    default void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.POLYGON);
+    }
 
-    void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    default void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw SqlgExceptions.gisNotSupportedException(PropertyType.GEOGRAPHY_POINT);
+    }
 
     default boolean isPostgresql() {
         return false;
     }
+    default boolean isMariaDb() {
+        return false;
+    }
 
-    <T> T getGis(SqlgGraph sqlgGraph);
+    default <T> T getGis(SqlgGraph sqlgGraph) {
+        throw SqlgExceptions.gisNotSupportedException();
+    }
 
     void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
 
@@ -432,6 +487,24 @@ public interface SqlDialect {
     String afterCreateTemporaryTableStatement();
 
     /**
+     * For Postgresql/Hsqldb and H2 temporary tables have no schema.
+     * For Mariadb the schema/database must be specified.
+     * @return true is a schema/database must be specified.
+     */
+    default boolean needsTemporaryTableSchema() {
+        return false;
+    }
+
+    /**
+     * MariaDb does not drop the temporary table after a commit. It only drops it when the session ends.
+     * Sqlg will manually drop the temporary table for Mariadb as we need the same semantics across all dialects.
+     * @return true if temporary tables are dropped on commit.
+     */
+    default boolean supportsTemporaryTableOnCommitDrop() {
+        return true;
+    }
+
+    /**
      * These are internal columns used by sqlg that must be ignored when loading elements.
      * eg. '_copy_dummy' when doing using the copy command on postgresql.
      *
@@ -442,7 +515,11 @@ public interface SqlDialect {
     }
 
     default String sqlgSqlgSchemaCreationScript() {
-        return "CREATE SCHEMA " + this.maybeWrapInQoutes("sqlg_schema");
+        return this.createSchemaStatement(Schema.SQLG_SCHEMA) + (needsSemicolon() ? ";" : "");
+    }
+
+    default String sqlgGuiSchemaCreationScript() {
+        return this.createSchemaStatement(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + (needsSemicolon() ? ";" : "");
     }
 
     List<String> sqlgTopologyCreationScripts();
@@ -460,7 +537,7 @@ public interface SqlDialect {
     /**
      * range condition
      *
-     * @param r range
+     * @param r              range
      * @param printedOrderBy indicates if order by was already produced
      * @return
      */
@@ -478,31 +555,71 @@ public interface SqlDialect {
         return "LIMIT " + (r.getMaximum() - r.getMinimum()) + " OFFSET " + r.getMinimum();
     }
 
+    default boolean requiredPreparedStatementDeallocate() {
+        return false;
+    }
+
     /**
      * get the full text query for the given predicate and column
+     *
      * @param fullText
      * @param column
      * @return
      */
-    default String getFullTextQueryText(FullText fullText,String column){
-    	throw new UnsupportedOperationException("FullText search is not supported on this database");
+    default String getFullTextQueryText(FullText fullText, String column) {
+        throw new UnsupportedOperationException("FullText search is not supported on this database");
     }
 
-    default boolean schemaExists(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
-        ResultSet schemaRs = metadata.getSchemas(catalog, schema);
+    default boolean schemaExists(DatabaseMetaData metadata, String schema) throws SQLException {
+        ResultSet schemaRs = metadata.getSchemas(null, schema);
         return schemaRs.next();
     }
-    
+
+    /**
+     * Returns all schemas. For some RDBMSes, like Cockroachdb and MariaDb, this is the database/catalog.
+     *
+     * @return The list of schema names.
+     */
+    List<String> getSchemaNames(DatabaseMetaData metaData);
+
+    /**
+     * Get all the Vertex tables. i.e. all tables starting with 'V_'
+     *
+     * @param metaData JDBC meta data.
+     * @return A triple holding the catalog, schema and table.
+     */
+    List<Triple<String, String, String>> getVertexTables(DatabaseMetaData metaData);
+
+    /**
+     * Get all the Edge tables. i.e. all tables starting with 'E_'
+     *
+     * @param metaData JDBC meta data.
+     * @return A triple holding the catalog, thea schema and the table.
+     */
+    List<Triple<String, String, String>> getEdgeTables(DatabaseMetaData metaData);
+
+    /**
+     * Get the columns for a table.
+     * @param metaData JDBC meta data.
+     * @return The columns.
+     */
+    List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
+                         String tableNamePattern, String columnNamePattern);
+
+    List<Triple<String, Boolean, String>> getIndexInfo(DatabaseMetaData metaData, String catalog,
+                                                       String schema, String table, boolean unique, boolean approximate);
+
     /**
      * extract all indices in one go
+     *
      * @param conn
      * @param catalog
      * @param schema
      * @return a map of indices references by key, the key being cat+schema+table
      * @throws SQLException
      */
-    default Map<String, Set<IndexRef>> extractIndices(Connection conn,String catalog,String schema) throws SQLException {
-    	return null;
+    default Map<String, Set<IndexRef>> extractIndices(Connection conn, String catalog, String schema) throws SQLException {
+        return null;
     }
 
     boolean isSystemIndex(String indexName);
@@ -512,13 +629,82 @@ public interface SqlDialect {
      * Instead the columns are hardcoded as "C1", "C2"
      *
      * @return true if the valueExpression is similar to Postgresql. i.e. <code>select * from values((1,1),(2,2)) as tmp("field1", "field2")</code>
-     *         H2 returns false and has some special code for it.
+     * H2 returns false and has some special code for it.
      */
     default boolean supportsFullValueExpression() {
         return true;
     }
 
+    /**
+     * Indicates if the rdbms supports 'VALUES (x,y)" table expressions.
+     * This is needed because Mariadb does not.
+     *
+     * @return true is 'VALUES' expression is supported else false.
+     */
+    default boolean supportsValuesExpression() {
+        return true;
+    }
+
+
     default boolean supportsDropSchemas() {
         return true;
     }
+
+    /**
+     * This is needed for Cockroachdb where the index needs to be specified as a part of the 'CREATE TABLE' statement.
+     *
+     * @return true if the indices must be specified together with the 'CREATE TABLE' sql, else false.
+     */
+    default boolean isIndexPartOfCreateTable() {
+        return false;
+    }
+
+
+    default String sqlInsertEmptyValues() {
+        return " DEFAULT VALUES";
+    }
+
+    /**
+     * MariaDb can not index the LONGTEXT type. It needs to know how many characters to index.
+     *
+     * @return Return true is the number of characters to index needs to be specified.
+     */
+    default boolean requiresIndexLengthLimit() {
+        return false;
+    }
+
+    /**
+     * Convert a value to insert into the db so that it can be used in a 'values' sql clause.
+     *
+     * @param propertyType The type of the property.
+     * @param value        The value of the property.
+     * @return The value that can be used in a sql 'from' clause.
+     */
+    String valueToValuesString(PropertyType propertyType, Object value);
+
+    /**
+     * An easy way to see if a dialect supports the given type of not.
+     *
+     * @param propertyType A {@link PropertyType} representing the type of the property.
+     * @return true if the PropertyType is supported else false.
+     */
+    boolean supportsType(PropertyType propertyType);
+
+    /**
+     * Returns the number of parameters that can be passed into a sql 'IN' statement.
+     *
+     * @return
+     */
+    int sqlInParameterLimit();
+
+    /**
+     * This is for Cockroachdb that only allows partial transactional schema creation.
+     * It to create schema elements if the transtion has already been written to.
+     *
+     * @return false if there is no need to force a commit before schema creation.
+     */
+    default boolean needsSchemaCreationPrecommit() {
+        return false;
+    }
+
 }

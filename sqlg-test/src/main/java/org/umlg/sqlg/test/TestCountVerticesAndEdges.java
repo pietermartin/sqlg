@@ -13,7 +13,7 @@ public class TestCountVerticesAndEdges extends BaseTest {
 
     @Test
     public void testCountVertices()  {
-        this.sqlgGraph.addVertex(T.label, "V1", "name", "v1");
+        this.sqlgGraph.addVertex(T.label, "A1", "name", "a1");
         this.sqlgGraph.addVertex(T.label, "v2", "name", "v2");
         this.sqlgGraph.addVertex(T.label, "v3", "name", "v3");
         this.sqlgGraph.addVertex(T.label, "v1", "name", "v4");

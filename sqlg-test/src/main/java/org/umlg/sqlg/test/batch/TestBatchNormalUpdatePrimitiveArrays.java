@@ -20,7 +20,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
         BaseTest.beforeClass();
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
+        if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
     }
@@ -32,6 +32,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testStringArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         String[] stringArray = new String[]{"a", "b"};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "stringArray1", stringArray);
@@ -72,6 +73,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testshortArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         short[] shortArray = new short[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "shortArray1", shortArray);
@@ -114,6 +116,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
     @Test
     public void testShortArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
         Short[] shortArray = new Short[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "shortArray1", shortArray);
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "shortArray2", shortArray);
@@ -153,6 +156,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testintArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         int[] intArray = new int[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "intArray1", intArray);
@@ -194,6 +198,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testIntegerArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Integer[] integerArray = new Integer[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "integerArray1", integerArray);
@@ -234,6 +239,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testbooleanArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         boolean[] booleanArray = new boolean[]{true, true};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "booleanArray1", booleanArray);
@@ -275,6 +281,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBooleanArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Boolean[] booleanArray = new Boolean[]{true, true};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "booleanArray1", booleanArray);
@@ -316,6 +323,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testbyteArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         byte[] byteArray = new byte[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "byteArray1", byteArray);
@@ -398,6 +406,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testlongArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         long[] longArray = new long[]{1L, 2L};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "longArray1", longArray);
@@ -439,6 +448,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testLongArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Long[] longArray = new Long[]{1L, 2L};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "longArray1", longArray);
@@ -480,6 +490,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testfloatArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         float[] floatArray = new float[]{1F, 2F};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "floatArray1", floatArray);
@@ -521,6 +532,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testFloatArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Float[] floatArray = new Float[]{1F, 2F};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "floatArray1", floatArray);
@@ -562,6 +574,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testdoubleArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         double[] doubleArray = new double[]{1D, 2D};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "doubleArray1", doubleArray);
@@ -603,6 +616,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testDoubleArrayUpdateNull() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Double[] doubleArray = new Double[]{1D, 2D};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "doubleArray1", doubleArray);
@@ -644,6 +658,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayString() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new String[]{"a", "b"});
         this.sqlgGraph.tx().commit();
@@ -666,6 +681,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayshort() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new short[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -688,6 +704,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayShort() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Short[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -710,6 +727,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayInt() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new int[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -732,6 +750,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayInteger() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Integer[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -754,6 +773,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayboolean() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new boolean[]{true, false});
         this.sqlgGraph.tx().commit();
@@ -776,6 +796,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayBoolean() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Boolean[]{true, false});
         this.sqlgGraph.tx().commit();
@@ -798,6 +819,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArraybyte() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new byte[]{1, 3});
         this.sqlgGraph.tx().commit();
@@ -820,6 +842,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayByte() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Byte[] bytes = {1, 3};
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", bytes);
@@ -843,6 +866,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArraylong() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new long[]{1L, 3L});
         this.sqlgGraph.tx().commit();
@@ -865,6 +889,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayLong() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Long[] longs = {1L, 3L};
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", longs);
@@ -888,6 +913,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayfloat() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new float[]{1.1f, 3.3f});
         this.sqlgGraph.tx().commit();
@@ -910,6 +936,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayFloat() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Float[]{1.1f, 2.2f});
         this.sqlgGraph.tx().commit();
@@ -932,6 +959,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArraydouble() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new double[]{1.1d, 3.3d});
         this.sqlgGraph.tx().commit();
@@ -954,6 +982,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
 
     @Test
     public void testBatchUpdateArrayDouble() throws InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Double[]{1.1d, 2.2d});
         this.sqlgGraph.tx().commit();

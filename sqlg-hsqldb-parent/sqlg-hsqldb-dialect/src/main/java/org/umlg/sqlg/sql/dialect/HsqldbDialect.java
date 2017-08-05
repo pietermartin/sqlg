@@ -1,12 +1,15 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.hsqldb.jdbc.JDBCArrayBasic;
+import org.hsqldb.lib.StringConverter;
 import org.hsqldb.types.Type;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -18,7 +21,7 @@ import java.util.*;
  * Date: 2014/07/16
  * Time: 3:09 PM
  */
-public class HsqldbDialect extends BaseSqlDialect {
+public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     public HsqldbDialect() {
         super();
@@ -37,6 +40,150 @@ public class HsqldbDialect extends BaseSqlDialect {
     @Override
     public boolean supportsDropSchemas() {
         return false;
+    }
+
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
+        switch (propertyType) {
+            case STRING:
+                return "'" + value.toString() + "'";
+            case STRING_ARRAY:
+                return toValuesArray(true, value).toString();
+            case BYTE:
+                return value.toString();
+            case byte_ARRAY:
+                return StringConverter.byteArrayToSQLHexString((byte[]) value);
+            case BYTE_ARRAY:
+                return StringConverter.byteArrayToSQLHexString(
+                        SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value)
+                );
+            case BOOLEAN:
+                return value.toString();
+            case boolean_ARRAY:
+                return toValuesArray(false, value).toString();
+            case BOOLEAN_ARRAY:
+                return toValuesArray(false, value).toString();
+            case SHORT:
+                return value.toString();
+            case short_ARRAY:
+                return toValuesArray(false, value).toString();
+            case SHORT_ARRAY:
+                return toValuesArray(false, value).toString();
+            case INTEGER:
+                return value.toString();
+            case int_ARRAY:
+                return toValuesArray(false, value).toString();
+            case INTEGER_ARRAY:
+                return toValuesArray(false, value).toString();
+            case LONG:
+                return value.toString();
+            case long_ARRAY:
+                return toValuesArray(false, value).toString();
+            case LONG_ARRAY:
+                return toValuesArray(false, value).toString();
+            case DOUBLE:
+                return value.toString();
+            case double_ARRAY:
+                return toValuesArray(false, value).toString();
+            case DOUBLE_ARRAY:
+                return toValuesArray(false, value).toString();
+            case LOCALDATE:
+                return "'" + value.toString() + "'";
+            case LOCALDATE_ARRAY:
+                return toValuesArray(true, getArrayDriverType(propertyType), value).toString();
+            case LOCALDATETIME:
+                return "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime) value).toString() + "'";
+            case LOCALDATETIME_ARRAY:
+                return toLocalDateTimeArray(true, getArrayDriverType(propertyType), value).toString();
+            case LOCALTIME:
+                return "TIME '" + Time.valueOf((LocalTime) value).toString() + "'";
+            case LOCALTIME_ARRAY:
+                return toLocalTimeArray(true, getArrayDriverType(propertyType), value).toString();
+            default:
+                throw SqlgExceptions.invalidPropertyType(propertyType);
+        }
+    }
+
+    private StringBuilder toValuesArray(boolean quote, Object value) {
+        return toValuesArray(quote, "", value);
+    }
+
+    private StringBuilder toValuesArray(boolean quote, String type, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("ARRAY [");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+            sb.append(type);
+            sb.append(" ");
+            if (quote) {
+                sb.append("'");
+            }
+            sb.append(valueOfArray);
+            if (quote) {
+                sb.append("'");
+            }
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb;
+    }
+
+    private StringBuilder toLocalDateTimeArray(boolean quote, String type, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("ARRAY [");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            LocalDateTime valueOfArray = (LocalDateTime) java.lang.reflect.Array.get(value, i);
+            sb.append(type);
+            sb.append(" ");
+            if (quote) {
+                sb.append("'");
+            }
+            sb.append(Timestamp.valueOf(valueOfArray).toString());
+            sb.append("+0:00");
+            if (quote) {
+                sb.append("'");
+            }
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb;
+    }
+
+    private StringBuilder toLocalTimeArray(boolean quote, String type, Object value) {
+        StringBuilder sb;
+        int length;
+        sb = new StringBuilder();
+        sb.append("ARRAY [");
+        length = java.lang.reflect.Array.getLength(value);
+        for (int i = 0; i < length; i++) {
+            LocalTime valueOfArray = (LocalTime) java.lang.reflect.Array.get(value, i);
+            sb.append(type);
+            sb.append(" ");
+            if (quote) {
+                sb.append("'");
+            }
+            sb.append(Time.valueOf(valueOfArray).toString());
+            sb.append("+0:00");
+            if (quote) {
+                sb.append("'");
+            }
+            if (i < length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb;
     }
 
     @Override
@@ -272,47 +419,76 @@ public class HsqldbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+    public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return new int[]{Types.BOOLEAN};
             case BYTE:
-                return Types.TINYINT;
+                return new int[]{Types.TINYINT};
             case SHORT:
-                return Types.SMALLINT;
+                return new int[]{Types.SMALLINT};
             case INTEGER:
-                return Types.INTEGER;
+                return new int[]{Types.INTEGER};
             case LONG:
-                return Types.BIGINT;
+                return new int[]{Types.BIGINT};
             case DOUBLE:
-                return Types.DOUBLE;
+                return new int[]{Types.DOUBLE};
             case STRING:
-                return Types.CLOB;
+                return new int[]{Types.CLOB};
             case LOCALDATETIME:
-                return Types.TIMESTAMP;
+                return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
-                return Types.DATE;
+                return new int[]{Types.DATE};
             case LOCALTIME:
-                return Types.TIME;
-            case JSON:
-                //TODO support other others like Geometry...
-                return Types.OTHER;
+                return new int[]{Types.TIME};
+            case ZONEDDATETIME:
+                return new int[]{Types.TIMESTAMP, Types.CLOB};
+            case PERIOD:
+                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
+            case DURATION:
+                return new int[]{Types.BIGINT, Types.INTEGER};
+            case BYTE_ARRAY:
+                return new int[]{Types.ARRAY};
             case byte_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
             case boolean_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case BOOLEAN_ARRAY:
+                return new int[]{Types.ARRAY};
             case short_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case SHORT_ARRAY:
+                return new int[]{Types.ARRAY};
             case int_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case INTEGER_ARRAY:
+                return new int[]{Types.ARRAY};
             case long_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case LONG_ARRAY:
+                return new int[]{Types.ARRAY};
             case float_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case FLOAT_ARRAY:
+                return new int[]{Types.ARRAY};
             case double_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case DOUBLE_ARRAY:
+                return new int[]{Types.ARRAY};
             case STRING_ARRAY:
-                return Types.ARRAY;
+                return new int[]{Types.ARRAY};
+            case LOCALDATETIME_ARRAY:
+                return new int[]{Types.ARRAY};
+            case LOCALDATE_ARRAY:
+                return new int[]{Types.ARRAY};
+            case LOCALTIME_ARRAY:
+                return new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY:
+                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -539,8 +715,13 @@ public class HsqldbDialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
     public boolean supportsBulkWithinOut() {
-        return false;
+        return true;
     }
 
     @Override
@@ -566,7 +747,6 @@ public class HsqldbDialect extends BaseSqlDialect {
                 "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
                 "\"name\" LONGVARCHAR);");
-//                "CONSTRAINT propertyUniqueConstraint UNIQUE(name));");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
@@ -706,4 +886,67 @@ public class HsqldbDialect extends BaseSqlDialect {
     public boolean isSystemIndex(String indexName) {
         return indexName.startsWith("SYS_IDX_") || indexName.startsWith("SYS_PK") || indexName.endsWith("SYS_FK");
     }
+
+    @Override
+    public boolean supportsType(PropertyType propertyType) {
+        switch (propertyType) {
+            case BOOLEAN:
+                return true;
+            case BOOLEAN_ARRAY:
+                return true;
+            case boolean_ARRAY:
+                return true;
+            case BYTE:
+                return true;
+            case BYTE_ARRAY:
+                return true;
+            case byte_ARRAY:
+                return true;
+            case SHORT:
+                return true;
+            case short_ARRAY:
+                return true;
+            case SHORT_ARRAY:
+                return true;
+            case INTEGER:
+                return true;
+            case int_ARRAY:
+                return true;
+            case INTEGER_ARRAY:
+                return true;
+            case LONG:
+                return true;
+            case long_ARRAY:
+                return true;
+            case LONG_ARRAY:
+                return true;
+            case DOUBLE:
+                return true;
+            case DOUBLE_ARRAY:
+                return true;
+            case double_ARRAY:
+                return true;
+            case STRING:
+                return true;
+            case LOCALDATE:
+                return true;
+            case LOCALDATE_ARRAY:
+                return true;
+            case LOCALDATETIME:
+                return true;
+            case LOCALDATETIME_ARRAY:
+                return true;
+            case LOCALTIME:
+                return true;
+            case LOCALTIME_ARRAY:
+                return true;
+            case JSON:
+                return true;
+            case STRING_ARRAY:
+                return true;
+            default:
+                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        }
+    }
+
 }

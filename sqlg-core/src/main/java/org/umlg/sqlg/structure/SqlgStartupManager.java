@@ -33,10 +33,10 @@ class SqlgStartupManager {
         this.sqlDialect = sqlgGraph.getSqlDialect();
     }
 
-    void loadSchema() {
+    void loadSqlgSchema() {
         try {
             if (logger.isDebugEnabled()) {
-                logger.debug("SchemaManager.loadSchema()...");
+                logger.debug("SchemaManager.loadSqlgSchema()...");
             }
             //check if the topology schema exists, if not createVertexLabel it
             boolean existSqlgSchema = existSqlgSchema();
@@ -72,7 +72,7 @@ class SqlgStartupManager {
                 stopWatch2.start();
                 loadSqlgSchemaFromInformationSchema();
                 stopWatch2.stop();
-                System.out.println("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
+                logger.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
                 logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             } else {
                 //make sure the property index column exist, this if for upgrading from 1.3.2 to 1.4.0
@@ -111,12 +111,18 @@ class SqlgStartupManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = "sqlg_schema";
-            ResultSet propertyRs = metadata.getColumns(catalog, schemaPattern, "V_property", "index_type");
-            if (!propertyRs.next()) {
+            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "V_property", "index_type");
+            if (!columns.isEmpty()) {
                 Statement statement = conn.createStatement();
                 String sql = this.sqlDialect.sqlgAddPropertyIndexTypeColumn();
                 statement.execute(sql);
             }
+//            ResultSet propertyRs = metadata.getColumns(catalog, schemaPattern, "V_property", "index_type");
+//            if (!propertyRs.next()) {
+//                Statement statement = conn.createStatement();
+//                String sql = this.sqlDialect.sqlgAddPropertyIndexTypeColumn();
+//                statement.execute(sql);
+//            }
         } catch (SQLException e) {
 //            throw new RuntimeException(e);
         }
@@ -131,220 +137,213 @@ class SqlgStartupManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
-            String[] types = new String[]{"TABLE"};
-            //load the schemas
-            try (ResultSet schemaRs = metadata.getSchemas()) {
-                while (schemaRs.next()) {
-                    String schema = schemaRs.getString(1);
-                    if (schema.equals(SQLG_SCHEMA) || schema.equals(this.sqlDialect.getPublicSchema()) ||
-                            this.sqlDialect.getInternalSchemas().contains(schema) ||
-                            this.sqlDialect.getGisSchemas().contains(schema)) {
-                        continue;
-                    }
-                    TopologyManager.addSchema(this.sqlgGraph, schema);
+            List<String> schemaNames = this.sqlDialect.getSchemaNames(metadata);
+            for (String schemaName : schemaNames) {
+                if (schemaName.equals(SQLG_SCHEMA) ||
+                        schemaName.equals(this.sqlDialect.getPublicSchema()) ||
+                        this.sqlDialect.getGisSchemas().contains(schemaName)) {
+                    continue;
                 }
+                TopologyManager.addSchema(this.sqlgGraph, schemaName);
             }
             Map<String, Set<IndexRef>> indices = this.sqlDialect.extractIndices(conn, catalog, schemaPattern);
 
             //load the vertices
-            try (ResultSet vertexRs = metadata.getTables(catalog, schemaPattern, "V_%", types)) {
-                while (vertexRs.next()) {
-                    String tblCat = vertexRs.getString(1);
-                    String schema = vertexRs.getString(2);
-                    String table = vertexRs.getString(3);
+            List<Triple<String, String, String>> vertexTables = this.sqlDialect.getVertexTables(metadata);
+            for (Triple<String, String, String> vertexTable : vertexTables) {
 
-                    //verify the table name matches our pattern
-                    if (!table.startsWith("V_")) {
-                        continue;
-                    }
+                String tblCat = vertexTable.getLeft();
+                String schema = vertexTable.getMiddle();
+                String table = vertexTable.getRight();
 
-                    //check if is internal, if so ignore.
-                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
-                    if (schema.equals(SQLG_SCHEMA) ||
-                            schemasToIgnore.contains(schema) ||
-                            this.sqlDialect.getGisSchemas().contains(schema)) {
-                        continue;
-                    }
-                    if (this.sqlDialect.getSpacialRefTable().contains(table)) {
-                        continue;
-                    }
+                //check if is internal, if so ignore.
+                Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
+                if (schema.equals(SQLG_SCHEMA) ||
+                        schemasToIgnore.contains(schema) ||
+                        this.sqlDialect.getGisSchemas().contains(schema)) {
+                    continue;
+                }
+                if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+                    continue;
+                }
+                Map<String, PropertyType> columns = new ConcurrentHashMap<>();
+                //get the columns
+//                ResultSet columnsRs = metadata.getColumns(tblCat, schema, table, null);
+                //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
+//                List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
+                List<Triple<String, Integer, String>> metaDatas = this.sqlDialect.getTableColumns(metadata, tblCat, schema, table, null);
+//                //noinspection Duplicates
+//                while (columnsRs.next()) {
+//                    String columnName = columnsRs.getString(4);
+//                    int columnType = columnsRs.getInt(5);
+//                    String typeName = columnsRs.getString("TYPE_NAME");
+//                    metaDatas.add(Triple.of(columnName, columnType, typeName));
+//                }
+//                columnsRs.close();
 
-                    Map<String, PropertyType> columns = new ConcurrentHashMap<>();
-                    //get the columns
-                    ResultSet columnsRs = metadata.getColumns(tblCat, schema, table, null);
-                    //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
-                    List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
-                    //noinspection Duplicates
-                    while (columnsRs.next()) {
-                        String columnName = columnsRs.getString(4);
-                        int columnType = columnsRs.getInt(5);
-                        String typeName = columnsRs.getString("TYPE_NAME");
-                        metaDatas.add(Triple.of(columnName, columnType, typeName));
-                    }
-                    columnsRs.close();
-
-                    ListIterator<Triple<String, Integer, String>> metaDataIter = metaDatas.listIterator();
-                    while (metaDataIter.hasNext()) {
-                        Triple<String, Integer, String> tripple = metaDataIter.next();
-                        String columnName = tripple.getLeft();
-                        int columnType = tripple.getMiddle();
-                        String typeName = tripple.getRight();
-                        if (!columnName.equals(Topology.ID)) {
-                            extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
-                        }
-                    }
-                    String label = table.substring(Topology.VERTEX_PREFIX.length());
-                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
-                    if (indices != null) {
-                        String key = tblCat + "." + schema + "." + table;
-                        Set<IndexRef> idxs = indices.get(key);
-                        if (idxs != null) {
-                            for (IndexRef ir : idxs) {
-                                TopologyManager.addIndex(sqlgGraph, schema, label, true, ir.getIndexName(), ir.getIndexType(), ir.getColumns());
-                            }
-                        }
-                    } else {
-                        extractIndices(metadata, tblCat, schema, table, label, true);
+                ListIterator<Triple<String, Integer, String>> metaDataIter = metaDatas.listIterator();
+                while (metaDataIter.hasNext()) {
+                    Triple<String, Integer, String> tripple = metaDataIter.next();
+                    String columnName = tripple.getLeft();
+                    int columnType = tripple.getMiddle();
+                    String typeName = tripple.getRight();
+                    if (!columnName.equals(Topology.ID)) {
+                        extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                     }
                 }
+                String label = table.substring(Topology.VERTEX_PREFIX.length());
+                TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
+                if (indices != null) {
+                    String key = tblCat + "." + schema + "." + table;
+                    Set<IndexRef> idxs = indices.get(key);
+                    if (idxs != null) {
+                        for (IndexRef ir : idxs) {
+                            TopologyManager.addIndex(sqlgGraph, schema, label, true, ir.getIndexName(), ir.getIndexType(), ir.getColumns());
+                        }
+                    }
+                } else {
+                    extractIndices(metadata, tblCat, schema, table, label, true);
+                }
             }
+
             //load the edges without their properties
-            try (ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types)) {
-                while (edgeRs.next()) {
-                    String edgCat = edgeRs.getString(1);
-                    String schema = edgeRs.getString(2);
-                    String table = edgeRs.getString(3);
+            List<Triple<String, String, String>> edgeTables = this.sqlDialect.getEdgeTables(metadata);
+            for (Triple<String, String, String> edgeTable : edgeTables) {
+                String edgCat = edgeTable.getLeft();
+                String schema = edgeTable.getMiddle();
+                String table = edgeTable.getRight();
 
-                    //verify the table name matches our pattern
-                    if (!table.startsWith("E_")) {
-                        continue;
-                    }
+                //check if is internal, if so ignore.
+                Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
+                if (schema.equals(SQLG_SCHEMA) ||
+                        schemasToIgnore.contains(schema) ||
+                        this.sqlDialect.getGisSchemas().contains(schema)) {
+                    continue;
+                }
+                if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+                    continue;
+                }
 
-                    //check if is internal, if so ignore.
-                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
-                    if (schema.equals(SQLG_SCHEMA) ||
-                            schemasToIgnore.contains(schema) ||
-                            this.sqlDialect.getGisSchemas().contains(schema)) {
-                        continue;
-                    }
-                    if (this.sqlDialect.getSpacialRefTable().contains(table)) {
-                        continue;
-                    }
-
-                    Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTableMap = new HashMap<>();
-                    Map<String, PropertyType> columns = Collections.emptyMap();
-                    //get the columns
-                    ResultSet columnsRs = metadata.getColumns(edgCat, schema, table, null);
-                    SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
-                    boolean edgeAdded = false;
-                    while (columnsRs.next()) {
-                        String column = columnsRs.getString(4);
-                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END))) {
-                            String[] split = column.split("\\.");
-                            SchemaTable foreignKey = SchemaTable.of(split[0], split[1]);
-                            if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                                SchemaTable schemaTable = SchemaTable.of(
-                                        split[0],
-                                        split[1].substring(0, split[1].length() - Topology.IN_VERTEX_COLUMN_END.length())
-                                );
-                                if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
-                                    MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
-                                    if (inSchemaTable.getLeft() == null) {
-                                        inSchemaTable.setLeft(schemaTable);
-                                    } else {
-                                        TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, true, foreignKey);
-                                    }
+                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTableMap = new HashMap<>();
+                Map<String, PropertyType> columns = Collections.emptyMap();
+                //get the columns
+                List<Triple<String, Integer, String>> tableColumns = this.sqlDialect.getTableColumns(metadata, edgCat, schema, table, null);
+                SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
+                boolean edgeAdded = false;
+                for (Triple<String, Integer, String> tableColumn : tableColumns) {
+                    String column = tableColumn.getLeft();
+                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END))) {
+                        String[] split = column.split("\\.");
+                        SchemaTable foreignKey = SchemaTable.of(split[0], split[1]);
+                        if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+                            SchemaTable schemaTable = SchemaTable.of(
+                                    split[0],
+                                    split[1].substring(0, split[1].length() - Topology.IN_VERTEX_COLUMN_END.length())
+                            );
+                            if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
+                                if (inSchemaTable.getLeft() == null) {
+                                    inSchemaTable.setLeft(schemaTable);
                                 } else {
-                                    inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
-                                }
-                            } else if (column.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                                SchemaTable schemaTable = SchemaTable.of(
-                                        split[0],
-                                        split[1].substring(0, split[1].length() - Topology.OUT_VERTEX_COLUMN_END.length())
-                                );
-                                if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
-                                    MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
-                                    if (outSchemaTable.getRight() == null) {
-                                        outSchemaTable.setRight(schemaTable);
+                                    if (inSchemaTable.getRight() == null) {
+                                        TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, foreignKey, inSchemaTable.getLeft(), columns);
+                                        edgeAdded = true;
                                     } else {
-                                        TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, false, foreignKey);
+                                        
                                     }
-                                } else {
-                                    inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
+                                    TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, true, foreignKey);
                                 }
+                            } else {
+                                inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
                             }
-                            MutablePair<SchemaTable, SchemaTable> inOutLabels = inOutSchemaTableMap.get(edgeSchemaTable);
-                            if (!edgeAdded && inOutLabels.getLeft() != null && inOutLabels.getRight() != null) {
-                                TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, inOutLabels.getRight(), inOutLabels.getLeft(), columns);
-                                edgeAdded = true;
+                        } else if (column.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+                            SchemaTable schemaTable = SchemaTable.of(
+                                    split[0],
+                                    split[1].substring(0, split[1].length() - Topology.OUT_VERTEX_COLUMN_END.length())
+                            );
+                            if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
+                                if (outSchemaTable.getRight() == null) {
+                                    outSchemaTable.setRight(schemaTable);
+                                } else {
+                                    if (outSchemaTable.getLeft() == null) {
+                                        TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, outSchemaTable.getRight(), outSchemaTable.getLeft(), columns);
+                                        edgeAdded = true;
+                                    }
+                                    TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, false, foreignKey);
+                                }
+                            } else {
+                                inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
                             }
+                        }
+                        MutablePair<SchemaTable, SchemaTable> inOutLabels = inOutSchemaTableMap.get(edgeSchemaTable);
+                        if (!edgeAdded && inOutLabels.getLeft() != null && inOutLabels.getRight() != null) {
+                            TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, inOutLabels.getRight(), inOutLabels.getLeft(), columns);
+                            edgeAdded = true;
                         }
                     }
                 }
             }
+
             //load the edges without their in and out vertices
-            try (ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types)) {
-                while (edgeRs.next()) {
-                    String edgCat = edgeRs.getString(1);
-                    String schema = edgeRs.getString(2);
-                    String table = edgeRs.getString(3);
+            for (Triple<String, String, String> edgeTable : edgeTables) {
 
-                    //verify the table name matches our pattern
-                    if (!table.startsWith("E_")) {
-                        continue;
-                    }
+                String edgCat = edgeTable.getLeft();
+                String schema = edgeTable.getMiddle();
+                String table = edgeTable.getRight();
 
-                    //check if is internal, if so ignore.
-                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
-                    if (schema.equals(SQLG_SCHEMA) ||
-                            schemasToIgnore.contains(schema) ||
-                            this.sqlDialect.getGisSchemas().contains(schema)) {
-                        continue;
-                    }
-                    if (this.sqlDialect.getSpacialRefTable().contains(table)) {
-                        continue;
-                    }
+                //check if is internal, if so ignore.
+                Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
+                if (schema.equals(SQLG_SCHEMA) ||
+                        schemasToIgnore.contains(schema) ||
+                        this.sqlDialect.getGisSchemas().contains(schema)) {
+                    continue;
+                }
+                if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+                    continue;
+                }
 
-                    Map<String, PropertyType> columns = new HashMap<>();
-                    //get the columns
-                    ResultSet columnsRs = metadata.getColumns(edgCat, schema, table, null);
-                    //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
-                    List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
-                    //noinspection Duplicates
-                    while (columnsRs.next()) {
-                        String columnName = columnsRs.getString(4);
-                        int columnType = columnsRs.getInt(5);
-                        String typeName = columnsRs.getString("TYPE_NAME");
-                        metaDatas.add(Triple.of(columnName, columnType, typeName));
-                    }
-                    columnsRs.close();
+                Map<String, PropertyType> columns = new HashMap<>();
+                //get the columns
 
-                    ListIterator<Triple<String, Integer, String>> metaDataIter = metaDatas.listIterator();
-                    while (metaDataIter.hasNext()) {
-                        Triple<String, Integer, String> tripple = metaDataIter.next();
-                        String columnName = tripple.getLeft();
-                        String typeName = tripple.getRight();
-                        int columnType = tripple.getMiddle();
-                        if (!columnName.equals(Topology.ID)) {
-                            extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
-                        }
-                    }
-                    TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
-                    String label = table.substring(Topology.EDGE_PREFIX.length());
-                    if (indices != null) {
-                        String key = edgCat + "." + schema + "." + table;
-                        Set<IndexRef> idxs = indices.get(key);
-                        if (idxs != null) {
-                            for (IndexRef ir : idxs) {
-                                TopologyManager.addIndex(sqlgGraph, schema, label, false, ir.getIndexName(), ir.getIndexType(), ir.getColumns());
-                            }
-                        }
-                    } else {
-                        extractIndices(metadata, edgCat, schema, table, label, false);
+                List<Triple<String, Integer, String>> metaDatas = this.sqlDialect.getTableColumns(metadata, edgCat, schema, table, null);
+//                ResultSet columnsRs = metadata.getColumns(edgCat, schema, table, null);
+//                //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
+//                List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
+//                //noinspection Duplicates
+//                while (columnsRs.next()) {
+//                    String columnName = columnsRs.getString(4);
+//                    int columnType = columnsRs.getInt(5);
+//                    String typeName = columnsRs.getString("TYPE_NAME");
+//                    metaDatas.add(Triple.of(columnName, columnType, typeName));
+//                }
+//                columnsRs.close();
+
+                ListIterator<Triple<String, Integer, String>> metaDataIter = metaDatas.listIterator();
+                while (metaDataIter.hasNext()) {
+                    Triple<String, Integer, String> tripple = metaDataIter.next();
+                    String columnName = tripple.getLeft();
+                    String typeName = tripple.getRight();
+                    int columnType = tripple.getMiddle();
+                    if (!columnName.equals(Topology.ID)) {
+                        extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                     }
                 }
-            }
+                TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
+                String label = table.substring(Topology.EDGE_PREFIX.length());
+                if (indices != null) {
+                    String key = edgCat + "." + schema + "." + table;
+                    Set<IndexRef> idxs = indices.get(key);
+                    if (idxs != null) {
+                        for (IndexRef ir : idxs) {
+                            TopologyManager.addIndex(sqlgGraph, schema, label, false, ir.getIndexName(), ir.getIndexType(), ir.getColumns());
+                        }
+                    }
+                } else {
+                    extractIndices(metadata, edgCat, schema, table, label, false);
+                }
 
+            }
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -354,36 +353,69 @@ class SqlgStartupManager {
 
     private void extractIndices(DatabaseMetaData metadata, String catalog, String schema
             , String table, String label, boolean isVertex) throws SQLException {
-        try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, true)) {
-            String lastIndexName = null;
-            IndexType lastIndexType = null;
-            List<String> lastColumns = new LinkedList<>();
-            while (indexRs.next()) {
-                String indexName = indexRs.getString("INDEX_NAME");
-                System.out.println(indexName);
-                boolean nonUnique = indexRs.getBoolean("NON_UNIQUE");
 
-                if (lastIndexName == null) {
-                    lastIndexName = indexName;
-                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
-                } else if (!lastIndexName.equals(indexName)) {
+        String lastIndexName = null;
+        IndexType lastIndexType = null;
+        List<String> lastColumns = new LinkedList<>();
+        List<Triple<String, Boolean, String>> indexes = this.sqlDialect.getIndexInfo(metadata, catalog, schema,table, false, true);
+        for (Triple<String, Boolean, String> index : indexes) {
+
+            String indexName = index.getLeft();
+            boolean nonUnique = index.getMiddle();
+            String columnName = index.getRight();
+
+            if (lastIndexName == null) {
+                lastIndexName = indexName;
+                lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
+            } else if (!lastIndexName.equals(indexName)) {
 //                    if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
-                    if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
-                        if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-                            //System.out.println(lastColumns);
-                            //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-                            //} else {
-                            TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
-                        }
+                if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
+                    if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
+                        //System.out.println(lastColumns);
+                        //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+                        //} else {
+                        TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
                     }
-                    lastColumns.clear();
-                    lastIndexName = indexName;
-                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
                 }
-
-                lastColumns.add(indexRs.getString("COLUMN_NAME"));
-
+                lastColumns.clear();
+                lastIndexName = indexName;
+                lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
             }
+
+            lastColumns.add(columnName);
+        }
+
+        
+//        try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, true)) {
+//            String lastIndexName = null;
+//            IndexType lastIndexType = null;
+//            List<String> lastColumns = new LinkedList<>();
+//            while (indexRs.next()) {
+//                String indexName = indexRs.getString("INDEX_NAME");
+//                System.out.println(indexName);
+//                boolean nonUnique = indexRs.getBoolean("NON_UNIQUE");
+//
+//                if (lastIndexName == null) {
+//                    lastIndexName = indexName;
+//                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
+//                } else if (!lastIndexName.equals(indexName)) {
+////                    if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+//                    if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
+//                        if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
+//                            //System.out.println(lastColumns);
+//                            //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+//                            //} else {
+//                            TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
+//                        }
+//                    }
+//                    lastColumns.clear();
+//                    lastIndexName = indexName;
+//                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
+//                }
+//
+//                lastColumns.add(indexRs.getString("COLUMN_NAME"));
+//
+//            }
 //            if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
             if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
                 if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
@@ -393,7 +425,7 @@ class SqlgStartupManager {
                     TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
                 }
             }
-        }
+//        }
     }
 
     private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) throws SQLException {
@@ -456,7 +488,7 @@ class SqlgStartupManager {
     private void createGuiSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE SCHEMA " + this.sqlDialect.maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + ";");
+            statement.execute(this.sqlDialect.sqlgGuiSchemaCreationScript());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -468,6 +500,9 @@ class SqlgStartupManager {
             List<String> creationScripts = this.sqlDialect.sqlgTopologyCreationScripts();
             //Hsqldb can not do this in one go
             for (String creationScript : creationScripts) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(creationScript);
+                }
                 statement.execute(creationScript);
             }
         } catch (SQLException e) {
@@ -478,12 +513,8 @@ class SqlgStartupManager {
     private boolean existSqlgSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
-            if (this.sqlDialect.supportSchemas()) {
-                DatabaseMetaData metadata = conn.getMetaData();
-                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, SQLG_SCHEMA);
-            } else {
-                throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
-            }
+            DatabaseMetaData metadata = conn.getMetaData();
+            return this.sqlDialect.schemaExists(metadata, SQLG_SCHEMA);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -492,12 +523,8 @@ class SqlgStartupManager {
     private boolean existDefaultSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
-            if (this.sqlDialect.supportSchemas()) {
-                DatabaseMetaData metadata = conn.getMetaData();
-                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, this.sqlDialect.getPublicSchema());
-            } else {
-                throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
-            }
+            DatabaseMetaData metadata = conn.getMetaData();
+            return this.sqlDialect.schemaExists(metadata, this.sqlDialect.getPublicSchema());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -506,12 +533,8 @@ class SqlgStartupManager {
     private boolean existGuiSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
-            if (this.sqlDialect.supportSchemas()) {
-                DatabaseMetaData metadata = conn.getMetaData();
-                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
-            } else {
-                throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
-            }
+            DatabaseMetaData metadata = conn.getMetaData();
+            return this.sqlDialect.schemaExists(metadata,Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -530,7 +553,7 @@ class SqlgStartupManager {
     private void createDefaultSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE SCHEMA IF NOT EXISTS " + this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()) + ";");
+            statement.execute(this.sqlDialect.createSchemaStatement(this.sqlDialect.getPublicSchema()));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

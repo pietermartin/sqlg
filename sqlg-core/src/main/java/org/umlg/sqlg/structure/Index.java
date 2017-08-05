@@ -16,7 +16,8 @@ import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2016/11/26
- * Time: 7:35 PM */
+ * Time: 7:35 PM
+ */
 public class Index implements TopologyInf {
 
     private Logger logger = LoggerFactory.getLogger(Index.class.getName());
@@ -60,12 +61,12 @@ public class Index implements TopologyInf {
     public String getName() {
         return name;
     }
-    
+
     @Override
     public String toString() {
-    	return getName();
+        return getName();
     }
-    
+
 
     @Override
     public int hashCode() {
@@ -74,7 +75,7 @@ public class Index implements TopologyInf {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) {
+        if (this == other) {
             return true;
         }
         if (!(other instanceof Index)) {
@@ -133,38 +134,46 @@ public class Index implements TopologyInf {
         sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
         sql.append(".");
         sql.append(sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
-        
-        if (indexType.isGIN()){
-        	sql.append(" USING GIN");
+
+
+        if (this.indexType.isGIN()) {
+            sql.append(" USING GIN");
         }
-        
+
         sql.append(" (");
-        List<PropertyColumn> props=getProperties();
-        if(IndexType.GIN_FULLTEXT.equals(getIndexType().getName())){
-        	sql.append("to_tsvector(");
-        	String conf=indexType.getProperties().get(IndexType.GIN_CONFIGURATION);
-        	if (conf!=null){
-        		sql.append("'"+conf+"'"); // need single quotes, no double
-        		sql.append(",");
-        	}
-        	int count = 1;
-	        for (PropertyColumn property : props) {
-	            sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
-	            if (count++ < props.size()) {
-	                sql.append(" || ' ' || ");
-	            }
-	        }
-	        sql.append(")");
+        List<PropertyColumn> props = getProperties();
+        if (IndexType.GIN_FULLTEXT.equals(getIndexType().getName())) {
+            sql.append("to_tsvector(");
+            String conf = indexType.getProperties().get(IndexType.GIN_CONFIGURATION);
+            if (conf != null) {
+                sql.append("'" + conf + "'"); // need single quotes, no double
+                sql.append(",");
+            }
+            int count = 1;
+            for (PropertyColumn property : props) {
+                sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
+                if (count++ < props.size()) {
+                    sql.append(" || ' ' || ");
+                }
+            }
+            sql.append(")");
         } else {
-	        int count = 1;
-	        for (PropertyColumn property : props) {
-	            sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
-	            if (count++ < props.size()) {
-	                sql.append(",");
-	            }
-	        }
+            int count = 1;
+            for (PropertyColumn property : props) {
+                sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
+                //This is for mariadb. It needs to know how many characters to index.
+                if (property.getPropertyType().isString() && sqlgGraph.getSqlDialect().requiresIndexLengthLimit()) {
+                    //This number is for MariaDb TEXT data type.
+                    //192 crashes with "Caused by: java.sql.SQLException: Specified key was too long; max key length is 767 bytes"
+                    //Some or other Innodb byte count magic I can't be bothered to understand.
+                    sql.append("(191)");
+                }
+                if (count++ < props.size()) {
+                    sql.append(", ");
+                }
+            }
         }
-        
+
         sql.append(")");
         if (sqlDialect.needsSemicolon()) {
             sql.append(";");
@@ -242,45 +251,46 @@ public class Index implements TopologyInf {
         return validationErrors;
 
     }
-    
+
     public AbstractLabel getParentLabel() {
-		return abstractLabel;
-	}
-    
+        return abstractLabel;
+    }
+
     public List<PropertyColumn> getProperties() {
-    	List<PropertyColumn> props=new ArrayList<>(properties);
-    	if (this.getParentLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
-    		props.addAll(uncommittedProperties);
-    	}
-		return Collections.unmodifiableList(props);
-	}
-    
+        List<PropertyColumn> props = new ArrayList<>(properties);
+        if (this.getParentLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
+            props.addAll(uncommittedProperties);
+        }
+        return Collections.unmodifiableList(props);
+    }
+
     /**
      * delete the index from the database
+     *
      * @param sqlgGraph
      */
-    void delete(SqlgGraph sqlgGraph){
-    	 StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
-         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
-         sql.append(sqlDialect.maybeWrapInQoutes(getParentLabel().getSchema().getName()));
-         sql.append(".");
-         sql.append(sqlDialect.maybeWrapInQoutes(getName()));
-         if (sqlDialect.needsSemicolon()) {
-             sql.append(";");
-         }
-         if (logger.isDebugEnabled()) {
-             logger.debug(sql.toString());
-         }
-         Connection conn = sqlgGraph.tx().getConnection();
-         try (Statement stmt = conn.createStatement()) {
-             stmt.execute(sql.toString());
-         } catch (SQLException e) {
-             throw new RuntimeException(e);
-         }
+    void delete(SqlgGraph sqlgGraph) {
+        StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
+        SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+        sql.append(sqlDialect.maybeWrapInQoutes(getParentLabel().getSchema().getName()));
+        sql.append(".");
+        sql.append(sqlDialect.maybeWrapInQoutes(getName()));
+        if (sqlDialect.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
-    
+
     @Override
     public void remove(boolean preserveData) {
-    	getParentLabel().removeIndex(this, preserveData);
+        getParentLabel().removeIndex(this, preserveData);
     }
 }

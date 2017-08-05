@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.text.RandomStringGenerator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,13 @@ public abstract class AbstractLabel implements TopologyInf {
     public Index ensureIndexExists(final IndexType indexType, final List<PropertyColumn> properties) {
         String prefix = this instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
         SchemaTable schemaTable = SchemaTable.of(this.getSchema().getName(), this.getLabel());
+
         String indexName = this.sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
+        if (indexName.length() > this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength()) {
+            RandomStringGenerator generator = new RandomStringGenerator.Builder()
+                    .withinRange('a', 'z').build();
+            indexName = generator.generate(this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength());
+        }
 
         Optional<Index> indexOptional = this.getIndex(indexName);
         if (!indexOptional.isPresent()) {

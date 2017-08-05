@@ -75,9 +75,6 @@ public class Topology {
 
     public static final String SQLG_NOTIFICATION_CHANNEL = "SQLG_NOTIFY";
 
-    //temporary table map. it is in a thread local as temporary tables are only valid per session/connection.
-    private final ThreadLocal<Map<String, Map<String, PropertyType>>> threadLocalTemporaryTables = ThreadLocal.withInitial(HashMap::new);
-
     //ownPids are the pids to ignore as it is what the graph sent a notification for.
     private Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
 
@@ -585,17 +582,14 @@ public class Topology {
         return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties);
     }
 
-    public void ensureVertexTemporaryTableExist(final String schema, final String table, final Map<String, PropertyType> columns) {
+    public void ensureTemporaryVertexTableExist(final String schema, final String label, final Map<String, PropertyType> properties) {
         Objects.requireNonNull(schema, "Given schema may not be null");
-        Objects.requireNonNull(table, "Given table may not be null");
-        final String prefixedTable = VERTEX_PREFIX + table;
-        if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
-            lock();
-            if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
-                this.threadLocalTemporaryTables.get().put(prefixedTable, columns);
-                createTempTable(prefixedTable, columns);
-            }
-        }
+        Preconditions.checkState(schema.equals(this.sqlgGraph.getSqlDialect().getPublicSchema()), "Temporary vertices may only be created in the '" + this.sqlgGraph.getSqlDialect().getPublicSchema() + "' schema. Found + " + schema);
+        Objects.requireNonNull(label, "Given label may not be null");
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
+        Schema publicSchema = getPublicSchema();
+        Preconditions.checkState(publicSchema != null, "Schema must be present after calling ensureSchemaExist");
+        publicSchema.ensureTemporaryVertexTableExist(label, properties);
     }
 
     /**
@@ -707,35 +701,6 @@ public class Topology {
         return globalUniqueIndexSchema.ensureGlobalUniqueIndexExist(properties);
     }
 
-    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
-        this.sqlgGraph.getSqlDialect().assertTableName(tableName);
-        StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTemporaryTableStatement());
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tableName));
-        sql.append("(");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" ");
-        sql.append(this.sqlgGraph.getSqlDialect().getAutoIncrementPrimaryKeyConstruct());
-        if (columns.size() > 0) {
-            sql.append(", ");
-        }
-        AbstractLabel.buildColumns(this.sqlgGraph, columns, sql);
-        sql.append(") ");
-        sql.append(this.sqlgGraph.getSqlDialect().afterCreateTemporaryTableStatement());
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
     private void beforeCommit() {
         if (this.distributed) {
             Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
@@ -758,10 +723,10 @@ public class Topology {
     }
 
     private void afterCommit() {
-        this.threadLocalTemporaryTables.remove();
         if (this.isSqlWriteLockHeldByCurrentThread()) {
             z_internalTopologyMapWriteLock();
             try {
+                getPublicSchema().removeTemporaryTables();
                 for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
                     Map.Entry<String, Schema> entry = it.next();
                     this.schemas.put(entry.getKey(), entry.getValue());
@@ -812,8 +777,8 @@ public class Topology {
     }
 
     private void afterRollback() {
-        this.threadLocalTemporaryTables.remove();
         if (this.isSqlWriteLockHeldByCurrentThread()) {
+            getPublicSchema().removeTemporaryTables();
             for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Schema> entry = it.next();
                 entry.getValue().afterRollback();
@@ -959,13 +924,12 @@ public class Topology {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
+            List<String> schemaNames = this.sqlgGraph.getSqlDialect().getSchemaNames(metadata);
             for (Schema schema : getSchemas()) {
-                try (ResultSet schemaRs = metadata.getSchemas(null, schema.getName())) {
-                    if (!schemaRs.next()) {
-                        this.validationErrors.add(new TopologyValidationError(schema));
-                    } else {
-                        this.validationErrors.addAll(schema.validateTopology(metadata));
-                    }
+                if (schemaNames.contains(schema.getName())) {
+                    this.validationErrors.addAll(schema.validateTopology(metadata));
+                } else {
+                    this.validationErrors.add(new TopologyValidationError(schema));
                 }
             }
         } catch (SQLException e) {
@@ -1454,12 +1418,12 @@ public class Topology {
         if (result != null) {
             return Collections.unmodifiableMap(result);
         }
-        if (isSqlWriteLockHeldByCurrentThread()) {
-            Map<String, PropertyType> temporaryPropertyMap = this.threadLocalTemporaryTables.get().get(schemaTable.getTable());
-            if (temporaryPropertyMap != null) {
-                return Collections.unmodifiableMap(temporaryPropertyMap);
-            }
-        }
+//        if (isSqlWriteLockHeldByCurrentThread()) {
+//            Map<String, PropertyType> temporaryPropertyMap = this.threadLocalTemporaryTables.get().get(schemaTable.getTable());
+//            if (temporaryPropertyMap != null) {
+//                return Collections.unmodifiableMap(temporaryPropertyMap);
+//            }
+//        }
         return Collections.emptyMap();
     }
 

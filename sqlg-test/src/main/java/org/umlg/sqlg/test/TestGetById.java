@@ -44,7 +44,7 @@ public class TestGetById extends BaseTest {
 
     @Test
     public void testByCollectionOfIds() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();

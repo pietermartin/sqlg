@@ -123,6 +123,10 @@ public abstract class BaseTest {
         }
     }
 
+    public static boolean isPostgres() {
+        return configuration.getString("jdbc.url").contains("postgresql");
+    }
+
     /**
      * return a clone of the configuration
      *
