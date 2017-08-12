@@ -669,11 +669,6 @@ public interface SqlDialect {
         return true;
     }
 
-
-    default boolean supportsDropSchemas() {
-        return true;
-    }
-
     /**
      * This is needed for Cockroachdb where the index needs to be specified as a part of the 'CREATE TABLE' statement.
      *

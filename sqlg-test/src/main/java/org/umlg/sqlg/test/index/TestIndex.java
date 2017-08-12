@@ -14,10 +14,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -117,9 +114,10 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnVertex2() throws SQLException {
-        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }});
+        vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList<>(vertexLabel.getProperties().values()));
         this.sqlgGraph.tx().commit();
         for (int i = 0; i < 5000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john" + i);
