@@ -671,6 +671,20 @@ public class H2Dialect extends BaseSqlDialect {
             case LOCALTIME_ARRAY:
                 Object[] times = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
+            case JSON_ARRAY:
+                String[] jsons = SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
+                JsonNode[] jsonNodes = new JsonNode[jsons.length];
+                ObjectMapper objectMapper = new ObjectMapper();
+                int count = 0;
+                for (String json : jsons) {
+                    try {
+                        JsonNode jsonNode = objectMapper.readTree(json);
+                        jsonNodes[count++] = jsonNode;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return jsonNodes;
             default:
                 throw new IllegalStateException("Unhandled property type " + propertyType.name());
         }
