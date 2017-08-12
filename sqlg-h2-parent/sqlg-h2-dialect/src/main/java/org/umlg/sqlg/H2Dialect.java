@@ -362,6 +362,8 @@ public class H2Dialect extends BaseSqlDialect {
                 return new int[]{Types.ARRAY, Types.ARRAY};
             case PERIOD_ARRAY:
                 return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
+            case JSON_ARRAY:
+                return new int[]{Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -707,7 +709,69 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsType(PropertyType propertyType) {
-        return false;
+        switch (propertyType) {
+            case BOOLEAN:
+                return true;
+            case BOOLEAN_ARRAY:
+                return true;
+            case boolean_ARRAY:
+                return true;
+            case BYTE:
+                return true;
+            case BYTE_ARRAY:
+                return true;
+            case byte_ARRAY:
+                return true;
+            case SHORT:
+                return true;
+            case short_ARRAY:
+                return true;
+            case SHORT_ARRAY:
+                return true;
+            case INTEGER:
+                return true;
+            case int_ARRAY:
+                return true;
+            case INTEGER_ARRAY:
+                return true;
+            case LONG:
+                return true;
+            case long_ARRAY:
+                return true;
+            case LONG_ARRAY:
+                return true;
+            case DOUBLE:
+                return true;
+            case DOUBLE_ARRAY:
+                return true;
+            case double_ARRAY:
+                return true;
+            case STRING:
+                return true;
+            case LOCALDATE:
+                return true;
+            case LOCALDATE_ARRAY:
+                return true;
+            case LOCALDATETIME:
+                return true;
+            case LOCALDATETIME_ARRAY:
+                return true;
+            case LOCALTIME:
+                return true;
+            case LOCALTIME_ARRAY:
+                return true;
+            case JSON:
+                return true;
+            case STRING_ARRAY:
+                return true;
+            default:
+                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        }
+    }
+
+    @Override
+    public boolean supportsJsonArrayValues() {
+        return true;
     }
 
 }
