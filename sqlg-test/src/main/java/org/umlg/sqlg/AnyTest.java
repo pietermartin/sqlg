@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.vertex.TestAddTemporaryVertex;
+import org.umlg.sqlg.test.schema.TestLoadSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,12 +10,7 @@ import org.umlg.sqlg.test.vertex.TestAddTemporaryVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestLoadSchema.class,
-//        TestJson.class,
-//        TestRemoveProperty.class,
-//        TestBatchJson.class,
-//        TestJsonUpdate.class,
-        TestAddTemporaryVertex.class
+        TestLoadSchema.class,
 })
 public class AnyTest {
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerConnection;
@@ -15,6 +16,7 @@ import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import javax.xml.bind.DatatypeConverter;
 import java.lang.reflect.Array;
 import java.sql.*;
 import java.time.*;
@@ -124,55 +126,49 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public void validateProperty(Object key, Object value) {
-        if (value instanceof String || value instanceof String[]) {
+        if (value instanceof String) {
             return;
         }
-        if (value instanceof Character || value instanceof Character[]) {
+        if (value instanceof Character) {
             return;
         }
-        if (value instanceof Boolean || value instanceof Boolean[] || value instanceof boolean[]) {
+        if (value instanceof Boolean) {
             return;
         }
         if (value instanceof Byte || value instanceof Byte[] || value instanceof byte[]) {
             return;
         }
-        if (value instanceof Short || value instanceof Short[] || value instanceof short[]) {
+        if (value instanceof Short) {
             return;
         }
-        if (value instanceof Integer || value instanceof Integer[] || value instanceof int[]) {
+        if (value instanceof Integer) {
             return;
         }
-        if (value instanceof Long || value instanceof Long[] || value instanceof long[]) {
+        if (value instanceof Long) {
             return;
         }
-        if (value instanceof Double || value instanceof Double[] || value instanceof double[]) {
+        if (value instanceof Double) {
             return;
         }
-        if (value instanceof Float || value instanceof Float[] || value instanceof float[]) {
+        if (value instanceof LocalDate) {
             return;
         }
-        if (value instanceof LocalDate || value instanceof LocalDate[]) {
+        if (value instanceof LocalDateTime) {
             return;
         }
-        if (value instanceof LocalDateTime || value instanceof LocalDateTime[]) {
+        if (value instanceof ZonedDateTime) {
             return;
         }
-        if (value instanceof ZonedDateTime || value instanceof ZonedDateTime[]) {
+        if (value instanceof LocalTime) {
             return;
         }
-        if (value instanceof LocalTime || value instanceof LocalTime[]) {
+        if (value instanceof Period) {
             return;
         }
-        if (value instanceof Period || value instanceof Period[]) {
-            return;
-        }
-        if (value instanceof Duration || value instanceof Duration[]) {
+        if (value instanceof Duration) {
             return;
         }
         if (value instanceof JsonNode) {
-            return;
-        }
-        if (value instanceof JsonNode[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -495,7 +491,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsBulkWithinOut() {
-        return false;
+        return true;
     }
 
     @Override
@@ -617,13 +613,37 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String valueToValuesString(PropertyType propertyType, Object value) {
-        throw new RuntimeException("Not yet implemented");
-    }
-
-    @Override
     public boolean supportsType(PropertyType propertyType) {
-        return false;
+        switch (propertyType) {
+            case BOOLEAN:
+                return true;
+            case BYTE:
+                return true;
+            case BYTE_ARRAY:
+                return true;
+            case byte_ARRAY:
+                return true;
+            case SHORT:
+                return true;
+            case INTEGER:
+                return true;
+            case LONG:
+                return true;
+            case DOUBLE:
+                return true;
+            case STRING:
+                return true;
+            case LOCALDATE:
+                return true;
+            case LOCALDATETIME:
+                return true;
+            case LOCALTIME:
+                return true;
+            case JSON:
+                return true;
+            default:
+                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        }
     }
 
     @Override
@@ -891,4 +911,46 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return "DROP SCHEMA " + maybeWrapInQoutes(schema) + (needsSemicolon() ? ";" : "");
     }
 
+    @Override
+    public String valueToValuesString(PropertyType propertyType, Object value) {
+        Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
+        switch (propertyType) {
+            case STRING:
+                return "'" + value.toString() + "'";
+            case BYTE:
+                return value.toString();
+            case byte_ARRAY:
+                //Mssql likes to have 0x prefix for binary literal
+                return "0x" + DatatypeConverter.printHexBinary((byte[]) value);
+            case BYTE_ARRAY:
+                //Mssql likes to have 0x prefix for binary literal
+                byte[] bytes = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value);
+                return "0x" + DatatypeConverter.printHexBinary(bytes);
+            case BOOLEAN:
+                Boolean b = (Boolean)value;
+                if (b) {
+                    return Integer.valueOf(1).toString();
+                } else {
+                    return Integer.valueOf(0).toString();
+                }
+            case SHORT:
+                return value.toString();
+            case INTEGER:
+                return value.toString();
+            case LONG:
+                return value.toString();
+            case DOUBLE:
+                return value.toString();
+            case LOCALDATE:
+                return "'" + value.toString() + "'";
+            case LOCALDATETIME:
+                return "'" + Timestamp.valueOf((LocalDateTime) value).toString() + "'";
+            case LOCALTIME:
+                return "'" + Time.valueOf((LocalTime) value).toString() + "'";
+            case JSON:
+                return "'" + value.toString() + "'";
+            default:
+                throw SqlgExceptions.invalidPropertyType(propertyType);
+        }
+    }
 }

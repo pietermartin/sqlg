@@ -9,3 +9,7 @@ temp2
 subgraph
 prototype
 target
+
+
+Mssql Server collate
+CREATE DATABASE blah COLLATE SQL_Latin1_General_Cp1_CS_AS

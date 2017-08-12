@@ -102,6 +102,10 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return "TIME '" + Time.valueOf((LocalTime) value).toString() + "'";
             case LOCALTIME_ARRAY:
                 return toLocalTimeArray(true, getArrayDriverType(propertyType), value).toString();
+            case JSON:
+                return "'" + value.toString() + "'";
+            case JSON_ARRAY:
+                return toValuesArray(true, value).toString();
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
         }
@@ -969,6 +973,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case JSON:
                 return true;
             case STRING_ARRAY:
+                return true;
+            case JSON_ARRAY:
                 return true;
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
