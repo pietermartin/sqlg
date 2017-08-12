@@ -669,15 +669,6 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
-        try {
-            preparedStatement.setString(parameterStartIndex, right.toString());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
     }
@@ -695,23 +686,6 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
-    }
-
-    @Override
-    public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        switch (propertyType) {
-            case JSON:
-                ObjectMapper objectMapper = new ObjectMapper();
-                try {
-                    JsonNode jsonNode = objectMapper.readTree(o.toString());
-                    properties.put(columnName, jsonNode);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                break;
-            default:
-                throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
-        }
     }
 
     @Override

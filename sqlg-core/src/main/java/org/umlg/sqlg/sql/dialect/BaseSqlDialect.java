@@ -1,5 +1,7 @@
 package org.umlg.sqlg.sql.dialect;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -8,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.util.*;
@@ -1056,4 +1059,31 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             }
         }
     }
+
+    @Override
+    public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
+        try {
+            preparedStatement.setString(parameterStartIndex, right.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
+        switch (propertyType) {
+            case JSON:
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    JsonNode jsonNode = objectMapper.readTree(o.toString());
+                    properties.put(columnName, jsonNode);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                break;
+            default:
+                throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
+        }
+    }
+
 }

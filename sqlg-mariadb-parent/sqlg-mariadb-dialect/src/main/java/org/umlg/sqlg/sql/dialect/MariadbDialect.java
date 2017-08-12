@@ -283,6 +283,9 @@ public class MariadbDialect extends BaseSqlDialect {
         if (value instanceof Duration) {
             return;
         }
+        if (value instanceof JsonNode) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -344,6 +347,9 @@ public class MariadbDialect extends BaseSqlDialect {
             return;
         }
         if (value instanceof Period[]) {
+            return;
+        }
+        if (value instanceof JsonNode[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -581,16 +587,6 @@ public class MariadbDialect extends BaseSqlDialect {
     @Override
     public List<String> getGisSchemas() {
         return Collections.emptyList();
-    }
-
-    @Override
-    public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
-        throw new IllegalStateException("Hsqldb does not support json types, this should not have happened!");
-    }
-
-    @Override
-    public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
     }
 
     @Override
