@@ -187,9 +187,9 @@ public class BatchManager {
         }
     }
 
-    public Map<SchemaTable, Pair<Long, Long>> flush() {
+    public void flush() {
         this.isBusyFlushing = true;
-        Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
+        this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
         this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
         this.sqlDialect.flushVertexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
         this.sqlDialect.flushEdgePropertyCache(this.sqlgGraph, this.edgePropertyCache);
@@ -203,7 +203,6 @@ public class BatchManager {
         this.sqlDialect.flushEdgeGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.edgePropertyCache);
         this.sqlDialect.flushRemovedGlobalUniqueIndexVertices(this.sqlgGraph, this.removeVertexCache);
         this.clear();
-        return verticesRange;
     }
 
     public void close() {

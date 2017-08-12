@@ -28,7 +28,11 @@ public class TestAddTemporaryVertex extends BaseTest {
             sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) +
                     "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
         } else {
-            sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
+            if (!this.sqlgGraph.getSqlDialect().needsTemporaryTablePrefix()) {
+                sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
+            } else {
+                sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().temporaryTablePrefix() + "V_A");
+            }
         }
         try (PreparedStatement s = conn.prepareStatement(sql)) {
             ResultSet resultSet = s.executeQuery();

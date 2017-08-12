@@ -201,9 +201,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      *                    3) The properties as a map of key values
      */
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
+    public void flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         Connection con = sqlgGraph.tx().getConnection();
-        Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
             String sql = internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, schemaTable.isTemporary(), schemaTable.getSchema(), schemaTable.getTable(), vertices.getLeft());
@@ -236,11 +235,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
                     sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
                 }
-                verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
             }
-
         }
-        return verticesRanges;
     }
 
     @Override
@@ -270,6 +266,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             Map<String, Object> globalUniqueIndexValues = new HashMap<>();
                             if (value != null) {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, value);
+                                globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgEdge.id().toString());
+                                globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
+                                writeStreamingVertex(writer, globalUniqueIndexValues);
+                            } else {
+                                globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, null);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgEdge.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
                                 writeStreamingVertex(writer, globalUniqueIndexValues);
@@ -312,7 +313,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
                                 writeStreamingVertex(writer, globalUniqueIndexValues);
                             } else {
-                                globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, value);
+                                globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, null);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgVertex.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
                                 writeStreamingVertex(writer, globalUniqueIndexValues);
@@ -2497,7 +2498,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public boolean supportsJson() {
+    public boolean supportsJsonType() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsJsonArrayValues() {
         return true;
     }
 

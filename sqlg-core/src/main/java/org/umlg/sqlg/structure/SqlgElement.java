@@ -339,17 +339,6 @@ public abstract class SqlgElement implements Element {
         } else {
             return id().hashCode();
         }
-
-//        this.sqlgGraph.tx().readWrite();
-//        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-//            // if we have an ID, we have a constant hashcode
-//            if (this.id() != null) {
-//                return ElementHelper.hashCode(this);
-//            }
-//            return super.hashCode();
-//        } else {
-//            return ElementHelper.hashCode(this);
-//        }
     }
 
 
@@ -364,7 +353,6 @@ public abstract class SqlgElement implements Element {
     }
 
     protected <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
-//        this.sqlgGraph.tx().readWrite();
         load();
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
 
@@ -456,11 +444,20 @@ public abstract class SqlgElement implements Element {
             );
         } else {
             //Need to insert null values else the update the code will not work.
-            sqlgGraph.addVertex(
-                    T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
-                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, this.recordId.toString(),
-                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
-            );
+            if (sqlgGraph.getSqlDialect().uniqueIndexConsidersNullValuesEqual()) {
+                sqlgGraph.addVertex(
+                        T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                        GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, "dummy_" + UUID.randomUUID().toString(),
+                        GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, this.recordId.toString(),
+                        GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
+                );
+            } else {
+                sqlgGraph.addVertex(
+                        T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                        GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, this.recordId.toString(),
+                        GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
+                );
+            }
         }
     }
 

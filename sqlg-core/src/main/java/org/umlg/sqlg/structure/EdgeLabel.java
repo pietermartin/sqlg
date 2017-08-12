@@ -39,11 +39,11 @@ public class EdgeLabel extends AbstractLabel {
         return new EdgeLabel(true, edgeLabelName, outVertexLabel, inVertexLabel, properties);
     }
 
-    static EdgeLabel createEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    static EdgeLabel createEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties, Properties additional) {
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties);
-        edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
+        edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties, additional);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -100,7 +100,7 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    private void createEdgeTable(VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
+    private void createEdgeTable(VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns, Properties additional) {
 
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
@@ -118,7 +118,7 @@ public class EdgeLabel extends AbstractLabel {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        buildColumns(this.sqlgGraph, columns, sql);
+        buildColumns(this.sqlgGraph, columns, sql, additional);
         sql.append(", ");
         sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
         sql.append(" ");

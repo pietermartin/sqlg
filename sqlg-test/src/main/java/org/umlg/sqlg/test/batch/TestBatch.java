@@ -51,6 +51,8 @@ public class TestBatch extends BaseTest {
             v.property("value", "Rio’s Supermarket");
         }
         this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1001, this.sqlgGraph.traversal().V().hasLabel("A").has("value", "Rio’s Supermarket").count().next(), 0);
+        Assert.assertEquals(1001, this.sqlgGraph.traversal().V().hasLabel("A").has("name", "<NULL>").count().next(), 0);
     }
 
     @Test
@@ -1030,7 +1032,7 @@ public class TestBatch extends BaseTest {
         int j = 1;
         //createVertexLabel 280 foreign keys
         for (int i = 0; i < 2810; i++) {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, this.sqlgGraph.getSqlDialect().getPublicSchema() + ".WorkspaceElement", "name", "workspaceElement" + i);
             if (j == 281) {
                 j = 1;
             }
@@ -1044,7 +1046,7 @@ public class TestBatch extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Vertex> vertexes = this.sqlgGraph.traversal().V().has(T.label, "public.WorkspaceElement").toList();
+        List<Vertex> vertexes = this.sqlgGraph.traversal().V().has(T.label, this.sqlgGraph.getSqlDialect().getPublicSchema() + ".WorkspaceElement").toList();
         for (Vertex sqlgVertex : vertexes) {
             sqlgVertex.remove();
         }

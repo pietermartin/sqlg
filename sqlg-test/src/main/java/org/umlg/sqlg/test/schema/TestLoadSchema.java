@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
@@ -83,7 +82,6 @@ public class TestLoadSchema extends BaseTest {
 
     @Test
     public void testLoadingJson() throws Exception {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
         ObjectMapper objectMapper =  new ObjectMapper();
         ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
         json.put("username", "john");

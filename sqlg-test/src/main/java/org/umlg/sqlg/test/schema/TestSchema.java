@@ -225,10 +225,10 @@ public class TestSchema extends BaseTest {
 
     @Test
     public void testExistingSchema() throws SQLException {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsTransactionalSchema());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsSchemaIfNotExists());
         String schema = "A";
         Connection c = this.sqlgGraph.tx().getConnection();
-        try (Statement ps = c.createStatement();) {
+        try (Statement ps = c.createStatement()) {
             ps.executeUpdate("create schema " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
         }
         c.commit();

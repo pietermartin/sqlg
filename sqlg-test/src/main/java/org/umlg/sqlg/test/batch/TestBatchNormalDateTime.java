@@ -31,7 +31,6 @@ public class TestBatchNormalDateTime extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
-
     @Test
     public void testLocalDateTime() throws InterruptedException {
         this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);

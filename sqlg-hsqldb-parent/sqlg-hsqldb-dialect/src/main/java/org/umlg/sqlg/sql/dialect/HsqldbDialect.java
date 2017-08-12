@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -13,6 +14,7 @@ import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
@@ -253,6 +255,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
         if (value instanceof Duration) {
             return;
         }
+        if (value instanceof JsonNode) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -316,6 +321,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
         if (value instanceof Period[]) {
             return;
         }
+        if (value instanceof JsonNode[]) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
 
@@ -364,7 +372,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case STRING:
                 return new String[]{"LONGVARCHAR"};
             case JSON:
-                throw new IllegalStateException("HSQLDB does not support json types, use good ol string instead!");
+                return new String[]{"LONGVARCHAR"};
             case POINT:
                 throw new IllegalStateException("HSQLDB does not support gis types!");
             case POLYGON:
@@ -413,6 +421,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
             case PERIOD_ARRAY:
                 return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
+            case JSON_ARRAY:
+                return new String[]{"LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -447,6 +457,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
             case DURATION:
                 return new int[]{Types.BIGINT, Types.INTEGER};
+            case JSON:
+                return new int[]{Types.CLOB};
             case BYTE_ARRAY:
                 return new int[]{Types.ARRAY};
             case byte_ARRAY:
@@ -489,6 +501,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return new int[]{Types.ARRAY, Types.ARRAY};
             case PERIOD_ARRAY:
                 return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
+            case JSON_ARRAY:
+                return new int[]{Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -656,7 +670,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
-        throw new IllegalStateException("Hsqldb does not support json types, this should not have happened!");
+        try {
+            preparedStatement.setString(parameterStartIndex, right.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -681,7 +699,19 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
+        switch (propertyType) {
+            case JSON:
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    JsonNode jsonNode = objectMapper.readTree(o.toString());
+                    properties.put(columnName, jsonNode);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                break;
+            default:
+                throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
+        }
     }
 
     @Override
@@ -827,6 +857,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case ZONEDDATETIME_ARRAY:
                 type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
                 break;
+            case JSON_ARRAY:
+                type = Type.SQL_VARCHAR;
+                break;
             default:
                 throw new IllegalStateException("Unhandled array type " + propertyType.name());
         }
@@ -871,6 +904,20 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALTIME_ARRAY:
                 Object[] times = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
+            case JSON_ARRAY:
+                String[] jsons = SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
+                JsonNode[] jsonNodes = new JsonNode[jsons.length];
+                ObjectMapper objectMapper = new ObjectMapper();
+                int count = 0;
+                for (String json : jsons) {
+                    try {
+                        JsonNode jsonNode = objectMapper.readTree(json);
+                        jsonNodes[count++] = jsonNode;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return jsonNodes;
             default:
                 throw new IllegalStateException("Unhandled property type " + propertyType.name());
         }
@@ -885,6 +932,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public boolean isSystemIndex(String indexName) {
         return indexName.startsWith("SYS_IDX_") || indexName.startsWith("SYS_PK") || indexName.endsWith("SYS_FK");
+    }
+
+    @Override
+    public boolean supportsJsonArrayValues() {
+        return true;
     }
 
     @Override
@@ -947,6 +999,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
+    }
+    
+    @Override
+    public String createSchemaStatement(String schemaName) {
+        // if ever schema is created outside of sqlg while the graph is already instantiated
+        return "CREATE SCHEMA IF NOT EXISTS " + maybeWrapInQoutes(schemaName);
     }
 
 }

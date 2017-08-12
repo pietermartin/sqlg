@@ -421,7 +421,7 @@ public class SqlgGraph implements Graph {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
-        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValuesTriple= SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
+        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValuesTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
         final Map<String, Object> allKeyValueMap = keyValuesTriple.getMiddle();
         final Map<String, PropertyType> columns = keyValuesTriple.getLeft();
         this.tx().readWrite();
@@ -462,7 +462,6 @@ public class SqlgGraph implements Graph {
             sqlBulkDialect.bulkAddEdges(this, outSchemaTable, inSchemaTable, edgeLabel, idFields, uids);
         }
     }
-
 
 
     @Override
@@ -1069,6 +1068,10 @@ public class SqlgGraph implements Graph {
         }
     }
 
+    /**
+     * @deprecated Please use {@link Topology#ensureVertexLabelExist(String, Map)} and {@link VertexLabel#ensureIndexExists(IndexType, List)}.
+     */
+    @Deprecated
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
         Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(dummykeyValues);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);

@@ -31,12 +31,17 @@ public class TestBatchTemporaryVertex extends BaseTest {
         System.out.println(stopWatch.toString());
         int count = 0;
         Connection conn = this.sqlgGraph.tx().getConnection();
-        String sql;
+        String sql = "select * from ";
         if (this.sqlgGraph.getSqlDialect().needsTemporaryTableSchema()) {
-            sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) +
-                    "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) +
+                    ".";
+        }
+        if (!this.sqlgGraph.getSqlDialect().needsTemporaryTablePrefix()) {
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
         } else {
-            sql = "select * from " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_A");
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                    this.sqlgGraph.getSqlDialect().temporaryTablePrefix() +
+                    "V_A");
         }
         try (PreparedStatement s = conn.prepareStatement(sql)) {
             ResultSet resultSet = s.executeQuery();

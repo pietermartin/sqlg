@@ -100,7 +100,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
     }
 
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
+    public void flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         for (Map.Entry<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> entry : vertexCache.entrySet()) {
             SchemaTable schemaTable = entry.getKey();
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = entry.getValue();
@@ -113,7 +113,13 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                 sql.append(".");
             }
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
+            if (!schemaTable.isTemporary() || !sqlgGraph.getSqlDialect().needsTemporaryTablePrefix()) {
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
+            } else {
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                        sqlgGraph.getSqlDialect().temporaryTablePrefix() +
+                        VERTEX_PREFIX + schemaTable.getTable()));
+            }
 
             Map<String, PropertyColumn> propertyColumns = null;
             Map<String, PropertyType> properties = null;
@@ -222,7 +228,6 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 throw new RuntimeException(e);
             }
         }
-        return null;
     }
 
     @Override

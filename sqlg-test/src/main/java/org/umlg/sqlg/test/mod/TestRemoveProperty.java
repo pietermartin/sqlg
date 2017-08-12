@@ -54,12 +54,6 @@ public class TestRemoveProperty extends BaseTest {
         if (this.value instanceof Byte) {
             Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteValues());
         }
-        if (this.value instanceof JsonNode) {
-            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
-        }
-        if (this.value instanceof JsonNode[]) {
-            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
-        }
         if (this.value instanceof boolean[] || this.value instanceof Boolean[]) {
             Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
         }
@@ -94,6 +88,9 @@ public class TestRemoveProperty extends BaseTest {
             Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         }
         if (this.value instanceof Period[]) {
+            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
+        }
+        if (this.value instanceof JsonNode[]) {
             Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         }
 

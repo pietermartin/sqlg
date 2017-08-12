@@ -51,7 +51,7 @@ public class TestIndex extends BaseTest {
 
         Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
         this.sqlgGraph.tx().commit();
-        assertTrue(index.getIndexType()==IndexType.NON_UNIQUE);
+        assertTrue(index.getIndexType() == IndexType.NON_UNIQUE);
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -117,7 +117,9 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnVertex2() throws SQLException {
-        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "dummy");
+        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+            put("name", PropertyType.STRING);
+        }});
         this.sqlgGraph.tx().commit();
         for (int i = 0; i < 5000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john" + i);
@@ -133,7 +135,7 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name\" = 'john50'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
         }
         this.sqlgGraph.tx().rollback();
@@ -157,7 +159,7 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
         }
         this.sqlgGraph.tx().rollback();
@@ -180,7 +182,7 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
@@ -203,7 +205,7 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"MySchema\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
@@ -218,7 +220,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.close();
-        this.sqlgGraph= SqlgGraph.open(configuration);
+        this.sqlgGraph = SqlgGraph.open(configuration);
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
 
 
@@ -235,7 +237,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.close();
-        this.sqlgGraph=SqlgGraph.open(configuration);
+        this.sqlgGraph = SqlgGraph.open(configuration);
         this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
 
     }
@@ -267,13 +269,13 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"E_person_address\" a WHERE a.\"name\" = 'address1001'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
 
         this.sqlgGraph.close();
-        this.sqlgGraph= SqlgGraph.open(configuration);
+        this.sqlgGraph = SqlgGraph.open(configuration);
         edgeLabel = this.sqlgGraph.getTopology().getEdgeLabel(publicSchema, "person_address").get();
         edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
 
@@ -312,15 +314,15 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexTypeFromJSON() throws Exception {
-    	IndexType it1=IndexType.fromNotifyJson(new ObjectMapper().readTree("{\"name\":\"UNIQUE\"}"));
-    	Assert.assertEquals(IndexType.UNIQUE, it1);
-    	IndexType it2=IndexType.fromNotifyJson(new ObjectMapper().readTree("\"UNIQUE\""));
-    	Assert.assertEquals(IndexType.UNIQUE, it2);
+        IndexType it1 = IndexType.fromNotifyJson(new ObjectMapper().readTree("{\"name\":\"UNIQUE\"}"));
+        Assert.assertEquals(IndexType.UNIQUE, it1);
+        IndexType it2 = IndexType.fromNotifyJson(new ObjectMapper().readTree("\"UNIQUE\""));
+        Assert.assertEquals(IndexType.UNIQUE, it2);
 
-    	it1=IndexType.fromNotifyJson(new ObjectMapper().readTree("{\"name\":\"NON_UNIQUE\"}"));
-    	Assert.assertEquals(IndexType.NON_UNIQUE, it1);
-    	it2=IndexType.fromNotifyJson(new ObjectMapper().readTree("\"NON_UNIQUE\""));
-    	Assert.assertEquals(IndexType.NON_UNIQUE, it2);
+        it1 = IndexType.fromNotifyJson(new ObjectMapper().readTree("{\"name\":\"NON_UNIQUE\"}"));
+        Assert.assertEquals(IndexType.NON_UNIQUE, it1);
+        it2 = IndexType.fromNotifyJson(new ObjectMapper().readTree("\"NON_UNIQUE\""));
+        Assert.assertEquals(IndexType.NON_UNIQUE, it2);
 
     }
 }

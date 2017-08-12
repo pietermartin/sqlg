@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -21,11 +20,6 @@ import static org.junit.Assert.assertEquals;
  * Time: 5:33 PM
  */
 public class TestJsonUpdate extends BaseTest {
-
-    @Before
-    public void beforeTest() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
-    }
 
     @Test
     public void testUpdateJson() {
@@ -97,6 +91,7 @@ public class TestJsonUpdate extends BaseTest {
 
     @Test
     public void testUpdateJsonArraysForObjectNodes() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
         ObjectMapper objectMapper =  new ObjectMapper();
         ObjectNode json1 = new ObjectNode(objectMapper.getNodeFactory());
         json1.put("username", "john1");
@@ -125,6 +120,7 @@ public class TestJsonUpdate extends BaseTest {
 
     @Test
     public void testUpdateJsonArraysForArrayNode() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
         ObjectMapper objectMapper =  new ObjectMapper();
         ArrayNode jsonArray1 = new ArrayNode(objectMapper.getNodeFactory());
         ObjectNode john = new ObjectNode(objectMapper.getNodeFactory());

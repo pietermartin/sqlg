@@ -33,7 +33,7 @@ public class TestBatchJson extends BaseTest {
 
     @Before
     public void beforeTest() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.getSqlDialect().supportsJson());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
     @Test
@@ -71,7 +71,7 @@ public class TestBatchJson extends BaseTest {
             batchJson_assert(this.sqlgGraph, json);
         }
     }
-    
+
 
     private void batchJson_assert(SqlgGraph sqlgGraph, ObjectNode json) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
@@ -162,6 +162,7 @@ public class TestBatchJson extends BaseTest {
 
     @Test
     public void testBatchJsonContainingEmbeddedJson() throws IOException, InterruptedException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
         String jsonQuery = "{" +
                 "\"chartEnabled\":true," +
                 "\"geom\":\"{\\\"type\\\":\\\"LineString\\\"," +

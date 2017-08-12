@@ -93,7 +93,7 @@ public class TestVertexOutWithHas extends BaseTest {
         Assert.assertEquals(1,vertexTraversal(this.sqlgGraph, marko).out("drives").has(T.label, "Car").has("name", "bmw").count().next(), 0);
         Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, marko).out("drives").has(T.label, "Person").has("name", "vw").count().next(), 0);
     }
-    
+
     /**
      * we reference labels that have schemas
      */

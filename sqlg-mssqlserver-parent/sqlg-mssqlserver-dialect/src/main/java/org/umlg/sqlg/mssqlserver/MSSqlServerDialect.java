@@ -4,22 +4,25 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableSet;
+import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
+import com.microsoft.sqlserver.jdbc.SQLServerConnection;
 import org.apache.commons.lang3.Range;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
+
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * @author Kevin Schmidt
@@ -43,7 +46,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public Set<String> getInternalSchemas() {
-        return null;
+        return ImmutableSet.copyOf(Arrays.asList("db_accessadmin", "db_backupoperator", "db_datareader",
+                "db_ddladmin", "db_debydatareader", "db_denydatawriter", "db_owner", "db_scurityadmin",
+                "dbo", "guest", "INFORMATION_SCHEMA", "sys"));
     }
 
     @Override
@@ -165,6 +170,12 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         if (value instanceof Duration || value instanceof Duration[]) {
             return;
         }
+        if (value instanceof JsonNode) {
+            return;
+        }
+        if (value instanceof JsonNode[]) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
 
@@ -187,13 +198,13 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return new String[]{"BOOLEAN"};
+                return new String[]{"BIT"};
             case BYTE:
                 return new String[]{"TINYINT"};
             case byte_ARRAY:
-                return new String[]{"BINARY"};
+                return new String[]{"VARBINARY(max)"};
             case BYTE_ARRAY:
-                return new String[]{"BINARY"};
+                return new String[]{"VARBINARY(max)"};
             case DOUBLE:
                 return new String[]{"DOUBLE PRECISION"};
             case DURATION:
@@ -205,7 +216,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             case LOCALDATE:
                 return new String[]{"DATE"};
             case LOCALDATETIME:
-                return new String[]{"DATETIME"};
+                return new String[]{"DATETIME2(3)"};
             case LOCALTIME:
                 return new String[]{"TIME"};
             case LONG:
@@ -215,24 +226,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             case SHORT:
                 return new String[]{"SMALLINT"};
             case STRING:
-                return new String[]{"VARCHAR(255)"};
+                return new String[]{"VARCHAR(2000)"};
             case ZONEDDATETIME:
-                return new String[]{"DATETIME", "VARCHAR(255)"};
-            case BOOLEAN_ARRAY:
-            case boolean_ARRAY:
-            case DOUBLE_ARRAY:
-            case double_ARRAY:
-            case FLOAT_ARRAY:
-            case float_ARRAY:
-            case int_ARRAY:
-            case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY:
-            case LOCALDATETIME_ARRAY:
-            case LOCALTIME_ARRAY:
-            case LONG_ARRAY:
-            case long_ARRAY:
-            case SHORT_ARRAY:
-            case short_ARRAY:
+                return new String[]{"DATETIME2(3)", "VARCHAR(255)"};
             case STRING_ARRAY:
                 return new String[]{"ARRAY"};
             case DURATION_ARRAY:
@@ -242,17 +238,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             case ZONEDDATETIME_ARRAY:
                 return new String[]{"ARRAY", "ARRAY"};
             case JSON:
-                throw new IllegalStateException("H2 does not support json types, use good ol string instead!");
-            case POINT:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case POLYGON:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case GEOGRAPHY_POINT:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case GEOGRAPHY_POLYGON:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case LINESTRING:
-                throw new IllegalStateException("H2 does not support gis types!");
+                return new String[]{"VARCHAR(max)"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -262,7 +248,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return new int[]{Types.BOOLEAN};
+                return new int[]{Types.BIT};
             case BYTE:
                 return new int[]{Types.TINYINT};
             case SHORT:
@@ -276,7 +262,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             case DOUBLE:
                 return new int[]{Types.DOUBLE};
             case STRING:
-                return new int[]{Types.CLOB};
+                return new int[]{Types.LONGVARCHAR};
             case LOCALDATETIME:
                 return new int[]{Types.TIMESTAMP};
             case LOCALDATE:
@@ -292,9 +278,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             case JSON:
                 return new int[]{Types.VARCHAR};
             case byte_ARRAY:
-                return new int[]{Types.BINARY};
+                return new int[]{Types.VARBINARY};
             case BYTE_ARRAY:
-                return new int[]{Types.BINARY};
+                return new int[]{Types.VARBINARY};
             case BOOLEAN_ARRAY:
             case boolean_ARRAY:
             case DOUBLE_ARRAY:
@@ -459,12 +445,28 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
-        throw new IllegalStateException("H2 doesn't support storing JSON.");
+        try {
+            preparedStatement.setString(parameterStartIndex, right.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        throw new IllegalStateException("H2 doesn't support other types.");
+        switch (propertyType) {
+            case JSON:
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    JsonNode jsonNode = objectMapper.readTree(o.toString());
+                    properties.put(columnName, jsonNode);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                break;
+            default:
+                throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
+        }
     }
 
     @Override
@@ -525,6 +527,11 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public boolean supportsTransactionalSchema() {
         return true;
+    }
+
+    @Override
+    public String createTemporaryTableStatement() {
+        return "CREATE TABLE ";
     }
 
     @Override
@@ -620,22 +627,19 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public String getPublicSchema() {
-        return "GRAPH";
+        return "graph";
     }
 
     @Override
-    public String getRangeClause(Range<Long> r, boolean printedOrderBy) {
+    public String getRangeClause(Range<Long> r) {
         StringBuilder sql = new StringBuilder();
-        if (!printedOrderBy) {
-            sql.append("\nORDER BY 1 ");
-        }
         sql.append("OFFSET ").append(r.getMinimum()).append(" ROWS FETCH NEXT ").append(r.getMaximum() - r.getMinimum()).append(" ROWS ONLY");
         return sql.toString();
     }
 
     @Override
     public boolean isSystemIndex(String indexName) {
-        return false;
+        return indexName.startsWith("PK_") || indexName.startsWith("FK_") || indexName.endsWith("_idx");
     }
 
     @Override
@@ -646,6 +650,271 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public boolean supportsType(PropertyType propertyType) {
         return false;
+    }
+
+    @Override
+    public boolean supportsBooleanArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsDoubleArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsFloatArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsIntegerArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsShortArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLongArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsStringArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsFloatValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsByteValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalDateTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalDateArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsZonedDateTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsPeriodArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsDurationArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean needsTemporaryTablePrefix() {
+        return true;
+    }
+
+    @Override
+    public String temporaryTablePrefix() {
+        return "#";
+    }
+
+    @Override
+    public boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
+    public void flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        for (Map.Entry<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> entry : vertexCache.entrySet()) {
+            SchemaTable schemaTable = entry.getKey();
+            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = entry.getValue();
+            if (vertices.getLeft().isEmpty()) {
+                Map<String, PropertyType> columns = new HashMap<>();
+                columns.put("dummy", PropertyType.from(0));
+                sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
+                        schemaTable.getSchema(),
+                        schemaTable.getTable(),
+                        columns);
+            }
+            try {
+                SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
+                try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
+                    if (schemaTable.isTemporary()) {
+                        bulkCopy.setDestinationTableName(
+                                sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().temporaryTablePrefix() + VERTEX_PREFIX + schemaTable.getTable())
+                        );
+                    } else {
+                        bulkCopy.setDestinationTableName(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()) + "." +
+                                sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable())
+                        );
+                    }
+                    bulkCopy.writeToServer(new SQLServerVertexCacheBulkRecord(bulkCopy, sqlgGraph, schemaTable, vertices));
+                }
+                int numberInserted = vertices.getRight().size();
+                if (!schemaTable.isTemporary() && numberInserted > 0) {
+                    long endHigh;
+                    //TODO this is not guaranteed to be correct.
+                    //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
+                    try (PreparedStatement preparedStatement = connection.prepareStatement(
+                            "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
+                                    VERTEX_PREFIX + schemaTable.getTable() + "')")) {
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        resultSet.next();
+                        endHigh = resultSet.getLong(1);
+                        resultSet.close();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                    //set the id on the vertex
+                    long id = endHigh - numberInserted + 1;
+                    for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
+                        sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        try {
+            for (MetaEdge metaEdge : edgeCache.keySet()) {
+                SchemaTable schemaTable = metaEdge.getSchemaTable();
+                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
+                try {
+                    SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
+                    try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
+                        bulkCopy.setDestinationTableName(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()) + "." +
+                                sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + schemaTable.getTable())
+                        );
+                        bulkCopy.writeToServer(new SQLServerEdgeCacheBulkRecord(bulkCopy, sqlgGraph, metaEdge, schemaTable, triples));
+                    }
+
+                    int numberInserted = triples.getRight().size();
+                    if (!schemaTable.isTemporary() && numberInserted > 0) {
+                        long endHigh;
+                        //TODO this is not guaranteed to be correct.
+                        //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
+                        try (PreparedStatement preparedStatement = connection.prepareStatement(
+                                "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
+                                        EDGE_PREFIX + schemaTable.getTable() + "')")) {
+                            ResultSet resultSet = preparedStatement.executeQuery();
+                            resultSet.next();
+                            endHigh = resultSet.getLong(1);
+                            resultSet.close();
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                        //set the id on the vertex
+                        long id = endHigh - numberInserted + 1;
+                        for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
+                            sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                        }
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void flushVertexGlobalUniqueIndexes(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
+        for (SchemaTable schemaTable : vertexCache.keySet()) {
+            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
+            Map<String, PropertyColumn> propertyColumnMap = sqlgGraph.getTopology().getPropertiesFor(schemaTable.withPrefix(VERTEX_PREFIX));
+            for (Map.Entry<String, PropertyColumn> propertyColumnEntry : propertyColumnMap.entrySet()) {
+                PropertyColumn propertyColumn = propertyColumnEntry.getValue();
+                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                    try {
+                        Connection connection = sqlgGraph.tx().getConnection();
+                        SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
+                        try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
+                            bulkCopy.setDestinationTableName(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + "." +
+                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName())
+                            );
+                            bulkCopy.writeToServer(new SQLServerVertexGlobalUniqueIndexBulkRecord(bulkCopy, sqlgGraph, vertices, propertyColumn));
+                        }
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void flushEdgeGlobalUniqueIndexes(SqlgGraph sqlgGraph,
+                                             Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
+        for (MetaEdge metaEdge : edgeCache.keySet()) {
+
+            Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
+            Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeMap = triples.getRight();
+            Map<String, PropertyColumn> propertyColumnMap = sqlgGraph.getTopology().getPropertiesFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
+
+            for (Map.Entry<String, PropertyColumn> propertyColumnEntry : propertyColumnMap.entrySet()) {
+                PropertyColumn propertyColumn = propertyColumnEntry.getValue();
+                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                    try {
+                        Connection connection = sqlgGraph.tx().getConnection();
+                        SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
+                        try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
+                            bulkCopy.setDestinationTableName(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + "." +
+                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName())
+                            );
+                            bulkCopy.writeToServer(new SQLServerEdgeGlobalUniqueIndexBulkRecord(bulkCopy, sqlgGraph, edgeMap, propertyColumn));
+                        }
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public boolean supportsSchemaIfNotExists() {
+        return false;
+    }
+
+    @Override
+    public boolean isMssqlServer() {
+        return true;
+    }
+
+    @Override
+    public boolean uniqueIndexConsidersNullValuesEqual() {
+        return true;
+    }
+
+    @Override
+    public String dropSchemaStatement(String schema) {
+        return "DROP SCHEMA " + maybeWrapInQoutes(schema) + (needsSemicolon() ? ";" : "");
     }
 
 }

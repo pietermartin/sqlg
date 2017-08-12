@@ -20,7 +20,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
 import org.umlg.sqlg.test.io.TestIo;
-import org.umlg.sqlg.test.json.JsonTest;
+import org.umlg.sqlg.test.json.TestJson;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestHasLabelAndId;
 import org.umlg.sqlg.test.labels.TestLabelLength;
@@ -116,7 +116,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLocalDateArray.class,
         TestBatchStreamVertex.class,
         TestBatchStreamEdge.class,
-        JsonTest.class,
+        TestJson.class,
         TestSchemaManagerGetTablesFor.class,
         TestBatchServerSideEdgeCreation.class,
         TestBatchedStreaming.class,

@@ -202,24 +202,28 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
+    static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql, Properties additional) {
         int i = 1;
         //This is to make the columns sorted
         List<String> keys = new ArrayList<>(columns.keySet());
         Collections.sort(keys);
         for (String column : keys) {
-            PropertyType propertyType = columns.get(column);
-            int count = 1;
-            String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-            for (String sqlDefinition : propertyTypeToSqlDefinition) {
-                if (count > 1) {
-                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2])).append(" ").append(sqlDefinition);
-                } else {
-                    //The first column existVertexLabel no postfix
-                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(sqlDefinition);
-                }
-                if (count++ < propertyTypeToSqlDefinition.length) {
-                    sql.append(", ");
+            if (additional.containsKey(Topology.COLUMN_TYPE_PREFIX + column)) {
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(additional.getProperty(Topology.COLUMN_TYPE_PREFIX + column));
+            } else {
+                PropertyType propertyType = columns.get(column);
+                int count = 1;
+                String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                    if (count > 1) {
+                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2])).append(" ").append(sqlDefinition);
+                    } else {
+                        //The first column existVertexLabel no postfix
+                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(sqlDefinition);
+                    }
+                    if (count++ < propertyTypeToSqlDefinition.length) {
+                        sql.append(", ");
+                    }
                 }
             }
             if (i++ < columns.size()) {

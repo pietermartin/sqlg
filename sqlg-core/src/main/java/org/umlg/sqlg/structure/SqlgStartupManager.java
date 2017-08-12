@@ -249,7 +249,7 @@ class SqlgStartupManager {
                                         TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, foreignKey, inSchemaTable.getLeft(), columns);
                                         edgeAdded = true;
                                     } else {
-                                        
+
                                     }
                                     TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, true, foreignKey);
                                 }
@@ -351,13 +351,17 @@ class SqlgStartupManager {
     }
 
 
-    private void extractIndices(DatabaseMetaData metadata, String catalog, String schema
-            , String table, String label, boolean isVertex) throws SQLException {
+    private void extractIndices(DatabaseMetaData metadata,
+                                String catalog,
+                                String schema,
+                                String table,
+                                String label,
+                                boolean isVertex) throws SQLException {
 
         String lastIndexName = null;
         IndexType lastIndexType = null;
         List<String> lastColumns = new LinkedList<>();
-        List<Triple<String, Boolean, String>> indexes = this.sqlDialect.getIndexInfo(metadata, catalog, schema,table, false, true);
+        List<Triple<String, Boolean, String>> indexes = this.sqlDialect.getIndexInfo(metadata, catalog, schema, table, false, true);
         for (Triple<String, Boolean, String> index : indexes) {
 
             String indexName = index.getLeft();
@@ -368,12 +372,8 @@ class SqlgStartupManager {
                 lastIndexName = indexName;
                 lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
             } else if (!lastIndexName.equals(indexName)) {
-//                    if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
                 if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
                     if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-                        //System.out.println(lastColumns);
-                        //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-                        //} else {
                         TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
                     }
                 }
@@ -381,51 +381,13 @@ class SqlgStartupManager {
                 lastIndexName = indexName;
                 lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
             }
-
             lastColumns.add(columnName);
         }
-
-        
-//        try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, true)) {
-//            String lastIndexName = null;
-//            IndexType lastIndexType = null;
-//            List<String> lastColumns = new LinkedList<>();
-//            while (indexRs.next()) {
-//                String indexName = indexRs.getString("INDEX_NAME");
-//                System.out.println(indexName);
-//                boolean nonUnique = indexRs.getBoolean("NON_UNIQUE");
-//
-//                if (lastIndexName == null) {
-//                    lastIndexName = indexName;
-//                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
-//                } else if (!lastIndexName.equals(indexName)) {
-////                    if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
-//                    if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
-//                        if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-//                            //System.out.println(lastColumns);
-//                            //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-//                            //} else {
-//                            TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
-//                        }
-//                    }
-//                    lastColumns.clear();
-//                    lastIndexName = indexName;
-//                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
-//                }
-//
-//                lastColumns.add(indexRs.getString("COLUMN_NAME"));
-//
-//            }
-//            if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
-            if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
-                if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-                    //System.out.println(lastColumns);
-                    //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-                    //} else {
-                    TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
-                }
+        if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
+            if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
+                TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
             }
-//        }
+        }
     }
 
     private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) throws SQLException {
@@ -534,7 +496,7 @@ class SqlgStartupManager {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
-            return this.sqlDialect.schemaExists(metadata,Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
+            return this.sqlDialect.schemaExists(metadata, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

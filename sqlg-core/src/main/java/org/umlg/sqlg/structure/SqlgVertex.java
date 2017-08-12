@@ -306,7 +306,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
         }
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + this.table));
+        if (!temporary) {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + this.table));
+        } else {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                    this.sqlgGraph.getSqlDialect().temporaryTablePrefix() +
+                    VERTEX_PREFIX + this.table));
+        }
 
         Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = null;

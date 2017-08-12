@@ -17,8 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.assertTrue;
-
 
 /**
  * Test range and limit, they should be implemented as the SQL level
@@ -38,7 +36,7 @@ public class TestRangeLimit extends BaseTest {
         for (Step<?, ?> s : dgt.getSteps()) {
             found |= (s instanceof RangeGlobalStep<?>);
         }
-        assertTrue(found);
+        Assert.assertTrue(found);
     }
 
 
@@ -198,7 +196,7 @@ public class TestRangeLimit extends BaseTest {
             String n = (String) g.next();
             names.add(n);
             if (previous != null) {
-                assertTrue(previous.compareTo(n) < 0);
+                Assert.assertTrue(previous.compareTo(n) < 0);
             }
             previous = n;
             cnt++;
@@ -206,9 +204,9 @@ public class TestRangeLimit extends BaseTest {
         ensureNoRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-        assertTrue(names.toString(), names.contains("a1"));
-        assertTrue(names.toString(), names.contains("a10"));
-        assertTrue(names.toString(), names.contains("a11"));
+        Assert.assertTrue(names.toString(), names.contains("a1"));
+        Assert.assertTrue(names.toString(), names.contains("a10"));
+        Assert.assertTrue(names.toString(), names.contains("a11"));
 
     }
 
@@ -238,7 +236,7 @@ public class TestRangeLimit extends BaseTest {
             String n = (String) g.next();
             names.add(n);
             if (previous != null) {
-                assertTrue(previous.compareTo(n) < 0);
+                Assert.assertTrue(previous.compareTo(n) < 0);
             }
             previous = n;
             cnt++;
@@ -246,9 +244,9 @@ public class TestRangeLimit extends BaseTest {
         ensureNoRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-        assertTrue(names.toString(), names.contains("a1"));
-        assertTrue(names.toString(), names.contains("a10"));
-        assertTrue(names.toString(), names.contains("a11"));
+        Assert.assertTrue(names.toString(), names.contains("a1"));
+        Assert.assertTrue(names.toString(), names.contains("a10"));
+        Assert.assertTrue(names.toString(), names.contains("a11"));
 
     }
 
@@ -308,7 +306,7 @@ public class TestRangeLimit extends BaseTest {
             String n = (String) g.next();
             names.add(n);
             if (previous != null) {
-                assertTrue(previous.compareTo(n) < 0);
+                Assert.assertTrue(previous.compareTo(n) < 0);
             }
             previous = n;
             cnt++;
@@ -316,9 +314,9 @@ public class TestRangeLimit extends BaseTest {
         ensureNoRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-        assertTrue(names.toString(), names.contains("a1"));
-        assertTrue(names.toString(), names.contains("a10"));
-        assertTrue(names.toString(), names.contains("a0"));
+        Assert.assertTrue(names.toString(), names.contains("a1"));
+        Assert.assertTrue(names.toString(), names.contains("a10"));
+        Assert.assertTrue(names.toString(), names.contains("a0"));
     }
 
     @Test
@@ -349,7 +347,7 @@ public class TestRangeLimit extends BaseTest {
             String n = (String) g.next();
             names.add(n);
             if (previous != null) {
-                assertTrue(previous.compareTo(n) < 0);
+                Assert.assertTrue(previous.compareTo(n) < 0);
             }
             previous = n;
             cnt++;
@@ -357,9 +355,9 @@ public class TestRangeLimit extends BaseTest {
         ensureNoRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-        assertTrue(names.toString(), names.contains("e1"));
-        assertTrue(names.toString(), names.contains("e10"));
-        assertTrue(names.toString(), names.contains("e11"));
+        Assert.assertTrue(names.toString(), names.contains("e1"));
+        Assert.assertTrue(names.toString(), names.contains("e10"));
+        Assert.assertTrue(names.toString(), names.contains("e11"));
     }
 
     @Test
@@ -391,7 +389,7 @@ public class TestRangeLimit extends BaseTest {
             String n = (String) g.next();
             names.add(n);
             if (previous != null) {
-                assertTrue(previous.compareTo(n) < 0);
+                Assert.assertTrue(previous.compareTo(n) < 0);
             }
             previous = n;
             cnt++;
@@ -400,9 +398,9 @@ public class TestRangeLimit extends BaseTest {
 //        ensureRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-        assertTrue(names.toString(), names.contains("a1"));
-        assertTrue(names.toString(), names.contains("a10"));
-        assertTrue(names.toString(), names.contains("a11"));
+        Assert.assertTrue(names.toString(), names.contains("a1"));
+        Assert.assertTrue(names.toString(), names.contains("a10"));
+        Assert.assertTrue(names.toString(), names.contains("a11"));
 
     }
 
@@ -505,7 +503,7 @@ public class TestRangeLimit extends BaseTest {
             String n = (String) g.next();
             names.add(n);
             if (previous != null) {
-                assertTrue(previous.compareTo(n) < 0);
+                Assert.assertTrue(previous.compareTo(n) < 0);
             }
             previous = n;
             cnt++;
@@ -513,9 +511,9 @@ public class TestRangeLimit extends BaseTest {
         ensureNoRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-        assertTrue(names.toString(), names.contains("b1"));
-        assertTrue(names.toString(), names.contains("b10"));
-        assertTrue(names.toString(), names.contains("b11"));
+        Assert.assertTrue(names.toString(), names.contains("b1"));
+        Assert.assertTrue(names.toString(), names.contains("b10"));
+        Assert.assertTrue(names.toString(), names.contains("b11"));
 
     }
 
@@ -545,7 +543,7 @@ public class TestRangeLimit extends BaseTest {
         for (Vertex v : vertexList) {
             Assert.assertEquals("C", v.label());
             int i = (Integer) v.property("age").value();
-            assertTrue(i >= 10 && i < 20);
+            Assert.assertTrue(i >= 10 && i < 20);
         }
     }
 
@@ -578,7 +576,7 @@ public class TestRangeLimit extends BaseTest {
         for (Vertex v : vertexList) {
             Assert.assertEquals("C", v.label());
             int i = (Integer) v.property("age").value();
-            assertTrue(i >= 10 && i < 20);
+            Assert.assertTrue(i >= 10 && i < 20);
         }
     }
 
@@ -609,9 +607,9 @@ public class TestRangeLimit extends BaseTest {
 //        ensureRangeGlobal(g);
         Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
-            assertTrue(v.label().equals("A") || v.label().equals("C"));
+            Assert.assertTrue(v.label().equals("A") || v.label().equals("C"));
             int i = (Integer) v.property("age").value();
-            assertTrue(String.valueOf(i), i >= 5 && i < 10);
+            Assert.assertTrue(String.valueOf(i), i >= 5 && i < 10);
         }
     }
 

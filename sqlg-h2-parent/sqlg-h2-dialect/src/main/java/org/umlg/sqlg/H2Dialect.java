@@ -14,6 +14,7 @@ import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.sql.*;
 import java.time.*;
@@ -27,6 +28,11 @@ public class H2Dialect extends BaseSqlDialect {
 
     public H2Dialect() {
         super();
+    }
+
+    @Override
+    public boolean supportsCascade() {
+        return false;
     }
 
     @Override
@@ -198,6 +204,9 @@ public class H2Dialect extends BaseSqlDialect {
         if (value instanceof Duration || value instanceof Duration[]) {
             return;
         }
+        if (value instanceof JsonNode|| value instanceof JsonNode[]) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
 
@@ -275,7 +284,9 @@ public class H2Dialect extends BaseSqlDialect {
             case ZONEDDATETIME_ARRAY:
                 return new String[]{"ARRAY", "ARRAY"};
             case JSON:
-                throw new IllegalStateException("H2 does not support json types, use good ol string instead!");
+                return new String[]{"VARCHAR"};
+            case JSON_ARRAY:
+                return new String[]{"ARRAY"};
             case POINT:
                 throw new IllegalStateException("H2 does not support gis types!");
             case POLYGON:
@@ -492,12 +503,28 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
-        throw new IllegalStateException("H2 doesn't support storing JSON.");
+        try {
+            preparedStatement.setString(parameterStartIndex, right.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        throw new IllegalStateException("H2 doesn't support other types.");
+        switch (propertyType) {
+            case JSON:
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    JsonNode jsonNode = objectMapper.readTree(o.toString());
+                    properties.put(columnName, jsonNode);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                break;
+            default:
+                throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
+        }
     }
 
     @Override

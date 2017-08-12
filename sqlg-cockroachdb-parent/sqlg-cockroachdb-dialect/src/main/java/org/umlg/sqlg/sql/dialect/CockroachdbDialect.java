@@ -66,8 +66,8 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String dropSchemaStatement() {
-        return "DROP DATABASE IF EXISTS ";
+    public String dropSchemaStatement(String schema) {
+        return "DROP DATABASE IF EXISTS " + maybeWrapInQoutes(schema);
     }
 
     @Override
@@ -1375,11 +1375,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean supportsJson() {
-        return true;
-    }
-
-    @Override
     public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "prefix must be " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         StringBuilder sql = new StringBuilder();
@@ -1739,11 +1734,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
         int m = t.getSeconds();
         t.setSeconds(m + offset);
         return t;
-    }
-
-    @Override
-    public boolean requiredPreparedStatementDeallocate() {
-        return true;
     }
 
     @Override

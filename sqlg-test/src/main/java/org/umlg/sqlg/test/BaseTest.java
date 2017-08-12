@@ -142,6 +142,39 @@ public abstract class BaseTest {
         return conf;
     }
 
+    public void dropSqlgSchema(SqlgGraph sqlgGraph) {
+        List<String> result = new ArrayList<>();
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_schema_vertex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_in_edges") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_out_edges") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_index_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_globalUniqueIndex_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_log") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_schema") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_vertex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_edge") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_globalUniqueIndex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+
+        result.add(sqlgGraph.getSqlDialect().dropSchemaStatement("sqlg_schema"));
+
+        Connection connection = sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            for (String s : result) {
+                statement.execute(s);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     protected GraphTraversal<Vertex, Vertex> vertexTraversal(SqlgGraph sqlgGraph, Vertex v) {
         return sqlgGraph.traversal().V(v);
     }
@@ -543,19 +576,6 @@ public abstract class BaseTest {
         SqlgStep sqlgStep = (SqlgStep) step;
         Assert.assertEquals("isEagerLoad should be " + isEagerLoad, isEagerLoad, sqlgStep.isEargerLoad());
         Assert.assertEquals("comparatorsNotOnDb should be " + comparatorsNotOnDb, comparatorsNotOnDb, sqlgStep.getReplacedSteps().stream().allMatch(r -> r.getDbComparators().isEmpty()));
-    }
-
-    public static <T> void checkOrderedResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
-        final List<T> results = traversal.toList();
-        Assert.assertFalse(traversal.hasNext());
-        if (expectedResults.size() != results.size()) {
-            logger.error("Expected results: " + expectedResults);
-            logger.error("Actual results:   " + results);
-            assertEquals("Checking result size", expectedResults.size(), results.size());
-        }
-        for (int i = 0; i < expectedResults.size(); i++) {
-            assertEquals(expectedResults.get(i), results.get(i));
-        }
     }
 
     public <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {

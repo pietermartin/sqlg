@@ -326,7 +326,8 @@ public class SqlgUtil {
                     preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDate) pair.right).atStartOfDay()));
                     break;
                 case LOCALDATETIME:
-                    preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDateTime) pair.right)));
+                    Timestamp timestamp = Timestamp.valueOf(((LocalDateTime) pair.right));
+                    preparedStatement.setTimestamp(parameterStartIndex++, timestamp);
                     break;
                 case ZONEDDATETIME:
                     if (sqlgGraph.getSqlDialect().needsTimeZone()) {
@@ -745,7 +746,11 @@ public class SqlgUtil {
                     break;
                 case BYTE_ARRAY:
                     Byte aByte = (Byte) Array.get(val, i);
-                    outputArray[i] = aByte.byteValue();
+                    outputArray[i] = aByte;
+                    break;
+                case JSON_ARRAY:
+                    JsonNode jsonNode = (JsonNode) Array.get(val, i);
+                    outputArray[i] = jsonNode.toString();
                     break;
                 default:
                     outputArray[i] = Array.get(val, i);
@@ -815,28 +820,6 @@ public class SqlgUtil {
     public static void dropDb(SqlDialect sqlDialect, Connection conn) {
         try {
             DatabaseMetaData metadata = conn.getMetaData();
-//            if (sqlDialect.supportsDropSchemas()) {
-//                List<String> schemas = sqlDialect.getSchemaNames(metadata);
-//                for (String schema : schemas) {
-//                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
-//                        StringBuilder sql = new StringBuilder(sqlDialect.dropSchemaStatement());
-//                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
-//                        if (sqlDialect.needsSchemaDropCascade()) {
-//                            sql.append(" CASCADE");
-//                        }
-//                        if (sqlDialect.needsSemicolon()) {
-//                            sql.append(";");
-//                        }
-//                        if (logger.isDebugEnabled()) {
-//                            logger.debug(sql.toString());
-//                        }
-//                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                            preparedStatement.executeUpdate();
-//                        }
-//                    }
-//                }
-//            } else {
-
             //Drop all the edges
             List<Triple<String, String, String>> edgeTables = sqlDialect.getEdgeTables(metadata);
             for (Triple<String, String, String> edgeTable : edgeTables) {
@@ -848,7 +831,9 @@ public class SqlgUtil {
                     sql.append(sqlDialect.maybeWrapInQoutes(schema));
                     sql.append(".");
                     sql.append(sqlDialect.maybeWrapInQoutes(table));
-                    sql.append(" CASCADE");
+                    if (sqlDialect.supportsCascade()) {
+                        sql.append(" CASCADE");
+                    }
                     if (sqlDialect.needsSemicolon()) {
                         sql.append(";");
                     }
@@ -871,7 +856,9 @@ public class SqlgUtil {
                     sql.append(sqlDialect.maybeWrapInQoutes(schema));
                     sql.append(".");
                     sql.append(sqlDialect.maybeWrapInQoutes(table));
-                    sql.append(" CASCADE");
+                    if (sqlDialect.supportsCascade()) {
+                        sql.append(" CASCADE");
+                    }
                     if (sqlDialect.needsSemicolon()) {
                         sql.append(";");
                     }
@@ -887,29 +874,15 @@ public class SqlgUtil {
             List<String> schemaNames = sqlDialect.getSchemaNames(metadata);
             for (String schema : schemaNames) {
                 if (!sqlDialect.getInternalSchemas().contains(schema) && !sqlDialect.getPublicSchema().equals(schema)) {
-
-                    StringBuilder sql = new StringBuilder("DROP ");
-                    if (sqlDialect.supportsSchemas()) {
-                        sql.append("SCHEMA ");
-                    } else {
-                        sql.append("DATABASE ");
-                    }
-                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                    if (sqlDialect.needsSchemaDropCascade()) {
-                        sql.append(" CASCADE");
-                    }
-                    if (sqlDialect.needsSemicolon()) {
-                        sql.append(";");
-                    }
+                    String sql = sqlDialect.dropSchemaStatement(schema);
                     if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
+                        logger.debug(sql);
                     }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
                         preparedStatement.executeUpdate();
                     }
                 }
             }
-//            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

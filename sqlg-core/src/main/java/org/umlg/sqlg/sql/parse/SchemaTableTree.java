@@ -539,7 +539,7 @@ public class SchemaTableTree {
                 //last entry, only order on the last entry as duplicate paths are for the same SchemaTable
                 if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
                     result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
-                    result += schemaTableTree.toRangeClause(sqlgGraph);
+                    result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy);
                 }
                 countInner++;
             }
@@ -817,7 +817,7 @@ public class SchemaTableTree {
             //construct the order by clause for the comparators
             for (SchemaTableTree schemaTableTree : distinctQueryStack) {
                 singlePathSql.append(schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, -1));
-                singlePathSql.append(schemaTableTree.toRangeClause(sqlgGraph));
+                singlePathSql.append(schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy));
             }
         }
 
@@ -1118,9 +1118,14 @@ public class SchemaTableTree {
         return result;
     }
 
-    private String toRangeClause(SqlgGraph sqlgGraph) {
+    private String toRangeClause(SqlgGraph sqlgGraph, MutableBoolean mutableOrderBy) {
         if (this.sqlgRangeHolder != null && this.sqlgRangeHolder.hasRange() && this.sqlgRangeHolder.isApplyOnDb()) {
-            return "\n" + sqlgGraph.getSqlDialect().getRangeClause(this.sqlgRangeHolder.getRange());
+            //This is MssqlServer, ugly but what to do???
+            String sql = "";
+            if (mutableOrderBy.isFalse() && sqlgGraph.getSqlDialect().isMssqlServer() && this.getDbComparators().isEmpty()) {
+                sql = "\n\tORDER BY 1\n\t";
+            }
+            return sql + "\n" + sqlgGraph.getSqlDialect().getRangeClause(this.sqlgRangeHolder.getRange());
         }
         return "";
     }

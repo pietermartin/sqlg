@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -20,12 +19,7 @@ import java.nio.file.Paths;
 /**
  * Created by pieter on 2015/09/12.
  */
-public class JsonTest extends BaseTest {
-
-    @Before
-    public void beforeTest() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
-    }
+public class TestJson extends BaseTest {
 
     @Test
     public void testJson() throws IOException {
@@ -69,6 +63,7 @@ public class JsonTest extends BaseTest {
 
     @Test
     public void testJsonArraysForObjectNodes() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
         ObjectMapper objectMapper =  new ObjectMapper();
         ObjectNode json1 = new ObjectNode(objectMapper.getNodeFactory());
         json1.put("username", "john1");
@@ -84,6 +79,7 @@ public class JsonTest extends BaseTest {
 
     @Test
     public void testJsonArraysForArrayNode() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
         ObjectMapper objectMapper =  new ObjectMapper();
         ArrayNode jsonArray1 = new ArrayNode(objectMapper.getNodeFactory());
         ObjectNode john = new ObjectNode(objectMapper.getNodeFactory());
@@ -137,6 +133,7 @@ public class JsonTest extends BaseTest {
 
     @Test
     public void testJsonExampleFilesArrays() throws IOException, URISyntaxException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
         ObjectMapper objectMapper = new ObjectMapper();
         String content1 = new String(Files.readAllBytes(Paths.get(ClassLoader.getSystemResource("jsonExample1.json").toURI())));
         JsonNode jsonNode1 = objectMapper.readTree(content1);

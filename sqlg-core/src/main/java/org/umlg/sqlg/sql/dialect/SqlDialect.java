@@ -131,6 +131,10 @@ public interface SqlDialect {
         return true;
     }
 
+    default boolean supportsJsonArrayValues() {
+        return false;
+    }
+
     default boolean supportsDurationArrayValues() {
         return true;
     }
@@ -327,8 +331,10 @@ public interface SqlDialect {
     /**
      * @return the statement head to drop a schema
      */
-    default String dropSchemaStatement() {
-        return "DROP SCHEMA IF EXISTS ";
+    default String dropSchemaStatement(String schema) {
+        return "DROP SCHEMA IF EXISTS " + maybeWrapInQoutes(schema) +
+                (supportsCascade() ? " CASCADE" : "") +
+                (needsSemicolon() ? ";" : "");
     }
 
     default void prepareDB(Connection conn) {
@@ -365,6 +371,17 @@ public interface SqlDialect {
         return sb.toString();
     }
 
+
+    /**
+     * This indicates whether a unique index considers mull values as equal or not.
+     * Mssql server is the only db so far that considers nulls equals.
+     * 
+     * @return true is multiple null values are equal and thus not allowed.
+     */
+    default boolean uniqueIndexConsidersNullValuesEqual() {
+        return false;
+    }
+
     String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName);
 
     //This is needed for mariadb, which does not support schemas, so need to drop the database instead
@@ -385,7 +402,7 @@ public interface SqlDialect {
         return false;
     }
 
-    default boolean supportsJson() {
+    default boolean supportsJsonType() {
         return false;
     }
 
@@ -464,7 +481,12 @@ public interface SqlDialect {
     default boolean isPostgresql() {
         return false;
     }
+
     default boolean isMariaDb() {
+        return false;
+    }
+
+    default boolean isMssqlServer() {
         return false;
     }
 
@@ -493,6 +515,23 @@ public interface SqlDialect {
      */
     default boolean needsTemporaryTableSchema() {
         return false;
+    }
+
+    /**
+     * Mssql server identifies temporary table by prepending it wirh a '#'
+     * @return true if a prefix is needed.
+     */
+    default boolean needsTemporaryTablePrefix() {
+        return false;
+    }
+
+    /**
+     * Mssql server's # prefix for temporary tables.
+     * @return The prefix.
+     */
+    default String temporaryTablePrefix() {
+        Preconditions.checkState(!needsTemporaryTablePrefix());
+        return "";
     }
 
     /**
@@ -530,20 +569,9 @@ public interface SqlDialect {
         return 1L;
     }
 
-    Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException;
+    Object convertArray(PropertyType propertyType, Array array) throws SQLException;
 
     void setArray(PreparedStatement statement, int index, PropertyType type, Object[] values) throws SQLException;
-
-    /**
-     * range condition
-     *
-     * @param r              range
-     * @param printedOrderBy indicates if order by was already produced
-     * @return
-     */
-    default String getRangeClause(Range<Long> r, boolean printedOrderBy) {
-        return getRangeClause(r);
-    }
 
     /**
      * range condition
@@ -553,10 +581,6 @@ public interface SqlDialect {
      */
     default String getRangeClause(Range<Long> r) {
         return "LIMIT " + (r.getMaximum() - r.getMinimum()) + " OFFSET " + r.getMinimum();
-    }
-
-    default boolean requiredPreparedStatementDeallocate() {
-        return false;
     }
 
     /**
@@ -707,4 +731,12 @@ public interface SqlDialect {
         return false;
     }
 
+
+    /**
+     * If true it means a labels (tables) can be created in existing schemas.
+     * @return true if 'CREATE SCHEMA IF NOT EXISTS' works.
+     */
+    default boolean supportsSchemaIfNotExists() {
+        return true;
+    }
 }
