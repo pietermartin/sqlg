@@ -17,7 +17,12 @@ public class H2AnyTest extends AnyTest {
     @BeforeClass
     public static void setUp() {
         try {
-            FileUtils.cleanDirectory(new File("./src/test/db/"));
+            File directory = new File("./src/test/db/");
+            if (directory.exists()) {
+                FileUtils.cleanDirectory(directory);
+            } else {
+                directory.mkdir();
+            }
         } catch (IOException e) {
             Assert.fail("Failed to delete H2's db dir at ./src/test/db");
         }
