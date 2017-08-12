@@ -686,11 +686,6 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean supportsDropSchemas() {
-        return false;
-    }
-
-    @Override
     public String valueToValuesString(PropertyType propertyType, Object value) {
         throw new RuntimeException("Not yet implemented");
     }

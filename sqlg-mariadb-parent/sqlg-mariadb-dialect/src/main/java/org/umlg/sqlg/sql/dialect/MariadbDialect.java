@@ -207,11 +207,6 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean supportsDropSchemas() {
-        return false;
-    }
-
-    @Override
     public boolean supportsCascade() {
         return false;
     }

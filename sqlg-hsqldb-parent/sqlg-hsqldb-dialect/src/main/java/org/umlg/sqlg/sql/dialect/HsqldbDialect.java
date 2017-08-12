@@ -40,11 +40,6 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public boolean supportsDropSchemas() {
-        return false;
-    }
-
-    @Override
     public String valueToValuesString(PropertyType propertyType, Object value) {
         Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
         switch (propertyType) {
