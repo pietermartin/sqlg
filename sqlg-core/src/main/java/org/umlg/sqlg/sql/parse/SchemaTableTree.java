@@ -830,8 +830,6 @@ public class SchemaTableTree {
     }
 
     private String bulkWithJoin(SqlgGraph sqlgGraph) {
-
-
         StringBuilder sb = new StringBuilder();
         List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).collect(Collectors.toList());
         for (HasContainer hasContainer : bulkHasContainers) {
@@ -851,41 +849,6 @@ public class SchemaTableTree {
             } else {
                 throw new UnsupportedOperationException("Only Contains.within and Contains.without is supported!");
             }
-
-//            SecureRandom random = new SecureRandom();
-//            byte bytes[] = new byte[6];
-//            random.nextBytes(bytes);
-//            String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
-//            tmpTableIdentified = VERTEX_PREFIX + Topology.BULK_TEMP_EDGE + tmpTableIdentified;
-//            sqlgGraph.getTopology().createTempTable(tmpTableIdentified, columns);
-//
-//            Map<String, Object> withInOutMap = new HashMap<>();
-//            if (hasContainer.getBiPredicate() == Contains.within) {
-//                withInOutMap.put(WITHIN, "unused");
-//            } else {
-//                withInOutMap.put(WITHOUT, "unused");
-//            }
-//            String copySql = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).temporaryTableCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(VERTEX_PREFIX.length())), withInOutMap.keySet());
-//            Writer writer = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(this.sqlgGraph, copySql);
-//
-//            for (Object withInOutValue : withInOuts) {
-//                if (withInOutValue instanceof RecordId) {
-//                    withInOutValue = ((RecordId) withInOutValue).getId();
-//                }
-//                withInOutMap = new HashMap<>();
-//                if (hasContainer.getBiPredicate() == Contains.within) {
-//                    withInOutMap.put(WITHIN, withInOutValue);
-//                } else {
-//                    withInOutMap.put(WITHOUT, withInOutValue);
-//                }
-//                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, withInOutMap);
-//            }
-//            try {
-//                writer.close();
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-
 
             if (hasContainer.getBiPredicate() == Contains.within) {
                 sb.append(" INNER JOIN\n\t");
@@ -917,9 +880,6 @@ public class SchemaTableTree {
                 sb.append(WITHOUT);
             }
             sb.append(") ");
-//            sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tmpTableIdentified));
-//            sb.append(" tmp");
-//            sb.append(this.rootSchemaTableTree().tmpTableAliasCounter);
             sb.append(" on ");
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
             sb.append(".");
