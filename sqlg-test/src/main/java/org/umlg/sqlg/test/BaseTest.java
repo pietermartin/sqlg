@@ -237,7 +237,7 @@ public abstract class BaseTest {
 
     protected void loadModern(SqlgGraph sqlgGraph) {
         final GraphReader gryoReader = GryoReader.build().create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo")) {
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
             gryoReader.readGraph(stream, sqlgGraph);
         } catch (IOException e) {
             Assert.fail(e.getMessage());
@@ -250,7 +250,7 @@ public abstract class BaseTest {
 
     protected void loadGratefulDead(SqlgGraph sqlgGraph) {
         final GraphReader gryoReader = GryoReader.build().create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/grateful-dead.kryo")) {
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
             gryoReader.readGraph(stream, sqlgGraph);
         } catch (IOException e) {
             Assert.fail(e.getMessage());

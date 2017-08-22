@@ -641,13 +641,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
 
     @Test
     public void g_V_asXaX_out_asXaX_out_asXaX_selectXaX_byXunfold_valuesXnameX_foldX_rangeXlocal_1_2X() throws IOException {
+        loadModern();
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
         assertModernGraph(g, true, false);
         DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) g.traversal()
                 .V().as("a")
@@ -669,13 +664,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
 
     @Test
     public void g_V_asXaX_out_asXaX_out_asXaX_selectXaX_byXunfold_valuesXnameX_foldX_rangeXlocal_1_2X_Simple() throws IOException {
+        loadModern();
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
         assertModernGraph(g, true, false);
         DefaultGraphTraversal<Vertex, List<Vertex>> traversal = (DefaultGraphTraversal) g.traversal()
                 .V().as("a")

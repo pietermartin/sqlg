@@ -1,21 +1,15 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -57,25 +51,19 @@ public class TestHas extends BaseTest {
 
     @Test
     public void g_V_hasId() throws IOException {
-        Graph graph = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(graph.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, graph);
-        }
-        assertModernGraph(graph, true, false);
-        GraphTraversalSource g = graph.traversal();
+        loadModern();
+        assertModernGraph(this.sqlgGraph, true, false);
+        GraphTraversalSource g = this.sqlgGraph.traversal();
 
         Object id = convertToVertexId("marko");
 
         List<Vertex> traversala2 =  g.V().has(T.id, id).toList();
         Assert.assertEquals(1, traversala2.size());
-        Assert.assertEquals(convertToVertex(graph, "marko"), traversala2.get(0));
+        Assert.assertEquals(convertToVertex(this.sqlgGraph, "marko"), traversala2.get(0));
 
         traversala2 =  g.V().hasId(id).toList();
         Assert.assertEquals(1, traversala2.size());
-        Assert.assertEquals(convertToVertex(graph, "marko"), traversala2.get(0));
+        Assert.assertEquals(convertToVertex(this.sqlgGraph, "marko"), traversala2.get(0));
     }
 
     @Test

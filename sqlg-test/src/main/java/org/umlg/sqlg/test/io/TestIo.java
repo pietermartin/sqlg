@@ -38,8 +38,8 @@ public class TestIo extends BaseTest {
         this.ioType = "graphson-v1-embedded";
         this.assertViaDirectEquality = true;
         this.assertEdgesAtSameTimeAsVertex = false;
-        this.readerMaker = g -> g.io(IoCore.graphson()).reader().mapper(g.io(IoCore.graphson()).mapper().embedTypes(true).create()).create();
-        this.writerMaker = g -> g.io(IoCore.graphson()).writer().mapper(g.io(IoCore.graphson()).mapper().embedTypes(true).create()).create();
+        this.readerMaker = g -> g.io(IoCore.graphson()).reader().mapper(g.io(IoCore.graphson()).mapper().create()).create();
+        this.writerMaker = g -> g.io(IoCore.graphson()).writer().mapper(g.io(IoCore.graphson()).mapper().create()).create();
 
         Graph graph = this.sqlgGraph;
         final Vertex v1 = graph.addVertex("name", "marko", T.label, "person");

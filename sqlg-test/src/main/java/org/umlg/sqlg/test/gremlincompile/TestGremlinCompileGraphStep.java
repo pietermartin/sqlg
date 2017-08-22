@@ -66,7 +66,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
                 .in("created")
                 .where(P.neq("a")).as("b")
                 .<Vertex>select("a", "b")
-                .addInE("a", "co-developer", "b", "year", 2009);
+                .addE("co-developer").from("a").to("b").property("year", 2009);
         int count = 0;
         Assert.assertEquals(6, traversal.getSteps().size());
         while (traversal.hasNext()) {
@@ -109,7 +109,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
                 .in("created")
                 .where(P.neq("a")).as("b")
                 .select("a", "b")
-                .addInE("a", "co-developer", "b", "year", 2009);
+                .addE("co-developer").property("year", 2009).from("a").to("b");
         Assert.assertEquals(6, traversal.getSteps().size());
         printTraversalForm(traversal);
         int count = 0;

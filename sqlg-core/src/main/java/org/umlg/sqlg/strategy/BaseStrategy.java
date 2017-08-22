@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.PathFilterStep;
@@ -48,7 +49,7 @@ import java.util.stream.Collectors;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/03/04
+ * Date: 2017/03/04
  */
 public abstract class BaseStrategy {
 
@@ -56,6 +57,7 @@ public abstract class BaseStrategy {
             VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class
             , OrderGlobalStep.class, RangeGlobalStep.class
             , ChooseStep.class
+            , OptionalStep.class
             , RepeatStep.class
             , SelectStep.class
             , SelectOneStep.class
@@ -78,6 +80,7 @@ public abstract class BaseStrategy {
     protected Traversal.Admin<?, ?> traversal;
     protected SqlgGraph sqlgGraph;
     SqlgStep sqlgStep = null;
+    private Stack<ReplacedStepTree.TreeNode> optionalStepStack = new Stack<>();
     private Stack<ReplacedStepTree.TreeNode> chooseStepStack = new Stack<>();
     ReplacedStepTree.TreeNode currentTreeNodeNode;
     ReplacedStep<?, ?> currentReplacedStep;
@@ -118,6 +121,14 @@ public abstract class BaseStrategy {
                 } else {
                     this.currentReplacedStep.addLabel((pathCount) + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
                     return false;
+                }
+            } else if (step instanceof OptionalStep) {
+                if (!unoptimizableOptionalStep((OptionalStep<?>) step)) {
+                    this.optionalStepStack.clear();
+                    handleOptionalStep(1, (OptionalStep<?>) step, this.traversal, pathCount);
+                    this.optionalStepStack.clear();
+                    //after choose steps the optimization starts over
+                    this.reset = true;
                 }
             } else if (step instanceof ChooseStep) {
                 if (!unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
@@ -237,6 +248,46 @@ public abstract class BaseStrategy {
         this.traversal.removeStep(repeatStep);
     }
 
+    private void handleOptionalStep(int optionalStepNestedCount, OptionalStep<?> optionalStep, Traversal.Admin<?, ?> traversal, MutableInt pathCount) {
+        //The currentTreeNode here is the node that will need the left join in the sql generation
+        this.optionalStepStack.add(this.currentTreeNodeNode);
+        Preconditions.checkState(this.optionalStepStack.size() == optionalStepNestedCount);
+
+        Traversal.Admin<?,?> optionalTraversal = optionalStep.getLocalChildren().get(0);
+
+        ReplacedStep<?, ?> previousReplacedStep = this.sqlgStep.getReplacedSteps().get(this.sqlgStep.getReplacedSteps().size() - 1);
+        previousReplacedStep.setLeftJoin(true);
+
+        List<Step<?, ?>> optionalTraversalSteps = new ArrayList(optionalTraversal.getSteps());
+        ListIterator<Step<?, ?>> optionalStepsIterator = optionalTraversalSteps.listIterator();
+        while (optionalStepsIterator.hasNext()) {
+            Step internalOptionalStep = optionalStepsIterator.next();
+            if (internalOptionalStep instanceof VertexStep || internalOptionalStep instanceof EdgeVertexStep || internalOptionalStep instanceof EdgeOtherVertexStep) {
+                handleVertexStep(optionalStepsIterator, (AbstractStep<?, ?>) internalOptionalStep, pathCount);
+                //if the chooseStepStack size is greater than the chooseStepNestedCount then it means the just executed
+                //handleVertexStep is after nested chooseSteps.
+                //This means that this VertexStep applies to the nested chooseSteps where the chooseStep was not chosen.
+                //I.e. there was no results for the chooseSteps traversal.
+                for (int i = optionalStepNestedCount; i < this.chooseStepStack.size(); i++) {
+                    ReplacedStepTree.TreeNode treeNode = this.chooseStepStack.get(i);
+                    this.currentReplacedStep.markAsJoinToLeftJoin();
+                    treeNode.addReplacedStep(this.currentReplacedStep);
+                }
+            } else if (internalOptionalStep instanceof OptionalStep) {
+                handleOptionalStep(optionalStepNestedCount + 1, (OptionalStep) internalOptionalStep, traversal, pathCount);
+            } else if (internalOptionalStep instanceof ComputerAwareStep.EndStep) {
+                break;
+            } else {
+                throw new IllegalStateException("Unhandled step nested in ChooseStep " + internalOptionalStep.getClass().getName());
+            }
+        }
+        //the chooseStep might be a ChooseStep nested inside another ChooseStep.
+        //In that case it will not be a direct step of the traversal.
+        if (traversal.getSteps().contains(optionalStep)) {
+            traversal.removeStep(optionalStep);
+        }
+    }
+
     private void handleChooseStep(int chooseStepNestedCount, ChooseStep<?, ?, ?> chooseStep, Traversal.Admin<?, ?> traversal, MutableInt pathCount) {
         //The currentTreeNode here is the node that will need the left join in the sql generation
         this.chooseStepStack.add(this.currentTreeNodeNode);
@@ -301,28 +352,28 @@ public abstract class BaseStrategy {
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
 //                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
-                    toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
-                    //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
-                    //i.e. for neq and without 'or' logic
-                    toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(optimizeHas(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(optimizeWithInOut(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(optimizeBetween(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(optimizeInside(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(optimizeOutside(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
-                    if (toRemoveHasContainers.size() == hasContainers.size()) {
-                        if (!currentStep.getLabels().isEmpty()) {
-                            final IdentityStep identityStep = new IdentityStep<>(this.traversal);
-                            currentStep.getLabels().forEach(l -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l));
-                            TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
-                        }
-                        if (this.traversal.getSteps().contains(currentStep)) {
-                            this.traversal.removeStep(currentStep);
-                        }
-                        iterator.remove();
-                        countToGoPrevious--;
+                toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
+                //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
+                //i.e. for neq and without 'or' logic
+                toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
+                toRemoveHasContainers.addAll(optimizeHas(this.currentReplacedStep, hasContainers));
+                toRemoveHasContainers.addAll(optimizeWithInOut(this.currentReplacedStep, hasContainers));
+                toRemoveHasContainers.addAll(optimizeBetween(this.currentReplacedStep, hasContainers));
+                toRemoveHasContainers.addAll(optimizeInside(this.currentReplacedStep, hasContainers));
+                toRemoveHasContainers.addAll(optimizeOutside(this.currentReplacedStep, hasContainers));
+                toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
+                if (toRemoveHasContainers.size() == hasContainers.size()) {
+                    if (!currentStep.getLabels().isEmpty()) {
+                        final IdentityStep identityStep = new IdentityStep<>(this.traversal);
+                        currentStep.getLabels().forEach(l -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l));
+                        TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
                     }
+                    if (this.traversal.getSteps().contains(currentStep)) {
+                        this.traversal.removeStep(currentStep);
+                    }
+                    iterator.remove();
+                    countToGoPrevious--;
+                }
 //                }
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
@@ -378,6 +429,8 @@ public abstract class BaseStrategy {
                         if (replacedStep.getLabels().isEmpty()) {
                             replacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
+                    } else if (previousStep instanceof OptionalStep) {
+                        throw new RuntimeException("not yet implemented");
                     } else if (previousStep instanceof ChooseStep) {
                         //The order applies to the current replaced step and the previous ChooseStep
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
@@ -632,11 +685,58 @@ public abstract class BaseStrategy {
         final ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         List<Step<?, ?>> toCome = steps.subList(stepIterator.nextIndex(), steps.size());
         return toCome.stream().anyMatch(s ->
-                s.getClass().equals(Order.class) ||
-                        s.getClass().equals(LambdaCollectingBarrierStep.class) ||
-                        s.getClass().equals(SackValueStep.class)
+                        s.getClass().equals(Order.class) ||
+                                s.getClass().equals(LambdaCollectingBarrierStep.class) ||
+                                s.getClass().equals(SackValueStep.class)
 //                        s.getClass().equals(SackStep.class)
         );
+    }
+
+    protected boolean unoptimizableOptionalStep(OptionalStep<?> optionalStep) {
+        if (!this.optionalStepStack.isEmpty()) {
+            return true;
+        }
+
+        Traversal.Admin<?, ?> optionalTraversal = optionalStep.getLocalChildren().get(0);
+        List<Step> optionalTraversalSteps = new ArrayList<>(optionalTraversal.getSteps());
+
+//        //Can not optimize if the traversal contains a LocalStep
+//        List<Step> localSteps = predicateSteps.stream().filter(p -> p.getClass().equals(LocalStep.class)).collect(Collectors.toList());
+//        if (!localSteps.isEmpty()) {
+//            return true;
+//        }
+
+        //Can not optimize if the traversal contains a RangeGlobalStep
+        List<Step> rangeGlobalSteps = optionalTraversalSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).collect(Collectors.toList());
+        if (rangeGlobalSteps.size() > 1) {
+            return true;
+        }
+        if (rangeGlobalSteps.size() > 0) {
+            Step rangeGlobalStep = rangeGlobalSteps.get(0);
+            //Only if the rangeGlobalStep is the last step can it be optimized
+            if (optionalTraversalSteps.get(optionalTraversalSteps.size() - 1) != rangeGlobalStep) {
+                return true;
+            }
+        }
+
+        ListIterator<Step> stepListIterator = optionalTraversalSteps.listIterator();
+        while (stepListIterator.hasNext()) {
+            Step internalOptionalStep = stepListIterator.next();
+            if (!(internalOptionalStep instanceof VertexStep || internalOptionalStep instanceof EdgeVertexStep ||
+                    internalOptionalStep instanceof EdgeOtherVertexStep || internalOptionalStep instanceof ComputerAwareStep.EndStep ||
+                    internalOptionalStep instanceof OptionalStep || internalOptionalStep instanceof HasStep ||
+                    internalOptionalStep instanceof OrderGlobalStep || internalOptionalStep instanceof RangeGlobalStep)) {
+                return true;
+            }
+        }
+
+        List<Step> optionalSteps = optionalTraversalSteps.stream().filter(p -> p.getClass().equals(OptionalStep.class)).collect(Collectors.toList());
+        for (Step step : optionalSteps) {
+            if (unoptimizableOptionalStep((OptionalStep<?>) step)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected boolean unoptimizableChooseStep(ChooseStep<?, ?, ?> chooseStep) {

@@ -5,6 +5,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -89,8 +90,13 @@ public class VertexStrategy extends BaseStrategy {
      */
     @Override
     protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
-        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof ChooseStep)) {
+        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof ChooseStep || step instanceof OptionalStep)) {
             return false;
+        }
+        if (step instanceof OptionalStep) {
+            if (unoptimizableOptionalStep((OptionalStep<?>) step)) {
+                return false;
+            }
         }
         if (step instanceof ChooseStep) {
             if (unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
