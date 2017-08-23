@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/04/24
  */
-public class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implements TraversalOptionParent<M, S, E> {
+public abstract class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implements TraversalOptionParent<M, S, E> {
 
     protected Traversal.Admin<S, M> branchTraversal;
     Map<M, List<Traversal.Admin<S, E>>> traversalOptions = new HashMap<>();
