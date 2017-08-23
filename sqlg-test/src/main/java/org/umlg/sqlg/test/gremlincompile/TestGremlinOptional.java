@@ -89,30 +89,6 @@ public class TestGremlinOptional extends BaseTest {
     }
 
     @Test
-    public void testUnoptimizableChooseStep() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
-        a1.addEdge("ab", b1);
-        a1.addEdge("ab", b2);
-        this.sqlgGraph.tx().commit();
-
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
-                .V()
-                .hasLabel("A")
-                .choose(
-                        v -> v.label().equals("A"),
-                        __.out(),
-                        __.in()
-                );
-        Assert.assertEquals(3, traversal.getSteps().size());
-        List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(2, traversal.getSteps().size());
-        Assert.assertEquals(2, vertices.size());
-    }
-
-    @Test
     public void testOptional() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");

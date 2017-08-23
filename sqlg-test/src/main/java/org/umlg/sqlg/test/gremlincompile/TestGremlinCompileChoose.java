@@ -6,13 +6,17 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgChooseStepBarrier;
+import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -91,4 +95,31 @@ public class TestGremlinCompileChoose extends BaseTest {
         Assert.assertEquals(Long.valueOf(1), counts.get("{name=[marko], age=[29]}"));
         Assert.assertEquals(Long.valueOf(1), counts.get("josh"));
     }
+
+    @Test
+    public void testUnoptimizableChooseStep() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+                .V()
+                .hasLabel("A")
+                .choose(
+                        v -> v.label().equals("A"),
+                        __.out(),
+                        __.in()
+                );
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgChooseStepBarrier);
+        Assert.assertEquals(2, vertices.size());
+    }
+
 }
