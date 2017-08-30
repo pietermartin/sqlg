@@ -29,6 +29,7 @@ public class C3p0DataSourceFactory implements SqlgDataSourceFactory {
 //        comboPooledDataSource.setMinPoolSize(1);
 //        comboPooledDataSource.setMaxPoolSize(1);
         comboPooledDataSource.setMaxIdleTime(configuration.getInt("maxIdleTime", 3600));
+        comboPooledDataSource.setForceUseNamedDriverClass(true);
         if (!StringUtils.isEmpty(username)) {
             comboPooledDataSource.setUser(username);
         }
