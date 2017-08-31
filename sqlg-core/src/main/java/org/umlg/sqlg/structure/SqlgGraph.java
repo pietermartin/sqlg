@@ -1145,7 +1145,6 @@ public class SqlgGraph implements Graph {
                 return p;
             }
         }
-
         return null;
     }
 
