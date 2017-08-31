@@ -2,6 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -10,6 +11,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.ds.C3p0DataSourceFactory;
 
@@ -18,6 +20,7 @@ import javax.naming.spi.InitialContextFactory;
 import javax.naming.spi.NamingManager;
 import javax.sql.DataSource;
 import java.net.URL;
+import java.util.ServiceLoader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -55,10 +58,10 @@ public class TestJNDIInitialization {
         }
 
         String url = configuration.getString("jdbc.url");
-
         //obtain the connection that we will later supply from JNDI
-        ds = new C3p0DataSourceFactory().setup(url, configuration).getDatasource();
-
+        SqlgPlugin p = findSqlgPlugin(url);
+        Assert.assertNotNull(p);
+        ds = new C3p0DataSourceFactory().setup(p.getDriverFor(url), configuration).getDatasource();
         //change the connection url to be a JNDI one
         configuration.setProperty("jdbc.url", "jndi:testConnection");
 
@@ -80,5 +83,14 @@ public class TestJNDIInitialization {
         assertNotNull(g.getSqlDialect());
         assertEquals(configuration.getString("jdbc.url"), g.getJdbcUrl());
         assertNotNull(g.getConnection());
+    }
+
+    private static SqlgPlugin findSqlgPlugin(String connectionUri) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, TestJNDIInitialization.class.getClassLoader())) {
+            if (p.getDriverFor(connectionUri) != null) {
+                return p;
+            }
+        }
+        return null;
     }
 }
