@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -218,7 +219,7 @@ public class TestPathStep extends BaseTest {
                 .V().as("a")
                 .out().as("a")
                 .in().as("a")
-                .select("a", "a", "a");
+                .select(Pop.all,"a", "a", "a");
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Map<String, Object>> result = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());

@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.localvertexstep;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -10,7 +9,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -23,7 +21,6 @@ import org.umlg.sqlg.step.SqlgLocalStepBarrier;
 import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
-import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -352,9 +349,9 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
         LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
         List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
-        //first choose step can not be optimized because it has a range step that is not the last step
+        //first optional step can not be optimized because it has a range step that is not the last step
         //the second is optimized.
-        Assert.assertEquals(4, sqlgVertexSteps.size());
+        Assert.assertEquals(2, sqlgVertexSteps.size());
 
         Assert.assertEquals(3, paths.size());
         List<Path> pathsOfLength1 = paths.stream().filter(p -> p.size() == 1).collect(Collectors.toList());
@@ -705,18 +702,18 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         SqlgLocalStepBarrier sqlgLocalStepBarrier = (SqlgLocalStepBarrier) traversal.getSteps().get(2);
         DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
 
-//        First optional is a non optimized, optimized SqlgChooseBarrierStep
+//        First optional is a non optimized, optimized SqlgOptionalBarrierStep
         Assert.assertEquals(1, t.getSteps().size());
         Assert.assertTrue(t.getSteps().get(0) instanceof SqlgOptionalStepBarrier);
         SqlgOptionalStepBarrier sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier) t.getSteps().get(0);
-        Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgOptionalStepBarrier);
-        Traversal.Admin<?, ?> trueTraversal = trueFalseTraversals.getLeft();
-        Assert.assertEquals(3, trueTraversal.getSteps().size());
-        Assert.assertTrue(trueTraversal.getSteps().get(0) instanceof SqlgVertexStep);
-        Assert.assertTrue(trueTraversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);
-        Assert.assertTrue(trueTraversal.getSteps().get(2) instanceof ComputerAwareStep.EndStep);
 
-        SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) trueTraversal.getSteps().get(1);
+        Traversal.Admin<?, ?> optionalTraversal = (Traversal.Admin<?, ?>) sqlgOptionalStepBarrier.getLocalChildren().get(0);
+
+        Assert.assertEquals(2, optionalTraversal.getSteps().size());
+        Assert.assertTrue(optionalTraversal.getSteps().get(0) instanceof SqlgVertexStep);
+        Assert.assertTrue(optionalTraversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);
+
+        SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) optionalTraversal.getSteps().get(1);
         t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
         //Second optional is a optimized
         Assert.assertEquals(1, t.getSteps().size());
@@ -785,7 +782,6 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                     System.out.print(" - ");
                 }
             }
-            System.out.println("");
         }
     }
 
@@ -845,14 +841,13 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(1, t.getSteps().size());
         Assert.assertTrue(t.getSteps().get(0) instanceof SqlgOptionalStepBarrier);
         SqlgOptionalStepBarrier sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier) t.getSteps().get(0);
-        Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgOptionalStepBarrier);
-        Traversal.Admin<?, ?> trueTraversal = trueFalseTraversals.getLeft();
-        Assert.assertEquals(3, trueTraversal.getSteps().size());
-        Assert.assertTrue(trueTraversal.getSteps().get(0) instanceof SqlgVertexStep);
-        Assert.assertTrue(trueTraversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);
-        Assert.assertTrue(trueTraversal.getSteps().get(2) instanceof ComputerAwareStep.EndStep);
 
-        SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) trueTraversal.getSteps().get(1);
+        Traversal.Admin<?, ?> optionalTraversal = (Traversal.Admin<?, ?>) sqlgOptionalStepBarrier.getLocalChildren().get(0);
+        Assert.assertEquals(2, optionalTraversal.getSteps().size());
+        Assert.assertTrue(optionalTraversal.getSteps().get(0) instanceof SqlgVertexStep);
+        Assert.assertTrue(optionalTraversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);
+
+        SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) optionalTraversal.getSteps().get(1);
         t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier1.getLocalChildren().get(0);
         //Second optional is a optimized
         Assert.assertEquals(1, t.getSteps().size());

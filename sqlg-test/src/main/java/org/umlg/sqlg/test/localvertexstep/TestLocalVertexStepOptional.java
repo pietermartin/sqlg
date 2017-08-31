@@ -97,7 +97,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);
         SqlgLocalStepBarrier<?, ?> localStep = (SqlgLocalStepBarrier) traversal.getSteps().get(1);
         List<SqlgVertexStep> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(2, sqlgVertexStepCompileds.size());
+        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
         SqlgVertexStep sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
         assertStep(sqlgVertexStepCompiled, false, false, false, true);
         Assert.assertEquals(3, paths.size());

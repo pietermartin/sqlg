@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
@@ -648,7 +649,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
                 .V().as("a")
                 .out().as("a")
                 .out().as("a")
-                .<List<String>>select("a")
+                .<List<String>>select(Pop.all, "a")
                 .by(__.unfold().values("name").fold())
                 .range(Scope.local, 1, 2);
         Assert.assertEquals(5, traversal.getSteps().size());
@@ -671,7 +672,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
                 .V().as("a")
                 .out().as("a")
                 .out().as("a")
-                .select("a");
+                .select(Pop.all, "a");
         Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
         Assert.assertEquals(2, traversal.getSteps().size());

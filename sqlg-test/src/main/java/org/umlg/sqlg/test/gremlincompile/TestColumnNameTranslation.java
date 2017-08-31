@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -79,7 +80,7 @@ public class TestColumnNameTranslation extends BaseTest {
                 .V().as("a")
                 .out().as("a")
                 .in().as("a")
-                .select("a", "a", "a")
+                .select(Pop.all, "a", "a", "a")
                 .toList();
         assertEquals(3, result.size());
         Object o1 = result.get(0).get("a");

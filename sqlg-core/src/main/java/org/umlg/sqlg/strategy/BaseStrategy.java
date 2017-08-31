@@ -700,12 +700,6 @@ public abstract class BaseStrategy {
         Traversal.Admin<?, ?> optionalTraversal = optionalStep.getLocalChildren().get(0);
         List<Step> optionalTraversalSteps = new ArrayList<>(optionalTraversal.getSteps());
 
-//        //Can not optimize if the traversal contains a LocalStep
-//        List<Step> localSteps = predicateSteps.stream().filter(p -> p.getClass().equals(LocalStep.class)).collect(Collectors.toList());
-//        if (!localSteps.isEmpty()) {
-//            return true;
-//        }
-
         //Can not optimize if the traversal contains a RangeGlobalStep
         List<Step> rangeGlobalSteps = optionalTraversalSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).collect(Collectors.toList());
         if (rangeGlobalSteps.size() > 1) {

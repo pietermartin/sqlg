@@ -1,6 +1,5 @@
 package org.umlg.sqlg.util;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -8,7 +7,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +17,6 @@ import java.util.function.Predicate;
  *         Date: 2017/04/29
  */
 public class SqlgTraversalUtil {
-
-    public static Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals(SqlgOptionalStepBarrier<?, ?, ?> sqlgChooseStepBarrier) {
-        return Pair.of(sqlgChooseStepBarrier.getTraversalOptions().get(Boolean.TRUE).get(0), sqlgChooseStepBarrier.getTraversalOptions().get(Boolean.FALSE).get(0));
-    }
 
     public static boolean hasOneBulkRequirement(Traversal.Admin<?, ?> traversal) {
         List<Step> steps = TraversalHelper.getStepsOfAssignableClassRecursively(Step.class, traversal);

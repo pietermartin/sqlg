@@ -31,6 +31,67 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
+    public void testSimple() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "order", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "order", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "order", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "order", 3);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .out()
+                .order().by("order", Order.decr);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        assertStep(traversal.getSteps().get(0), true, false, false, false);
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals(b3, vertices.get(0));
+        Assert.assertEquals(b2, vertices.get(1));
+        Assert.assertEquals(b1, vertices.get(2));
+    }
+
+    @Test
+    public void testSimpleButLessSo() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "order", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "order", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "order", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "order", 3);
+        Vertex a12 = this.sqlgGraph.addVertex(T.label, "A", "order", 10);
+        Vertex b12 = this.sqlgGraph.addVertex(T.label, "B", "order", 1);
+        Vertex b22 = this.sqlgGraph.addVertex(T.label, "B", "order", 2);
+        Vertex b32 = this.sqlgGraph.addVertex(T.label, "B", "order", 3);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a12.addEdge("ab", b12);
+        a12.addEdge("ab", b22);
+        a12.addEdge("ab", b32);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A").as("a")
+                .out().as("b")
+                .order()
+                .by(__.select("a").by("order"), Order.decr)
+                .by(__.select("b").by("order"), Order.decr);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        assertStep(traversal.getSteps().get(0), true, false, false, false);
+        Assert.assertEquals(6, vertices.size());
+        Assert.assertEquals(b32, vertices.get(0));
+        Assert.assertEquals(b22, vertices.get(1));
+        Assert.assertEquals(b12, vertices.get(2));
+        Assert.assertEquals(b3, vertices.get(3));
+        Assert.assertEquals(b2, vertices.get(4));
+        Assert.assertEquals(b1, vertices.get(5));
+    }
+
+
+    @Test
     public void testSelectBeforeOrder() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
