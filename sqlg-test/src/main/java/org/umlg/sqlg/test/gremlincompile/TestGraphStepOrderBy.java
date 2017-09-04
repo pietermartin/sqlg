@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -14,6 +15,7 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +30,122 @@ public class TestGraphStepOrderBy extends BaseTest {
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
+    }
+
+    @Test
+    public void testOrderOnEdge() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Edge e1 = a1.addEdge("ab", b1, "order", 0);
+        Edge e2 = a1.addEdge("ab", b2, "order", 1);
+        Edge e3 = a1.addEdge("ab", b3, "order", 2);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .outE()
+                .order().by("order", Order.decr);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Edge> edges = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        assertStep(traversal.getSteps().get(0), true, false, false, false);
+        Assert.assertEquals(3, edges.size());
+        Assert.assertEquals(e3, edges.get(0));
+        Assert.assertEquals(e2, edges.get(1));
+        Assert.assertEquals(e1, edges.get(2));
+    }
+
+    @Test
+    public void testOrderOnEdgeMultipleLabels() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C");
+        Edge e1 = a1.addEdge("ab", b1, "order", 0);
+        Edge e2 = a1.addEdge("ab", b2, "order", 1);
+        Edge e3 = a1.addEdge("ab", b3, "order", 2);
+        Edge ec1 = a1.addEdge("ac", c1, "order", 3);
+        Edge ec2 = a1.addEdge("ac", c2, "order", 4);
+        Edge ec3 = a1.addEdge("ac", c3, "order", 5);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .outE()
+                .order().by("order", Order.decr);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Edge> edges = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        assertStep(traversal.getSteps().get(0), true, true, true, true);
+        Assert.assertEquals(6, edges.size());
+        Assert.assertEquals(ec3, edges.get(0));
+        Assert.assertEquals(ec2, edges.get(1));
+        Assert.assertEquals(ec1, edges.get(2));
+        Assert.assertEquals(e3, edges.get(3));
+        Assert.assertEquals(e2, edges.get(4));
+        Assert.assertEquals(e1, edges.get(5));
+    }
+
+    @Test
+    public void testOrderOnEdgeWithInV() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Edge e1 = a1.addEdge("ab", b1, "order", 0);
+        Edge e2 = a1.addEdge("ab", b2, "order", 11);
+        Edge e3 = a1.addEdge("ab", b3, "order", 2);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V(a1.id()).hasLabel("A")
+                .outE()
+                .order().by("order", Order.decr)
+                .inV();
+        Assert.assertEquals(5, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        assertStep(traversal.getSteps().get(0), true, false, false, false);
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals(b2, vertices.get(0));
+        Assert.assertEquals(b3, vertices.get(1));
+        Assert.assertEquals(b1, vertices.get(2));
+    }
+
+    @Test
+    public void testOrderOnEdgeMultipleLabelsInV() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C");
+        Edge e1 = a1.addEdge("ab", b1, "order", 0);
+        Edge e2 = a1.addEdge("ab", b2, "order", 1);
+        Edge e3 = a1.addEdge("ab", b3, "order", 2);
+        Edge ec1 = a1.addEdge("ac", c1, "order", 3);
+        Edge ec2 = a1.addEdge("ac", c2, "order", 4);
+        Edge ec3 = a1.addEdge("ac", c3, "order", 5);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .outE()
+                .order().by("order", Order.decr)
+                .inV();
+        Assert.assertEquals(5, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        assertStep(traversal.getSteps().get(0), true, true, true, true);
+        Assert.assertEquals(6, vertices.size());
+        Assert.assertEquals(c3, vertices.get(0));
+        Assert.assertEquals(c2, vertices.get(1));
+        Assert.assertEquals(c1, vertices.get(2));
+        Assert.assertEquals(b3, vertices.get(3));
+        Assert.assertEquals(b2, vertices.get(4));
+        Assert.assertEquals(b1, vertices.get(5));
     }
 
     @Test
@@ -83,7 +201,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbdd");
         this.sqlgGraph.tx().commit();
         List<String> names = this.sqlgGraph.traversal().V().order()
-                .<String>by("name", (a, b) -> a.substring(1, 2).compareTo(b.substring(1, 2)))
+                .<String>by("name", Comparator.comparing(a -> a.substring(1, 2)))
                 .<String>by("name", (a, b) -> b.substring(2, 3).compareTo(a.substring(2, 3)))
                 .<String>values("name").toList();
         Assert.assertEquals(4, names.size());
