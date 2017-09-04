@@ -171,10 +171,6 @@ import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
         method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
         reason = "Takes too long")
 @Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutorPerformanceTest",
-        method = "executorEval",
-        reason = "Takes too long")
-@Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
