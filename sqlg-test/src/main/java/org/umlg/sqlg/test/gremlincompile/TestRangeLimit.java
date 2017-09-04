@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -13,6 +14,7 @@ import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -150,6 +152,35 @@ public class TestRangeLimit extends BaseTest {
         assertStep(sqlgGraphStep, true, false, false, true, true);
 
         Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
+    public void testSkipAfterNonOptimizedStep() {
+        for (int i = 0; i < 100; i++) {
+            Vertex column = this.sqlgGraph.addVertex(T.label, "BigData.Column");
+            Vertex tag = this.sqlgGraph.addVertex(T.label, "BigData.Tag", "name", "NonAnonymized");
+            tag.addEdge("tag", column);
+        }
+        for (int i = 0; i < 100; i++) {
+            Vertex column = this.sqlgGraph.addVertex(T.label, "BigData.Column");
+            Vertex tag = this.sqlgGraph.addVertex(T.label, "BigData.Tag", "name", "Anonymized");
+            tag.addEdge("tag", column);
+        }
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("BigData.Column")
+                .where(
+                        __.in("tag").hasLabel("BigData.Tag").has("name", "Anonymized")
+                )
+                .skip(2);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, false, true, true);
+
+        Assert.assertEquals(98, vertices.size());
     }
 
     @Test
@@ -405,6 +436,49 @@ public class TestRangeLimit extends BaseTest {
     }
 
     @Test
+    public void testRangeOnMultipleLabelsOrderedWithSkip() {
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + 12);
+        for (int i = 0; i < 20; i++) {
+            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            a.addEdge("E", b, "name", "e" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+                .V().hasLabel("A", "B")
+                .order().by("name")
+                .skip(2)
+                .values("name");
+        Assert.assertEquals(5, g.getSteps().size());
+        ensureRangeGlobal(g);
+        int cnt = 0;
+        Set<String> names = new HashSet<>();
+        String previous = null;
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, true, true, true, false);
+        }
+        while (g.hasNext()) {
+            String n = (String) g.next();
+            names.add(n);
+            if (previous != null) {
+                Assert.assertTrue(previous.compareTo(n) < 0);
+            }
+            previous = n;
+            cnt++;
+        }
+        // order by on multiple labels is not done in SQL, so the range isn't
+//        ensureRangeGlobal(g);
+        Assert.assertEquals(38, cnt);
+        Assert.assertEquals(names.toString(), 38, names.size());
+        Assert.assertTrue(names.toString(), !names.contains("a0"));
+        Assert.assertTrue(names.toString(), !names.contains("a1"));
+
+    }
+
+    @Test
     public void testRangeOnMultipleLabelsOffset() {
         for (int i = 0; i < 20; i++) {
             Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
@@ -635,5 +709,17 @@ public class TestRangeLimit extends BaseTest {
         SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
         assertStep(sqlgGraphStep, true, false, true, true, false);
         Assert.assertEquals(10, vertices.size());
+    }
+
+    @Test
+    public void g_V_hasLabelXpersonX_order_byXageX_skipX1X_valuesXnameX() {
+        loadModern();
+
+        final Traversal<Vertex, String> traversal =  this.sqlgGraph.traversal()
+                .V().hasLabel("person")
+                .order().by("age").skip(1).values("name");
+        printTraversalForm(traversal);
+        Assert.assertTrue(traversal.hasNext());
+        Assert.assertEquals(Arrays.asList("marko", "josh", "peter"), traversal.toList());
     }
 }

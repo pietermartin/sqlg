@@ -583,6 +583,10 @@ public interface SqlDialect {
         return "LIMIT " + (r.getMaximum() - r.getMinimum()) + " OFFSET " + r.getMinimum();
     }
 
+    default String getSkipClause(long skip) {
+        return " OFFSET " + skip;
+    }
+
     /**
      * get the full text query for the given predicate and column
      *
@@ -734,4 +738,5 @@ public interface SqlDialect {
     default boolean supportsSchemaIfNotExists() {
         return true;
     }
+
 }

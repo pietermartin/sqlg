@@ -9,8 +9,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.SackStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -30,7 +28,6 @@ import java.util.*;
  */
 public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgGraphStep.class.getName());
     private SqlgGraph sqlgGraph;
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
@@ -48,8 +45,6 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
     private long rangeCount = 0;
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
-
-//    private Set<SchemaTableTree> rootSchemaTableTrees;
 
     /**
      * This is a jippo of sorts.
@@ -114,12 +109,20 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
 
     private boolean applyRange(Emit<E> emit) {
         if (this.lastReplacedStep.hasRange() && this.lastReplacedStep.applyInStep() && this.lastReplacedStep.getDepth() == emit.getReplacedStepDepth()) {
-            if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
-                throw FastNoSuchElementException.instance();
-            }
-            if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
-                this.rangeCount++;
-                return true;
+            if (this.lastReplacedStep.getSqlgRangeHolder().hasRange()) {
+                if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
+                    throw FastNoSuchElementException.instance();
+                }
+                if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
+                    this.rangeCount++;
+                    return true;
+                }
+            } else {
+                Preconditions.checkState(this.lastReplacedStep.getSqlgRangeHolder().hasSkip(), "If not a range query then it must be a skip.");
+                if (this.rangeCount < this.lastReplacedStep.getSqlgRangeHolder().getSkip()) {
+                    this.rangeCount++;
+                    return true;
+                }
             }
             this.rangeCount++;
         }

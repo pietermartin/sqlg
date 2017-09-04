@@ -1079,13 +1079,18 @@ public class SchemaTableTree {
     }
 
     private String toRangeClause(SqlgGraph sqlgGraph, MutableBoolean mutableOrderBy) {
-        if (this.sqlgRangeHolder != null && this.sqlgRangeHolder.hasRange() && this.sqlgRangeHolder.isApplyOnDb()) {
-            //This is MssqlServer, ugly but what to do???
-            String sql = "";
-            if (mutableOrderBy.isFalse() && sqlgGraph.getSqlDialect().isMssqlServer() && this.getDbComparators().isEmpty()) {
-                sql = "\n\tORDER BY 1\n\t";
+        if (this.sqlgRangeHolder != null && this.sqlgRangeHolder.isApplyOnDb()) {
+            if (this.sqlgRangeHolder.hasRange()) {
+                //This is MssqlServer, ugly but what to do???
+                String sql = "";
+                if (mutableOrderBy.isFalse() && sqlgGraph.getSqlDialect().isMssqlServer() && this.getDbComparators().isEmpty()) {
+                    sql = "\n\tORDER BY 1\n\t";
+                }
+                return sql + "\n" + sqlgGraph.getSqlDialect().getRangeClause(this.sqlgRangeHolder.getRange());
+            } else {
+                Preconditions.checkState(this.sqlgRangeHolder.hasSkip(), "If not a range query then it must be a skip.");
+                return sqlgGraph.getSqlDialect().getSkipClause(this.sqlgRangeHolder.getSkip());
             }
-            return sql + "\n" + sqlgGraph.getSqlDialect().getRangeClause(this.sqlgRangeHolder.getRange());
         }
         return "";
     }

@@ -8,12 +8,25 @@ import org.apache.commons.lang3.Range;
  */
 public class SqlgRangeHolder {
 
+    private long skip = -1;
     private Range<Long> range;
     private boolean applyOnDb = true;
     private boolean applyInStep = true;
 
     private SqlgRangeHolder(Range<Long> range) {
         this.range = range;
+    }
+
+    private SqlgRangeHolder(long skip) {
+        this.skip = skip;
+    }
+
+    public static SqlgRangeHolder from(Range<Long> range) {
+        return new SqlgRangeHolder(range);
+    }
+
+    public static SqlgRangeHolder from(long skip) {
+        return new SqlgRangeHolder(skip);
     }
 
     public Range<Long> getRange() {
@@ -37,9 +50,6 @@ public class SqlgRangeHolder {
         return applyOnDb;
     }
 
-    public static SqlgRangeHolder from(Range<Long> range) {
-        return new SqlgRangeHolder(range);
-    }
 
     public boolean hasRange() {
         return this.range != null;
@@ -51,5 +61,13 @@ public class SqlgRangeHolder {
 
     public void setApplyInStep(boolean applyInStep) {
         this.applyInStep = applyInStep;
+    }
+
+    public boolean hasSkip() {
+        return this.skip != -1;
+    }
+
+    public long getSkip() {
+        return skip;
     }
 }

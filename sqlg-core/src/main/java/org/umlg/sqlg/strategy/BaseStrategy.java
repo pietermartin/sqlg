@@ -491,7 +491,12 @@ public abstract class BaseStrategy {
                 }
                 RangeGlobalStep<?> rgs = (RangeGlobalStep<?>) step;
                 long high = rgs.getHighRange();
-                this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(Range.between(rgs.getLowRange(), high)));
+                if (high == -1) {
+                    //skip step
+                    this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(rgs.getLowRange()));
+                } else {
+                    this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(Range.between(rgs.getLowRange(), high)));
+                }
                 //add a label if the step does not yet have one and is not a leaf node
                 if (this.currentReplacedStep.getLabels().isEmpty()) {
                     this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
