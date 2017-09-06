@@ -137,9 +137,10 @@ import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
         reason = "Assertions are TinkerGraph specific.")
 
 @Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONTest",
+        test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONV1d0Test",
         method = "shouldSerializeTraversalMetrics",
         reason = "Assertions are TinkerGraph specific.")
+
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX3X_count",
