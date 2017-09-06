@@ -4,9 +4,13 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
+import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
+import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
+import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
+import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdScalarSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 import org.apache.tinkerpop.shaded.kryo.Kryo;
 import org.apache.tinkerpop.shaded.kryo.KryoSerializable;
@@ -115,7 +119,6 @@ public class RecordId implements KryoSerializable, Comparable {
     public int hashCode() {
         int result = this.schemaTable.hashCode();
         return result ^ this.id.hashCode();
-//        return (this.schemaTable + this.id.toString()).hashCode();
     }
 
     @Override
@@ -198,6 +201,39 @@ public class RecordId implements KryoSerializable, Comparable {
         @Override
         public RecordId createObject(final Map data) {
             return RecordId.from((SchemaTable) data.get("schemaTable"), (Long) data.get("id"));
+        }
+    }
+
+    static class RecordIdJacksonSerializerV3d0 extends StdScalarSerializer<RecordId> {
+        public RecordIdJacksonSerializerV3d0() {
+            super(RecordId.class);
+        }
+
+        @Override
+        public void serialize(final RecordId recordId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
+                throws IOException, JsonGenerationException {
+            final Map<String, Object> m = new HashMap<>();
+            m.put("schemaTable", recordId.getSchemaTable());
+            m.put("id", recordId.getId());
+            jsonGenerator.writeObject(m);
+        }
+
+    }
+
+    static class RecordIdJacksonDeserializerV3d0 extends StdDeserializer<RecordId> {
+        public RecordIdJacksonDeserializerV3d0() {
+            super(RecordId.class);
+        }
+
+        @Override
+        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            final Map<String, Object> data = deserializationContext.readValue(jsonParser, Map.class);
+            return RecordId.from((SchemaTable) data.get("schemaTable"), (Long) data.get("id"));
+        }
+
+        @Override
+        public boolean isCachable() {
+            return true;
         }
     }
 

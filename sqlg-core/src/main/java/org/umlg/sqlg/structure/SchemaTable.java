@@ -1,13 +1,17 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
+import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
+import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
+import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
+import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdScalarSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
+import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -172,4 +176,41 @@ public class SchemaTable implements Serializable, Comparable {
             return SchemaTable.of((String)data.get("schema"), (String) data.get("table"));
         }
     }
+
+    @SuppressWarnings("DuplicateThrows")
+    static class SchemaTableJacksonSerializerV3d0 extends StdScalarSerializer<SchemaTable> {
+        SchemaTableJacksonSerializerV3d0() {
+            super(SchemaTable.class);
+        }
+
+        @Override
+        public void serialize(final SchemaTable schemaTable, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
+                throws IOException, JsonGenerationException {
+            // when types are not embedded, stringify or resort to JSON primitive representations of the
+            // type so that non-jvm languages can better interoperate with the TinkerPop stack.
+            final Map<String, Object> m = new LinkedHashMap<>();
+            m.put("schema", schemaTable.getSchema());
+            m.put("table", schemaTable.getTable());
+            jsonGenerator.writeObject(m);
+        }
+
+    }
+
+    static class SchemaTableJacksonDeserializerV3d0 extends StdDeserializer<SchemaTable> {
+        public SchemaTableJacksonDeserializerV3d0() {
+            super(SchemaTable.class);
+        }
+
+        @Override
+        public SchemaTable deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            final Map<String, Object> data = deserializationContext.readValue(jsonParser, Map.class);
+            return SchemaTable.of((String)data.get("schema"), (String) data.get("table"));
+        }
+
+        @Override
+        public boolean isCachable() {
+            return true;
+        }
+    }
+
 }

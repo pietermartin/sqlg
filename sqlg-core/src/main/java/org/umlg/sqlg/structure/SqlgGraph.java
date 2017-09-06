@@ -15,6 +15,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoVersion;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -153,18 +155,6 @@ import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX8X_count",
-        reason = "Takes too long")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
-        method = "g_V_repeatXoutX_timesX3X_count",
-        reason = "Takes too long")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
-        method = "g_V_repeatXoutX_timesX8X_count",
-        reason = "Takes too long")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
-        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
         reason = "Takes too long")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
@@ -532,7 +522,12 @@ public class SqlgGraph implements Graph {
 
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
-        return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistry.getInstance())).create();
+        if (builder.requiresVersion(GryoVersion.V1_0) || builder.requiresVersion(GraphSONVersion.V1_0))
+            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistry.instance())).create();
+        else if (builder.requiresVersion(GraphSONVersion.V2_0))   // there is no gryo v2
+            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistry.instance())).create();
+        else
+            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistryV3.instance())).create();
     }
 
     @Override

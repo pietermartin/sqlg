@@ -20,6 +20,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
 import org.umlg.sqlg.test.io.TestIo;
+import org.umlg.sqlg.test.io.TestIoEdge;
 import org.umlg.sqlg.test.json.TestJson;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestHasLabelAndId;
@@ -70,9 +71,6 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestVertexCreation.class,
         TestVertexEdgeSameName.class,
         TestVertexNavToEdges.class,
-        // are these tests gone?
-        //TestByteArray.class,
-        //TestQuery.class,
         TestSchema.class,
         TestIndex.class,
         TestVertexOutWithHas.class,
@@ -82,11 +80,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestMultiThreadedBatch.class,
         TestMultiThread.class,
         TestMultipleThreadMultipleJvm.class,
-
         TestRemoveEdge.class,
         TestEdgeSchemaCreation.class,
         TestRollback.class,
-
         TestNewVertex.class,
         TestEdgeCache.class,
         TestVertexCache.class,
@@ -202,7 +198,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestDeadLock.class,
         TestLabelLength.class,
         TestAddTemporaryVertex.class,
-        TestBatchTemporaryVertex.class
+        TestBatchTemporaryVertex.class,
+        TestIoEdge.class
 
 })
 public class AllTest {
