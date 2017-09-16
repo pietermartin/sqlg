@@ -531,18 +531,29 @@ public class SchemaTableTree {
     private static String constructOuterOrderByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String result = "";
         int countOuter = 1;
+        // last table list with order as last step wins
+        int winningOrder = 0;
+        for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
+        	if (!subQueryLinkedList.isEmpty()){
+        		SchemaTableTree schemaTableTree=subQueryLinkedList.peekLast();
+        		if (!schemaTableTree.getDbComparators().isEmpty() 
+        				){
+        			winningOrder=countOuter;
+        		}
+        	}
+        	countOuter++;
+        }
+        countOuter = 1;
         //construct the order by clause for the comparators
         MutableBoolean mutableOrderBy = new MutableBoolean(false);
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
-            int countInner = 1;
-            for (SchemaTableTree schemaTableTree : subQueryLinkedList) {
-                //last entry, only order on the last entry as duplicate paths are for the same SchemaTable
-                if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
-                    result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
-                    result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy);
-                }
-                countInner++;
-            }
+        	if (!subQueryLinkedList.isEmpty()){
+        		SchemaTableTree schemaTableTree=subQueryLinkedList.peekLast();
+        		if (countOuter==winningOrder){
+        			result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
+        		}
+        		result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy);
+        	}
             countOuter++;
         }
         return result;
