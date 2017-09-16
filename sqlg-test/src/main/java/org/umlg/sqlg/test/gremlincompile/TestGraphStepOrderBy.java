@@ -579,6 +579,7 @@ public class TestGraphStepOrderBy extends BaseTest {
             a.addEdge("ab", b);
         }
         this.sqlgGraph.tx().commit();
+        // last one should win
         List<Vertex> vertices = this.sqlgGraph.traversal()
                 .V().hasLabel("A").as("a")
                 .out().order().by("name")

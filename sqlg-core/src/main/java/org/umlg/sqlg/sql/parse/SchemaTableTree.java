@@ -552,6 +552,7 @@ public class SchemaTableTree {
         		if (countOuter==winningOrder){
         			result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
         		}
+        		// support range without order
         		result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy);
         	}
             countOuter++;
