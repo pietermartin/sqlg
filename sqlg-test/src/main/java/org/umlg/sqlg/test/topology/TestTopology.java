@@ -11,10 +11,12 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.Topology;
 import org.umlg.sqlg.structure.TopologyInf;
 import org.umlg.sqlg.structure.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -113,4 +115,44 @@ public class TestTopology extends BaseTest {
         Assert.assertTrue(labelAndProperties.get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_Cat").get("name") == PropertyType.STRING);
     }
 
+    @Test
+    public void testAddColumns(){
+    	//Create Schema
+        Topology topology = sqlgGraph.getTopology();
+        topology.ensureSchemaExist("TEST");
+
+        Map<String, Object> columns = new HashMap<>();
+        columns.put("Test1", "");
+        columns.put("Test2", "");
+
+        //Add a vertex and remove to create columns
+        Vertex v = sqlgGraph.addVertex("TEST" + "." + "TEST_Table", columns);
+        v.remove();
+        sqlgGraph.tx().commit();
+
+        columns = new HashMap<>();
+        columns.put("Test1", "T1");
+        columns.put("Test2", "T2");
+        
+        //Add the data
+        Vertex vv = sqlgGraph.addVertex("TEST" + "." + "TEST_Table", columns);
+        sqlgGraph.tx().commit();
+
+        //Simulating second load
+        //Remove the whole table label
+        Optional<VertexLabel> tableVertexLabel = sqlgGraph.getTopology().getVertexLabel("TEST", "TEST_Table");
+        if (tableVertexLabel.isPresent()) {
+            tableVertexLabel.get().remove(false);
+        }
+
+        columns = new HashMap<>();
+        columns.put("Test1", "");
+        columns.put("Test2", "");
+        columns.put("Test3", "");
+
+        //Add a vertex with more columns than previously had
+        v = sqlgGraph.addVertex("TEST" + "." + "TEST_Table", columns);
+        v.remove();
+        sqlgGraph.tx().commit();
+    }
 }
