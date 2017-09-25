@@ -327,9 +327,12 @@ public class Schema implements TopologyInf {
         if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)) {
             return Optional.empty();
         }
-        VertexLabel result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-        if (result == null && this.topology.isSqlWriteLockHeldByCurrentThread()) {
+        VertexLabel result = null;
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+        }
+        if (result==null){
+        	result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         }
         return Optional.ofNullable(result);
     }
