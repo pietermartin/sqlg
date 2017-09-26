@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -591,6 +592,24 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals("b1", vertices.get(1).value("name"));
         Assert.assertEquals("b0", vertices.get(2).value("name"));
         Assert.assertEquals("b0", vertices.get(3).value("name"));
+    }
+    
+    @Test
+    public void testOutEOrderID(){
+    	 Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    	 for (int i = 0; i < 2; i++) {
+             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+             a.addEdge("ab", b);
+         }
+         this.sqlgGraph.tx().commit();
+         GraphTraversal<Vertex, Map<String,Object>> gt=this.sqlgGraph.traversal().V().hasLabel("A").as("a")
+         	.outE("ab").order().by(T.id).as("e")
+         	.inV().as("b")
+         	.select("a","e","b");
+         while (gt.hasNext()){
+        	 Map<String,Object> m=gt.next();
+        	 assertEquals(a,m.get("a"));
+         }
     }
 
 }
