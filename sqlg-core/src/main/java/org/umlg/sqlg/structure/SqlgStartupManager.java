@@ -110,7 +110,7 @@ class SqlgStartupManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = "sqlg_schema";
-            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "E_index_property", Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
+            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "E_index_property", SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
             if (columns.isEmpty()) {
                 Statement statement = conn.createStatement();
                 String sql = this.sqlDialect.sqlgAddIndexEdgeSequenceColumn();
