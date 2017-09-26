@@ -562,8 +562,8 @@ public interface SqlDialect {
     }
 
     List<String> sqlgTopologyCreationScripts();
-
-    String sqlgAddPropertyIndexTypeColumn();
+    
+    String sqlgAddIndexEdgeSequenceColumn();
 
     default Long getPrimaryKeyStartValue() {
         return 1L;

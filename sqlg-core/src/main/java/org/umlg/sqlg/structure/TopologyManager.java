@@ -445,6 +445,7 @@ public class TopologyManager {
             } else {
                 abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
             }
+            int ix=0;
             for (PropertyColumn property : index.getProperties()) {
                 List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
                         .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
@@ -453,7 +454,7 @@ public class TopologyManager {
                 Preconditions.checkState(!propertyVertexes.isEmpty(), "Property %s for AbstractLabel %s.%s does not exists", property.getName(), abstractLabel.getSchema().getName(), abstractLabel.getLabel());
                 Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property.getName(), abstractLabel.getSchema().getName(), abstractLabel.getLabel());
                 Vertex propertyVertex = propertyVertexes.get(0);
-                indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
+                indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex,SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE,ix++);
             }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
@@ -543,6 +544,7 @@ public class TopologyManager {
 
             boolean createdIndexVertex = false;
             Vertex indexVertex =  null;
+            int ix=0;
             for (String property : properties) {
 
                 List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
@@ -570,7 +572,7 @@ public class TopologyManager {
                     Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property, schema, label);
                     Preconditions.checkState(indexVertex != null);
                     Vertex propertyVertex = propertyVertexes.get(0);
-                    indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
+                    indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex,SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE,ix);
                 }
             }
         } finally {
