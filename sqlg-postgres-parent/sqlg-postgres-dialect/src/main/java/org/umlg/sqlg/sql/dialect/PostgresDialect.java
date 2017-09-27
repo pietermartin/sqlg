@@ -575,7 +575,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case STRING:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(value.toString().replace("'", "''"));
+                    sql.append(escapeQuotes(value));
                     sql.append("'");
                 } else {
                     sql.append("null");
@@ -655,7 +655,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case JSON:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(value.toString().replace("'", "''"));
+                    sql.append(escapeQuotes(value));
                     sql.append("'::JSONB");
                 } else {
                     sql.append("null");
@@ -696,7 +696,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case byte_ARRAY:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) value).replace("'", "''"));
+                    sql.append(escapeQuotes(PGbytea.toPGString((byte[]) value)));
                     sql.append("'");
                 } else {
                     sql.append("null");
@@ -705,7 +705,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case BYTE_ARRAY:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)).replace("'", "''"));
+                    sql.append(escapeQuotes(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value))));
                     sql.append("'");
                 } else {
                     sql.append("null");
@@ -2820,7 +2820,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"E_edge_index_index__I_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.index__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"E_edge_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.edge__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, \"sequence\" INTEGER, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
         result.add("CREATE INDEX IF NOT EXISTS \"E_index_property_property__I_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"E_index_property_index__O_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.index__O\");");
 
@@ -2832,8 +2832,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public String sqlgAddPropertyIndexTypeColumn() {
-        return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" TEXT DEFAULT 'NONE';";
+    public String sqlgAddIndexEdgeSequenceColumn() {
+        return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
+        
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
@@ -3365,23 +3366,23 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
             case STRING:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case STRING_ARRAY:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
             case LOCALDATE:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case LOCALDATE_ARRAY:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
             case LOCALDATETIME:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case LOCALDATETIME_ARRAY:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
             case LOCALTIME:
                 LocalTime lt = (LocalTime) value;
-                return "'" + shiftDST(lt).toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(shiftDST(lt)) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case LOCALTIME_ARRAY:
                 sb = new StringBuilder();
                 sb.append("'{");
@@ -3409,7 +3410,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case DURATION_ARRAY:
                 throw new IllegalStateException("DURATION_ARRAY is not supported in within.");
             case JSON:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case JSON_ARRAY:
                 sb = new StringBuilder();
                 sb.append("'{");
@@ -3417,7 +3418,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 for (int i = 0; i < length; i++) {
                     String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
                     sb.append("\"");
-                    sb.append(valueOfArray.replace("\"", "\\\""));
+                    sb.append( escapeQuotes(valueOfArray.replace("\"", "\\\"")));
                     sb.append("\"");
                     if (i < length - 1) {
                         sb.append(",");
@@ -3427,15 +3428,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sb.append(this.propertyTypeToSqlDefinition(propertyType)[0]);
                 return sb.toString();
             case POINT:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case LINESTRING:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case POLYGON:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case GEOGRAPHY_POINT:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case GEOGRAPHY_POLYGON:
-                return "'" + value.toString() + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
         }
@@ -3551,5 +3552,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public int sqlInParameterLimit() {
         return PARAMETER_LIMIT;
+    }
+    
+    /**
+     * escape quotes by doubling them when we need a string inside quotes
+     * @param o
+     * @return
+     */
+    private String escapeQuotes(Object o){
+    	if (o!=null){
+	    	return o.toString().replace("'", "''");
+	    }
+    	return null;
     }
 }

@@ -766,10 +766,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
         return result;
     }
 
+
     @Override
-    public String sqlgAddPropertyIndexTypeColumn() {
-        return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" LONGVARCHAR DEFAULT 'NONE';";
+    public String sqlgAddIndexEdgeSequenceColumn() {
+        return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
     }
+    
 
     @Override
     public Long getPrimaryKeyStartValue() {

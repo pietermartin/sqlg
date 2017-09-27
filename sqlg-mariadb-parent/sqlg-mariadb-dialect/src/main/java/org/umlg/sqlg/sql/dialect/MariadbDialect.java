@@ -716,9 +716,11 @@ public class MariadbDialect extends BaseSqlDialect {
         return result;
     }
 
+
     @Override
-    public String sqlgAddPropertyIndexTypeColumn() {
-        return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" LONGVARCHAR DEFAULT 'NONE';";
+    public String sqlgAddIndexEdgeSequenceColumn() {
+        return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
+        
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {

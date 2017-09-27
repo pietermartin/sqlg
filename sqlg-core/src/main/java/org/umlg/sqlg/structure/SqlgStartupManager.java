@@ -75,8 +75,8 @@ class SqlgStartupManager {
                 logger.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
                 logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             } else {
-                //make sure the property index column exist, this if for upgrading from 1.3.2 to 1.4.0
-                upgradePropertyIndexTypeToExist();
+                // make sure the index edge index property exist, this if for upgrading from 1.3.4 to 1.4.0
+                upgradeIndexEdgeSequenceToExist();
                 this.sqlgGraph.tx().commit();
             }
             cacheTopology();
@@ -103,27 +103,22 @@ class SqlgStartupManager {
             }
         }
     }
-
-    @SuppressWarnings("ConstantConditions")
-    private void upgradePropertyIndexTypeToExist() {
+    
+    private void upgradeIndexEdgeSequenceToExist() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = "sqlg_schema";
-            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "V_property", "index_type");
-            if (!columns.isEmpty()) {
+            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "E_index_property", SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
+            if (columns.isEmpty()) {
                 Statement statement = conn.createStatement();
-                String sql = this.sqlDialect.sqlgAddPropertyIndexTypeColumn();
+                String sql = this.sqlDialect.sqlgAddIndexEdgeSequenceColumn();
                 statement.execute(sql);
             }
-//            ResultSet propertyRs = metadata.getColumns(catalog, schemaPattern, "V_property", "index_type");
-//            if (!propertyRs.next()) {
-//                Statement statement = conn.createStatement();
-//                String sql = this.sqlDialect.sqlgAddPropertyIndexTypeColumn();
-//                statement.execute(sql);
-//            }
+
         } catch (SQLException e) {
+        	e.printStackTrace();
 //            throw new RuntimeException(e);
         }
 

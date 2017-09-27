@@ -192,6 +192,8 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_INDEX_PROPERTY_EDGE = "index_property";
+
+    public static final String SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE = "sequence";
     /**
      * Table storing the graphs unique property constraints.
      */
@@ -290,31 +292,24 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(globalUniqueIndexVertexLabel);
 
         columns.clear();
-        @SuppressWarnings("unused")
         EdgeLabel schemaToVertexEdgeLabel = schemaVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(schemaToVertexEdgeLabel);
-        @SuppressWarnings("unused")
         EdgeLabel vertexInEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexInEdgeLabel);
-        @SuppressWarnings("unused")
         EdgeLabel vertexOutEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexOutEdgeLabel);
-        @SuppressWarnings("unused")
         EdgeLabel vertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexPropertyEdgeLabel);
-        @SuppressWarnings("unused")
         EdgeLabel edgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(edgePropertyEdgeLabel);
-        @SuppressWarnings("unused")
         EdgeLabel vertexIndexEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexIndexEdgeLabel);
-        @SuppressWarnings("unused")
         EdgeLabel edgeIndexEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(edgeIndexEdgeLabel);
-        @SuppressWarnings("unused")
+        columns.put(SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE, PropertyType.INTEGER);
         EdgeLabel indexPropertyEdgeLabel = indexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertexLabel, columns);
+        columns.clear();
         this.sqlgSchemaAbstractLabels.add(indexPropertyEdgeLabel);
-        @SuppressWarnings("unused")
         EdgeLabel globalUniqueIndexPropertyEdgeLabel = globalUniqueIndexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(globalUniqueIndexPropertyEdgeLabel);
 
@@ -322,7 +317,6 @@ public class Topology {
         columns.put(SQLG_SCHEMA_LOG_TIMESTAMP, PropertyType.LOCALDATETIME);
         columns.put(SQLG_SCHEMA_LOG_LOG, PropertyType.JSON);
         columns.put(SQLG_SCHEMA_LOG_PID, PropertyType.INTEGER);
-        @SuppressWarnings("unused")
         VertexLabel logVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_LOG, columns);
         this.sqlgSchemaAbstractLabels.add(logVertexLabel);
 

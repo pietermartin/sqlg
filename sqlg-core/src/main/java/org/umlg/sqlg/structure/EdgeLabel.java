@@ -61,6 +61,14 @@ public class EdgeLabel extends AbstractLabel {
             this.uncommittedOutVertexLabels.add(outVertexLabel);
             this.uncommittedInVertexLabels.add(inVertexLabel);
         }
+        // this is a topology edge label, the columns exist
+        if (forSqlgSchema){
+        	for (PropertyColumn pc:this.uncommittedProperties.values()){
+        		pc.setCommitted(true);
+        		this.properties.put(pc.getName(), pc);
+        	}
+        	this.uncommittedProperties.clear();
+        }
         this.topology = outVertexLabel.getSchema().getTopology();
     }
 
