@@ -1,9 +1,5 @@
 package org.umlg.sqlg.test.edges;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.List;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
@@ -14,6 +10,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Date: 2015/02/23
