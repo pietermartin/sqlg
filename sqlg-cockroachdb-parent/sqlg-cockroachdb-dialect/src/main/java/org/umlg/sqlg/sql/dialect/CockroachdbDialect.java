@@ -1592,8 +1592,8 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String sqlgAddPropertyIndexTypeColumn() {
-        return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" TEXT DEFAULT 'NONE';";
+    public String sqlgAddIndexEdgeSequenceColumn() {
+        return null;
     }
 
     @Override

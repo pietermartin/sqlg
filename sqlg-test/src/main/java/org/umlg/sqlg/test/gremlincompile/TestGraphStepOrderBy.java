@@ -14,13 +14,13 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import static org.junit.Assert.assertEquals;
-
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by pieter on 2015/08/22.
@@ -59,54 +59,6 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(b1, vertices.get(2));
     }
 
-    @Test
-    public void testOrderOnEdge() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
-        Edge e1 = a1.addEdge("ab", b1, "order", 0);
-        Edge e2 = a1.addEdge("ab", b2, "order", 1);
-        Edge e3 = a1.addEdge("ab", b3, "order", 2);
-        this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
-                .V().hasLabel("A")
-                .outE()
-                .order().by("order", Order.decr);
-        Assert.assertEquals(4, traversal.getSteps().size());
-        List<Edge> edges = traversal.toList();
-        Assert.assertEquals(1, traversal.getSteps().size());
-        assertStep(traversal.getSteps().get(0), true, false, false, false);
-        Assert.assertEquals(3, edges.size());
-        Assert.assertEquals(e3, edges.get(0));
-        Assert.assertEquals(e2, edges.get(1));
-        Assert.assertEquals(e1, edges.get(2));
-    }
-
-    @Test
-    public void testOrderOnEdgeWithInV() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
-        Edge e1 = a1.addEdge("ab", b1, "order", 0);
-        Edge e2 = a1.addEdge("ab", b2, "order", 11);
-        Edge e3 = a1.addEdge("ab", b3, "order", 2);
-        this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
-                .V().hasLabel("A")
-                .outE()
-                .order().by("order", Order.decr)
-                .inV();
-        Assert.assertEquals(5, traversal.getSteps().size());
-        List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(1, traversal.getSteps().size());
-        assertStep(traversal.getSteps().get(0), true, false, false, false);
-        Assert.assertEquals(3, vertices.size());
-        Assert.assertEquals(b2, vertices.get(0));
-        Assert.assertEquals(b3, vertices.get(1));
-        Assert.assertEquals(b1, vertices.get(2));
-    }
 
     @Test
     public void testSimpleButLessSo() {
@@ -143,7 +95,6 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(b2, vertices.get(4));
         Assert.assertEquals(b1, vertices.get(5));
     }
-
 
     @Test
     public void testOrderOnEdge() {
