@@ -168,7 +168,6 @@
         <module>sqlg-cockroachdb-parent</module>
         <module>sqlg-mariadb-parent</module>
         <module>sqlg-mssqlserver-parent</module>
-        <!--<module>sqlg-mysql-parent</module>-->
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>
