@@ -323,4 +323,60 @@ public class TestIndex extends BaseTest {
         Assert.assertEquals(IndexType.NON_UNIQUE, it2);
 
     }
+    
+    @Test
+    public void testLongIndexName() throws Exception {
+    	String i1=buildLongIndex(sqlgGraph);
+    	String i2=buildLongIndex(sqlgGraph);
+    	assertEquals(i1,i2);
+    	sqlgGraph.close();
+    	sqlgGraph=SqlgGraph.open(getConfigurationClone());
+    	String i3=buildLongIndex(sqlgGraph);
+    	assertEquals(i1,i3);
+    }
+    
+    private String buildLongIndex(SqlgGraph g){
+    	Schema sch=g.getTopology().ensureSchemaExist("longIndex");
+    	Map<String,PropertyType> columns=new HashMap<String, PropertyType>();
+    	columns.put("longpropertyname1",PropertyType.STRING);
+    	columns.put("longpropertyname2",PropertyType.STRING);
+    	columns.put("longpropertyname3",PropertyType.STRING);
+    	VertexLabel label=sch.ensureVertexLabelExist("LongIndex", columns);
+    	List<PropertyColumn> properties=Arrays.asList(
+    			label.getProperty("longpropertyname1").get()
+    			,label.getProperty("longpropertyname2").get()
+    			,label.getProperty("longpropertyname3").get());
+    	Index idx=label.ensureIndexExists(IndexType.NON_UNIQUE, properties);
+    	
+    	g.tx().commit();
+    	return idx.getName();
+    }
+    
+    @Test
+    public void testShortIndexName() throws Exception {
+    	String i1=buildShortIndex(sqlgGraph);
+    	String i2=buildShortIndex(sqlgGraph);
+    	assertEquals(i1,i2);
+    	sqlgGraph.close();
+    	sqlgGraph=SqlgGraph.open(getConfigurationClone());
+    	String i3=buildShortIndex(sqlgGraph);
+    	assertEquals(i1,i3);
+    }
+    
+    private String buildShortIndex(SqlgGraph g){
+    	Schema sch=g.getTopology().ensureSchemaExist("longIndex");
+    	Map<String,PropertyType> columns=new HashMap<String, PropertyType>();
+    	columns.put("short1",PropertyType.STRING);
+    	columns.put("short2",PropertyType.STRING);
+    	columns.put("short3",PropertyType.STRING);
+    	VertexLabel label=sch.ensureVertexLabelExist("LongIndex", columns);
+    	List<PropertyColumn> properties=Arrays.asList(
+    			label.getProperty("short1").get()
+    			,label.getProperty("short2").get()
+    			,label.getProperty("short3").get());
+    	Index idx=label.ensureIndexExists(IndexType.NON_UNIQUE, properties);
+    	
+    	g.tx().commit();
+    	return idx.getName();
+    }
 }

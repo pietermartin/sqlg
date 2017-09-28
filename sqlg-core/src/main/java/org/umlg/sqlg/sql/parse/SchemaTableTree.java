@@ -531,18 +531,30 @@ public class SchemaTableTree {
     private static String constructOuterOrderByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String result = "";
         int countOuter = 1;
+        // last table list with order as last step wins
+        int winningOrder = 0;
+        for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
+        	if (!subQueryLinkedList.isEmpty()){
+        		SchemaTableTree schemaTableTree=subQueryLinkedList.peekLast();
+        		if (!schemaTableTree.getDbComparators().isEmpty() 
+        				){
+        			winningOrder=countOuter;
+        		}
+        	}
+        	countOuter++;
+        }
+        countOuter = 1;
         //construct the order by clause for the comparators
         MutableBoolean mutableOrderBy = new MutableBoolean(false);
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
-            int countInner = 1;
-            for (SchemaTableTree schemaTableTree : subQueryLinkedList) {
-                //last entry, only order on the last entry as duplicate paths are for the same SchemaTable
-                if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
-                    result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
-                    result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy);
-                }
-                countInner++;
-            }
+        	if (!subQueryLinkedList.isEmpty()){
+        		SchemaTableTree schemaTableTree=subQueryLinkedList.peekLast();
+        		if (countOuter==winningOrder){
+        			result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
+        		}
+        		// support range without order
+        		result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy);
+        	}
             countOuter++;
         }
         return result;
@@ -966,7 +978,7 @@ public class SchemaTableTree {
                 result += ",\n\t";
             }
             if (comparator.getValue1() instanceof ElementValueComparator) {
-                ElementValueComparator elementValueComparator = (ElementValueComparator) comparator.getValue1();
+                ElementValueComparator<?> elementValueComparator = (ElementValueComparator<?>) comparator.getValue1();
                 String prefix = this.getSchemaTable().getSchema();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.getSchemaTable().getTable();
@@ -989,8 +1001,9 @@ public class SchemaTableTree {
                 }
 
                 //TODO redo this via SqlgOrderGlobalStep
-            } else if (comparator.getValue0() instanceof ElementValueTraversal<?> && comparator.getValue1() instanceof Order) {
-                ElementValueTraversal elementValueTraversal = (ElementValueTraversal) comparator.getValue0();
+            } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?,?>)
+            		&& comparator.getValue1() instanceof Order) {
+            	Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>)comparator.getValue0();
                 String prefix = String.valueOf(this.stepDepth);
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.reducedLabels();
@@ -999,16 +1012,31 @@ public class SchemaTableTree {
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.getSchemaTable().getTable();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
-                prefix += elementValueTraversal.getPropertyKey();
+                String key;
+                if (t instanceof ElementValueTraversal) {
+                    ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal<?>) t;
+                    key= elementValueTraversal.getPropertyKey();
+                } else {
+                    TokenTraversal<?,?> tokenTraversal = (TokenTraversal<?,?>) t;
+                    // see calculateLabeledAliasId
+                    if (tokenTraversal.getToken().equals(T.id)){
+                    	key=Topology.ID;
+                    } else {
+                    	key= tokenTraversal.getToken().getAccessor();
+                    }
+                }
+                prefix+=key;
                 String alias;
+                String rawAlias=this.getColumnNameAliasMap().get(prefix);
+                if (rawAlias==null) {
+                    throw new IllegalArgumentException("order by field '" + prefix + "' not found!");
+                }
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
-                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
-                    if (alias.equals("\"null\"")) {
-                        throw new IllegalArgumentException("order by field '" + elementValueTraversal.getPropertyKey() + "' not found!");
-                    }
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
+                    
                 } else {
-                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
+                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
                 result += " " + alias;
                 if (comparator.getValue1() == Order.incr) {
@@ -1052,18 +1080,27 @@ public class SchemaTableTree {
                 prefix += selectSchemaTableTree.getSchemaTable().getTable();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 if (t instanceof ElementValueTraversal) {
-                    ElementValueTraversal elementValueTraversal = (ElementValueTraversal) t;
+                    ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal<?>) t;
                     prefix += elementValueTraversal.getPropertyKey();
                 } else {
-                    TokenTraversal tokenTraversal = (TokenTraversal) t;
-                    prefix += tokenTraversal.getToken().getAccessor();
+                    TokenTraversal<?,?> tokenTraversal = (TokenTraversal<?,?>) t;
+                    // see calculateLabeledAliasId
+                    if (tokenTraversal.getToken().equals(T.id)){
+                    	prefix += Topology.ID;
+                    } else {
+                    	prefix += tokenTraversal.getToken().getAccessor();
+                    }
                 }
                 String alias;
+                String rawAlias=this.getColumnNameAliasMap().get(prefix);
+                if (rawAlias==null) {
+                    throw new IllegalArgumentException("order by field '" + prefix + "' not found!");
+                }
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
-                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 } else {
-                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
+                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
                 result += " " + alias;
                 if (comparator.getValue1() == Order.incr) {

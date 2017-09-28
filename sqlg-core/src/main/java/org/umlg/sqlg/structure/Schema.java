@@ -13,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.strategy.BaseStrategy;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -327,9 +328,12 @@ public class Schema implements TopologyInf {
         if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)) {
             return Optional.empty();
         }
-        VertexLabel result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-        if (result == null && this.topology.isSqlWriteLockHeldByCurrentThread()) {
+        VertexLabel result = null;
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+        }
+        if (result==null){
+        	result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         }
         return Optional.ofNullable(result);
     }
@@ -802,18 +806,15 @@ public class Schema implements TopologyInf {
      * @param schemaVertex
      */
     void loadVertexIndices(GraphTraversalSource traversalSource, Vertex schemaVertex) {
-        List<Path> indices = traversalSource
-                .V(schemaVertex)
-                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
-                //a vertex does not necessarily have properties so use optional.
-                .optional(
-                        __.out(SQLG_SCHEMA_VERTEX_INDEX_EDGE).as("index")
-                                .optional(
-                                        __.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE).as("property")
-                                )
-                )
-                .path()
-                .toList();
+    	 List<Path> indices = traversalSource
+                 .V(schemaVertex)
+                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+                 .out(SQLG_SCHEMA_VERTEX_INDEX_EDGE).as("index")
+                 .outE(SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                 .order().by(SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE)
+                 .inV().as("property")
+                 .path()
+                 .toList();
         for (Path vertexIndices : indices) {
             Vertex vertexVertex = null;
             Vertex vertexIndex = null;
@@ -831,8 +832,8 @@ public class Schema implements TopologyInf {
                         case "property":
                             propertyIndex = vertexIndices.get("property");
                             break;
-                        case "sqlgPathFakeLabel":
-                            break;
+                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
+                        case BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL:
                         case Schema.MARKER:
                             break;
                         default:
@@ -950,16 +951,11 @@ public class Schema implements TopologyInf {
         List<Path> indices = traversalSource
                 .V(schemaVertex)
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
-                //a vertex does not necessarily have properties so use optional.
-                .optional(
-                        __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
-                                .optional(
-                                        __.out(SQLG_SCHEMA_EDGE_INDEX_EDGE).as("index")
-                                                .optional(
-                                                        __.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE).as("property")
-                                                )
-                                )
-                )
+                .out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
+                .out(SQLG_SCHEMA_EDGE_INDEX_EDGE).as("index")
+                .outE(SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                .order().by(SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE)
+                .inV().as("property")
                 .path()
                 .toList();
         for (Path vertexIndices : indices) {
@@ -983,8 +979,8 @@ public class Schema implements TopologyInf {
                         case "property":
                             propertyIndex = vertexIndices.get("property");
                             break;
-                        case "sqlgPathFakeLabel":
-                            break;
+                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
+                        case BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL:
                         case MARKER:
                             break;
                         default:

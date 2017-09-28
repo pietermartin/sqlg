@@ -8,7 +8,7 @@ import org.umlg.sqlg.test.BaseTest;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Test values that are escaped by backslashes
+ * Test values that are escaped by backslashes and that may impact SQL
  * @author jpmoresmau
  *
  */
@@ -16,7 +16,7 @@ public class TestEscapedValues extends BaseTest {
 
 	@Test
 	public void testEscapedValuesSingleQuery(){
-		String[] vals = new String[] { "x-y", "x\ny", "x\"y", "x\\y", "x\\ny", "x\\\"y" };
+		String[] vals = new String[] { "x-y", "x\ny", "x\"y", "x\\y", "x\\ny", "x\\\"y", "'x'y'" };
 		for (String s : vals) {
 			this.sqlgGraph.addVertex("Escaped").property("name", s);
 		}
@@ -29,7 +29,7 @@ public class TestEscapedValues extends BaseTest {
 	
 	@Test
 	public void testEscapedValuesWithinQuery(){
-		String[] vals = new String[] { "x-y", "x\ny", "x\"y", "x\\y", "x\\ny", "x\\\"y" };
+		String[] vals = new String[] { "x-y", "x\ny", "x\"y", "x\\y", "x\\ny", "x\\\"y", "'x'y'"  };
 		for (String s : vals) {
 			this.sqlgGraph.addVertex("Escaped").property("name", s); 
 		}
@@ -43,7 +43,7 @@ public class TestEscapedValues extends BaseTest {
 	public void testEscapedValuesSingleQueryBatch(){
 		Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 		this.sqlgGraph.tx().normalBatchModeOn();
-		String[] vals = new String[] { "x-y", "x\ny", "x\"y", "x\\y", "x\\ny", "x\\\"y" };
+		String[] vals = new String[] { "x-y", "x\ny", "x\"y", "x\\y", "x\\ny", "x\\\"y", "'x'y'" };
 		for (String s : vals) {
 			this.sqlgGraph.addVertex("Escaped").property("name", s);
 		}

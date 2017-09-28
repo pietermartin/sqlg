@@ -72,22 +72,39 @@ public abstract class AbstractLabel implements TopologyInf {
 
         String indexName = this.sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
         if (indexName.length() > this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength()) {
-            RandomStringGenerator generator = new RandomStringGenerator.Builder()
+            // name was random, need to check the properties list
+        	for (Index idx:this.getIndexes().values()){
+            	if (idx.getProperties().equals(properties)){
+            		return idx;
+            	}
+            }
+        	
+            this.getSchema().getTopology().lock();
+            for (Index idx:this.getIndexes().values()){
+            	if (idx.getProperties().equals(properties)){
+            		return idx;
+            	}
+            }
+        	RandomStringGenerator generator = new RandomStringGenerator.Builder()
                     .withinRange('a', 'z').build();
             indexName = generator.generate(this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength());
-        }
-
-        Optional<Index> indexOptional = this.getIndex(indexName);
-        if (!indexOptional.isPresent()) {
-            this.getSchema().getTopology().lock();
-            indexOptional = this.getIndex(indexName);
-            if (!indexOptional.isPresent()) {
-                return this.createIndex(indexName, indexType, properties);
-            } else {
-                return indexOptional.get();
-            }
+            
+            return this.createIndex(indexName, indexType, properties);
+            
         } else {
-            return indexOptional.get();
+
+	        Optional<Index> indexOptional = this.getIndex(indexName);
+	        if (!indexOptional.isPresent()) {
+	            this.getSchema().getTopology().lock();
+	            indexOptional = this.getIndex(indexName);
+	            if (!indexOptional.isPresent()) {
+	                return this.createIndex(indexName, indexType, properties);
+	            } else {
+	                return indexOptional.get();
+	            }
+	        } else {
+	            return indexOptional.get();
+	        }
         }
     }
 
