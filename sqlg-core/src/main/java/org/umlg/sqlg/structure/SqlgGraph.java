@@ -199,6 +199,7 @@ public class SqlgGraph implements Graph {
                         new SqlgRepeatStepStrategy(),
                         new SqlgOptionalStepStrategy(),
                         new SqlgChooseStepStrategy(),
+                        new SqlgTraversalFilterStepStrategy<>(),
                         TopologyStrategy.build().create()));
     }
 

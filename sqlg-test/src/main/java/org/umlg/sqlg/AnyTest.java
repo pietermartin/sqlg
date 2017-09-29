@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.io.TestIoEdge;
+import org.umlg.sqlg.test.where.TestWhereTraversalStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.io.TestIoEdge;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestIoEdge.class
+        TestWhereTraversalStep.class
 })
 public class AnyTest {
 }

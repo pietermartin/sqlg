@@ -44,6 +44,7 @@ import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
+import org.umlg.sqlg.test.where.TestWhereTraversalStep;
 
 /**
  * Date: 2014/07/16
@@ -199,7 +200,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLabelLength.class,
         TestAddTemporaryVertex.class,
         TestBatchTemporaryVertex.class,
-        TestIoEdge.class
+        TestIoEdge.class,
+        TestWhereTraversalStep.class
 
 })
 public class AllTest {
