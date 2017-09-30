@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestJNDIInitialization;
+import org.umlg.sqlg.test.schema.TestSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.TestJNDIInitialization;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestJNDIInitialization.class
+        TestSchema.class
 })
 public class AnyTest {
 }
