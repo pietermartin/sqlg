@@ -1,7 +1,7 @@
 [ ![Codeship Status for pietermartin/sqlg](https://app.codeship.com/projects/8d76eca0-de21-0134-65d6-666b8ac96438/status?branch=master)](https://app.codeship.com/projects/204650)
 
 <style type="text/css">
- @import "154.65.43.238:8111/css/status/externalStatus.css";
+ @import "http://154.65.43.238/css/status/externalStatus.css";
 </style>
 
 Sqlg
