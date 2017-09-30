@@ -490,6 +490,10 @@ public interface SqlDialect {
         return false;
     }
 
+    default boolean isHsqldb() {
+        return false;
+    }
+
     default <T> T getGis(SqlgGraph sqlgGraph) {
         throw SqlgExceptions.gisNotSupportedException();
     }

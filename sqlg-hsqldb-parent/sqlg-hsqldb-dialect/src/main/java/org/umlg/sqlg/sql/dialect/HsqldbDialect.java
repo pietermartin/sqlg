@@ -984,4 +984,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
         return "CREATE SCHEMA IF NOT EXISTS " + maybeWrapInQoutes(schemaName);
     }
 
+    @Override
+    public boolean isHsqldb() {
+        return true;
+    }
 }
