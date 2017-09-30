@@ -437,8 +437,10 @@ public class TestBulkWithin extends BaseTest {
     }
 
     //Hsqldb fails, looks like Hsqldb bug
+    //TODO https://sourceforge.net/p/hsqldb/bugs/1495/
     @Test
     public void testBulkWithinLocalTime() {
+        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isHsqldb());
         LocalTime localTime1 = LocalTime.now();
         LocalTime localTime2 = LocalTime.now().minusHours(1);
         LocalTime localTime3 = LocalTime.now().minusHours(2);
@@ -450,8 +452,10 @@ public class TestBulkWithin extends BaseTest {
         Assert.assertEquals(3, vertices.size());
     }
 
+    //TODO https://sourceforge.net/p/hsqldb/bugs/1495/
     @Test
     public void testBulkWithin_LocalTimeArray() {
+        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isHsqldb());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());
         LocalTime[] localTimeArray1 = new LocalTime[]{LocalTime.now().minusHours(1), LocalTime.now().minusHours(2), LocalTime.now().minusHours(3)};
         LocalTime[] localTimeArray2 = new LocalTime[]{LocalTime.now().minusHours(4), LocalTime.now().minusHours(5), LocalTime.now().minusHours(6)};
