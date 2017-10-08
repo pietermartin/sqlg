@@ -699,6 +699,7 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
                 "`sqlg_schema.index__O` BIGINT UNSIGNED, " +
+                "`sequence` INTEGER, " +
                 "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
                 "FOREIGN KEY (`sqlg_schema.index__O`) REFERENCES `sqlg_schema`.`V_index` (`ID`)" +
                 ");");
@@ -719,8 +720,7 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
-        return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
-        
+        return "ALTER TABLE `sqlg_schema`.`E_index_property` ADD COLUMN `sequence` INTEGER DEFAULT 0;";
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {

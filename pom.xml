@@ -105,13 +105,19 @@
                         <!--<include>**/SqlgH2ProcessStandardTest.java</include>-->
                         <!--<include>**/H2AllTest.java</include>-->
 
-                        <!--<include>**/SqlgHsqldbStructureStandardTest.java</include>-->
-                        <!--<include>**/SqlgHsqldbProcessStandardTest.java</include>-->
-                        <!--<include>**/HsqldbAllTest.java</include>-->
-
                         <include>**/SqlgPostgresStructureStandardTest.java</include>
                         <include>**/SqlgGraphPostgresProcessStandardTest.java</include>
                         <include>**/PostgresAllTest.java</include>
+
+                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
+                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+                        <include>**/HsqldbAllTest.java</include>
+
+                        <include>**/SqlgMSSqlStructureStandardTest.java</include>
+                        <include>**/SqlgMSSqlProcessStandardTest.java</include>
+                        <include>**/MSSqlAllTest.java</include>
+
+                        <include>**/MariadbAllTest.java</include>
                     </includes>
                 </configuration>
             </plugin>
@@ -169,7 +175,6 @@
         <module>sqlg-cockroachdb-parent</module>
         <module>sqlg-mariadb-parent</module>
         <module>sqlg-mssqlserver-parent</module>
-        <!--<module>sqlg-mysql-parent</module>-->
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>

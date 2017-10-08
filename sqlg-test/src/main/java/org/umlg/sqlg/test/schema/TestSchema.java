@@ -80,8 +80,10 @@ public class TestSchema extends BaseTest {
         Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
     }
 
+    //TODO https://github.com/pietermartin/sqlg/issues/238
     @Test
     public void testEdgeBetweenSchemas() {
+        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isMssqlServer());
         Vertex john = this.sqlgGraph.addVertex(T.label, "TEST_SCHEMA1.Person", "name", "John");
         Vertex tom = this.sqlgGraph.addVertex(T.label, "TEST_SCHEMA2.Person", "name", "Tom");
         Vertex ape = this.sqlgGraph.addVertex(T.label, "TEST_SCHEMA2.Ape", "name", "Amuz");

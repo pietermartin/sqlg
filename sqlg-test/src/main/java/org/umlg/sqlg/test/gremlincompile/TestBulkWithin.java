@@ -419,8 +419,10 @@ public class TestBulkWithin extends BaseTest {
     }
 
     //Hsqldb fails, looks like Hsqldb bug
+    //TODO https://sourceforge.net/p/hsqldb/bugs/1495/
     @Test
     public void testBulkWithin_LocalDateTimeArray() {
+        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isHsqldb());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         LocalDateTime[] localDateTimeArray1 = new LocalDateTime[]{LocalDateTime.now().minusDays(1), LocalDateTime.now().minusDays(2), LocalDateTime.now().minusDays(3)};
         LocalDateTime[] localDateTimeArray2 = new LocalDateTime[]{LocalDateTime.now().minusDays(4), LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(6)};
@@ -436,7 +438,6 @@ public class TestBulkWithin extends BaseTest {
         Assert.assertTrue(Arrays.asList(v1, v3, v4).containsAll(vertices));
     }
 
-    //Hsqldb fails, looks like Hsqldb bug
     @Test
     public void testBulkWithinLocalTime() {
         LocalTime localTime1 = LocalTime.now();
@@ -450,8 +451,10 @@ public class TestBulkWithin extends BaseTest {
         Assert.assertEquals(3, vertices.size());
     }
 
+    //TODO https://sourceforge.net/p/hsqldb/bugs/1495/
     @Test
     public void testBulkWithin_LocalTimeArray() {
+        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isHsqldb());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());
         LocalTime[] localTimeArray1 = new LocalTime[]{LocalTime.now().minusHours(1), LocalTime.now().minusHours(2), LocalTime.now().minusHours(3)};
         LocalTime[] localTimeArray2 = new LocalTime[]{LocalTime.now().minusHours(4), LocalTime.now().minusHours(5), LocalTime.now().minusHours(6)};
