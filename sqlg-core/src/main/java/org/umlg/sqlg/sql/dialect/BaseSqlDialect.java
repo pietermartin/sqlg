@@ -1086,4 +1086,15 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
         }
     }
 
+    /**
+     * escape quotes by doubling them when we need a string inside quotes
+     * @param o
+     * @return
+     */
+    protected String escapeQuotes(Object o){
+        if (o!=null){
+            return o.toString().replace("'", "''");
+        }
+        return null;
+    }
 }

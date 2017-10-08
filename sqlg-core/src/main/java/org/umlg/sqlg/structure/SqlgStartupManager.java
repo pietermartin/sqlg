@@ -116,10 +116,8 @@ class SqlgStartupManager {
                 String sql = this.sqlDialect.sqlgAddIndexEdgeSequenceColumn();
                 statement.execute(sql);
             }
-
         } catch (SQLException e) {
-        	e.printStackTrace();
-//            throw new RuntimeException(e);
+            logger.error("Error upgrading index edge property to include a sequence column. Error swallowed.", e);
         }
 
     }

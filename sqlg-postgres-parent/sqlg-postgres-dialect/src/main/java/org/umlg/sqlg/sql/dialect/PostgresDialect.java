@@ -3554,15 +3554,4 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return PARAMETER_LIMIT;
     }
     
-    /**
-     * escape quotes by doubling them when we need a string inside quotes
-     * @param o
-     * @return
-     */
-    private String escapeQuotes(Object o){
-    	if (o!=null){
-	    	return o.toString().replace("'", "''");
-	    }
-    	return null;
-    }
 }
