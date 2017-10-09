@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.where.TestWhereTraversalStep;
+import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.where.TestWhereTraversalStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestWhereTraversalStep.class
+        TestTraversalFilterStepBarrier.class
 })
 public class AnyTest {
 }

@@ -6,8 +6,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
-import org.umlg.sqlg.structure.SqlgElement;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
 import java.util.*;
@@ -35,24 +36,48 @@ public class SqlgTraversalFilterStepBarrier<S> extends AbstractStep<S, S> implem
             Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
-                SqlgElement sqlgElement = (SqlgElement) start.get();
-                startRecordIds.put(sqlgElement.id().toString(), start);
+                //Well now, can't say I really really get this.
+                //The TinkerPop's TraversalFilterStep resets the traversal for each start.
+                //This in turn clears TraverserSet's internal map. So the result for every start is added to an empty map. This means
+                //no merging happens which means no bulking happens. Look at TraverserSet.add
+                //This requirement says no bulking must happen.
+                //If the strategy finds TraverserRequirement.ONE_BULK it will set requiredOneBulk = true on the traverser.
+                //However the traverser might have been created from a step and strategy that does not care for TraverserRequirement.ONE_BULK so we force it here.
+                ((SqlgTraverser) start).setRequiresOneBulk(true);
+                List<Object> startObjects = start.path().objects();
+                StringBuilder recordIdConcatenated = new StringBuilder();
+                for (Object startObject : startObjects) {
+                    if (startObject instanceof Element) {
+                        Element e = (Element) startObject;
+                        recordIdConcatenated.append(e.id().toString());
+                    } else {
+                        recordIdConcatenated.append(startObject.toString());
+                    }
+                }
+                startRecordIds.put(recordIdConcatenated.toString(), start);
+
                 this.filterTraversal.addStart(start);
             }
-            Set<String> toRemainRecordIds = new HashSet<>();
             while (this.filterTraversal.hasNext()) {
                 Traverser.Admin<?> filterTraverser = this.filterTraversal.nextTraverser();
                 List<Object> filterTraverserObjects = filterTraverser.path().objects();
-                //Take the first as its the incoming.
-                SqlgElement incoming = (SqlgElement)filterTraverserObjects.get(0);
-                toRemainRecordIds.add(incoming.id().toString());
-            }
-            for (Map.Entry<String, Traverser.Admin<S>> startEntry : startRecordIds.entries()) {
-                String key = startEntry.getKey();
-                Traverser.Admin<S> value = startEntry.getValue();
-                if (toRemainRecordIds.contains(key)) {
-                    this.results.add(value);
+                String startId = "";
+                for (Object filteredTraverserObject : filterTraverserObjects) {
+                    if (filteredTraverserObject instanceof Element) {
+                        Element e = (Element) filteredTraverserObject;
+                        startId += e.id().toString();
+                    } else {
+                        startId += filteredTraverserObject.toString();
+                    }
+                    if (startRecordIds.containsKey(startId)) {
+                        results.addAll(startRecordIds.get(startId));
+                        startRecordIds.removeAll(startId);
+                    }
+                    if (startRecordIds.isEmpty()) {
+                        break;
+                    }
                 }
+
             }
             this.results.sort((o1, o2) -> {
                 SqlgTraverser x = (SqlgTraverser) o1;
@@ -65,7 +90,28 @@ public class SqlgTraversalFilterStepBarrier<S> extends AbstractStep<S, S> implem
             Traverser.Admin<S> traverser = this.resultIterator.next();
             return traverser;
         } else {
+            //The standard TraversalFilterStep.filter calls TraversalUtil.test which normally resets the traversal for every incoming start.
+            reset();
             throw FastNoSuchElementException.instance();
         }
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+        this.first = true;
+        this.results.clear();
+        this.getLocalChildren().forEach(Traversal.Admin::reset);
+        this.getGlobalChildren().forEach(Traversal.Admin::reset);
+    }
+
+    @Override
+    public List<Traversal.Admin<S, ?>> getLocalChildren() {
+        return Collections.singletonList(this.filterTraversal);
+    }
+
+    @Override
+    public Set<TraverserRequirement> getRequirements() {
+        return Collections.singleton(TraverserRequirement.ONE_BULK);
     }
 }

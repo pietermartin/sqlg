@@ -73,4 +73,8 @@ public class SqlgTraverser<T> extends B_LP_O_P_S_SE_SL_Traverser<T> {
             return super.equals(object);
         }
     }
+
+    public void setRequiresOneBulk(boolean requiresOneBulk) {
+        this.requiresOneBulk = requiresOneBulk;
+    }
 }

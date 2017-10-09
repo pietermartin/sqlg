@@ -847,7 +847,7 @@ public abstract class SqlgElement implements Element {
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
     public long getInternalStartTraverserIndex() {
-        return internalStartTraverserIndex;
+        return this.internalStartTraverserIndex;
     }
 
     public void setInternalStartTraverserIndex(long internalStartTraverserIndex) {

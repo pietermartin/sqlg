@@ -54,13 +54,17 @@ import java.util.stream.Collectors;
 public abstract class BaseStrategy {
 
     static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
-            VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class
-            , OrderGlobalStep.class, RangeGlobalStep.class
-            , ChooseStep.class
-            , OptionalStep.class
-            , RepeatStep.class
-            , SelectStep.class
-            , SelectOneStep.class
+            VertexStep.class,
+            EdgeVertexStep.class,
+            GraphStep.class,
+            EdgeOtherVertexStep.class,
+            OrderGlobalStep.class,
+            RangeGlobalStep.class,
+            ChooseStep.class,
+            OptionalStep.class,
+            RepeatStep.class,
+            SelectStep.class,
+            SelectOneStep.class
     );
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
@@ -74,7 +78,6 @@ public abstract class BaseStrategy {
     );
     public static final List<BiPredicate> SUPPORTED_ID_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Contains.within, Contains.without
-//            Compare.eq, Contains.within
     );
 
     protected Traversal.Admin<?, ?> traversal;
@@ -112,7 +115,6 @@ public abstract class BaseStrategy {
                 return false;
             }
         } else {
-            Preconditions.checkState(sqlgStep != null);
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount);
             } else if (step instanceof RepeatStep) {

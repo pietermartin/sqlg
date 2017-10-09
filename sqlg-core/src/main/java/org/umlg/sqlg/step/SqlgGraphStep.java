@@ -184,7 +184,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
-        return this.getSelfAndChildRequirements(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS);
+        return this.getSelfAndChildRequirements(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS, TraverserRequirement.ONE_BULK);
     }
 
     private Iterator<List<Emit<E>>> elements() {
