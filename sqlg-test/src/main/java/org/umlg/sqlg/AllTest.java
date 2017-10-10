@@ -35,6 +35,7 @@ import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
+import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
@@ -72,6 +73,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestVertexCreation.class,
         TestVertexEdgeSameName.class,
         TestVertexNavToEdges.class,
+        // are these tests gone?
+        //TestByteArray.class,
+        //TestQuery.class,
         TestSchema.class,
         TestIndex.class,
         TestVertexOutWithHas.class,
@@ -81,9 +85,11 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestMultiThreadedBatch.class,
         TestMultiThread.class,
         TestMultipleThreadMultipleJvm.class,
+
         TestRemoveEdge.class,
         TestEdgeSchemaCreation.class,
         TestRollback.class,
+
         TestNewVertex.class,
         TestEdgeCache.class,
         TestVertexCache.class,
@@ -201,6 +207,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestAddTemporaryVertex.class,
         TestBatchTemporaryVertex.class,
         TestIoEdge.class,
+        TestBatchTemporaryVertex.class,
+        TestUnoptimizedRepeatStep.class,
         TestTraversalFilterStepBarrier.class
 
 })
