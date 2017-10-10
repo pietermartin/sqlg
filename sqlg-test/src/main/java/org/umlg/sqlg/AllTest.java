@@ -34,6 +34,7 @@ import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
+import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
@@ -202,7 +203,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestDeadLock.class,
         TestLabelLength.class,
         TestAddTemporaryVertex.class,
-        TestBatchTemporaryVertex.class
+        TestBatchTemporaryVertex.class,
+        TestUnoptimizedRepeatStep.class
 
 })
 public class AllTest {
