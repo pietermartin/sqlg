@@ -1,3 +1,13 @@
+##1.4.0
+
+* Added support for MariaDb
+* Added support for MSSqlServer
+* Added barrier optimization for unoptimized steps. This optimization barriers (cache) the incoming traversers and 
+performs the next step for all the traversers at once. It uses the sql `VALUES` expression for this.
+
+Currently the `optional`, `choose`, `repeat` and `local` steps have this optimization.
+* Added batch mode support for all dialects.
+
 ##1.3.3
 
 * `TopologyInf` support for `remove(boolean preserveData)` added.
