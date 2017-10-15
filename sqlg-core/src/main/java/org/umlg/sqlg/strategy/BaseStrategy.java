@@ -534,23 +534,6 @@ public abstract class BaseStrategy {
         sqlgGraphStep.clearIds();
     }
 
-    private boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
-        for (HasContainer h : currentStep.getHasContainers()) {
-            P<?> predicate = h.getPredicate();
-            if (predicate.getValue() instanceof ZonedDateTime ||
-                    predicate.getValue() instanceof Period ||
-                    predicate.getValue() instanceof Duration ||
-                    (predicate.getValue() instanceof List && containsZonedDateTimePeriodOrDuration((List<Object>) predicate.getValue())) ||
-                    (predicate instanceof ConnectiveP && isConnectivePWithZonedDateTimePeriodOrDuration((ConnectiveP) h.getPredicate()))) {
-
-
-                return false;
-            }
-
-        }
-        return true;
-    }
-
     private boolean hasContainerKeyNotIdOrLabel(HasContainer hasContainer) {
         return !(hasContainer.getKey().equals(T.id.getAccessor()) || (hasContainer.getKey().equals(T.label.getAccessor())));
     }
@@ -695,11 +678,10 @@ public abstract class BaseStrategy {
                         s.getClass().equals(Order.class) ||
                                 s.getClass().equals(LambdaCollectingBarrierStep.class) ||
                                 s.getClass().equals(SackValueStep.class)
-//                        s.getClass().equals(SackStep.class)
         );
     }
 
-    protected boolean unoptimizableOptionalStep(OptionalStep<?> optionalStep) {
+    boolean unoptimizableOptionalStep(OptionalStep<?> optionalStep) {
         if (!this.optionalStepStack.isEmpty()) {
             return true;
         }
@@ -740,7 +722,7 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    protected boolean unoptimizableChooseStep(ChooseStep<?, ?, ?> chooseStep) {
+    boolean unoptimizableChooseStep(ChooseStep<?, ?, ?> chooseStep) {
         if (!this.chooseStepStack.isEmpty()) {
             return true;
         }

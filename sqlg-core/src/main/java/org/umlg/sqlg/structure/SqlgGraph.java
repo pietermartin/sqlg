@@ -200,6 +200,7 @@ public class SqlgGraph implements Graph {
                         new SqlgOptionalStepStrategy(),
                         new SqlgChooseStepStrategy(),
                         new SqlgTraversalFilterStepStrategy<>(),
+                        new SqlgHasStepStrategy(),
                         TopologyStrategy.build().create()));
     }
 

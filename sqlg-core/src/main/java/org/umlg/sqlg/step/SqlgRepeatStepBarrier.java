@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -15,29 +14,30 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.strategy.SqlgRangeHolder;
 
 import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/04/20
+ * Date: 2017/04/20
  */
-public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements TraversalParent {
+public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implements TraversalParent {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgRepeatStepBarrier.class.getName());
     private Traversal.Admin<S, S> repeatTraversal = null;
     private Traversal.Admin<S, ?> untilTraversal = null;
     private Traversal.Admin<S, ?> emitTraversal = null;
-    public boolean untilFirst = false;
-    public boolean emitFirst = false;
+    boolean untilFirst = false;
+    boolean emitFirst = false;
     private boolean first = true;
-    private List<Traverser.Admin<S>> cachedStarts;
     private List<Iterator<Traverser.Admin<S>>> toReturn;
     //Special cache for untilTraverser
     private List<HasContainer> untilHasContainers;
     private HasContainer untilHasContainer;
+    //This is for limit/range step immediately following the Repeat.
+    //It needs to be embedded else the repeat might just repeat forever.
+    private SqlgRangeHolder sqlgRangeHolder;
+    private long rangeCount = 0;
 
     public SqlgRepeatStepBarrier(final Traversal.Admin traversal, RepeatStep<S> repeatStep) {
         super(traversal);
@@ -48,7 +48,11 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
         this.emitFirst = repeatStep.emitFirst;
         List<RepeatStep.RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfAssignableClass(RepeatStep.RepeatEndStep.class, this.repeatTraversal);
         Preconditions.checkState(repeatEndSteps.size() == 1, "Only handling one RepeatEndStep! Found " + repeatEndSteps.size());
-        TraversalHelper.replaceStep(repeatEndSteps.get(0), new SqlgRepeatStepBarrier.SqlgRepeatEndStepBarrier<>(this.repeatTraversal), this.repeatTraversal);
+        TraversalHelper.replaceStep(repeatEndSteps.get(0), new SqlgRepeatStepBarrier.SqlgRepeatEndStepBarrier(this.repeatTraversal), this.repeatTraversal);
+    }
+
+    public void setSqlgRangeHolder(SqlgRangeHolder sqlgRangeHolder) {
+        this.sqlgRangeHolder = sqlgRangeHolder;
     }
 
     @Override
@@ -74,13 +78,13 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
     }
 
     public final boolean doUntil(final Traverser.Admin<S> traverser, boolean utilFirst) {
-//        return utilFirst == this.untilFirst && null != this.untilTraversal && test(traverser, this.untilTraversal);
         return utilFirst == this.untilFirst && null != this.untilTraversal && TraversalUtil.test(traverser, this.untilTraversal);
+//        return utilFirst == this.untilFirst && null != this.untilTraversal && SqlgTraversalUtil.test(traverser, this.untilTraversal);
     }
 
     public final boolean doEmit(final Traverser.Admin<S> traverser, boolean emitFirst) {
-//        return emitFirst == this.emitFirst && null != this.emitTraversal && test(traverser, this.emitTraversal);
         return emitFirst == this.emitFirst && null != this.emitTraversal && TraversalUtil.test(traverser, this.emitTraversal);
+//        return emitFirst == this.emitFirst && null != this.emitTraversal && SqlgTraversalUtil.test(traverser, this.emitTraversal);
     }
 
     @Override
@@ -152,29 +156,27 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
         while (true) {
             if (this.first) {
                 this.first = false;
-                this.cachedStarts = new ArrayList<>();
                 this.toReturn = new ArrayList<>();
             }
             Iterator<Iterator<Traverser.Admin<S>>> returnIterator = toReturn.iterator();
             if (returnIterator.hasNext()) {
                 Iterator<Traverser.Admin<S>> next = returnIterator.next();
                 returnIterator.remove();
+                if (this.sqlgRangeHolder != null && applyRange()) {
+                    continue;
+                }
                 return next;
             }
             if (this.repeatTraversal.getEndStep().hasNext()) {
                 return this.repeatTraversal.getEndStep();
             } else {
+                boolean foundSomething = false;
                 while (this.starts.hasNext()) {
-                    this.cachedStarts.add(this.starts.next());
-                }
-                if (this.cachedStarts.isEmpty()) {
-                    throw FastNoSuchElementException.instance();
-                }
-                Iterator<Traverser.Admin<S>> iterator = this.cachedStarts.iterator();
-                while (iterator.hasNext()) {
-                    Traverser.Admin<S> cachedStart = iterator.next();
-                    iterator.remove();
-                    //optimize this logic to be outside the loop.
+                    foundSomething = true;
+                    Traverser.Admin<S> cachedStart = this.starts.next();
+//                    if (this.untilFirst && null != this.untilTraversal) {
+//                        //doUntil()
+//                    }
                     if (doUntil(cachedStart, true)) {
                         cachedStart.resetLoops();
                         this.toReturn.add(IteratorUtils.of(cachedStart));
@@ -188,6 +190,9 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
                         this.toReturn.add(IteratorUtils.of(emitSplit));
                     }
                 }
+                if (!foundSomething) {
+                    throw FastNoSuchElementException.instance();
+                }
             }
         }
     }
@@ -197,14 +202,12 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
         throw new IllegalStateException("computerAlgorithm not supported!");
     }
 
-    public static class SqlgRepeatEndStepBarrier<S> extends ComputerAwareStep<S, S> {
+    public class SqlgRepeatEndStepBarrier<S> extends SqlgComputerAwareStep<S, S> {
 
-        private List<Traverser.Admin<S>> cachedStarts;
         private List<Iterator<Traverser.Admin<S>>> toReturn;
 
-        public SqlgRepeatEndStepBarrier(final Traversal.Admin traversal) {
+        SqlgRepeatEndStepBarrier(final Traversal.Admin traversal) {
             super(traversal);
-            this.cachedStarts = new ArrayList<>();
             this.toReturn = new ArrayList<>();
         }
 
@@ -216,19 +219,15 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
                 if (returnIterator.hasNext()) {
                     Iterator<Traverser.Admin<S>> next = returnIterator.next();
                     returnIterator.remove();
+                    if (SqlgRepeatStepBarrier.this.sqlgRangeHolder != null && applyRange()) {
+                        continue;
+                    }
                     return next;
                 }
+                boolean foundSomething = false;
                 while (this.starts.hasNext()) {
-                    this.cachedStarts.add(this.starts.next());
-                }
-                if (this.cachedStarts.isEmpty()) {
-                    throw FastNoSuchElementException.instance();
-                }
-                logger.info("cached starts size = " + this.cachedStarts.size() + " loops = " + this.cachedStarts.get(0).loops());
-                Iterator<Traverser.Admin<S>> iterator = this.cachedStarts.iterator();
-                while (iterator.hasNext()) {
-                    Traverser.Admin<S> cachedStart = iterator.next();
-                    iterator.remove();
+                    foundSomething = true;
+                    Traverser.Admin<S> cachedStart = this.starts.next();
                     cachedStart.incrLoops(this.getId());
                     if (repeatStep.doUntil(cachedStart, false)) {
                         cachedStart.resetLoops();
@@ -244,6 +243,9 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
                             toReturn.add(IteratorUtils.of(emitSplit));
                         }
                     }
+                }
+                if (!foundSomething) {
+                    throw FastNoSuchElementException.instance();
                 }
             }
         }
@@ -283,6 +285,18 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
             traversal.addStart(split);
             return traversal.hasNext(); // filter
         }
+    }
+
+    private boolean applyRange() {
+        if (this.sqlgRangeHolder.getRange().isBefore(this.rangeCount + 1)) {
+            throw FastNoSuchElementException.instance();
+        }
+        if (this.sqlgRangeHolder.getRange().isAfter(this.rangeCount)) {
+            this.rangeCount++;
+            return true;
+        }
+        this.rangeCount++;
+        return false;
     }
 }
 

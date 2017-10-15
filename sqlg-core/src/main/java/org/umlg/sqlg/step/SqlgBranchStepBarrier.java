@@ -3,7 +3,6 @@ package org.umlg.sqlg.step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -15,15 +14,15 @@ import java.util.stream.Collectors;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/04/24
+ * Date: 2017/04/24
  */
-public abstract class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implements TraversalOptionParent<M, S, E> {
+public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S, E> implements TraversalOptionParent<M, S, E> {
 
-    protected Traversal.Admin<S, M> branchTraversal;
+    private Traversal.Admin<S, M> branchTraversal;
     Map<M, List<Traversal.Admin<S, E>>> traversalOptions = new HashMap<>();
     protected boolean first = true;
     protected List<Traverser.Admin<E>> results = new ArrayList<>();
-    protected Iterator<Traverser.Admin<E>> resultIterator;
+    private Iterator<Traverser.Admin<E>> resultIterator;
 
     SqlgBranchStepBarrier(final Traversal.Admin traversal) {
         super(traversal);
@@ -46,10 +45,10 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> 
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
 
         if (this.first) {
-            
-            List<Traverser.Admin<S>> tmpStarts = new ArrayList<>();
-            List<Traverser.Admin<S>> tmpStartsToRemove = new ArrayList<>();
-            Map<M, List<Traverser.Admin<S>>> predicateWithSuccessfulStarts = new HashMap<>();
+
+            List<Traverser.Admin<S>> successfulStarts = new ArrayList<>();
+            Map<Long, Traverser.Admin<S>> cachedStarts = new HashMap<>();
+            Map<Traverser.Admin<S>, Object> startBranchTraversalResults = new HashMap<>();
 
             this.first = false;
 
@@ -57,89 +56,99 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> 
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 this.branchTraversal.addStart(start);
-                ((SqlgElement)start.get()).setInternalStartTraverserIndex(startCount++);
-                tmpStarts.add(start);
+                ((SqlgElement) start.get()).setInternalStartTraverserIndex(startCount);
+                cachedStarts.put(startCount++, start);
             }
 
+            Set<Long> toRemove = new HashSet<>();
             while (true) {
                 if (this.branchTraversal.hasNext()) {
                     Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
-                    for (Traverser.Admin<S> tmpStart : tmpStarts) {
-                        List<Object> startObjects = tmpStart.path().objects();
-                        List<Object> optionObjects = branchTraverser.path().objects();
-                        int count = 0;
-                        boolean startsWith = false;
-                        //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
-                        if (!(optionObjects.get(0) instanceof SqlgElement)) {
-                            startsWith = true;
-                        }
-                        if (!startsWith) {
-                            for (Object startObject : startObjects) {
-                                startsWith = optionObjects.get(count++).equals(startObject);
-                                if (!startsWith) {
-                                    break;
+                    long startElementIndex = ((SqlgTraverser<M>) branchTraverser).getStartElementIndex();
+                    M m = branchTraverser.get();
+                    //startElementIndex is 0 for branchTraversals that do not contain a SqlgVertexStep.
+                    //i.e. traversals that do not go to the db.
+                    if (startElementIndex == 0 && m instanceof SqlgElement) {
+                        SqlgElement sqlgElement = (SqlgElement) m;
+                        startElementIndex = sqlgElement.getInternalStartTraverserIndex();
+                    }
+                    if (!(m instanceof SqlgElement)) {
+                        //This assumes that branchTraversals that do not go to the db only return one value per start.
+                        List<Object> branchTraverserPathObjects = branchTraverser.path().objects();
+                        long count = 0;
+                        for (Traverser.Admin<S> cachedStart : cachedStarts.values()) {
+                            count++;
+                            List<Object> cachedStartPathObjects = cachedStart.path().objects();
+                            boolean startsWith = false;
+                            //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
+                            if (!(branchTraverserPathObjects.get(0) instanceof SqlgElement)) {
+                                startsWith = true;
+                            }
+                            if (!startsWith) {
+                                int countX = 0;
+                                for (Object startObject : cachedStartPathObjects) {
+                                    startsWith = branchTraverserPathObjects.get(countX++).equals(startObject);
+                                    if (!startsWith) {
+                                        break;
+                                    }
                                 }
                             }
+                            if (startsWith) {
+                                successfulStarts.add(cachedStart);
+                                toRemove.add(count);
+                                startBranchTraversalResults.put(cachedStart, branchTraverserPathObjects.get(branchTraverserPathObjects.size() - 1));
+                            }
                         }
-                        if (startsWith) {
-                            List<Traverser.Admin<S>> starts = predicateWithSuccessfulStarts.computeIfAbsent(branchTraverser.get(), k -> new ArrayList<>());
-                            starts.add(tmpStart);
-                            tmpStartsToRemove.add(tmpStart);
+                    } else {
+                        Traverser.Admin<S> start = cachedStarts.remove(startElementIndex);
+                        if (start != null) {
+                            successfulStarts.add(start);
                         }
                     }
                 } else {
                     break;
                 }
             }
-            tmpStarts.removeAll(tmpStartsToRemove);
+            //remove all successful starts from the cachedStarts.
+            //i.e. only failed starts remain in the list.
+            for (Long remove : toRemove) {
+                cachedStarts.remove(remove);
+            }
 
             //true false choose step does not have a HasNextStep. Its been removed to keep the path.
             if (this.traversalOptions.containsKey(Boolean.TRUE) && this.traversalOptions.containsKey(Boolean.FALSE)) {
-                for (Map.Entry<M, List<Traverser.Admin<S>>> entry : predicateWithSuccessfulStarts.entrySet()) {
-                    for (Traverser.Admin<S> start : entry.getValue()) {
-                        for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Boolean.TRUE)) {
-                            optionTraversal.addStart(start);
-                            //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                            start.setBulk(1L);
-                        }
+                for (Traverser.Admin<S> successfulStart : successfulStarts) {
+                    for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Boolean.TRUE)) {
+                        optionTraversal.addStart(successfulStart);
                     }
                 }
-                List<Traversal.Admin<S, E>> optionTraversals = this.traversalOptions.get(Boolean.FALSE);
-                for (Traversal.Admin<S, E> optionTraversal : optionTraversals) {
-                    for (Traverser.Admin<S> start : tmpStarts) {
+                for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Boolean.FALSE)) {
+                    for (Traverser.Admin<S> start : cachedStarts.values()) {
                         optionTraversal.addStart(start);
-                        //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                        start.setBulk(1L);
                     }
                 }
             } else {
-                for (Map.Entry<M, List<Traverser.Admin<S>>> entry : predicateWithSuccessfulStarts.entrySet()) {
-                    for (Traverser.Admin<S> start : entry.getValue()) {
-                        if (this.traversalOptions.containsKey(entry.getKey())) {
-                            for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(entry.getKey())) {
+                for (Map.Entry<Traverser.Admin<S>, Object> entry : startBranchTraversalResults.entrySet()) {
+                    Traverser.Admin<S> start = entry.getKey();
+                    Object branchEndObject = entry.getValue();
+                    if (this.traversalOptions.containsKey(branchEndObject)) {
+                        for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(branchEndObject)) {
+                            optionTraversal.addStart(start);
+                        }
+                    } else {
+                        if (this.traversalOptions.containsKey(Pick.none)) {
+                            for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Pick.none)) {
                                 optionTraversal.addStart(start);
-                                //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                                start.setBulk(1L);
-                            }
-                        } else {
-                            if (this.traversalOptions.containsKey(Pick.none)) {
-                                for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Pick.none)) {
-                                    optionTraversal.addStart(start);
-                                    //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                                    start.setBulk(1L);
-                                }
                             }
                         }
                     }
                 }
-                List<Traversal.Admin<S, E>> optionTraversals = this.traversalOptions.get(Pick.none);
-                for (Traversal.Admin<S, E> optionTraversal : optionTraversals) {
-                    for (Traverser.Admin<S> start : tmpStarts) {
-                        optionTraversal.addStart(start);
-                        //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                        start.setBulk(1L);
-                    }
-                }
+//                List<Traversal.Admin<S, E>> optionTraversals = this.traversalOptions.get(Pick.none);
+//                for (Traversal.Admin<S, E> optionTraversal : optionTraversals) {
+//                    for (Traverser.Admin<S> start : cachedStarts.values()) {
+//                        optionTraversal.addStart(start);
+//                    }
+//                }
             }
             //Now travers the options. The starts have been set.
             for (M choice : this.traversalOptions.keySet()) {

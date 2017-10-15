@@ -5,10 +5,10 @@ import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
 import java.util.*;
@@ -17,7 +17,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/09/28
  */
-public class SqlgTraversalFilterStepBarrier<S> extends AbstractStep<S, S> implements TraversalParent {
+public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> implements TraversalParent {
 
     private boolean first = true;
     private Traversal.Admin<S, ?> filterTraversal;
@@ -113,5 +113,10 @@ public class SqlgTraversalFilterStepBarrier<S> extends AbstractStep<S, S> implem
     @Override
     public Set<TraverserRequirement> getRequirements() {
         return Collections.singleton(TraverserRequirement.ONE_BULK);
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, this.filterTraversal);
     }
 }

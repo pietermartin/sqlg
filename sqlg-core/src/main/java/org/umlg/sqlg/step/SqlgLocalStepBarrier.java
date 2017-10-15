@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.umlg.sqlg.structure.SqlgTraverser;
@@ -16,7 +15,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/04/20
  */
-public class SqlgLocalStepBarrier<S, E> extends AbstractStep<S, E> implements TraversalParent, Step<S, E> {
+public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implements TraversalParent, Step<S, E> {
 
     private boolean first = true;
     private Traversal.Admin<S, E> localTraversal;

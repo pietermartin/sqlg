@@ -3,9 +3,7 @@ package org.umlg.sqlg.step;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ExpandableStepIterator;
 import org.apache.tinkerpop.gremlin.process.traversal.util.EmptyTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -21,7 +19,7 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
     protected Set<String> labels = new LinkedHashSet<>();
     protected String id = Traverser.Admin.HALT;
     protected Traversal.Admin traversal;
-    protected ExpandableStepIterator<S> starts;
+    protected SqlgExpandableStepIterator<S> starts;
     protected Traverser.Admin<E> nextEnd = null;
     protected boolean traverserStepIdAndLabelsSetByChild = false;
 
@@ -30,7 +28,7 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
 
     public SqlgAbstractStep(final Traversal.Admin traversal) {
         this.traversal = traversal;
-        this.starts = new ExpandableStepIterator<>(this);
+        this.starts = new SqlgExpandableStepIterator<>(this);
     }
 
     @Override
@@ -155,7 +153,7 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
     public SqlgAbstractStep<S, E> clone() {
         try {
             final SqlgAbstractStep<S, E> clone = (SqlgAbstractStep<S, E>) super.clone();
-            clone.starts = new ExpandableStepIterator<>(clone);
+            clone.starts = new SqlgExpandableStepIterator<>(clone);
             clone.previousStep = EmptyStep.instance();
             clone.nextStep = EmptyStep.instance();
             clone.nextEnd = null;

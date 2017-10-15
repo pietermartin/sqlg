@@ -230,7 +230,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     }
 
     public long getParentIndex() {
-        return parentIndex;
+        return this.parentIndex;
     }
 
 }

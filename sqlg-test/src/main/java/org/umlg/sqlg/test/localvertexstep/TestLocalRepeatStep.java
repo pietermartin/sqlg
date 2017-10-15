@@ -31,10 +31,6 @@ public class TestLocalRepeatStep extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         List<Path> paths = this.sqlgGraph.traversal().V(a1).local(__.<Vertex>emit().times(2).repeat(__.out())).path().toList();
-//        List<Path> paths = this.sqlgGraph.traversal().V(a1).emit().times(2).repeat(__.out()).path().toList();
-        for (Path path : paths) {
-            System.out.println(path);
-        }
         assertEquals(3, paths.size());
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 1 && p.get(0).equals(a1),

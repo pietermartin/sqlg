@@ -1,12 +1,17 @@
 package org.umlg.sqlg.test.repeatstep;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -16,9 +21,124 @@ import java.util.function.Predicate;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/06/06
+ * Date: 2017/06/06
  */
 public class TestUnoptimizedRepeatStep extends BaseTest {
+
+    @Test
+    public void testRepeatStepWithUntilLast() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex x = this.sqlgGraph.addVertex(T.label, "X", "name", "hallo");
+        a1.addEdge("ab", b1);
+        a2.addEdge("ab", b2);
+        b1.addEdge("bc", c1);
+        b2.addEdge("bc", c2);
+
+        b1.addEdge("bx", x);
+        c2.addEdge("cx", x);
+
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .until(__.out().has("name", "hallo"))
+                .repeat(__.out());
+
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(b1) && vertices.contains(c2));
+    }
+
+    @Test
+    public void testRepeatStepWithLimit() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        a2.addEdge("ab", b2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .until(__.has(T.label, "B"))
+                .repeat(__.out())
+                .limit(1);
+
+        Assert.assertEquals(4, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof RepeatStep);
+        Assert.assertTrue(traversal.getSteps().get(3) instanceof RangeGlobalStep);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgRepeatStepBarrier);
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(b1) || vertices.contains(b2));
+
+        vertices = this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .repeat(__.out())
+                .until(__.has(T.label, "B"))
+                .limit(1)
+                .toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(b1) || vertices.contains(b2));
+
+    }
+
+//    @Test
+    public void testRepeatStepPerformance() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 1000; i++) {
+            Vertex a;
+            if (i % 100 == 0) {
+                a = this.sqlgGraph.addVertex(T.label, "A", "hubSite", true);
+            } else {
+                a = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+            }
+            for (int j = 0; j < 10; j++) {
+                Vertex b = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+                a.addEdge("link", b);
+                for (int k = 0; k < 10; k++) {
+                    Vertex c;
+                    if (k == 5) {
+                        c = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+                    } else {
+                        c = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+                    }
+                    b.addEdge("link", c);
+
+                    for (int l = 0; l < 10; l++) {
+                        Vertex d = this.sqlgGraph.addVertex(T.label, "A", "hubSite", true);
+                        c.addEdge("link", d);
+                    }
+                }
+            }
+        }
+        this.sqlgGraph.tx().commit();
+
+        System.out.println("===========================");
+
+        StopWatch stopWatch = new StopWatch();
+        for (int i = 0; i < 1000; i++) {
+            stopWatch.start();
+            List<Path> vertices = this.sqlgGraph.traversal()
+                    .V().has("hubSite", true)
+                    .repeat(__.out())
+                    .until(__.or(__.loops().is(P.gt(3)), __.has("hubSite", true)))
+//                    .until(__.has("hubSite", true))
+                    .path()
+                    .toList();
+            Assert.assertEquals(10000, vertices.size());
+            stopWatch.stop();
+            System.out.println(stopWatch.toString());
+            stopWatch.reset();
+        }
+    }
 
     @Test
     public void testHubSites() {

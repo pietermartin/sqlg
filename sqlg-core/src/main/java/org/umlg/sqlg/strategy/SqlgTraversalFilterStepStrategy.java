@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.InlineFilterStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.SqlgTraversalFilterStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -61,16 +62,10 @@ public class SqlgTraversalFilterStepStrategy<S> extends AbstractTraversalStrateg
     }
 
     @Override
-    public Set<Class<? extends OptimizationStrategy>> applyPost() {
-        return Stream.of(
-                SqlgVertexStepStrategy.class
-        ).collect(Collectors.toSet());
-    }
-
-    @Override
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(
-                SqlgGraphStepStrategy.class
+                //Inline must happen first as it sometimes removes the need for a TraversalFilterStep
+                InlineFilterStrategy.class
         ).collect(Collectors.toSet());
     }
 

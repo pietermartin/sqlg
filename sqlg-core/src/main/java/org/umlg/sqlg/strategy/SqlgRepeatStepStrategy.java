@@ -1,5 +1,6 @@
 package org.umlg.sqlg.strategy;
 
+import org.apache.commons.lang3.Range;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
@@ -70,6 +71,19 @@ public class SqlgRepeatStepStrategy extends AbstractTraversalStrategy<TraversalS
                 SqlgRepeatStepBarrier<?> sqlgRepeatStepBarrier = new SqlgRepeatStepBarrier<>(traversal, repeatStep);
                 for (String label : repeatStep.getLabels()) {
                     sqlgRepeatStepBarrier.addLabel(label);
+                }
+
+                int indexOfRepeatStep = traversal.getSteps().indexOf(repeatStep);
+                if ((traversal.getSteps().size() > indexOfRepeatStep + 1) && traversal.getSteps().get(indexOfRepeatStep + 1) instanceof RangeGlobalStep) {
+                    RangeGlobalStep<?> rgs = (RangeGlobalStep<?>) traversal.getSteps().get(indexOfRepeatStep + 1);
+                    long high = rgs.getHighRange();
+                    if (high == -1) {
+                        //skip step
+                        sqlgRepeatStepBarrier.setSqlgRangeHolder(SqlgRangeHolder.from(rgs.getLowRange()));
+                    } else {
+                        sqlgRepeatStepBarrier.setSqlgRangeHolder(SqlgRangeHolder.from(Range.between(rgs.getLowRange(), high)));
+                    }
+                    traversal.removeStep(indexOfRepeatStep + 1);
                 }
                 TraversalHelper.replaceStep((Step) repeatStep, sqlgRepeatStepBarrier, traversal);
             } else {

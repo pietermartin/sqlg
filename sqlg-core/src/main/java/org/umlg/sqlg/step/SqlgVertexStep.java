@@ -5,7 +5,6 @@ import com.google.common.collect.LinkedListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.slf4j.Logger;
@@ -21,9 +20,9 @@ import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2014/08/15
+ * Date: 2014/08/15
  */
-public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implements SqlgStep {
+public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep implements SqlgStep {
 
     private static Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class.getName());
     private SqlgGraph sqlgGraph;
@@ -109,6 +108,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                     }
                     this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                 } else {
+//                    if (!this.sqlgStarts.hasNext()) {
                     if (!this.starts.hasNext()) {
                         throw FastNoSuchElementException.instance();
                     } else {
@@ -127,9 +127,19 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
             Traverser.Admin<E> h = this.starts.next();
             E value = h.get();
             SchemaTable schemaTable = value.getSchemaTablePrefixed();
-            List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+//            List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+            List<Traverser.Admin<E>> traverserList = this.heads.get(schemaTable);
+            if (traverserList == null) {
+                traverserList = new ArrayList<>();
+                this.heads.put(schemaTable, traverserList);
+            }
             traverserList.add(h);
-            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+//            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.get(schemaTable);
+            if (parentIdList == null) {
+                parentIdList = new ArrayList<>();
+                this.schemaTableParentIds.put(schemaTable, parentIdList);
+            }
             parentIdList.add(Pair.of(((RecordId) value.id()).getId(), this.startIndex));
             this.startIndexTraverserAdminMap.put(this.startIndex++, h);
         }
@@ -158,7 +168,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
             if (!emit.isFake()) {
                 if (emit.isIncomingOnlyLocalOptionalStep()) {
                     //no split it happening for left joined elements
-                    ((SqlgTraverser)traverser).setStartElementIndex(emit.getParentIndex());
+                    ((SqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
                     traverser.get().setInternalStartTraverserIndex(emit.getParentIndex());
                     this.toEmit = emit;
                     break;
@@ -168,7 +178,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                 this.labels = emit.getLabels();
                 traverser = traverser.split(e, this);
                 if (traverser instanceof SqlgTraverser) {
-                    ((SqlgTraverser)traverser).setStartElementIndex(emit.getParentIndex());
+                    ((SqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
                 }
                 emitComparators.add(this.toEmit.getSqlgComparatorHolder());
             } else {

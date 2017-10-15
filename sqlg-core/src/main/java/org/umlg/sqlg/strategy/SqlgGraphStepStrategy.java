@@ -35,7 +35,7 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
                 MatchPredicateStrategy.class,
                 RepeatUnrollStrategy.class,
                 PathRetractionStrategy.class,
-                InlineFilterStrategy.class,
+//                InlineFilterStrategy.class,
                 MessagePassingReductionStrategy.class,
                 IncidentToAdjacentStrategy.class
         ).collect(Collectors.toSet());
