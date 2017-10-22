@@ -1,3 +1,11 @@
+##1.4.1
+
+* Optimize `RepeatStep`s until traversal to barrier the starts.
+* Replace `TraversetSet` in `ExpandableStep` with an `ArrayList` in `SqlgExpandableStep`. `TravererSet` has a backing `Map`
+of `Traverser` which for Sqlg is always a `SqlgTraverser`. As `SqlgTraverser` always holds the full `Path` adding the barriered (cached)
+starts to the map is to heavy. Seeing as Sqlg does not use bulking the `TraverserSet`s logic is not needed.
+* Optimize the `TraversalFilterStep` to barrier the starts.
+
 ##1.4.0
 
 * Added support for MariaDb
