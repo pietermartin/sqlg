@@ -83,6 +83,9 @@ public class SqlgRepeatStepStrategy extends AbstractTraversalStrategy<TraversalS
                     } else {
                         sqlgRepeatStepBarrier.setSqlgRangeHolder(SqlgRangeHolder.from(Range.between(rgs.getLowRange(), high)));
                     }
+                    for (String label : rgs.getLabels()) {
+                        sqlgRepeatStepBarrier.addLabel(label);
+                    }
                     traversal.removeStep(indexOfRepeatStep + 1);
                 }
                 TraversalHelper.replaceStep((Step) repeatStep, sqlgRepeatStepBarrier, traversal);

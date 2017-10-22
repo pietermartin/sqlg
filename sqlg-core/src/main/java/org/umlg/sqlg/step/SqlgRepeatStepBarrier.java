@@ -90,12 +90,10 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
 
     public final boolean doUntil(final Traverser.Admin<S> traverser, boolean utilFirst) {
         return utilFirst == this.untilFirst && null != this.untilTraversal && TraversalUtil.test(traverser, this.untilTraversal);
-//        return utilFirst == this.untilFirst && null != this.untilTraversal && SqlgTraversalUtil.test(traverser, this.untilTraversal);
     }
 
     public final boolean doEmit(final Traverser.Admin<S> traverser, boolean emitFirst) {
         return emitFirst == this.emitFirst && null != this.emitTraversal && TraversalUtil.test(traverser, this.emitTraversal);
-//        return emitFirst == this.emitFirst && null != this.emitTraversal && SqlgTraversalUtil.test(traverser, this.emitTraversal);
     }
 
     @Override
@@ -191,6 +189,11 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                         //They are then added to the repeatTraversal to continue the repetition.
                         foundSomething = doUntilBarrier(this.starts, this.toReturn, startsToContinue);
                         for (Traverser.Admin<S> start : startsToContinue.values()) {
+                            if (doEmit(start, true)) {
+                                final Traverser.Admin<S> emitSplit = start.split();
+                                emitSplit.resetLoops();
+                                this.toReturn.add(IteratorUtils.of(emitSplit));
+                            }
                             this.repeatTraversal.addStart(start);
                         }
                     } else {
@@ -200,12 +203,17 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                             foundSomething = true;
                             Traverser.Admin<S> start = starts.next();
                             this.repeatTraversal.addStart(start);
+                            if (doEmit(start, true)) {
+                                final Traverser.Admin<S> emitSplit = start.split();
+                                emitSplit.resetLoops();
+                                this.toReturn.add(IteratorUtils.of(emitSplit));
+                            }
                         }
                     }
                     if (!foundSomething) {
                         throw FastNoSuchElementException.instance();
                     }
-                } else if (!this.optimizeUntil) {
+                } else {
                     while (this.starts.hasNext()) {
                         foundSomething = true;
                         Traverser.Admin<S> cachedStart = this.starts.next();
@@ -265,7 +273,20 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                         Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
                         foundSomething = repeatStep.doUntilBarrier(this.starts, this.toReturn, startRecordIds);
                         for (Traverser.Admin<S> start : startRecordIds.values()) {
-                            repeatStep.repeatTraversal.addStart(start);
+                            //This is a brain bender.
+                            if (!repeatStep.emitFirst) {
+                                repeatStep.repeatTraversal.addStart(start);
+                            } else {
+                                //util is last and emit is first.
+                                //the start here did not pass the until so it goes round again.
+                                //The RepeatStep will iter the start and since emit is first it will emit it.
+                                repeatStep.addStart(start);
+                            }
+                            if (repeatStep.doEmit(start, false)) {
+                                final Traverser.Admin<S> emitSplit = start.split();
+                                emitSplit.resetLoops();
+                                this.toReturn.add(IteratorUtils.of(emitSplit));
+                            }
                         }
                     } else {
                         //For untilFirst the starts are placed directly on the repeatStep.
@@ -273,13 +294,19 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                         while (this.starts.hasNext()) {
                             foundSomething = true;
                             Traverser.Admin<S> start = starts.next();
+                            start.incrLoops(this.getId());
                             repeatStep.addStart(start);
+                            if (repeatStep.doEmit(start, false)) {
+                                final Traverser.Admin<S> emitSplit = start.split();
+                                emitSplit.resetLoops();
+                                toReturn.add(IteratorUtils.of(emitSplit));
+                            }
                         }
                     }
                     if (!foundSomething) {
                         throw FastNoSuchElementException.instance();
                     }
-                } else if (repeatStep.optimizeUntil) {
+                } else {
                     while (this.starts.hasNext()) {
                         foundSomething = true;
                         Traverser.Admin<S> cachedStart = this.starts.next();
@@ -361,6 +388,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         while (starts.hasNext()) {
             foundSomething = true;
             Traverser.Admin<S> cachedStart = starts.next();
+            cachedStart.incrLoops(this.getId());
             List<Object> startObjects = cachedStart.path().objects();
             StringBuilder recordIdConcatenated = new StringBuilder();
             for (Object startObject : startObjects) {

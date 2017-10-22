@@ -16,7 +16,8 @@ import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 //        TestVertexStepPerformance.class,
 //        TestUnoptimizedRepeatStep.class
 //        TestComplex.class,
-        TestUnoptimizedRepeatStep.class
+        TestUnoptimizedRepeatStep.class,
+//        TestBatchNormalUpdateDateTime.class
 })
 public class AnyTest {
 }
