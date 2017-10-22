@@ -1,11 +1,16 @@
 package org.umlg.sqlg.step;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -39,6 +44,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
     private SqlgRangeHolder sqlgRangeHolder;
     private long rangeCount = 0;
 
+    private boolean optimizeUntil = false;
+
     public SqlgRepeatStepBarrier(final Traversal.Admin traversal, RepeatStep<S> repeatStep) {
         super(traversal);
         this.repeatTraversal = repeatStep.getRepeatTraversal();
@@ -49,6 +56,10 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         List<RepeatStep.RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfAssignableClass(RepeatStep.RepeatEndStep.class, this.repeatTraversal);
         Preconditions.checkState(repeatEndSteps.size() == 1, "Only handling one RepeatEndStep! Found " + repeatEndSteps.size());
         TraversalHelper.replaceStep(repeatEndSteps.get(0), new SqlgRepeatStepBarrier.SqlgRepeatEndStepBarrier(this.repeatTraversal), this.repeatTraversal);
+        this.optimizeUntil = this.untilTraversal != null && TraversalHelper.anyStepRecursively(
+                (s) -> (s instanceof VertexStep) || (s instanceof EdgeVertexStep) || (s instanceof EdgeOtherVertexStep),
+                this.untilTraversal
+        );
     }
 
     public void setSqlgRangeHolder(SqlgRangeHolder sqlgRangeHolder) {
@@ -171,31 +182,55 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                 return this.repeatTraversal.getEndStep();
             } else {
                 boolean foundSomething = false;
-                while (this.starts.hasNext()) {
-                    foundSomething = true;
-                    Traverser.Admin<S> cachedStart = this.starts.next();
-//                    if (this.untilFirst && null != this.untilTraversal) {
-//                        //doUntil()
-//                    }
-                    if (doUntil(cachedStart, true)) {
-                        cachedStart.resetLoops();
-                        this.toReturn.add(IteratorUtils.of(cachedStart));
-                        continue;
+                if (this.optimizeUntil) {
+                    if (this.untilFirst) {
+                        Multimap<String, Traverser.Admin<S>> startsToContinue = LinkedListMultimap.create();
+                        //doUntilBarrier will iterate the starts and for each the utilTraversal.
+                        //The starts for which the untilTraversal returns something will be placed in the toReturn list.
+                        //The rest will be in the startsToContinue map.
+                        //They are then added to the repeatTraversal to continue the repetition.
+                        foundSomething = doUntilBarrier(this.starts, this.toReturn, startsToContinue);
+                        for (Traverser.Admin<S> start : startsToContinue.values()) {
+                            this.repeatTraversal.addStart(start);
+                        }
                     } else {
-                        this.repeatTraversal.addStart(cachedStart);
+                        //Place all starts on the repeatTraversal.
+                        //As there is no until non of them are returned.
+                        while (this.starts.hasNext()) {
+                            foundSomething = true;
+                            Traverser.Admin<S> start = starts.next();
+                            this.repeatTraversal.addStart(start);
+                        }
                     }
-                    if (doEmit(cachedStart, true)) {
-                        final Traverser.Admin<S> emitSplit = cachedStart.split();
-                        emitSplit.resetLoops();
-                        this.toReturn.add(IteratorUtils.of(emitSplit));
+                    if (!foundSomething) {
+                        throw FastNoSuchElementException.instance();
                     }
-                }
-                if (!foundSomething) {
-                    throw FastNoSuchElementException.instance();
+                } else if (!this.optimizeUntil) {
+                    while (this.starts.hasNext()) {
+                        foundSomething = true;
+                        Traverser.Admin<S> cachedStart = this.starts.next();
+                        if (doUntil(cachedStart, true)) {
+                            cachedStart.resetLoops();
+                            this.toReturn.add(IteratorUtils.of(cachedStart));
+                            continue;
+                        } else {
+                            this.repeatTraversal.addStart(cachedStart);
+                        }
+                        if (doEmit(cachedStart, true)) {
+                            final Traverser.Admin<S> emitSplit = cachedStart.split();
+                            emitSplit.resetLoops();
+                            this.toReturn.add(IteratorUtils.of(emitSplit));
+                        }
+                    }
+                    if (!foundSomething) {
+                        throw FastNoSuchElementException.instance();
+                    }
+
                 }
             }
         }
     }
+
 
     @Override
     protected Iterator<Traverser.Admin<S>> computerAlgorithm() throws NoSuchElementException {
@@ -225,27 +260,49 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                     return next;
                 }
                 boolean foundSomething = false;
-                while (this.starts.hasNext()) {
-                    foundSomething = true;
-                    Traverser.Admin<S> cachedStart = this.starts.next();
-                    cachedStart.incrLoops(this.getId());
-                    if (repeatStep.doUntil(cachedStart, false)) {
-                        cachedStart.resetLoops();
-                        toReturn.add(IteratorUtils.of(cachedStart));
+                if (repeatStep.optimizeUntil) {
+                    if (!repeatStep.untilFirst) {
+                        Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
+                        foundSomething = repeatStep.doUntilBarrier(this.starts, this.toReturn, startRecordIds);
+                        for (Traverser.Admin<S> start : startRecordIds.values()) {
+                            repeatStep.repeatTraversal.addStart(start);
+                        }
                     } else {
-                        if (!repeatStep.untilFirst && !repeatStep.emitFirst)
-                            repeatStep.repeatTraversal.addStart(cachedStart);
-                        else
-                            repeatStep.addStart(cachedStart);
-                        if (repeatStep.doEmit(cachedStart, false)) {
-                            final Traverser.Admin<S> emitSplit = cachedStart.split();
-                            emitSplit.resetLoops();
-                            toReturn.add(IteratorUtils.of(emitSplit));
+                        //For untilFirst the starts are placed directly on the repeatStep.
+                        //The end repeat step will return false and then the RepeatStep will check the untilTraversal before returning and/or continuing the repetition.
+                        while (this.starts.hasNext()) {
+                            foundSomething = true;
+                            Traverser.Admin<S> start = starts.next();
+                            repeatStep.addStart(start);
                         }
                     }
-                }
-                if (!foundSomething) {
-                    throw FastNoSuchElementException.instance();
+                    if (!foundSomething) {
+                        throw FastNoSuchElementException.instance();
+                    }
+                } else if (repeatStep.optimizeUntil) {
+                    while (this.starts.hasNext()) {
+                        foundSomething = true;
+                        Traverser.Admin<S> cachedStart = this.starts.next();
+                        cachedStart.incrLoops(this.getId());
+                        if (repeatStep.doUntil(cachedStart, false)) {
+                            cachedStart.resetLoops();
+                            toReturn.add(IteratorUtils.of(cachedStart));
+                        } else {
+                            if (!repeatStep.untilFirst && !repeatStep.emitFirst) {
+                                repeatStep.repeatTraversal.addStart(cachedStart);
+                            } else {
+                                repeatStep.addStart(cachedStart);
+                            }
+                            if (repeatStep.doEmit(cachedStart, false)) {
+                                final Traverser.Admin<S> emitSplit = cachedStart.split();
+                                emitSplit.resetLoops();
+                                toReturn.add(IteratorUtils.of(emitSplit));
+                            }
+                        }
+                    }
+                    if (!foundSomething) {
+                        throw FastNoSuchElementException.instance();
+                    }
                 }
             }
         }
@@ -297,6 +354,51 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         }
         this.rangeCount++;
         return false;
+    }
+
+    private boolean doUntilBarrier(SqlgExpandableStepIterator<S> starts, List<Iterator<Traverser.Admin<S>>> toReturn, Multimap<String, Traverser.Admin<S>> startRecordIds) {
+        boolean foundSomething = false;
+        while (starts.hasNext()) {
+            foundSomething = true;
+            Traverser.Admin<S> cachedStart = starts.next();
+            List<Object> startObjects = cachedStart.path().objects();
+            StringBuilder recordIdConcatenated = new StringBuilder();
+            for (Object startObject : startObjects) {
+                if (startObject instanceof Element) {
+                    Element e = (Element) startObject;
+                    recordIdConcatenated.append(e.id().toString());
+                } else {
+                    recordIdConcatenated.append(startObject.toString());
+                }
+            }
+            startRecordIds.put(recordIdConcatenated.toString(), cachedStart);
+            this.untilTraversal.addStart(cachedStart);
+        }
+        while (this.untilTraversal.hasNext()) {
+            Traverser.Admin<?> filterTraverser = this.untilTraversal.nextTraverser();
+            List<Object> filterTraverserObjects = filterTraverser.path().objects();
+            String startId = "";
+            for (Object filteredTraverserObject : filterTraverserObjects) {
+                if (filteredTraverserObject instanceof Element) {
+                    Element e = (Element) filteredTraverserObject;
+                    startId += e.id().toString();
+                } else {
+                    startId += filteredTraverserObject.toString();
+                }
+                if (startRecordIds.containsKey(startId)) {
+                    Collection<Traverser.Admin<S>> startsToReturn = startRecordIds.get(startId);
+                    for (Traverser.Admin<S> start : startsToReturn) {
+                        start.resetLoops();
+                        toReturn.add(IteratorUtils.of(start));
+                    }
+                    startRecordIds.removeAll(startId);
+                }
+                if (startRecordIds.isEmpty()) {
+                    break;
+                }
+            }
+        }
+        return foundSomething;
     }
 }
 
