@@ -13,8 +13,8 @@ jdk:
 #script: "./run-tests.sh"
 script:
   - sudo rm /etc/mavenrc
-  - export MAVEN_OPTS="-Xmx5012m"
-  - mvn -e test
+  - export MAVEN_OPTS="-Djava.security.egd=file:/dev/./urandom -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx5012m"
+  - mvn -e -T40 test
 addons:
   postgresql: "9.6"
 before_script:
