@@ -33,7 +33,7 @@ public class C3p0DataSourceFactory implements SqlgDataSourceFactory {
         if (!StringUtils.isEmpty(username)) {
             comboPooledDataSource.setUser(username);
         }
-        if (!StringUtils.isEmpty(username)) {
+        if (!StringUtils.isEmpty(password)) {
             comboPooledDataSource.setPassword(password);
         }
 
