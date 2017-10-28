@@ -6,6 +6,7 @@ import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.aggregate.TestAggregate;
 import org.umlg.sqlg.test.aggregate.TestGroupCount;
 import org.umlg.sqlg.test.aggregate.TestMax;
+import org.umlg.sqlg.test.andstep.TestAndStepBarrier;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.complex.TestGithub;
@@ -32,6 +33,7 @@ import org.umlg.sqlg.test.localvertexstep.*;
 import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
+import org.umlg.sqlg.test.orstep.TestOrStepBarrier;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
@@ -209,7 +211,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestIoEdge.class,
         TestBatchTemporaryVertex.class,
         TestUnoptimizedRepeatStep.class,
-        TestTraversalFilterStepBarrier.class
+        TestTraversalFilterStepBarrier.class,
+        TestOrStepBarrier.class,
+        TestAndStepBarrier.class
 
 })
 public class AllTest {

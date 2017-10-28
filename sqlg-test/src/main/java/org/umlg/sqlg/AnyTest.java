@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
+import org.umlg.sqlg.test.where.TestWhereWithSelect;
 
 /**
  * Date: 2014/07/16
@@ -16,8 +16,11 @@ import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 //        TestVertexStepPerformance.class,
 //        TestUnoptimizedRepeatStep.class
 //        TestComplex.class,
-        TestUnoptimizedRepeatStep.class,
-//        TestBatchNormalUpdateDateTime.class
+//        TestUnoptimizedRepeatStep.class,
+//        TestBatchNormalUpdateDateTime.class,
+        TestWhereWithSelect.class,
+//        TestOrStepBarrier.class,
+//        TestAndStepBarrier.class
 })
 public class AnyTest {
 }

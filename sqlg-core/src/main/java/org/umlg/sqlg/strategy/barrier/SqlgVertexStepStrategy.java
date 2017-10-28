@@ -1,10 +1,12 @@
-package org.umlg.sqlg.strategy;
+package org.umlg.sqlg.strategy.barrier;
 
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimization.MessagePassingReductionStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.*;
+import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
+import org.umlg.sqlg.strategy.VertexStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.Set;

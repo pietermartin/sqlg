@@ -1,4 +1,4 @@
-package org.umlg.sqlg.strategy;
+package org.umlg.sqlg.strategy.barrier;
 
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimization.MessagePassingReductionStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;

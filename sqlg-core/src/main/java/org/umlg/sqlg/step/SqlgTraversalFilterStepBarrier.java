@@ -101,6 +101,8 @@ public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> im
         super.reset();
         this.first = true;
         this.results.clear();
+        this.resultIterator = null;
+        this.filterTraversal.reset();
         this.getLocalChildren().forEach(Traversal.Admin::reset);
         this.getGlobalChildren().forEach(Traversal.Admin::reset);
     }

@@ -27,6 +27,7 @@ import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.*;
+import org.umlg.sqlg.strategy.barrier.*;
 import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
 import org.umlg.sqlg.structure.ds.C3p0DataSourceFactory;
 import org.umlg.sqlg.structure.ds.JNDIDataSource;
@@ -200,7 +201,11 @@ public class SqlgGraph implements Graph {
                         new SqlgOptionalStepStrategy(),
                         new SqlgChooseStepStrategy(),
                         new SqlgTraversalFilterStepStrategy<>(),
+                        new SqlgWhereTraversalStepStrategy(),
+                        new SqlgOrStepStepStrategy(),
+                        new SqlgAndStepStepStrategy(),
                         new SqlgHasStepStrategy(),
+//                        new SqlgCountGlobalStepStrategy(),
                         TopologyStrategy.build().create()));
     }
 

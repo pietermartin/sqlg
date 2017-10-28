@@ -1,14 +1,14 @@
-package org.umlg.sqlg.strategy;
+package org.umlg.sqlg.strategy.barrier;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WhereTraversalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.InlineFilterStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.umlg.sqlg.step.SqlgTraversalFilterStepBarrier;
+import org.umlg.sqlg.step.SqlgWhereTraversalStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.List;
@@ -20,9 +20,9 @@ import java.util.stream.Stream;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2014/08/15
  */
-public class SqlgTraversalFilterStepStrategy<S> extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
+public class SqlgWhereTraversalStepStrategy<S> extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
-    public SqlgTraversalFilterStepStrategy() {
+    public SqlgWhereTraversalStepStrategy() {
         super();
     }
 
@@ -33,30 +33,30 @@ public class SqlgTraversalFilterStepStrategy<S> extends AbstractTraversalStrateg
         if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
-        List<TraversalFilterStep> traversalFilterSteps = TraversalHelper.getStepsOfAssignableClass(TraversalFilterStep.class, traversal);
-        for (TraversalFilterStep<S> traversalFilterStep : traversalFilterSteps) {
+        List<WhereTraversalStep> whereTraversalSteps = TraversalHelper.getStepsOfAssignableClass(WhereTraversalStep.class, traversal);
+        for (WhereTraversalStep<S> whereTraversalStep : whereTraversalSteps) {
 
-            List<Traversal.Admin<S, ?>> filterTraversals = traversalFilterStep.getLocalChildren();
-            Preconditions.checkState(filterTraversals.size() == 1);
-            Traversal.Admin<S, ?> filterTraversal = filterTraversals.get(0);
+            List<Traversal.Admin<?, ?>> whereTraversals = whereTraversalStep.getLocalChildren();
+            Preconditions.checkState(whereTraversals.size() == 1);
+            Traversal.Admin<?, ?> whereTraversal = whereTraversals.get(0);
 
-            //whats this for again
-            List<ReducingBarrierStep> reducingBarrierSteps = TraversalHelper.getStepsOfAssignableClass(ReducingBarrierStep.class, filterTraversal);
+            //reducing barrier steps like count does not work with Sqlg's barrier optimizations
+            List<ReducingBarrierStep> reducingBarrierSteps = TraversalHelper.getStepsOfAssignableClassRecursively(ReducingBarrierStep.class, whereTraversal);
             if (!reducingBarrierSteps.isEmpty()) {
                 continue;
             }
 
-            SqlgTraversalFilterStepBarrier sqlgTraversalFilterStepBarrier = new SqlgTraversalFilterStepBarrier<>(
+            SqlgWhereTraversalStepBarrier sqlgTraversalFilterStepBarrier = new SqlgWhereTraversalStepBarrier<>(
                     traversal,
-                    filterTraversal
+                    whereTraversalStep
             );
-            for (String label : traversalFilterStep.getLabels()) {
+            for (String label : whereTraversalStep.getLabels()) {
                 sqlgTraversalFilterStepBarrier.addLabel(label);
             }
             TraversalHelper.replaceStep(
-                    traversalFilterStep,
+                    whereTraversalStep,
                     sqlgTraversalFilterStepBarrier,
-                    traversalFilterStep.getTraversal()
+                    whereTraversalStep.getTraversal()
             );
         }
     }

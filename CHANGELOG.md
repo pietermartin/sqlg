@@ -1,5 +1,8 @@
 ##1.4.1
 
+* Optimize `AndStep` to barrier the starts.
+* Optimize `OrStep` to barrier the starts.
+* Optimize `WhereTraversalStep` to barrier the starts.
 * Optimize `RepeatStep`s until traversal to barrier the starts.
 * Replace `TraversetSet` in `ExpandableStep` with an `ArrayList` in `SqlgExpandableStep`. `TravererSet` has a backing `Map`
 of `Traverser` which for Sqlg is always a `SqlgTraverser`. As `SqlgTraverser` always holds the full `Path` adding the barriered (cached)
