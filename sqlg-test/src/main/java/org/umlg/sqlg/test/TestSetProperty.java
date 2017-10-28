@@ -333,7 +333,7 @@ public class TestSetProperty extends BaseTest {
         LocalTime lt = ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
         v.property("lt", lt);
 
-        ZonedDateTime zdt = ZonedDateTime.now();
+        ZonedDateTime zdt = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("Africa/Johannesburg"));
         ZonedDateTime zdt1Fixed = ZonedDateTime.of(zdt.toLocalDateTime(), ZoneId.of("Africa/Johannesburg"));
         v.property("zdt", zdt);
 

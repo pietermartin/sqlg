@@ -117,7 +117,7 @@
                         <include>**/SqlgMSSqlProcessStandardTest.java</include>
                         <include>**/MSSqlAllTest.java</include>
 
-                        <include>**/MariadbAllTest.java</include>
+                        <!--<include>**/MariadbAllTest.java</include>-->
                     </includes>
                 </configuration>
             </plugin>
