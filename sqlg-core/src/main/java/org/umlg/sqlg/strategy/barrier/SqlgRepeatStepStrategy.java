@@ -9,8 +9,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalSte
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.CountStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.umlg.sqlg.step.SqlgRepeatStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -107,7 +108,8 @@ public class SqlgRepeatStepStrategy extends AbstractTraversalStrategy<TraversalS
     @Override
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(
-                SqlgGraphStepStrategy.class
+                SqlgGraphStepStrategy.class,
+                CountStrategy.class
         ).collect(Collectors.toSet());
     }
 

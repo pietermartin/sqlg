@@ -1,16 +1,18 @@
-package org.umlg.sqlg.test.andstep;
+package org.umlg.sqlg.test.barrier.andstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.step.barrier.SqlgAndStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
@@ -40,6 +42,8 @@ public class TestAndStepBarrier extends BaseTest {
         final Traversal t = sg.V();
         t.hasNext();
         printTraversalForm(t);
+
+
         Assert.assertEquals(6, sg.V().count().next().longValue());
 
         // only the given edges are included
@@ -62,7 +66,7 @@ public class TestAndStepBarrier extends BaseTest {
         Assert.assertEquals(2, g.V(convertToVertexId("josh")).out().count().next().longValue());
         Assert.assertEquals(1, sg.V(convertToVertexId("josh")).out().count().next().longValue());
 
-       Assert.assertEquals(1, g.V(convertToVertexId("josh")).inE().count().next().longValue());
+        Assert.assertEquals(1, g.V(convertToVertexId("josh")).inE().count().next().longValue());
         Assert.assertEquals(1, sg.V(convertToVertexId("josh")).inE().count().next().longValue());
         Assert.assertEquals(1, g.V(convertToVertexId("josh")).in().count().next().longValue());
         Assert.assertEquals(1, sg.V(convertToVertexId("josh")).in().count().next().longValue());
@@ -105,8 +109,8 @@ public class TestAndStepBarrier extends BaseTest {
 
         // from edge
 
-        Assert.assertEquals(2, g.E(convertToEdgeId(this.sqlgGraph,"marko", "knows", "josh")).bothV().count().next().longValue());
-        Assert.assertEquals(2, sg.E(convertToEdgeId(this.sqlgGraph,"marko", "knows", "josh")).bothV().count().next().longValue());
+        Assert.assertEquals(2, g.E(convertToEdgeId(this.sqlgGraph, "marko", "knows", "josh")).bothV().count().next().longValue());
+        Assert.assertEquals(2, sg.E(convertToEdgeId(this.sqlgGraph, "marko", "knows", "josh")).bothV().count().next().longValue());
 
         Assert.assertEquals(3, g.E(convertToEdgeId(this.sqlgGraph, "marko", "knows", "josh")).outV().outE().count().next().longValue());
         Assert.assertEquals(2, sg.E(convertToEdgeId(this.sqlgGraph, "marko", "knows", "josh")).outV().outE().count().next().longValue());
@@ -115,7 +119,7 @@ public class TestAndStepBarrier extends BaseTest {
     @Test
     public void g_VX1X_repeatXboth_simplePathX_untilXhasXname_peterX_and_loops_isX3XX_hasXname_peterX_path_byXnameX() {
         loadModern();
-        final Traversal<Vertex, Path> traversal = this.sqlgGraph.traversal()
+        final DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V(convertToVertexId("marko"))
                 .repeat(
                         __.both().simplePath()
@@ -134,19 +138,25 @@ public class TestAndStepBarrier extends BaseTest {
         Assert.assertEquals("lop", path.get(2));
         Assert.assertEquals("peter", path.get(3));
         Assert.assertFalse(traversal.hasNext());
+
+        List<SqlgAndStepBarrier> sqlgAndStepBarriers = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgAndStepBarrier.class, traversal);
+        Assert.assertEquals(1, sqlgAndStepBarriers.size());
+
     }
 
     @Test
     public void g_V_asXaX_outXknowsX_and_outXcreatedX_inXcreatedX_asXaX_name() {
         loadModern();
-        final Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
+        final DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
                 .V().as("a")
                 .out("knows")
                 .and()
                 .out("created").in("created").as("a")
-                .values("name");
+                .<Vertex>values("name");
         printTraversalForm(traversal);
         checkResults(Arrays.asList(convertToVertex(this.sqlgGraph, "marko")), traversal);
+        List<SqlgAndStepBarrier> sqlgAndStepBarriers = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgAndStepBarrier.class, traversal);
+        Assert.assertEquals(1, sqlgAndStepBarriers.size());
     }
 
     @Test
@@ -163,7 +173,7 @@ public class TestAndStepBarrier extends BaseTest {
         a3.addEdge("abbb", b3);
 
 
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A").and(
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
                 __.out("ab"),
                 __.out("abb")
         );
@@ -171,6 +181,9 @@ public class TestAndStepBarrier extends BaseTest {
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
         Assert.assertTrue(vertices.contains(a1));
+
+        List<SqlgAndStepBarrier> sqlgAndStepBarriers = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgAndStepBarrier.class, traversal);
+        Assert.assertEquals(1, sqlgAndStepBarriers.size());
     }
 
 }

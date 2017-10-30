@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalSt
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.umlg.sqlg.step.SqlgLocalStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
 

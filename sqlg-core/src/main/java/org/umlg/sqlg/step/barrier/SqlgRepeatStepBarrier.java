@@ -1,4 +1,4 @@
-package org.umlg.sqlg.step;
+package org.umlg.sqlg.step.barrier;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
@@ -19,6 +19,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.umlg.sqlg.step.SqlgComputerAwareStep;
+import org.umlg.sqlg.step.SqlgExpandableStepIterator;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
 
 import java.util.*;

@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 

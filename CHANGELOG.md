@@ -1,6 +1,5 @@
 ##1.4.1
 
-*
 * Optimize `NotStep` to barrier the starts.
 * Optimize `AndStep` to barrier the starts.
 * Optimize `OrStep` to barrier the starts.

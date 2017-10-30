@@ -1,4 +1,4 @@
-package org.umlg.sqlg.step;
+package org.umlg.sqlg.step.barrier;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 

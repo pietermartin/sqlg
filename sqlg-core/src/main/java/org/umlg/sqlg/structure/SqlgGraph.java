@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
@@ -204,9 +205,13 @@ public class SqlgGraph implements Graph {
                         new SqlgWhereTraversalStepStrategy(),
                         new SqlgOrStepStepStrategy(),
                         new SqlgAndStepStepStrategy(),
+                        new SqlgNotStepStepStrategy(),
                         new SqlgHasStepStrategy(),
 //                        new SqlgCountGlobalStepStrategy(),
-                        TopologyStrategy.build().create()));
+                        TopologyStrategy.build().create())
+                .removeStrategies(
+                        PathRetractionStrategy.class)
+        );
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {

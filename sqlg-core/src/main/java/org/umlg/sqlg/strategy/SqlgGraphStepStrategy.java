@@ -41,5 +41,9 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
         ).collect(Collectors.toSet());
     }
 
+    @Override
+    public Set<Class<? extends OptimizationStrategy>> applyPrior() {
+        return Stream.of(CountStrategy.class).collect(Collectors.toSet());
+    }
 }
 

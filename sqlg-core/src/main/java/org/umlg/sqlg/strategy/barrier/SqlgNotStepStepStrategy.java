@@ -2,11 +2,12 @@ package org.umlg.sqlg.strategy.barrier;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NotStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.CountStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.umlg.sqlg.step.barrier.SqlgOrStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgNotStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.List;
@@ -18,9 +19,9 @@ import java.util.stream.Stream;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2014/08/15
  */
-public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
+public class SqlgNotStepStepStrategy<S> extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
-    public SqlgOrStepStepStrategy() {
+    public SqlgNotStepStepStrategy() {
         super();
     }
 
@@ -31,10 +32,8 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
         if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
-        List<OrStep> orSteps = TraversalHelper.getStepsOfAssignableClass(OrStep.class, traversal);
-        for (OrStep<S> orStep : orSteps) {
-
-            List<Traversal.Admin<S, ?>> orTraversals = orStep.getLocalChildren();
+        List<NotStep> notSteps = TraversalHelper.getStepsOfAssignableClass(NotStep.class, traversal);
+        for (NotStep<S> notStep : notSteps) {
 
             //reducing barrier steps like count does not work with Sqlg's barrier optimizations
             List<ReducingBarrierStep> reducingBarrierSteps = TraversalHelper.getStepsOfAssignableClassRecursively(ReducingBarrierStep.class, traversal);
@@ -42,18 +41,14 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
                 return;
             }
 
-            SqlgOrStepBarrier<S> sqlgOrStepBarrier = new SqlgOrStepBarrier<>(
-                    traversal,
-                    orTraversals.get(0),
-                    orTraversals.get(1)
-            );
-            for (String label : orStep.getLabels()) {
-                sqlgOrStepBarrier.addLabel(label);
+            SqlgNotStepBarrier<S> sqlgNotStepBarrier = new SqlgNotStepBarrier<>(traversal, notStep.getLocalChildren().get(0));
+            for (String label : notStep.getLabels()) {
+                sqlgNotStepBarrier.addLabel(label);
             }
             TraversalHelper.replaceStep(
-                    orStep,
-                    sqlgOrStepBarrier,
-                    orStep.getTraversal()
+                    notStep,
+                    sqlgNotStepBarrier,
+                    notStep.getTraversal()
             );
         }
     }
@@ -62,7 +57,8 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(
                 //Inline must happen first as it sometimes removes the need for a TraversalFilterStep
-                SqlgWhereTraversalStepStrategy.class
+                SqlgVertexStepStrategy.class,
+                CountStrategy.class
         ).collect(Collectors.toSet());
     }
 

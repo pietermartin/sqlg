@@ -8,7 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierS
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.*;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.List;

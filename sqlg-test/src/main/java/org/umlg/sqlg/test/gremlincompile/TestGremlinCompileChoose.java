@@ -11,7 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.step.SqlgChooseStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.test.BaseTest;
 

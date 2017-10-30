@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.where.TestWhereWithSelect;
+import org.umlg.sqlg.test.barrier.andstep.TestAndStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -18,9 +18,10 @@ import org.umlg.sqlg.test.where.TestWhereWithSelect;
 //        TestComplex.class,
 //        TestUnoptimizedRepeatStep.class,
 //        TestBatchNormalUpdateDateTime.class,
-        TestWhereWithSelect.class,
+//        TestWhereWithSelect.class,
 //        TestOrStepBarrier.class,
-//        TestAndStepBarrier.class
+        TestAndStepBarrier.class,
+//        TestNotStepBarrier.class
 })
 public class AnyTest {
 }
