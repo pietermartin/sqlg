@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test.barrier.orstep;
+package org.umlg.sqlg.test.filter.or.barrier;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -63,5 +63,10 @@ public class TestOrStepBarrier extends BaseTest {
         Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a2)));
         List<SqlgOrStepBarrier> sqlgOrStepBarriers = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgOrStepBarrier.class, traversal);
         Assert.assertEquals(1, sqlgOrStepBarriers.size());
+    }
+
+    @Test
+    public void test() {
+        this.sqlgGraph.traversal().V().hasLabel("A").or();
     }
 }

@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test.barrier.notstep;
+package org.umlg.sqlg.test.filter.not.barrier;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
@@ -28,7 +28,8 @@ public class TestNotStepBarrier extends BaseTest {
                 .repeat(__.out())
                 .until(__.outE().count().is(0))
                 .<String>values("name");
-        printTraversalForm(traversal);
+
+//        printTraversalForm(traversal);
         checkResults(Arrays.asList("lop", "lop", "ripple", "vadas"), traversal);
 
         List<SqlgNotStepBarrier> steps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgNotStepBarrier.class, traversal);

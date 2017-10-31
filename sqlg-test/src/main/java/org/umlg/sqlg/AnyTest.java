@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.barrier.andstep.TestAndStepBarrier;
+import org.umlg.sqlg.test.filter.or.TestOrStep;
 
 /**
  * Date: 2014/07/16
@@ -20,8 +20,9 @@ import org.umlg.sqlg.test.barrier.andstep.TestAndStepBarrier;
 //        TestBatchNormalUpdateDateTime.class,
 //        TestWhereWithSelect.class,
 //        TestOrStepBarrier.class,
-        TestAndStepBarrier.class,
-//        TestNotStepBarrier.class
+//        TestAndStepBarrier.class,
+//        TestNotStepBarrier.class,
+        TestOrStep.class
 })
 public class AnyTest {
 }
