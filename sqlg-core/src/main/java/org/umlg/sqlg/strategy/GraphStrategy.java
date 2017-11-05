@@ -99,6 +99,7 @@ public class GraphStrategy extends BaseStrategy {
         handleHasSteps(stepIterator, pathCount.getValue());
         handleOrderGlobalSteps(stepIterator, pathCount);
         handleRangeGlobalSteps(stepIterator, pathCount);
+        handleConnectiveSteps(stepIterator);
         this.sqlgStep = constructSqlgStep(step);
         this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         replaceStepInTraversal(step, this.sqlgStep);

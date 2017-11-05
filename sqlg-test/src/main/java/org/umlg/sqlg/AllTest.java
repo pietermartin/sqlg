@@ -6,14 +6,16 @@ import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.aggregate.TestAggregate;
 import org.umlg.sqlg.test.aggregate.TestGroupCount;
 import org.umlg.sqlg.test.aggregate.TestMax;
-import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
-import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.complex.TestGithub;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.event.TestTinkerPopEvent;
+import org.umlg.sqlg.test.filter.and.TestAndStep;
+import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
+import org.umlg.sqlg.test.filter.connectivestep.TestAndandOrStep;
+import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
 import org.umlg.sqlg.test.filter.or.TestOrStep;
 import org.umlg.sqlg.test.filter.or.barrier.TestOrStepBarrier;
 import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
@@ -217,7 +219,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestOrStepBarrier.class,
         TestAndStepBarrier.class,
         TestNotStepBarrier.class,
-        TestOrStep.class
+        TestOrStep.class,
+        TestAndStep.class,
+        TestAndandOrStep.class
 
 })
 public class AllTest {

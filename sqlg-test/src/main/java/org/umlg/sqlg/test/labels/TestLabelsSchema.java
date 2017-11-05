@@ -23,7 +23,6 @@ public class TestLabelsSchema extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "S2.B");
         assertEquals("S1.A", v1.label());
         assertEquals("S2.B", v2.label());
-
     }
 
     @Test

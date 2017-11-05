@@ -29,7 +29,7 @@ public class TestNotStepBarrier extends BaseTest {
                 .until(__.outE().count().is(0))
                 .<String>values("name");
 
-//        printTraversalForm(traversal);
+        printTraversalForm(traversal);
         checkResults(Arrays.asList("lop", "lop", "ripple", "vadas"), traversal);
 
         List<SqlgNotStepBarrier> steps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgNotStepBarrier.class, traversal);

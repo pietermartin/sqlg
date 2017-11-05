@@ -43,7 +43,7 @@ public class ReplacedStep<S, E> {
     private List<HasContainer> hasContainers = new ArrayList<>();
     private List<HasContainer> idHasContainers = new ArrayList<>();
     private List<HasContainer> labelHasContainers = new ArrayList<>();
-    private List<HasContainer> clonedHasContainers;
+    private List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
     /**
@@ -92,6 +92,10 @@ public class ReplacedStep<S, E> {
 
     List<HasContainer> getHasContainers() {
         return this.hasContainers;
+    }
+
+    public List<AndOrHasContainer> getAndOrHasContainers() {
+        return andOrHasContainers;
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
@@ -492,8 +496,8 @@ public class ReplacedStep<S, E> {
                 schemaTable,
                 0,
                 schemaTableTreeHasContainers,
+                this.andOrHasContainers,
                 this.sqlgComparatorHolder,
-//                this.dbComparators,
                 this.sqlgComparatorHolder.getComparators(),
                 this.sqlgRangeHolder,
                 SchemaTableTree.STEP_TYPE.GRAPH_STEP,
@@ -733,6 +737,10 @@ public class ReplacedStep<S, E> {
         this.hasContainers.add(hasContainer);
     }
 
+    public void addAndOrHasContainer(AndOrHasContainer andOrHasContainer) {
+        this.andOrHasContainers.add(andOrHasContainer);
+    }
+
     public SqlgRangeHolder getSqlgRangeHolder() {
         return this.sqlgRangeHolder;
     }
@@ -753,14 +761,4 @@ public class ReplacedStep<S, E> {
         this.joinToLeftJoin = true;
     }
 
-    public void cloneHasContainers() {
-        this.clonedHasContainers = new ArrayList<>();
-        for (HasContainer hasContainer : this.hasContainers) {
-            this.clonedHasContainers.add(hasContainer.clone());
-        }
-    }
-
-    public void resetHasContainers() {
-        this.hasContainers = this.clonedHasContainers;
-    }
 }

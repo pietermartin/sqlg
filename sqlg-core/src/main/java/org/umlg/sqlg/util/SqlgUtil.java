@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.BaseStrategy;
@@ -262,6 +263,9 @@ public class SqlgUtil {
                     WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
                     whereClause.putKeyValueMap(hasContainer, keyValueMap);
                 }
+            }
+            for (AndOrHasContainer andOrHasContainer : schemaTableTree.getAndOrHasContainers()) {
+                andOrHasContainer.setParameterOnStatement(keyValueMap);
             }
         }
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValueMap);

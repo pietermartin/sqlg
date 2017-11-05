@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test.filter.or;
+package org.umlg.sqlg.test.filter.and;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -12,47 +12,48 @@ import java.util.List;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- * Date: 2017/10/30
+ * Date: 2017/11/05
  */
-public class TestOrStep extends BaseTest {
+public class TestAndStep extends BaseTest {
 
     @Test
-    public void testOrStepOptimized() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    public void testAndStepOptimized() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "surname", "aa1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "aa2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "surname", "aa3");
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
-                .or(
+                .and(
                         __.has("name", "a1"),
-                        __.has("name", "a2")
+                        __.has("surname", "aa1")
                 );
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        Assert.assertEquals(2, vertices.size());
-        Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2));
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(a1));
     }
 
     @Test
-    public void testNestedOrStep() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
-        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
+    public void testNestedAndStep() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "surname", "aa1", "middlename", "aaa1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "aa2", "middlename", "aaa2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "surname", "aa3", "middlename", "aaa3");
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
-                .or(
+                .and(
                         __.has("name", "a1"),
-                        __.or(
-                                __.has("name", "a2"),
-                                __.has("name", "a3")
+                        __.and(
+                                __.has("surname", "aa1"),
+                                __.has("middlename", "aaa1")
+
                         )
                 );
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        Assert.assertEquals(3, vertices.size());
-        Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2) && vertices.contains(a3));
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(a1));
+
     }
 }

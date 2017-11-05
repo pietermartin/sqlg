@@ -53,6 +53,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
+    private List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
     //labels are immutable
@@ -108,6 +109,7 @@ public class SchemaTableTree {
         this.schemaTable = schemaTable;
         this.stepDepth = stepDepth;
         this.hasContainers = new ArrayList<>();
+        this.andOrHasContainers = new ArrayList<>();
         this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
@@ -121,8 +123,11 @@ public class SchemaTableTree {
      * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
      * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
      */
-    SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth,
+    SchemaTableTree(SqlgGraph sqlgGraph,
+                    SchemaTable schemaTable,
+                    int stepDepth,
                     List<HasContainer> hasContainers,
+                    List<AndOrHasContainer> andOrHasContainers,
                     SqlgComparatorHolder sqlgComparatorHolder,
                     List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
                     SqlgRangeHolder sqlgRangeHolder,
@@ -136,8 +141,9 @@ public class SchemaTableTree {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
         this.stepDepth = stepDepth;
-        this.replacedStepDepth = replacedStepDepth;
         this.hasContainers = hasContainers;
+        this.andOrHasContainers = andOrHasContainers;
+        this.replacedStepDepth = replacedStepDepth;
         this.sqlgComparatorHolder = sqlgComparatorHolder;
         this.dbComparators = dbComparators;
         this.sqlgRangeHolder = sqlgRangeHolder;
@@ -162,8 +168,8 @@ public class SchemaTableTree {
                 direction,
                 elementClass,
                 replacedStep.getHasContainers(),
+                replacedStep.getAndOrHasContainers(),
                 replacedStep.getSqlgComparatorHolder(),
-//                replacedStep.getDbComparators(),
                 replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
                 replacedStep.getDepth(),
@@ -197,8 +203,8 @@ public class SchemaTableTree {
                 direction,
                 elementClass,
                 replacedStep.getHasContainers(),
+                replacedStep.getAndOrHasContainers(),
                 replacedStep.getSqlgComparatorHolder(),
-//                replacedStep.getDbComparators(),
                 replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
                 replacedStep.getDepth(),
@@ -214,6 +220,7 @@ public class SchemaTableTree {
             Direction direction,
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
+            List<AndOrHasContainer> andOrHasContainers,
             SqlgComparatorHolder sqlgComparatorHolder,
             List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
             SqlgRangeHolder sqlgRangeHolder,
@@ -228,6 +235,7 @@ public class SchemaTableTree {
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
+            schemaTableTree.andOrHasContainers = new ArrayList<>(andOrHasContainers);
             schemaTableTree.sqlgComparatorHolder = sqlgComparatorHolder;
             schemaTableTree.dbComparators = new ArrayList<>(dbComparators);
             schemaTableTree.sqlgRangeHolder = sqlgRangeHolder;
@@ -940,16 +948,29 @@ public class SchemaTableTree {
     private String toWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
         final StringBuilder result = new StringBuilder();
         if (sqlgGraph.getSqlDialect().supportsBulkWithinOut()) {
-            this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(sqlgGraph, h)).forEach(h -> {
-                if (!printedWhere.booleanValue()) {
-                    printedWhere.setTrue();
-                    result.append("\nWHERE\n\t(");
-                } else {
-                    result.append(" AND (");
+            for (HasContainer hasContainer : this.hasContainers) {
+                if (!SqlgUtil.isBulkWithin(sqlgGraph, hasContainer)) {
+                    if (!printedWhere.booleanValue()) {
+                        printedWhere.setTrue();
+                        result.append("\nWHERE\n\t(");
+                    } else {
+                        result.append(" AND (");
+                    }
+                    WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                    result.append(" ").append(whereClause.toSql(sqlgGraph, this, hasContainer)).append(")");
                 }
-                WhereClause whereClause = WhereClause.from(h.getPredicate());
-                result.append(" " + whereClause.toSql(sqlgGraph, this, h) + ")");
-            });
+            }
+//            this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(sqlgGraph, h)).forEach(h -> {
+//                if (!printedWhere.booleanValue()) {
+//                    printedWhere.setTrue();
+//                    result.append("\nWHERE\n\t(");
+//                } else {
+//                    printedAnd = true;
+//                    result.append(" AND (");
+//                }
+//                WhereClause whereClause = WhereClause.from(h.getPredicate());
+//                result.append(" ").append(whereClause.toSql(sqlgGraph, this, h)).append(")");
+//            });
         } else {
             for (HasContainer hasContainer : this.getHasContainers()) {
                 if (!printedWhere.booleanValue()) {
@@ -964,6 +985,15 @@ public class SchemaTableTree {
                     result.append(" COLLATE latin1_general_cs");
                 }
             }
+        }
+        for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
+            if (!printedWhere.booleanValue()) {
+                printedWhere.setTrue();
+                result.append("\nWHERE ");
+            } else {
+                result.append(" AND ");
+            }
+            andOrHasContainer.toSql(sqlgGraph, this, result);
         }
         return result.toString();
     }
@@ -2010,7 +2040,6 @@ public class SchemaTableTree {
                 .append(this.stepDepth).append(" ")
                 .append(this.hasContainers.toString()).append(" ")
                 .append("Comparators = ")
-//                .append(this.comparators.toString()).append(" ")
                 .append(this.sqlgComparatorHolder.toString()).append(" ")
                 .append("Range = ")
                 .append(String.valueOf(this.sqlgRangeHolder.getRange())).append(" ")
@@ -2033,6 +2062,10 @@ public class SchemaTableTree {
 
     public List<HasContainer> getHasContainers() {
         return this.hasContainers;
+    }
+
+    public List<AndOrHasContainer> getAndOrHasContainers() {
+        return andOrHasContainers;
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
