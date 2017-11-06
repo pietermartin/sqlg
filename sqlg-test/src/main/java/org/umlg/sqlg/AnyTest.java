@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.labels.TestLabelsSchema;
+import org.umlg.sqlg.test.filter.or.TestOrStepAfterVertexStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -25,7 +25,7 @@ import org.umlg.sqlg.test.labels.TestLabelsSchema;
 //        TestOrStep.class,
 //        TestAndStep.class,
 //        TestAndandOrStep.class
-        TestLabelsSchema.class
+        TestOrStepAfterVertexStepBarrier.class
 })
 public class AnyTest {
 }

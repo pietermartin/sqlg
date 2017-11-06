@@ -17,6 +17,7 @@ import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
 import org.umlg.sqlg.test.filter.connectivestep.TestAndandOrStep;
 import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
 import org.umlg.sqlg.test.filter.or.TestOrStep;
+import org.umlg.sqlg.test.filter.or.TestOrStepAfterVertexStepBarrier;
 import org.umlg.sqlg.test.filter.or.barrier.TestOrStepBarrier;
 import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
@@ -221,7 +222,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestNotStepBarrier.class,
         TestOrStep.class,
         TestAndStep.class,
-        TestAndandOrStep.class
+        TestAndandOrStep.class,
+        TestOrStepAfterVertexStepBarrier.class
 
 })
 public class AllTest {
