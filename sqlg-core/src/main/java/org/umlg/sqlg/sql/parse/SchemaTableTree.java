@@ -960,17 +960,6 @@ public class SchemaTableTree {
                     result.append(" ").append(whereClause.toSql(sqlgGraph, this, hasContainer)).append(")");
                 }
             }
-//            this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(sqlgGraph, h)).forEach(h -> {
-//                if (!printedWhere.booleanValue()) {
-//                    printedWhere.setTrue();
-//                    result.append("\nWHERE\n\t(");
-//                } else {
-//                    printedAnd = true;
-//                    result.append(" AND (");
-//                }
-//                WhereClause whereClause = WhereClause.from(h.getPredicate());
-//                result.append(" ").append(whereClause.toSql(sqlgGraph, this, h)).append(")");
-//            });
         } else {
             for (HasContainer hasContainer : this.getHasContainers()) {
                 if (!printedWhere.booleanValue()) {

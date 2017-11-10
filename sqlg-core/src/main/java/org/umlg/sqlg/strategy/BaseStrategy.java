@@ -491,23 +491,45 @@ public abstract class BaseStrategy {
             }
             AndOrHasContainer andOrHasContainer = new AndOrHasContainer(AndOrHasContainer.TYPE.NONE);
             outerAndOrHasContainer.addAndOrHasContainer(andOrHasContainer);
-            for (Step<?,?> step : localTraversal.getSteps()) {
+            for (Step<?, ?> step : localTraversal.getSteps()) {
                 if (step instanceof HasStep) {
-                    HasStep<?> hasStep = (HasStep)step;
+                    HasStep<?> hasStep = (HasStep) step;
                     for (HasContainer hasContainer : hasStep.getHasContainers()) {
                         if (hasContainerKeyNotIdOrLabel(hasContainer) && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+                            andOrHasContainer.addHasContainer(hasContainer);
+                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof AndP) {
+                            AndP<?> andP = (AndP) hasContainer.getPredicate();
+                            List<? extends P<?>> predicates = andP.getPredicates();
+                            if (predicates.size() == 2) {
+                                if (predicates.get(0).getBiPredicate() == Compare.gte && predicates.get(1).getBiPredicate() == Compare.lt) {
+                                    andOrHasContainer.addHasContainer(hasContainer);
+                                } else if (predicates.get(0).getBiPredicate() == Compare.gt && predicates.get(1).getBiPredicate() == Compare.lt) {
+                                    andOrHasContainer.addHasContainer(hasContainer);
+                                }
+                            }
+                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof OrP) {
+                            OrP<?> orP = (OrP) hasContainer.getPredicate();
+                            List<? extends P<?>> predicates = orP.getPredicates();
+                            if (predicates.size() == 2) {
+                                if (predicates.get(0).getBiPredicate() == Compare.lt && predicates.get(1).getBiPredicate() == Compare.gt) {
+                                    andOrHasContainer.addHasContainer(hasContainer);
+                                }
+                            }
+                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
+                                    hasContainer.getBiPredicate() instanceof FullText) {
                             andOrHasContainer.addHasContainer(hasContainer);
                         } else {
                             return Optional.empty();
                         }
                     }
                 } else {
-                    ConnectiveStep connectiveStepLocalChild = (ConnectiveStep)step;
+                    ConnectiveStep connectiveStepLocalChild = (ConnectiveStep) step;
                     Optional<AndOrHasContainer> result = handleConnectiveStepInternal(connectiveStepLocalChild);
                     if (result.isPresent()) {
                         andOrHasContainer.addAndOrHasContainer(result.get());
+                    } else {
+                        return Optional.empty();
                     }
-                    //Ignore the result.
                 }
             }
         }

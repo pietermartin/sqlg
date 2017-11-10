@@ -59,7 +59,7 @@ public class WhereClause {
             return result;
         } else if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
             result += " tmp" + (schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
-            result += " .without IS NULL";
+            result += ".without IS NULL";
             return result;
         } else if (p instanceof AndP) {
             AndP<?> andP = (AndP<?>) p;

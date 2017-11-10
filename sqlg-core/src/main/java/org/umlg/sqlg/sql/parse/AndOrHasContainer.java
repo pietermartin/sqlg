@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.ConnectiveStep
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
  * Date: 2017/11/02
  */
 public class AndOrHasContainer {
+
 
 
     //AND and OR means its represents a nested and/or traversal.
@@ -57,20 +59,39 @@ public class AndOrHasContainer {
         return type;
     }
 
-    public void toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, StringBuilder result) {
+    public List<HasContainer> getAllHasContainers() {
+        List<HasContainer> result = new ArrayList<>(this.hasContainers);
+        internalAllHasContainers(result);
+        return result;
+    }
+
+    private void internalAllHasContainers(List<HasContainer> result) {
+        result.addAll(this.hasContainers);
+        for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
+            andOrHasContainer.internalAllHasContainers(result);
+        }
+    }
+
+    void toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, StringBuilder result) {
         toSql(sqlgGraph, schemaTableTree, result, 0);
     }
 
-    public void toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, StringBuilder result, int depth) {
+    private void toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, StringBuilder result, int depth) {
         if (!this.hasContainers.isEmpty()) {
-            result.append("(");
-        }
-        for (HasContainer h : this.hasContainers) {
-            WhereClause whereClause = WhereClause.from(h.getPredicate());
-            result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h));
-        }
-        if (!this.hasContainers.isEmpty()) {
-            result.append(")");
+            boolean first = true;
+            for (HasContainer h : this.hasContainers) {
+                if (!SqlgUtil.isBulkWithin(sqlgGraph, h)) {
+                    if (first) {
+                        first = false;
+                        result.append("(");
+                    }
+                    WhereClause whereClause = WhereClause.from(h.getPredicate());
+                    result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h));
+                }
+            }
+            if (!first) {
+                result.append(")");
+            }
         }
         int count = 1;
         if (!this.andOrHasContainers.isEmpty()) {

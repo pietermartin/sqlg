@@ -107,8 +107,8 @@ public class TestAndandOrStep extends BaseTest {
                                         __.has("name", "b1")
                                 )
                         )
-
                 );
+
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(2, vertices.size());

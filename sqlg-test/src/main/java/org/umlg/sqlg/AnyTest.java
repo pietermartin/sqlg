@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.filter.or.TestOrStepAfterVertexStepBarrier;
+import org.umlg.sqlg.test.filter.or.TestOrStep;
 
 /**
  * Date: 2014/07/16
@@ -10,22 +10,7 @@ import org.umlg.sqlg.test.filter.or.TestOrStepAfterVertexStepBarrier;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTraversalFilterStepBarrier.class,
-//        TestLocalVertexStepWithOrder.class,
-//        TestGremlinCompileChoose.class,
-//        TestVertexStepPerformance.class,
-//        TestUnoptimizedRepeatStep.class
-//        TestComplex.class,
-//        TestUnoptimizedRepeatStep.class,
-//        TestBatchNormalUpdateDateTime.class,
-//        TestWhereWithSelect.class,
-//        TestOrStepBarrier.class,
-//        TestAndStepBarrier.class,
-//        TestNotStepBarrier.class,
-//        TestOrStep.class,
-//        TestAndStep.class,
-//        TestAndandOrStep.class
-        TestOrStepAfterVertexStepBarrier.class
+        TestOrStep.class
 })
 public class AnyTest {
 }
