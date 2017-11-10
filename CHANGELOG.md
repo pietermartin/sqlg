@@ -1,5 +1,8 @@
 ##1.4.1
 
+* Upgrade dependencies to latest in sonatype. [#247](https://github.com/pietermartin/sqlg/issues/247)
+* Fix bug [#246](https://github.com/pietermartin/sqlg/issues/246)
+* Optimize `OrStep` and `AndStep` to push the predicates down to the db if they are trivial.
 * Optimize `NotStep` to barrier the starts.
 * Optimize `AndStep` to barrier the starts.
 * Optimize `OrStep` to barrier the starts.
