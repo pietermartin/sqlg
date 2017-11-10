@@ -610,6 +610,11 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
+    public String getSkipClause(long skip) {
+        return " OFFSET " + skip + " ROWS";
+    }
+
+    @Override
     public boolean isSystemIndex(String indexName) {
         return indexName.startsWith("PK_") || indexName.startsWith("FK_") || indexName.endsWith("_idx");
     }
