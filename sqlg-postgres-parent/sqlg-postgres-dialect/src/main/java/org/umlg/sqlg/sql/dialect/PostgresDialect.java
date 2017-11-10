@@ -1138,10 +1138,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             Map<String, PropertyType> keyPropertyTypeMap = new HashMap<>();
             for (String key : keys) {
                 PropertyType propertyType = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(forVertices ? VERTEX_PREFIX : EDGE_PREFIX)).get(key);
+                if (keys.size() == 1 && propertyType.getPostFixes().length > 0) {
+                    sql.append("(");
+                }
                 keyPropertyTypeMap.put(key, propertyType);
                 appendKeyForBatchUpdate(propertyType, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
+                }
+                if (keys.size() == 1 && propertyType.getPostFixes().length > 0) {
+                    sql.append(")");
                 }
             }
             if (keys.size() > 1) {
