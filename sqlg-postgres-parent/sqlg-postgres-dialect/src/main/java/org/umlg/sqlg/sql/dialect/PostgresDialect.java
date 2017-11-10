@@ -1129,7 +1129,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
             sql.append(maybeWrapInQoutes((forVertices ? VERTEX_PREFIX : EDGE_PREFIX) + schemaTable.getTable()));
-            sql.append(" a \nSET\n\t(");
+            sql.append(" a \nSET\n\t");
+            if (keys.size() > 1) {
+                sql.append("(");
+            }
             int count = 1;
             //this map is for optimizations reason to not look up the property via all tables within the loop
             Map<String, PropertyType> keyPropertyTypeMap = new HashMap<>();
@@ -1141,7 +1144,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(", ");
                 }
             }
-            sql.append(") = \n\t(");
+            if (keys.size() > 1) {
+                sql.append(")");
+            }
+            sql.append(" = \n\t(");
             count = 1;
             for (String key : keys) {
                 sql.append("v.");
