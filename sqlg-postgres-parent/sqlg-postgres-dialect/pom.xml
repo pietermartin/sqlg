@@ -32,12 +32,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.1.1.jre7</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.10</version>
+            <version>42.1.4.jre7</version>
         </dependency>
         <dependency>
             <groupId>net.postgis</groupId>
