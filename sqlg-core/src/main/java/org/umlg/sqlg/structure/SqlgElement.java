@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -204,7 +203,7 @@ public abstract class SqlgElement implements Element {
                     columns
             );
         } else {
-            Map<String, PropertyType> columns = new HashedMap<>();
+            Map<String, PropertyType> columns = new HashMap<>();
             columns.put(key, PropertyType.from(value));
             this.sqlgGraph.getTopology().ensureEdgePropertiesExist(
                     this.schema,

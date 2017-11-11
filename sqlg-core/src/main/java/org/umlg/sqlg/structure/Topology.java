@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -262,7 +261,7 @@ public class Topology {
         Schema sqlgSchema = Schema.instantiateSqlgSchema(this);
         this.metaSchemas.put(SQLG_SCHEMA, sqlgSchema);
 
-        Map<String, PropertyType> columns = new HashedMap<>();
+        Map<String, PropertyType> columns = new HashMap<>();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);
