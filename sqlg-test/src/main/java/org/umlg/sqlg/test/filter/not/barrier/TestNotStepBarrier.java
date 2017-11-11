@@ -8,8 +8,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.barrier.SqlgNotStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -22,8 +20,6 @@ import java.util.List;
  */
 public class TestNotStepBarrier extends BaseTest {
 
-    private Logger logger = LoggerFactory.getLogger(TestNotStepBarrier.class);
-
     @Test
     public void g_VX1X_repeatXoutX_untilXoutE_count_isX0XX_name() {
         loadModern();
@@ -33,12 +29,7 @@ public class TestNotStepBarrier extends BaseTest {
                 .until(__.outE().count().is(0))
                 .<String>values("name");
 
-        try {
-            printTraversalForm(traversal);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            Assert.fail(e.getMessage());
-        }
+        printTraversalForm(traversal);
         checkResults(Arrays.asList("lop", "lop", "ripple", "vadas"), traversal);
 
         List<SqlgNotStepBarrier> steps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgNotStepBarrier.class, traversal);
