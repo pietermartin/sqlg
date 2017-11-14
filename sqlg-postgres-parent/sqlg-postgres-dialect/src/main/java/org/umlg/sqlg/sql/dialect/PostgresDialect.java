@@ -1129,19 +1129,32 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
             sql.append(maybeWrapInQoutes((forVertices ? VERTEX_PREFIX : EDGE_PREFIX) + schemaTable.getTable()));
-            sql.append(" a \nSET\n\t(");
+            sql.append(" a \nSET\n\t");
+            //Postgres 10 does not allow parenthesis to be used if there is only one value.
+            if (keys.size() > 1) {
+                sql.append("(");
+            }
             int count = 1;
             //this map is for optimizations reason to not look up the property via all tables within the loop
             Map<String, PropertyType> keyPropertyTypeMap = new HashMap<>();
             for (String key : keys) {
                 PropertyType propertyType = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(forVertices ? VERTEX_PREFIX : EDGE_PREFIX)).get(key);
+                if (keys.size() == 1 && propertyType.getPostFixes().length > 0) {
+                    sql.append("(");
+                }
                 keyPropertyTypeMap.put(key, propertyType);
                 appendKeyForBatchUpdate(propertyType, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
+                if (keys.size() == 1 && propertyType.getPostFixes().length > 0) {
+                    sql.append(")");
+                }
             }
-            sql.append(") = \n\t(");
+            if (keys.size() > 1) {
+                sql.append(")");
+            }
+            sql.append(" = \n\t(");
             count = 1;
             for (String key : keys) {
                 sql.append("v.");
