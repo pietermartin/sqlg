@@ -6,8 +6,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.structure.IndexType;
-import org.umlg.sqlg.structure.VertexLabel;
+import org.umlg.sqlg.structure.topology.IndexType;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;

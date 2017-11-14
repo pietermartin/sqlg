@@ -3,7 +3,7 @@ package org.umlg.sqlg.test.batch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.*;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.VertexLabel;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;

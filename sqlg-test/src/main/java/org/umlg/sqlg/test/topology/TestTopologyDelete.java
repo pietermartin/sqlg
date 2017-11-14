@@ -13,6 +13,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTest;
 
@@ -24,9 +25,9 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Test the deletion of topology items

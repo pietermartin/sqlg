@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ import java.time.*;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.PropertyType.*;
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)

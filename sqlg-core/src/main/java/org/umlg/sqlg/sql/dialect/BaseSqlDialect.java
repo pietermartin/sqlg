@@ -8,6 +8,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
@@ -15,7 +19,7 @@ import java.security.SecureRandom;
 import java.sql.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Date: 2014/08/21

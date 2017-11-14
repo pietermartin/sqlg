@@ -8,7 +8,7 @@ import org.umlg.sqlg.structure.*;
 
 import java.util.*;
 
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)

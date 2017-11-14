@@ -6,10 +6,10 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
-import org.umlg.sqlg.structure.EdgeLabel;
-import org.umlg.sqlg.structure.Schema;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.VertexLabel;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Optional;

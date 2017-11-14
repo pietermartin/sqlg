@@ -14,6 +14,9 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import javax.xml.bind.DatatypeConverter;
@@ -22,8 +25,8 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * @author Kevin Schmidt
@@ -960,4 +963,5 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 throw SqlgExceptions.invalidPropertyType(propertyType);
         }
     }
+
 }

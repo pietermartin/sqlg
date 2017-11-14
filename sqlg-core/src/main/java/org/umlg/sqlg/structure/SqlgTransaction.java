@@ -246,15 +246,15 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         this.threadLocalTx.get().getElementPropertyRollback().put(elementPropertyRollback, null);
     }
 
-    void beforeCommit(BeforeCommit beforeCommitFunction) {
+    public void beforeCommit(BeforeCommit beforeCommitFunction) {
         this.beforeCommitFunction = beforeCommitFunction;
     }
 
-    void afterCommit(AfterCommit afterCommitFunction) {
+    public void afterCommit(AfterCommit afterCommitFunction) {
         this.afterCommitFunction = afterCommitFunction;
     }
 
-    void afterRollback(AfterRollback afterCommitFunction) {
+    public void afterRollback(AfterRollback afterCommitFunction) {
         this.afterRollbackFunction = afterCommitFunction;
     }
 

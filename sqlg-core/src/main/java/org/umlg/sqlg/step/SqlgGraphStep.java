@@ -276,7 +276,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                     }
                     //Regular
                     List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
-                    this.isForMultipleQueries = (distinctQueries.size()) > 1;
+                    this.isForMultipleQueries = distinctQueries.size() > 1;
                     if (this.isForMultipleQueries) {
                         break;
                     }

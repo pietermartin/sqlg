@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure;
 
+import org.umlg.sqlg.structure.topology.IndexType;
+
 import java.util.ArrayList;
 import java.util.List;
 

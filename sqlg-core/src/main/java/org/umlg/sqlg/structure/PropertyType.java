@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.umlg.sqlg.structure.topology.Topology;
 
 import java.time.*;
 import java.util.HashMap;

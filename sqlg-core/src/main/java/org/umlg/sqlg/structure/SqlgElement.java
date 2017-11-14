@@ -7,6 +7,10 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -15,8 +19,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.umlg.sqlg.sql.parse.SchemaTableTree.ALIAS_SEPARATOR;
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/07/12

@@ -10,7 +10,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.Topology;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;

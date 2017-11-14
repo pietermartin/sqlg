@@ -11,6 +11,7 @@ import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.beans.PropertyVetoException;

@@ -19,8 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/08/17

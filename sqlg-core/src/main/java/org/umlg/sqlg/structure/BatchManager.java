@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/09/12

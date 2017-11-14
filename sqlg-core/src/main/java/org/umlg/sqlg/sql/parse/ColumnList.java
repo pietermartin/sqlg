@@ -15,7 +15,13 @@ public class ColumnList {
     /**
      * Column -> alias
      */
-    private Map<Column, String> columns = new LinkedHashMap<>();
+    private LinkedHashMap<Column, String> columns = new LinkedHashMap<>();
+
+    /**
+     * Indicates that the query is for a {@link org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep}
+     * In this case only the first column will be returned.
+     */
+    private boolean drop;
 
     /**
      * the graph to have access to the SQL dialect
@@ -27,10 +33,12 @@ public class ColumnList {
      * build a new empty column list
      *
      * @param graph
+     * @param drop
      */
-    public ColumnList(SqlgGraph graph) {
+    public ColumnList(SqlgGraph graph, boolean drop) {
         super();
         this.sqlgGraph = graph;
+        this.drop = drop;
     }
 
     /**
@@ -42,7 +50,7 @@ public class ColumnList {
      * @param stepDepth
      * @param alias
      */
-    public void add(String schema, String table, String column, int stepDepth, String alias) {
+    private void add(String schema, String table, String column, int stepDepth, String alias) {
         Column c = new Column(schema, table, column, stepDepth);
         columns.put(c, alias);
     }
@@ -118,6 +126,9 @@ public class ColumnList {
             c.toString(sb);
             sb.append(" AS ");
             sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
+            if (this.drop) {
+                break;
+            }
         }
         return sb.toString();
     }

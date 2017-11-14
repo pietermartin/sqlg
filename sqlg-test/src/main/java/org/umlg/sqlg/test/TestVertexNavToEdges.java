@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
-import org.umlg.sqlg.structure.Topology;
+import org.umlg.sqlg.structure.topology.Topology;
 
 import java.util.Iterator;
 import java.util.List;

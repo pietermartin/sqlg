@@ -1,17 +1,18 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.structure.topology;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.umlg.sqlg.structure.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Created by pieter on 2015/12/08.
@@ -265,7 +266,7 @@ public class TopologyManager {
          }
     }
     
-    static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
+    public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
@@ -580,13 +581,13 @@ public class TopologyManager {
         }
     }
 
-    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column) {
+    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column) {
         for (Map.Entry<String, PropertyType> stringPropertyTypeEntry : column.entrySet()) {
             addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyTypeEntry);
         }
     }
 
-    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column) {
+    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(EDGE_PREFIX), "prefixedTable must be for an edge. prefixedTable = " + prefixedTable);

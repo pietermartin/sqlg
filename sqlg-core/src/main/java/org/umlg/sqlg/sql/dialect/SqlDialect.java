@@ -9,7 +9,9 @@ import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.Schema;
 
 import java.sql.*;
 import java.util.*;
@@ -742,5 +744,36 @@ public interface SqlDialect {
     default boolean supportsSchemaIfNotExists() {
         return true;
     }
+
+    default List<String> drop(SqlgGraph sqlgGraph, String result, Optional<String> edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+        List<String> sqls = new ArrayList<>();
+        SchemaTableTree last = distinctQueryStack.getLast();
+        StringBuilder sb = new StringBuilder();
+        sb.append("DELETE FROM ");
+        sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
+        sb.append(" \nWHERE \"ID\" IN (");
+        sb.append(result);
+        sb.append(")");
+        sqls.add(sb.toString());
+
+        if (edgesToDelete.isPresent()) {
+            SchemaTableTree secondToLast = distinctQueryStack.get(distinctQueryStack.size() - 2);
+            sb = new StringBuilder();
+            sb.append("DELETE FROM ");
+            sb.append(maybeWrapInQoutes(secondToLast.getSchemaTable().getSchema()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(secondToLast.getSchemaTable().getTable()));
+            sb.append(" \nWHERE \"ID\" IN (");
+            sb.append(edgesToDelete.get());
+            sb.append(")");
+            sqls.add(sb.toString());
+        }
+
+        return sqls;
+    }
+
+    String sqlgCreateTopologyGraph();
 
 }

@@ -3,7 +3,7 @@ package org.umlg.sqlg.mssqlserver;
 import com.microsoft.sqlserver.jdbc.ISQLServerBulkRecord;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.umlg.sqlg.structure.PropertyColumn;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;

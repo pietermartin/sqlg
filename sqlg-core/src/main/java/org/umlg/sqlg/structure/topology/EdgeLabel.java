@@ -1,4 +1,4 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.structure.topology;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -10,11 +10,14 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.TopologyChangeAction;
 
 import java.sql.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Date: 2016/09/04
@@ -137,7 +140,7 @@ public class EdgeLabel extends AbstractLabel {
         sql.append(sqlDialect.getForeignKeyTypeDefinition());
 
         //foreign key definition start
-        if (this.sqlgGraph.isImplementForeignKeys()) {
+        if (this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
             sql.append(", ");
             sql.append("FOREIGN KEY (");
             sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END));
@@ -435,7 +438,7 @@ public class EdgeLabel extends AbstractLabel {
         }
         StringBuilder sql = new StringBuilder();
         //foreign key definition start
-        if (this.sqlgGraph.isImplementForeignKeys()) {
+        if (this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
             sql.append(" ALTER TABLE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sql.append(".");
@@ -450,7 +453,7 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
             sql.append(" (");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(")");
+            sql.append(") DEFERRABLE");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }

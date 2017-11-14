@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;

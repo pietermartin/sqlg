@@ -9,8 +9,8 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.structure.IndexType;
-import org.umlg.sqlg.structure.VertexLabel;
+import org.umlg.sqlg.structure.topology.IndexType;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;

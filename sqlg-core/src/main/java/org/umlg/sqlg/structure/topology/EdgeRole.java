@@ -1,6 +1,7 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.structure.topology;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.umlg.sqlg.structure.TopologyInf;
 
 /**
  * Represent a pair VertexLabel and EdgeLabel

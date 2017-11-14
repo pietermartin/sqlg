@@ -1,4 +1,4 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.structure.topology;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -9,12 +9,13 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.*;
 
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Date: 2016/09/14

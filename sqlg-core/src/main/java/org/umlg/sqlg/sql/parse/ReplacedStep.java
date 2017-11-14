@@ -21,6 +21,7 @@ import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
@@ -28,8 +29,8 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.id;
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2015/06/27
@@ -58,6 +59,7 @@ public class ReplacedStep<S, E> {
     private boolean leftJoin;
     private boolean fake;
     private boolean joinToLeftJoin;
+    private boolean drop;
 
     private ReplacedStep() {
     }
@@ -504,6 +506,7 @@ public class ReplacedStep<S, E> {
                 ReplacedStep.this.emit,
                 ReplacedStep.this.untilFirst,
                 ReplacedStep.this.leftJoin,
+                ReplacedStep.this.drop,
                 replacedStepDepth,
                 ReplacedStep.this.labels
         );
@@ -619,6 +622,10 @@ public class ReplacedStep<S, E> {
 
     public boolean isLeftJoin() {
         return leftJoin;
+    }
+
+    public boolean isDrop() {
+        return drop;
     }
 
     public boolean isJoinToLeftJoin() {
@@ -761,4 +768,7 @@ public class ReplacedStep<S, E> {
         this.joinToLeftJoin = true;
     }
 
+    public void markAsDrop() {
+        this.drop = true;
+    }
 }

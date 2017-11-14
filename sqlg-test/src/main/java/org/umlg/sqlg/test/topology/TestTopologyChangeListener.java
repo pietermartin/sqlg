@@ -4,10 +4,10 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import static org.junit.Assert.assertEquals;

@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
-import org.umlg.sqlg.structure.Topology;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;

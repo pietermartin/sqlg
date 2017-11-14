@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
+import org.umlg.sqlg.test.process.dropstep.TestDropStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestNotStepBarrier.class
+        TestDropStep.class,
+//        TestTopologyDeleteSpecific.class
 })
 public class AnyTest {
 }

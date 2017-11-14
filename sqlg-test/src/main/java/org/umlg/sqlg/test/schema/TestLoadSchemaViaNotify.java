@@ -13,6 +13,7 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 

@@ -5,6 +5,8 @@ import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
 
 import java.util.*;
 

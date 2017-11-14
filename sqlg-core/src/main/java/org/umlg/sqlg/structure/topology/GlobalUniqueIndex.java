@@ -1,9 +1,12 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.structure.topology;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.TopologyInf;
 
 import java.time.LocalDateTime;
 import java.util.*;

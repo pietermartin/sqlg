@@ -9,7 +9,7 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.Topology;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;

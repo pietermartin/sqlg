@@ -14,8 +14,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/07/12

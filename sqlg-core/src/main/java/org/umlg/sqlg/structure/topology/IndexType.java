@@ -1,11 +1,11 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.structure.topology;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Specification of an index type (unique, GIN, etc).

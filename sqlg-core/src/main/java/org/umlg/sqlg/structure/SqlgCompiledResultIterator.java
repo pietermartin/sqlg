@@ -113,7 +113,12 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.currentDistinctQueryStack = this.distinctQueriesIterator.next();
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.currentDistinctQueryStack);
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
-                                    executeRegularQuery();
+                                    if (this.currentDistinctQueryStack.getLast().isDrop()) {
+                                        executeDropQuery();
+                                        return false;
+                                    } else {
+                                        executeRegularQuery();
+                                    }
                                     this.first = true;
                                 } else {
                                     //try the next rootSchemaTableTree
@@ -233,6 +238,10 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         List<Emit<SqlgElement>> result = this.elements;
         this.elements = null;
         return (E) result;
+    }
+
+    private void executeDropQuery() {
+        SqlgSqlExecutor.executeDropQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.currentDistinctQueryStack);
     }
 
     private void executeRegularQuery() {

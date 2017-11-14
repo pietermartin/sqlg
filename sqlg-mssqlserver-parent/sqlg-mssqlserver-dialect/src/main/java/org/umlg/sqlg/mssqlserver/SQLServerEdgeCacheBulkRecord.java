@@ -6,6 +6,7 @@ import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.Topology;
 
 import java.util.*;
 

@@ -32,143 +32,149 @@ import org.umlg.sqlg.strategy.barrier.*;
 import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
 import org.umlg.sqlg.structure.ds.C3p0DataSourceFactory;
 import org.umlg.sqlg.structure.ds.JNDIDataSource;
+import org.umlg.sqlg.structure.topology.IndexType;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
+import static org.apache.tinkerpop.gremlin.structure.Graph.OptIn;
+import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 
 /**
  * Date: 2014/07/12
  * Time: 5:38 AM
  */
-@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
-@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
+@OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
+@OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
 //Start remove these for 3.2.6
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
         method = "shouldDetachVertexPropertyWhenRemoved",
         reason = "Tests assumes elements are auto synchronized.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
         method = "shouldDetachPropertyOfEdgeWhenNew",
         reason = "Tests assumes elements are auto synchronized.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
         method = "shouldDetachPropertyOfEdgeWhenRemoved",
         reason = "Tests assumes elements are auto synchronized.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
         method = "shouldDetachVertexPropertyWhenNew",
         reason = "Tests assumes elements are auto synchronized.")
 //End remove these for 3.2.6
 
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest",
         method = "*",
         reason = "Fails for HSQLDB. HSQLDB has its own interrupt logic that does not play well with TinkerPop's interrupt.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
         reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldSupportTransactionIsolationCommitCheck",
         reason = "Fails for as the schema creation deadlock because of unnatural locking in the test.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
         reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldAllowReferenceOfEdgeIdOutsideOfOriginalThreadManual",
         reason = "Fails as the test leaves multiple transactions open which causes a dead lock.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldAllowReferenceOfVertexIdOutsideOfOriginalThreadManual",
         reason = "Fails as the test leaves multiple transactions open which causes a dead lock.")
 
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ExplainTest$Traversals",
         method = "g_V_outE_identity_inV_explain",
         reason = "Assertions assume that the strategies are in a particular order.")
 
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "modern_V_out_out_profileXmetricsX",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "grateful_V_out_out_profileXmetricsX",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "g_V_repeat_both_profileXmetricsX",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "grateful_V_out_out_profile",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "g_V_repeat_both_profile",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "modern_V_out_out_profile",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "testProfileStrategyCallback",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "testProfileStrategyCallbackSideEffect",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "g_V_whereXinXcreatedX_count_isX1XX_name_profile",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "g_V_whereXinXcreatedX_count_isX1XX_name_profileXmetricsX",
         reason = "Assertions are TinkerGraph specific.")
 
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONV1d0Test",
         method = "shouldSerializeTraversalMetrics",
         reason = "Assertions are TinkerGraph specific.")
 
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX3X_count",
         reason = "Takes too long, and too much memory at present.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_both_both_count",
         reason = "Travis times out.")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
         reason = "Takes too long")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Takes too long")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
         method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
         reason = "Takes too long")
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
 
-@Graph.OptOut(
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
@@ -186,7 +192,7 @@ public class SqlgGraph implements Graph {
     private SqlDialect sqlDialect;
     private String jdbcUrl;
     private ObjectMapper mapper = new ObjectMapper();
-    private boolean implementForeignKeys;
+//    private boolean implementForeignKeys;
     private Configuration configuration = new BaseConfiguration();
     private final ISqlGFeatures features = new SqlGFeatures();
 
@@ -207,7 +213,7 @@ public class SqlgGraph implements Graph {
                         new SqlgAndStepStepStrategy(),
                         new SqlgNotStepStepStrategy(),
                         new SqlgHasStepStrategy(),
-//                        new SqlgCountGlobalStepStrategy(),
+                        new SqlgDropStepStrategy(),
                         TopologyStrategy.build().create())
                 .removeStrategies(
                         PathRetractionStrategy.class)
@@ -251,7 +257,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgGraph(final Configuration configuration, SqlgDataSourceFactory dataSourceFactory) {
-        this.implementForeignKeys = configuration.getBoolean("implement.foreign.keys", true);
+//        this.implementForeignKeys = configuration.getBoolean("implement.foreign.keys", true);
         this.configuration = configuration;
 
         try {
@@ -1128,9 +1134,9 @@ public class SqlgGraph implements Graph {
         return count;
     }
 
-    public boolean isImplementForeignKeys() {
-        return this.implementForeignKeys;
-    }
+//    public boolean isImplementForeignKeys() {
+//        return this.implementForeignKeys;
+//    }
 
     private SqlgPlugin findSqlgPlugin(DatabaseMetaData metadata) throws SQLException {
         for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, this.getClass().getClassLoader())) {

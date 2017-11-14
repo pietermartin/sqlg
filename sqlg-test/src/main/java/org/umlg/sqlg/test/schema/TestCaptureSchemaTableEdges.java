@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
+import static org.umlg.sqlg.structure.topology.Topology.SQLG_SCHEMA;
 
 /**
  * Date: 2015/01/02

@@ -21,7 +21,9 @@ import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
@@ -36,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Date: 2014/07/16
@@ -2763,16 +2765,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return true;
     }
 
-    //This is not being called but leaving it here for prosperity.
-//    @Override
-//    public void registerGisDataTypes(Connection connection) {
-//        try {
-//            ((Jdbc4Connection) ((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
     @Override
     public <T> T getGis(SqlgGraph sqlgGraph) {
         Gis gis = Gis.GIS;
@@ -2793,7 +2785,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-
+//        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"schemaVertex\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
@@ -2844,9 +2836,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
+    public String sqlgCreateTopologyGraph() {
+        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT);";
+    }
+
+    @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
-        
+
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
@@ -3430,7 +3427,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 for (int i = 0; i < length; i++) {
                     String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
                     sb.append("\"");
-                    sb.append( escapeQuotes(valueOfArray.replace("\"", "\\\"")));
+                    sb.append(escapeQuotes(valueOfArray.replace("\"", "\\\"")));
                     sb.append("\"");
                     if (i < length - 1) {
                         sb.append(",");
@@ -3565,5 +3562,100 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public int sqlInParameterLimit() {
         return PARAMETER_LIMIT;
     }
-    
+
+    @Override
+    public List<String> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, Optional<String> edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+        List<String> sqls = new ArrayList<>();
+        SchemaTableTree last = distinctQueryStack.getLast();
+
+        SchemaTableTree lastEdge = null;
+        boolean hasEdge = last.getSchemaTable().isVertexTable() && distinctQueryStack.size() > 1;
+        if (hasEdge) {
+            Preconditions.checkState(edgesToDelete.isPresent());
+
+            lastEdge = distinctQueryStack.get(distinctQueryStack.size() - 2);
+            //First delete all other edges except for this vertex label.
+            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(last.getSchemaTable().getSchema());
+            Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().getSchema());
+            Schema schema = schemaOptional.get();
+            Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(last.getSchemaTable().withOutPrefix().getTable());
+            Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().withOutPrefix().getTable());
+            VertexLabel lastVertexLabel = vertexLabelOptional.get();
+
+            Optional<Schema> edgeSchema = sqlgGraph.getTopology().getSchema(lastEdge.getSchemaTable().getSchema());
+            Preconditions.checkState(edgeSchema.isPresent(), "BUG: %s not found in the topology.", lastEdge.getSchemaTable().getSchema());
+            Optional<EdgeLabel> edgeLabelOptional = edgeSchema.get().getEdgeLabel(lastEdge.getSchemaTable().withOutPrefix().getTable());
+            Preconditions.checkState(edgeLabelOptional.isPresent(), "BUG: %s not found in the topology.", lastEdge.getSchemaTable().getTable());
+            EdgeLabel lastEdgeLabel = edgeLabelOptional.get();
+
+            StringBuilder sb;
+            for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getOutEdgeLabels().entrySet()) {
+                String name = edgeLabelEntry.getKey();
+                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+                if (!edgeLabel.equals(lastEdgeLabel)) {
+                    //Delete
+                    sb = new StringBuilder();
+                    sb.append("WITH todelete AS (");
+                    sb.append(leafElementsToDelete);
+                    sb.append("\n)\nDELETE FROM ");
+                    sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                    sb.append(".");
+                    sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                    sb.append(" a USING todelete\nWHERE a.");
+                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
+                    sb.append(" = todelete.\"alias1\";");
+                    sqls.add(sb.toString());
+                }
+            }
+            for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
+                String name = edgeLabelEntry.getKey();
+                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+                if (!edgeLabel.equals(lastEdgeLabel)) {
+                    //Delete
+                    sb = new StringBuilder();
+                    sb.append("WITH todelete AS (");
+                    sb.append(leafElementsToDelete);
+                    sb.append("\n)\nDELETE FROM ");
+                    sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                    sb.append(".");
+                    sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                    sb.append(" a USING todelete\nWHERE a.");
+                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
+                    sb.append(" = todelete.\"alias1\";");
+                    sqls.add(sb.toString());
+                }
+            }
+
+            //Need to defer foreign key constraint checks.
+            sqls.add("ALTER TABLE " + maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()) + " ALTER CONSTRAINT \"E_ab_public.B__I_fkey\" DEFERRABLE INITIALLY DEFERRED;");
+
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("WITH todelete AS (");
+        sb.append(leafElementsToDelete);
+        sb.append("\n)\nDELETE FROM ");
+        sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
+        sb.append(" a USING todelete\nWHERE a.\"ID\" = todelete.\"alias1\";");
+        sqls.add(sb.toString());
+
+        if (hasEdge) {
+            SchemaTableTree secondToLast = distinctQueryStack.get(distinctQueryStack.size() - 2);
+            sb = new StringBuilder();
+            sb.append("WITH todelete AS (");
+            sb.append(edgesToDelete.get());
+            sb.append("\n)\nDELETE FROM ");
+            sb.append(maybeWrapInQoutes(secondToLast.getSchemaTable().getSchema()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(secondToLast.getSchemaTable().getTable()));
+            sb.append(" a USING todelete\nWHERE a.\"ID\" = todelete.\"alias1\";");
+            sqls.add(sb.toString());
+
+            //Enable the foreign key constraint
+            sqls.add("ALTER TABLE " + maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()) + " ALTER CONSTRAINT \"E_ab_public.B__I_fkey\" NOT DEFERRABLE;");
+        }
+        return sqls;
+    }
 }

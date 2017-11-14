@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;

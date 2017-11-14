@@ -22,6 +22,7 @@ import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.Topology;
 
 import java.lang.reflect.Array;
 import java.sql.*;
@@ -33,8 +34,8 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.label;
-import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/07/12

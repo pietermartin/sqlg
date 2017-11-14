@@ -7,6 +7,10 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Collections;

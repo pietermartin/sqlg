@@ -13,7 +13,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Created by pieter on 2015/12/09.

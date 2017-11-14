@@ -9,12 +9,15 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * Date: 2014/07/12
@@ -390,7 +393,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).get().getVertexLabel(this.table).get();
             StringBuilder sql = new StringBuilder("SELECT\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            for (PropertyColumn propertyColumn : vertexLabel.properties.values()) {
+            for (PropertyColumn propertyColumn : vertexLabel.getProperties().values()) {
                 sql.append(", ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
                 // additional columns for time zone, etc.

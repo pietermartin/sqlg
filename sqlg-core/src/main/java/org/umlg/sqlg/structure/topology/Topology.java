@@ -1,4 +1,4 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.structure.topology;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,10 +11,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
+import org.umlg.sqlg.structure.*;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -32,6 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class Topology {
 
+    public static final String GRAPH = "graph";
     public static final String COLUMN_TYPE_PREFIX = "sqlg.type.";
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
@@ -48,7 +48,6 @@ public class Topology {
     public static final String DURATION_NANOS = "~~~NANOS";
     public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
 
-    private Logger logger = LoggerFactory.getLogger(Topology.class.getName());
     private SqlgGraph sqlgGraph;
     private boolean distributed;
 
@@ -251,7 +250,7 @@ public class Topology {
      *
      * @param sqlgGraph The graph.
      */
-    Topology(SqlgGraph sqlgGraph) {
+    public Topology(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
         this.topologySqlWriteLock = new ReentrantLock(true);
@@ -365,7 +364,7 @@ public class Topology {
         return this.sqlgGraph;
     }
 
-    void close() {
+    public void close() {
         if (this.distributed) {
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).unregisterListener();
         }
@@ -375,6 +374,9 @@ public class Topology {
         return validationErrors;
     }
 
+    public boolean isImplementingForeignKeys() {
+        return this.sqlgGraph.configuration().getBoolean("implement.foreign.keys", true);
+    }
     /**
      * Global lock on the topology.
      * For distributed graph (multiple jvm) this happens on the db via a lock sql statement.
@@ -821,7 +823,7 @@ public class Topology {
         this.sqlgGraph.getSqlgDataSource().softResetPool();
     }
 
-    void cacheTopology() {
+    public void cacheTopology() {
         this.lock();
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         //load the last log
@@ -933,7 +935,7 @@ public class Topology {
         this.edgeForeignKeyCache.putAll(loadAllEdgeForeignKeys());
     }
 
-    void validateTopology() {
+    public void validateTopology() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
@@ -1685,7 +1687,7 @@ public class Topology {
         }
     }
 
-    static class TopologyValidationError {
+    public static class TopologyValidationError {
         private TopologyInf error;
 
         TopologyValidationError(TopologyInf error) {

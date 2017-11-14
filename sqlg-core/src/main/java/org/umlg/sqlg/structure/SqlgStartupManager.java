@@ -8,13 +8,17 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.structure.topology.IndexType;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.TopologyManager;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * This class contains the logic to ensure all is well on startup.
@@ -77,6 +81,7 @@ class SqlgStartupManager {
             } else {
                 // make sure the index edge index property exist, this if for upgrading from 1.3.4 to 1.4.0
                 upgradeIndexEdgeSequenceToExist();
+//                upgradeTopologyGraphToExist();
                 this.sqlgGraph.tx().commit();
             }
             cacheTopology();
@@ -103,23 +108,48 @@ class SqlgStartupManager {
             }
         }
     }
-    
+
+    private void upgradeTopologyGraphToExist() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            String[] types = new String[]{"TABLE"};
+            try {
+                //load the vertices
+                try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, types)) {
+                    if (!vertexRs.next()) {
+                        try (Statement statement = conn.createStatement()) {
+                            String sql = this.sqlDialect.sqlgCreateTopologyGraph();
+                            statement.execute(sql);
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        } catch (SQLException e) {
+            logger.error("Error upgrading index edge property to include a sequence column. Error swallowed.", e);
+        }
+    }
+
     private void upgradeIndexEdgeSequenceToExist() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = "sqlg_schema";
+            @SuppressWarnings("ConstantConditions")
             List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "E_index_property", SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
             if (columns.isEmpty()) {
-                Statement statement = conn.createStatement();
-                String sql = this.sqlDialect.sqlgAddIndexEdgeSequenceColumn();
-                statement.execute(sql);
+                try (Statement statement = conn.createStatement()) {
+                    String sql = this.sqlDialect.sqlgAddIndexEdgeSequenceColumn();
+                    statement.execute(sql);
+                }
             }
         } catch (SQLException e) {
             logger.error("Error upgrading index edge property to include a sequence column. Error swallowed.", e);
         }
-
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -160,20 +190,7 @@ class SqlgStartupManager {
                     continue;
                 }
                 Map<String, PropertyType> columns = new ConcurrentHashMap<>();
-                //get the columns
-//                ResultSet columnsRs = metadata.getColumns(tblCat, schema, table, null);
-                //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
-//                List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
                 List<Triple<String, Integer, String>> metaDatas = this.sqlDialect.getTableColumns(metadata, tblCat, schema, table, null);
-//                //noinspection Duplicates
-//                while (columnsRs.next()) {
-//                    String columnName = columnsRs.getString(4);
-//                    int columnType = columnsRs.getInt(5);
-//                    String typeName = columnsRs.getString("TYPE_NAME");
-//                    metaDatas.add(Triple.of(columnName, columnType, typeName));
-//                }
-//                columnsRs.close();
-
                 ListIterator<Triple<String, Integer, String>> metaDataIter = metaDatas.listIterator();
                 while (metaDataIter.hasNext()) {
                     Triple<String, Integer, String> tripple = metaDataIter.next();
@@ -241,8 +258,6 @@ class SqlgStartupManager {
                                     if (inSchemaTable.getRight() == null) {
                                         TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, foreignKey, inSchemaTable.getLeft(), columns);
                                         edgeAdded = true;
-                                    } else {
-
                                     }
                                     TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, true, foreignKey);
                                 }
@@ -300,18 +315,6 @@ class SqlgStartupManager {
                 //get the columns
 
                 List<Triple<String, Integer, String>> metaDatas = this.sqlDialect.getTableColumns(metadata, edgCat, schema, table, null);
-//                ResultSet columnsRs = metadata.getColumns(edgCat, schema, table, null);
-//                //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
-//                List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
-//                //noinspection Duplicates
-//                while (columnsRs.next()) {
-//                    String columnName = columnsRs.getString(4);
-//                    int columnType = columnsRs.getInt(5);
-//                    String typeName = columnsRs.getString("TYPE_NAME");
-//                    metaDatas.add(Triple.of(columnName, columnType, typeName));
-//                }
-//                columnsRs.close();
-
                 ListIterator<Triple<String, Integer, String>> metaDataIter = metaDatas.listIterator();
                 while (metaDataIter.hasNext()) {
                     Triple<String, Integer, String> tripple = metaDataIter.next();

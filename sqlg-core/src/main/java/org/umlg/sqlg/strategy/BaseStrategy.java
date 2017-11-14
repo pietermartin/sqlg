@@ -63,7 +63,8 @@ public abstract class BaseStrategy {
             OptionalStep.class,
             RepeatStep.class,
             SelectStep.class,
-            SelectOneStep.class
+            SelectOneStep.class,
+            DropStep.class
     );
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
@@ -145,18 +146,26 @@ public abstract class BaseStrategy {
                 handleRangeGlobalSteps(stepIterator, pathCount);
             } else if (step instanceof RangeGlobalStep) {
                 handleRangeGlobalSteps(stepIterator, pathCount);
-
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
                 handleOrderGlobalSteps(stepIterator, pathCount);
                 handleRangeGlobalSteps(stepIterator, pathCount);
                 if (stepIterator.hasNext() && stepIterator.next() instanceof SelectOneStep) {
                     return false;
                 }
+            } else if (step instanceof DropStep && !this.sqlgGraph.getSqlDialect().isMariaDb()) {
+                //MariaDB does not support target and source together.
+                //Table 'E_ab' is specified twice, both as a target for 'DELETE' and as a separate source for data
+                //This has been fixed in 10.3.1, waiting for it to land in the repo.
+                handleDropStep((DropStep)step);
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
             }
         }
         return true;
+    }
+
+    private void handleDropStep(DropStep dropStep) {
+        this.currentReplacedStep.markAsDrop();
     }
 
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
