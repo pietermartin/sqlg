@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
@@ -13,9 +12,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -28,7 +24,6 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -496,12 +491,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_V_asXaX_out_asXbX_selectXa_bX_byXnameX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         DefaultGraphTraversal traversal = (DefaultGraphTraversal) g.traversal().V().as("a").out().aggregate("x").as("b").<String>select("a", "b").by("name");
         Assert.assertEquals(4, traversal.getSteps().size());
@@ -521,12 +511,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_VX1AsStringX_out_hasXid_2AsStringX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(convertToVertexId("marko")).out().hasId(convertToVertexId("vadas"));
         Assert.assertEquals(3, traversal.getSteps().size());
@@ -540,12 +525,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_VX4X_out_asXhereX_hasXlang_javaX_selectXhereX_name() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         Object vertexId = convertToVertexId("josh");
         DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) g.traversal().V(vertexId)
@@ -572,12 +552,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_V_asXaX_outXcreatedX_asXbX_inXcreatedX_asXcX_bothXknowsX_bothXknowsX_asXdX_whereXc__notXeqXaX_orXeqXdXXXX_selectXa_b_c_dX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
                 .V().as("a")
@@ -689,12 +664,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_V_hasXinXcreatedX_count_isXgte_2XX_valuesXnameX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
                 .V()
@@ -717,12 +687,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_VX1X_out_hasXid_2X() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         Object marko = convertToVertexId("marko");
         Object vadas = convertToVertexId("vadas");
@@ -1006,12 +971,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void testg_EX11X_outV_outE_hasXid_10AsStringX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         final Object edgeId11 = convertToEdgeId(this.sqlgGraph, "josh", "created", "lop");
         final Object edgeId10 = convertToEdgeId(this.sqlgGraph, "josh", "created", "ripple");
@@ -1029,12 +989,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_V_out_outE_inV_inE_inV_both_name() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
 
         Object id = convertToVertexId(g, "marko");
@@ -1062,12 +1017,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void testHasWithStringIds() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         String marko = convertToVertexId("marko").toString();
         String vadas = convertToVertexId("vadas").toString();
@@ -1082,12 +1032,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void testHas() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         final Object id2 = convertToVertexId("vadas");
         final Object id3 = convertToVertexId("lop");
@@ -1100,12 +1045,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_VX1X_out_hasXid_2AsString_3AsStringX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         final Object id2 = convertToVertexId("vadas");
         final Object id3 = convertToVertexId("lop");
@@ -1118,12 +1058,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void testX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         final Object marko = convertToVertexId("marko");
         DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal) g.traversal().V(marko)
@@ -1143,12 +1078,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void g_VX1X_outE_hasXweight_inside_0_06X_inV() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) get_g_VX1X_outE_hasXweight_inside_0_06X_inV(g.traversal(), convertToVertexId("marko"));
         Assert.assertEquals(4, traversal.getSteps().size());
@@ -1164,12 +1094,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     @Test
     public void testY() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
         Object marko = convertToVertexId(g, "marko");
         DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) g.traversal().V(marko).outE("knows").bothV().values("name");

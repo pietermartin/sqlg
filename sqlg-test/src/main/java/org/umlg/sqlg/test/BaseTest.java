@@ -12,7 +12,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
+import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
@@ -236,9 +238,10 @@ public abstract class BaseTest {
     }
 
     protected void loadModern(SqlgGraph sqlgGraph) {
-        final GraphReader gryoReader = GryoReader.build().create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            gryoReader.readGraph(stream, sqlgGraph);
+        Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0);
+        final GraphReader reader = sqlgGraph.io(builder).reader().create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern-v3d0.json")) {
+            reader.readGraph(stream, sqlgGraph);
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -249,9 +252,10 @@ public abstract class BaseTest {
     }
 
     protected void loadGratefulDead(SqlgGraph sqlgGraph) {
-        final GraphReader gryoReader = GryoReader.build().create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
-            gryoReader.readGraph(stream, sqlgGraph);
+        Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0);
+        final GraphReader reader = sqlgGraph.io(builder).reader().create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead-v3d0.json")) {
+            reader.readGraph(stream, sqlgGraph);
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }

@@ -3,10 +3,16 @@ package org.umlg.sqlg.strategy;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgEdge;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -25,26 +31,38 @@ public class SqlgSqlExecutor {
     private SqlgSqlExecutor() {
     }
 
-    public static boolean executeDropQuery(
+    public enum DROP_QUERY {
+        ALTER,
+        EDGE,
+        NORMAL
+    }
+
+    public static void executeDropQuery(
             SqlgGraph sqlgGraph,
             SchemaTableTree rootSchemaTableTree,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        List<String> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
-        int count = 1;
-        for (String sql : sqls) {
-            if (count++ == sqls.size() - 1) {
-                distinctQueryStack.removeLast();
-                executeDropQuery(sqlgGraph, sql, distinctQueryStack);
-            } else {
-                if (sql.startsWith("ALTER")) {
-                    executeDropQuery(sqlgGraph, sql, new LinkedList<>());
-                } else {
-                    executeDropQuery(sqlgGraph, sql, distinctQueryStack);
-                }
+        List<Triple<DROP_QUERY, String, SchemaTable>> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
+        for (Triple<DROP_QUERY, String, SchemaTable> sqlPair : sqls) {
+            DROP_QUERY dropQuery = sqlPair.getLeft();
+            String sql = sqlPair.getMiddle();
+            SchemaTable deletedSchemaTable = sqlPair.getRight();
+            switch (dropQuery) {
+                case ALTER:
+                    executeDropQuery(sqlgGraph, sql, new LinkedList<>(), deletedSchemaTable);
+                    break;
+                case EDGE:
+                    LinkedList<SchemaTableTree> tmp = new LinkedList<>(distinctQueryStack);
+                    tmp.removeLast();
+                    executeDropQuery(sqlgGraph, sql, tmp, deletedSchemaTable);
+                    break;
+                case NORMAL:
+                    executeDropQuery(sqlgGraph, sql, distinctQueryStack, deletedSchemaTable);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery.toString());
             }
         }
-        return true;
     }
 
     public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeRegularQuery(
@@ -122,7 +140,7 @@ public class SqlgSqlExecutor {
         }
     }
 
-    private static void executeDropQuery(SqlgGraph sqlgGraph, String sql, LinkedList<SchemaTableTree> distinctQueryStack) {
+    private static void executeDropQuery(SqlgGraph sqlgGraph, String sql, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTable deletedSchemaTable) {
         if (sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().flush();
         }
@@ -138,9 +156,75 @@ public class SqlgSqlExecutor {
             sqlgGraph.tx().add(preparedStatement);
             int parameterCount = 1;
             SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount);
-            preparedStatement.execute();
+            if (distinctQueryStack.isEmpty()) {
+                preparedStatement.execute();
+            } else {
+                SchemaTableTree last = distinctQueryStack.getLast();
+                SchemaTable schemaTable = last.getSchemaTable().withOutPrefix();
+                if (last.getMutatingCallbacks().isEmpty()) {
+                    preparedStatement.execute();
+                } else if (sqlgGraph.getSqlDialect().supportReturningDeletedRows()) {
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    while (resultSet.next()) {
+                        Long id = resultSet.getLong(1);
+                        final Event removeEvent;
+                        if (deletedSchemaTable.isVertexTable()) {
+                            removeEvent = new Event.VertexRemovedEvent(SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable()));
+                        } else {
+                            removeEvent = new Event.EdgeRemovedEvent(SqlgEdge.of(sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable()));
+                        }
+                        for (EventCallback<Event> eventCallback : last.getMutatingCallbacks()) {
+                            eventCallback.accept(removeEvent);
+                        }
+                    }
+                } else {
+                    throw new IllegalStateException(sqlgGraph.toString() + " does not support returning deleted rows. The remove event listener can not be called.");
+                }
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void executeDropEdges(SqlgGraph sqlgGraph, EdgeLabel edgeLabel, String sql, List<EventCallback<Event>> mutatingCallbacks) {
+        try {
+            Connection conn = sqlgGraph.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql);
+            }
+            try (Statement statement = conn.createStatement()) {
+                if (mutatingCallbacks.isEmpty()) {
+                    statement.execute(sql);
+                } else {
+                    ResultSet resultSet = statement.executeQuery(sql);
+                    while (resultSet.next()) {
+                        Long id = resultSet.getLong(1);
+                        final Event removeEvent;
+                        removeEvent = new Event.EdgeRemovedEvent(SqlgEdge.of(sqlgGraph, id, edgeLabel.getSchema().getName(), edgeLabel.getName()));
+                        for (EventCallback<Event> eventCallback : mutatingCallbacks) {
+                            eventCallback.accept(removeEvent);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public static void executeDrop(SqlgGraph sqlgGraph, String sql) {
+        try {
+            Connection conn = sqlgGraph.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql);
+            }
+            try (Statement statement = conn.createStatement()) {
+                statement.execute(sql);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }

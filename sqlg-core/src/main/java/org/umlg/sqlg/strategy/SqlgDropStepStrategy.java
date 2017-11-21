@@ -1,13 +1,11 @@
 package org.umlg.sqlg.strategy;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.umlg.sqlg.step.SqlgGraphStep;
-import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.barrier.SqlgDropStepBarrier;
 import org.umlg.sqlg.strategy.barrier.SqlgVertexStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
 
@@ -23,32 +21,15 @@ import java.util.stream.Stream;
 public class SqlgDropStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy  {
 
     @Override
-    public void apply(Traversal.Admin<?, ?> traversal) {
+    public void apply(Traversal.Admin traversal) {
         if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
         Optional<DropStep> dropStepOptional = TraversalHelper.getLastStepOfAssignableClass(DropStep.class, traversal);
         if (dropStepOptional.isPresent()) {
-            DropStep dropStep = dropStepOptional.get();
-            Step previousStep = dropStep.getPreviousStep();
-            if (previousStep instanceof SqlgGraphStep || previousStep instanceof SqlgVertexStep) {
-
-                if (previousStep instanceof SqlgGraphStep) {
-                    optimize((SqlgGraphStep)previousStep);
-                } else {
-                    optimize((SqlgVertexStep)previousStep);
-                }
-
-            }
+            DropStep<?> dropStep = dropStepOptional.get();
+            TraversalHelper.replaceStep(dropStep, new SqlgDropStepBarrier<>(traversal, dropStep.getMutatingCallbackRegistry()), traversal);
         }
-    }
-
-    private void optimize(SqlgGraphStep previousStep) {
-        System.out.println(previousStep);
-    }
-
-    private void optimize(SqlgVertexStep previousStep) {
-
     }
 
     @Override

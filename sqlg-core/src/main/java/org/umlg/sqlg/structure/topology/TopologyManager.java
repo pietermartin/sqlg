@@ -20,12 +20,32 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
 public class TopologyManager {
 
     public static final String CREATED_ON = "createdOn";
+    public static final String UPDATED_ON = "updatedOn";
     public static final String DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG = " does not exist in Sqlg's topology. BUG!!!";
     public static final String SCHEMA = "Schema ";
     public static final String FOUND_IN_SQLG_S_TOPOLOGY_BUG = " found in Sqlg's topology. BUG!!!";
     public static final String MULTIPLE = "Multiple ";
 
     private TopologyManager() {
+    }
+
+    public static Vertex addGraph(SqlgGraph sqlgGraph, String  version) {
+        LocalDateTime now = LocalDateTime.now();
+        return sqlgGraph.addVertex(
+                T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GRAPH,
+                "version", version,
+                CREATED_ON, now,
+                UPDATED_ON, now
+        );
+    }
+
+    public static void updateGraph(SqlgGraph sqlgGraph, String  version) {
+        GraphTraversalSource traversalSource = sqlgGraph.topology();
+        List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
+        Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
+        Vertex graph = graphVertices.get(0);
+        graph.property("version", version);
+        graph.property(UPDATED_ON,  LocalDateTime.now());
     }
 
     public static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {

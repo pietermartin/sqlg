@@ -49,6 +49,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
+    public static SqlgEdge of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
+        return new SqlgEdge(sqlgGraph, id, schema, table);
+    }
+
     /**
      * This is the primary constructor for loading edges from the db via gremlin.
      *

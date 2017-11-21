@@ -87,6 +87,9 @@ public abstract class BaseStrategy {
     private Stack<ReplacedStepTree.TreeNode> chooseStepStack = new Stack<>();
     ReplacedStepTree.TreeNode currentTreeNodeNode;
     ReplacedStep<?, ?> currentReplacedStep;
+    /**
+     * reset is used in {@link VertexStrategy#combineSteps()} where it allows the optimization to continue.
+     */
     boolean reset = false;
 
     BaseStrategy(Traversal.Admin<?, ?> traversal) {
@@ -129,8 +132,10 @@ public abstract class BaseStrategy {
                     this.optionalStepStack.clear();
                     handleOptionalStep(1, (OptionalStep<?>) step, this.traversal, pathCount);
                     this.optionalStepStack.clear();
-                    //after choose steps the optimization starts over
+                    //after choose steps the optimization starts over in VertexStrategy
                     this.reset = true;
+                } else {
+                    return false;
                 }
             } else if (step instanceof ChooseStep) {
                 if (!unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
@@ -139,6 +144,8 @@ public abstract class BaseStrategy {
                     this.chooseStepStack.clear();
                     //after choose steps the optimization starts over
                     this.reset = true;
+                } else {
+                    return false;
                 }
             } else if (step instanceof OrderGlobalStep) {
                 stepIterator.previous();
@@ -157,6 +164,9 @@ public abstract class BaseStrategy {
                 //Table 'E_ab' is specified twice, both as a target for 'DELETE' and as a separate source for data
                 //This has been fixed in 10.3.1, waiting for it to land in the repo.
                 handleDropStep((DropStep)step);
+                return false;
+            } else if (step instanceof DropStep && this.sqlgGraph.getSqlDialect().isMariaDb()) {
+                return false;
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
             }
@@ -165,7 +175,7 @@ public abstract class BaseStrategy {
     }
 
     private void handleDropStep(DropStep dropStep) {
-        this.currentReplacedStep.markAsDrop();
+        this.currentReplacedStep.markAsDrop(dropStep.getMutatingCallbackRegistry().getCallbacks());
     }
 
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
@@ -246,6 +256,8 @@ public abstract class BaseStrategy {
                         }
                     }
                     pathCount.increment();
+                    //If there is an emit we can not continue the optimization.
+                    this.reset = repeatStep.getEmitTraversal() != null;
                 } else {
                     throw new IllegalStateException("Unhandled step nested in RepeatStep " + internalRepeatStep.getClass().getName());
                 }
@@ -283,8 +295,10 @@ public abstract class BaseStrategy {
                 handleOptionalStep(optionalStepNestedCount + 1, (OptionalStep) internalOptionalStep, traversal, pathCount);
             } else if (internalOptionalStep instanceof ComputerAwareStep.EndStep) {
                 break;
+            } else if (internalOptionalStep instanceof HasStep) {
+                handleHasSteps(optionalStepsIterator, pathCount.getValue());
             } else {
-                throw new IllegalStateException("Unhandled step nested in ChooseStep " + internalOptionalStep.getClass().getName());
+                throw new IllegalStateException("Unhandled step nested in OptionalStep " + internalOptionalStep.getClass().getName());
             }
         }
         //the chooseStep might be a ChooseStep nested inside another ChooseStep.

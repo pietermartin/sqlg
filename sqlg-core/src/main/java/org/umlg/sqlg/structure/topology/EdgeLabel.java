@@ -150,8 +150,11 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + inVertexLabel.getLabel()));
             sql.append(" (");
             sql.append(sqlDialect.maybeWrapInQoutes("ID"));
-            sql.append("), ");
-            sql.append(" FOREIGN KEY (");
+            sql.append(") ");
+            if (sqlDialect.supportsDeferrableForeignKey()) {
+                sql.append("DEFERRABLE");
+            }
+            sql.append(", FOREIGN KEY (");
             sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName() + "." + outVertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END));
             sql.append(") REFERENCES ");
             sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName()));
@@ -159,7 +162,10 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + outVertexLabel.getLabel()));
             sql.append(" (");
             sql.append(sqlDialect.maybeWrapInQoutes("ID"));
-            sql.append(")");
+            sql.append(") ");
+            if (sqlDialect.supportsDeferrableForeignKey()) {
+                sql.append("DEFERRABLE");
+            }
             if (sqlDialect.needForeignKeyIndex() && sqlDialect.isIndexPartOfCreateTable()) {
                 //This is true for Cockroachdb
                 sql.append(", INDEX (");
@@ -453,7 +459,11 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
             sql.append(" (");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(") DEFERRABLE");
+            if (this.sqlgGraph.getSqlDialect().supportsDeferrableForeignKey()) {
+                sql.append(") DEFERRABLE");
+            } else {
+                sql.append(")");
+            }
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }

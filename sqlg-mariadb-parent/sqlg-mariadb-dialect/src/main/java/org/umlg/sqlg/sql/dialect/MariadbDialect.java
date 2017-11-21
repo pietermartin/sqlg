@@ -630,6 +630,7 @@ public class MariadbDialect extends BaseSqlDialect {
         List<String> result = new ArrayList<>();
 
         //SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_schema` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_vertex` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `schemaVertex` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_edge` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
@@ -718,6 +719,10 @@ public class MariadbDialect extends BaseSqlDialect {
         return result;
     }
 
+    @Override
+    public String sqlgCreateTopologyGraph() {
+        return "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);";
+    }
 
     @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
@@ -899,4 +904,18 @@ public class MariadbDialect extends BaseSqlDialect {
         return false;
     }
 
+    @Override
+    public String sqlToTurnOffReferentialConstraintCheck(String tableName) {
+        return "SET FOREIGN_KEY_CHECKS=0";
+    }
+
+    @Override
+    public String sqlToTurnOnReferentialConstraintCheck(String tableName) {
+        return "SET FOREIGN_KEY_CHECKS=1";
+    }
+
+    @Override
+    public boolean supportReturningDeletedRows() {
+        return true;
+    }
 }

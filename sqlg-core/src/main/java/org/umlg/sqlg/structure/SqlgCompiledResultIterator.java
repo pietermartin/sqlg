@@ -113,9 +113,10 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.currentDistinctQueryStack = this.distinctQueriesIterator.next();
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.currentDistinctQueryStack);
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
-                                    if (this.currentDistinctQueryStack.getLast().isDrop()) {
+                                    //if there are duplicates in the stack we can not execute drop steps.
+                                    //execute the query as per normal and the proper DropStep will do the rest.
+                                    if (this.currentDistinctQueryStack.getLast().isDrop() && !this.currentRootSchemaTableTree.duplicatesInStack(currentDistinctQueryStack)) {
                                         executeDropQuery();
-                                        return false;
                                     } else {
                                         executeRegularQuery();
                                     }

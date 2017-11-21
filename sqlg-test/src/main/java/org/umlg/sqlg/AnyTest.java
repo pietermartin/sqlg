@@ -11,7 +11,9 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStep;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestDropStep.class,
-//        TestTopologyDeleteSpecific.class
+//        TestDropStepBarrier.class
+//        TestGremlinCompileGraphV.class,
+//        TestGremlinCompileVertexStep.class
 })
 public class AnyTest {
 }

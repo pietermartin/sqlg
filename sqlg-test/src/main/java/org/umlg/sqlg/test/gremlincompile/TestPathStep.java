@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
@@ -10,16 +9,12 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,12 +28,7 @@ public class TestPathStep extends BaseTest {
     @Test
     public void g_V_hasXlabel_personX_asXaX_localXoutXcreatedX_asXbXX_selectXa_bX_byXnameX_by() throws IOException {
         Graph graph = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(graph.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, graph);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
 
@@ -69,12 +59,7 @@ public class TestPathStep extends BaseTest {
     @Test
     public void testGraphPathWithBy() throws IOException {
         Graph graph = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(graph.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, graph);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) graph.traversal().V().out().path();
         Assert.assertEquals(3, traversal1.getSteps().size());
@@ -101,12 +86,7 @@ public class TestPathStep extends BaseTest {
     @Test
     public void testVertexPathWithBy() throws IOException {
         Graph graph = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(graph.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, graph);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) g
@@ -178,12 +158,7 @@ public class TestPathStep extends BaseTest {
     @Test
     public void g_V_asXaX_hasXname_markoX_asXbX_hasXage_29X_asXcX_path() throws IOException {
         Graph graph = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(graph.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, graph);
-        }
+        loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) g

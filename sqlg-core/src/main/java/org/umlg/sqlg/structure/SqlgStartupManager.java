@@ -13,6 +13,7 @@ import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.TopologyManager;
 
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -75,13 +76,18 @@ class SqlgStartupManager {
                 StopWatch stopWatch2 = new StopWatch();
                 stopWatch2.start();
                 loadSqlgSchemaFromInformationSchema();
+                String version = getBuildVersion();
+                TopologyManager.addGraph(this.sqlgGraph, version);
                 stopWatch2.stop();
                 logger.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
                 logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             } else {
                 // make sure the index edge index property exist, this if for upgrading from 1.3.4 to 1.4.0
                 upgradeIndexEdgeSequenceToExist();
-//                upgradeTopologyGraphToExist();
+                //make sure the sqlg_schema.graph exists.
+                String version = getBuildVersion();
+                createOrUpdateGraph(version);
+                updateTopology(version);
                 this.sqlgGraph.tx().commit();
             }
             cacheTopology();
@@ -92,6 +98,20 @@ class SqlgStartupManager {
         } catch (Exception e) {
             this.sqlgGraph.tx().rollback();
             throw e;
+        }
+    }
+
+    private void updateTopology(String version) {
+        //strip of SNAPSHOT
+        version = version.replace("-SNAPSHOT", "");
+        //convert to number
+        version = version.replace(".", "");
+        int versionNumber = Integer.valueOf(version);
+        switch (versionNumber) {
+            case 141:
+                break;
+            case 142:
+                break;
         }
     }
 
@@ -109,7 +129,7 @@ class SqlgStartupManager {
         }
     }
 
-    private void upgradeTopologyGraphToExist() {
+    private void createOrUpdateGraph(String version) {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
@@ -121,7 +141,10 @@ class SqlgStartupManager {
                         try (Statement statement = conn.createStatement()) {
                             String sql = this.sqlDialect.sqlgCreateTopologyGraph();
                             statement.execute(sql);
+                            TopologyManager.addGraph(this.sqlgGraph, version);
                         }
+                    } else {
+                        TopologyManager.updateGraph(this.sqlgGraph, version);
                     }
                 }
             } catch (SQLException e) {
@@ -513,6 +536,16 @@ class SqlgStartupManager {
         try (Statement statement = conn.createStatement()) {
             statement.execute(this.sqlDialect.createSchemaStatement(this.sqlDialect.getPublicSchema()));
         } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getBuildVersion() {
+        Properties prop = new Properties();
+        try {
+            prop.load(ClassLoader.getSystemResource("application.properties").openStream());
+            return (String) prop.get("application.version");
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

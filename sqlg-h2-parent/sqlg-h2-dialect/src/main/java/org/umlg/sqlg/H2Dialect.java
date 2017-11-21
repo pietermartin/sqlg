@@ -572,6 +572,7 @@ public class H2Dialect extends BaseSqlDialect {
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"updatedOn\" TIMESTAMP, \"version\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"schemaVertex\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
@@ -598,7 +599,11 @@ public class H2Dialect extends BaseSqlDialect {
         return result;
     }
 
-    
+    @Override
+    public String sqlgCreateTopologyGraph() {
+        return null;
+    }
+
     @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
@@ -753,9 +758,19 @@ public class H2Dialect extends BaseSqlDialect {
         }
     }
 
+
     @Override
     public boolean supportsJsonArrayValues() {
         return true;
     }
 
+    @Override
+    public String sqlToTurnOffReferentialConstraintCheck(String tableName) {
+        return "SET REFERENTIAL_INTEGRITY FALSE";
+    }
+
+    @Override
+    public String sqlToTurnOnReferentialConstraintCheck(String tableName) {
+        return "SET REFERENTIAL_INTEGRITY TRUE";
+    }
 }

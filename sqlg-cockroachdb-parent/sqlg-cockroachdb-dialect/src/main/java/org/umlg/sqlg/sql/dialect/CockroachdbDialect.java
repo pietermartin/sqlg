@@ -1593,6 +1593,11 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
+    public String sqlgCreateTopologyGraph() {
+        return null;
+    }
+    
+    @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
         return null;
     }
@@ -1758,6 +1763,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
     public boolean needsSchemaCreationPrecommit() {
         return true;
     }
+
 
     @Override
     public boolean supportsBooleanArrayValues() {

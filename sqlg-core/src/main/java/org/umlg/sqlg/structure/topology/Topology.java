@@ -93,12 +93,25 @@ public class Topology {
     public static final String CREATED_ON = "createdOn";
 
     @SuppressWarnings("WeakerAccess")
+    public static final String UPDATED_ON = "updatedOn";
+
+    @SuppressWarnings("WeakerAccess")
+    /**
+     * Holds the current Sqlg pom version.
+     */
+    public static final String VERSION = "version";
+
+    @SuppressWarnings("WeakerAccess")
     public static final String SCHEMA_VERTEX_DISPLAY = "schemaVertex";
 
     /**
      * Rdbms schema that holds sqlg topology.
      */
     public static final String SQLG_SCHEMA = "sqlg_schema";
+    /**
+     * Table storing the graph's graph meta data.
+     */
+    public static final String SQLG_SCHEMA_GRAPH = "graph";
     /**
      * Table storing the graph's schemas.
      */
@@ -227,6 +240,7 @@ public class Topology {
 
     public static final List<String> SQLG_SCHEMA_SCHEMA_TABLES = Arrays.asList(
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_GRAPH,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
@@ -261,6 +275,15 @@ public class Topology {
         this.metaSchemas.put(SQLG_SCHEMA, sqlgSchema);
 
         Map<String, PropertyType> columns = new HashMap<>();
+        columns.put(VERSION, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        columns.put(UPDATED_ON, PropertyType.LOCALDATETIME);
+        VertexLabel graphVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_GRAPH, columns);
+        this.sqlgSchemaAbstractLabels.add(graphVertexLabel);
+        columns.remove(VERSION);
+        columns.remove(UPDATED_ON);
+
+        columns = new HashMap<>();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);

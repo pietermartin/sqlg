@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
@@ -11,12 +12,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallback;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.strategy.BaseStrategy;
-import org.umlg.sqlg.strategy.SqlgComparatorHolder;
-import org.umlg.sqlg.strategy.SqlgRangeHolder;
-import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Topology;
@@ -95,6 +95,11 @@ public class SchemaTableTree {
      * Indicates the DropStep.
      */
     private boolean drop;
+    /**
+     * Indicates that an {@link org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy} is present.
+     * This means the deleted rows need to be returned to register with the EventStrategy.
+     */
+    private List<EventCallback<Event>> mutatingCallbacks;
 
     /**
      * range limitation, if any
@@ -142,6 +147,7 @@ public class SchemaTableTree {
                     boolean untilFirst,
                     boolean optionalLeftJoin,
                     boolean drop,
+                    List<EventCallback<Event>> mutatingCallbacks,
                     int replacedStepDepth,
                     Set<String> labels
     ) {
@@ -160,6 +166,7 @@ public class SchemaTableTree {
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
         this.drop = drop;
+        this.mutatingCallbacks = mutatingCallbacks;
         this.filteredAllTables = SqlgUtil.filterSqlgSchemaHasContainers(sqlgGraph.getTopology(), this.hasContainers, Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         initializeAliasColumnNameMaps();
     }
@@ -186,6 +193,7 @@ public class SchemaTableTree {
                 replacedStep.isUntilFirst(),
                 replacedStep.isLeftJoin(),
                 replacedStep.isDrop(),
+                replacedStep.getMutatingCallbacks(),
                 labels);
     }
 
@@ -222,6 +230,7 @@ public class SchemaTableTree {
                 replacedStep.isUntilFirst(),
                 replacedStep.isLeftJoin(),
                 replacedStep.isDrop(),
+                replacedStep.getMutatingCallbacks(),
                 labels);
     }
 
@@ -240,6 +249,7 @@ public class SchemaTableTree {
             boolean untilFirst,
             boolean leftJoin,
             boolean drop,
+            List<EventCallback<Event>> mutatingCallbacks,
             Set<String> labels) {
 
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth, this.replacedStepDepth);
@@ -260,6 +270,7 @@ public class SchemaTableTree {
         schemaTableTree.untilFirst = untilFirst;
         schemaTableTree.optionalLeftJoin = leftJoin;
         schemaTableTree.drop = drop;
+        schemaTableTree.mutatingCallbacks = mutatingCallbacks;
         return schemaTableTree;
     }
 
@@ -363,14 +374,15 @@ public class SchemaTableTree {
             return constructDuplicatePathSql(this.sqlgGraph, subQueryStacks);
         } else {
             //If there are no duplicates in the path then one select statement will suffice.
-            return constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null);
+            return constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null, false);
         }
     }
 
-    public List<String> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
         Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
         Preconditions.checkState(distinctQueryStack.getLast().drop);
-        String leafNodeToDelete = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null);
+        Preconditions.checkState(!duplicatesInStack(distinctQueryStack));
+        String leafNodeToDelete = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null, true);
         resetColumnAliasMaps();
 
         Optional<String> edgesToDelete = Optional.empty();
@@ -379,7 +391,7 @@ public class SchemaTableTree {
             leftJoin.add(distinctQueryStack.getLast());
             LinkedList<SchemaTableTree> edgeSchemaTableTrees = new LinkedList<>(distinctQueryStack);
             edgeSchemaTableTrees.removeLast();
-            edgesToDelete = Optional.of(constructSinglePathSql(this.sqlgGraph, false, edgeSchemaTableTrees, null, null, leftJoin));
+            edgesToDelete = Optional.of(constructSinglePathSql(this.sqlgGraph, false, edgeSchemaTableTrees, null, null, leftJoin, true));
         }
         return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete, distinctQueryStack);
     }
@@ -391,7 +403,7 @@ public class SchemaTableTree {
             return constructDuplicatePathSql(this.sqlgGraph, subQueryStacks, leftJoinOn);
         } else {
             //If there are no duplicates in the path then one select statement will suffice.
-            return constructSinglePathSql(this.sqlgGraph, false, innerJoinStack, null, null, leftJoinOn);
+            return constructSinglePathSql(this.sqlgGraph, false, innerJoinStack, null, null, leftJoinOn, false);
         }
     }
 
@@ -488,7 +500,8 @@ public class SchemaTableTree {
 
             String sql;
             if (last) {
-                sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, null, leftJoinOn);
+                //only the last step must have dropStep as true. As only the outer select needs only an ID in the select
+                sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, null, leftJoinOn, false);
             } else {
                 sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, firstOfNext);
             }
@@ -676,8 +689,23 @@ public class SchemaTableTree {
         return result;
     }
 
-    private String constructSinglePathSql(SqlgGraph sqlgGraph, boolean partOfDuplicateQuery, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
-        return constructSinglePathSql(sqlgGraph, partOfDuplicateQuery, distinctQueryStack, lastOfPrevious, firstOfNextStack, Collections.emptySet());
+    private String constructSinglePathSql(
+            SqlgGraph sqlgGraph,
+            boolean partOfDuplicateQuery,
+            LinkedList<SchemaTableTree> distinctQueryStack,
+            SchemaTableTree lastOfPrevious,
+            SchemaTableTree firstOfNextStack) {
+        return constructSinglePathSql(sqlgGraph, partOfDuplicateQuery, distinctQueryStack, lastOfPrevious, firstOfNextStack, Collections.emptySet(), false);
+    }
+
+    private String constructSinglePathSql(
+            SqlgGraph sqlgGraph,
+            boolean partOfDuplicateQuery,
+            LinkedList<SchemaTableTree> distinctQueryStack,
+            SchemaTableTree lastOfPrevious,
+            SchemaTableTree firstOfNextStack,
+            boolean dropStep) {
+        return constructSinglePathSql(sqlgGraph, partOfDuplicateQuery, distinctQueryStack, lastOfPrevious, firstOfNextStack, Collections.emptySet(), dropStep);
     }
 
     /**
@@ -696,7 +724,8 @@ public class SchemaTableTree {
             LinkedList<SchemaTableTree> distinctQueryStack,
             SchemaTableTree lastOfPrevious,
             SchemaTableTree firstOfNextStack,
-            Set<SchemaTableTree> leftJoinOn) {
+            Set<SchemaTableTree> leftJoinOn,
+            boolean dropStep) {
 
         return constructSelectSinglePathSql(
                 sqlgGraph,
@@ -704,16 +733,28 @@ public class SchemaTableTree {
                 distinctQueryStack,
                 lastOfPrevious,
                 firstOfNextStack,
-                leftJoinOn);
+                leftJoinOn,
+                dropStep);
     }
 
-    private String constructSelectSinglePathSql(SqlgGraph sqlgGraph, boolean partOfDuplicateQuery, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack, Set<SchemaTableTree> leftJoinOn) {
+    private String constructSelectSinglePathSql(
+            SqlgGraph sqlgGraph,
+            boolean partOfDuplicateQuery,
+            LinkedList<SchemaTableTree> distinctQueryStack,
+            SchemaTableTree lastOfPrevious,
+            SchemaTableTree firstOfNextStack,
+            Set<SchemaTableTree> leftJoinOn,
+            boolean dropStep
+    ) {
         StringBuilder singlePathSql = new StringBuilder("\nSELECT\n\t");
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
 
         //The SqlgVertexStep's incoming/parent element index and ids
-        if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
+        //dropStep must not have the index as it uses 'delete from where in (select...)' or 'WITH (SELECT) DELETE...'
+        //the first column in the select must be the ID.
+        //As its a DELETE there is no need for the 'index' to order on.
+        if (!dropStep && lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             //if there is only 1 incoming start/traverser we use a where clause as its faster.
             if (this.parentIdsAndIndexes.size() == 1) {
                 singlePathSql.append(this.parentIdsAndIndexes.get(0).getRight());
@@ -736,7 +777,7 @@ public class SchemaTableTree {
             singlePathSql.append(",\n\t");
         }
 
-        singlePathSql.append(constructFromClause(sqlgGraph, distinctQueryStack, lastOfPrevious, firstOfNextStack));
+        singlePathSql.append(constructFromClause(sqlgGraph, distinctQueryStack, lastOfPrevious, firstOfNextStack, dropStep));
         singlePathSql.append("\nFROM\n\t");
         singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTableTree.getSchemaTable().getSchema()));
         singlePathSql.append(".");
@@ -867,7 +908,7 @@ public class SchemaTableTree {
         //if partOfDuplicateQuery then the order by clause is on the outer select
         if (!partOfDuplicateQuery) {
 
-            if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
+            if (!dropStep && lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
                 singlePathSql.append("\nORDER BY\n\t");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
                 mutableOrderBy.setTrue();
@@ -1235,7 +1276,7 @@ public class SchemaTableTree {
      * @return true is there are duplicates else false
      */
 
-    private boolean duplicatesInStack(LinkedList<SchemaTableTree> distinctQueryStack) {
+    public boolean duplicatesInStack(LinkedList<SchemaTableTree> distinctQueryStack) {
         Set<SchemaTable> alreadyVisited = new HashSet<>();
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             if (!alreadyVisited.contains(schemaTableTree.getSchemaTable())) {
@@ -1256,12 +1297,14 @@ public class SchemaTableTree {
      *                                //     * @param lastSchemaTableTree
      * @param previousSchemaTableTree The previous schemaTableTree that will be joined to.
      * @param nextSchemaTableTree     represents the table to join to. it is null for the last table as there is nothing to join to.  @return
+     * @param dropStep                Indicates that the from clause is generated for a drop step. In this case we only generate the "ID"
      */
     private static String constructFromClause(
             SqlgGraph sqlgGraph,
             LinkedList<SchemaTableTree> distinctQueryStack,
             SchemaTableTree previousSchemaTableTree,
-            SchemaTableTree nextSchemaTableTree) {
+            SchemaTableTree nextSchemaTableTree,
+            boolean dropStep) {
 
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTableTree lastSchemaTableTree = distinctQueryStack.getLast();
@@ -1293,7 +1336,7 @@ public class SchemaTableTree {
             throw new IllegalStateException("Join can not be between 2 edge tables!");
         }
 
-        ColumnList columnList = new ColumnList(sqlgGraph, distinctQueryStack.getLast().isDrop());
+        ColumnList columnList = new ColumnList(sqlgGraph, dropStep);
         boolean printedId = false;
 
         //join to the previous label/table
@@ -2271,5 +2314,9 @@ public class SchemaTableTree {
 
     public boolean isDrop() {
         return drop;
+    }
+
+    public List<EventCallback<Event>> getMutatingCallbacks() {
+        return mutatingCallbacks;
     }
 }

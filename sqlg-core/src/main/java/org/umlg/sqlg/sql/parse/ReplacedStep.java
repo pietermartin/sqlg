@@ -14,6 +14,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallback;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
@@ -60,6 +62,7 @@ public class ReplacedStep<S, E> {
     private boolean fake;
     private boolean joinToLeftJoin;
     private boolean drop;
+    private List<EventCallback<Event>> mutatingCallbacks;
 
     private ReplacedStep() {
     }
@@ -507,6 +510,7 @@ public class ReplacedStep<S, E> {
                 ReplacedStep.this.untilFirst,
                 ReplacedStep.this.leftJoin,
                 ReplacedStep.this.drop,
+                ReplacedStep.this.getMutatingCallbacks(),
                 replacedStepDepth,
                 ReplacedStep.this.labels
         );
@@ -626,6 +630,10 @@ public class ReplacedStep<S, E> {
 
     public boolean isDrop() {
         return drop;
+    }
+
+    public List<EventCallback<Event>> getMutatingCallbacks() {
+        return mutatingCallbacks;
     }
 
     public boolean isJoinToLeftJoin() {
@@ -768,7 +776,8 @@ public class ReplacedStep<S, E> {
         this.joinToLeftJoin = true;
     }
 
-    public void markAsDrop() {
+    public void markAsDrop(List<EventCallback<Event>> mutatingCallbacks) {
         this.drop = true;
+        this.mutatingCallbacks = mutatingCallbacks;
     }
 }

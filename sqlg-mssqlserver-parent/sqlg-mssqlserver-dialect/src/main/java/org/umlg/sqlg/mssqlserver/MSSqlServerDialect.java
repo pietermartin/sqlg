@@ -515,6 +515,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_schema\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_vertex\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"schemaVertex\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_edge\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
@@ -540,11 +541,15 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return result;
     }
 
+    @Override
+    public String sqlgCreateTopologyGraph() {
+        return "CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255));";
+    }
 
     @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD \"sequence\" INTEGER DEFAULT 0;";
-        
+
     }
 
     @Override
@@ -906,6 +911,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return false;
     }
 
+
     @Override
     public boolean isMssqlServer() {
         return true;
@@ -937,7 +943,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 byte[] bytes = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value);
                 return "0x" + DatatypeConverter.printHexBinary(bytes);
             case BOOLEAN:
-                Boolean b = (Boolean)value;
+                Boolean b = (Boolean) value;
                 if (b) {
                     return Integer.valueOf(1).toString();
                 } else {
@@ -964,4 +970,18 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         }
     }
 
+   @Override
+    public String sqlToTurnOffReferentialConstraintCheck(String tableName) {
+        return "ALTER TABLE " + tableName + " NOCHECK CONSTRAINT ALL";
+    }
+
+    @Override
+    public String sqlToTurnOnReferentialConstraintCheck(String tableName) {
+        return "ALTER TABLE " + tableName + " CHECK CONSTRAINT ALL";
+    }
+
+    @Override
+    public boolean supportReturningDeletedRows() {
+        return true;
+    }
 }
