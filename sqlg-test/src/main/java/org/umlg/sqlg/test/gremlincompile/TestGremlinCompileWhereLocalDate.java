@@ -139,7 +139,41 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
+        
+        DefaultGraphTraversal<Vertex, Vertex> traversal2bis = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+                .V().hasLabel("Person").has("name","johnny").has("born", P.lt(born3));
+        Assert.assertEquals(2, traversal2bis.getSteps().size());
+        vertices = traversal2bis.toList();
+        Assert.assertEquals(traversal2bis.toString(),1, traversal2bis.getSteps().size());
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(v1));
+        Assert.assertFalse(vertices.contains(v2));
 
+        DefaultGraphTraversal<Vertex, Vertex> traversal2ter = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+                .V().hasLabel("Person").has("name").has("born", P.lt(born3));
+        Assert.assertEquals(4, traversal2ter.getSteps().size());
+        vertices = traversal2ter.toList();
+        Assert.assertEquals(traversal2ter.toString(),1, traversal2ter.getSteps().size());
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(v1));
+        Assert.assertTrue(vertices.contains(v2));
+        
+        DefaultGraphTraversal<Vertex, Vertex> traversal2cuatro = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+                .V().hasLabel("Person").hasNot("name").has("born", P.lt(born3));
+        Assert.assertEquals(4, traversal2cuatro.getSteps().size());
+        vertices = traversal2cuatro.toList();
+        Assert.assertEquals(traversal2cuatro.toString(),1, traversal2cuatro.getSteps().size());
+        Assert.assertEquals(0, vertices.size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal2cinquo = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+                .V().hasLabel("Person").hasNot("unknown").has("born", P.lt(born3));
+        Assert.assertEquals(4, traversal2cinquo.getSteps().size());
+        vertices = traversal2cinquo.toList();
+        Assert.assertEquals(traversal2cinquo.toString(),1, traversal2cinquo.getSteps().size());
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(v1));
+        Assert.assertTrue(vertices.contains(v2));
+        
         DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("Person").has("born", P.gt(born1));
         Assert.assertEquals(2, traversal3.getSteps().size());
@@ -193,7 +227,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
                 .V().hasLabel("Person").has("born", P.eq(born1));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v1, vertices.get(0));
 
@@ -201,14 +235,14 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
                 .V().hasLabel("Person").has("born", P.eq(born2));
         Assert.assertEquals(2, traversal1.getSteps().size());
         vertices = traversal1.toList();
-        Assert.assertEquals(2, traversal1.getSteps().size());
+        Assert.assertEquals(1, traversal1.getSteps().size());
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(v2, vertices.get(0));
 
         DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("Person").has("born", P.lt(born3));
         Assert.assertEquals(2, traversal2.getSteps().size());
         vertices = traversal2.toList();
-        Assert.assertEquals(2, traversal2.getSteps().size());
+        Assert.assertEquals(1, traversal2.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
@@ -217,7 +251,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
                 .V().hasLabel("Person").has("born", P.gt(born1));
         Assert.assertEquals(2, traversal3.getSteps().size());
         vertices = traversal3.toList();
-        Assert.assertEquals(2, traversal3.getSteps().size());
+        Assert.assertEquals(1, traversal3.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(v2));
         Assert.assertTrue(vertices.contains(v3));
@@ -226,7 +260,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
                 .V().hasLabel("Person").has("born", P.between(born1, born3));
         Assert.assertEquals(2, traversal4.getSteps().size());
         vertices = traversal4.toList();
-        Assert.assertEquals(2, traversal4.getSteps().size());
+        Assert.assertEquals(1, traversal4.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v2));
@@ -235,7 +269,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
                 .V().hasLabel("Person").has("born", P.within(born1, born3));
         Assert.assertEquals(2, traversal5.getSteps().size());
         vertices = traversal5.toList();
-        Assert.assertEquals(2, traversal5.getSteps().size());
+        Assert.assertEquals(1, traversal5.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(v1));
         Assert.assertTrue(vertices.contains(v3));
@@ -266,7 +300,7 @@ public class TestGremlinCompileWhereLocalDate extends BaseTest {
                 .V().hasLabel("Person").has("born", P.gt(born2));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(1, vertices.size());
     }
 

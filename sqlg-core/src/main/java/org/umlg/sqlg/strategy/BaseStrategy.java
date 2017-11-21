@@ -367,10 +367,13 @@ public abstract class BaseStrategy {
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
             countToGoPrevious++;
+            String notNullKey=null;
+            String nullKey=null;
             if (currentStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
+//                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
                 toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
                 //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                 //i.e. for neq and without 'or' logic
@@ -394,6 +397,20 @@ public abstract class BaseStrategy {
                     countToGoPrevious--;
                 }
 //                }
+            } else if ((notNullKey=isNotNullStep(currentStep))!=null){
+            	this.currentReplacedStep.addHasContainer(new HasContainer(notNullKey, new P<String>(Existence.NOTNULL,null)));
+            	 if (this.traversal.getSteps().contains(currentStep)) {
+                     this.traversal.removeStep(currentStep);
+                 }
+            	 iterator.remove();
+                 countToGoPrevious--;
+            }  else if ((nullKey=isNullStep(currentStep))!=null){
+             	this.currentReplacedStep.addHasContainer(new HasContainer(nullKey, new P<String>(Existence.NULL,null)));
+             	if (this.traversal.getSteps().contains(currentStep)) {
+                      this.traversal.removeStep(currentStep);
+                }
+             	iterator.remove();
+                countToGoPrevious--;
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {
@@ -404,6 +421,54 @@ public abstract class BaseStrategy {
             }
         }
     }
+
+    /**
+     * if this is a has(property) step, returns the property key, otherwise returns null
+     * @param currentStep the step
+     * @return the property which should be not null
+     */
+	protected String isNotNullStep(Step<?,?> currentStep){
+		if (currentStep instanceof TraversalFilterStep<?>){
+			TraversalFilterStep<?> tfs=(TraversalFilterStep<?>)currentStep;
+			List<?> c=tfs.getLocalChildren();
+			if (c!=null && c.size()==1){
+				Admin<?,?> a=(Admin<?,?>)c.iterator().next();
+				Step<?,?> s=a.getEndStep();
+				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
+					PropertiesStep<?> ps=(PropertiesStep<?>)s;
+					String[] keys=ps.getPropertyKeys();
+					if (keys!=null && keys.length==1){
+						return keys[0];
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+     * if this is a hasNot(property) step, returns the property key, otherwise returns null
+     * @param currentStep the step
+     * @return the property which should be not null
+     */
+	protected String isNullStep(Step<?,?> currentStep){
+		if (currentStep instanceof NotStep<?>){
+			NotStep<?> tfs=(NotStep<?>)currentStep;
+			List<?> c=tfs.getLocalChildren();
+			if (c!=null && c.size()==1){
+				Admin<?,?> a=(Admin<?,?>)c.iterator().next();
+				Step<?,?> s=a.getEndStep();
+				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
+					PropertiesStep<?> ps=(PropertiesStep<?>)s;
+					String[] keys=ps.getPropertyKeys();
+					if (keys!=null && keys.length==1){
+						return keys[0];
+					}
+				}
+			}
+		}
+		return null;
+	}
 
     protected void handleOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
@@ -629,6 +694,23 @@ public abstract class BaseStrategy {
         HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(sqlgGraphStep.getIds()));
         this.currentReplacedStep.addIdHasContainer(idHasContainer);
         sqlgGraphStep.clearIds();
+    }
+
+    private boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
+        for (HasContainer h : currentStep.getHasContainers()) {
+            P<?> predicate = h.getPredicate();
+            if (predicate.getValue() instanceof ZonedDateTime ||
+                    predicate.getValue() instanceof Period ||
+                    predicate.getValue() instanceof Duration ||
+                    (predicate.getValue() instanceof List && containsZonedDateTimePeriodOrDuration((List<Object>) predicate.getValue())) ||
+                    (predicate instanceof ConnectiveP && isConnectivePWithZonedDateTimePeriodOrDuration((ConnectiveP) h.getPredicate()))) {
+
+
+                return false;
+            }
+
+        }
+        return true;
     }
 
     private boolean hasContainerKeyNotIdOrLabel(HasContainer hasContainer) {
