@@ -1,7 +1,5 @@
 package org.umlg.sqlg.test.process.dropstep;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
@@ -36,10 +34,10 @@ public class TestDropStepBarrier extends BaseTest {
 
     @Parameterized.Parameters(name = "foreign key implement foreign keys: {0}, callback {1}")
     public static Collection<Object[]> data() {
-//        return Arrays.asList(new Object[]{Boolean.TRUE, Boolean.FALSE}, new Object[]{Boolean.FALSE, Boolean.FALSE},
-//                new Object[]{Boolean.TRUE, Boolean.TRUE}, new Object[]{Boolean.FALSE, Boolean.TRUE});
+        return Arrays.asList(new Object[]{Boolean.TRUE, Boolean.FALSE}, new Object[]{Boolean.FALSE, Boolean.FALSE},
+                new Object[]{Boolean.TRUE, Boolean.TRUE}, new Object[]{Boolean.FALSE, Boolean.TRUE});
 //        return Collections.singletonList(new Object[]{Boolean.FALSE});
-        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.TRUE});
+//        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.TRUE});
     }
 
     @Before
@@ -74,7 +72,7 @@ public class TestDropStepBarrier extends BaseTest {
 
 
     @Test
-    public void testDropBarrier3() {
+    public void testDropBarrier() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
@@ -171,28 +169,28 @@ public class TestDropStepBarrier extends BaseTest {
         }
     }
 
-//    @Test
-    public void playlistPaths() {
-        loadGratefulDead();
-        final GraphTraversal<Vertex, Vertex> traversal = getPlaylistPaths(this.sqlgGraph.traversal());
-        printTraversalForm(traversal);
-        List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(100, vertices.size());
-        getPlaylistPaths(this.dropTraversal).barrier().drop().iterate();
-        this.sqlgGraph.tx().commit();
-        Long count = this.sqlgGraph.traversal().V().count().next();
-        //Sometimes its 804 and sometimes 803.
-        //Probably something to do with the limit
-        Assert.assertTrue(count == 804 || count == 803);
-    }
-
-    public GraphTraversal<Vertex, Vertex> getPlaylistPaths(GraphTraversalSource graphTraversal) {
-        return graphTraversal.V().has("name", "Bob_Dylan").in("sungBy").as("a").
-                repeat(__.out().order().by(Order.shuffle).simplePath().from("a")).
-                until(__.out("writtenBy").has("name", "Johnny_Cash")).limit(1).as("b").
-                repeat(__.out().order().by(Order.shuffle).as("c").simplePath().from("b").to("c")).
-                until(__.out("sungBy").has("name", "Grateful_Dead")).limit(100);
-    }
+////    @Test
+//    public void playlistPaths() {
+//        loadGratefulDead();
+//        final GraphTraversal<Vertex, Vertex> traversal = getPlaylistPaths(this.sqlgGraph.traversal());
+//        printTraversalForm(traversal);
+//        List<Vertex> vertices = traversal.toList();
+//        Assert.assertEquals(100, vertices.size());
+//        getPlaylistPaths(this.dropTraversal).barrier().drop().iterate();
+//        this.sqlgGraph.tx().commit();
+//        Long count = this.sqlgGraph.traversal().V().count().next();
+//        //Sometimes its 804 and sometimes 803.
+//        //Probably something to do with the limit
+//        Assert.assertTrue(count == 804 || count == 803);
+//    }
+//
+//    public GraphTraversal<Vertex, Vertex> getPlaylistPaths(GraphTraversalSource graphTraversal) {
+//        return graphTraversal.V().has("name", "Bob_Dylan").in("sungBy").as("a").
+//                repeat(__.out().order().by(Order.shuffle).simplePath().from("a")).
+//                until(__.out("writtenBy").has("name", "Johnny_Cash")).limit(1).as("b").
+//                repeat(__.out().order().by(Order.shuffle).as("c").simplePath().from("b").to("c")).
+//                until(__.out("sungBy").has("name", "Grateful_Dead")).limit(100);
+//    }
 
     @Test
     public void dropProperty() {

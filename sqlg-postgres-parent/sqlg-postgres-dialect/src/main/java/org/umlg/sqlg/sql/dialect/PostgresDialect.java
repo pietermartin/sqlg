@@ -3609,9 +3609,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append(" a USING todelete\nWHERE a.");
                     sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
-                    sb.append(" = todelete.\"alias1\"");
+                    sb.append(" = todelete.");
+                    sb.append(maybeWrapInQoutes("alias1"));
                     if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                        sb.append("\nRETURNING \"ID\";");
+                        sb.append("\nRETURNING ");
+                        sb.append(maybeWrapInQoutes("ID"));
                     }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
@@ -3630,9 +3632,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append(" a USING todelete\nWHERE a.");
                     sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
-                    sb.append(" = todelete.\"alias1\"");
+                    sb.append(" = todelete.");
+                    sb.append(maybeWrapInQoutes("alias1"));
                     if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                        sb.append("\nRETURNING \"ID\";");
+                        sb.append("\nRETURNING ");
+                        sb.append(maybeWrapInQoutes("ID"));
                     }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
@@ -3651,9 +3655,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
         sb.append(".");
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
-        sb.append(" a USING todelete\nWHERE a.\"ID\" = todelete.\"alias1\"");
+        sb.append(" a USING todelete\nWHERE a.");
+        sb.append(maybeWrapInQoutes("ID"));
+        sb.append(" = todelete.");
+        sb.append(maybeWrapInQoutes("alias1"));
         if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-            sb.append("\nRETURNING \"ID\";");
+            sb.append("\nRETURNING ");
+            sb.append(maybeWrapInQoutes("ID"));
         }
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
@@ -3665,9 +3673,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
-            sb.append(" a USING todelete\nWHERE a.\"ID\" = todelete.\"alias1\"");
+            sb.append(" a USING todelete\nWHERE a.");
+            sb.append(maybeWrapInQoutes("ID"));
+            sb.append(" = todelete.");
+            sb.append(maybeWrapInQoutes("alias1"));
             if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                sb.append("\nRETURNING \"ID\";");
+                sb.append("\nRETURNING ");
+                sb.append(maybeWrapInQoutes("ID"));
             }
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
@@ -3676,11 +3688,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, "SET CONSTRAINTS ALL IMMEDIATE", null));
         }
         return sqls;
-    }
-
-    @Override
-    public boolean supportsDeferrableForeignKey() {
-        return true;
     }
 
     @Override
@@ -3705,7 +3712,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append(maybeWrapInQoutes("ID"));
         return sql.toString();
     }
-
 
     @Override
     public String drop(EdgeLabel edgeLabel, Collection<Long> ids) {
@@ -3755,6 +3761,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append(" RETURNING\n \"ID\"");
         }
         return sql.toString();
+    }
+
+    @Override
+    public boolean supportsDeferrableForeignKey() {
+        return true;
     }
 
     @Override

@@ -13,10 +13,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import javax.xml.bind.DatatypeConverter;
@@ -978,6 +978,152 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public String sqlToTurnOnReferentialConstraintCheck(String tableName) {
         return "ALTER TABLE " + tableName + " CHECK CONSTRAINT ALL";
+    }
+
+    @Override
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, Optional<String> edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+
+        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
+        SchemaTableTree last = distinctQueryStack.getLast();
+
+        SchemaTableTree lastEdge = null;
+        //if the leaf elements are vertices then we need to delete its in and out edges.
+        boolean isVertex = last.getSchemaTable().isVertexTable();
+        VertexLabel lastVertexLabel = null;
+        if (isVertex) {
+            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(last.getSchemaTable().getSchema());
+            Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().getSchema());
+            Schema schema = schemaOptional.get();
+            Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(last.getSchemaTable().withOutPrefix().getTable());
+            Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().withOutPrefix().getTable());
+            lastVertexLabel = vertexLabelOptional.get();
+        }
+        boolean queryTraversesEdge = isVertex && (distinctQueryStack.size() > 1);
+        EdgeLabel lastEdgeLabel = null;
+        if (queryTraversesEdge) {
+            lastEdge = distinctQueryStack.get(distinctQueryStack.size() - 2);
+            Optional<Schema> edgeSchema = sqlgGraph.getTopology().getSchema(lastEdge.getSchemaTable().getSchema());
+            Preconditions.checkState(edgeSchema.isPresent(), "BUG: %s not found in the topology.", lastEdge.getSchemaTable().getSchema());
+            Optional<EdgeLabel> edgeLabelOptional = edgeSchema.get().getEdgeLabel(lastEdge.getSchemaTable().withOutPrefix().getTable());
+            Preconditions.checkState(edgeLabelOptional.isPresent(), "BUG: %s not found in the topology.", lastEdge.getSchemaTable().getTable());
+            lastEdgeLabel = edgeLabelOptional.get();
+        }
+
+        if (isVertex) {
+            //First delete all edges except for this edge traversed to get to the vertices.
+            StringBuilder sb;
+            for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getOutEdgeLabels().entrySet()) {
+                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                    //Delete
+                    sb = new StringBuilder();
+                    sb.append("DELETE FROM ");
+                    sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                    sb.append(".");
+                    sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                    if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
+                        sb.append("\nOUTPUT DELETED.");
+                        sb.append(maybeWrapInQoutes("ID"));
+                    }
+                    sb.append("\nWHERE ");
+                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
+                    sb.append(" IN(");
+                    sb.append(leafElementsToDelete);
+                    sb.append(")");
+                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
+                }
+            }
+            for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
+                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                    //Delete
+                    sb = new StringBuilder();
+                    sb.append("DELETE FROM ");
+                    sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                    sb.append(".");
+                    sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                    if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
+                        sb.append("\nOUTPUT DELETED.");
+                        sb.append(maybeWrapInQoutes("ID"));
+                    }
+                    sb.append("\nWHERE ");
+                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
+                    sb.append(" IN\n\t(");
+                    sb.append(leafElementsToDelete);
+                    sb.append(")");
+                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
+                }
+            }
+        }
+
+        //Need to defer foreign key constraint checks.
+        if (queryTraversesEdge) {
+            String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
+            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), lastEdge.getSchemaTable()));
+        }
+        //Delete the leaf vertices, if there are foreign keys then its been deferred.
+        StringBuilder sb = new StringBuilder();
+        sb.append("DELETE FROM ");
+        sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
+        if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
+            sb.append("\nOUTPUT DELETED.");
+            sb.append(maybeWrapInQoutes("ID"));
+        }
+        sb.append("\nWHERE \"ID\" IN (");
+        sb.append(leafElementsToDelete);
+        sb.append(")");
+        sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
+
+        if (queryTraversesEdge) {
+            sb = new StringBuilder();
+            sb.append("DELETE FROM ");
+            sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
+            if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
+                sb.append("\nOUTPUT DELETED.");
+                sb.append(maybeWrapInQoutes("ID"));
+            }
+            sb.append("\nWHERE \"ID\" IN (\n\t");
+            sb.append(edgesToDelete.get());
+            sb.append(")");
+            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
+        }
+        //Enable the foreign key constraint
+        if (queryTraversesEdge) {
+            String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
+            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), null));
+        }
+        return sqls;
+    }
+
+    @Override
+    public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<Long> ids, boolean mutatingCallbacks) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("DELETE FROM\n\t");
+        sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+        if (mutatingCallbacks) {
+            sql.append("\nOUTPUT DELETED.");
+            sql.append(maybeWrapInQoutes("ID"));
+        }
+        sql.append(" WHERE ");
+        sql.append(maybeWrapInQoutes(
+                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
+                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        sql.append(" IN (\n");
+        int count = 1;
+        for (Long id : ids) {
+            sql.append(Long.toString(id));
+            if (count++ < ids.size()) {
+                sql.append(",");
+            }
+        }
+        sql.append(")");
+        return sql.toString();
     }
 
     @Override

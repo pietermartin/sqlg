@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
+import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
@@ -432,7 +433,7 @@ public abstract class BaseStrategy {
 			TraversalFilterStep<?> tfs=(TraversalFilterStep<?>)currentStep;
 			List<?> c=tfs.getLocalChildren();
 			if (c!=null && c.size()==1){
-				Admin<?,?> a=(Admin<?,?>)c.iterator().next();
+				Traversal.Admin<?,?> a=(Traversal.Admin<?,?>)c.iterator().next();
 				Step<?,?> s=a.getEndStep();
 				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
 					PropertiesStep<?> ps=(PropertiesStep<?>)s;
@@ -456,7 +457,7 @@ public abstract class BaseStrategy {
 			NotStep<?> tfs=(NotStep<?>)currentStep;
 			List<?> c=tfs.getLocalChildren();
 			if (c!=null && c.size()==1){
-				Admin<?,?> a=(Admin<?,?>)c.iterator().next();
+				Traversal.Admin<?,?> a=(Traversal.Admin<?,?>)c.iterator().next();
 				Step<?,?> s=a.getEndStep();
 				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
 					PropertiesStep<?> ps=(PropertiesStep<?>)s;
