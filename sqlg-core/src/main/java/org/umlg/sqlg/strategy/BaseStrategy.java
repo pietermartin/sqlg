@@ -1,18 +1,53 @@
 package org.umlg.sqlg.strategy;
 
-import com.google.common.base.Preconditions;
+import java.time.Duration;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Stack;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.NotStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.PathFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaCollectingBarrierStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SackValueStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
@@ -26,6 +61,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
+import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -38,13 +74,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.time.Duration;
-import java.time.Period;
-import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import com.google.common.base.Preconditions;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -296,6 +326,8 @@ public abstract class BaseStrategy {
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
             countToGoPrevious++;
+            String notNullKey=null;
+            String nullKey=null;
             if (currentStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
@@ -324,6 +356,20 @@ public abstract class BaseStrategy {
                         countToGoPrevious--;
                     }
 //                }
+            } else if ((notNullKey=isNotNullStep(currentStep))!=null){
+            	this.currentReplacedStep.addHasContainer(new HasContainer(notNullKey, new P<String>(Existence.NOTNULL,null)));
+            	 if (this.traversal.getSteps().contains(currentStep)) {
+                     this.traversal.removeStep(currentStep);
+                 }
+            	 iterator.remove();
+                 countToGoPrevious--;
+            }  else if ((nullKey=isNullStep(currentStep))!=null){
+             	this.currentReplacedStep.addHasContainer(new HasContainer(nullKey, new P<String>(Existence.NULL,null)));
+             	if (this.traversal.getSteps().contains(currentStep)) {
+                      this.traversal.removeStep(currentStep);
+                }
+             	iterator.remove();
+                countToGoPrevious--;
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {
@@ -334,6 +380,54 @@ public abstract class BaseStrategy {
             }
         }
     }
+
+    /**
+     * if this is a has(property) step, returns the property key, otherwise returns null
+     * @param currentStep the step
+     * @return the property which should be not null
+     */
+	protected String isNotNullStep(Step<?,?> currentStep){
+		if (currentStep instanceof TraversalFilterStep<?>){
+			TraversalFilterStep<?> tfs=(TraversalFilterStep<?>)currentStep;
+			List<?> c=tfs.getLocalChildren();
+			if (c!=null && c.size()==1){
+				Admin<?,?> a=(Admin<?,?>)c.iterator().next();
+				Step<?,?> s=a.getEndStep();
+				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
+					PropertiesStep<?> ps=(PropertiesStep<?>)s;
+					String[] keys=ps.getPropertyKeys();
+					if (keys!=null && keys.length==1){
+						return keys[0];
+					}
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+     * if this is a hasNot(property) step, returns the property key, otherwise returns null
+     * @param currentStep the step
+     * @return the property which should be not null
+     */
+	protected String isNullStep(Step<?,?> currentStep){
+		if (currentStep instanceof NotStep<?>){
+			NotStep<?> tfs=(NotStep<?>)currentStep;
+			List<?> c=tfs.getLocalChildren();
+			if (c!=null && c.size()==1){
+				Admin<?,?> a=(Admin<?,?>)c.iterator().next();
+				Step<?,?> s=a.getEndStep();
+				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
+					PropertiesStep<?> ps=(PropertiesStep<?>)s;
+					String[] keys=ps.getPropertyKeys();
+					if (keys!=null && keys.length==1){
+						return keys[0];
+					}
+				}
+			}
+		}
+		return null;
+	}
 
     protected void handleOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
