@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -97,6 +98,10 @@ public class WhereClause {
         	prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
         	FullText ft=(FullText)p.getBiPredicate();
         	result += sqlgGraph.getSqlDialect().getFullTextQueryText(ft, prefix);
+        	return result;
+        } else if (p.getBiPredicate() instanceof Existence){
+        	result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+        	result += " "+p.getBiPredicate().toString();
         	return result;
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
@@ -235,6 +240,8 @@ public class WhereClause {
             keyValueMap.put(hasContainer.getKey(), hasContainer.getValue() + "%");
         } else if (p.getBiPredicate() == Text.endsWith || p.getBiPredicate() == Text.nendsWith) {
             keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue());
+        } else if (p.getBiPredicate() instanceof Existence){
+        	// no value
         } else {
             keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
         }
