@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -24,6 +25,28 @@ public class TestHas extends BaseTest {
         final Traversal<Vertex, Vertex> traversal =  this.sqlgGraph.traversal().V().has("blah");
         printTraversalForm(traversal);
         Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testHasProperty() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().has("name").count().next(), 0);
+        Assert.assertTrue(this.sqlgGraph.traversal().V().has("name").toList().containsAll(Arrays.asList(a1, a2)));
+    }
+
+    @Test
+    public void testHasNotProperty() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasNot("name").count().next(), 0);
+        Assert.assertTrue(this.sqlgGraph.traversal().V().hasNot("name").toList().containsAll(Arrays.asList(a3, a4)));
     }
 
     @Test
