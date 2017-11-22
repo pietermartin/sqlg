@@ -301,31 +301,31 @@ public abstract class BaseStrategy {
             if (currentStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
-                List<HasContainer> toRemoveHasContainers = new ArrayList<>();
-//                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
-                toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
-                //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
-                //i.e. for neq and without 'or' logic
-                toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeHas(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeWithInOut(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeBetween(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeInside(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeOutside(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
-                if (toRemoveHasContainers.size() == hasContainers.size()) {
-                    if (!currentStep.getLabels().isEmpty()) {
-                        final IdentityStep identityStep = new IdentityStep<>(this.traversal);
-                        currentStep.getLabels().forEach(l -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l));
-                        TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
-                    }
-                    if (this.traversal.getSteps().contains(currentStep)) {
-                        this.traversal.removeStep(currentStep);
-                    }
-                    iterator.remove();
-                    countToGoPrevious--;
+               if (isNotWithMultipleColumnValue(hasContainerHolder)) {
+            	    List<HasContainer> toRemoveHasContainers = new ArrayList<>();
+                    toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
+	                //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
+	                //i.e. for neq and without 'or' logic
+	                toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
+	                toRemoveHasContainers.addAll(optimizeHas(this.currentReplacedStep, hasContainers));
+	                toRemoveHasContainers.addAll(optimizeWithInOut(this.currentReplacedStep, hasContainers));
+	                toRemoveHasContainers.addAll(optimizeBetween(this.currentReplacedStep, hasContainers));
+	                toRemoveHasContainers.addAll(optimizeInside(this.currentReplacedStep, hasContainers));
+	                toRemoveHasContainers.addAll(optimizeOutside(this.currentReplacedStep, hasContainers));
+	                toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
+	                if (toRemoveHasContainers.size() == hasContainers.size()) {
+	                    if (!currentStep.getLabels().isEmpty()) {
+	                        final IdentityStep identityStep = new IdentityStep<>(this.traversal);
+	                        currentStep.getLabels().forEach(l -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l));
+	                        TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
+	                    }
+	                    if (this.traversal.getSteps().contains(currentStep)) {
+	                        this.traversal.removeStep(currentStep);
+	                    }
+	                    iterator.remove();
+	                    countToGoPrevious--;
+	                }
                 }
-//                }
             } else if ((notNullKey = isNotNullStep(currentStep)) != null) {
                 this.currentReplacedStep.addHasContainer(new HasContainer(notNullKey, new P<String>(Existence.NOTNULL, null)));
                 if (!currentStep.getLabels().isEmpty()) {
@@ -550,14 +550,20 @@ public abstract class BaseStrategy {
         sqlgGraphStep.clearIds();
     }
 
-    private boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
+    /**
+     * check if we don't have criteria on values that require multiple SQL columns
+     * for the moment we don't generate SQL queries for these
+     * @param currentStep
+     * @return
+     */
+    private boolean isNotWithMultipleColumnValue(HasContainerHolder currentStep) {
         for (HasContainer h : currentStep.getHasContainers()) {
             P<?> predicate = h.getPredicate();
-            if (predicate.getValue() instanceof ZonedDateTime ||
+            if (    predicate.getValue() instanceof ZonedDateTime ||
                     predicate.getValue() instanceof Period ||
                     predicate.getValue() instanceof Duration ||
-                    (predicate.getValue() instanceof List && containsZonedDateTimePeriodOrDuration((List<Object>) predicate.getValue())) ||
-                    (predicate instanceof ConnectiveP && isConnectivePWithZonedDateTimePeriodOrDuration((ConnectiveP) h.getPredicate()))) {
+                    (predicate.getValue() instanceof List && containsWithMultipleColumnValue((List<Object>) predicate.getValue())) ||
+                    (predicate instanceof ConnectiveP && isConnectivePWithMultipleColumnValue((ConnectiveP) h.getPredicate()))) {
 
 
                 return false;
@@ -680,10 +686,15 @@ public abstract class BaseStrategy {
         return result;
     }
 
-    private boolean containsZonedDateTimePeriodOrDuration(List<Object> values) {
+    /**
+     * Do we have a list with values that use several columns in tables?
+     * @param values
+     * @return
+     */
+    private boolean containsWithMultipleColumnValue(List<Object> values) {
         for (Object value : values) {
-            if (value instanceof ZonedDateTime ||
-                    value instanceof Period ||
+            if (    value instanceof ZonedDateTime ||
+            		value instanceof Period ||
                     value instanceof Duration) {
                 return true;
             }
@@ -691,11 +702,16 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    private boolean isConnectivePWithZonedDateTimePeriodOrDuration(ConnectiveP connectiveP) {
+    /**
+     * Do we have a connective predicate with values that use several columns in tables?
+     * @param connectiveP
+     * @return
+     */
+    private boolean isConnectivePWithMultipleColumnValue(ConnectiveP connectiveP) {
         List<P<?>> ps = connectiveP.getPredicates();
         for (P<?> predicate : ps) {
-            if (predicate.getValue() instanceof ZonedDateTime ||
-                    predicate.getValue() instanceof Period ||
+            if (    predicate.getValue() instanceof ZonedDateTime ||
+            		predicate.getValue() instanceof Period ||
                     predicate.getValue() instanceof Duration) {
                 return true;
             }
