@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventS
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +49,7 @@ public class TestDropStep extends BaseTest {
         configuration.setProperty("implement.foreign.keys", this.fkOn);
         this.removedVertices.clear();
         if (this.mutatingCallback) {
-            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportReturningDeletedRows());
+//            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportReturningDeletedRows());
             final MutationListener listener = new AbstractMutationListener() {
                 @Override
                 public void vertexRemoved(final Vertex vertex) {

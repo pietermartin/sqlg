@@ -12,16 +12,16 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.ListCallbackRegistry;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.umlg.sqlg.step.SqlgFilterStep;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -63,16 +63,51 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                     if (sqlgElement instanceof SqlgVertex) {
                         Optional<VertexLabel> vertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable());
                         Preconditions.checkState(vertexLabelOptional.isPresent());
+                        SqlgVertex sqlgVertex = (SqlgVertex)sqlgElement;
                         boolean added = this.verticesToDelete.put(vertexLabelOptional.get(), id);
                         if (added && eventStrategy != null) {
-                            final Event removeEvent = new Event.VertexRemovedEvent(eventStrategy.detach((SqlgVertex) sqlgElement));
+                            final Event removeEvent = new Event.VertexRemovedEvent(eventStrategy.detach(sqlgVertex));
                             this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
                         }
                         for (EdgeLabel outEdgeLabel : vertexLabelOptional.get().getOutEdgeLabels().values()) {
-                            this.foreignKeyOutEdgesToDelete.put(Pair.of(outEdgeLabel, vertexLabelOptional.get()), id);
+                            //If there are registered callBacks and the dialect does not support returning deleted rows we need to do it the slow way.
+                            //Get all the edges, register to the callBack and delete.
+                            if (!this.sqlgGraph.getSqlDialect().supportReturningDeletedRows() && eventStrategy != null) {
+                                Iterator<Edge> edges = sqlgVertex.edges(Direction.OUT);
+                                while (edges.hasNext()) {
+                                    Edge edge = edges.next();
+                                    SchemaTable schemaTableEdge = ((SqlgEdge)edge).getSchemaTablePrefixed().withOutPrefix();
+                                    Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(schemaTableEdge.getSchema(), schemaTableEdge.getTable());
+                                    Preconditions.checkState(edgeLabelOptional.isPresent());
+                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getId());
+                                    if (added) {
+                                        final Event removeEvent = new Event.EdgeRemovedEvent(eventStrategy.detach(edge));
+                                        this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
+                                    }
+                                }
+                            } else {
+                                this.foreignKeyOutEdgesToDelete.put(Pair.of(outEdgeLabel, vertexLabelOptional.get()), id);
+                            }
                         }
                         for (EdgeLabel inEdgeLabel : vertexLabelOptional.get().getInEdgeLabels().values()) {
-                            this.foreignKeyInEdgesToDelete.put(Pair.of(inEdgeLabel, vertexLabelOptional.get()), id);
+                            //If there are registered callBacks and the dialect does not support returning deleted rows we need to do it the slow way.
+                            //Get all the edges, register to the callBack and delete.
+                            if (!this.sqlgGraph.getSqlDialect().supportReturningDeletedRows() && !this.callbackRegistry.getCallbacks().isEmpty()) {
+                                Iterator<Edge> edges = sqlgVertex.edges(Direction.IN);
+                                while (edges.hasNext()) {
+                                    Edge edge = edges.next();
+                                    SchemaTable schemaTableEdge = ((SqlgEdge)edge).getSchemaTablePrefixed().withOutPrefix();
+                                    Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(schemaTableEdge.getSchema(), schemaTableEdge.getTable());
+                                    Preconditions.checkState(edgeLabelOptional.isPresent());
+                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getId());
+                                    if (added) {
+                                        final Event removeEvent = new Event.EdgeRemovedEvent(eventStrategy.detach(edge));
+                                        this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
+                                    }
+                                }
+                            } else {
+                                this.foreignKeyInEdgesToDelete.put(Pair.of(inEdgeLabel, vertexLabelOptional.get()), id);
+                            }
                         }
                     } else if (sqlgElement instanceof SqlgEdge) {
                         Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(schemaTable.getSchema(), schemaTable.getTable());
@@ -86,8 +121,14 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                 } else if (object instanceof SqlgProperty) {
                     SqlgProperty sqlgProperty = (SqlgProperty)object;
                     if (eventStrategy != null) {
-                        final Event removeEvent = new Event.VertexPropertyRemovedEvent(eventStrategy.detach((SqlgVertexProperty) sqlgProperty));
-                        callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
+                        final Event removeEvent;
+                        if (sqlgProperty.element() instanceof Edge) {
+                            removeEvent = new Event.EdgePropertyRemovedEvent(eventStrategy.detach((Edge) sqlgProperty.element()), eventStrategy.detach(sqlgProperty));
+                        } else if (sqlgProperty instanceof VertexProperty)
+                            removeEvent = new Event.VertexPropertyRemovedEvent(eventStrategy.detach((VertexProperty) sqlgProperty));
+                        else
+                            throw new IllegalStateException("The incoming object is not removable: " + object);
+                        this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
                     }
                     sqlgProperty.remove();
                 } else {

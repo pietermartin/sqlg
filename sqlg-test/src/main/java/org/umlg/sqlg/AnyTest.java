@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
+import org.umlg.sqlg.test.process.dropstep.TestDropStep;
+import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -10,11 +11,9 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithHas.class
-//        TestDropStep.class,
-//        TestDropStepBarrier.class
-//        TestGremlinCompileGraphV.class,
-//        TestGremlinCompileVertexStep.class
+        TestDropStep.class,
+        TestDropStepBarrier.class,
+//        TestNotStepBarrier.class
 })
 public class AnyTest {
 }

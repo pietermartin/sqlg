@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEf
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
@@ -160,11 +161,18 @@ public abstract class BaseStrategy {
                 if (stepIterator.hasNext() && stepIterator.next() instanceof SelectOneStep) {
                     return false;
                 }
-            } else if (step instanceof DropStep && !this.sqlgGraph.getSqlDialect().isMariaDb()) {
-                //MariaDB does not support target and source together.
-                //Table 'E_ab' is specified twice, both as a target for 'DELETE' and as a separate source for data
-                //This has been fixed in 10.3.1, waiting for it to land in the repo.
-                handleDropStep((DropStep)step);
+            } else if (step instanceof DropStep && (!this.sqlgGraph.getSqlDialect().isMariaDb())) {
+
+                Traversal.Admin<?, ?> root = TraversalHelper.getRootTraversal(this.traversal);
+                final Optional<EventStrategy> eventStrategyOptional = root.getStrategies().getStrategy(EventStrategy.class);
+                if (!this.sqlgGraph.getSqlDialect().supportReturningDeletedRows() && eventStrategyOptional.isPresent()) {
+                    //Do nothing, it will go via the SqlgDropStepBarrier.
+                } else {
+                    //MariaDB does not support target and source together.
+                    //Table 'E_ab' is specified twice, both as a target for 'DELETE' and as a separate source for data
+                    //This has been fixed in 10.3.1, waiting for it to land in the repo.
+                    handleDropStep((DropStep) step);
+                }
                 return false;
             } else if (step instanceof DropStep && this.sqlgGraph.getSqlDialect().isMariaDb()) {
                 return false;
@@ -368,59 +376,59 @@ public abstract class BaseStrategy {
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
             countToGoPrevious++;
-            String notNullKey=null;
-            String nullKey=null;
+            String notNullKey = null;
+            String nullKey = null;
             if (currentStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
-//                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
-                toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
-                //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
-                //i.e. for neq and without 'or' logic
-                toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeHas(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeWithInOut(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeBetween(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeInside(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeOutside(this.currentReplacedStep, hasContainers));
-                toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
-                if (toRemoveHasContainers.size() == hasContainers.size()) {
-                    if (!currentStep.getLabels().isEmpty()) {
-                        final IdentityStep identityStep = new IdentityStep<>(this.traversal);
-                        currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
-                        TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
+                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
+                    toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
+                    //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
+                    //i.e. for neq and without 'or' logic
+                    toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeHas(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeWithInOut(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeBetween(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeInside(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeOutside(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
+                    if (toRemoveHasContainers.size() == hasContainers.size()) {
+                        if (!currentStep.getLabels().isEmpty()) {
+                            final IdentityStep identityStep = new IdentityStep<>(this.traversal);
+                            currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
+                            TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
+                        }
+                        if (this.traversal.getSteps().contains(currentStep)) {
+                            this.traversal.removeStep(currentStep);
+                        }
+                        iterator.remove();
+                        countToGoPrevious--;
                     }
-                    if (this.traversal.getSteps().contains(currentStep)) {
-                        this.traversal.removeStep(currentStep);
-                    }
-                    iterator.remove();
-                    countToGoPrevious--;
                 }
-//                }
-            } else if ((notNullKey=isNotNullStep(currentStep))!=null){
-            	this.currentReplacedStep.addHasContainer(new HasContainer(notNullKey, new P<>(Existence.NOTNULL,null)));
+            } else if ((notNullKey = isNotNullStep(currentStep)) != null) {
+                this.currentReplacedStep.addHasContainer(new HasContainer(notNullKey, new P<>(Existence.NOTNULL, null)));
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(this.traversal);
                     currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
                     TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
                 }
-            	 if (this.traversal.getSteps().contains(currentStep)) {
-                     this.traversal.removeStep(currentStep);
-                 }
-            	 iterator.remove();
-                 countToGoPrevious--;
-            }  else if ((nullKey=isNullStep(currentStep))!=null){
-             	this.currentReplacedStep.addHasContainer(new HasContainer(nullKey, new P<>(Existence.NULL,null)));
+                if (this.traversal.getSteps().contains(currentStep)) {
+                    this.traversal.removeStep(currentStep);
+                }
+                iterator.remove();
+                countToGoPrevious--;
+            } else if ((nullKey = isNullStep(currentStep)) != null) {
+                this.currentReplacedStep.addHasContainer(new HasContainer(nullKey, new P<>(Existence.NULL, null)));
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(this.traversal);
                     currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
                     TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
                 }
-             	if (this.traversal.getSteps().contains(currentStep)) {
-                      this.traversal.removeStep(currentStep);
+                if (this.traversal.getSteps().contains(currentStep)) {
+                    this.traversal.removeStep(currentStep);
                 }
-             	iterator.remove();
+                iterator.remove();
                 countToGoPrevious--;
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
@@ -435,51 +443,53 @@ public abstract class BaseStrategy {
 
     /**
      * if this is a has(property) step, returns the property key, otherwise returns null
+     *
      * @param currentStep the step
      * @return the property which should be not null
      */
-	protected String isNotNullStep(Step<?,?> currentStep){
-		if (currentStep instanceof TraversalFilterStep<?>){
-			TraversalFilterStep<?> tfs=(TraversalFilterStep<?>)currentStep;
-			List<?> c=tfs.getLocalChildren();
-			if (c!=null && c.size()==1){
-				Traversal.Admin<?,?> a=(Traversal.Admin<?,?>)c.iterator().next();
-				Step<?,?> s=a.getEndStep();
-				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
-					PropertiesStep<?> ps=(PropertiesStep<?>)s;
-					String[] keys=ps.getPropertyKeys();
-					if (keys!=null && keys.length==1){
-						return keys[0];
-					}
-				}
-			}
-		}
-		return null;
-	}
+    protected String isNotNullStep(Step<?, ?> currentStep) {
+        if (currentStep instanceof TraversalFilterStep<?>) {
+            TraversalFilterStep<?> tfs = (TraversalFilterStep<?>) currentStep;
+            List<?> c = tfs.getLocalChildren();
+            if (c != null && c.size() == 1) {
+                Traversal.Admin<?, ?> a = (Traversal.Admin<?, ?>) c.iterator().next();
+                Step<?, ?> s = a.getEndStep();
+                if (a.getSteps().size() == 1 && s instanceof PropertiesStep<?>) {
+                    PropertiesStep<?> ps = (PropertiesStep<?>) s;
+                    String[] keys = ps.getPropertyKeys();
+                    if (keys != null && keys.length == 1) {
+                        return keys[0];
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
-	/**
+    /**
      * if this is a hasNot(property) step, returns the property key, otherwise returns null
+     *
      * @param currentStep the step
      * @return the property which should be not null
      */
-	protected String isNullStep(Step<?,?> currentStep){
-		if (currentStep instanceof NotStep<?>){
-			NotStep<?> tfs=(NotStep<?>)currentStep;
-			List<?> c=tfs.getLocalChildren();
-			if (c!=null && c.size()==1){
-				Traversal.Admin<?,?> a=(Traversal.Admin<?,?>)c.iterator().next();
-				Step<?,?> s=a.getEndStep();
-				if (a.getSteps().size()==1 && s instanceof PropertiesStep<?>){
-					PropertiesStep<?> ps=(PropertiesStep<?>)s;
-					String[] keys=ps.getPropertyKeys();
-					if (keys!=null && keys.length==1){
-						return keys[0];
-					}
-				}
-			}
-		}
-		return null;
-	}
+    protected String isNullStep(Step<?, ?> currentStep) {
+        if (currentStep instanceof NotStep<?>) {
+            NotStep<?> tfs = (NotStep<?>) currentStep;
+            List<?> c = tfs.getLocalChildren();
+            if (c != null && c.size() == 1) {
+                Traversal.Admin<?, ?> a = (Traversal.Admin<?, ?>) c.iterator().next();
+                Step<?, ?> s = a.getEndStep();
+                if (a.getSteps().size() == 1 && s instanceof PropertiesStep<?>) {
+                    PropertiesStep<?> ps = (PropertiesStep<?>) s;
+                    String[] keys = ps.getPropertyKeys();
+                    if (keys != null && keys.length == 1) {
+                        return keys[0];
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
     protected void handleOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
@@ -615,7 +625,7 @@ public abstract class BaseStrategy {
                                 }
                             }
                         } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
-                                    hasContainer.getBiPredicate() instanceof FullText) {
+                                hasContainer.getBiPredicate() instanceof FullText) {
                             andOrHasContainer.addHasContainer(hasContainer);
                         } else {
                             return Optional.empty();
