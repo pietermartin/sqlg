@@ -399,14 +399,24 @@ public abstract class BaseStrategy {
                 }
 //                }
             } else if ((notNullKey=isNotNullStep(currentStep))!=null){
-            	this.currentReplacedStep.addHasContainer(new HasContainer(notNullKey, new P<String>(Existence.NOTNULL,null)));
+            	this.currentReplacedStep.addHasContainer(new HasContainer(notNullKey, new P<>(Existence.NOTNULL,null)));
+                if (!currentStep.getLabels().isEmpty()) {
+                    final IdentityStep identityStep = new IdentityStep<>(this.traversal);
+                    currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
+                    TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
+                }
             	 if (this.traversal.getSteps().contains(currentStep)) {
                      this.traversal.removeStep(currentStep);
                  }
             	 iterator.remove();
                  countToGoPrevious--;
             }  else if ((nullKey=isNullStep(currentStep))!=null){
-             	this.currentReplacedStep.addHasContainer(new HasContainer(nullKey, new P<String>(Existence.NULL,null)));
+             	this.currentReplacedStep.addHasContainer(new HasContainer(nullKey, new P<>(Existence.NULL,null)));
+                if (!currentStep.getLabels().isEmpty()) {
+                    final IdentityStep identityStep = new IdentityStep<>(this.traversal);
+                    currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
+                    TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
+                }
              	if (this.traversal.getSteps().contains(currentStep)) {
                       this.traversal.removeStep(currentStep);
                 }

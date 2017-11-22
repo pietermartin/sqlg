@@ -42,6 +42,20 @@ public class TestGremlinCompileWithHas extends BaseTest {
     }
 
     @Test
+    public void testHasPropertyWithLabel() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("name").as("a").<Vertex>select("a").toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").hasNot("name").as("a").<Vertex>select("a").toList();
+        Assert.assertEquals(2, vertices.size());
+    }
+
+    @Test
     public void testHasIdRecompilation() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
