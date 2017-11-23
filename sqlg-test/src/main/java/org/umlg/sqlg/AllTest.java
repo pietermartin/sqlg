@@ -207,7 +207,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLabelLength.class,
         TestAddTemporaryVertex.class,
         TestBatchTemporaryVertex.class,
-        TestUnoptimizedRepeatStep.class
+        TestUnoptimizedRepeatStep.class,
+        TestPropertyReference.class
 
 })
 public class AllTest {

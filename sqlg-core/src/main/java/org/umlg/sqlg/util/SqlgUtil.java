@@ -14,6 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.predicate.PropertyReference;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
@@ -678,7 +679,8 @@ public class SqlgUtil {
             String key = entry.getKey();
             //value
             //skip the label as that is not a property but the table
-            if (key.equals(label.getAccessor())) {
+            // skip column references that don't have values
+            if (key.equals(label.getAccessor()) || value instanceof PropertyReference) {
                 continue;
             }
             // we transform id in ID

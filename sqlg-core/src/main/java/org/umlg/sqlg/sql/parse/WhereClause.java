@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.predicate.PropertyReference;
 import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
@@ -42,7 +43,12 @@ public class WhereClause {
         prefix += ".";
         prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
 
-        if (p.getBiPredicate() instanceof Compare) {
+        if (p.getValue() instanceof PropertyReference && p.getBiPredicate() instanceof Compare){
+        	result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+        	String column= prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(((PropertyReference)p.getValue()).getColumnName());
+        	result += compareToSql((Compare) p.getBiPredicate(),column);
+        	return result;
+        } else if (p.getBiPredicate() instanceof Compare) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
             } else {
@@ -126,6 +132,26 @@ public class WhereClause {
         }
     }
 
+    private static String compareToSql(Compare compare,String column) {
+        switch (compare) {
+            case eq:
+                return " = " + column;
+            case neq:
+                return " <> " + column;
+            case gt:
+                return " > " + column;
+            case gte:
+                return " >= " + column;
+            case lt:
+                return " < " + column;
+            case lte:
+                return " <= " + column;
+            default:
+                throw new RuntimeException("Unknown Compare " + compare.name());
+        }
+    }
+
+    
     private static String containsToSql(Contains contains, int size) {
         String result;
         if (size == 1) {
