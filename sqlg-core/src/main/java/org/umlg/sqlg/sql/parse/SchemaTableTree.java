@@ -12,15 +12,16 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallback;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.security.SecureRandom;
@@ -96,11 +97,6 @@ public class SchemaTableTree {
      * Indicates the DropStep.
      */
     private boolean drop;
-    /**
-     * Indicates that an {@link org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy} is present.
-     * This means the deleted rows need to be returned to register with the EventStrategy.
-     */
-    private List<EventCallback<Event>> mutatingCallbacks;
 
     /**
      * range limitation, if any
@@ -148,7 +144,6 @@ public class SchemaTableTree {
                     boolean untilFirst,
                     boolean optionalLeftJoin,
                     boolean drop,
-                    List<EventCallback<Event>> mutatingCallbacks,
                     int replacedStepDepth,
                     Set<String> labels
     ) {
@@ -167,7 +162,6 @@ public class SchemaTableTree {
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
         this.drop = drop;
-        this.mutatingCallbacks = mutatingCallbacks;
         this.filteredAllTables = SqlgUtil.filterSqlgSchemaHasContainers(sqlgGraph.getTopology(), this.hasContainers, Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         initializeAliasColumnNameMaps();
     }
@@ -194,7 +188,6 @@ public class SchemaTableTree {
                 replacedStep.isUntilFirst(),
                 replacedStep.isLeftJoin(),
                 replacedStep.isDrop(),
-                replacedStep.getMutatingCallbacks(),
                 labels);
     }
 
@@ -231,7 +224,6 @@ public class SchemaTableTree {
                 replacedStep.isUntilFirst(),
                 replacedStep.isLeftJoin(),
                 replacedStep.isDrop(),
-                replacedStep.getMutatingCallbacks(),
                 labels);
     }
 
@@ -250,7 +242,6 @@ public class SchemaTableTree {
             boolean untilFirst,
             boolean leftJoin,
             boolean drop,
-            List<EventCallback<Event>> mutatingCallbacks,
             Set<String> labels) {
 
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth, this.replacedStepDepth);
@@ -271,7 +262,6 @@ public class SchemaTableTree {
         schemaTableTree.untilFirst = untilFirst;
         schemaTableTree.optionalLeftJoin = leftJoin;
         schemaTableTree.drop = drop;
-        schemaTableTree.mutatingCallbacks = mutatingCallbacks;
         return schemaTableTree;
     }
 
@@ -383,18 +373,81 @@ public class SchemaTableTree {
         Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
         Preconditions.checkState(distinctQueryStack.getLast().drop);
         Preconditions.checkState(!duplicatesInStack(distinctQueryStack));
-        String leafNodeToDelete = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null, true);
-        resetColumnAliasMaps();
 
-        Optional<String> edgesToDelete = Optional.empty();
-        if (distinctQueryStack.size() > 1 && distinctQueryStack.getLast().getSchemaTable().isVertexTable()) {
-            Set<SchemaTableTree> leftJoin = new HashSet<>();
-            leftJoin.add(distinctQueryStack.getLast());
-            LinkedList<SchemaTableTree> edgeSchemaTableTrees = new LinkedList<>(distinctQueryStack);
-            edgeSchemaTableTrees.removeLast();
-            edgesToDelete = Optional.of(constructSinglePathSql(this.sqlgGraph, false, edgeSchemaTableTrees, null, null, leftJoin, true));
+        if (distinctQueryStack.size() == 1 &&
+                distinctQueryStack.getFirst().getHasContainers().isEmpty() &&
+                distinctQueryStack.getFirst().getAndOrHasContainers().isEmpty() &&
+                (
+                        (this.sqlgGraph.getSqlDialect().supportsTruncateMultipleTablesTogether() && hasOnlyOneInOutEdgeLabel(distinctQueryStack.getFirst().getSchemaTable())) ||
+                                (!this.sqlgGraph.getSqlDialect().supportsTruncateMultipleTablesTogether() && hasNoEdgeLabels(distinctQueryStack.getFirst().getSchemaTable()))
+                )) {
+            //truncate logica.
+            SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
+            return this.sqlgGraph.getSqlDialect().sqlTruncate(this.sqlgGraph, schemaTableTree.getSchemaTable());
+        } else {
+            String leafNodeToDelete = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null, true);
+            resetColumnAliasMaps();
+
+            Optional<String> edgesToDelete = Optional.empty();
+            if (distinctQueryStack.size() > 1 && distinctQueryStack.getLast().getSchemaTable().isVertexTable()) {
+                Set<SchemaTableTree> leftJoin = new HashSet<>();
+                leftJoin.add(distinctQueryStack.getLast());
+                LinkedList<SchemaTableTree> edgeSchemaTableTrees = new LinkedList<>(distinctQueryStack);
+                edgeSchemaTableTrees.removeLast();
+                edgesToDelete = Optional.of(constructSinglePathSql(this.sqlgGraph, false, edgeSchemaTableTrees, null, null, leftJoin, true));
+            }
+            return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete, distinctQueryStack);
         }
-        return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete, distinctQueryStack);
+
+    }
+
+    private boolean hasOnlyOneInOutEdgeLabel(SchemaTable schemaTable) {
+        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.getSchema());
+        Schema schema = schemaOptional.get();
+        boolean result = true;
+        if (schemaTable.isVertexTable()) {
+            //Need to delete any in/out edges.
+            Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(schemaTable.withOutPrefix().getTable());
+            Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.withOutPrefix().getTable());
+            VertexLabel vertexLabel = vertexLabelOptional.get();
+            Collection<EdgeLabel> outEdgeLabels = vertexLabel.getOutEdgeLabels().values();
+            for (EdgeLabel edgeLabel : outEdgeLabels) {
+                result = edgeLabel.getOutVertexLabels().size() == 1;
+                if (!result) {
+                    break;
+                }
+            }
+            if (result) {
+                Collection<EdgeLabel> inEdgeLabels = vertexLabel.getInEdgeLabels().values();
+                for (EdgeLabel edgeLabel : inEdgeLabels) {
+                    result = edgeLabel.getInVertexLabels().size() == 1;
+                    if (!result) {
+                        break;
+                    }
+                }
+            }
+        }
+        return result;
+
+    }
+
+    private boolean hasNoEdgeLabels(SchemaTable schemaTable) {
+        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.getSchema());
+        Schema schema = schemaOptional.get();
+        boolean result = true;
+        if (schemaTable.isVertexTable()) {
+            //Need to delete any in/out edges.
+            Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(schemaTable.withOutPrefix().getTable());
+            Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.withOutPrefix().getTable());
+            VertexLabel vertexLabel = vertexLabelOptional.get();
+            Collection<EdgeLabel> outEdgeLabels = vertexLabel.getOutEdgeLabels().values();
+            Collection<EdgeLabel> inEdgeLabels = vertexLabel.getInEdgeLabels().values();
+            result = outEdgeLabels.isEmpty() && inEdgeLabels.isEmpty();
+        }
+        return result;
+
     }
 
     public String constructSqlForOptional(LinkedList<SchemaTableTree> innerJoinStack, Set<SchemaTableTree> leftJoinOn) {
@@ -1983,11 +2036,11 @@ public class SchemaTableTree {
             if (hasContainer.getKey().equals(label.getAccessor())) {
                 toRemove.add(hasContainer);
             }
-            
-            if (Existence.NULL.equals(hasContainer.getBiPredicate())){
-	            // we checked that a non existing property was null, that's fine
-	            if (!this.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
-	            	toRemove.add(hasContainer);
+
+            if (Existence.NULL.equals(hasContainer.getBiPredicate())) {
+                // we checked that a non existing property was null, that's fine
+                if (!this.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
+                    toRemove.add(hasContainer);
                 }
             }
         }
@@ -2080,9 +2133,9 @@ public class SchemaTableTree {
                     }
                     //check if the hasContainer is for a property that exists, if not remove this node from the query tree
                     if (!this.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
-                    	if (!Existence.NULL.equals(hasContainer.getBiPredicate())){
-                    		 return true;
-                    	}
+                        if (!Existence.NULL.equals(hasContainer.getBiPredicate())) {
+                            return true;
+                        }
                     }
                     //Check if it is a Contains.within with a empty list of values
                     if (hasEmptyWithin(hasContainer)) {
@@ -2326,7 +2379,4 @@ public class SchemaTableTree {
         return drop;
     }
 
-    public List<EventCallback<Event>> getMutatingCallbacks() {
-        return mutatingCallbacks;
-    }
 }

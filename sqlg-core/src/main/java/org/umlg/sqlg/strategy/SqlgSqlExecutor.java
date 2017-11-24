@@ -11,7 +11,6 @@ import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgEdge;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -34,7 +33,8 @@ public class SqlgSqlExecutor {
     public enum DROP_QUERY {
         ALTER,
         EDGE,
-        NORMAL
+        NORMAL,
+        TRUNCATE
     }
 
     public static void executeDropQuery(
@@ -58,6 +58,9 @@ public class SqlgSqlExecutor {
                     break;
                 case NORMAL:
                     executeDropQuery(sqlgGraph, sql, distinctQueryStack, deletedSchemaTable);
+                    break;
+                case TRUNCATE:
+                    executeDropQuery(sqlgGraph, sql, new LinkedList<>(), deletedSchemaTable);
                     break;
                 default:
                     throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery.toString());
@@ -159,27 +162,7 @@ public class SqlgSqlExecutor {
             if (distinctQueryStack.isEmpty()) {
                 preparedStatement.execute();
             } else {
-                SchemaTableTree last = distinctQueryStack.getLast();
-                SchemaTable schemaTable = last.getSchemaTable().withOutPrefix();
-                if (last.getMutatingCallbacks().isEmpty()) {
-                    preparedStatement.execute();
-                } else if (sqlgGraph.getSqlDialect().supportReturningDeletedRows()) {
-                    ResultSet resultSet = preparedStatement.executeQuery();
-                    while (resultSet.next()) {
-                        Long id = resultSet.getLong(1);
-                        final Event removeEvent;
-                        if (deletedSchemaTable.isVertexTable()) {
-                            removeEvent = new Event.VertexRemovedEvent(SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable()));
-                        } else {
-                            removeEvent = new Event.EdgeRemovedEvent(SqlgEdge.of(sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable()));
-                        }
-                        for (EventCallback<Event> eventCallback : last.getMutatingCallbacks()) {
-                            eventCallback.accept(removeEvent);
-                        }
-                    }
-                } else {
-                    throw new IllegalStateException(sqlgGraph.toString() + " does not support returning deleted rows. The remove event listener can not be called.");
-                }
+                preparedStatement.execute();
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

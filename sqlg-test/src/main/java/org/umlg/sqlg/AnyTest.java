@@ -2,8 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.process.dropstep.TestDropStep;
-import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
+import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -11,9 +10,7 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestDropStep.class,
-        TestDropStepBarrier.class,
-//        TestNotStepBarrier.class
+        TestTopologyUpgrade.class
 })
 public class AnyTest {
 }

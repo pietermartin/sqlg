@@ -29,7 +29,7 @@ public class TopologyManager {
     private TopologyManager() {
     }
 
-    public static Vertex addGraph(SqlgGraph sqlgGraph, String  version) {
+    public static Vertex addGraph(SqlgGraph sqlgGraph, String version) {
         LocalDateTime now = LocalDateTime.now();
         return sqlgGraph.addVertex(
                 T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GRAPH,
@@ -39,13 +39,22 @@ public class TopologyManager {
         );
     }
 
-    public static void updateGraph(SqlgGraph sqlgGraph, String  version) {
+    /**
+     * Updates sqlg_schema.V_graph's version to the new version and returns the old version.
+     *
+     * @param sqlgGraph The graph.
+     * @param version   The new version.
+     * @return The old version.
+     */
+    public static String updateGraph(SqlgGraph sqlgGraph, String version) {
         GraphTraversalSource traversalSource = sqlgGraph.topology();
         List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
         Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
         Vertex graph = graphVertices.get(0);
+        String oldVersion = graph.value("version");
         graph.property("version", version);
-        graph.property(UPDATED_ON,  LocalDateTime.now());
+        graph.property(UPDATED_ON, LocalDateTime.now());
+        return oldVersion;
     }
 
     public static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
@@ -60,76 +69,76 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
-    
+
     public static void removeSchema(SqlgGraph sqlgGraph, String schema) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
-        	GraphTraversalSource traversalSource = sqlgGraph.topology();
-        
-        	List<Vertex> schemas = traversalSource.V()
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+
+            List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
                     .toList();
-            if (schemas.size()>0){
-            	Vertex vs=schemas.get(0);
-            	traversalSource.V(vs)
-            		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-            		.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-            		.drop().iterate();
-            	traversalSource.V(vs)
-	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-	        		.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-	        		.inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
-	        		.drop().iterate();            	
-            	
-            	traversalSource.V(vs)
-	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-	        		.out(SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-	        		.drop().iterate();
-            	
-            	traversalSource.V(vs)
-	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-	        		.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-	        		.drop().iterate();
-            	traversalSource.V(vs)
-	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-	        		.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
-	        		.inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
-	        		.drop().iterate();
-            	traversalSource.V(vs)
-	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-	        		.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
-	        		.drop().iterate();
-            	traversalSource.V(vs)
-	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-	        		.out(SQLG_SCHEMA_EDGE_INDEX_EDGE)
-	        		.drop().iterate();
-            	traversalSource.V(vs)
-	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-	        		.drop().iterate();
-            	traversalSource.V(vs)
-        			.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-        			.drop().iterate();
-            	
-            	// delete global unique indices with no properties left
-            	// TODO this doesn't work, to investigate?
-            	/*traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
+            if (schemas.size() > 0) {
+                Vertex vs = schemas.get(0);
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                        .drop().iterate();
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                        .inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+                        .drop().iterate();
+
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                        .drop().iterate();
+
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                        .drop().iterate();
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                        .inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+                        .drop().iterate();
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                        .drop().iterate();
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .out(SQLG_SCHEMA_EDGE_INDEX_EDGE)
+                        .drop().iterate();
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .drop().iterate();
+                traversalSource.V(vs)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .drop().iterate();
+
+                // delete global unique indices with no properties left
+                // TODO this doesn't work, to investigate?
+                /*traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
             		.where(__.not(__.out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)))
             		.drop().iterate();*/
-            	for (Vertex v:traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
-            			.toList()){
-            		if (!v.edges(Direction.OUT, SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).hasNext()){
-            			traversalSource.V(v).drop().iterate();
-            		}
-            	}
-            	traversalSource.V(vs)
-    				.drop().iterate();
-            } 	
-           
+                for (Vertex v : traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
+                        .toList()) {
+                    if (!v.edges(Direction.OUT, SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).hasNext()) {
+                        traversalSource.V(v).drop().iterate();
+                    }
+                }
+                traversalSource.V(vs)
+                        .drop().iterate();
+            }
+
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
@@ -169,28 +178,28 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
-    
-    public static void removeVertexLabel(SqlgGraph sqlgGraph, VertexLabel lbl){
-    	BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+
+    public static void removeVertexLabel(SqlgGraph sqlgGraph, VertexLabel lbl) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
-        	GraphTraversalSource traversalSource = sqlgGraph.topology();
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                     .has("name", lbl.getSchema().getName())
                     .toList();
-            if (schemas.size()>0){
-            	Vertex schemaVertex = schemas.get(0);
-            	List<Vertex> vertices= traversalSource.V(schemaVertex)
-            			.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-            			.has(SQLG_SCHEMA_VERTEX_LABEL_NAME,lbl.getLabel())
-            			.toList();
-            	if (vertices.size()>0){
-            		Vertex vertex=vertices.get(0);
-            		traversalSource.V(vertex)
-            			.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-            			.drop().iterate();
-            		vertex.remove();
-            	}
+            if (schemas.size() > 0) {
+                Vertex schemaVertex = schemas.get(0);
+                List<Vertex> vertices = traversalSource.V(schemaVertex)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, lbl.getLabel())
+                        .toList();
+                if (vertices.size() > 0) {
+                    Vertex vertex = vertices.get(0);
+                    traversalSource.V(vertex)
+                            .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                            .drop().iterate();
+                    vertex.remove();
+                }
             }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
@@ -213,7 +222,7 @@ public class TopologyManager {
                     .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", foreignKeyOut.getTable())
                     .toList();
-            Preconditions.checkState(!outVertices.isEmpty(), "Schema %s does not contain vertex label %s ", schema,   foreignKeyOut.getTable());
+            Preconditions.checkState(!outVertices.isEmpty(), "Schema %s does not contain vertex label %s ", schema, foreignKeyOut.getTable());
             Preconditions.checkState(outVertices.size() == 1, "Multiple out vertices " + foreignKeyOut.toString() + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
             Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
             Vertex outVertex = outVertices.get(0);
@@ -258,34 +267,34 @@ public class TopologyManager {
         }
     }
 
-    public static void removeEdgeLabel(SqlgGraph sqlgGraph, EdgeLabel edge){
-    	 BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
-         try {
-             GraphTraversalSource traversalSource = sqlgGraph.topology();
-             List<Vertex> edges=
-	             traversalSource.V()
-		          	.hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
-		          	.has("name", edge.getSchema().getName())
-		         	.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-		         	.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-		         	.has("name",edge.getName()).toList();
-	         if (edges.size()>0){
-	        	 Vertex edgeV=edges.get(0);
-             
-	        	 traversalSource.V(edgeV)
-	             	.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
-	             	.drop()
-            		.iterate();
-	        	 traversalSource.V(edgeV)
-	             	.drop()
-	             	.iterate();
-	         }
-             	
-         } finally {
-             sqlgGraph.tx().batchMode(batchModeType);
-         }
+    public static void removeEdgeLabel(SqlgGraph sqlgGraph, EdgeLabel edge) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> edges =
+                    traversalSource.V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                            .has("name", edge.getSchema().getName())
+                            .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                            .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .has("name", edge.getName()).toList();
+            if (edges.size() > 0) {
+                Vertex edgeV = edges.get(0);
+
+                traversalSource.V(edgeV)
+                        .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                        .drop()
+                        .iterate();
+                traversalSource.V(edgeV)
+                        .drop()
+                        .iterate();
+            }
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
     }
-    
+
     public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -379,7 +388,7 @@ public class TopologyManager {
         }
 
     }
-    
+
     public static void removeVertexColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -392,15 +401,15 @@ public class TopologyManager {
                     .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", prefixedTable.substring(VERTEX_PREFIX.length()))
                     .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-                    .has("name",column)
+                    .has("name", column)
                     .drop().iterate();
-            
+
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
 
     }
-    
+
     public static void removeEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -408,17 +417,17 @@ public class TopologyManager {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
 
             traversalSource.V()
-            		.hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
-            		.has("name", prefixedTable.substring(EDGE_PREFIX.length()))
-            		.as("a")
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
+                    .has("name", prefixedTable.substring(EDGE_PREFIX.length()))
+                    .as("a")
                     .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
                     .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", schema)
                     .select("a")
                     .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
-                    .has("name",column)
+                    .has("name", column)
                     .drop().iterate();
-            
+
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
@@ -431,8 +440,8 @@ public class TopologyManager {
             //get the abstractLabel's vertex
             GraphTraversalSource traversalSource = sqlgGraph.topology();
             List<Vertex> abstractLabelVertexes;
-            
-            AbstractLabel abstractLabel=index.getParentLabel();
+
+            AbstractLabel abstractLabel = index.getParentLabel();
             if (abstractLabel instanceof VertexLabel) {
                 abstractLabelVertexes = traversalSource.V()
                         .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
@@ -466,7 +475,7 @@ public class TopologyManager {
             } else {
                 abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
             }
-            int ix=0;
+            int ix = 0;
             for (PropertyColumn property : index.getProperties()) {
                 List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
                         .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
@@ -475,20 +484,20 @@ public class TopologyManager {
                 Preconditions.checkState(!propertyVertexes.isEmpty(), "Property %s for AbstractLabel %s.%s does not exists", property.getName(), abstractLabel.getSchema().getName(), abstractLabel.getLabel());
                 Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property.getName(), abstractLabel.getSchema().getName(), abstractLabel.getLabel());
                 Vertex propertyVertex = propertyVertexes.get(0);
-                indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex,SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE,ix++);
+                indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex, SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE, ix++);
             }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
-    
+
     public static void removeIndex(SqlgGraph sqlgGraph, Index index) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
-        	GraphTraversalSource traversalSource = sqlgGraph.topology();
-        	List<Vertex> abstractLabelVertexes;
-            
-            AbstractLabel abstractLabel=index.getParentLabel();
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> abstractLabelVertexes;
+
+            AbstractLabel abstractLabel = index.getParentLabel();
             if (abstractLabel instanceof VertexLabel) {
                 abstractLabelVertexes = traversalSource.V()
                         .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
@@ -506,34 +515,35 @@ public class TopologyManager {
                         .dedup()
                         .toList();
             }
-        	if (abstractLabelVertexes.size()>0){
-        		Vertex v=abstractLabelVertexes.get(0);
-        		traversalSource.V(v.id())
-        			.out(abstractLabel instanceof VertexLabel?SQLG_SCHEMA_VERTEX_INDEX_EDGE:SQLG_SCHEMA_EDGE_INDEX_EDGE)
-        			.has(SQLG_SCHEMA_INDEX_NAME,index.getName())
-        			.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-        			.drop()
-        			.iterate();
-        		traversalSource.V(v.id())
-	    			.out(abstractLabel instanceof VertexLabel?SQLG_SCHEMA_VERTEX_INDEX_EDGE:SQLG_SCHEMA_EDGE_INDEX_EDGE)
-	    			.has(SQLG_SCHEMA_INDEX_NAME,index.getName())
-	    			.drop()
-	    			.iterate();
-        	}
-            
+            if (abstractLabelVertexes.size() > 0) {
+                Vertex v = abstractLabelVertexes.get(0);
+                traversalSource.V(v.id())
+                        .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_INDEX_EDGE : SQLG_SCHEMA_EDGE_INDEX_EDGE)
+                        .has(SQLG_SCHEMA_INDEX_NAME, index.getName())
+                        .out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                        .drop()
+                        .iterate();
+                traversalSource.V(v.id())
+                        .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_INDEX_EDGE : SQLG_SCHEMA_EDGE_INDEX_EDGE)
+                        .has(SQLG_SCHEMA_INDEX_NAME, index.getName())
+                        .drop()
+                        .iterate();
+            }
+
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
-    
+
     /**
      * add an index from information schema
-     * @param sqlgGraph the graph
-     * @param schema the schema name
-     * @param label the label name
-     * @param vertex is it a vertex or an edge label?
-     * @param index the index name
-     * @param indexType index type
+     *
+     * @param sqlgGraph  the graph
+     * @param schema     the schema name
+     * @param label      the label name
+     * @param vertex     is it a vertex or an edge label?
+     * @param index      the index name
+     * @param indexType  index type
      * @param properties the column names
      */
     public static void addIndex(SqlgGraph sqlgGraph, String schema, String label, boolean vertex, String index, IndexType indexType, List<String> properties) {
@@ -564,8 +574,8 @@ public class TopologyManager {
             Vertex abstractLabelVertex = abstractLabelVertexes.get(0);
 
             boolean createdIndexVertex = false;
-            Vertex indexVertex =  null;
-            int ix=0;
+            Vertex indexVertex = null;
+            int ix = 0;
             for (String property : properties) {
 
                 List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
@@ -593,7 +603,7 @@ public class TopologyManager {
                     Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property, schema, label);
                     Preconditions.checkState(indexVertex != null);
                     Vertex propertyVertex = propertyVertexes.get(0);
-                    indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex,SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE,ix);
+                    indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex, SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE, ix);
                 }
             }
         } finally {
@@ -699,7 +709,7 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
-    
+
     static void removeGlobalUniqueIndex(SqlgGraph sqlgGraph, String globalUniqueIndexName) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -709,20 +719,20 @@ public class TopologyManager {
                     .has("name", globalUniqueIndexName)
                     .toList();
             if (uniquePropertyConstraints.size() > 0) {
-            	traversalSource.V(uniquePropertyConstraints.get(0))
-            		.out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
-            		.drop()
-            		.iterate();
-            	traversalSource.V(uniquePropertyConstraints.get(0))
-        			.drop()
-        			.iterate();
+                traversalSource.V(uniquePropertyConstraints.get(0))
+                        .out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+                        .drop()
+                        .iterate();
+                traversalSource.V(uniquePropertyConstraints.get(0))
+                        .drop()
+                        .iterate();
             }
-            
+
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
-    
+
 
     private static BatchManager.BatchModeType flushAndSetTxToNone(SqlgGraph sqlgGraph) {
         //topology elements can not be added in batch mode because on flushing the topology

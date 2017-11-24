@@ -1021,10 +1021,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
-                    if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                        sb.append("\nOUTPUT DELETED.");
-                        sb.append(maybeWrapInQoutes("ID"));
-                    }
                     sb.append("\nWHERE ");
                     sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
                     sb.append(" IN(");
@@ -1042,10 +1038,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
-                    if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                        sb.append("\nOUTPUT DELETED.");
-                        sb.append(maybeWrapInQoutes("ID"));
-                    }
                     sb.append("\nWHERE ");
                     sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
                     sb.append(" IN\n\t(");
@@ -1067,10 +1059,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
         sb.append(".");
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
-        if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-            sb.append("\nOUTPUT DELETED.");
-            sb.append(maybeWrapInQoutes("ID"));
-        }
         sb.append("\nWHERE \"ID\" IN (");
         sb.append(leafElementsToDelete);
         sb.append(")");
@@ -1082,10 +1070,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
-            if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                sb.append("\nOUTPUT DELETED.");
-                sb.append(maybeWrapInQoutes("ID"));
-            }
             sb.append("\nWHERE \"ID\" IN (\n\t");
             sb.append(edgesToDelete.get());
             sb.append(")");
@@ -1126,8 +1110,4 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return sql.toString();
     }
 
-    @Override
-    public boolean supportReturningDeletedRows() {
-        return true;
-    }
 }

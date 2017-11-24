@@ -86,8 +86,8 @@ class SqlgStartupManager {
                 upgradeIndexEdgeSequenceToExist();
                 //make sure the sqlg_schema.graph exists.
                 String version = getBuildVersion();
-                createOrUpdateGraph(version);
-                updateTopology(version);
+                String oldVersion = createOrUpdateGraph(version);
+                updateTopology(oldVersion);
                 this.sqlgGraph.tx().commit();
             }
             cacheTopology();
@@ -101,20 +101,41 @@ class SqlgStartupManager {
         }
     }
 
-    private void updateTopology(String version) {
+    private void updateTopology(String oldVersion) {
         //strip of SNAPSHOT
-        version = version.replace("-SNAPSHOT", "");
+        oldVersion = oldVersion.replace("-SNAPSHOT", "");
         //convert to number
-        version = version.replace(".", "");
-        int versionNumber = Integer.valueOf(version);
-        switch (versionNumber) {
+        oldVersion = oldVersion.replace(".", "");
+        int oldVersionNumber = Integer.valueOf(oldVersion);
+        switch (oldVersionNumber) {
             case 141:
-                break;
+                if (this.sqlDialect.supportsDeferrableForeignKey()) {
+                    upgradeForeignKeysToDeferrable();
+                }
+                //Fall through
             case 142:
                 break;
         }
     }
 
+    private void upgradeForeignKeysToDeferrable() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (PreparedStatement s = conn.prepareStatement(this.sqlDialect.sqlToGetAllForeignKeys())) {
+            ResultSet rs = s.executeQuery();
+            while (rs.next()) {
+                String schema = rs.getString(1);
+                String table = rs.getString(2);
+                String fk = rs.getString(3);
+
+                try (Statement statement = conn.createStatement()) {
+                    statement.execute(this.sqlDialect.alterForeignKeyToDeferrable(schema, table, fk));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
     private void cacheTopology() {
         this.sqlgGraph.getTopology().cacheTopology();
@@ -129,30 +150,28 @@ class SqlgStartupManager {
         }
     }
 
-    private void createOrUpdateGraph(String version) {
+    private String createOrUpdateGraph(String version) {
+        String oldVersion;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             String[] types = new String[]{"TABLE"};
-            try {
-                //load the vertices
-                try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, types)) {
-                    if (!vertexRs.next()) {
-                        try (Statement statement = conn.createStatement()) {
-                            String sql = this.sqlDialect.sqlgCreateTopologyGraph();
-                            statement.execute(sql);
-                            TopologyManager.addGraph(this.sqlgGraph, version);
-                        }
-                    } else {
-                        TopologyManager.updateGraph(this.sqlgGraph, version);
+            //load the vertices
+            try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, types)) {
+                if (!vertexRs.next()) {
+                    try (Statement statement = conn.createStatement()) {
+                        String sql = this.sqlDialect.sqlgCreateTopologyGraph();
+                        statement.execute(sql);
+                        TopologyManager.addGraph(this.sqlgGraph, version);
+                        oldVersion = version;
                     }
+                } else {
+                    oldVersion = TopologyManager.updateGraph(this.sqlgGraph, version);
                 }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                return oldVersion;
             }
-
         } catch (SQLException e) {
-            logger.error("Error upgrading index edge property to include a sequence column. Error swallowed.", e);
+            throw new RuntimeException(e);
         }
     }
 

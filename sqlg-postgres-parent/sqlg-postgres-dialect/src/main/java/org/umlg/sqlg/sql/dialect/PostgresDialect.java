@@ -3595,9 +3595,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         if (isVertex) {
             //First delete all edges except for this edge traversed to get to the vertices.
             StringBuilder sb;
-            for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getOutEdgeLabels().entrySet()) {
-                String name = edgeLabelEntry.getKey();
-                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+            for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
                 if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
@@ -3611,16 +3609,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
                     sb.append(" = todelete.");
                     sb.append(maybeWrapInQoutes("alias1"));
-                    if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                        sb.append("\nRETURNING ");
-                        sb.append(maybeWrapInQoutes("ID"));
-                    }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
             }
-            for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
-                String name = edgeLabelEntry.getKey();
-                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+            for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
                 if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
@@ -3634,10 +3626,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
                     sb.append(" = todelete.");
                     sb.append(maybeWrapInQoutes("alias1"));
-                    if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                        sb.append("\nRETURNING ");
-                        sb.append(maybeWrapInQoutes("ID"));
-                    }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
             }
@@ -3659,10 +3647,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sb.append(maybeWrapInQoutes("ID"));
         sb.append(" = todelete.");
         sb.append(maybeWrapInQoutes("alias1"));
-        if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-            sb.append("\nRETURNING ");
-            sb.append(maybeWrapInQoutes("ID"));
-        }
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
         if (queryTraversesEdge) {
@@ -3677,10 +3661,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sb.append(maybeWrapInQoutes("ID"));
             sb.append(" = todelete.");
             sb.append(maybeWrapInQoutes("alias1"));
-            if (!distinctQueryStack.getLast().getMutatingCallbacks().isEmpty()) {
-                sb.append("\nRETURNING ");
-                sb.append(maybeWrapInQoutes("ID"));
-            }
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
         //Enable the foreign key constraint
@@ -3769,8 +3749,95 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public boolean supportReturningDeletedRows() {
-        return true;
+    public String sqlToGetAllForeignKeys() {
+        return "select \n" +
+                "    con.schema,\n" +
+                "    con.table,\n" +
+                "    con.fk\n" +
+                "from\n" +
+                "   (select \n" +
+                "    \tns.nspname as \"schema\",\n" +
+                "        unnest(con1.conkey) as \"parent\", \n" +
+                "        unnest(con1.confkey) as \"child\", \n" +
+                "        con1.confrelid, \n" +
+                "        con1.conrelid,\n" +
+                "        con1.conname as \"fk\",\n" +
+                "        cl.relname as \"table\"\n" +
+                "    from \n" +
+                "        pg_class cl\n" +
+                "        join pg_namespace ns on cl.relnamespace = ns.oid\n" +
+                "        join pg_constraint con1 on con1.conrelid = cl.oid\n" +
+                "    where\n" +
+                "        cl.relname like '%E_%' AND\n" +
+                "        con1.contype = 'f'\n" +
+                "   ) con\n" +
+                "   join pg_attribute att on\n" +
+                "       att.attrelid = con.confrelid and att.attnum = con.child\n" +
+                "   join pg_class cl on\n" +
+                "       cl.oid = con.confrelid\n" +
+                "   join pg_attribute att2 on\n" +
+                "       att2.attrelid = con.conrelid and att2.attnum = con.parent";
     }
 
+    @Override
+    public String alterForeignKeyToDeferrable(String schema, String table, String foreignKeyName) {
+        return "alter table \n" +
+                "\t\"" + schema + "\".\"" + table + "\" \n" +
+                "ALTER CONSTRAINT \n" +
+                "\t\"" + foreignKeyName + "\" DEFERRABLE;";
+    }
+
+    @Override
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        Preconditions.checkState(schemaTable.isWithPrefix(), "SqlDialect.sqlTruncate' schemaTable must start with a prefix %s or %s", Topology.VERTEX_PREFIX, Topology.EDGE_PREFIX);
+        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> result = new ArrayList<>();
+        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
+        Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.getSchema());
+        Schema schema = schemaOptional.get();
+        List<String> edgesToTruncate = new ArrayList<>();
+        if (schemaTable.isVertexTable()) {
+            //Need to delete any in/out edges.
+            Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(schemaTable.withOutPrefix().getTable());
+            Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.withOutPrefix().getTable());
+            VertexLabel vertexLabel = vertexLabelOptional.get();
+            Collection<EdgeLabel> outEdgeLabels = vertexLabel.getOutEdgeLabels().values();
+            for (EdgeLabel edgeLabel : outEdgeLabels) {
+                if (edgeLabel.getOutVertexLabels().size() == 1) {
+                    //The edgeLabel is the vertexTable being deleted's only edge so we can truncate it.
+                    edgesToTruncate.add(maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." + maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                } else {
+                    throw new IllegalStateException("BUG: sqlTruncate should not be called when an edge has more than one out edge labels.");
+                }
+            }
+            Collection<EdgeLabel> inEdgeLabels = vertexLabel.getInEdgeLabels().values();
+            for (EdgeLabel edgeLabel : inEdgeLabels) {
+                if (edgeLabel.getInVertexLabels().size() == 1) {
+                    //The edgeLabel is the vertexTable being deleted's only edge so we can truncate it.
+                    edgesToTruncate.add(maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." + maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                } else {
+                    throw new IllegalStateException("BUG: sqlTruncate should not be called when an edge has more than one in edge labels.");
+                }
+            }
+        }
+        StringBuilder sql = new StringBuilder("TRUNCATE ONLY ");
+        int count = 1;
+        for (String edgeToTruncate : edgesToTruncate) {
+            sql.append(edgeToTruncate);
+            sql.append(", ");
+        }
+        sql.append(maybeWrapInQoutes(schemaTable.getSchema())).append(".").append(maybeWrapInQoutes(schemaTable.getTable()));
+        result.add(
+                Triple.of(
+                        SqlgSqlExecutor.DROP_QUERY.TRUNCATE,
+                        sql.toString(),
+                        schemaTable
+                )
+        );
+        return result;
+    }
+
+    @Override
+    public boolean supportsTruncateMultipleTablesTogether() {
+        return true;
+    }
 }

@@ -1,12 +1,17 @@
 package org.umlg.sqlg.test.process.dropstep;
 
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceFactory;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -70,6 +76,37 @@ public class TestDropStep extends BaseTest {
         } else {
             this.dropTraversal = this.sqlgGraph.traversal();
         }
+    }
+
+    @Test
+    public void shouldReferenceVertexWhenRemoved() {
+        final AtomicBoolean triggered = new AtomicBoolean(false);
+        final Vertex v = this.sqlgGraph.addVertex();
+        final String label = v.label();
+        final Object id = v.id();
+
+        final MutationListener listener = new AbstractMutationListener() {
+            @Override
+            public void vertexRemoved(final Vertex element) {
+                Assert.assertThat(element, IsInstanceOf.instanceOf(ReferenceVertex.class));
+                Assert.assertEquals(id, element.id());
+                Assert.assertEquals(label, element.label());
+                triggered.set(true);
+            }
+        };
+        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener).detach(ReferenceFactory.class);
+
+        if (this.sqlgGraph.features().graph().supportsTransactions())
+            builder.eventQueue(new EventStrategy.TransactionalEventQueue(this.sqlgGraph));
+
+        final EventStrategy eventStrategy = builder.create();
+        final GraphTraversalSource gts = this.sqlgGraph.traversal().withStrategies(eventStrategy);
+
+        gts.V(v).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        AbstractGremlinTest.assertVertexEdgeCounts(this.sqlgGraph, 0, 0);
+        Assert.assertThat(triggered.get(), CoreMatchers.is(true));
     }
 
     @Test

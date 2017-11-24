@@ -873,7 +873,6 @@ public interface SqlDialect {
     }
 
 
-
     default String drop(VertexLabel vertexLabel, Collection<Long> ids) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
@@ -951,7 +950,39 @@ public interface SqlDialect {
         throw new UnsupportedOperationException("Turning of foreign key constraint check is not supported.");
     }
 
-    default boolean supportReturningDeletedRows() {
+    /**
+     * This is only relevant to Postgresql for now.
+     *
+     * @return The sql string that will return all the foreign keys.
+     */
+    default String sqlToGetAllForeignKeys() {
+        throw new IllegalStateException("sqlToGetAllForeignKeys is not supported.");
+    }
+
+    /**
+     * Only used by Postgresql
+     *
+     * @param schema
+     * @param table
+     * @param foreignKeyName
+     * @return The sql statement to alter the foreign key to be deferrable.
+     */
+    default String alterForeignKeyToDeferrable(String schema, String table, String foreignKeyName) {
+        throw new IllegalStateException("alterForeignKeyToDeferrable is not supported.");
+    }
+
+    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        Preconditions.checkState(schemaTable.isWithPrefix(), "SqlDialect.sqlTruncate' schemaTable must start with a prefix %s or %s", Topology.VERTEX_PREFIX, Topology.EDGE_PREFIX);
+        return Collections.singletonList(
+                Triple.of(
+                        SqlgSqlExecutor.DROP_QUERY.TRUNCATE,
+                        "TRUNCATE TABLE " + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(schemaTable.getTable()),
+                        schemaTable
+                )
+        );
+    }
+
+    default boolean supportsTruncateMultipleTablesTogether() {
         return false;
     }
 }

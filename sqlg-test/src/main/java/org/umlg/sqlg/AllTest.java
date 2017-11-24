@@ -40,6 +40,8 @@ import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.process.dropstep.TestDropStep;
+import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
+import org.umlg.sqlg.test.process.dropstep.TestDropStepTruncate;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
@@ -229,6 +231,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestAndandOrStep.class,
         TestOrStepAfterVertexStepBarrier.class,
         TestDropStep.class,
+        TestDropStepBarrier.class,
+        TestDropStepTruncate.class,
         TestTopologyGraph.class
 
 })

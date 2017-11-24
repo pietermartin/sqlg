@@ -12,6 +12,7 @@ import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdScalarSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.umlg.sqlg.structure.topology.Topology;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -133,6 +134,10 @@ public class SchemaTable implements Serializable, Comparable {
             return -1;
         }
         return toString().compareTo(o.toString());
+    }
+
+    public boolean isWithPrefix() {
+        return this.table.startsWith(Topology.VERTEX_PREFIX) || this.table.startsWith(Topology.EDGE_PREFIX);
     }
 
     @SuppressWarnings("DuplicateThrows")

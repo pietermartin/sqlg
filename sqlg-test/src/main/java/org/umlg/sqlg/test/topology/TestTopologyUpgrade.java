@@ -28,6 +28,18 @@ import java.util.*;
  */
 public class TestTopologyUpgrade extends BaseTest {
 
+    @Test
+    public void testTopologyUpgradeForeignKey() throws Exception {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            System.out.println("asd");
+        }
+    }
+
     //The asdasd index is for a property that foes not exist, it will be ignored when loading the topology.
     @Test
     public void testCustomIndexIgnored() throws Exception {

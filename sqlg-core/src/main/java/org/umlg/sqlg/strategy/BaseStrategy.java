@@ -165,7 +165,7 @@ public abstract class BaseStrategy {
 
                 Traversal.Admin<?, ?> root = TraversalHelper.getRootTraversal(this.traversal);
                 final Optional<EventStrategy> eventStrategyOptional = root.getStrategies().getStrategy(EventStrategy.class);
-                if (!this.sqlgGraph.getSqlDialect().supportReturningDeletedRows() && eventStrategyOptional.isPresent()) {
+                if (eventStrategyOptional.isPresent()) {
                     //Do nothing, it will go via the SqlgDropStepBarrier.
                 } else {
                     //MariaDB does not support target and source together.
@@ -376,13 +376,13 @@ public abstract class BaseStrategy {
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
             countToGoPrevious++;
-            String notNullKey = null;
-            String nullKey = null;
+            String notNullKey;
+            String nullKey;
             if (currentStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
-                if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
+                if (isNotWithMultipleColumnValue(hasContainerHolder)) {
                     toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
                     //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                     //i.e. for neq and without 'or' logic
@@ -717,14 +717,14 @@ public abstract class BaseStrategy {
         sqlgGraphStep.clearIds();
     }
 
-    private boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
+    private boolean isNotWithMultipleColumnValue(HasContainerHolder currentStep) {
         for (HasContainer h : currentStep.getHasContainers()) {
             P<?> predicate = h.getPredicate();
             if (predicate.getValue() instanceof ZonedDateTime ||
                     predicate.getValue() instanceof Period ||
                     predicate.getValue() instanceof Duration ||
-                    (predicate.getValue() instanceof List && containsZonedDateTimePeriodOrDuration((List<Object>) predicate.getValue())) ||
-                    (predicate instanceof ConnectiveP && isConnectivePWithZonedDateTimePeriodOrDuration((ConnectiveP) h.getPredicate()))) {
+                    (predicate.getValue() instanceof List && containsWithMultipleColumnValue((List<Object>) predicate.getValue())) ||
+                    (predicate instanceof ConnectiveP && isConnectivePWithMultipleColumnValue((ConnectiveP) h.getPredicate()))) {
 
 
                 return false;
@@ -847,7 +847,7 @@ public abstract class BaseStrategy {
         return result;
     }
 
-    private boolean containsZonedDateTimePeriodOrDuration(List<Object> values) {
+    private boolean containsWithMultipleColumnValue(List<Object> values) {
         for (Object value : values) {
             if (value instanceof ZonedDateTime ||
                     value instanceof Period ||
@@ -858,7 +858,7 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    private boolean isConnectivePWithZonedDateTimePeriodOrDuration(ConnectiveP connectiveP) {
+    private boolean isConnectivePWithMultipleColumnValue(ConnectiveP connectiveP) {
         List<P<?>> ps = connectiveP.getPredicates();
         for (P<?> predicate : ps) {
             if (predicate.getValue() instanceof ZonedDateTime ||

@@ -914,8 +914,4 @@ public class MariadbDialect extends BaseSqlDialect {
         return "SET FOREIGN_KEY_CHECKS=1";
     }
 
-    @Override
-    public boolean supportReturningDeletedRows() {
-        return true;
-    }
 }

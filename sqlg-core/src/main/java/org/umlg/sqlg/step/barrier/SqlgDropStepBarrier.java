@@ -72,7 +72,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                         for (EdgeLabel outEdgeLabel : vertexLabelOptional.get().getOutEdgeLabels().values()) {
                             //If there are registered callBacks and the dialect does not support returning deleted rows we need to do it the slow way.
                             //Get all the edges, register to the callBack and delete.
-                            if (!this.sqlgGraph.getSqlDialect().supportReturningDeletedRows() && eventStrategy != null) {
+                            if (eventStrategy != null) {
                                 Iterator<Edge> edges = sqlgVertex.edges(Direction.OUT);
                                 while (edges.hasNext()) {
                                     Edge edge = edges.next();
@@ -92,7 +92,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                         for (EdgeLabel inEdgeLabel : vertexLabelOptional.get().getInEdgeLabels().values()) {
                             //If there are registered callBacks and the dialect does not support returning deleted rows we need to do it the slow way.
                             //Get all the edges, register to the callBack and delete.
-                            if (!this.sqlgGraph.getSqlDialect().supportReturningDeletedRows() && !this.callbackRegistry.getCallbacks().isEmpty()) {
+                            if (!this.callbackRegistry.getCallbacks().isEmpty()) {
                                 Iterator<Edge> edges = sqlgVertex.edges(Direction.IN);
                                 while (edges.hasNext()) {
                                     Edge edge = edges.next();
