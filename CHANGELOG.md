@@ -1,5 +1,8 @@
-##1.4.1
+##1.5.0
 
+* Optimize `DropStep` i.e. `drop()`.
+`TRUNCATE` is used for the most simplest cases. Else `DELETE` statements are generated.
+If the `traversal` itself can not be optimized then barrier strategy is used to cache the starts before deleted them all in one statement.
 * Upgrade dependencies to latest in sonatype. [#247](https://github.com/pietermartin/sqlg/issues/247)
 * Fix bug [#246](https://github.com/pietermartin/sqlg/issues/246)
 * Optimize `OrStep` and `AndStep` to push the predicates down to the db if they are trivial.
