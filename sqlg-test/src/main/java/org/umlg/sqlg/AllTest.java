@@ -234,6 +234,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestDropStepBarrier.class,
         TestDropStepTruncate.class,
         TestTopologyGraph.class
+        TestUnoptimizedRepeatStep.class,
+        TestPropertyReference.class
 
 })
 public class AllTest {
