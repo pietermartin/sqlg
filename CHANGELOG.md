@@ -1,3 +1,8 @@
+##1.4.1
+
+* Added new predicate to compare 2 properties on the same label.
+* Added support for `has("property")` and `hasNot("property")`
+
 ##1.4.0
 
 * Added support for MariaDb
