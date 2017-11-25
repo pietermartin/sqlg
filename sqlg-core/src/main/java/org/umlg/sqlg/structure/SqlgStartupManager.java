@@ -108,12 +108,12 @@ class SqlgStartupManager {
         oldVersion = oldVersion.replace(".", "");
         int oldVersionNumber = Integer.valueOf(oldVersion);
         switch (oldVersionNumber) {
-            case 141:
+            case 150:
                 if (this.sqlDialect.supportsDeferrableForeignKey()) {
                     upgradeForeignKeysToDeferrable();
                 }
                 //Fall through
-            case 142:
+            case 151:
                 break;
         }
     }
