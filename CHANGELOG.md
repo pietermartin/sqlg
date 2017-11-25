@@ -1,8 +1,3 @@
-##1.4.1
-
-* Added new predicate to compare 2 properties on the same label.
-* Added support for `has("property")` and `hasNot("property")`
-
 ##1.5.0
 
 * Optimize `DropStep` i.e. `drop()`.
@@ -20,6 +15,12 @@ If the `traversal` itself can not be optimized then barrier strategy is used to 
 of `Traverser` which for Sqlg is always a `SqlgTraverser`. As `SqlgTraverser` always holds the full `Path` adding the barriered (cached)
 starts to the map is to heavy. Seeing as Sqlg does not use bulking the `TraverserSet`s logic is not needed.
 * Optimize the `TraversalFilterStep` to barrier the starts.
+* Upgrade to Tinkerpop 3.3.0
+
+##1.4.1
+
+* Added new predicate to compare 2 properties on the same label.
+* Added support for `has("property")` and `hasNot("property")`
 
 ##1.4.0
 
