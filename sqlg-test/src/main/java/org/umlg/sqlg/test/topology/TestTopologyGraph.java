@@ -26,7 +26,7 @@ public class TestTopologyGraph extends BaseTest {
         String versionTmp = "";
         Properties prop = new Properties();
         try {
-            prop.load(ClassLoader.getSystemResource("application.properties").openStream());
+            prop.load(ClassLoader.getSystemResource("sqlg.application.properties").openStream());
             versionTmp = (String) prop.get("application.version");
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -562,7 +562,7 @@ class SqlgStartupManager {
     private String getBuildVersion() {
         Properties prop = new Properties();
         try {
-            prop.load(ClassLoader.getSystemResource("application.properties").openStream());
+            prop.load(ClassLoader.getSystemResource("sqlg.application.properties").openStream());
             return (String) prop.get("application.version");
         } catch (IOException e) {
             throw new RuntimeException(e);
