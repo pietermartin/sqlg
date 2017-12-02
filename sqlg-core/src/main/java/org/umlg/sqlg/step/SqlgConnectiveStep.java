@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -15,11 +16,15 @@ import java.util.stream.Stream;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/10/26
  */
-public abstract class SqlgConnectiveStep<S>  extends SqlgFilterStep<S> implements TraversalParent {
-
-    public enum Connective {AND, OR}
+public abstract class SqlgConnectiveStep<S> extends SqlgFilterStep<S> implements TraversalParent {
 
     protected List<Traversal.Admin<S, ?>> traversals;
+
+    public SqlgConnectiveStep(final Traversal.Admin traversal, final Collection<Traversal<S, ?>> traversals) {
+        super(traversal);
+        this.traversals = traversals.stream().map(Traversal::asAdmin).collect(Collectors.toList());
+        this.traversals.forEach(this::integrateChild);
+    }
 
     public SqlgConnectiveStep(final Traversal.Admin traversal, final Traversal<S, ?>... traversals) {
         super(traversal);

@@ -41,6 +41,37 @@ public class TestOrStepBarrier extends BaseTest {
     }
 
     @Test
+    public void testOrStepBarrier3Ors() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        a2.addEdge("abb", b2);
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        a3.addEdge("abbb", b3);
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B");
+        a4.addEdge("abbbb", b4);
+
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .or(
+                        __.out("ab"),
+                        __.out("abb"),
+                        __.out("abbb")
+                );
+        printTraversalForm(traversal);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a2, a3)));
+        List<SqlgOrStepBarrier> sqlgOrStepBarriers = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgOrStepBarrier.class, traversal);
+        Assert.assertEquals(1, sqlgOrStepBarriers.size());
+    }
+
+    @Test
     public void testOrStepBarrier() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
@@ -53,10 +84,12 @@ public class TestOrStepBarrier extends BaseTest {
         a3.addEdge("abbb", b3);
 
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").or(
-                __.out("ab"),
-                __.out("abb")
-        );
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .or(
+                        __.out("ab"),
+                        __.out("abb")
+                );
         printTraversalForm(traversal);
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, vertices.size());

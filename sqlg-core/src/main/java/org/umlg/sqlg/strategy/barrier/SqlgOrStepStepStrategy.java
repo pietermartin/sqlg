@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.barrier.SqlgOrStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,7 +35,7 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
         List<OrStep> orSteps = TraversalHelper.getStepsOfAssignableClass(OrStep.class, traversal);
         for (OrStep<S> orStep : orSteps) {
 
-            List<Traversal.Admin<S, ?>> orTraversals = orStep.getLocalChildren();
+            Collection<Traversal.Admin<S, ?>> orTraversals = orStep.getLocalChildren();
 
             //reducing barrier steps like count does not work with Sqlg's barrier optimizations
             List<ReducingBarrierStep> reducingBarrierSteps = TraversalHelper.getStepsOfAssignableClassRecursively(ReducingBarrierStep.class, traversal);
@@ -42,10 +43,9 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
                 return;
             }
 
-            SqlgOrStepBarrier<S> sqlgOrStepBarrier = new SqlgOrStepBarrier<>(
+            SqlgOrStepBarrier<S> sqlgOrStepBarrier = new SqlgOrStepBarrier(
                     traversal,
-                    orTraversals.get(0),
-                    orTraversals.get(1)
+                    orTraversals
             );
             for (String label : orStep.getLabels()) {
                 sqlgOrStepBarrier.addLabel(label);

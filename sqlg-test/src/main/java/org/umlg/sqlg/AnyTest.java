@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.complex.TestComplex;
+import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,9 @@ import org.umlg.sqlg.test.complex.TestComplex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    TestComplex.class
+//        TestOrStepBarrier.class
+//    NetAggregateTest.class,
+        TestNotStepBarrier.class
 })
 public class AnyTest {
 }

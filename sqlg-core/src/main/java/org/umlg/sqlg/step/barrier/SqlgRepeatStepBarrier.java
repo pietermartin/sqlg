@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.step.SqlgComputerAwareStep;
 import org.umlg.sqlg.step.SqlgExpandableStepIterator;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
@@ -58,10 +59,14 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         List<RepeatStep.RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfAssignableClass(RepeatStep.RepeatEndStep.class, this.repeatTraversal);
         Preconditions.checkState(repeatEndSteps.size() == 1, "Only handling one RepeatEndStep! Found " + repeatEndSteps.size());
         TraversalHelper.replaceStep(repeatEndSteps.get(0), new SqlgRepeatStepBarrier.SqlgRepeatEndStepBarrier(this.repeatTraversal), this.repeatTraversal);
-        this.optimizeUntil = this.untilTraversal != null && TraversalHelper.anyStepRecursively(
-                (s) -> (s instanceof VertexStep) || (s instanceof EdgeVertexStep) || (s instanceof EdgeOtherVertexStep),
-                this.untilTraversal
-        );
+        this.optimizeUntil = this.untilTraversal != null &&
+                (
+                        TraversalHelper.anyStepRecursively(
+                                (s) -> (s instanceof VertexStep) || (s instanceof EdgeVertexStep) || (s instanceof EdgeOtherVertexStep),
+                                this.untilTraversal
+                        ) ||
+                                true
+                );
     }
 
     public void setSqlgRangeHolder(SqlgRangeHolder sqlgRangeHolder) {
@@ -182,7 +187,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                 return this.repeatTraversal.getEndStep();
             } else {
                 boolean foundSomething = false;
-                if (this.optimizeUntil) {
+//                if (this.optimizeUntil) {
+                if (barrierUntil()) {
                     if (this.untilFirst) {
                         Multimap<String, Traverser.Admin<S>> startsToContinue = LinkedListMultimap.create();
                         //doUntilBarrier will iterate the starts and for each the utilTraversal.
@@ -235,10 +241,14 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                     if (!foundSomething) {
                         throw FastNoSuchElementException.instance();
                     }
-
                 }
             }
         }
+    }
+
+    private boolean barrierUntil() {
+        return this.untilTraversal != null && !this.untilTraversal.getSteps().isEmpty() && this.untilTraversal.getSteps().get(0) instanceof SqlgAbstractStep;
+//        return TraversalHelper.anyStepRecursively((s) -> s instanceof SqlgAbstractStep, this.untilTraversal);
     }
 
 
@@ -270,7 +280,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                     return next;
                 }
                 boolean foundSomething = false;
-                if (repeatStep.optimizeUntil) {
+//                if (repeatStep.optimizeUntil) {
+                if (barrierUntil()) {
                     if (!repeatStep.untilFirst) {
                         Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
                         foundSomething = repeatStep.doUntilBarrier(this.starts, this.toReturn, startRecordIds);
