@@ -87,7 +87,9 @@ class SqlgStartupManager {
                 //make sure the sqlg_schema.graph exists.
                 String version = getBuildVersion();
                 String oldVersion = createOrUpdateGraph(version);
-                updateTopology(oldVersion);
+                if (!oldVersion.equals(version)) {
+                    updateTopology(oldVersion);
+                }
                 this.sqlgGraph.tx().commit();
             }
             cacheTopology();
