@@ -24,7 +24,7 @@ import java.util.*;
  */
 public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep implements SqlgStep {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class);
     private SqlgGraph sqlgGraph;
 
     //This holds the head/start traversers per SchemaTable.

@@ -23,7 +23,7 @@ import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
  */
 public class SqlgEdge extends SqlgElement implements Edge {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgEdge.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgEdge.class);
     private SqlgVertex inVertex;
     private SqlgVertex outVertex;
 

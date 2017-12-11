@@ -30,7 +30,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class Schema implements TopologyInf {
 
-    private static Logger logger = LoggerFactory.getLogger(Schema.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(Schema.class);
     private SqlgGraph sqlgGraph;
     private Topology topology;
     private String name;

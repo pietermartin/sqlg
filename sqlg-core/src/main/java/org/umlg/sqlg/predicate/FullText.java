@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class FullText implements BiPredicate<String, String> {
-	private static Logger logger = LoggerFactory.getLogger(FullText.class.getName());
+	private static Logger logger = LoggerFactory.getLogger(FullText.class);
 	/**
 	 * full text configuration to use
 	 */

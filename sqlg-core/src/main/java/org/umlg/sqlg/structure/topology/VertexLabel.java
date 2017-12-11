@@ -27,7 +27,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class VertexLabel extends AbstractLabel {
 
-    private Logger logger = LoggerFactory.getLogger(VertexLabel.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(VertexLabel.class);
     private Schema schema;
 
     //hand (out) ----<label>---- finger (in)

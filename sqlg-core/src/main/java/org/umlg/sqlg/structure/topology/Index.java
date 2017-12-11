@@ -21,7 +21,7 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class Index implements TopologyInf {
 
-    private Logger logger = LoggerFactory.getLogger(Index.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(Index.class);
     private String name;
     private boolean committed = true;
     private AbstractLabel abstractLabel;
