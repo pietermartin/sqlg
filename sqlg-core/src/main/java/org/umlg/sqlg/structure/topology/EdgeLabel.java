@@ -25,7 +25,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class EdgeLabel extends AbstractLabel {
 
-    private Logger logger = LoggerFactory.getLogger(EdgeLabel.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(EdgeLabel.class);
     //This just won't stick in my brain.
     //hand (out) ----<label>---- finger (in)
     Set<VertexLabel> outVertexLabels = new HashSet<>();

@@ -28,7 +28,7 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public abstract class SqlgElement implements Element {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgVertex.class);
 
     protected String schema;
     protected String table;

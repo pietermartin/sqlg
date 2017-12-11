@@ -185,7 +185,7 @@ public class SqlgGraph implements Graph {
     public static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
     public static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
     private final SqlgDataSource sqlgDataSource;
-    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgGraph.class);
     private final SqlgTransaction sqlgTransaction;
     private Topology topology;
     private GremlinParser gremlinParser;

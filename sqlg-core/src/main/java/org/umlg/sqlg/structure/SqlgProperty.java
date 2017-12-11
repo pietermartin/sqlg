@@ -23,7 +23,7 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class SqlgProperty<V> implements Property<V>, Serializable {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgProperty.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgProperty.class);
     private final String key;
     private V value;
     private SqlgElement element;

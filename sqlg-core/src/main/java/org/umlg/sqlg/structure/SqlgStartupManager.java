@@ -29,7 +29,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 class SqlgStartupManager {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
 

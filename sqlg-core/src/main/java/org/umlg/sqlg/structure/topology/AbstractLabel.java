@@ -23,7 +23,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public abstract class AbstractLabel implements TopologyInf {
 
-    private Logger logger = LoggerFactory.getLogger(AbstractLabel.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(AbstractLabel.class);
     protected boolean committed = true;
     protected String label;
     protected SqlgGraph sqlgGraph;

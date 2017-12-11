@@ -44,7 +44,7 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class SqlgUtil {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgUtil.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgUtil.class);
 
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='

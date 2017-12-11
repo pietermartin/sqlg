@@ -27,7 +27,7 @@ import java.util.ListIterator;
  */
 public class VertexStrategy extends BaseStrategy {
 
-    private Logger logger = LoggerFactory.getLogger(VertexStrategy.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(VertexStrategy.class);
 
     public VertexStrategy(Traversal.Admin<?, ?> traversal) {
         super(traversal);

@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  */
 public class GraphStrategy extends BaseStrategy {
 
-    private Logger logger = LoggerFactory.getLogger(GraphStrategy.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(GraphStrategy.class);
 
     private GraphStrategy(Traversal.Admin<?, ?> traversal) {
         super(traversal);
