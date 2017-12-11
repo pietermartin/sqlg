@@ -19,3 +19,5 @@ src/test/db/
 **/.classpath
 **/.project
 **/.settings
+/.metadata
+/.recommenders
