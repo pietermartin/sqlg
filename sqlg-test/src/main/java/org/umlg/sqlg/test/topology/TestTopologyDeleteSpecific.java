@@ -94,4 +94,35 @@ public class TestTopologyDeleteSpecific extends BaseTest {
         assertTrue(aVertexLabelOpt.isPresent());
 
     }
+    
+    @Test
+    public void testRemoveSchemaWithCrossEdges() throws Exception {
+    	  Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());
+    	  Configuration c = getConfigurationClone();
+          c.setProperty(SqlgGraph.DISTRIBUTED, true);
+          sqlgGraph = SqlgGraph.open(c);
+          
+          String schema1 = "willDelete1";
+          Vertex v1 = sqlgGraph.addVertex(T.label, schema1 + ".t1", "name", "n1", "hello", "world");
+          String schema2 = "willDelete2";
+          Vertex v2 = sqlgGraph.addVertex(T.label, schema2 + ".t2", "name", "n2", "hello", "world");
+          Vertex v3 = sqlgGraph.addVertex(T.label, schema2 + ".t3", "name", "n3", "hello", "world");
+          Vertex v4 = sqlgGraph.addVertex(T.label, schema2 + ".t4", "name", "n4", "hello", "world");
+          
+          v1.addEdge("e1", v3, "me","again");
+          v2.addEdge("e1", v3, "me","again");
+          v1.addEdge("e1", v4, "me","again");
+          v2.addEdge("e1", v4, "me","again");
+          
+          
+          sqlgGraph.tx().commit();
+          
+         
+          sqlgGraph.getTopology().getSchema(schema1).ifPresent((Schema s) -> s.remove(false));
+          sqlgGraph.tx().commit();
+          sqlgGraph.getTopology().getSchema(schema2).ifPresent((Schema s) -> s.remove(false));
+          sqlgGraph.tx().commit();
+        
+          
+    }
 }

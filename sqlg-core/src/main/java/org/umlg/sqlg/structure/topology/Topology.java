@@ -1551,11 +1551,10 @@ public class Topology {
         Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
         if (foreignKeys == null) {
             foreignKeys = new HashSet<>();
-            foreignKeys.add(foreignKey);
             this.edgeForeignKeyCache.put(name, foreignKeys);
-        } else {
-            foreignKeys.add(foreignKey);
-        }
+        }   
+        foreignKeys.add(foreignKey);
+        
     }
 
     void removeFromEdgeForeignKeyCache(String name, String foreignKey) {
@@ -1563,10 +1562,11 @@ public class Topology {
         Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
         if (foreignKeys != null) {
             foreignKeys.remove(foreignKey);
+            if(foreignKeys.isEmpty()) {
+                this.edgeForeignKeyCache.remove(name);
+            }
         }
-        if (foreignKeys.isEmpty()) {
-            this.edgeForeignKeyCache.remove(name);
-        }
+        
     }
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
@@ -1693,10 +1693,22 @@ public class Topology {
         lock();
         if (!this.uncommittedRemovedSchemas.contains(schema.getName())) {
             // remove edge roles in other schemas pointing to vertex labels in removed schema
+        	// TODO undo this in case of rollback?
             for (VertexLabel vlbl : schema.getVertexLabels().values()) {
                 for (EdgeRole er : vlbl.getInEdgeRoles().values()) {
                     if (er.getEdgeLabel().getSchema() != schema) {
                         er.remove(preserveData);
+                    }
+                }
+             // remove out edge roles in other schemas edges
+                for (EdgeRole er : vlbl.getOutEdgeRoles().values()) {
+                    if (er.getEdgeLabel().getSchema() == schema) {
+                        for(EdgeRole erIn : er.getEdgeLabel().getInEdgeRoles()){
+                        	if (erIn.getVertexLabel().getSchema() != schema) {
+                        		erIn.remove(preserveData);
+                            }
+                        }
+                        
                     }
                 }
             }
