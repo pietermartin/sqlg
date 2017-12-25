@@ -1,21 +1,22 @@
 package org.umlg.sqlg.test.topology;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Optional;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
-
-import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * test deletion behavior in a specific scenarios
@@ -93,5 +94,43 @@ public class TestTopologyDeleteSpecific extends BaseTest {
         aVertexLabelOpt = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
         assertTrue(aVertexLabelOpt.isPresent());
 
+    }
+    
+    @Test
+    public void testRemoveSchemaWithCrossEdges() throws Exception {
+    	  Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());
+    	  Configuration c = getConfigurationClone();
+          c.setProperty(SqlgGraph.DISTRIBUTED, true);
+          sqlgGraph = SqlgGraph.open(c);
+          
+          String schema1 = "willDelete1";
+          Vertex v1 = sqlgGraph.addVertex(T.label, schema1 + ".t1", "name", "n1", "hello", "world");
+          String schema2 = "willDelete2";
+          Vertex v2 = sqlgGraph.addVertex(T.label, schema2 + ".t2", "name", "n2", "hello", "world");
+          Vertex v3 = sqlgGraph.addVertex(T.label, schema2 + ".t3", "name", "n3", "hello", "world");
+          Vertex v4 = sqlgGraph.addVertex(T.label, schema2 + ".t4", "name", "n4", "hello", "world");
+          
+          v1.addEdge("e1", v3, "me","again");
+          v2.addEdge("e1", v3, "me","again");
+          v1.addEdge("e1", v4, "me","again");
+          v2.addEdge("e1", v4, "me","again");
+          
+          
+          sqlgGraph.tx().commit();
+          
+          assertTrue(sqlgGraph.getTopology().getSchema(schema1).isPresent());
+          assertTrue(sqlgGraph.getTopology().getSchema(schema2).isPresent());
+          
+          sqlgGraph.getTopology().getSchema(schema1).ifPresent((Schema s) -> s.remove(false));
+          sqlgGraph.tx().commit();
+          
+          assertFalse(sqlgGraph.getTopology().getSchema(schema1).isPresent());
+          // this used to fail
+          sqlgGraph.getTopology().getSchema(schema2).ifPresent((Schema s) -> s.remove(false));
+          sqlgGraph.tx().commit();
+        
+          assertFalse(sqlgGraph.getTopology().getSchema(schema2).isPresent());
+          
+          
     }
 }
