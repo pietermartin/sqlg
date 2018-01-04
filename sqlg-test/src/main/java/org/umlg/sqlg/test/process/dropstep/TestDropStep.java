@@ -19,10 +19,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -45,7 +42,7 @@ public class TestDropStep extends BaseTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[]{Boolean.TRUE, Boolean.FALSE}, new Object[]{Boolean.FALSE, Boolean.FALSE},
                 new Object[]{Boolean.TRUE, Boolean.TRUE}, new Object[]{Boolean.FALSE, Boolean.TRUE});
-//        return Collections.singletonList(new Object[]{Boolean.FALSE, Boolean.FALSE});
+//        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.FALSE});
 //        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.TRUE});
     }
 
@@ -421,6 +418,70 @@ public class TestDropStep extends BaseTest {
         if (this.mutatingCallback) {
             Assert.assertEquals(1, this.removedVertices.size());
             Assert.assertEquals(1, this.removedEdges.size());
+        }
+    }
+
+    @Test
+    public void testDropOutMultiple() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("e1", b1);
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        a2.addEdge("e1", c2);
+
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("C").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(0, vertices.size());
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(4, this.removedVertices.size());
+            Assert.assertTrue(this.removedVertices.contains(b1));
+            Assert.assertTrue(this.removedVertices.contains(c2));
+            Assert.assertTrue(this.removedVertices.contains(a1));
+            Assert.assertTrue(this.removedVertices.contains(a2));
+        }
+    }
+
+    @Test
+    public void testDropOutMultipleAcrossSchemas() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
+        a1.addEdge("e1", b1);
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a2");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C.C", "name", "c2");
+        a2.addEdge("e1", c2);
+
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("C").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(0, vertices.size());
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(4, this.removedVertices.size());
+            Assert.assertTrue(this.removedVertices.contains(b1));
+            Assert.assertTrue(this.removedVertices.contains(c2));
+            Assert.assertTrue(this.removedVertices.contains(a1));
+            Assert.assertTrue(this.removedVertices.contains(a2));
         }
     }
 
