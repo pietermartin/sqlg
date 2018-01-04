@@ -1,15 +1,21 @@
 package org.umlg.sqlg.sql.parse;
 
-import com.google.common.collect.Multimap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.AndStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.ConnectiveStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.predicate.Existence;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -87,8 +93,35 @@ public class AndOrHasContainer {
                     } else {
                     	result.append(" AND ");
                     }
+                    String k=h.getKey();
                     WhereClause whereClause = WhereClause.from(h.getPredicate());
-                    result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h));
+                    
+                    // check if property exists
+                    String bool=null;
+                    if (!k.equals(T.id.getAccessor())){
+                    	Map<String,PropertyType> pts=sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
+                        if (pts!=null && !pts.containsKey(k)){
+                        	// verify if we have a value
+                        	Multimap<String, Object> keyValueMap=LinkedListMultimap.create();
+                        	whereClause.putKeyValueMap(h, keyValueMap);
+                        	// we do
+                        	if (keyValueMap.size()>0){
+                        		bool="? is null";
+                        	} else {
+                        		 if (Existence.NULL.equals(h.getBiPredicate())) {
+                        			 bool="1=1";
+                        		 } else {
+                        			 bool="1=0";
+                        		 }
+                        	}
+                        }
+                    }
+                    if (bool!=null){
+                    	result.append(bool);
+                    } else {
+                    	
+                    	result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h));
+                    }
                 }
             }
             if (!first) {
