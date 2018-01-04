@@ -957,8 +957,29 @@ public class SchemaTableTree {
         //add in the is null where clause for the optional left joins
         for (SchemaTableTree schemaTableTree : leftJoinOn) {
             singlePathSql.append(schemaTableTree.toOptionalLeftJoinWhereClause(sqlgGraph, mutableWhere));
+            if (dropStep){
+          	  String rawLabel;
+                if (schemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)) {
+                    rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
+                } else {
+                    rawLabel = schemaTableTree.getSchemaTable().getTable();
+                }
+                
+              singlePathSql.append(" AND ");
+              singlePathSql.append( sqlgGraph.getSqlDialect().maybeWrapInQoutes(previous.getSchemaTable().getSchema()));
+              singlePathSql.append(".");
+              singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(previous.getSchemaTable().getTable()));
+              singlePathSql.append(".");
+              singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+            		  schemaTableTree.getSchemaTable().getSchema() + "." + rawLabel +
+                              (schemaTableTree.getDirection() == Direction.IN ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+              singlePathSql.append(" IS NOT NULL ");
+          }  
         }
 
+      
+ 
+        
         //if partOfDuplicateQuery then the order by clause is on the outer select
         if (!partOfDuplicateQuery) {
 
