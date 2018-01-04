@@ -14,6 +14,8 @@ import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.TopologyManager;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -29,7 +31,10 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 class SqlgStartupManager {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
+    private static final String APPLICATION_VERSION = "application.version";
+	private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
+	private static final String UNKNOWN_VERSION = "unknown";
+	private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
 
@@ -561,13 +566,31 @@ class SqlgStartupManager {
         }
     }
 
+    /**
+     * get the build version
+     * @return the build version, or "unknown"
+     */
     private String getBuildVersion() {
         Properties prop = new Properties();
+        String v=null;
         try {
-            prop.load(ClassLoader.getSystemResource("sqlg.application.properties").openStream());
-            return (String) prop.get("application.version");
+        	// try system
+        	URL u=ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
+        	if(u==null){
+        		// try own class loader
+        		u=getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
+        	}
+        	if (u!=null){
+        		try (InputStream is=u.openStream()){
+        			prop.load(is);
+        		}
+        		v=prop.getProperty(APPLICATION_VERSION);
+        		
+        	}
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        // let's never return null
+        return v!=null?v:UNKNOWN_VERSION;
     }
 }
