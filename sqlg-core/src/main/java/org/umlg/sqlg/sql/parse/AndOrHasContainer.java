@@ -26,7 +26,7 @@ public class AndOrHasContainer {
         OR,
         NONE;
 
-        public static TYPE from(ConnectiveStep connectiveStep) {
+        public static TYPE from(ConnectiveStep<?> connectiveStep) {
             if (connectiveStep instanceof AndStep) {
                 return AND;
             } else if (connectiveStep instanceof OrStep) {
@@ -84,6 +84,8 @@ public class AndOrHasContainer {
                     if (first) {
                         first = false;
                         result.append("(");
+                    } else {
+                    	result.append(" AND ");
                     }
                     WhereClause whereClause = WhereClause.from(h.getPredicate());
                     result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h));
