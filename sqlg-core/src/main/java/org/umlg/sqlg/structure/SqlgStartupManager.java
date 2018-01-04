@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure;
 
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.util.VersionUtil;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -33,7 +35,6 @@ class SqlgStartupManager {
 
     private static final String APPLICATION_VERSION = "application.version";
 	private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
-	private static final String UNKNOWN_VERSION = "unknown";
 	private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
@@ -92,7 +93,7 @@ class SqlgStartupManager {
                 //make sure the sqlg_schema.graph exists.
                 String version = getBuildVersion();
                 String oldVersion = createOrUpdateGraph(version);
-                if (!oldVersion.equals(version)) {
+                if (oldVersion==null || !oldVersion.equals(version)) {
                     updateTopology(oldVersion);
                 }
                 this.sqlgGraph.tx().commit();
@@ -109,19 +110,14 @@ class SqlgStartupManager {
     }
 
     private void updateTopology(String oldVersion) {
-        //strip of SNAPSHOT
-        oldVersion = oldVersion.replace("-SNAPSHOT", "");
-        //convert to number
-        oldVersion = oldVersion.replace(".", "");
-        int oldVersionNumber = Integer.valueOf(oldVersion);
-        switch (oldVersionNumber) {
-            case 150:
-                if (this.sqlDialect.supportsDeferrableForeignKey()) {
-                    upgradeForeignKeysToDeferrable();
-                }
-                //Fall through
-            case 151:
-                break;
+       Version v = Version.unknownVersion();
+        if (oldVersion!=null){
+	    	v=VersionUtil.parseVersion(oldVersion, null,null);
+	    }
+        if (v.isUnknownVersion() || v.compareTo(new Version(1,5,0,null,null,null))<0){
+        	 if (this.sqlDialect.supportsDeferrableForeignKey()) {
+                 upgradeForeignKeysToDeferrable();
+             }
         }
     }
 
@@ -157,8 +153,13 @@ class SqlgStartupManager {
         }
     }
 
+    /**
+     * create or update the graph metadata
+     * @param version the new version of the graph
+     * @return the old version of the graph, or null if there was no graph
+     */
     private String createOrUpdateGraph(String version) {
-        String oldVersion;
+        String oldVersion = null;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
@@ -170,7 +171,6 @@ class SqlgStartupManager {
                         String sql = this.sqlDialect.sqlgCreateTopologyGraph();
                         statement.execute(sql);
                         TopologyManager.addGraph(this.sqlgGraph, version);
-                        oldVersion = version;
                     }
                 } else {
                     oldVersion = TopologyManager.updateGraph(this.sqlgGraph, version);
@@ -568,7 +568,7 @@ class SqlgStartupManager {
 
     /**
      * get the build version
-     * @return the build version, or "unknown"
+     * @return the build version, or null if unknown
      */
     private String getBuildVersion() {
         Properties prop = new Properties();
@@ -590,7 +590,6 @@ class SqlgStartupManager {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        // let's never return null
-        return v!=null?v:UNKNOWN_VERSION;
+       return v;
     }
 }
