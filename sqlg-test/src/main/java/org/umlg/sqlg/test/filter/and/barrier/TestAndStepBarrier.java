@@ -186,4 +186,33 @@ public class TestAndStepBarrier extends BaseTest {
         Assert.assertEquals(1, sqlgAndStepBarriers.size());
     }
 
+    @Test
+    public void testAndStepBarrierMultiple() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        a1.addEdge("abb", b1);
+        a1.addEdge("abbb", b1);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        a2.addEdge("abb", b2);
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        a3.addEdge("abbb", b3);
+
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
+                __.out("ab"),
+                __.out("abb"),
+                __.out("abbb")
+        );
+        printTraversalForm(traversal);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(a1));
+
+        List<SqlgAndStepBarrier> sqlgAndStepBarriers = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgAndStepBarrier.class, traversal);
+        Assert.assertEquals(1, sqlgAndStepBarriers.size());
+    }
+
 }

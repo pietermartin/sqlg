@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.barrier.SqlgAndStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,7 +35,7 @@ public class SqlgAndStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
         List<AndStep> andSteps = TraversalHelper.getStepsOfAssignableClass(AndStep.class, traversal);
         for (AndStep<S> andStep : andSteps) {
 
-            List<Traversal.Admin<S, ?>> andTraversals = andStep.getLocalChildren();
+            Collection<Traversal.Admin<S, ?>> andTraversals = andStep.getLocalChildren();
 
             //reducing barrier steps like count does not work with Sqlg's barrier optimizations
             List<ReducingBarrierStep> reducingBarrierSteps = TraversalHelper.getStepsOfAssignableClassRecursively(ReducingBarrierStep.class, traversal);
@@ -42,10 +43,9 @@ public class SqlgAndStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
                 return;
             }
 
-            SqlgAndStepBarrier<S> sqlgAndStepBarrier = new SqlgAndStepBarrier<>(
+            SqlgAndStepBarrier<S> sqlgAndStepBarrier = new SqlgAndStepBarrier(
                     traversal,
-                    andTraversals.get(0),
-                    andTraversals.get(1)
+                    andTraversals
             );
             for (String label : andStep.getLabels()) {
                 sqlgAndStepBarrier.addLabel(label);

@@ -12,6 +12,7 @@ import org.umlg.sqlg.step.SqlgConnectiveStep;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -26,7 +27,7 @@ public class SqlgAndStepBarrier<S> extends SqlgConnectiveStep<S> {
     private Iterator<Traverser.Admin<S>> resultIterator;
     private List<Traversal.Admin<S, ?>> andTraversals = new ArrayList<>();
 
-    public SqlgAndStepBarrier(final Traversal.Admin traversal, final Traversal<S, ?>... traversals) {
+    public SqlgAndStepBarrier(final Traversal.Admin traversal, final Collection<Traversal<S, ?>> traversals) {
         super(traversal, traversals);
         for (Traversal<S, ?> sTraversal : traversals) {
             this.andTraversals.add((Traversal.Admin<S, ?>) sTraversal);
