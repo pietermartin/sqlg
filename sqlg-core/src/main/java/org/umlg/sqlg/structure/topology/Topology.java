@@ -32,7 +32,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class Topology {
 
     public static final String GRAPH = "graph";
-    public static final String COLUMN_TYPE_PREFIX = "sqlg.type.";
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
     public static final String VERTICES = "VERTICES";
@@ -549,12 +548,8 @@ public class Topology {
      * @param columns The properties with their types.
      * @see PropertyType
      */
-    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns, Properties additional) {
-        return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns, additional);
-    }
-
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
-        return ensureVertexLabelExist(label, columns, new Properties());
+        return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
     }
 
     /**
@@ -579,18 +574,14 @@ public class Topology {
      * @param properties The properties with their types.
      * @see PropertyType
      */
-    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties, Properties additional) {
+    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties) {
         Objects.requireNonNull(schemaName, "Given tables must not be null");
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
 
         Schema schema = this.ensureSchemaExist(schemaName);
         Preconditions.checkState(schema != null, "Schema must be present after calling ensureSchemaExist");
-        return schema.ensureVertexLabelExist(label, properties, additional);
-    }
-
-    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties) {
-        return ensureVertexLabelExist(schemaName, label, properties, new Properties());
+        return schema.ensureVertexLabelExist(label, properties);
     }
 
     public void ensureTemporaryVertexTableExist(final String schema, final String label, final Map<String, PropertyType> properties) {
@@ -614,16 +605,12 @@ public class Topology {
      * @param properties     The edge's properties with their type.
      * @return The {@link EdgeLabel}
      */
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> properties, Properties additional) {
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel must not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel must not be null");
         Schema outVertexSchema = outVertexLabel.getSchema();
-        return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, additional);
-    }
-
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
-        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, new Properties());
+        return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties);
     }
 
     /**
@@ -637,7 +624,7 @@ public class Topology {
      * @param properties    The edge's properties with their type.
      * @return The {@link SchemaTable} that represents the edge.
      */
-    public SchemaTable ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties, Properties additional) {
+    public SchemaTable ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(foreignKeyOut, "Given outTable must not be null");
         Objects.requireNonNull(foreignKeyIn, "Given inTable must not be null");
@@ -655,12 +642,8 @@ public class Topology {
         Preconditions.checkState(inVertexLabel.isPresent(), "in VertexLabel must be present");
 
         @SuppressWarnings("OptionalGetWithoutIsPresent")
-        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties, additional);
+        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties);
         return SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
-    }
-
-    public SchemaTable ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties) {
-        return ensureEdgeLabelExist(edgeLabelName, foreignKeyOut, foreignKeyIn, properties, new Properties());
     }
 
     /**

@@ -42,6 +42,13 @@ public abstract class AbstractLabel implements TopologyInf {
     private Map<String, PropertyType> propertyTypeMap;
 
     /**
+     * Indicates if the table is partitioned or not.
+     * {@link PartitionType#NONE} indicates a normal non partitioned table.
+     * {@link PartitionType#RANGE} and {@link PartitionType#LIST} indicate the type of partitioning.
+     */
+    private PartitionType partitionType = PartitionType.NONE;
+
+    /**
      * Only called for a new vertex/edge label being added.
      *
      * @param label      The vertex or edge's label.
@@ -74,38 +81,38 @@ public abstract class AbstractLabel implements TopologyInf {
         String indexName = this.sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
         if (indexName.length() > this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength()) {
             // name was random, need to check the properties list
-        	for (Index idx:this.getIndexes().values()){
-            	if (idx.getProperties().equals(properties)){
-            		return idx;
-            	}
+            for (Index idx : this.getIndexes().values()) {
+                if (idx.getProperties().equals(properties)) {
+                    return idx;
+                }
             }
-        	
+
             this.getSchema().getTopology().lock();
-            for (Index idx:this.getIndexes().values()){
-            	if (idx.getProperties().equals(properties)){
-            		return idx;
-            	}
+            for (Index idx : this.getIndexes().values()) {
+                if (idx.getProperties().equals(properties)) {
+                    return idx;
+                }
             }
-        	RandomStringGenerator generator = new RandomStringGenerator.Builder()
+            RandomStringGenerator generator = new RandomStringGenerator.Builder()
                     .withinRange('a', 'z').build();
             indexName = generator.generate(this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength());
-            
+
             return this.createIndex(indexName, indexType, properties);
-            
+
         } else {
 
-	        Optional<Index> indexOptional = this.getIndex(indexName);
-	        if (!indexOptional.isPresent()) {
-	            this.getSchema().getTopology().lock();
-	            indexOptional = this.getIndex(indexName);
-	            if (!indexOptional.isPresent()) {
-	                return this.createIndex(indexName, indexType, properties);
-	            } else {
-	                return indexOptional.get();
-	            }
-	        } else {
-	            return indexOptional.get();
-	        }
+            Optional<Index> indexOptional = this.getIndex(indexName);
+            if (!indexOptional.isPresent()) {
+                this.getSchema().getTopology().lock();
+                indexOptional = this.getIndex(indexName);
+                if (!indexOptional.isPresent()) {
+                    return this.createIndex(indexName, indexType, properties);
+                } else {
+                    return indexOptional.get();
+                }
+            } else {
+                return indexOptional.get();
+            }
         }
     }
 
@@ -220,28 +227,24 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql, Properties additional) {
+    static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
         int i = 1;
         //This is to make the columns sorted
         List<String> keys = new ArrayList<>(columns.keySet());
         Collections.sort(keys);
         for (String column : keys) {
-            if (additional.containsKey(Topology.COLUMN_TYPE_PREFIX + column)) {
-                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(additional.getProperty(Topology.COLUMN_TYPE_PREFIX + column));
-            } else {
-                PropertyType propertyType = columns.get(column);
-                int count = 1;
-                String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-                for (String sqlDefinition : propertyTypeToSqlDefinition) {
-                    if (count > 1) {
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2])).append(" ").append(sqlDefinition);
-                    } else {
-                        //The first column existVertexLabel no postfix
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(sqlDefinition);
-                    }
-                    if (count++ < propertyTypeToSqlDefinition.length) {
-                        sql.append(", ");
-                    }
+            PropertyType propertyType = columns.get(column);
+            int count = 1;
+            String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                if (count > 1) {
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2])).append(" ").append(sqlDefinition);
+                } else {
+                    //The first column existVertexLabel no postfix
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(sqlDefinition);
+                }
+                if (count++ < propertyTypeToSqlDefinition.length) {
+                    sql.append(", ");
                 }
             }
             if (i++ < columns.size()) {

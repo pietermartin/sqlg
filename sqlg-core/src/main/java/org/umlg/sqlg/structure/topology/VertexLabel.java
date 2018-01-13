@@ -59,10 +59,10 @@ public class VertexLabel extends AbstractLabel {
         return vertexLabel;
     }
 
-    static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns, Properties additional) {
+    static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns);
-        vertexLabel.createVertexLabelOnDb(columns, additional);
+        vertexLabel.createVertexLabelOnDb(columns);
         TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns);
         vertexLabel.committed = false;
         return vertexLabel;
@@ -258,8 +258,8 @@ public class VertexLabel extends AbstractLabel {
      * @param properties
      * @return
      */
-    EdgeLabel addEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties, Properties additional) {
-        EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(edgeLabelName, this, inVertexLabel, properties, additional);
+    EdgeLabel addEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(edgeLabelName, this, inVertexLabel, properties);
         if (this.schema.isSqlgSchema()) {
             this.outEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
             inVertexLabel.inEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
@@ -289,7 +289,7 @@ public class VertexLabel extends AbstractLabel {
         }
     }
 
-    private void createVertexLabelOnDb(Map<String, PropertyType> columns, Properties additional) {
+    private void createVertexLabelOnDb(Map<String, PropertyType> columns) {
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
         sql.append(".");
@@ -301,7 +301,7 @@ public class VertexLabel extends AbstractLabel {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        buildColumns(this.sqlgGraph, columns, sql, additional);
+        buildColumns(this.sqlgGraph, columns, sql);
         sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");

@@ -154,7 +154,7 @@ public class Schema implements TopologyInf {
         }
     }
 
-    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns, Properties additional) {
+    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
 
@@ -163,7 +163,7 @@ public class Schema implements TopologyInf {
             this.topology.lock();
             vertexLabelOptional = this.getVertexLabel(label);
             if (!vertexLabelOptional.isPresent()) {
-                return this.createVertexLabel(label, columns, additional);
+                return this.createVertexLabel(label, columns);
             } else {
                 return vertexLabelOptional.get();
             }
@@ -175,11 +175,7 @@ public class Schema implements TopologyInf {
         }
     }
 
-    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
-        return ensureVertexLabelExist(label, columns, new Properties());
-    }
-
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> columns, Properties additional) {
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
@@ -190,7 +186,7 @@ public class Schema implements TopologyInf {
             this.topology.lock();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (!edgeLabelOptional.isPresent()) {
-                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, additional);
+                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 this.getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
@@ -204,10 +200,6 @@ public class Schema implements TopologyInf {
         return edgeLabel;
     }
 
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
-        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, columns, new Properties());
-    }
-
     private EdgeLabel internalEnsureEdgeTableExists(EdgeLabel edgeLabel, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
         edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
         edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
@@ -216,7 +208,7 @@ public class Schema implements TopologyInf {
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private EdgeLabel createEdgeLabel(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, final Map<String, PropertyType> columns, Properties additional) {
+    private EdgeLabel createEdgeLabel(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, final Map<String, PropertyType> columns) {
         Preconditions.checkArgument(this.topology.isSqlWriteLockHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
@@ -237,7 +229,7 @@ public class Schema implements TopologyInf {
                 throw new RuntimeException(e);
             }
         }
-        return outVertexLabel.addEdgeLabel(edgeLabelName, inVertexLabel, columns, additional);
+        return outVertexLabel.addEdgeLabel(edgeLabelName, inVertexLabel, columns);
     }
 
     VertexLabel createSqlgSchemaVertexLabel(String vertexLabelName, Map<String, PropertyType> columns) {
@@ -248,11 +240,11 @@ public class Schema implements TopologyInf {
         return vertexLabel;
     }
 
-    private VertexLabel createVertexLabel(String vertexLabelName, Map<String, PropertyType> columns, Properties additional) {
+    private VertexLabel createVertexLabel(String vertexLabelName, Map<String, PropertyType> columns) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
         this.uncommittedRemovedVertexLabels.remove(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-        VertexLabel vertexLabel = VertexLabel.createVertexLabel(this.sqlgGraph, this, vertexLabelName, columns, additional);
+        VertexLabel vertexLabel = VertexLabel.createVertexLabel(this.sqlgGraph, this, vertexLabelName, columns);
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
         this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
         return vertexLabel;
@@ -1446,7 +1438,7 @@ public class Schema implements TopologyInf {
         }
     }
 
-    public void createTempTable(String tableName, Map<String, PropertyType> columns, Properties additional) {
+    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlgGraph.getSqlDialect().assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTemporaryTableStatement());
         if (this.sqlgGraph.getSqlDialect().needsTemporaryTablePrefix()) {
@@ -1463,7 +1455,7 @@ public class Schema implements TopologyInf {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        AbstractLabel.buildColumns(this.sqlgGraph, columns, sql, additional);
+        AbstractLabel.buildColumns(this.sqlgGraph, columns, sql);
         sql.append(") ");
         sql.append(this.sqlgGraph.getSqlDialect().afterCreateTemporaryTableStatement());
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
@@ -1478,10 +1470,6 @@ public class Schema implements TopologyInf {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
-        createTempTable(tableName, columns, new Properties());
     }
 
     void removeTemporaryTables() {
