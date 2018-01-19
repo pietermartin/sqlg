@@ -62,7 +62,7 @@ public class Topology {
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
-    private Map<String, Set<String>> edgeForeignKeyCache = new HashMap<>();
+    private Map<String, Set<String>> edgeForeignKeyCache;
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     private Map<String, Schema> schemas = new HashMap<>();
 
@@ -130,6 +130,14 @@ public class Topology {
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_VERTEX_LABEL_NAME = "name";
     /**
+     * VertexLabel's partition type. {@link PartitionType}
+     */
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE = "partitionType";
+    /**
+     * VertexLabel's partition expression.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION = "partitionExpression";
+    /**
      * Table storing the graphs edge labels.
      */
     public static final String SQLG_SCHEMA_EDGE_LABEL = "edge";
@@ -138,6 +146,30 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_EDGE_LABEL_NAME = "name";
+
+
+    /**
+     * Table storing the partition.
+     */
+    public static final String SQLG_SCHEMA_PARTITION = "partition";
+    /**
+     * The Partition's name.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_NAME = "name";
+    /**
+     * The Partition's from spec.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_FROM = "from";
+    /**
+     * The Partition's to spec.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_TO = "to";
+    /**
+     * Edge table for the vertex's partitions.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_PARTITION_EDGE = "vertex_partition";
+
+
     /**
      * Table storing the graphs element properties.
      */
@@ -242,6 +274,7 @@ public class Topology {
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_GRAPH,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PARTITION,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_INDEX,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
@@ -251,6 +284,7 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PARTITION_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_INDEX_PROPERTY_EDGE,
@@ -279,21 +313,40 @@ public class Topology {
         columns.put(UPDATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel graphVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_GRAPH, columns);
         this.sqlgSchemaAbstractLabels.add(graphVertexLabel);
-        columns.remove(VERSION);
-        columns.remove(UPDATED_ON);
 
         columns = new HashMap<>();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);
         this.sqlgSchemaAbstractLabels.add(schemaVertexLabel);
+
+
+        columns = new HashMap<>();
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION, PropertyType.STRING);
         VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(vertexVertexLabel);
-        columns.remove(SCHEMA_VERTEX_DISPLAY);
+
+        columns.clear();
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(edgeVertexLabel);
 
+        columns.clear();
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyType.STRING);
+        VertexLabel partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
+        this.sqlgSchemaAbstractLabels.add(partitionVertexLabel);
+
+        columns.clear();
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SQLG_SCHEMA_PROPERTY_TYPE, PropertyType.STRING);
         VertexLabel propertyVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PROPERTY, columns);
         this.sqlgSchemaAbstractLabels.add(propertyVertexLabel);
@@ -318,6 +371,10 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(vertexInEdgeLabel);
         EdgeLabel vertexOutEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexOutEdgeLabel);
+
+        EdgeLabel vertexPartitionEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, partitionVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexPartitionEdgeLabel);
+
         EdgeLabel vertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexPropertyEdgeLabel);
         EdgeLabel edgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
@@ -399,6 +456,7 @@ public class Topology {
     public boolean isImplementingForeignKeys() {
         return this.sqlgGraph.configuration().getBoolean("implement.foreign.keys", true);
     }
+
     /**
      * Global lock on the topology.
      * For distributed graph (multiple jvm) this happens on the db via a lock sql statement.
@@ -1535,9 +1593,9 @@ public class Topology {
         if (foreignKeys == null) {
             foreignKeys = new HashSet<>();
             this.edgeForeignKeyCache.put(name, foreignKeys);
-        }   
+        }
         foreignKeys.add(foreignKey);
-        
+
     }
 
     void removeFromEdgeForeignKeyCache(String name, String foreignKey) {
@@ -1545,11 +1603,11 @@ public class Topology {
         Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
         if (foreignKeys != null) {
             foreignKeys.remove(foreignKey);
-            if(foreignKeys.isEmpty()) {
+            if (foreignKeys.isEmpty()) {
                 this.edgeForeignKeyCache.remove(name);
             }
         }
-        
+
     }
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
@@ -1676,22 +1734,22 @@ public class Topology {
         lock();
         if (!this.uncommittedRemovedSchemas.contains(schema.getName())) {
             // remove edge roles in other schemas pointing to vertex labels in removed schema
-        	// TODO undo this in case of rollback?
+            // TODO undo this in case of rollback?
             for (VertexLabel vlbl : schema.getVertexLabels().values()) {
                 for (EdgeRole er : vlbl.getInEdgeRoles().values()) {
                     if (er.getEdgeLabel().getSchema() != schema) {
                         er.remove(preserveData);
                     }
                 }
-             // remove out edge roles in other schemas edges
+                // remove out edge roles in other schemas edges
                 for (EdgeRole er : vlbl.getOutEdgeRoles().values()) {
                     if (er.getEdgeLabel().getSchema() == schema) {
-                        for(EdgeRole erIn : er.getEdgeLabel().getInEdgeRoles()){
-                        	if (erIn.getVertexLabel().getSchema() != schema) {
-                        		erIn.remove(preserveData);
+                        for (EdgeRole erIn : er.getEdgeLabel().getInEdgeRoles()) {
+                            if (erIn.getVertexLabel().getSchema() != schema) {
+                                erIn.remove(preserveData);
                             }
                         }
-                        
+
                     }
                 }
             }

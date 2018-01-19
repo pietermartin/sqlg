@@ -46,7 +46,11 @@ public abstract class AbstractLabel implements TopologyInf {
      * {@link PartitionType#NONE} indicates a normal non partitioned table.
      * {@link PartitionType#RANGE} and {@link PartitionType#LIST} indicate the type of partitioning.
      */
-    private PartitionType partitionType = PartitionType.NONE;
+    protected PartitionType partitionType = PartitionType.NONE;
+    protected String partitionExpression;
+    protected Map<String, Partition> partitions = new HashMap<>();
+    Map<String, Partition> uncommittedPartitions = new HashMap<>();
+    Set<String> uncommittedRemovedPartitions = new HashSet<>();
 
     /**
      * Only called for a new vertex/edge label being added.
@@ -64,14 +68,66 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
+    /**
+     * Only called for a new partitioned vertex/edge label being added.
+     *
+     * @param label               The vertex or edge's label.
+     * @param properties          The vertex's properties.
+     * @param partitionType       The partition type. i.e. RANGE or LIST.
+     * @param partitionExpression The sql fragment to express the partition column or expression.
+     */
+    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, PartitionType partitionType, String partitionExpression) {
+        Preconditions.checkArgument(partitionType == PartitionType.RANGE || partitionType == PartitionType.LIST, "Only RANGE and LIST partitions are supported. Found %s", partitionType.name());
+        Preconditions.checkArgument(!partitionExpression.isEmpty(), "partitionExpression may not be an empty string.");
+        this.sqlgGraph = sqlgGraph;
+        this.label = label;
+        for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
+            PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
+            property.setCommitted(false);
+            this.uncommittedProperties.put(propertyEntry.getKey(), property);
+        }
+        this.partitionType = partitionType;
+        this.partitionExpression = partitionExpression;
+    }
+
     AbstractLabel(SqlgGraph sqlgGraph, String label) {
         this.sqlgGraph = sqlgGraph;
         this.label = label;
     }
 
+    public abstract void ensurePropertiesExist(Map<String, PropertyType> columns);
+
+    public Partition ensurePartitionExists(String name, String from, String to) {
+        Objects.requireNonNull(name, "Partition's \"name\" must not be null");
+        Objects.requireNonNull(from, "Partition's \"from\" must not be null");
+        Objects.requireNonNull(to, "Partition's \"to\" must not be null");
+        Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensurePartitionExists(String name, String from, String to) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
+        Optional<Partition> partitionOptional = this.getPartition(name);
+        if (!partitionOptional.isPresent()) {
+            getSchema().getTopology().lock();
+            partitionOptional = this.getPartition(name);
+            if (!partitionOptional.isPresent()) {
+                return this.createPartition(name, from, to);
+            } else {
+                return partitionOptional.get();
+            }
+        } else {
+            return partitionOptional.get();
+        }
+    }
+
     @Override
     public boolean isCommitted() {
         return this.committed;
+    }
+
+    private Partition createPartition(String name, String from, String to) {
+        Preconditions.checkState(!this.getSchema().isSqlgSchema(), "createPartition may not be called for \"%s\"", SQLG_SCHEMA);
+        this.uncommittedPartitions.remove(name);
+        Partition partition = Partition.createPartition(this.sqlgGraph, this, name, from, to);
+        this.uncommittedPartitions.put(name, partition);
+        this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        return partition;
     }
 
     public Index ensureIndexExists(final IndexType indexType, final List<PropertyColumn> properties) {
@@ -143,16 +199,39 @@ public abstract class AbstractLabel implements TopologyInf {
         return getSchema().getName() + "." + getName();
     }
 
+    public Optional<Partition> getPartition(String name) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedPartitions.contains(name)) {
+            return Optional.empty();
+        }
+        Partition result = null;
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
+            result = this.uncommittedPartitions.get(name);
+        }
+        if (result == null) {
+            result = this.partitions.get(name);
+        }
+        return Optional.ofNullable(result);
+    }
+
+    public Map<String, Partition> getPartitions() {
+        Map<String, Partition> result = new HashMap<>(this.partitions);
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
+            result.putAll(this.uncommittedPartitions);
+            for (String s : this.uncommittedRemovedPartitions) {
+                result.remove(s);
+            }
+        }
+        return result;
+    }
+
     public Map<String, PropertyColumn> getProperties() {
-        Map<String, PropertyColumn> result = new HashMap<>();
-        result.putAll(this.properties);
+        Map<String, PropertyColumn> result = new HashMap<>(this.properties);
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedProperties);
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
             }
         }
-
         return result;
     }
 
@@ -293,6 +372,13 @@ public abstract class AbstractLabel implements TopologyInf {
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
+    void addPartition(Vertex partitionVertex) {
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread());
+        Partition partition = new Partition(this.sqlgGraph, this, partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME),
+                partitionVertex.value(SQLG_SCHEMA_PARTITION_FROM), partitionVertex.value(SQLG_SCHEMA_PARTITION_TO));
+        this.partitions.put(partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME), partition);
+    }
+
     void afterCommit() {
         Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "Abstract.afterCommit must hold the write lock");
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
@@ -333,6 +419,21 @@ public abstract class AbstractLabel implements TopologyInf {
         }
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
+            entry.getValue().afterCommit();
+        }
+        for (Iterator<Map.Entry<String, Partition>> it = this.uncommittedPartitions.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, Partition> entry = it.next();
+            this.partitions.put(entry.getKey(), entry.getValue());
+            entry.getValue().afterCommit();
+            it.remove();
+        }
+        for (Iterator<String> it = this.uncommittedRemovedPartitions.iterator(); it.hasNext(); ) {
+            String prop = it.next();
+            this.partitions.remove(prop);
+            it.remove();
+        }
+        for (Iterator<Map.Entry<String, Partition>> it = this.partitions.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, Partition> entry = it.next();
             entry.getValue().afterCommit();
         }
         this.committed = true;
@@ -546,4 +647,19 @@ public abstract class AbstractLabel implements TopologyInf {
         return true;
     }
 
+    public void removePartition(Partition partition, boolean preserveData) {
+        this.getSchema().getTopology().lock();
+        String fn = partition.getName();
+        if (!uncommittedRemovedPartitions.contains(fn)) {
+            uncommittedRemovedPartitions.add(fn);
+            TopologyManager.removePartition(this.sqlgGraph, partition);
+            if (!preserveData) {
+                partition.delete();
+            } else {
+                partition.detach();
+            }
+            this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.DELETE);
+        }
+
+    }
 }

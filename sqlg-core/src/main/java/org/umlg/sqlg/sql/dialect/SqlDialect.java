@@ -63,6 +63,10 @@ public interface SqlDialect {
 
     String getAutoIncrementPrimaryKeyConstruct();
 
+    default String getAutoIncrement() {
+        throw new RuntimeException("Not yet implemented.");
+    }
+
     String[] propertyTypeToSqlDefinition(PropertyType propertyType);
 
     int[] propertyTypeToJavaSqlType(PropertyType propertyType);
