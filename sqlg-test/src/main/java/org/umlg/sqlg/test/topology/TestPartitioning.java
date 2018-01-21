@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.topology;
 
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
@@ -17,7 +18,7 @@ import java.util.HashMap;
  */
 public class TestPartitioning extends BaseTest {
 
-//    @Test
+    @Test
     public void testPartitioning() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
@@ -27,7 +28,7 @@ public class TestPartitioning extends BaseTest {
                 PartitionType.RANGE,
                 "date");
         partitionedVertexLabel.ensurePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
-        partitionedVertexLabel.ensurePartitionExists("measurement2", "'2016-08-01'",  "'2016-09-01'");
+        partitionedVertexLabel.ensurePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'");
         this.sqlgGraph.tx().commit();
 
         LocalDate localDate1 = LocalDate.of(2016, 7, 1);
@@ -61,7 +62,7 @@ public class TestPartitioning extends BaseTest {
                 PartitionType.RANGE,
                 "date");
         partitionedVertexLabel.ensurePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
-        partitionedVertexLabel.ensurePartitionExists("measurement2", "'2016-08-01'",  "'2016-09-01'");
+        partitionedVertexLabel.ensurePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'");
         this.sqlgGraph.tx().commit();
 
         LocalDate localDate1 = LocalDate.of(2016, 7, 1);
@@ -91,6 +92,37 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("test.Measurement").has("date", localDate2).count().next(), 0);
 
             Assert.assertEquals(1, sqlgGraph1.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+
+    }
+
+    @Test
+    public void testPartitionedEdges() {
+        VertexLabel person = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person");
+        VertexLabel address = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address");
+        EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist("liveAt", address, new HashMap<String, PropertyType>() {{
+            put("date", PropertyType.LOCALDATE);
+        }}, PartitionType.RANGE, "date");
+        Partition p1 = livedAt.ensurePartitionExists("livedAt1", "'2016-07-01'", "'2016-08-01'");
+        Partition p2 = livedAt.ensurePartitionExists("livedAt2", "'2016-08-01'", "'2016-09-01'");
+        this.sqlgGraph.tx().commit();
+
+        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "Address");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "Address");
+        person1.addEdge("liveAt", a1, "date", LocalDate.of(2016, 7, 1));
+        person1.addEdge("liveAt", a2, "date", LocalDate.of(2016, 8, 2));
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("liveAt").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("liveAt").has("date", LocalDate.of(2016, 7, 1)).count().next(), 0);
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("liveAt").count().next(), 0);
+            Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("liveAt").has("date", LocalDate.of(2016, 7, 1)).count().next(), 0);
+            Assert.assertEquals(2, sqlgGraph1.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }

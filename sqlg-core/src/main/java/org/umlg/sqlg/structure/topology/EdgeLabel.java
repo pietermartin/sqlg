@@ -34,7 +34,7 @@ public class EdgeLabel extends AbstractLabel {
     private Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedRemovedInVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedRemovedOutVertexLabels = new HashSet<>();
-    
+
     private Topology topology;
 
     static EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
@@ -46,7 +46,30 @@ public class EdgeLabel extends AbstractLabel {
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties);
-        edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties);
+        edgeLabel.committed = false;
+        return edgeLabel;
+    }
+
+    static EdgeLabel createPartitionedEdgeLabel(
+            String edgeLabelName,
+            VertexLabel outVertexLabel,
+            VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
+        //edges are created in the out vertex's schema.
+        EdgeLabel edgeLabel = new EdgeLabel(
+                false,
+                edgeLabelName,
+                outVertexLabel,
+                inVertexLabel,
+                properties,
+                partitionType,
+                partitionExpression);
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, partitionType, partitionExpression);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -55,7 +78,41 @@ public class EdgeLabel extends AbstractLabel {
         return new EdgeLabel(topology, edgeLabelName);
     }
 
-    private EdgeLabel(boolean forSqlgSchema, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    private EdgeLabel(
+            boolean forSqlgSchema,
+            String edgeLabelName,
+            VertexLabel outVertexLabel,
+            VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        super(outVertexLabel.getSchema().getSqlgGraph(), edgeLabelName, properties, partitionType, partitionExpression);
+        if (forSqlgSchema) {
+            this.outVertexLabels.add(outVertexLabel);
+            this.inVertexLabels.add(inVertexLabel);
+        } else {
+            this.uncommittedOutVertexLabels.add(outVertexLabel);
+            this.uncommittedInVertexLabels.add(inVertexLabel);
+        }
+        // this is a topology edge label, the columns exist
+        if (forSqlgSchema) {
+            for (PropertyColumn pc : this.uncommittedProperties.values()) {
+                pc.setCommitted(true);
+                this.properties.put(pc.getName(), pc);
+            }
+            this.uncommittedProperties.clear();
+        }
+        this.topology = outVertexLabel.getSchema().getTopology();
+    }
+
+    private EdgeLabel(
+            boolean forSqlgSchema,
+            String edgeLabelName,
+            VertexLabel outVertexLabel,
+            VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties) {
+
         super(outVertexLabel.getSchema().getSqlgGraph(), edgeLabelName, properties);
         if (forSqlgSchema) {
             this.outVertexLabels.add(outVertexLabel);
@@ -65,12 +122,12 @@ public class EdgeLabel extends AbstractLabel {
             this.uncommittedInVertexLabels.add(inVertexLabel);
         }
         // this is a topology edge label, the columns exist
-        if (forSqlgSchema){
-        	for (PropertyColumn pc:this.uncommittedProperties.values()){
-        		pc.setCommitted(true);
-        		this.properties.put(pc.getName(), pc);
-        	}
-        	this.uncommittedProperties.clear();
+        if (forSqlgSchema) {
+            for (PropertyColumn pc : this.uncommittedProperties.values()) {
+                pc.setCommitted(true);
+                this.properties.put(pc.getName(), pc);
+            }
+            this.uncommittedProperties.clear();
         }
         this.topology = outVertexLabel.getSchema().getTopology();
     }
@@ -113,7 +170,16 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    private void createEdgeTable(VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
+    private void createEdgeTableOnDb(VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
+        createEdgeTableOnDb(outVertexLabel, inVertexLabel, columns, PartitionType.NONE, null);
+    }
+
+    private void createEdgeTableOnDb(
+            VertexLabel outVertexLabel,
+            VertexLabel inVertexLabel,
+            Map<String, PropertyType> columns,
+            PartitionType partitionType,
+            String partitionExpression) {
 
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
@@ -124,14 +190,19 @@ public class EdgeLabel extends AbstractLabel {
         sql.append(sqlDialect.maybeWrapInQoutes(schema));
         sql.append(".");
         sql.append(sqlDialect.maybeWrapInQoutes(tableName));
-        sql.append("(");
+        sql.append("(\n\t");
         sql.append(sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
-        sql.append(sqlDialect.getAutoIncrementPrimaryKeyConstruct());
+        if (partitionType.isNone()) {
+            sql.append(sqlDialect.getAutoIncrementPrimaryKeyConstruct());
+        } else {
+            sql.append(this.sqlgGraph.getSqlDialect().getAutoIncrement());
+        }
         if (columns.size() > 0) {
             sql.append(", ");
         }
         buildColumns(this.sqlgGraph, columns, sql);
+
         sql.append(", ");
         sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
         sql.append(" ");
@@ -142,7 +213,7 @@ public class EdgeLabel extends AbstractLabel {
         sql.append(sqlDialect.getForeignKeyTypeDefinition());
 
         //foreign key definition start
-        if (this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
+        if (partitionType.isNone() && this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
             sql.append(", ");
             sql.append("FOREIGN KEY (");
             sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END));
@@ -179,12 +250,20 @@ public class EdgeLabel extends AbstractLabel {
         }
         //foreign key definition end
 
-        sql.append(")");
+        sql.append("\n)");
+        if (!partitionType.isNone()) {
+            sql.append(" PARTITION BY ");
+            sql.append(this.partitionType.name());
+            sql.append(" (");
+            sql.append(this.partitionExpression);
+            sql.append(")");
+        }
+
         if (sqlDialect.needsSemicolon()) {
             sql.append(";");
         }
 
-        if (sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
+        if (partitionType.isNone() && sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
             sql.append("\nCREATE INDEX");
             if (sqlDialect.requiresIndexName()) {
                 sql.append(" ");

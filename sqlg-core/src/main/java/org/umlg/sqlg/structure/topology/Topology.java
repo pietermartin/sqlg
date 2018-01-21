@@ -146,6 +146,14 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_EDGE_LABEL_NAME = "name";
+    /**
+     * EdgeLabel's partition type. {@link PartitionType}
+     */
+    public static final String SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE = "partitionType";
+    /**
+     * EdgeLabel's partition expression.
+     */
+    public static final String SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION = "partitionExpression";
 
 
     /**
@@ -168,8 +176,10 @@ public class Topology {
      * Edge table for the vertex's partitions.
      */
     public static final String SQLG_SCHEMA_VERTEX_PARTITION_EDGE = "vertex_partition";
-
-
+    /**
+     * Edge table for the edge's partitions.
+     */
+    public static final String SQLG_SCHEMA_EDGE_PARTITION_EDGE = "edge_partition";
     /**
      * Table storing the graphs element properties.
      */
@@ -333,6 +343,8 @@ public class Topology {
         columns.clear();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, PropertyType.STRING);
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(edgeVertexLabel);
 
@@ -374,6 +386,8 @@ public class Topology {
 
         EdgeLabel vertexPartitionEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, partitionVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexPartitionEdgeLabel);
+        EdgeLabel edgePartitionEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PARTITION_EDGE, partitionVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgePartitionEdgeLabel);
 
         EdgeLabel vertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexPropertyEdgeLabel);

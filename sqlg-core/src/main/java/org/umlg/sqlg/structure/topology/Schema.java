@@ -174,7 +174,12 @@ public class Schema implements TopologyInf {
         }
     }
 
-    public VertexLabel ensurePartitionedVertexLabelExist(final String label, final Map<String, PropertyType> columns, PartitionType partitionType, String partitionExpression) {
+    public VertexLabel ensurePartitionedVertexLabelExist(
+            final String label,
+            final Map<String, PropertyType> columns,
+            PartitionType partitionType,
+            String partitionExpression) {
+
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
 
@@ -195,7 +200,12 @@ public class Schema implements TopologyInf {
         }
     }
 
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
+    public EdgeLabel ensureEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyType> columns) {
+
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
@@ -220,11 +230,94 @@ public class Schema implements TopologyInf {
         return edgeLabel;
     }
 
+    public EdgeLabel ensurePartitionedEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyType> columns,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
+        Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
+        Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
+
+        EdgeLabel edgeLabel;
+        Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
+        if (!edgeLabelOptional.isPresent()) {
+            this.topology.lock();
+            edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
+            if (!edgeLabelOptional.isPresent()) {
+                edgeLabel = this.createPartitionedEdgeLabel(
+                        edgeLabelName,
+                        outVertexLabel,
+                        inVertexLabel,
+                        columns,
+                        partitionType,
+                        partitionExpression);
+                this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
+                this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
+                this.getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
+                //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
+            } else {
+                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+            }
+        } else {
+            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+        }
+        return edgeLabel;
+    }
+
     private EdgeLabel internalEnsureEdgeTableExists(EdgeLabel edgeLabel, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
         edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
         edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
         edgeLabel.ensurePropertiesExist(columns);
         return edgeLabel;
+    }
+
+    private EdgeLabel createPartitionedEdgeLabel(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            final Map<String, PropertyType> columns,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        Preconditions.checkArgument(this.topology.isSqlWriteLockHeldByCurrentThread(), "Lock must be held by the thread to call createPartitionedEdgeLabel");
+        Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
+        Preconditions.checkState(!this.isSqlgSchema(), "createPartitionedEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
+
+        Schema inVertexSchema = inVertexLabel.getSchema();
+
+        //Edge may not already exist.
+        Preconditions.checkState(!getEdgeLabel(edgeLabelName).isPresent(), "BUG: Edge \"%s\" already exists!", edgeLabelName);
+
+        SchemaTable foreignKeyOut = SchemaTable.of(this.name, outVertexLabel.getLabel());
+        SchemaTable foreignKeyIn = SchemaTable.of(inVertexSchema.name, inVertexLabel.getLabel());
+
+        TopologyManager.addEdgeLabel(
+                this.sqlgGraph,
+                this.getName(),
+                EDGE_PREFIX + edgeLabelName,
+                foreignKeyOut,
+                foreignKeyIn,
+                columns,
+                partitionType,
+                partitionExpression);
+        if (this.sqlgGraph.getSqlDialect().needsSchemaCreationPrecommit()) {
+            try {
+                this.sqlgGraph.tx().getConnection().commit();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return outVertexLabel.addPartitionedEdgeLabel(
+                edgeLabelName,
+                inVertexLabel,
+                columns,
+                partitionType,
+                partitionExpression);
+
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -748,13 +841,13 @@ public class Schema implements TopologyInf {
             Preconditions.checkState(vertexVertex != null, "BUG: Topology vertex not found.");
             String schemaName = schemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
             String tableName = vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
-            VertexProperty<String> partitionType = vertexVertex.property(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE);
+            PartitionType partitionType = PartitionType.valueOf(vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE));
             VertexProperty<String> partitionExpression = vertexVertex.property(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION);
             VertexLabel vertexLabel;
             vertexLabel = this.vertexLabels.get(schemaName + "." + VERTEX_PREFIX + tableName);
             if (vertexLabel == null) {
-                if (partitionType != VertexProperty.<String>empty()) {
-                    vertexLabel = new VertexLabel(this, tableName, Collections.emptyMap(), PartitionType.valueOf(partitionType.value()), partitionExpression.value());
+                if (!partitionType.isNone()) {
+                    vertexLabel = new VertexLabel(this, tableName, Collections.emptyMap(), partitionType, partitionExpression.value());
                 } else {
                     vertexLabel = new VertexLabel(this, tableName);
                 }
@@ -777,7 +870,7 @@ public class Schema implements TopologyInf {
                 .optional(
                         __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
                                 .optional(
-                                        __.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).as("property")
+                                        __.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, SQLG_SCHEMA_EDGE_PARTITION_EDGE).as("property_partition")
                                 )
                 )
                 .path()
@@ -786,7 +879,7 @@ public class Schema implements TopologyInf {
             List<Set<String>> labelsList = outEdgePath.labels();
             Vertex vertexVertex = null;
             Vertex outEdgeVertex = null;
-            Vertex edgePropertyVertex = null;
+            Vertex edgePropertyPartitionVertex = null;
             for (Set<String> labels : labelsList) {
                 for (String label : labels) {
                     switch (label) {
@@ -796,8 +889,8 @@ public class Schema implements TopologyInf {
                         case "outEdgeVertex":
                             outEdgeVertex = outEdgePath.get("outEdgeVertex");
                             break;
-                        case "property":
-                            edgePropertyVertex = outEdgePath.get("property");
+                        case "property_partition":
+                            edgePropertyPartitionVertex = outEdgePath.get("property_partition");
                             break;
                         case "sqlgPathFakeLabel":
                             break;
@@ -825,9 +918,13 @@ public class Schema implements TopologyInf {
                     edgeLabel = edgeLabelOptional.get();
                     vertexLabel.addToOutEdgeLabels(schemaName, edgeLabel);
                 }
-                if (edgePropertyVertex != null) {
-                    //load the property
-                    edgeLabel.addProperty(edgePropertyVertex);
+                if (edgePropertyPartitionVertex != null) {
+                    if (edgePropertyPartitionVertex.label().equals("sqlg_schema.property")) {
+                        //load the property
+                        edgeLabel.addProperty(edgePropertyPartitionVertex);
+                    } else {
+                        edgeLabel.addPartition(edgePropertyPartitionVertex);
+                    }
                 }
                 this.outEdgeLabels.put(schemaName + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
             }

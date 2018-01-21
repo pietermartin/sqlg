@@ -55,7 +55,11 @@ public class Partition implements TopologyInf {
         Preconditions.checkArgument(!abstractLabel.getSchema().isSqlgSchema(), "createPartition may not be called for \"%s\"", Topology.SQLG_SCHEMA);
         Partition partition = new Partition(sqlgGraph, abstractLabel, name, from, to);
         partition.createPartitionOnDb();
-        TopologyManager.addPartition(sqlgGraph, abstractLabel, name, from, to);
+        if (abstractLabel instanceof VertexLabel) {
+            TopologyManager.addVertexLabelPartition(sqlgGraph, abstractLabel, name, from, to);
+        } else {
+            TopologyManager.addEdgeLabelPartition(sqlgGraph, abstractLabel, name, from, to);
+        }
         partition.committed = false;
         return partition;
     }
@@ -63,7 +67,7 @@ public class Partition implements TopologyInf {
     private void createPartitionOnDb() {
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE TABLE ");
-        sql.append(this.name);
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
         sql.append(" PARTITION OF ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.abstractLabel.getSchema().getName()));
         sql.append(".");

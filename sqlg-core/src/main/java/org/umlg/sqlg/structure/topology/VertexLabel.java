@@ -98,7 +98,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     /**
-     * Only called for a new partitioned vertex label being added.
+     * Called for a new partitioned vertex label being added and when partitioned vertices are loaded on startup.
      *
      * @param schema        The schema.
      * @param label         The vertex's label.
@@ -272,6 +272,46 @@ public class VertexLabel extends AbstractLabel {
      */
     public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties);
+    }
+
+    public EdgeLabel ensurePartitionedEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        return this.getSchema().ensurePartitionedEdgeLabelExist(
+                edgeLabelName,
+                this,
+                inVertexLabel,
+                properties,
+                partitionType,
+                partitionExpression);
+    }
+
+    EdgeLabel addPartitionedEdgeLabel(
+            String edgeLabelName,
+            VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        EdgeLabel edgeLabel = EdgeLabel.createPartitionedEdgeLabel(
+                edgeLabelName,
+                this,
+                inVertexLabel,
+                properties,
+                partitionType,
+                partitionExpression);
+        if (this.schema.isSqlgSchema()) {
+            this.outEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
+            inVertexLabel.inEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
+        } else {
+            this.uncommittedOutEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
+            inVertexLabel.uncommittedInEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
+        }
+        return edgeLabel;
     }
 
     /**
