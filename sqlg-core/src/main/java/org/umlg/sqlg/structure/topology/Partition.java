@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure.topology;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,14 @@ public class Partition implements TopologyInf {
         this.name = name;
         this.from = from;
         this.to = to;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public String getTo() {
+        return to;
     }
 
     @Override
@@ -131,5 +141,32 @@ public class Partition implements TopologyInf {
 
     void afterCommit() {
 
+    }
+
+    public ObjectNode toNotifyJson() {
+        ObjectNode partitionObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        partitionObjectNode.put("name", this.name);
+        partitionObjectNode.put("from", this.from);
+        partitionObjectNode.put("to", this.to);
+        return partitionObjectNode;
+    }
+
+    public static Partition fromNotifyJson(AbstractLabel abstractLabel, JsonNode partitionNode) {
+        return new Partition(
+                abstractLabel.getSchema().getSqlgGraph(),
+                abstractLabel,
+                partitionNode.get("name").asText(),
+                partitionNode.get("from").asText(),
+                partitionNode.get("to").asText()
+        );
+    }
+
+    @Override
+    public String toString() {
+        return toJson().toString();
+    }
+
+    protected JsonNode toJson() {
+        return toNotifyJson();
     }
 }

@@ -989,4 +989,8 @@ public interface SqlDialect {
     default boolean supportsTruncateMultipleTablesTogether() {
         return false;
     }
+
+    default boolean supportPartitioning() {
+        return false;
+    }
 }

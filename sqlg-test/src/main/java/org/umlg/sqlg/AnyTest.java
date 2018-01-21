@@ -2,6 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.topology.TestPartitionMultipleGraphs;
 import org.umlg.sqlg.test.topology.TestPartitioning;
 
 /**
@@ -10,7 +11,9 @@ import org.umlg.sqlg.test.topology.TestPartitioning;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestPartitioning.class
+        TestPartitioning.class,
+        TestPartitionMultipleGraphs.class,
+//        TestTopologyUpgrade.class
 })
 public class AnyTest {
 }

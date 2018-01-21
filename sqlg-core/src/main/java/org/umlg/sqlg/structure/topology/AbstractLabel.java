@@ -199,6 +199,14 @@ public abstract class AbstractLabel implements TopologyInf {
         return getSchema().getName() + "." + getName();
     }
 
+    public PartitionType getPartitionType() {
+        return partitionType;
+    }
+
+    public String getPartitionExpression() {
+        return partitionExpression;
+    }
+
     public Optional<Partition> getPartition(String name) {
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedPartitions.contains(name)) {
             return Optional.empty();
@@ -483,6 +491,16 @@ public abstract class AbstractLabel implements TopologyInf {
             for (String property : this.uncommittedRemovedProperties) {
                 removedPropertyArrayNode.add(property);
             }
+
+            ArrayNode partitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (Partition partition : this.uncommittedPartitions.values()) {
+                partitionArrayNode.add(partition.toNotifyJson());
+            }
+            ArrayNode removedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (String partition : this.uncommittedRemovedPartitions) {
+                removedPartitionArrayNode.add(partition);
+            }
+
             ArrayNode indexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Index index : this.uncommittedIndexes.values()) {
                 //noinspection OptionalGetWithoutIsPresent
@@ -497,9 +515,13 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             result.set("uncommittedProperties", propertyArrayNode);
             result.set("uncommittedRemovedProperties", removedPropertyArrayNode);
+            result.set("uncommittedPartitions", partitionArrayNode);
+            result.set("uncommittedRemovedPartitions", removedPartitionArrayNode);
             result.set("uncommittedIndexes", indexArrayNode);
             result.set("uncommittedRemovedIndexes", removedIndexArrayNode);
-            if (propertyArrayNode.size() == 0 && removedPropertyArrayNode.size() == 0 && indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0) {
+            if (propertyArrayNode.size() == 0 && removedPropertyArrayNode.size() == 0 &&
+                    partitionArrayNode.size() == 0 && removedPartitionArrayNode.size() == 0 &&
+                    indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0) {
                 return Optional.empty();
             }
             return Optional.of(result);
@@ -528,6 +550,26 @@ public abstract class AbstractLabel implements TopologyInf {
             for (JsonNode propertyNode : removedPropertyArrayNode) {
                 String pName = propertyNode.asText();
                 PropertyColumn old = this.properties.remove(pName);
+                if (fire && old != null) {
+                    this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
+                }
+            }
+        }
+        ArrayNode partitionsNode = (ArrayNode) vertexLabelJson.get("uncommittedPartitions");
+        if (partitionsNode != null) {
+            for (JsonNode partitionNode : partitionsNode) {
+                Partition partitionColumn = Partition.fromNotifyJson(this, partitionNode);
+                Partition old = this.partitions.put(partitionColumn.getName(), partitionColumn);
+                if (fire && old == null) {
+                    this.getSchema().getTopology().fire(partitionColumn, "", TopologyChangeAction.CREATE);
+                }
+            }
+        }
+        ArrayNode removedPartitionsArrayNode = (ArrayNode) vertexLabelJson.get("uncommittedRemovedPartitions");
+        if (removedPartitionsArrayNode != null) {
+            for (JsonNode partitionNode : removedPartitionsArrayNode) {
+                String pName = partitionNode.asText();
+                Partition old = this.partitions.remove(pName);
                 if (fire && old != null) {
                     this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }

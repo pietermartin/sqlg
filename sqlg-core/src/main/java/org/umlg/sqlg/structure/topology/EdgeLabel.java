@@ -137,6 +137,11 @@ public class EdgeLabel extends AbstractLabel {
         this.topology = topology;
     }
 
+    EdgeLabel(Topology topology, String edgeLabelName, PartitionType partitionType, String partitionExpression) {
+        super(topology.getSqlgGraph(), edgeLabelName, Collections.emptyMap(), partitionType, partitionExpression);
+        this.topology = topology;
+    }
+
     @Override
     public Schema getSchema() {
         if (!this.outVertexLabels.isEmpty()) {
@@ -719,13 +724,17 @@ public class EdgeLabel extends AbstractLabel {
         ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         edgeLabelNode.put("schema", getSchema().getName());
         edgeLabelNode.put("label", getLabel());
+        edgeLabelNode.put("partitionType", this.partitionType.name());
+        edgeLabelNode.put("partitionExpression", this.partitionExpression);
 
         Optional<JsonNode> abstractLabelNode = super.toNotifyJson();
         if (abstractLabelNode.isPresent()) {
             foundSomething = true;
             edgeLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             edgeLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
+            edgeLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
             edgeLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
+            edgeLabelNode.set("uncommittedRemovedPartitions", abstractLabelNode.get().get("uncommittedRemovedPartitions"));
             edgeLabelNode.set("uncommittedRemovedIndexes", abstractLabelNode.get().get("uncommittedRemovedIndexes"));
         }
 

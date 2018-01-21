@@ -3,12 +3,16 @@ package org.umlg.sqlg.test.topology;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.HashMap;
 
@@ -17,6 +21,12 @@ import java.util.HashMap;
  * Date: 2018/01/13
  */
 public class TestPartitioning extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws PropertyVetoException, IOException, ClassNotFoundException {
+        BaseTest.beforeClass();
+        Assume.assumeTrue(isPostgres());
+    }
 
     @Test
     public void testPartitioning() {

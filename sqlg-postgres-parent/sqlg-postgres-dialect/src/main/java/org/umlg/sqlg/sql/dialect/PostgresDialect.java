@@ -3869,4 +3869,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public boolean supportsTruncateMultipleTablesTogether() {
         return true;
     }
+
+    @Override
+    public boolean supportPartitioning() {
+        return true;
+    }
 }

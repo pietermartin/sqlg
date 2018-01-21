@@ -574,12 +574,16 @@ public class VertexLabel extends AbstractLabel {
     protected Optional<JsonNode> toNotifyJson() {
         ObjectNode vertexLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         vertexLabelNode.put("label", getLabel());
+        vertexLabelNode.put("partitionType", this.partitionType.name());
+        vertexLabelNode.put("partitionExpression", this.partitionExpression);
 
         Optional<JsonNode> abstractLabelNode = super.toNotifyJson();
         if (abstractLabelNode.isPresent()) {
             vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
+            vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
             vertexLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
             vertexLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
+            vertexLabelNode.set("uncommittedRemovedPartitions", abstractLabelNode.get().get("uncommittedRemovedPartitions"));
             vertexLabelNode.set("uncommittedRemovedIndexes", abstractLabelNode.get().get("uncommittedRemovedIndexes"));
         }
 
@@ -675,7 +679,13 @@ public class VertexLabel extends AbstractLabel {
                     Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
                     EdgeLabel edgeLabel;
                     if (!edgeLabelOptional.isPresent()) {
-                        edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);
+                        PartitionType partitionType = PartitionType.valueOf(uncommittedOutEdgeLabel.get("partitionType").asText());
+                        if (partitionType.isNone()) {
+                            edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);
+                        } else {
+                            String partitionExpression = uncommittedOutEdgeLabel.get("partitionExpression").asText();
+                            edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName, partitionType, partitionExpression);
+                        }
                     } else {
                         edgeLabel = edgeLabelOptional.get();
                     }

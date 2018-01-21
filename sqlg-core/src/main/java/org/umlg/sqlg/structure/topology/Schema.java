@@ -1261,7 +1261,13 @@ public class Schema implements TopologyInf {
                     if (vertexLabelOptional.isPresent()) {
                         vertexLabel = vertexLabelOptional.get();
                     } else {
-                        vertexLabel = new VertexLabel(this, vertexLabelName);
+                        PartitionType partitionType = PartitionType.valueOf(vertexLabelJson.get("partitionType").asText());
+                        if (partitionType.isNone()) {
+                            vertexLabel = new VertexLabel(this, vertexLabelName);
+                        } else {
+                            String partitionExpression = vertexLabelJson.get("partitionExpression").asText();
+                            vertexLabel = new VertexLabel(this, vertexLabelName, Collections.emptyMap(), partitionType, partitionExpression);
+                        }
                         this.vertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
                         this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
                     }

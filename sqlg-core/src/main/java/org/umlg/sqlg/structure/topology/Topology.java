@@ -279,7 +279,7 @@ public class Topology {
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_PROPERTY_TYPE = "type";
 
-    public static final List<String> SQLG_SCHEMA_SCHEMA_TABLES = Arrays.asList(
+    private static final List<String> SQLG_SCHEMA_SCHEMA_TABLES = Arrays.asList(
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_GRAPH,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
@@ -330,7 +330,6 @@ public class Topology {
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);
         this.sqlgSchemaAbstractLabels.add(schemaVertexLabel);
 
-
         columns = new HashMap<>();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
@@ -348,12 +347,13 @@ public class Topology {
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(edgeVertexLabel);
 
+        VertexLabel partitionVertexLabel = null;
         columns.clear();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyType.STRING);
-        VertexLabel partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
+        partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
         this.sqlgSchemaAbstractLabels.add(partitionVertexLabel);
 
         columns.clear();
