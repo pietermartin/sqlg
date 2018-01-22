@@ -173,6 +173,10 @@ public class Topology {
      */
     public static final String SQLG_SCHEMA_PARTITION_TO = "to";
     /**
+     * The Partition's in spec.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_IN = "in";
+    /**
      * Edge table for the vertex's partitions.
      */
     public static final String SQLG_SCHEMA_VERTEX_PARTITION_EDGE = "vertex_partition";
@@ -353,6 +357,7 @@ public class Topology {
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_IN, PropertyType.STRING);
         partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
         this.sqlgSchemaAbstractLabels.add(partitionVertexLabel);
 

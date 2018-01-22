@@ -97,10 +97,17 @@ public abstract class AbstractLabel implements TopologyInf {
 
     public abstract void ensurePropertiesExist(Map<String, PropertyType> columns);
 
+    /**
+     * Ensures that a RANGE partition exists.
+     * @param name The partition's name
+     * @param from The RANGE partition's start clause.
+     * @param to THe RANGE partition's end clause.
+     * @return The {@link Partition}
+     */
     public Partition ensurePartitionExists(String name, String from, String to) {
-        Objects.requireNonNull(name, "Partition's \"name\" must not be null");
-        Objects.requireNonNull(from, "Partition's \"from\" must not be null");
-        Objects.requireNonNull(to, "Partition's \"to\" must not be null");
+        Objects.requireNonNull(name, "RANGE Partition's \"name\" must not be null");
+        Objects.requireNonNull(from, "RANGE Partition's \"from\" must not be null");
+        Objects.requireNonNull(to, "RANGE Partition's \"to\" must not be null");
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensurePartitionExists(String name, String from, String to) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (!partitionOptional.isPresent()) {
@@ -108,6 +115,30 @@ public abstract class AbstractLabel implements TopologyInf {
             partitionOptional = this.getPartition(name);
             if (!partitionOptional.isPresent()) {
                 return this.createPartition(name, from, to);
+            } else {
+                return partitionOptional.get();
+            }
+        } else {
+            return partitionOptional.get();
+        }
+    }
+
+    /**
+     * Ensures that a LIST partition exists.
+     * @param name The partition's name.
+     * @param in The LIST partition's 'in' clause.
+     * @return The {@link Partition}
+     */
+    public Partition ensurePartitionExists(String name, String in) {
+        Objects.requireNonNull(name, "LIST Partition's \"name\" must not be null");
+        Objects.requireNonNull(in, "LIST Partition's \"in\" must not be null");
+        Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensurePartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
+        Optional<Partition> partitionOptional = this.getPartition(name);
+        if (!partitionOptional.isPresent()) {
+            getSchema().getTopology().lock();
+            partitionOptional = this.getPartition(name);
+            if (!partitionOptional.isPresent()) {
+                return this.createPartition(name, in);
             } else {
                 return partitionOptional.get();
             }
@@ -125,6 +156,15 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(!this.getSchema().isSqlgSchema(), "createPartition may not be called for \"%s\"", SQLG_SCHEMA);
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createPartition(this.sqlgGraph, this, name, from, to);
+        this.uncommittedPartitions.put(name, partition);
+        this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        return partition;
+    }
+
+    private Partition createPartition(String name, String in) {
+        Preconditions.checkState(!this.getSchema().isSqlgSchema(), "createPartition may not be called for \"%s\"", SQLG_SCHEMA);
+        this.uncommittedPartitions.remove(name);
+        Partition partition = Partition.createPartition(this.sqlgGraph, this, name, in);
         this.uncommittedPartitions.put(name, partition);
         this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.CREATE);
         return partition;

@@ -363,11 +363,11 @@ public class Schema implements TopologyInf {
         return vertexLabel;
     }
 
-    private VertexLabel createPartitionedVertexLabel(String vertexLabelName, Map<String, PropertyType> columns, PartitionType partitionType, String partitionKeys) {
+    private VertexLabel createPartitionedVertexLabel(String vertexLabelName, Map<String, PropertyType> columns, PartitionType partitionType, String partitionExpression) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
         this.uncommittedRemovedVertexLabels.remove(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-        VertexLabel vertexLabel = VertexLabel.createPartitionedVertexLabel(this.sqlgGraph, this, vertexLabelName, columns, partitionType, partitionKeys);
+        VertexLabel vertexLabel = VertexLabel.createPartitionedVertexLabel(this.sqlgGraph, this, vertexLabelName, columns, partitionType, partitionExpression);
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
         this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
         return vertexLabel;

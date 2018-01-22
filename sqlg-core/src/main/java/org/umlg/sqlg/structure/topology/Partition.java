@@ -23,6 +23,7 @@ public class Partition implements TopologyInf {
     private String name;
     private String from;
     private String to;
+    private String in;
     private AbstractLabel abstractLabel;
     protected boolean committed = true;
 
@@ -34,12 +35,23 @@ public class Partition implements TopologyInf {
         this.to = to;
     }
 
+    Partition(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String name, String in) {
+        this.sqlgGraph = sqlgGraph;
+        this.abstractLabel = abstractLabel;
+        this.name = name;
+        this.in = in;
+    }
+
     public String getFrom() {
         return from;
     }
 
     public String getTo() {
         return to;
+    }
+
+    public String getIn() {
+        return in;
     }
 
     @Override
@@ -64,7 +76,7 @@ public class Partition implements TopologyInf {
     public static Partition createPartition(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String name, String from, String to) {
         Preconditions.checkArgument(!abstractLabel.getSchema().isSqlgSchema(), "createPartition may not be called for \"%s\"", Topology.SQLG_SCHEMA);
         Partition partition = new Partition(sqlgGraph, abstractLabel, name, from, to);
-        partition.createPartitionOnDb();
+        partition.createRangePartitionOnDb();
         if (abstractLabel instanceof VertexLabel) {
             TopologyManager.addVertexLabelPartition(sqlgGraph, abstractLabel, name, from, to);
         } else {
@@ -74,7 +86,20 @@ public class Partition implements TopologyInf {
         return partition;
     }
 
-    private void createPartitionOnDb() {
+    public static Partition createPartition(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String name, String in) {
+        Preconditions.checkArgument(!abstractLabel.getSchema().isSqlgSchema(), "createPartition may not be called for \"%s\"", Topology.SQLG_SCHEMA);
+        Partition partition = new Partition(sqlgGraph, abstractLabel, name, in);
+        partition.createListPartitionOnDb();
+        if (abstractLabel instanceof VertexLabel) {
+            TopologyManager.addVertexLabelPartition(sqlgGraph, abstractLabel, name, in);
+        } else {
+            TopologyManager.addEdgeLabelPartition(sqlgGraph, abstractLabel, name, in);
+        }
+        partition.committed = false;
+        return partition;
+    }
+
+    private void createRangePartitionOnDb() {
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE TABLE ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
@@ -86,6 +111,31 @@ public class Partition implements TopologyInf {
         sql.append(this.from);
         sql.append(") TO (");
         sql.append(this.to);
+        sql.append(")");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createListPartitionOnDb() {
+        StringBuilder sql = new StringBuilder();
+        sql.append("CREATE TABLE ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
+        sql.append(" PARTITION OF ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.abstractLabel.getSchema().getName()));
+        sql.append(".");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.abstractLabel.getPrefix() + this.abstractLabel.getLabel()));
+        sql.append(" FOR VALUES IN (");
+        sql.append(this.in);
         sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");

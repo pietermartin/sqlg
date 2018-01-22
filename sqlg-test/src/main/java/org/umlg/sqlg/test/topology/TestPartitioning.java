@@ -29,7 +29,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testPartitioning() {
+    public void testPartitioningRange() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
                     put("date", PropertyType.LOCALDATE);
@@ -63,7 +63,46 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testPartitionInSchema() {
+    public void testPartitioningList() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities", new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("population", PropertyType.LONG);
+                }},
+                PartitionType.LIST,
+                "left(lower(name), 1)");
+        partitionedVertexLabel.ensurePartitionExists("Cities_a", "'a'");
+        partitionedVertexLabel.ensurePartitionExists("Cities_b", "'b'");
+        partitionedVertexLabel.ensurePartitionExists("Cities_c", "'c'");
+        partitionedVertexLabel.ensurePartitionExists("Cities_d", "'d'");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "aasbc", "population", 1000L);
+        }
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "basbc", "population", 1000L);
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "casbc", "population", 1000L);
+        }
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "dasbc", "population", 1000L);
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(202, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
+        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "aasbc").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "basbc").count().next(), 0);
+        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "casbc").count().next(), 0);
+
+        Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Cities").get().getPartition("Cities_a").get();
+        partition.remove();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
+        Assert.assertEquals(3, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
+    }
+
+    @Test
+    public void testPartitionRangeInSchema() {
         Schema testSchema = this.sqlgGraph.getTopology().ensureSchemaExist("test");
         VertexLabel partitionedVertexLabel = testSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
                     put("date", PropertyType.LOCALDATE);

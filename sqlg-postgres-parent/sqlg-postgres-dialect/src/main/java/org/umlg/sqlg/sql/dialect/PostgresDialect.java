@@ -2810,7 +2810,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
                 "\"name\" TEXT, " +
                 "\"from\" TEXT, " +
-                "\"to\" TEXT);");
+                "\"to\" TEXT, " +
+                "\"in\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"index_type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
