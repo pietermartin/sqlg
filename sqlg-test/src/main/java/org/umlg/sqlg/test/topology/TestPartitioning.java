@@ -62,6 +62,9 @@ public class TestPartitioning extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
     }
 
+
+    //the partitionExpression 'left(lower(name), 1)' is to complex for the query planner to optimize.
+    //i.e. select * from Cities where name = 'asdasd' willscan all partitions.
     @Test
     public void testPartitioningList() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
@@ -99,6 +102,40 @@ public class TestPartitioning extends BaseTest {
 
         Assert.assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
         Assert.assertEquals(3, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
+    }
+
+    //partitionExpression is simple enough for the query planner to optimize the queries.
+    @Test
+    public void testPartitioningListSimple() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities", new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("population", PropertyType.LONG);
+                }},
+                PartitionType.LIST,
+                "name");
+        partitionedVertexLabel.ensurePartitionExists("Cities_a", "'London'");
+        partitionedVertexLabel.ensurePartitionExists("Cities_b", "'New York'");
+        partitionedVertexLabel.ensurePartitionExists("Cities_c", "'Paris'");
+        partitionedVertexLabel.ensurePartitionExists("Cities_d", "'Johannesburg'");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "London", "population", 1000L);
+        }
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "New York", "population", 1000L);
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "Paris", "population", 1000L);
+        }
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "Johannesburg", "population", 1000L);
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(202, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
+        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "London").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "New York").count().next(), 0);
+        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "Paris").count().next(), 0);
+
     }
 
     @Test
