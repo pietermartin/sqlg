@@ -81,7 +81,6 @@ public class ReplacedStepTree {
                 schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }
         }
-
     }
 
     private List<ReplacedStep<?, ?>> linearPathToLeafNode() {
@@ -235,9 +234,7 @@ public class ReplacedStepTree {
 
         @Override
         public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append(this.replacedStep.toString());
-            return sb.toString();
+            return this.replacedStep.toString();
         }
 
         void internalLinearPathToLeafNode(List<ReplacedStep<?, ?>> result) {

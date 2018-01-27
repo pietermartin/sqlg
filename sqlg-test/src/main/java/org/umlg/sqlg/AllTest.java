@@ -237,7 +237,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestUnoptimizedRepeatStep.class,
         TestPropertyReference.class,
         TestPartitioning.class,
-        TestPartitionMultipleGraphs.class
+        TestPartitionMultipleGraphs.class,
+        TestSubSubPartition.class
 
 
 })

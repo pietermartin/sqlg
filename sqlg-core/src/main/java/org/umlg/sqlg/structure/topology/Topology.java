@@ -177,6 +177,14 @@ public class Topology {
      */
     public static final String SQLG_SCHEMA_PARTITION_IN = "in";
     /**
+     * The Partition's sub-partition's PartitionType.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_PARTITION_TYPE = "partitionType";
+    /**
+     * The Partition's sub-partition's partitionExpression.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION = "partitionExpression";
+    /**
      * Edge table for the vertex's partitions.
      */
     public static final String SQLG_SCHEMA_VERTEX_PARTITION_EDGE = "vertex_partition";
@@ -184,6 +192,10 @@ public class Topology {
      * Edge table for the edge's partitions.
      */
     public static final String SQLG_SCHEMA_EDGE_PARTITION_EDGE = "edge_partition";
+    /**
+     * Partition table for the partition's partitions.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_PARTITION_EDGE = "partition_partition";
     /**
      * Table storing the graphs element properties.
      */
@@ -299,6 +311,8 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PARTITION_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PARTITION_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_PARTITION_PARTITION_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_INDEX_PROPERTY_EDGE,
@@ -358,6 +372,8 @@ public class Topology {
         columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_PARTITION_IN, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, PropertyType.STRING);
         partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
         this.sqlgSchemaAbstractLabels.add(partitionVertexLabel);
 
@@ -393,6 +409,8 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(vertexPartitionEdgeLabel);
         EdgeLabel edgePartitionEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PARTITION_EDGE, partitionVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(edgePartitionEdgeLabel);
+        EdgeLabel partitionPartitionEdgeLabel = partitionVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_PARTITION_PARTITION_EDGE, partitionVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(partitionPartitionEdgeLabel);
 
         EdgeLabel vertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexPropertyEdgeLabel);
@@ -1483,6 +1501,14 @@ public class Topology {
                         result.put(key, tmp);
                     }
                 }
+//            } else if (f instanceof Partition) {
+//                Partition partition = (Partition) f;
+//                Schema schema = partition.getAbstractLabel().getSchema();
+//                String key = schema.getName() + "." + (partition.getAbstractLabel() instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
+//                Map<String, PropertyType> tmp = tbls.get(key);
+//                if (tmp != null) {
+//                    result.put(key, tmp);
+//                }
             } else if (f instanceof GlobalUniqueIndex) {
                 GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
                 String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + VERTEX_PREFIX + globalUniqueIndex.getName();

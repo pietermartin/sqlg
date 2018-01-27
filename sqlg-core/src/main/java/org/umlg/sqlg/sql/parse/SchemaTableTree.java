@@ -105,6 +105,13 @@ public class SchemaTableTree {
     //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
     private List<Pair<Long, Long>> parentIdsAndIndexes;
 
+    public void removeTopologyStrategyHasContainer() {
+        SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
+        for (SchemaTableTree child : children) {
+            SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
+            child.removeTopologyStrategyHasContainer();
+        }
+    }
 
     public enum STEP_TYPE {
         GRAPH_STEP,

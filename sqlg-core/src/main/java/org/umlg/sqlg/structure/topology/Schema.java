@@ -800,22 +800,24 @@ public class Schema implements TopologyInf {
 
     void loadVertexOutEdgesAndProperties(GraphTraversalSource traversalSource, Vertex schemaVertex) {
         //First load the vertex and its properties
+        Map<String, Partition> partitionMap = new HashMap<>();
         List<Path> vertices = traversalSource
                 .V(schemaVertex)
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
                 //a vertex does not necessarily have properties so use optional.
                 .optional(
-                        __.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).as("property")
-                )
-                .optional(
-                        __.out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE).as("partition")
+                        __.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, SQLG_SCHEMA_VERTEX_PARTITION_EDGE).as("property_partition")
+                                .optional(
+                                        __.repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE)).emit().as("subPartition")
+                                )
                 )
                 .path()
                 .toList();
         for (Path vertexProperties : vertices) {
             Vertex vertexVertex = null;
-            Vertex propertyVertex = null;
-            Vertex partitionVertex = null;
+            Vertex vertexPropertyPartitionVertex = null;
+            Vertex partitionParentVertex = null;
+            Vertex subPartition = null;
             List<Set<String>> labelsList = vertexProperties.labels();
             for (Set<String> labels : labelsList) {
                 for (String label : labels) {
@@ -823,13 +825,15 @@ public class Schema implements TopologyInf {
                         case "vertex":
                             vertexVertex = vertexProperties.get("vertex");
                             break;
-                        case "property":
-                            propertyVertex = vertexProperties.get("property");
-                            break;
-                        case "partition":
-                            partitionVertex = vertexProperties.get("partition");
+                        case "property_partition":
+                            vertexPropertyPartitionVertex = vertexProperties.get("property_partition");
                             break;
                         case "sqlgPathFakeLabel":
+                            break;
+                        case "subPartition":
+                            Preconditions.checkState(vertexPropertyPartitionVertex != null);
+                            subPartition = vertexProperties.get("subPartition");
+                            partitionParentVertex = vertexProperties.get(vertexProperties.size() - 2);
                             break;
                         case MARKER:
                             break;
@@ -853,15 +857,25 @@ public class Schema implements TopologyInf {
                 }
                 this.vertexLabels.put(schemaName + "." + VERTEX_PREFIX + tableName, vertexLabel);
             }
-            if (propertyVertex != null) {
-                vertexLabel.addProperty(propertyVertex);
+            if (subPartition == null && vertexPropertyPartitionVertex != null) {
+                if (vertexPropertyPartitionVertex.label().equals("sqlg_schema.property")) {
+                    //load the property
+                    vertexLabel.addProperty(vertexPropertyPartitionVertex);
+                } else {
+                    Partition partition = vertexLabel.addPartition(vertexPropertyPartitionVertex);
+                    partitionMap.put(partition.getName(), partition);
+                }
             }
-            if (partitionVertex != null) {
-                vertexLabel.addPartition(partitionVertex);
+            if (subPartition != null) {
+                Partition partition = partitionMap.get(partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
+                Preconditions.checkState(partition != null, "Partition %s not found", partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
+                Partition partition1 = partition.addPartition(subPartition);
+                partitionMap.put(partition1.getName(), partition1);
             }
         }
 
 
+        partitionMap.clear();
         //Load the out edges. This will load all edges as all edges have a out vertex.
         List<Path> outEdges = traversalSource
                 .V(schemaVertex)
@@ -871,6 +885,9 @@ public class Schema implements TopologyInf {
                         __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
                                 .optional(
                                         __.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, SQLG_SCHEMA_EDGE_PARTITION_EDGE).as("property_partition")
+                                                .optional(
+                                                        __.repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE)).emit().as("subPartition")
+                                                )
                                 )
                 )
                 .path()
@@ -880,6 +897,8 @@ public class Schema implements TopologyInf {
             Vertex vertexVertex = null;
             Vertex outEdgeVertex = null;
             Vertex edgePropertyPartitionVertex = null;
+            Vertex partitionParentVertex = null;
+            Vertex subPartition = null;
             for (Set<String> labels : labelsList) {
                 for (String label : labels) {
                     switch (label) {
@@ -891,6 +910,11 @@ public class Schema implements TopologyInf {
                             break;
                         case "property_partition":
                             edgePropertyPartitionVertex = outEdgePath.get("property_partition");
+                            break;
+                        case "subPartition":
+                            Preconditions.checkState(edgePropertyPartitionVertex != null);
+                            subPartition = outEdgePath.get("subPartition");
+                            partitionParentVertex = outEdgePath.get(outEdgePath.size() - 2);
                             break;
                         case "sqlgPathFakeLabel":
                             break;
@@ -918,13 +942,20 @@ public class Schema implements TopologyInf {
                     edgeLabel = edgeLabelOptional.get();
                     vertexLabel.addToOutEdgeLabels(schemaName, edgeLabel);
                 }
-                if (edgePropertyPartitionVertex != null) {
+                if (subPartition == null && edgePropertyPartitionVertex != null) {
                     if (edgePropertyPartitionVertex.label().equals("sqlg_schema.property")) {
                         //load the property
                         edgeLabel.addProperty(edgePropertyPartitionVertex);
                     } else {
-                        edgeLabel.addPartition(edgePropertyPartitionVertex);
+                        Partition partition = edgeLabel.addPartition(edgePropertyPartitionVertex);
+                        partitionMap.put(partition.getName(), partition);
                     }
+                }
+                if (subPartition != null) {
+                    Partition partition = partitionMap.get(partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
+                    Preconditions.checkState(partition != null, "Partition %s not found", partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
+                    Partition partition1 = partition.addPartition(subPartition);
+                    partitionMap.put(partition1.getName(), partition1);
                 }
                 this.outEdgeLabels.put(schemaName + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
             }

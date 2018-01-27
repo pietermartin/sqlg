@@ -15,6 +15,7 @@ import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -37,8 +38,8 @@ public class TestPartitioning extends BaseTest {
                 }},
                 PartitionType.RANGE,
                 "date");
-        partitionedVertexLabel.ensurePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
-        partitionedVertexLabel.ensurePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'");
+        partitionedVertexLabel.ensureRangePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
+        partitionedVertexLabel.ensureRangePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'");
         this.sqlgGraph.tx().commit();
 
         LocalDate localDate1 = LocalDate.of(2016, 7, 1);
@@ -74,10 +75,10 @@ public class TestPartitioning extends BaseTest {
                 }},
                 PartitionType.LIST,
                 "left(lower(name), 1)");
-        partitionedVertexLabel.ensurePartitionExists("Cities_a", "'a'");
-        partitionedVertexLabel.ensurePartitionExists("Cities_b", "'b'");
-        partitionedVertexLabel.ensurePartitionExists("Cities_c", "'c'");
-        partitionedVertexLabel.ensurePartitionExists("Cities_d", "'d'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'a'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_b", "'b'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_c", "'c'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_d", "'d'");
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -114,10 +115,10 @@ public class TestPartitioning extends BaseTest {
                 }},
                 PartitionType.LIST,
                 "name");
-        partitionedVertexLabel.ensurePartitionExists("Cities_a", "'London'");
-        partitionedVertexLabel.ensurePartitionExists("Cities_b", "'New York'");
-        partitionedVertexLabel.ensurePartitionExists("Cities_c", "'Paris'");
-        partitionedVertexLabel.ensurePartitionExists("Cities_d", "'Johannesburg'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'London'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_b", "'New York'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_c", "'Paris'");
+        partitionedVertexLabel.ensureListPartitionExists("Cities_d", "'Johannesburg'");
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -136,6 +137,15 @@ public class TestPartitioning extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "New York").count().next(), 0);
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "Paris").count().next(), 0);
 
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(202, sqlgGraph1.traversal().V().hasLabel("Cities").count().next(), 0);
+            Assert.assertEquals(100, sqlgGraph1.traversal().V().hasLabel("Cities").has("name", "London").count().next(), 0);
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("Cities").has("name", "New York").count().next(), 0);
+            Assert.assertEquals(100, sqlgGraph1.traversal().V().hasLabel("Cities").has("name", "Paris").count().next(), 0);
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+
     }
 
     @Test
@@ -147,8 +157,8 @@ public class TestPartitioning extends BaseTest {
                 }},
                 PartitionType.RANGE,
                 "date");
-        partitionedVertexLabel.ensurePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
-        partitionedVertexLabel.ensurePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'");
+        partitionedVertexLabel.ensureRangePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
+        partitionedVertexLabel.ensureRangePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'");
         this.sqlgGraph.tx().commit();
 
         LocalDate localDate1 = LocalDate.of(2016, 7, 1);
@@ -185,14 +195,14 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testPartitionedEdges() {
+    public void testPartitionedEdgesRange() {
         VertexLabel person = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person");
         VertexLabel address = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address");
         EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist("liveAt", address, new HashMap<String, PropertyType>() {{
             put("date", PropertyType.LOCALDATE);
         }}, PartitionType.RANGE, "date");
-        Partition p1 = livedAt.ensurePartitionExists("livedAt1", "'2016-07-01'", "'2016-08-01'");
-        Partition p2 = livedAt.ensurePartitionExists("livedAt2", "'2016-08-01'", "'2016-09-01'");
+        Partition p1 = livedAt.ensureRangePartitionExists("livedAt1", "'2016-07-01'", "'2016-08-01'");
+        Partition p2 = livedAt.ensureRangePartitionExists("livedAt2", "'2016-08-01'", "'2016-09-01'");
         this.sqlgGraph.tx().commit();
 
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person");
@@ -212,6 +222,230 @@ public class TestPartitioning extends BaseTest {
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
+    }
+
+    @Test
+    public void testPartitionedEdgesList() {
+        VertexLabel person = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person");
+        VertexLabel address = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address");
+        EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist("liveAt", address, new HashMap<String, PropertyType>() {{
+            put("date", PropertyType.LOCALDATE);
+        }}, PartitionType.LIST, "date");
+        Partition p1 = livedAt.ensureListPartitionExists("livedAt1", "'2016-07-01'");
+        Partition p2 = livedAt.ensureListPartitionExists("livedAt2", "'2016-07-02'");
+        Partition p3 = livedAt.ensureListPartitionExists("livedAt2", "'2016-07-03'");
+        Partition p4 = livedAt.ensureListPartitionExists("livedAt2", "'2016-07-04'");
+        this.sqlgGraph.tx().commit();
+
+        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "Address");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "Address");
+        person1.addEdge("liveAt", a1, "date", LocalDate.of(2016, 7, 1));
+        person1.addEdge("liveAt", a2, "date", LocalDate.of(2016, 7, 2));
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("liveAt").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("liveAt").has("date", LocalDate.of(2016, 7, 1)).count().next(), 0);
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("liveAt").count().next(), 0);
+            Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("liveAt").has("date", LocalDate.of(2016, 7, 1)).count().next(), 0);
+            Assert.assertEquals(2, sqlgGraph1.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testSubPartitioningRange() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("logdate", PropertyType.LOCALDATE);
+                    put("peaktemp", PropertyType.INTEGER);
+                    put("unitsales", PropertyType.INTEGER);
+                }},
+                PartitionType.RANGE,
+                "logdate");
+
+        Partition p1 = measurement.ensureRangePartitionWithSubPartitionExists("measurement_y2006m02", "'2006-02-01'", "'2006-03-01'", PartitionType.RANGE, "peaktemp");
+        Partition p2 = measurement.ensureRangePartitionWithSubPartitionExists("measurement_y2006m03", "'2006-03-01'", "'2006-04-01'", PartitionType.RANGE, "peaktemp");
+        p1.ensureRangePartitionExist("peaktemp1", "1", "2");
+        p1.ensureRangePartitionExist("peaktemp2", "2", "3");
+        p2.ensureRangePartitionExist("peaktemp3", "1", "2");
+        p2.ensureRangePartitionExist("peaktemp4", "2", "3");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 2, 1),
+                "peaktemp", 1, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 2, 2),
+                "peaktemp", 1, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 3, 1),
+                "peaktemp", 1, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 3, 2),
+                "peaktemp", 2, "unitsales", 1);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertexList = this.sqlgGraph.traversal().V()
+                .hasLabel("Measurement")
+                .has("logdate", LocalDate.of(2006, 2, 1))
+                .has("peaktemp", 1)
+                .toList();
+        Assert.assertEquals(1, vertexList.size());
+    }
+
+    @Test
+    public void testSubPartitioningList() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("list1", PropertyType.STRING);
+                    put("list2", PropertyType.INTEGER);
+                    put("unitsales", PropertyType.INTEGER);
+                }},
+                PartitionType.LIST,
+                "list1");
+
+        Partition p1 = measurement.ensureListPartitionWithSubPartitionExists("measurement_list1", "'1'", PartitionType.LIST, "list2");
+        Partition p2 = measurement.ensureListPartitionWithSubPartitionExists("measurement_list2", "'2'", PartitionType.LIST, "list2");
+        p1.ensureListPartitionExist("measurement_list1_1", "1");
+        p1.ensureListPartitionExist("measurement_list1_2", "2");
+        p1.ensureListPartitionExist("measurement_list1_3", "3");
+        p1.ensureListPartitionExist("measurement_list1_4", "4");
+
+        p2.ensureListPartitionExist("measurement_list2_1", "1");
+        p2.ensureListPartitionExist("measurement_list2_2", "2");
+        p2.ensureListPartitionExist("measurement_list2_3", "3");
+        p2.ensureListPartitionExist("measurement_list2_4", "4");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 1, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 2, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 3, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
+
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 1, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 2, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 3, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
+
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertexList = this.sqlgGraph.traversal().V()
+                .hasLabel("Measurement")
+                .has("list1", "1")
+                .toList();
+        Assert.assertEquals(7, vertexList.size());
+
+        vertexList = this.sqlgGraph.traversal().V()
+                .hasLabel("Measurement")
+                .has("list1", "2")
+                .has("list2", 4)
+                .toList();
+        Assert.assertEquals(4, vertexList.size());
+    }
+
+    @Test
+    public void testEdgeSubPartitioningRange() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensureVertexLabelExist("A");
+        VertexLabel b = publicSchema.ensureVertexLabelExist("B");
+        EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
+                "ab",
+                b,
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                }},
+                PartitionType.RANGE,
+                "int1");
+        Partition p11 = ab.ensureRangePartitionWithSubPartitionExists("int1_1_4", "1", "4", PartitionType.RANGE, "int2");
+        Partition p12 = ab.ensureRangePartitionWithSubPartitionExists("int1_4_8", "4", "8", PartitionType.RANGE, "int2");
+        Partition p13 = ab.ensureRangePartitionWithSubPartitionExists("int1_8_12", "8", "12", PartitionType.RANGE, "int2");
+
+        p11.ensureRangePartitionExist("int2_1_4", "1", "4");
+        p11.ensureRangePartitionExist("int2_4_8", "4", "8");
+        p11.ensureRangePartitionExist("int2_8_12", "8", "12");
+        p11.ensureRangePartitionExist("int2_12_16", "12", "16");
+
+        p12.ensureRangePartitionExist("int22_1_4", "1", "4");
+        p12.ensureRangePartitionExist("int22_4_8", "4", "8");
+        p12.ensureRangePartitionExist("int22_8_12", "8", "12");
+        p12.ensureRangePartitionExist("int22_12_16", "12", "16");
+
+        p13.ensureRangePartitionExist("int23_1_4", "1", "4");
+        p13.ensureRangePartitionExist("int23_4_8", "4", "8");
+        p13.ensureRangePartitionExist("int23_8_12", "8", "12");
+        p13.ensureRangePartitionExist("int23_12_16", "12", "16");
+        this.sqlgGraph.tx().commit();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex a1 = sqlgGraph1.addVertex(T.label, "A");
+            Vertex b1 = sqlgGraph1.addVertex(T.label, "B");
+            a1.addEdge("ab", b1, "int1", 2, "int2", 2);
+            a1.addEdge("ab", b1, "int1", 6, "int2", 6);
+            a1.addEdge("ab", b1, "int1", 10, "int2", 10);
+            a1.addEdge("ab", b1, "int1", 10, "int2", 14);
+            sqlgGraph1.tx().commit();
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("A").out().count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").outE().has("int1", 6).has("int2", 6).otherV().count().next(), 0);
+
+    }
+
+    @Test
+    public void testEdgeSubPartitioningList() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensureVertexLabelExist("A");
+        VertexLabel b = publicSchema.ensureVertexLabelExist("B");
+        EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
+                "ab",
+                b,
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                }},
+                PartitionType.LIST,
+                "int1");
+        Partition p11 = ab.ensureListPartitionWithSubPartitionExists("int1_1_5", "1,2,3,4,5", PartitionType.LIST, "int2");
+        Partition p12 = ab.ensureListPartitionWithSubPartitionExists("int1_5_10", "6,7,8,9,10", PartitionType.LIST, "int2");
+
+        p11.ensureListPartitionExist("int2_11_15", "11,12,13,14,15");
+        p11.ensureListPartitionExist("int2_16_20", "16,17,18,19,20");
+
+        p12.ensureListPartitionExist("int22_11_15", "11,12,13,14,15");
+        p12.ensureListPartitionExist("int22_16_20", "16,17,18,19,20");
+
+        this.sqlgGraph.tx().commit();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex a1 = sqlgGraph1.addVertex(T.label, "A");
+            Vertex b1 = sqlgGraph1.addVertex(T.label, "B");
+            a1.addEdge("ab", b1, "int1", 2, "int2", 12);
+            a1.addEdge("ab", b1, "int1", 6, "int2", 13);
+            a1.addEdge("ab", b1, "int1", 10, "int2", 14);
+            a1.addEdge("ab", b1, "int1", 10, "int2", 15);
+            sqlgGraph1.tx().commit();
+        } catch (Exception e) {
+            Assert.fail(e.getMessage());
+        }
+
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("A").out().count().next(), 0);
+        Assert.assertEquals(
+                1,
+                this.sqlgGraph.traversal()
+                        .V().hasLabel("A")
+                        .outE().has("int1", 6).has("int2", 13)
+                        .otherV().count().next(), 0);
 
     }
 }

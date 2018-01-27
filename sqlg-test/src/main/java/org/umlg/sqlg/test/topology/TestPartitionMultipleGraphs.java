@@ -63,8 +63,8 @@ public class TestPartitionMultipleGraphs extends BaseTest {
                     }},
                     PartitionType.RANGE,
                     "date");
-            Partition p1 = measurement.ensurePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
-            Partition p2 = measurement.ensurePartitionExists("m2", "'2016-08-01'", "'2016-09-01'");
+            Partition p1 = measurement.ensureRangePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
+            Partition p2 = measurement.ensureRangePartitionExists("m2", "'2016-08-01'", "'2016-09-01'");
 
             Assert.assertTrue(tlt.receivedEvent(measurement, TopologyChangeAction.CREATE));
             Assert.assertTrue(tlt.receivedEvent(p1, TopologyChangeAction.CREATE));
@@ -118,8 +118,8 @@ public class TestPartitionMultipleGraphs extends BaseTest {
                     }},
                     PartitionType.RANGE,
                     "date");
-            Partition p1 = livesAt.ensurePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
-            Partition p2 = livesAt.ensurePartitionExists("m2", "'2016-08-01'", "'2016-09-01'");
+            Partition p1 = livesAt.ensureRangePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
+            Partition p2 = livesAt.ensureRangePartitionExists("m2", "'2016-08-01'", "'2016-09-01'");
             Assert.assertTrue(tlt.receivedEvent(livesAt, TopologyChangeAction.CREATE));
             Assert.assertTrue(tlt.receivedEvent(p1, TopologyChangeAction.CREATE));
             Assert.assertTrue(tlt.receivedEvent(p2, TopologyChangeAction.CREATE));

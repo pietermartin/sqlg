@@ -9,7 +9,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.Inli
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.SqlgHasStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,10 +36,11 @@ public class SqlgHasStepStrategy extends AbstractTraversalStrategy<TraversalStra
         }
         List<HasStep> hasSteps = TraversalHelper.getStepsOfAssignableClass(HasStep.class, traversal);
         for (HasStep<?> hasStep : hasSteps) {
-
+            List<HasContainer> hasContainers = new ArrayList<>(hasStep.getHasContainers());
+            SqlgUtil.removeTopologyStrategyHasContainer(hasContainers);
             SqlgHasStep sqlgHasStep = new SqlgHasStep(
                     hasStep.getTraversal(),
-                    hasStep.getHasContainers().toArray(new HasContainer[]{})
+                    hasContainers.toArray(new HasContainer[]{})
             );
             for (String label : hasStep.getLabels()) {
                 sqlgHasStep.addLabel(label);
