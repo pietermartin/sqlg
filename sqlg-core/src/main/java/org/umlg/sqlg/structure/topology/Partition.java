@@ -7,6 +7,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
@@ -394,6 +396,8 @@ public class Partition implements TopologyInf {
     private void createRangePartitionOnDb() {
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE TABLE ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getAbstractLabel().getSchema().getName()));
+        sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
         sql.append(" PARTITION OF ");
         if (this.parentPartition == null) {
@@ -421,6 +425,13 @@ public class Partition implements TopologyInf {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        //Only leaf partitions can have indexes on the foreign key.
+        if (this.partitionType.isNone()) {
+            AbstractLabel abstractLabel = getAbstractLabel();
+            if (abstractLabel instanceof EdgeLabel) {
+                sql.append(foreignKeyIndexSql());
+            }
+        }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -430,11 +441,76 @@ public class Partition implements TopologyInf {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        if (this.partitionType.isNone()) {
+            for (Index index : getAbstractLabel().getIndexes().values()) {
+                //Append the partition name to the index name.
+                String indexName = index.getName() + "_" + this.getName();
+                if (indexName.length() > this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength()) {
+                    indexName = Index.generateName(this.sqlgGraph.getSqlDialect());
+                }
+                index.createIndex(this.sqlgGraph, SchemaTable.of(getAbstractLabel().getSchema().getName(), this.getName()), indexName);
+            }
+        }
+    }
+
+    private String foreignKeyIndexSql() {
+        Preconditions.checkState(this.partitionType.isNone(), "Only leaf partitions can have indexes.");
+        Preconditions.checkState(this.getAbstractLabel() instanceof EdgeLabel);
+        SqlDialect sqlDialect = this.sqlgGraph.getSqlDialect();
+        String schema = this.getAbstractLabel().getSchema().getName();
+        String tableName = this.getName();
+        EdgeLabel edgeLabel = (EdgeLabel)this.getAbstractLabel();
+        StringBuilder sql = new StringBuilder();
+        Set<EdgeRole> inEdgeRoles = edgeLabel.getInEdgeRoles();
+        for (EdgeRole inEdgeRole : inEdgeRoles) {
+            sql.append("\nCREATE INDEX");
+            if (sqlDialect.requiresIndexName()) {
+                sql.append(" ");
+                sql.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(
+                        SchemaTable.of(schema, tableName).withOutPrefix(),
+                        EDGE_PREFIX,
+                        "_idx",
+                        Collections.singletonList(
+                                inEdgeRole.getVertexLabel().getSchema().getName() + "_" + inEdgeRole.getVertexLabel().getLabel() + Topology.IN_VERTEX_COLUMN_END
+                        ))));
+            }
+            sql.append(" ON ");
+            sql.append(sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(sqlDialect.maybeWrapInQoutes(tableName));
+            sql.append(" (");
+            sql.append(sqlDialect.maybeWrapInQoutes(inEdgeRole.getVertexLabel().getSchema().getName() + "." + inEdgeRole.getVertexLabel().getLabel() + Topology.IN_VERTEX_COLUMN_END));
+            sql.append(");");
+        }
+        Set<EdgeRole> outEdgeRoles = edgeLabel.getOutEdgeRoles();
+        for (EdgeRole outEdgeRole : outEdgeRoles) {
+            sql.append("\nCREATE INDEX");
+            if (sqlDialect.requiresIndexName()) {
+                sql.append(" ");
+                sql.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(
+                        SchemaTable.of(schema, tableName).withOutPrefix(),
+                        EDGE_PREFIX,
+                        "_idx",
+                        Collections.singletonList(
+                                outEdgeRole.getVertexLabel().getSchema().getName() + "_" + outEdgeRole.getVertexLabel().getLabel() + Topology.OUT_VERTEX_COLUMN_END
+                        ))));
+            }
+            sql.append(" ON ");
+            sql.append(sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(sqlDialect.maybeWrapInQoutes(tableName));
+            sql.append(" (");
+            sql.append(sqlDialect.maybeWrapInQoutes(outEdgeRole.getVertexLabel().getSchema().getName() + "." + outEdgeRole.getVertexLabel().getLabel() + Topology.OUT_VERTEX_COLUMN_END));
+            sql.append(");");
+        }
+        return sql.toString();
     }
 
     private void createListPartitionOnDb() {
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE TABLE ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getAbstractLabel().getSchema().getName()));
+        sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
         sql.append(" PARTITION OF ");
         if (this.parentPartition == null) {
@@ -460,6 +536,16 @@ public class Partition implements TopologyInf {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        //Only leaf partitions can have indexes.
+        if (this.partitionType.isNone()) {
+            AbstractLabel abstractLabel = getAbstractLabel();
+            if (abstractLabel instanceof EdgeLabel) {
+                sql.append(foreignKeyIndexSql());
+            }
+        }
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -474,6 +560,8 @@ public class Partition implements TopologyInf {
     void delete() {
         StringBuilder sql = new StringBuilder();
         sql.append("DROP TABLE ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getAbstractLabel().getSchema().getName()));
+        sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -494,6 +582,8 @@ public class Partition implements TopologyInf {
         sql.append("ALTER TABLE ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.abstractLabel.getPrefix() + this.abstractLabel.getName()));
         sql.append(" DETACH PARTITION ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getAbstractLabel().getSchema().getName()));
+        sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -564,7 +654,7 @@ public class Partition implements TopologyInf {
         return toNotifyJson();
     }
 
-    public Partition ensureRangePartitionExist(String name, String from, String to) {
+    public Partition ensureRangePartitionExists(String name, String from, String to) {
         Objects.requireNonNull(name, "Sub-partition's \"name\" must not be null");
         Objects.requireNonNull(from, "Sub-partition's \"from\" must not be null");
         Objects.requireNonNull(to, "Sub-partition's \"to\" must not be null");
@@ -583,7 +673,7 @@ public class Partition implements TopologyInf {
         }
     }
 
-    public Partition ensureListPartitionExist(String name, String in) {
+    public Partition ensureListPartitionExists(String name, String in) {
         Objects.requireNonNull(name, "Sub-partition's \"name\" must not be null");
         Objects.requireNonNull(in, "Sub-partition's \"in\" must not be null");
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureRangePartitionExists(String name, String in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
@@ -601,7 +691,7 @@ public class Partition implements TopologyInf {
         }
     }
 
-    public Partition ensureRangePartitionWithSubPartitionExist(
+    public Partition ensureRangePartitionWithSubPartitionExists(
             String name,
             String from,
             String to,
@@ -611,7 +701,7 @@ public class Partition implements TopologyInf {
         Objects.requireNonNull(name, "Sub-partition's \"name\" must not be null");
         Objects.requireNonNull(from, "Sub-partition's \"from\" must not be null");
         Objects.requireNonNull(to, "Sub-partition's \"to\" must not be null");
-        Preconditions.checkState(partitionType == PartitionType.RANGE, "ensureRangePartitionWithSubPartitionExist(String name, String from, String to, PartitionType partitionType, String partitionExpression) can only be called with a RANGE partition. Found %s", partitionType.name());
+        Preconditions.checkState(partitionType == PartitionType.RANGE, "ensureRangePartitionWithSubPartitionExists(String name, String from, String to, PartitionType partitionType, String partitionExpression) can only be called with a RANGE partition. Found %s", partitionType.name());
         Objects.requireNonNull(partitionExpression, "Sub-partition's \"partitionExpression\" must not be null");
 
         Optional<Partition> partitionOptional = this.getPartition(name);
@@ -628,7 +718,7 @@ public class Partition implements TopologyInf {
         }
     }
 
-    public Partition ensureListPartitionWithSubPartitionExist(
+    public Partition ensureListPartitionWithSubPartitionExists(
             String name,
             String in,
             PartitionType partitionType,
@@ -636,7 +726,7 @@ public class Partition implements TopologyInf {
 
         Objects.requireNonNull(name, "Sub-partition's \"name\" must not be null");
         Objects.requireNonNull(in, "Sub-partition's \"in\" must not be null");
-        Preconditions.checkState(partitionType == PartitionType.LIST, "ensureListPartitionWithSubPartitionExist(String name, String in, PartitionType partitionType, String partitionExpression) can only be called with a LIST partition. Found %s", partitionType.name());
+        Preconditions.checkState(partitionType == PartitionType.LIST, "ensureListPartitionWithSubPartitionExists(String name, String in, PartitionType partitionType, String partitionExpression) can only be called with a LIST partition. Found %s", partitionType.name());
         Objects.requireNonNull(partitionExpression, "Sub-partition's \"partitionExpression\" must not be null");
 
         Optional<Partition> partitionOptional = this.getPartition(name);
@@ -764,5 +854,20 @@ public class Partition implements TopologyInf {
         }
         this.partitions.put(partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME), partition);
         return partition;
+    }
+
+    public void createIndexOnLeafPartitions(Index index) {
+        if (this.partitionType.isNone()) {
+            //Append the partition name to the index name.
+            String indexName = index.getName() + "_" + this.getName();
+            if (indexName.length() > this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength()) {
+                indexName = Index.generateName(this.sqlgGraph.getSqlDialect());
+            }
+            index.createIndex(this.sqlgGraph, SchemaTable.of(getAbstractLabel().getSchema().getName(), this.getName()), indexName);
+        } else {
+            for (Partition partition : this.partitions.values()) {
+                partition.createIndexOnLeafPartitions(index);
+            }
+        }
     }
 }

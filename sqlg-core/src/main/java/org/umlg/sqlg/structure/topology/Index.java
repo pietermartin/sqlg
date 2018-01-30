@@ -4,10 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.TopologyInf;
 
 import java.sql.*;
 import java.util.*;
@@ -38,7 +42,7 @@ public class Index implements TopologyInf {
      * @param abstractLabel
      * @param properties
      */
-    Index(String name, IndexType indexType, AbstractLabel abstractLabel, List<PropertyColumn> properties) {
+    private Index(String name, IndexType indexType, AbstractLabel abstractLabel, List<PropertyColumn> properties) {
         this.name = name;
         this.indexType = indexType;
         this.uncommittedIndexType = indexType;
@@ -122,19 +126,18 @@ public class Index implements TopologyInf {
         this.uncommittedProperties.clear();
     }
 
-    private void addIndex(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-        String prefix = this.abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
+    void createIndex(SqlgGraph sqlgGraph, SchemaTable schemaTable, String name) {
         StringBuilder sql = new StringBuilder("CREATE ");
         if (IndexType.UNIQUE.equals(getIndexType())) {
             sql.append("UNIQUE ");
         }
         sql.append("INDEX ");
         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
-        sql.append(sqlDialect.maybeWrapInQoutes(getName()));
+        sql.append(sqlDialect.maybeWrapInQoutes(name));
         sql.append(" ON ");
         sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
         sql.append(".");
-        sql.append(sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
+        sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getTable()));
 
 
         if (this.indexType.isGIN()) {
@@ -223,7 +226,16 @@ public class Index implements TopologyInf {
     static Index createIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String indexName, IndexType indexType, List<PropertyColumn> properties) {
         Index index = new Index(indexName, indexType, abstractLabel, properties);
         SchemaTable schemaTable = SchemaTable.of(abstractLabel.getSchema().getName(), abstractLabel.getLabel());
-        index.addIndex(sqlgGraph, schemaTable);
+        //For partitioned tables the index is on each partition.
+        //It is created when the partition is created.
+        if (!abstractLabel.isPartition()) {
+            String prefix = abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
+            index.createIndex(sqlgGraph, schemaTable.withPrefix(prefix), index.getName());
+        } else {
+            for (Partition partition : abstractLabel.getPartitions().values()) {
+                partition.createIndexOnLeafPartitions(index);
+            }
+        }
         TopologyManager.addIndex(sqlgGraph, index);
         index.committed = false;
         return index;
@@ -293,5 +305,11 @@ public class Index implements TopologyInf {
     @Override
     public void remove(boolean preserveData) {
         getParentLabel().removeIndex(this, preserveData);
+    }
+
+    public static String generateName(SqlDialect sqlDialect) {
+        RandomStringGenerator generator = new RandomStringGenerator.Builder()
+                .withinRange('a', 'z').build();
+        return generator.generate(sqlDialect.getMaximumIndexNameLength());
     }
 }

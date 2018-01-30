@@ -69,7 +69,7 @@ public class EdgeLabel extends AbstractLabel {
                 properties,
                 partitionType,
                 partitionExpression);
-        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, partitionType, partitionExpression);
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -175,16 +175,10 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    private void createEdgeTableOnDb(VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
-        createEdgeTableOnDb(outVertexLabel, inVertexLabel, columns, PartitionType.NONE, null);
-    }
-
     private void createEdgeTableOnDb(
             VertexLabel outVertexLabel,
             VertexLabel inVertexLabel,
-            Map<String, PropertyType> columns,
-            PartitionType partitionType,
-            String partitionExpression) {
+            Map<String, PropertyType> columns) {
 
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
@@ -444,8 +438,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     public Set<VertexLabel> getInVertexLabels() {
-        Set<VertexLabel> result = new HashSet<>();
-        result.addAll(this.inVertexLabels);
+        Set<VertexLabel> result = new HashSet<>(this.inVertexLabels);
         if (isValid() && this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedInVertexLabels);
             result.removeAll(this.uncommittedRemovedInVertexLabels);
@@ -456,16 +449,16 @@ public class EdgeLabel extends AbstractLabel {
     public Set<EdgeRole> getOutEdgeRoles() {
         Set<EdgeRole> result = new HashSet<>();
         for (VertexLabel lbl : this.outVertexLabels) {
-            if (!this.uncommittedOutVertexLabels.contains(lbl)) {
+//            if (!this.uncommittedOutVertexLabels.contains(lbl)) {
                 result.add(new EdgeRole(lbl, this, Direction.OUT, true));
-            }
+//            }
         }
 
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl : this.uncommittedOutVertexLabels) {
-                if (!this.uncommittedOutVertexLabels.contains(lbl)) {
+//                if (!this.uncommittedOutVertexLabels.contains(lbl)) {
                     result.add(new EdgeRole(lbl, this, Direction.OUT, false));
-                }
+//                }
             }
         }
         return Collections.unmodifiableSet(result);
@@ -474,16 +467,16 @@ public class EdgeLabel extends AbstractLabel {
     public Set<EdgeRole> getInEdgeRoles() {
         Set<EdgeRole> result = new HashSet<>();
         for (VertexLabel lbl : this.inVertexLabels) {
-            if (!this.uncommittedInVertexLabels.contains(lbl)) {
+//            if (!this.uncommittedInVertexLabels.contains(lbl)) {
                 result.add(new EdgeRole(lbl, this, Direction.IN, true));
-            }
+//            }
         }
 
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl : this.uncommittedInVertexLabels) {
-                if (!this.uncommittedInVertexLabels.contains(lbl)) {
+//                if (!this.uncommittedInVertexLabels.contains(lbl)) {
                     result.add(new EdgeRole(lbl, this, Direction.IN, false));
-                }
+//                }
             }
         }
         return Collections.unmodifiableSet(result);
@@ -893,4 +886,5 @@ public class EdgeLabel extends AbstractLabel {
             deleteColumn(lbl.getFullName() + Topology.IN_VERTEX_COLUMN_END);
         }
     }
+
 }

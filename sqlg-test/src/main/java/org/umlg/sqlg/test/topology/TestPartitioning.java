@@ -270,10 +270,10 @@ public class TestPartitioning extends BaseTest {
 
         Partition p1 = measurement.ensureRangePartitionWithSubPartitionExists("measurement_y2006m02", "'2006-02-01'", "'2006-03-01'", PartitionType.RANGE, "peaktemp");
         Partition p2 = measurement.ensureRangePartitionWithSubPartitionExists("measurement_y2006m03", "'2006-03-01'", "'2006-04-01'", PartitionType.RANGE, "peaktemp");
-        p1.ensureRangePartitionExist("peaktemp1", "1", "2");
-        p1.ensureRangePartitionExist("peaktemp2", "2", "3");
-        p2.ensureRangePartitionExist("peaktemp3", "1", "2");
-        p2.ensureRangePartitionExist("peaktemp4", "2", "3");
+        p1.ensureRangePartitionExists("peaktemp1", "1", "2");
+        p1.ensureRangePartitionExists("peaktemp2", "2", "3");
+        p2.ensureRangePartitionExists("peaktemp3", "1", "2");
+        p2.ensureRangePartitionExists("peaktemp4", "2", "3");
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 2, 1),
@@ -308,15 +308,15 @@ public class TestPartitioning extends BaseTest {
 
         Partition p1 = measurement.ensureListPartitionWithSubPartitionExists("measurement_list1", "'1'", PartitionType.LIST, "list2");
         Partition p2 = measurement.ensureListPartitionWithSubPartitionExists("measurement_list2", "'2'", PartitionType.LIST, "list2");
-        p1.ensureListPartitionExist("measurement_list1_1", "1");
-        p1.ensureListPartitionExist("measurement_list1_2", "2");
-        p1.ensureListPartitionExist("measurement_list1_3", "3");
-        p1.ensureListPartitionExist("measurement_list1_4", "4");
+        p1.ensureListPartitionExists("measurement_list1_1", "1");
+        p1.ensureListPartitionExists("measurement_list1_2", "2");
+        p1.ensureListPartitionExists("measurement_list1_3", "3");
+        p1.ensureListPartitionExists("measurement_list1_4", "4");
 
-        p2.ensureListPartitionExist("measurement_list2_1", "1");
-        p2.ensureListPartitionExist("measurement_list2_2", "2");
-        p2.ensureListPartitionExist("measurement_list2_3", "3");
-        p2.ensureListPartitionExist("measurement_list2_4", "4");
+        p2.ensureListPartitionExists("measurement_list2_1", "1");
+        p2.ensureListPartitionExists("measurement_list2_2", "2");
+        p2.ensureListPartitionExists("measurement_list2_3", "3");
+        p2.ensureListPartitionExists("measurement_list2_4", "4");
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 1, "unitsales", 1);
@@ -369,20 +369,20 @@ public class TestPartitioning extends BaseTest {
         Partition p12 = ab.ensureRangePartitionWithSubPartitionExists("int1_4_8", "4", "8", PartitionType.RANGE, "int2");
         Partition p13 = ab.ensureRangePartitionWithSubPartitionExists("int1_8_12", "8", "12", PartitionType.RANGE, "int2");
 
-        p11.ensureRangePartitionExist("int2_1_4", "1", "4");
-        p11.ensureRangePartitionExist("int2_4_8", "4", "8");
-        p11.ensureRangePartitionExist("int2_8_12", "8", "12");
-        p11.ensureRangePartitionExist("int2_12_16", "12", "16");
+        p11.ensureRangePartitionExists("int2_1_4", "1", "4");
+        p11.ensureRangePartitionExists("int2_4_8", "4", "8");
+        p11.ensureRangePartitionExists("int2_8_12", "8", "12");
+        p11.ensureRangePartitionExists("int2_12_16", "12", "16");
 
-        p12.ensureRangePartitionExist("int22_1_4", "1", "4");
-        p12.ensureRangePartitionExist("int22_4_8", "4", "8");
-        p12.ensureRangePartitionExist("int22_8_12", "8", "12");
-        p12.ensureRangePartitionExist("int22_12_16", "12", "16");
+        p12.ensureRangePartitionExists("int22_1_4", "1", "4");
+        p12.ensureRangePartitionExists("int22_4_8", "4", "8");
+        p12.ensureRangePartitionExists("int22_8_12", "8", "12");
+        p12.ensureRangePartitionExists("int22_12_16", "12", "16");
 
-        p13.ensureRangePartitionExist("int23_1_4", "1", "4");
-        p13.ensureRangePartitionExist("int23_4_8", "4", "8");
-        p13.ensureRangePartitionExist("int23_8_12", "8", "12");
-        p13.ensureRangePartitionExist("int23_12_16", "12", "16");
+        p13.ensureRangePartitionExists("int23_1_4", "1", "4");
+        p13.ensureRangePartitionExists("int23_4_8", "4", "8");
+        p13.ensureRangePartitionExists("int23_8_12", "8", "12");
+        p13.ensureRangePartitionExists("int23_12_16", "12", "16");
         this.sqlgGraph.tx().commit();
 
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
@@ -419,11 +419,11 @@ public class TestPartitioning extends BaseTest {
         Partition p11 = ab.ensureListPartitionWithSubPartitionExists("int1_1_5", "1,2,3,4,5", PartitionType.LIST, "int2");
         Partition p12 = ab.ensureListPartitionWithSubPartitionExists("int1_5_10", "6,7,8,9,10", PartitionType.LIST, "int2");
 
-        p11.ensureListPartitionExist("int2_11_15", "11,12,13,14,15");
-        p11.ensureListPartitionExist("int2_16_20", "16,17,18,19,20");
+        p11.ensureListPartitionExists("int2_11_15", "11,12,13,14,15");
+        p11.ensureListPartitionExists("int2_16_20", "16,17,18,19,20");
 
-        p12.ensureListPartitionExist("int22_11_15", "11,12,13,14,15");
-        p12.ensureListPartitionExist("int22_16_20", "16,17,18,19,20");
+        p12.ensureListPartitionExists("int22_11_15", "11,12,13,14,15");
+        p12.ensureListPartitionExists("int22_16_20", "16,17,18,19,20");
 
         this.sqlgGraph.tx().commit();
 

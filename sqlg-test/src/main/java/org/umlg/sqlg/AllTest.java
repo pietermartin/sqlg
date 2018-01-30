@@ -25,6 +25,7 @@ import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.index.TestIndexOnPartition;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
 import org.umlg.sqlg.test.io.TestIo;
 import org.umlg.sqlg.test.io.TestIoEdge;
@@ -238,9 +239,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPropertyReference.class,
         TestPartitioning.class,
         TestPartitionMultipleGraphs.class,
-        TestSubSubPartition.class
-
-
+        TestSubSubPartition.class,
+        TestIndexOnPartition.class
 })
 public class AllTest {
 

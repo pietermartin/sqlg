@@ -36,19 +36,19 @@ public class TestSubSubPartition extends BaseTest {
         Partition p1 = a.ensureRangePartitionWithSubPartitionExists("int1", "1", "5", PartitionType.RANGE, "int2");
         Partition p2 = a.ensureRangePartitionWithSubPartitionExists("int2", "5", "10", PartitionType.RANGE, "int2");
 
-        Partition p1_1 = p1.ensureRangePartitionWithSubPartitionExist("int11", "1", "5", PartitionType.RANGE, "int3");
-        Partition p1_2 = p1.ensureRangePartitionWithSubPartitionExist("int12", "5", "10", PartitionType.RANGE, "int3");
-        Partition p2_1 = p2.ensureRangePartitionWithSubPartitionExist("int21", "1", "5", PartitionType.RANGE, "int3");
-        Partition p2_2 = p2.ensureRangePartitionWithSubPartitionExist("int22", "5", "10", PartitionType.RANGE, "int3");
+        Partition p1_1 = p1.ensureRangePartitionWithSubPartitionExists("int11", "1", "5", PartitionType.RANGE, "int3");
+        Partition p1_2 = p1.ensureRangePartitionWithSubPartitionExists("int12", "5", "10", PartitionType.RANGE, "int3");
+        Partition p2_1 = p2.ensureRangePartitionWithSubPartitionExists("int21", "1", "5", PartitionType.RANGE, "int3");
+        Partition p2_2 = p2.ensureRangePartitionWithSubPartitionExists("int22", "5", "10", PartitionType.RANGE, "int3");
 
-        p1_1.ensureRangePartitionExist("int111", "1", "5");
-        p1_1.ensureRangePartitionExist("int112", "5", "10");
-        p1_2.ensureRangePartitionExist("int121", "1", "5");
-        p1_2.ensureRangePartitionExist("int122", "5", "10");
-        p2_1.ensureRangePartitionExist("int211", "1", "5");
-        p2_1.ensureRangePartitionExist("int212", "5", "10");
-        p2_2.ensureRangePartitionExist("int221", "1", "5");
-        p2_2.ensureRangePartitionExist("int222", "5", "10");
+        p1_1.ensureRangePartitionExists("int111", "1", "5");
+        p1_1.ensureRangePartitionExists("int112", "5", "10");
+        p1_2.ensureRangePartitionExists("int121", "1", "5");
+        p1_2.ensureRangePartitionExists("int122", "5", "10");
+        p2_1.ensureRangePartitionExists("int211", "1", "5");
+        p2_1.ensureRangePartitionExists("int212", "5", "10");
+        p2_2.ensureRangePartitionExists("int221", "1", "5");
+        p2_2.ensureRangePartitionExists("int222", "5", "10");
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.addVertex(T.label, "A", "int1", 1, "int2", 1, "int3", 1);
@@ -148,17 +148,17 @@ public class TestSubSubPartition extends BaseTest {
         Partition p1 = ab.ensureRangePartitionWithSubPartitionExists("int1", "1", "5", PartitionType.RANGE, "int2");
         Partition p2 = ab.ensureRangePartitionWithSubPartitionExists("int2", "5", "10", PartitionType.RANGE, "int2");
 
-        Partition p11 = p1.ensureRangePartitionWithSubPartitionExist("int11", "1", "5", PartitionType.RANGE, "int3");
-        Partition p12 = p1.ensureRangePartitionWithSubPartitionExist("int12", "5", "10", PartitionType.RANGE, "int3");
-        Partition p21 = p2.ensureRangePartitionWithSubPartitionExist("int21", "1", "5", PartitionType.RANGE, "int3");
-        Partition p22 = p2.ensureRangePartitionWithSubPartitionExist("int22", "5", "10", PartitionType.RANGE, "int3");
+        Partition p11 = p1.ensureRangePartitionWithSubPartitionExists("int11", "1", "5", PartitionType.RANGE, "int3");
+        Partition p12 = p1.ensureRangePartitionWithSubPartitionExists("int12", "5", "10", PartitionType.RANGE, "int3");
+        Partition p21 = p2.ensureRangePartitionWithSubPartitionExists("int21", "1", "5", PartitionType.RANGE, "int3");
+        Partition p22 = p2.ensureRangePartitionWithSubPartitionExists("int22", "5", "10", PartitionType.RANGE, "int3");
 
-        p11.ensureRangePartitionExist("int111", "1", "5");
-        p11.ensureRangePartitionExist("int112", "5", "10");
-        p12.ensureRangePartitionExist("int121", "1", "5");
-        p12.ensureRangePartitionExist("int122", "5", "10");
-        p21.ensureRangePartitionExist("int221", "1", "5");
-        p22.ensureRangePartitionExist("int222", "5", "10");
+        p11.ensureRangePartitionExists("int111", "1", "5");
+        p11.ensureRangePartitionExists("int112", "5", "10");
+        p12.ensureRangePartitionExists("int121", "1", "5");
+        p12.ensureRangePartitionExists("int122", "5", "10");
+        p21.ensureRangePartitionExists("int221", "1", "5");
+        p22.ensureRangePartitionExists("int222", "5", "10");
 
         this.sqlgGraph.tx().commit();
 
@@ -276,19 +276,19 @@ public class TestSubSubPartition extends BaseTest {
         Partition p1 = a.ensureListPartitionWithSubPartitionExists("int1", "1,2,3,4,5", PartitionType.LIST, "int2");
         Partition p2 = a.ensureListPartitionWithSubPartitionExists("int2", "6,7,8,9,10", PartitionType.LIST, "int2");
 
-        Partition p1_1 = p1.ensureListPartitionWithSubPartitionExist("int11", "1,2,3,4,5", PartitionType.LIST, "int3");
-        Partition p1_2 = p1.ensureListPartitionWithSubPartitionExist("int12", "6,7,8,9,10", PartitionType.LIST, "int3");
-        Partition p2_1 = p2.ensureListPartitionWithSubPartitionExist("int21", "1,2,3,4,5", PartitionType.LIST, "int3");
-        Partition p2_2 = p2.ensureListPartitionWithSubPartitionExist("int22", "6,7,8,9,10", PartitionType.LIST, "int3");
+        Partition p1_1 = p1.ensureListPartitionWithSubPartitionExists("int11", "1,2,3,4,5", PartitionType.LIST, "int3");
+        Partition p1_2 = p1.ensureListPartitionWithSubPartitionExists("int12", "6,7,8,9,10", PartitionType.LIST, "int3");
+        Partition p2_1 = p2.ensureListPartitionWithSubPartitionExists("int21", "1,2,3,4,5", PartitionType.LIST, "int3");
+        Partition p2_2 = p2.ensureListPartitionWithSubPartitionExists("int22", "6,7,8,9,10", PartitionType.LIST, "int3");
 
-        p1_1.ensureListPartitionExist("int111", "1,2,3,4,5");
-        p1_1.ensureListPartitionExist("int112", "6,7,8,9,10");
-        p1_2.ensureListPartitionExist("int121", "1,2,3,4,5");
-        p1_2.ensureListPartitionExist("int122", "6,7,8,9,10");
-        p2_1.ensureListPartitionExist("int211", "1,2,3,4,5");
-        p2_1.ensureListPartitionExist("int212", "6,7,8,9,10");
-        p2_2.ensureListPartitionExist("int221", "1,2,3,4,5");
-        p2_2.ensureListPartitionExist("int222", "6,7,8,9,10");
+        p1_1.ensureListPartitionExists("int111", "1,2,3,4,5");
+        p1_1.ensureListPartitionExists("int112", "6,7,8,9,10");
+        p1_2.ensureListPartitionExists("int121", "1,2,3,4,5");
+        p1_2.ensureListPartitionExists("int122", "6,7,8,9,10");
+        p2_1.ensureListPartitionExists("int211", "1,2,3,4,5");
+        p2_1.ensureListPartitionExists("int212", "6,7,8,9,10");
+        p2_2.ensureListPartitionExists("int221", "1,2,3,4,5");
+        p2_2.ensureListPartitionExists("int222", "6,7,8,9,10");
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.addVertex(T.label, "A", "int1", 1, "int2", 1, "int3", 1);
@@ -321,17 +321,17 @@ public class TestSubSubPartition extends BaseTest {
         Partition p1 = ab.ensureListPartitionWithSubPartitionExists("int1", "1,2,3,4,5", PartitionType.LIST, "int2");
         Partition p2 = ab.ensureListPartitionWithSubPartitionExists("int2", "6,7,8,9,10", PartitionType.LIST, "int2");
 
-        Partition p11 = p1.ensureListPartitionWithSubPartitionExist("int11", "1,2,3,4,5", PartitionType.LIST, "int3");
-        Partition p12 = p1.ensureListPartitionWithSubPartitionExist("int12", "6,7,8,9,10", PartitionType.LIST, "int3");
-        Partition p21 = p2.ensureListPartitionWithSubPartitionExist("int21", "1,2,3,4,5", PartitionType.LIST, "int3");
-        Partition p22 = p2.ensureListPartitionWithSubPartitionExist("int22", "6,7,8,9,10", PartitionType.LIST, "int3");
+        Partition p11 = p1.ensureListPartitionWithSubPartitionExists("int11", "1,2,3,4,5", PartitionType.LIST, "int3");
+        Partition p12 = p1.ensureListPartitionWithSubPartitionExists("int12", "6,7,8,9,10", PartitionType.LIST, "int3");
+        Partition p21 = p2.ensureListPartitionWithSubPartitionExists("int21", "1,2,3,4,5", PartitionType.LIST, "int3");
+        Partition p22 = p2.ensureListPartitionWithSubPartitionExists("int22", "6,7,8,9,10", PartitionType.LIST, "int3");
 
-        p11.ensureListPartitionExist("int111", "1,2,3,4,5");
-        p11.ensureListPartitionExist("int112", "6,7,8,9,10");
-        p12.ensureListPartitionExist("int121", "1,2,3,4,5");
-        p12.ensureListPartitionExist("int122", "6,7,8,9,10");
-        p21.ensureListPartitionExist("int221", "1,2,3,4,5");
-        p22.ensureListPartitionExist("int222", "6,7,8,9,10");
+        p11.ensureListPartitionExists("int111", "1,2,3,4,5");
+        p11.ensureListPartitionExists("int112", "6,7,8,9,10");
+        p12.ensureListPartitionExists("int121", "1,2,3,4,5");
+        p12.ensureListPartitionExists("int122", "6,7,8,9,10");
+        p21.ensureListPartitionExists("int221", "1,2,3,4,5");
+        p22.ensureListPartitionExists("int222", "6,7,8,9,10");
 
         this.sqlgGraph.tx().commit();
 

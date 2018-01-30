@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.text.RandomStringGenerator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
@@ -278,9 +277,7 @@ public abstract class AbstractLabel implements TopologyInf {
                     return idx;
                 }
             }
-            RandomStringGenerator generator = new RandomStringGenerator.Builder()
-                    .withinRange('a', 'z').build();
-            indexName = generator.generate(this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength());
+            indexName = Index.generateName(this.sqlgGraph.getSqlDialect());
 
             return this.createIndex(indexName, indexType, properties);
 
