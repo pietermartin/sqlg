@@ -99,9 +99,10 @@ public abstract class AbstractLabel implements TopologyInf {
 
     /**
      * Ensures that a RANGE partition exists.
+     *
      * @param name The partition's name
      * @param from The RANGE partition's start clause.
-     * @param to THe RANGE partition's end clause.
+     * @param to   THe RANGE partition's end clause.
      * @return The {@link Partition}
      */
     public Partition ensureRangePartitionExists(String name, String from, String to) {
@@ -125,10 +126,11 @@ public abstract class AbstractLabel implements TopologyInf {
 
     /**
      * Ensures that a RANGE partition exists.
-     * @param name The partition's name
-     * @param from The RANGE partition's start clause.
-     * @param to The RANGE partition's end clause.
-     * @param partitionType The partition's {@link PartitionType} if is is going to be sub-partitioned.
+     *
+     * @param name                The partition's name
+     * @param from                The RANGE partition's start clause.
+     * @param to                  The RANGE partition's end clause.
+     * @param partitionType       The partition's {@link PartitionType} if is is going to be sub-partitioned.
      * @param partitionExpression The partition's partitionExpression if is is going to be sub-partitioned.
      * @return The {@link Partition}
      */
@@ -155,8 +157,9 @@ public abstract class AbstractLabel implements TopologyInf {
 
     /**
      * Ensures that a LIST partition exists.
+     *
      * @param name The partition's name.
-     * @param in The LIST partition's 'in' clause.
+     * @param in   The LIST partition's 'in' clause.
      * @return The {@link Partition}
      */
     public Partition ensureListPartitionExists(String name, String in) {
@@ -179,9 +182,10 @@ public abstract class AbstractLabel implements TopologyInf {
 
     /**
      * Ensures that a LIST partition exists.
-     * @param name The partition's name.
-     * @param in The LIST partition's 'in' clause.
-     * @param partitionType The partition's {@link PartitionType} if is is going to be sub-partitioned.
+     *
+     * @param name                The partition's name.
+     * @param in                  The LIST partition's 'in' clause.
+     * @param partitionType       The partition's {@link PartitionType} if is is going to be sub-partitioned.
      * @param partitionExpression The partition's partitionExpression if is is going to be sub-partitioned.
      * @return The {@link Partition}
      */
@@ -331,6 +335,14 @@ public abstract class AbstractLabel implements TopologyInf {
 
     public String getPartitionExpression() {
         return partitionExpression;
+    }
+
+    public void setPartitionType(PartitionType partitionType) {
+        this.partitionType = partitionType;
+    }
+
+    public void setPartitionExpression(String partitionExpression) {
+        this.partitionExpression = partitionExpression;
     }
 
     public Optional<Partition> getPartition(String name) {
@@ -511,6 +523,8 @@ public abstract class AbstractLabel implements TopologyInf {
         VertexProperty<String> from = partitionVertex.property(SQLG_SCHEMA_PARTITION_FROM);
         VertexProperty<String> to = partitionVertex.property(SQLG_SCHEMA_PARTITION_TO);
         VertexProperty<String> in = partitionVertex.property(SQLG_SCHEMA_PARTITION_IN);
+        VertexProperty<String> partitionType = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_TYPE);
+        VertexProperty<String> partitionExpression = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION);
         Partition partition;
         if (from.isPresent()) {
             Preconditions.checkState(to.isPresent());
@@ -520,7 +534,9 @@ public abstract class AbstractLabel implements TopologyInf {
                     this,
                     partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME),
                     from.value(),
-                    to.value());
+                    to.value(),
+                    PartitionType.from(partitionType.<String>value()),
+                    partitionExpression.isPresent() ? partitionExpression.<String>value() : null);
         } else {
             Preconditions.checkState(in.isPresent());
             Preconditions.checkState(!to.isPresent());
@@ -528,7 +544,9 @@ public abstract class AbstractLabel implements TopologyInf {
                     this.sqlgGraph,
                     this,
                     partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME),
-                    in.value());
+                    in.value(),
+                    PartitionType.from(partitionType.<String>value()),
+                    partitionExpression.isPresent() ? partitionExpression.<String>value() : null);
         }
         this.partitions.put(partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME), partition);
         return partition;

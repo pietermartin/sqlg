@@ -34,8 +34,8 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
 class SqlgStartupManager {
 
     private static final String APPLICATION_VERSION = "application.version";
-	private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
-	private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
+    private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
+    private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
 
@@ -93,7 +93,7 @@ class SqlgStartupManager {
                 //make sure the sqlg_schema.graph exists.
                 String version = getBuildVersion();
                 String oldVersion = createOrUpdateGraph(version);
-                if (oldVersion==null || !oldVersion.equals(version)) {
+                if (oldVersion == null || !oldVersion.equals(version)) {
                     updateTopology(oldVersion);
                 }
                 this.sqlgGraph.tx().commit();
@@ -110,14 +110,14 @@ class SqlgStartupManager {
     }
 
     private void updateTopology(String oldVersion) {
-       Version v = Version.unknownVersion();
-        if (oldVersion!=null){
-	    	v=VersionUtil.parseVersion(oldVersion, null,null);
-	    }
-        if (v.isUnknownVersion() || v.compareTo(new Version(1,5,0,null,null,null))<0){
-        	 if (this.sqlDialect.supportsDeferrableForeignKey()) {
-                 upgradeForeignKeysToDeferrable();
-             }
+        Version v = Version.unknownVersion();
+        if (oldVersion != null) {
+            v = VersionUtil.parseVersion(oldVersion, null, null);
+        }
+        if (v.isUnknownVersion() || v.compareTo(new Version(1, 5, 0, null, null, null)) < 0) {
+            if (this.sqlDialect.supportsDeferrableForeignKey()) {
+                upgradeForeignKeysToDeferrable();
+            }
         }
     }
 
@@ -155,6 +155,7 @@ class SqlgStartupManager {
 
     /**
      * create or update the graph metadata
+     *
      * @param version the new version of the graph
      * @return the old version of the graph, or null if there was no graph
      */
@@ -390,11 +391,21 @@ class SqlgStartupManager {
 
             }
 
+            if (this.sqlDialect.supportPartitioning()) {
+                this.sqlgGraph.tx().commit();
+                //load the partitions
+                conn = this.sqlgGraph.tx().getConnection();
+                List<Map<String, String>> partitions = this.sqlDialect.getPartitions(conn);
+                List<PartitionTree> roots = PartitionTree.build(partitions);
+                for (PartitionTree root : roots) {
+                    root.createPartitions(this.sqlgGraph);
+                }
+            }
+            this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
-
 
     private void extractIndices(DatabaseMetaData metadata,
                                 String catalog,
@@ -568,28 +579,29 @@ class SqlgStartupManager {
 
     /**
      * get the build version
+     *
      * @return the build version, or null if unknown
      */
     private String getBuildVersion() {
         Properties prop = new Properties();
-        String v=null;
+        String v = null;
         try {
-        	// try system
-        	URL u=ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
-        	if(u==null){
-        		// try own class loader
-        		u=getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
-        	}
-        	if (u!=null){
-        		try (InputStream is=u.openStream()){
-        			prop.load(is);
-        		}
-        		v=prop.getProperty(APPLICATION_VERSION);
-        		
-        	}
+            // try system
+            URL u = ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
+            if (u == null) {
+                // try own class loader
+                u = getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
+            }
+            if (u != null) {
+                try (InputStream is = u.openStream()) {
+                    prop.load(is);
+                }
+                v = prop.getProperty(APPLICATION_VERSION);
+
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-       return v;
+        return v;
     }
 }

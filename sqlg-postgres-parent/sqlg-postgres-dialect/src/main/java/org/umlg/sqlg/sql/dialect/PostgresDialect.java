@@ -3886,4 +3886,62 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public boolean supportPartitioning() {
         return true;
     }
+
+    @Override
+    public List<Map<String,String>> getPartitions(Connection connection) {
+        List<Map<String,String>> result = new ArrayList<>();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("with pg_partitioned_table as (select \n" +
+                    "    p.partrelid,\n" +
+                    "    p.partstrat as partitionType,\n" +
+                    "    p.partnatts,\n" +
+                    "    string_agg(a.attname, ',' order by a.attnum) \"partitionExpression1\",\n" +
+                    "    pg_get_expr(p.partexprs, p.partrelid) \"partitionExpression2\"\n" +
+                    "from \n" +
+                    "(select \n" +
+                    "\tpartrelid,\n" +
+                    "    partstrat,\n" +
+                    "    partnatts,\n" +
+                    "    unnest(partattrs) partattrs,\n" +
+                    "    partexprs\n" +
+                    "from \n" +
+                    "\tpg_catalog.pg_partitioned_table\n" +
+                    ") p left join\n" +
+                    "\tpg_catalog.pg_attribute a on partrelid = a.attrelid and p.partattrs = a.attnum\n" +
+                    "group by \n" +
+                    "\t1,2,3,5\n" +
+                    ")\n" +
+                    "SELECT\n" +
+                    "\tn.nspname as schema,\n" +
+                    "\t(i.inhparent::regclass)::text as parent,\n" +
+                    "\t(cl.oid::regclass)::text as child,\n" +
+                    "    p.partitionType,\n" +
+                    "    p.\"partitionExpression1\",\n" +
+                    "    p.\"partitionExpression2\",\n" +
+                    "    pg_get_expr(cl.relpartbound, cl.oid, true) as \"fromToIn\"\n" +
+                    "FROM\n" +
+                    "    sqlg_schema.\"V_schema\" s join\n" +
+                    "\tpg_catalog.pg_namespace n on s.name = n.nspname join\n" +
+                    "    pg_catalog.pg_class cl on cl.relnamespace = n.oid left join\n" +
+                    "    pg_catalog.pg_inherits i on i.inhrelid = cl.oid left join\n" +
+                    "    pg_partitioned_table p on p.partrelid = cl.relfilenode\n" +
+                    "WHERE\n" +
+                    "\tcl.relkind <> 'S' AND " +
+                    "(p.\"partitionExpression1\" is not null or p.\"partitionExpression2\" is not null or cl.relpartbound is not null)");
+            while (resultSet.next()) {
+                Map<String, String> row = new HashMap<>();
+                row.put("schema", resultSet.getString("schema"));
+                row.put("parent", resultSet.getString("parent"));
+                row.put("child", resultSet.getString("child"));
+                row.put("partitionType", resultSet.getString("partitionType"));
+                row.put("partitionExpression1", resultSet.getString("partitionExpression1"));
+                row.put("partitionExpression2", resultSet.getString("partitionExpression2"));
+                row.put("fromToIn", resultSet.getString("fromToIn"));
+                result.add(row);
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

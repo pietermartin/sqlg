@@ -22,7 +22,7 @@ import java.util.Optional;
 public class TestSubSubPartition extends BaseTest {
 
     @Test
-    public void testVertexSubSubPartitionRange() {
+    public void testVertexSubSubPartitionRange() throws Exception {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
@@ -62,71 +62,98 @@ public class TestSubSubPartition extends BaseTest {
         Assert.assertEquals(1, vertices.size());
 
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-
-            VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
-            Map<String, Partition> partitions = vertexLabel.getPartitions();
-            Assert.assertEquals(2, partitions.size());
-            Assert.assertTrue(partitions.containsKey("int1"));
-            Partition pint1 = partitions.get("int1");
-            Assert.assertEquals(2, pint1.getPartitions().size());
-            Assert.assertTrue(pint1.getPartitions().containsKey("int11"));
-            Partition pint11 = pint1.getPartitions().get("int11");
-            Assert.assertEquals(2, pint11.getPartitions().size());
-            Assert.assertTrue(pint11.getPartitions().containsKey("int111"));
-            Partition pint111 = pint11.getPartitions().get("int111");
-            Assert.assertEquals(0, pint111.getPartitions().size());
-            Assert.assertTrue(pint11.getPartitions().containsKey("int112"));
-            Partition pint112 = pint11.getPartitions().get("int112");
-            Assert.assertEquals(0, pint112.getPartitions().size());
-
-
-            Assert.assertTrue(pint1.getPartitions().containsKey("int12"));
-            Partition pint12 = pint1.getPartitions().get("int12");
-            Assert.assertEquals(2, pint12.getPartitions().size());
-            Assert.assertTrue(pint12.getPartitions().containsKey("int121"));
-            Partition pint121 = pint12.getPartitions().get("int121");
-            Assert.assertEquals(0, pint121.getPartitions().size());
-            Assert.assertTrue(pint12.getPartitions().containsKey("int122"));
-            Partition pint122 = pint12.getPartitions().get("int122");
-            Assert.assertEquals(0, pint122.getPartitions().size());
-
-            Assert.assertTrue(partitions.containsKey("int2"));
-            Partition pint2 = partitions.get("int2");
-            Assert.assertEquals(2, pint2.getPartitions().size());
-            Assert.assertTrue(pint2.getPartitions().containsKey("int21"));
-            Partition pint21 = pint2.getPartitions().get("int21");
-            Assert.assertEquals(2, pint21.getPartitions().size());
-            Assert.assertTrue(pint21.getPartitions().containsKey("int211"));
-            Partition pint211 = pint21.getPartitions().get("int211");
-            Assert.assertEquals(0, pint211.getPartitions().size());
-            Assert.assertTrue(pint21.getPartitions().containsKey("int212"));
-            Partition pint212 = pint21.getPartitions().get("int212");
-            Assert.assertEquals(0, pint212.getPartitions().size());
-
-            Assert.assertTrue(pint2.getPartitions().containsKey("int22"));
-            Partition pint22 = pint2.getPartitions().get("int22");
-            Assert.assertEquals(2, pint22.getPartitions().size());
-            Assert.assertTrue(pint22.getPartitions().containsKey("int221"));
-            Partition pint221 = pint22.getPartitions().get("int221");
-            Assert.assertEquals(0, pint221.getPartitions().size());
-            Assert.assertTrue(pint22.getPartitions().containsKey("int222"));
-            Partition pint222 = pint22.getPartitions().get("int222");
-            Assert.assertEquals(0, pint222.getPartitions().size());
-
-            Assert.assertEquals(14, sqlgGraph1.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
-
-            vertices = sqlgGraph1.traversal().V().hasLabel("A").has("int1", 1).has("int2", 1).has("int3", 1).toList();
-            Assert.assertEquals(1, vertices.size());
-            vertices = sqlgGraph1.traversal().V().hasLabel("A").has("int1", 5).has("int2", 5).has("int3", 5).toList();
-            Assert.assertEquals(1, vertices.size());
+            assert_vertexLabelSubSubPartition(sqlgGraph1);
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
 
-        p2.remove();
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, a.getPartitions().size());
-        Assert.assertEquals(7, sqlgGraph.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            assert_vertexLabelSubSubPartition(sqlgGraph1);
+            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+            p2 = a.getPartition("int2").get();
+            p2.remove();
+            Assert.assertEquals(1, a.getPartitions().size());
+            Assert.assertEquals(7, sqlgGraph1.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
+        }
+    }
+
+    private void assert_vertexLabelSubSubPartition(SqlgGraph sqlgGraph1) {
+        List<Vertex> vertices;VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+        Map<String, Partition> partitions = vertexLabel.getPartitions();
+        Assert.assertEquals(2, partitions.size());
+        Assert.assertTrue(partitions.containsKey("int1"));
+        Partition pint1 = partitions.get("int1");
+        Assert.assertTrue(pint1.getPartitionType().isRange());
+        Assert.assertEquals("int2", pint1.getPartitionExpression());
+
+        Assert.assertEquals(2, pint1.getPartitions().size());
+        Assert.assertTrue(pint1.getPartitions().containsKey("int11"));
+        Partition pint11 = pint1.getPartitions().get("int11");
+        Assert.assertTrue(pint11.getPartitionType().isRange());
+        Assert.assertEquals("int3", pint11.getPartitionExpression());
+
+        Assert.assertEquals(2, pint11.getPartitions().size());
+        Assert.assertTrue(pint11.getPartitions().containsKey("int111"));
+        Partition pint111 = pint11.getPartitions().get("int111");
+        Assert.assertTrue(pint111.getPartitionType().isNone());
+        Assert.assertNull(pint111.getPartitionExpression());
+
+        Assert.assertEquals(0, pint111.getPartitions().size());
+        Assert.assertTrue(pint11.getPartitions().containsKey("int112"));
+        Partition pint112 = pint11.getPartitions().get("int112");
+        Assert.assertEquals(0, pint112.getPartitions().size());
+
+        Assert.assertTrue(pint1.getPartitions().containsKey("int12"));
+        Partition pint12 = pint1.getPartitions().get("int12");
+        Assert.assertEquals(2, pint12.getPartitions().size());
+        Assert.assertTrue(pint12.getPartitions().containsKey("int121"));
+        Partition pint121 = pint12.getPartitions().get("int121");
+        Assert.assertEquals(0, pint121.getPartitions().size());
+        Assert.assertTrue(pint12.getPartitions().containsKey("int122"));
+        Partition pint122 = pint12.getPartitions().get("int122");
+        Assert.assertEquals(0, pint122.getPartitions().size());
+
+        Assert.assertTrue(partitions.containsKey("int2"));
+        Partition pint2 = partitions.get("int2");
+        Assert.assertTrue(pint2.getPartitionType().isRange());
+        Assert.assertEquals("int2", pint2.getPartitionExpression());
+        Assert.assertEquals(2, pint2.getPartitions().size());
+        Assert.assertTrue(pint2.getPartitions().containsKey("int21"));
+        Partition pint21 = pint2.getPartitions().get("int21");
+        Assert.assertTrue(pint21.getPartitionType().isRange());
+        Assert.assertEquals("int3", pint21.getPartitionExpression());
+        Assert.assertEquals(2, pint21.getPartitions().size());
+        Assert.assertTrue(pint21.getPartitions().containsKey("int211"));
+        Partition pint211 = pint21.getPartitions().get("int211");
+        Assert.assertEquals(0, pint211.getPartitions().size());
+        Assert.assertTrue(pint21.getPartitions().containsKey("int212"));
+        Partition pint212 = pint21.getPartitions().get("int212");
+        Assert.assertTrue(pint212.getPartitionType().isNone());
+        Assert.assertNull(pint212.getPartitionExpression());
+        Assert.assertEquals(0, pint212.getPartitions().size());
+
+        Assert.assertTrue(pint2.getPartitions().containsKey("int22"));
+        Partition pint22 = pint2.getPartitions().get("int22");
+        Assert.assertEquals(2, pint22.getPartitions().size());
+        Assert.assertTrue(pint22.getPartitions().containsKey("int221"));
+        Partition pint221 = pint22.getPartitions().get("int221");
+        Assert.assertEquals(0, pint221.getPartitions().size());
+        Assert.assertTrue(pint22.getPartitions().containsKey("int222"));
+        Partition pint222 = pint22.getPartitions().get("int222");
+        Assert.assertEquals(0, pint222.getPartitions().size());
+
+        Assert.assertEquals(14, sqlgGraph1.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
+
+        vertices = sqlgGraph1.traversal().V().hasLabel("A").has("int1", 1).has("int2", 1).has("int3", 1).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = sqlgGraph1.traversal().V().hasLabel("A").has("int1", 5).has("int2", 5).has("int3", 5).toList();
+        Assert.assertEquals(1, vertices.size());
     }
 
     @Test

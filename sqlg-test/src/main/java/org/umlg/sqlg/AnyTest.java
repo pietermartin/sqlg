@@ -3,6 +3,9 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.index.TestIndexOnPartition;
+import org.umlg.sqlg.test.topology.TestPartitionMultipleGraphs;
+import org.umlg.sqlg.test.topology.TestPartitioning;
+import org.umlg.sqlg.test.topology.TestSubSubPartition;
 
 /**
  * Date: 2014/07/16
@@ -10,11 +13,10 @@ import org.umlg.sqlg.test.index.TestIndexOnPartition;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestSubSubPartition.class,
-//        TestPartitioning.class,
-//        TestPartitionMultipleGraphs.class,
+        TestSubSubPartition.class,
+        TestPartitioning.class,
+        TestPartitionMultipleGraphs.class,
         TestIndexOnPartition.class
-//        TestTopologyUpgrade.class
 })
 public class AnyTest {
 }

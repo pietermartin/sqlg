@@ -14,8 +14,10 @@ import org.umlg.sqlg.test.BaseTest;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -27,6 +29,309 @@ public class TestPartitioning extends BaseTest {
     public static void beforeClass() throws PropertyVetoException, IOException, ClassNotFoundException {
         BaseTest.beforeClass();
         Assume.assumeTrue(isPostgres());
+    }
+
+    @Test
+    public void testReloadVertexLabelWithNoPartitions() throws Exception {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensurePartitionedVertexLabelExist(
+                "A",
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                }},
+                PartitionType.RANGE,
+                "int1,int2");
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            VertexLabel a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+            Assert.assertEquals("int1,int2", a.getPartitionExpression());
+            Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
+        }
+    }
+
+    @Test
+    public void testReloadVertexLabelWithPartitions() throws Exception {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
+                "A",
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                }},
+                PartitionType.RANGE,
+                "int1,int2");
+        a.ensureRangePartitionExists("part1", "1,1", "5,5");
+        a.ensureRangePartitionExists("part2", "5,5", "10,10");
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+            Assert.assertEquals("int1,int2", a.getPartitionExpression());
+            Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
+
+            Optional<Partition> part1 =  a.getPartition("part1");
+            Assert.assertTrue(part1.isPresent());
+            Assert.assertNull(part1.get().getPartitionExpression());
+            Assert.assertEquals("1, 1", part1.get().getFrom());
+            Assert.assertEquals("5, 5", part1.get().getTo());
+            Optional<Partition> part2 =  a.getPartition("part2");
+            Assert.assertTrue(part2.isPresent());
+            Assert.assertNull(part2.get().getPartitionExpression());
+            Assert.assertEquals("5, 5", part2.get().getFrom());
+            Assert.assertEquals("10, 10", part2.get().getTo());
+        }
+    }
+
+    @Test
+    public void testReloadVertexLabelWithSubPartitions() throws Exception {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
+                "A",
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
+                }},
+                PartitionType.RANGE,
+                "int1,int2");
+        Partition part1 = a.ensureRangePartitionWithSubPartitionExists("part1", "1,1", "5,5", PartitionType.RANGE, "int3");
+        Partition part2 = a.ensureRangePartitionWithSubPartitionExists("part2", "5,5", "10,10", PartitionType.RANGE, "int3");
+
+        part1.ensureRangePartitionExists("part11", "1", "5");
+        part2.ensureRangePartitionExists("part21", "1", "5");
+
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+            Assert.assertEquals("int1,int2", a.getPartitionExpression());
+            Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
+
+            Optional<Partition> p1 =  a.getPartition("part1");
+            Assert.assertTrue(p1.isPresent());
+            Assert.assertEquals("int3", p1.get().getPartitionExpression());
+            Assert.assertEquals(PartitionType.RANGE, p1.get().getPartitionType());
+            Assert.assertEquals("1, 1", p1.get().getFrom());
+            Assert.assertEquals("5, 5", p1.get().getTo());
+
+            Optional<Partition> p11 = p1.get().getPartition("part11");
+            Assert.assertTrue(p11.isPresent());
+            Assert.assertNull(p11.get().getPartitionExpression());
+            Assert.assertEquals(PartitionType.NONE, p11.get().getPartitionType());
+            Assert.assertEquals("1", p11.get().getFrom());
+            Assert.assertEquals("5", p11.get().getTo());
+
+            Optional<Partition> p2 =  a.getPartition("part2");
+            Assert.assertTrue(p2.isPresent());
+            Assert.assertEquals("int3", p2.get().getPartitionExpression());
+            Assert.assertEquals(PartitionType.RANGE, p2.get().getPartitionType());
+            Assert.assertEquals("5, 5", p2.get().getFrom());
+            Assert.assertEquals("10, 10", p2.get().getTo());
+
+            Optional<Partition> p21 = p2.get().getPartition("part21");
+            Assert.assertTrue(p21.isPresent());
+            Assert.assertNull(p21.get().getPartitionExpression());
+            Assert.assertEquals(PartitionType.NONE, p21.get().getPartitionType());
+            Assert.assertEquals("1", p21.get().getFrom());
+            Assert.assertEquals("5", p21.get().getTo());
+        }
+    }
+
+    @Test
+    public void testReloadEdgeLabelWithNoPartitions() throws Exception {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensureVertexLabelExist(
+                "A",
+                Collections.emptyMap()
+        );
+        VertexLabel b = publicSchema.ensureVertexLabelExist(
+                "B",
+                Collections.emptyMap()
+        );
+        a.ensurePartitionedEdgeLabelExist(
+                "ab",
+                b,
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
+                }},
+                PartitionType.RANGE,
+                "int1,int2"
+        );
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            EdgeLabel edgeLabel = sqlgGraph1.getTopology()
+                    .getPublicSchema()
+                    .getEdgeLabel("ab").get();
+            Assert.assertEquals("int1,int2", edgeLabel.getPartitionExpression());
+            Assert.assertEquals(PartitionType.RANGE, edgeLabel.getPartitionType());
+        }
+    }
+
+    @Test
+    public void testReloadEdgeLabelWithPartitions() throws Exception {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensureVertexLabelExist(
+                "A",
+                Collections.emptyMap()
+        );
+        VertexLabel b = publicSchema.ensureVertexLabelExist(
+                "B",
+                Collections.emptyMap()
+        );
+        EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
+                "ab",
+                b,
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
+                }},
+                PartitionType.LIST,
+                "int1"
+        );
+        Partition p1 = ab.ensureListPartitionExists("int1", "1,2,3,4,5");
+        Partition p2 = ab.ensureListPartitionExists("int2", "6,7,8,9,10");
+
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            EdgeLabel edgeLabel = sqlgGraph1.getTopology()
+                    .getPublicSchema()
+                    .getEdgeLabel("ab").get();
+            Assert.assertEquals("int1", edgeLabel.getPartitionExpression());
+            Assert.assertEquals(PartitionType.LIST, edgeLabel.getPartitionType());
+
+            Assert.assertEquals(2, edgeLabel.getPartitions().size());
+            Assert.assertTrue(edgeLabel.getPartitions().containsKey("int1"));
+            Assert.assertTrue(edgeLabel.getPartitions().containsKey("int2"));
+
+            p1 = edgeLabel.getPartition("int1").get();
+            Assert.assertEquals(PartitionType.NONE, p1.getPartitionType());
+            Assert.assertEquals("1, 2, 3, 4, 5", p1.getIn());
+            p2 = edgeLabel.getPartition("int2").get();
+            Assert.assertEquals(PartitionType.NONE, p2.getPartitionType());
+            Assert.assertEquals("6, 7, 8, 9, 10", p2.getIn());
+        }
+    }
+
+    @Test
+    public void testReloadEdgeLabelWithSubPartitions() throws Exception {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensureVertexLabelExist(
+                "A",
+                Collections.emptyMap()
+        );
+        VertexLabel b = publicSchema.ensureVertexLabelExist(
+                "B",
+                Collections.emptyMap()
+        );
+        EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
+                "ab",
+                b,
+                new HashMap<String, PropertyType>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
+                }},
+                PartitionType.LIST,
+                "int1"
+        );
+        Partition p1 = ab.ensureListPartitionWithSubPartitionExists("p11", "1,2,3,4,5", PartitionType.RANGE, "int2");
+        Partition p111 = p1.ensureRangePartitionWithSubPartitionExists("p111", "1", "5", PartitionType.LIST, "int3");
+        p111.ensureListPartitionExists("p1111", "1,2,3,4,5");
+        Partition p2 = ab.ensureListPartitionWithSubPartitionExists("p12", "6,7,8,9,10", PartitionType.RANGE, "int2");
+        Partition p121 = p2.ensureRangePartitionWithSubPartitionExists("p121", "1", "5", PartitionType.LIST, "int3");
+        p121.ensureListPartitionExists("p1211", "1,2,3,4,10");
+
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            EdgeLabel edgeLabel = sqlgGraph1.getTopology()
+                    .getPublicSchema()
+                    .getEdgeLabel("ab").get();
+            Assert.assertEquals("int1", edgeLabel.getPartitionExpression());
+            Assert.assertEquals(PartitionType.LIST, edgeLabel.getPartitionType());
+
+            Assert.assertEquals(2, edgeLabel.getPartitions().size());
+            Assert.assertTrue(edgeLabel.getPartitions().containsKey("p11"));
+            Assert.assertTrue(edgeLabel.getPartitions().containsKey("p12"));
+
+            p1 = edgeLabel.getPartition("p11").get();
+            Assert.assertEquals(PartitionType.RANGE, p1.getPartitionType());
+            Assert.assertEquals("1, 2, 3, 4, 5", p1.getIn());
+            Assert.assertEquals(1, p1.getPartitions().size());
+            Assert.assertTrue(p1.getPartitions().containsKey("p111"));
+            p111 = p1.getPartitions().get("p111");
+            Assert.assertEquals(PartitionType.LIST, p111.getPartitionType());
+            Assert.assertEquals("int3", p111.getPartitionExpression());
+            Assert.assertEquals("1", p111.getFrom());
+            Assert.assertEquals("5", p111.getTo());
+            Assert.assertTrue(p111.getPartition("p1111").isPresent());
+            Partition p1111 = p111.getPartition("p1111").get();
+            Assert.assertTrue(p1111.getPartitionType().isNone());
+            Assert.assertNull(p1111.getPartitionExpression());
+            Assert.assertEquals("1, 2, 3, 4, 5", p1111.getIn());
+
+
+            p2 = edgeLabel.getPartition("p12").get();
+            Assert.assertEquals(PartitionType.RANGE, p2.getPartitionType());
+            Assert.assertEquals("6, 7, 8, 9, 10", p2.getIn());
+            Assert.assertEquals(1, p2.getPartitions().size());
+            Assert.assertTrue(p2.getPartitions().containsKey("p121"));
+            p121 = p2.getPartitions().get("p121");
+            Assert.assertEquals(PartitionType.LIST, p121.getPartitionType());
+            Assert.assertEquals("int3", p121.getPartitionExpression());
+            Assert.assertEquals("1", p121.getFrom());
+            Assert.assertEquals("5", p121.getTo());
+            Assert.assertTrue(p121.getPartition("p1211").isPresent());
+            Partition p1211 = p121.getPartition("p1211").get();
+            Assert.assertTrue(p1211.getPartitionType().isNone());
+            Assert.assertNull(p1211.getPartitionExpression());
+            Assert.assertEquals("1, 2, 3, 4, 10", p1211.getIn());
+        }
     }
 
     @Test
@@ -219,6 +524,15 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("liveAt").count().next(), 0);
             Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("liveAt").has("date", LocalDate.of(2016, 7, 1)).count().next(), 0);
             Assert.assertEquals(2, sqlgGraph1.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
+
+            Assert.assertEquals(
+                    "date",
+                    sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("liveAt").get().getPartitionExpression()
+            );
+            Assert.assertEquals(
+                    PartitionType.RANGE,
+                    sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("liveAt").get().getPartitionType()
+            );
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }

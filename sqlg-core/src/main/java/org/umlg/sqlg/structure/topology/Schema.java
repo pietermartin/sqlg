@@ -933,10 +933,17 @@ public class Schema implements TopologyInf {
             if (outEdgeVertex != null) {
                 //load the EdgeLabel
                 String edgeLabelName = outEdgeVertex.value(SQLG_SCHEMA_EDGE_LABEL_NAME);
+                PartitionType partitionType = PartitionType.valueOf(outEdgeVertex.value(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE));
+                VertexProperty<String> partitionExpression = outEdgeVertex.property(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION);
                 Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
                 EdgeLabel edgeLabel;
                 if (!edgeLabelOptional.isPresent()) {
-                    edgeLabel = EdgeLabel.loadFromDb(vertexLabel.getSchema().getTopology(), edgeLabelName);
+                    if (partitionType.isNone()) {
+                        edgeLabel = EdgeLabel.loadFromDb(vertexLabel.getSchema().getTopology(), edgeLabelName);
+                    } else {
+                        Preconditions.checkState(partitionExpression.isPresent());
+                        edgeLabel = EdgeLabel.loadFromDb(vertexLabel.getSchema().getTopology(), edgeLabelName, partitionType, partitionExpression.value());
+                    }
                     vertexLabel.addToOutEdgeLabels(schemaName, edgeLabel);
                 } else {
                     edgeLabel = edgeLabelOptional.get();

@@ -78,6 +78,10 @@ public class EdgeLabel extends AbstractLabel {
         return new EdgeLabel(topology, edgeLabelName);
     }
 
+    static EdgeLabel loadFromDb(Topology topology, String edgeLabelName, PartitionType partitionType, String partitionExpression) {
+        return new EdgeLabel(topology, edgeLabelName, partitionType, partitionExpression);
+    }
+
     private EdgeLabel(
             boolean forSqlgSchema,
             String edgeLabelName,
