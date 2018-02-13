@@ -39,6 +39,29 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
+    public void testBatchNormalModeFlushWrapsInQuotes() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        String vertexLabel = "schem\"a.tabl\"e";
+        String edgeLabel = "edg\"e";
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, vertexLabel, "name", "test1");
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, vertexLabel, "name", "test2");
+        Edge edge = vertex1.addEdge(edgeLabel, vertex2);
+        this.sqlgGraph.tx().flush();
+        Assert.assertNotNull(vertex1.id());
+        Assert.assertNotNull(vertex2.id());
+        Assert.assertNotNull(edge.id());
+    }
+
+    @Test
+    public void testBatchNormalModeFlushWrapsInQuotesSimple() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        String vertexLabel = "B\"B.B\"B";
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, vertexLabel, "name", "test1");
+        this.sqlgGraph.tx().commit();
+        Assert.assertNotNull(vertex1.id());
+    }
+
+    @Test
     public void testBatchNonUTF8Chars() {
         Vertex v = sqlgGraph.addVertex(T.label, "A");
         v.property("name", "<NULL>");
