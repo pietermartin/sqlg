@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure.topology;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -35,13 +36,13 @@ public class Partition implements TopologyInf {
     private AbstractLabel abstractLabel;
     protected boolean committed = true;
 
-    private PartitionType partitionType = PartitionType.NONE;
+    private PartitionType partitionType;
     private String partitionExpression;
 
     private Partition parentPartition;
-    protected Map<String, Partition> partitions = new HashMap<>();
-    Map<String, Partition> uncommittedPartitions = new HashMap<>();
-    Set<String> uncommittedRemovedPartitions = new HashSet<>();
+    private Map<String, Partition> partitions = new HashMap<>();
+    private Map<String, Partition> uncommittedPartitions = new HashMap<>();
+    private Set<String> uncommittedRemovedPartitions = new HashSet<>();
 
     public Partition(
             SqlgGraph sqlgGraph,
@@ -635,35 +636,185 @@ public class Partition implements TopologyInf {
         }
     }
 
-    public ObjectNode toNotifyJson() {
+    public Optional<ObjectNode> toUncommitedPartitionNotifyJson() {
+        return toNotifyJson(false);
+    }
+
+    public Optional<ObjectNode> toCommittedPartitionNotifyJson() {
+        return toNotifyJson(true);
+    }
+
+    public Optional<ObjectNode> toNotifyJson(boolean committed) {
+        boolean foundSomething = false;
         ObjectNode partitionObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         partitionObjectNode.put("name", this.name);
         partitionObjectNode.put("from", this.from);
         partitionObjectNode.put("to", this.to);
+        partitionObjectNode.put("in", this.in);
         partitionObjectNode.put("partitionType", this.partitionType.name());
         partitionObjectNode.put("partitionExpression", this.partitionExpression);
-        return partitionObjectNode;
+        ArrayNode uncommittedPartitions = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (Partition partition : this.uncommittedPartitions.values()) {
+            foundSomething = true;
+            Optional<ObjectNode> json = partition.toNotifyJson(false);
+            if (json.isPresent()) {
+                uncommittedPartitions.add(json.get());
+            }
+        }
+        if (uncommittedPartitions.size() > 0) {
+            partitionObjectNode.set("uncommittedPartitions", uncommittedPartitions);
+        }
+        ArrayNode committedPartitions = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (Partition partition : this.partitions.values()) {
+            if (!this.uncommittedRemovedPartitions.contains(partition.getName())) {
+                Optional<ObjectNode> json = partition.toNotifyJson(true);
+                if (json.isPresent()) {
+                    foundSomething = true;
+                    committedPartitions.add(json.get());
+                }
+            }
+        }
+        if (committedPartitions.size() > 0) {
+            partitionObjectNode.set("partitions", committedPartitions);
+        }
+        ArrayNode uncommittedRemovedPartitions = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (String removedPartition : this.uncommittedRemovedPartitions) {
+            uncommittedRemovedPartitions.add(removedPartition);
+        }
+        if (uncommittedRemovedPartitions.size() > 0) {
+            foundSomething = true;
+            partitionObjectNode.set("uncommittedRemovedPartitions", uncommittedRemovedPartitions);
+        }
+        if (!committed || foundSomething) {
+            return Optional.of(partitionObjectNode);
+        } else {
+            return Optional.empty();
+        }
     }
 
-    public static Partition fromNotifyJson(AbstractLabel abstractLabel, JsonNode partitionNode) {
-        return new Partition(
-                abstractLabel.getSchema().getSqlgGraph(),
-                abstractLabel,
-                partitionNode.get("name").asText(),
-                partitionNode.get("from").asText(),
-                partitionNode.get("to").asText(),
-                PartitionType.from(partitionNode.get("partitionType").asText()),
-                partitionNode.get("partitionExpression").asText()
-        );
+    static Partition fromUncommittedPartitionNotifyJson(AbstractLabel abstractLabel, JsonNode partitionNode) {
+        Partition p;
+        if (!partitionNode.get("from").asText().equals("null")) {
+            Preconditions.checkState(!partitionNode.get("to").asText().equals("null"));
+            Preconditions.checkState(partitionNode.get("in").asText().equals("null"));
+            p = new Partition(
+                    abstractLabel.getSchema().getSqlgGraph(),
+                    abstractLabel,
+                    partitionNode.get("name").asText(),
+                    partitionNode.get("from").asText(),
+                    partitionNode.get("to").asText(),
+                    PartitionType.from(partitionNode.get("partitionType").asText()),
+                    partitionNode.get("partitionExpression").asText().equals("null") ? null : partitionNode.get("partitionExpression").asText()
+            );
+        } else {
+            Preconditions.checkState(partitionNode.get("from").asText().equals("null"));
+            Preconditions.checkState(partitionNode.get("to").asText().equals("null"));
+            Preconditions.checkState(!partitionNode.get("in").asText().equals("null"));
+            p = new Partition(
+                    abstractLabel.getSchema().getSqlgGraph(),
+                    abstractLabel,
+                    partitionNode.get("name").asText(),
+                    partitionNode.get("in").asText(),
+                    PartitionType.from(partitionNode.get("partitionType").asText()),
+                    partitionNode.get("partitionExpression").asText().equals("null") ? null : partitionNode.get("partitionExpression").asText()
+            );
+        }
+        ArrayNode uncommittedPartitions = (ArrayNode) partitionNode.get("uncommittedPartitions");
+        if (uncommittedPartitions != null) {
+            for (JsonNode uncommittedPartition : uncommittedPartitions) {
+                p.fromUncommittedPartitionNotifyJson(uncommittedPartition);
+            }
+        }
+        ArrayNode removedPartitions = (ArrayNode) partitionNode.get("removedPartitions");
+        if (removedPartitions != null) {
+            p.fromNotifyJsonRemove(removedPartitions);
+        }
+        return p;
+    }
+
+    private void fromUncommittedPartitionNotifyJson(JsonNode partitionNode) {
+        Partition p;
+        if (!partitionNode.get("from").asText().equals("null")) {
+            Preconditions.checkState(!partitionNode.get("to").asText().equals("null"));
+            Preconditions.checkState(partitionNode.get("in").asText().equals("null"));
+            p = new Partition(
+                    this.sqlgGraph,
+                    this,
+                    partitionNode.get("name").asText(),
+                    partitionNode.get("from").asText(),
+                    partitionNode.get("to").asText(),
+                    PartitionType.from(partitionNode.get("partitionType").asText()),
+                    partitionNode.get("partitionExpression").asText().equals("null") ? null : partitionNode.get("partitionExpression").asText()
+            );
+        } else {
+            Preconditions.checkState(partitionNode.get("from").asText().equals("null"));
+            Preconditions.checkState(partitionNode.get("to").asText().equals("null"));
+            Preconditions.checkState(!partitionNode.get("in").asText().equals("null"));
+            p = new Partition(
+                    this.sqlgGraph,
+                    this,
+                    partitionNode.get("name").asText(),
+                    partitionNode.get("in").asText(),
+                    PartitionType.from(partitionNode.get("partitionType").asText()),
+                    partitionNode.get("partitionExpression").asText().equals("null") ? null : partitionNode.get("partitionExpression").asText()
+            );
+        }
+        this.partitions.put(p.getName(), p);
+
+        ArrayNode uncommittedPartitions = (ArrayNode) partitionNode.get("uncommittedPartitions");
+        if (uncommittedPartitions != null) {
+            for (JsonNode uncommittedPartition : uncommittedPartitions) {
+                p.fromUncommittedPartitionNotifyJson(uncommittedPartition);
+            }
+        }
+
+        ArrayNode removedPartitions = (ArrayNode) partitionNode.get("removedPartitions");
+        if (removedPartitions != null) {
+            p.fromNotifyJsonRemove(removedPartitions);
+        }
+    }
+
+    private void fromNotifyJsonRemove(ArrayNode partitionNode) {
+        for (JsonNode jsonNode : partitionNode) {
+            this.partitions.remove(jsonNode.toString());
+        }
+    }
+
+    PropertyColumn fromNotifyJson(JsonNode partitionNode, boolean fire) {
+        ArrayNode partitionsNode = (ArrayNode) partitionNode.get("partitions");
+        if (partitionsNode != null) {
+            for (JsonNode jsonNode : partitionsNode) {
+                Optional<Partition> optionalPartition = getPartition(jsonNode.get("name").asText());
+                Preconditions.checkState(optionalPartition.isPresent(), "committed partition %s on partition %s must be present",
+                        jsonNode.get("name").asText(),
+                        this.getName());
+                Partition committedPartition = optionalPartition.get();
+                committedPartition.fromNotifyJson(jsonNode, fire);
+            }
+        }
+        ArrayNode uncommittedPartitionsNode = (ArrayNode) partitionNode.get("uncommittedPartitions");
+        if (uncommittedPartitionsNode != null) {
+            for (JsonNode jsonNode : uncommittedPartitionsNode) {
+                this.fromUncommittedPartitionNotifyJson(jsonNode);
+            }
+        }
+        ArrayNode uncommittedRemovedPartitions = (ArrayNode) partitionNode.get("uncommittedRemovedPartitions");
+        if (uncommittedRemovedPartitions != null) {
+            for (JsonNode jsonNode : uncommittedRemovedPartitions) {
+                String pName = jsonNode.asText();
+                Partition old = this.partitions.remove(pName);
+                if (fire && old != null) {
+                    this.getAbstractLabel().getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
+                }
+            }
+        }
+
+        return null;
     }
 
     @Override
     public String toString() {
-        return toJson().toString();
-    }
-
-    protected JsonNode toJson() {
-        return toNotifyJson();
+        return this.name;
     }
 
     public Partition ensureRangePartitionExists(String name, String from, String to) {
@@ -837,6 +988,20 @@ public class Partition implements TopologyInf {
         if (result == null) {
             result = this.partitions.get(name);
         }
+        if (result == null) {
+            for (Partition partition : this.uncommittedPartitions.values()) {
+                Optional<Partition> p = partition.getPartition(name);
+                if (p.isPresent()) {
+                    return p;
+                }
+            }
+            for (Partition partition : this.partitions.values()) {
+                Optional<Partition> p = partition.getPartition(name);
+                if (p.isPresent()) {
+                    return p;
+                }
+            }
+        }
         return Optional.ofNullable(result);
     }
 
@@ -919,4 +1084,5 @@ public class Partition implements TopologyInf {
             }
         }
     }
+
 }

@@ -119,6 +119,21 @@ class SqlgStartupManager {
                 upgradeForeignKeysToDeferrable();
             }
         }
+        if (v.isUnknownVersion() || v.compareTo(new Version(1, 6, 0, null, null, null)) < 0) {
+            addPartitionSupportToSqlgSchema();
+        }
+    }
+
+    private void addPartitionSupportToSqlgSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        List<String> addPartitionTables = this.sqlDialect.addPartitionTables();
+        for (String addPartitionTable : addPartitionTables) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(addPartitionTable);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void upgradeForeignKeysToDeferrable() {
@@ -137,7 +152,6 @@ class SqlgStartupManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private void cacheTopology() {
@@ -174,6 +188,15 @@ class SqlgStartupManager {
                         TopologyManager.addGraph(this.sqlgGraph, version);
                     }
                 } else {
+                    //Need to check if dbVersion has been added
+                    try (ResultSet columnRs = metadata.getColumns(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, Topology.SQLG_SCHEMA_GRAPH_DB_VERSION)) {
+                        if (!columnRs.next()) {
+                            try (Statement statement = conn.createStatement()) {
+                                statement.execute("ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT;");
+                                statement.execute("UPDATE \"sqlg_schema\".\"V_graph\" SET \"dbVersion\" = " + metadata.getDatabaseProductVersion() + ";");
+                            }
+                        }
+                    }
                     oldVersion = TopologyManager.updateGraph(this.sqlgGraph, version);
                 }
                 return oldVersion;
@@ -206,7 +229,6 @@ class SqlgStartupManager {
     private void loadSqlgSchemaFromInformationSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
-
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
@@ -391,8 +413,7 @@ class SqlgStartupManager {
 
             }
 
-            if (this.sqlDialect.supportPartitioning()) {
-                this.sqlgGraph.tx().commit();
+            if (this.sqlDialect.supportsPartitioning()) {
                 //load the partitions
                 conn = this.sqlgGraph.tx().getConnection();
                 List<Map<String, String>> partitions = this.sqlDialect.getPartitions(conn);

@@ -2,6 +2,8 @@ package org.umlg.sqlg.test.index;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -17,6 +19,12 @@ import java.util.Map;
  * Date: 2018/01/28
  */
 public class TestIndexOnPartition extends BaseTest {
+
+    @Before
+    public void before() throws Exception {
+        super.before();
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPartitioning());
+    }
 
     @Test
     public void testCreateIndexOnPartitionedVertexLabelBeforeCreatingPartitions() {

@@ -990,11 +990,15 @@ public interface SqlDialect {
         return false;
     }
 
-    default boolean supportPartitioning() {
+    default boolean supportsPartitioning() {
         return false;
     }
 
     default List<Map<String,String>> getPartitions(Connection connection) {
+        throw new IllegalStateException("Partitioning is not supported.");
+    }
+
+    default List<String> addPartitionTables() {
         throw new IllegalStateException("Partitioning is not supported.");
     }
 }

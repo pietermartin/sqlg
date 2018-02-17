@@ -730,6 +730,7 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             edgeLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
             edgeLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
+            edgeLabelNode.set("partitions", abstractLabelNode.get().get("partitions"));
             edgeLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
             edgeLabelNode.set("uncommittedRemovedPartitions", abstractLabelNode.get().get("uncommittedRemovedPartitions"));
             edgeLabelNode.set("uncommittedRemovedIndexes", abstractLabelNode.get().get("uncommittedRemovedIndexes"));

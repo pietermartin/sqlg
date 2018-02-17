@@ -4,15 +4,13 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,10 +23,10 @@ import java.util.Optional;
  */
 public class TestPartitioning extends BaseTest {
 
-    @BeforeClass
-    public static void beforeClass() throws PropertyVetoException, IOException, ClassNotFoundException {
-        BaseTest.beforeClass();
-        Assume.assumeTrue(isPostgres());
+    @Before
+    public void before() throws Exception {
+        super.before();
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPartitioning());
     }
 
     @Test

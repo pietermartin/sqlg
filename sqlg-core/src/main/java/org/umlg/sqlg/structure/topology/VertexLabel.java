@@ -581,6 +581,7 @@ public class VertexLabel extends AbstractLabel {
         if (abstractLabelNode.isPresent()) {
             vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
+            vertexLabelNode.set("partitions", abstractLabelNode.get().get("partitions"));
             vertexLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
             vertexLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
             vertexLabelNode.set("uncommittedRemovedPartitions", abstractLabelNode.get().get("uncommittedRemovedPartitions"));

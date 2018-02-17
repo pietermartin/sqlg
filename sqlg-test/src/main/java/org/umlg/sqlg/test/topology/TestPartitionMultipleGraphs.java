@@ -45,6 +45,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
     @Before
     public void before() throws Exception {
         super.before();
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPartitioning());
         this.topologyListenerTriple.clear();
     }
 
@@ -153,4 +154,60 @@ public class TestPartitionMultipleGraphs extends BaseTest {
             Assert.fail(e.getMessage());
         }
     }
+
+    @Test
+    public void testNotificationSubSubPartitions() throws InterruptedException {
+        TopologyListenerTest tlt = new TopologyListenerTest(topologyListenerTriple);
+        this.sqlgGraph.getTopology().registerListener(tlt);
+        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        VertexLabel a = aSchema.ensurePartitionedVertexLabelExist(
+                "A",
+                new HashMap<String, PropertyType>(){{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
+                    put("int4", PropertyType.INTEGER);
+                }},
+                PartitionType.LIST,
+                "int1"
+        );
+        Partition p1 = a.ensureListPartitionWithSubPartitionExists("int1", "1,2,3,4,5", PartitionType.LIST, "int2");
+        Partition p2 = p1.ensureListPartitionWithSubPartitionExists("int2", "1,2,3,4,5", PartitionType.LIST, "int3");
+        Partition p3 = p2.ensureListPartitionWithSubPartitionExists("int3", "1,2,3,4,5", PartitionType.LIST, "int4");
+        p3.ensureListPartitionExists("int4", "1,2,3,4,5");
+        this.sqlgGraph.tx().commit();
+        Thread.sleep(1000);
+
+        a = this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get();
+        Optional<Partition> p = a.getPartition("int4");
+        Assert.assertTrue(p.isPresent());
+        Assert.assertNull(p.get().getFrom());
+        Assert.assertNull(p.get().getTo());
+        Assert.assertEquals("1,2,3,4,5", p.get().getIn());
+
+        Assert.assertTrue(tlt.receivedEvent(p1, TopologyChangeAction.CREATE));
+        Assert.assertTrue(tlt.receivedEvent(p2, TopologyChangeAction.CREATE));
+        Assert.assertTrue(tlt.receivedEvent(p3, TopologyChangeAction.CREATE));
+
+        p3.remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(tlt.receivedEvent(p3, TopologyChangeAction.DELETE));
+        p2.remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(tlt.receivedEvent(p2, TopologyChangeAction.DELETE));
+        p1.remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(tlt.receivedEvent(p1, TopologyChangeAction.DELETE));
+        Thread.sleep(1000);
+        a = this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get();
+        p = a.getPartition("int4");
+        Assert.assertFalse(p.isPresent());
+        p = a.getPartition("int3");
+        Assert.assertFalse(p.isPresent());
+        p = a.getPartition("int2");
+        Assert.assertFalse(p.isPresent());
+        p = a.getPartition("int1");
+        Assert.assertFalse(p.isPresent());
+    }
+
 }

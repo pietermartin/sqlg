@@ -515,7 +515,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255), \"dbVersion\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_schema\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_vertex\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"schemaVertex\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_edge\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
@@ -543,7 +543,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255));";
+        return "CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255), \"dbVersion\" VARCHAR(255));";
     }
 
     @Override

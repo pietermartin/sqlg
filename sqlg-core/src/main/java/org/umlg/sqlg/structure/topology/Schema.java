@@ -180,6 +180,7 @@ public class Schema implements TopologyInf {
             PartitionType partitionType,
             String partitionExpression) {
 
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsPartitioning());
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
 
@@ -238,6 +239,7 @@ public class Schema implements TopologyInf {
             PartitionType partitionType,
             String partitionExpression) {
 
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsPartitioning());
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");

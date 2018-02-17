@@ -2791,7 +2791,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT, \"dbVersion\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
@@ -2879,13 +2879,47 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT);";
+        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT, \"dbVersion\" TEXT);";
     }
 
     @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
+    }
 
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionType\" TEXT DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionExpression\" TEXT;",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionType\" TEXT DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionExpression\" TEXT;",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
+                        "\"ID\" SERIAL PRIMARY KEY, " +
+                        "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                        "\"name\" TEXT, " +
+                        "\"from\" TEXT, " +
+                        "\"to\" TEXT, " +
+                        "\"in\" TEXT, " +
+                        "\"partitionType\" TEXT, " +
+                        "\"partitionExpression\" TEXT);",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\") DEFERRABLE);",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.vertex__O\");",
+
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\") DEFERRABLE);",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.edge__O\");",
+
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_partition_partition\"(" +
+                        "\"ID\" SERIAL PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.partition__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE);",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__O_idx\" ON \"sqlg_schema\".\"E_partition_partition\" (\"sqlg_schema.partition__O\");"
+        );
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
@@ -2934,9 +2968,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case boolean_ARRAY:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
             case SHORT_ARRAY:
-                return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
             case short_ARRAY:
-                return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[]) array.getArray());
             case INTEGER_ARRAY:
                 return array.getArray();
             case int_ARRAY:
@@ -3883,13 +3917,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public boolean supportPartitioning() {
+    public boolean supportsPartitioning() {
         return true;
     }
 
     @Override
-    public List<Map<String,String>> getPartitions(Connection connection) {
-        List<Map<String,String>> result = new ArrayList<>();
+    public List<Map<String, String>> getPartitions(Connection connection) {
+        List<Map<String, String>> result = new ArrayList<>();
         try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery("with pg_partitioned_table as (select \n" +
                     "    p.partrelid,\n" +

@@ -95,12 +95,6 @@ public class Topology {
     public static final String UPDATED_ON = "updatedOn";
 
     @SuppressWarnings("WeakerAccess")
-    /**
-     * Holds the current Sqlg pom version.
-     */
-    public static final String VERSION = "version";
-
-    @SuppressWarnings("WeakerAccess")
     public static final String SCHEMA_VERTEX_DISPLAY = "schemaVertex";
 
     /**
@@ -111,6 +105,14 @@ public class Topology {
      * Table storing the graph's graph meta data.
      */
     public static final String SQLG_SCHEMA_GRAPH = "graph";
+    /**
+     * graph's sqlg version.
+     */
+    public static final String SQLG_SCHEMA_GRAPH_VERSION = "version";
+    /**
+     * graph's database version. This is sourced from {@link DatabaseMetaData#getDatabaseProductVersion()}
+     */
+    public static final String SQLG_SCHEMA_GRAPH_DB_VERSION = "dbVersion";
     /**
      * Table storing the graph's schemas.
      */
@@ -154,7 +156,6 @@ public class Topology {
      * EdgeLabel's partition expression.
      */
     public static final String SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION = "partitionExpression";
-
 
     /**
      * Table storing the partition.
@@ -336,7 +337,8 @@ public class Topology {
         this.metaSchemas.put(SQLG_SCHEMA, sqlgSchema);
 
         Map<String, PropertyType> columns = new HashMap<>();
-        columns.put(VERSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_GRAPH_VERSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_GRAPH_DB_VERSION, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(UPDATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel graphVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_GRAPH, columns);

@@ -630,7 +630,7 @@ public class MariadbDialect extends BaseSqlDialect {
         List<String> result = new ArrayList<>();
 
         //SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT, `dbVersion` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_schema` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_vertex` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `schemaVertex` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_edge` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
@@ -721,7 +721,7 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);";
+        return "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT, `dbVersion` TEXT);";
     }
 
     @Override

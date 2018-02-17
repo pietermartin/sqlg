@@ -11,6 +11,9 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -23,20 +26,25 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class TopologyManager {
 
-    public static final String CREATED_ON = "createdOn";
-    public static final String UPDATED_ON = "updatedOn";
 
     private TopologyManager() {
     }
 
     public static Vertex addGraph(SqlgGraph sqlgGraph, String version) {
-        LocalDateTime now = LocalDateTime.now();
-        return sqlgGraph.addVertex(
-                T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GRAPH,
-                "version", version,
-                CREATED_ON, now,
-                UPDATED_ON, now
-        );
+        Connection conn = sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            LocalDateTime now = LocalDateTime.now();
+            return sqlgGraph.addVertex(
+                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GRAPH,
+                    SQLG_SCHEMA_GRAPH_VERSION, version,
+                    SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion(),
+                    CREATED_ON, now,
+                    UPDATED_ON, now
+            );
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -47,14 +55,21 @@ public class TopologyManager {
      * @return The old version.
      */
     public static String updateGraph(SqlgGraph sqlgGraph, String version) {
-        GraphTraversalSource traversalSource = sqlgGraph.topology();
-        List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
-        Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
-        Vertex graph = graphVertices.get(0);
-        String oldVersion = graph.value("version");
-        graph.property("version", version);
-        graph.property(UPDATED_ON, LocalDateTime.now());
-        return oldVersion;
+        Connection conn = sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
+            Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
+            Vertex graph = graphVertices.get(0);
+            String oldVersion = graph.value(SQLG_SCHEMA_GRAPH_VERSION);
+            graph.property(SQLG_SCHEMA_GRAPH_VERSION, version);
+            graph.property(SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion());
+            graph.property(UPDATED_ON, LocalDateTime.now());
+            return oldVersion;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
@@ -333,6 +348,7 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
+
     public static void addEdgeLabelPartition(
             SqlgGraph sqlgGraph,
             AbstractLabel abstractLabel,
