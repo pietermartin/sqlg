@@ -948,7 +948,7 @@ public class SqlgUtil {
     public static Short[] convertObjectOfIntegersArrayToShortArray(Object[] shortArray) {
         Short[] target = new Short[shortArray.length];
         for (int i = 0; i < shortArray.length; i++) {
-            Array.set(target, i, shortArray[i]);
+            Array.set(target, i, Short.valueOf(((Integer) shortArray[i]).shortValue()));
         }
         return target;
     }
@@ -964,7 +964,7 @@ public class SqlgUtil {
     public static short[] convertObjectOfIntegersArrayToShortPrimitiveArray(Object[] shortArray) {
         short[] target = new short[shortArray.length];
         for (int i = 0; i < shortArray.length; i++) {
-            Array.set(target, i, shortArray[i]);
+            Array.set(target, i, ((Integer) shortArray[i]).shortValue());
         }
         return target;
     }
