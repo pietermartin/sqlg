@@ -517,8 +517,31 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         List<String> result = new ArrayList<>();
         result.add("CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255), \"dbVersion\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_schema\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_vertex\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"schemaVertex\" VARCHAR(255));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_edge\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_vertex\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"name\" VARCHAR(255), " +
+                "\"schemaVertex\" VARCHAR(255), " +
+                "\"partitionType\" VARCHAR(255), " +
+                "\"partitionExpression\" VARCHAR(255)" +
+                ");");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_edge\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"name\" VARCHAR(255), " +
+                "\"partitionType\" VARCHAR(255), " +
+                "\"partitionExpression\" VARCHAR(255)" +
+                ");");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_partition\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"name\" VARCHAR(255), " +
+                "\"from\" VARCHAR(255), " +
+                "\"to\" VARCHAR(255), " +
+                "\"in\" VARCHAR(255), " +
+                "\"partitionType\" VARCHAR(255), " +
+                "\"partitionExpression\" VARCHAR(255)" +
+                ");");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_property\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"type\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_index\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"index_type\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
@@ -531,6 +554,27 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         result.add("CREATE TABLE \"sqlg_schema\".\"E_out_edges\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_partition\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_partition\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_partition_partition\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.partition__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));");
+
+
         result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_index\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_index\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_index_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, \"sequence\" INTEGER, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
@@ -970,7 +1014,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         }
     }
 
-   @Override
+    @Override
     public String sqlToTurnOffReferentialConstraintCheck(String tableName) {
         return "ALTER TABLE " + tableName + " NOCHECK CONSTRAINT ALL";
     }
@@ -1110,4 +1154,50 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return sql.toString();
     }
 
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"partitionExpression\" VARCHAR(255);",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"partitionExpression\" VARCHAR(255);",
+                "CREATE TABLE \"sqlg_schema\".\"V_partition\" (" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"createdOn\" DATETIME, " +
+                        "\"name\" VARCHAR(255), " +
+                        "\"from\" VARCHAR(255), " +
+                        "\"to\" VARCHAR(255), " +
+                        "\"in\" VARCHAR(255), " +
+                        "\"partitionType\" VARCHAR(255), " +
+                        "\"partitionExpression\" VARCHAR(255)" +
+                        ");",
+                "CREATE TABLE \"sqlg_schema\".\"E_vertex_partition\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));",
+                "CREATE TABLE \"sqlg_schema\".\"E_edge_partition\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));",
+                "CREATE TABLE \"sqlg_schema\".\"E_partition_partition\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.partition__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));"
+        );
+    }
+
+    @Override
+    public String addDbVersionToGraph(DatabaseMetaData metadata) {
+        try {
+            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD \"dbVersion\" VARCHAR(255) DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

@@ -192,8 +192,7 @@ class SqlgStartupManager {
                     try (ResultSet columnRs = metadata.getColumns(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, Topology.SQLG_SCHEMA_GRAPH_DB_VERSION)) {
                         if (!columnRs.next()) {
                             try (Statement statement = conn.createStatement()) {
-                                statement.execute("ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT;");
-                                statement.execute("UPDATE \"sqlg_schema\".\"V_graph\" SET \"dbVersion\" = " + metadata.getDatabaseProductVersion() + ";");
+                                statement.execute(sqlDialect.addDbVersionToGraph(metadata));
                             }
                         }
                     }

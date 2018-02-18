@@ -3862,7 +3862,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String alterForeignKeyToDeferrable(String schema, String table, String foreignKeyName) {
-        return "alter table \n" +
+        return "ALTER TABLE \n" +
                 "\t\"" + schema + "\".\"" + table + "\" \n" +
                 "ALTER CONSTRAINT \n" +
                 "\t\"" + foreignKeyName + "\" DEFERRABLE;";

@@ -994,11 +994,19 @@ public interface SqlDialect {
         return false;
     }
 
-    default List<Map<String,String>> getPartitions(Connection connection) {
+    default List<Map<String, String>> getPartitions(Connection connection) {
         throw new IllegalStateException("Partitioning is not supported.");
     }
 
     default List<String> addPartitionTables() {
         throw new IllegalStateException("Partitioning is not supported.");
+    }
+
+    default String addDbVersionToGraph(DatabaseMetaData metadata) {
+        try {
+            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT SET DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

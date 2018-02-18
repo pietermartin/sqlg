@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestSqlgSchema;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileTextPredicate;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.schema.TestSqlgSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSqlgSchema.class
+        TestGremlinCompileTextPredicate.class
 //        TestSubSubPartition.class,
 //        TestPartitioning.class,
 //        TestPartitionMultipleGraphs.class,
