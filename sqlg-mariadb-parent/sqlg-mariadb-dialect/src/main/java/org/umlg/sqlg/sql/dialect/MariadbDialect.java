@@ -914,4 +914,13 @@ public class MariadbDialect extends BaseSqlDialect {
         return "SET FOREIGN_KEY_CHECKS=1";
     }
 
+    /**
+     * Hardcoded the rows to return. MariaDB does nto support just an offset.
+     * @param skip The number of rows to skip. i.e. OFFSET
+     * @return The sql fragment.
+     */
+    @Override
+    public String getSkipClause(long skip) {
+        return " LIMIT " + skip + ", 1000000";
+    }
 }
