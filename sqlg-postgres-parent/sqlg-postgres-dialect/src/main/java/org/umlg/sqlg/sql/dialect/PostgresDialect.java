@@ -230,7 +230,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             if (!schemaTable.isTemporary() && numberInserted > 0) {
                 long endHigh;
-                try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+                sql = "SELECT CURRVAL('" + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq") + "');";
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql);
+                }
+                try (PreparedStatement preparedStatement = con.prepareStatement(sql)) {
                     ResultSet resultSet = preparedStatement.executeQuery();
                     resultSet.next();
                     endHigh = resultSet.getLong(1);
@@ -390,10 +394,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                 }
                 long endHigh;
-                try (PreparedStatement preparedStatement = con.prepareStatement(
-                        "SELECT CURRVAL('\"" + metaEdge.getSchemaTable().getSchema() + "\".\"" +
-                                EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq\"');")) {
-
+                sql.setLength(0);
+                sql.append("SELECT CURRVAL('" + maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()) + "." + maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq") + "');");
+                if(logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
+                try (PreparedStatement preparedStatement = con.prepareStatement(sql.toString())) {
                     ResultSet resultSet = preparedStatement.executeQuery();
                     resultSet.next();
                     endHigh = resultSet.getLong(1);
