@@ -1157,9 +1157,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public List<String> addPartitionTables() {
         return Arrays.asList(
-                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE' WITH VALUES;",
                 "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"partitionExpression\" VARCHAR(255);",
-                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE' WITH VALUES;",
                 "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"partitionExpression\" VARCHAR(255);",
                 "CREATE TABLE \"sqlg_schema\".\"V_partition\" (" +
                         "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
