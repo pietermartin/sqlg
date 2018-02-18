@@ -986,7 +986,7 @@ public class MariadbDialect extends BaseSqlDialect {
                 "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_partition`(" +
                         "`ID` SERIAL PRIMARY KEY, " +
                         "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
-                        "`sqlg_schema.vertex__O` BIGINT, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
                         "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
                         "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`));",
                 "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_partition`(" +
