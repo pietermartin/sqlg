@@ -1004,7 +1004,7 @@ public interface SqlDialect {
 
     default String addDbVersionToGraph(DatabaseMetaData metadata) {
         try {
-            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT SET DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
