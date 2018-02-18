@@ -742,15 +742,6 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
                 "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
                 "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`));");
-
-//        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_property`(" +
-//                "`ID` SERIAL PRIMARY KEY, " +
-//                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
-//                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
-//                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
-//                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`)" +
-//                ");");
-
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_partition`(" +
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
@@ -971,8 +962,10 @@ public class MariadbDialect extends BaseSqlDialect {
     public List<String> addPartitionTables() {
         return Arrays.asList(
                 "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_vertex` SET `partitionType` = 'NONE';",
                 "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionExpression` TEXT;",
                 "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_edge` SET `partitionType` = 'NONE';",
                 "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionExpression` TEXT;",
                 "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
                         "`ID` SERIAL PRIMARY KEY, " +
