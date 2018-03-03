@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
+import org.umlg.sqlg.test.tinkerpopjira.TestTinkerPopJira;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAndStepBarrier.class
+        TestTinkerPopJira.class
 })
 public class AnyTest {
 }
