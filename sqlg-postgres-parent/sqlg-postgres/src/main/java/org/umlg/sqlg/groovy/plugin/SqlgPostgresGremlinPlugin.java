@@ -1,27 +1,57 @@
 package org.umlg.sqlg.groovy.plugin;
 
 import org.apache.tinkerpop.gremlin.jsr223.AbstractGremlinPlugin;
-import org.apache.tinkerpop.gremlin.jsr223.Customizer;
-
-import java.util.Set;
+import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
+import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
+import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.*;
 
 /**
  * Date: 2014/10/11
  * Time: 9:55 AM
  */
-public class SqlgPostgresGremlinPlugin  extends AbstractGremlinPlugin {
+public class SqlgPostgresGremlinPlugin extends AbstractGremlinPlugin {
 
-    public SqlgPostgresGremlinPlugin(String moduleName, Customizer... customizers) {
-        super(moduleName, customizers);
+    private static final String NAME = "sqlg.postgres";
+    private static final ImportCustomizer imports;
+
+    static {
+        try {
+            imports = DefaultImportCustomizer.build()
+                    .addClassImports(
+                            PropertyType.class,
+                            RecordId.class,
+                            SchemaTable.class,
+                            SqlgEdge.class,
+                            SqlgElement.class,
+                            SqlgGraph.class,
+                            SqlgProperty.class,
+                            SqlgVertex.class,
+                            SqlgVertexProperty.class,
+                            Topology.class,
+                            EdgeLabel.class,
+                            VertexLabel.class,
+                            Schema.class,
+                            PropertyColumn.class,
+                            Index.class,
+                            IndexType.class,
+                            Graph.class,
+                            GlobalUniqueIndex.class
+                    )
+                    .create();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
-    public SqlgPostgresGremlinPlugin(String moduleName, Set<String> appliesTo, Customizer... customizers) {
-        super(moduleName, appliesTo, customizers);
+    private static final SqlgPostgresGremlinPlugin instance = new SqlgPostgresGremlinPlugin();
+
+    public SqlgPostgresGremlinPlugin() {
+        super(NAME, imports);
     }
 
-    @Override
-    public String getName() {
-        return "sqlg.postgres";
+    public static SqlgPostgresGremlinPlugin instance() {
+        return instance;
     }
 
 }
