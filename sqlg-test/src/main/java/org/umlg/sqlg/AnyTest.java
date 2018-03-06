@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.tinkerpopjira.TestTinkerPopJira;
+import org.umlg.sqlg.test.complex.TestGithub;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.tinkerpopjira.TestTinkerPopJira;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTinkerPopJira.class
+        TestGithub.class
 })
 public class AnyTest {
 }
