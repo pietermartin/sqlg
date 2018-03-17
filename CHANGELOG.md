@@ -1,3 +1,7 @@
+##1.5.1
+* Fix bug [#272](https://github.com/pietermartin/sqlg/issues/272)
+* Make gremlin console work. Tinkerpop made some minor changes to the console that made it stop working.
+
 ##1.5.0
 
 * Optimize `DropStep` i.e. `drop()`.

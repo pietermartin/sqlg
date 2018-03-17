@@ -21,8 +21,8 @@ import java.util.List;
  */
 public class TestGithub extends BaseTest {
 
-//    @Test
-    public void test() {
+    @Test
+    public void test272() {
         this.sqlgGraph.addVertex("category", "a", "name", "hello");
         this.sqlgGraph.addVertex("category", "b", "name", "ignore");
         this.sqlgGraph.addVertex("category", "a", "name", "world");
@@ -35,6 +35,9 @@ public class TestGithub extends BaseTest {
                 .<String>values("name");
         printTraversalForm(gt);
         List<String> values = gt.toList();
+        Assert.assertEquals(2, values.size());
+        Assert.assertTrue(values.contains("hello"));
+        Assert.assertTrue(values.contains("world"));
     }
 
     @Test
