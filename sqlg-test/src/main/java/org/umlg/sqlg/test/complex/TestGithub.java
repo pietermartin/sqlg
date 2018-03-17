@@ -1,6 +1,10 @@
 package org.umlg.sqlg.test.complex;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Scope;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -9,14 +13,32 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Iterator;
-
-import static org.junit.Assert.assertEquals;
+import java.util.List;
 
 /**
  * Date: 2016/04/26
  * Time: 5:02 PM
  */
 public class TestGithub extends BaseTest {
+
+    @Test
+    public void test272() {
+        this.sqlgGraph.addVertex("category", "a", "name", "hello");
+        this.sqlgGraph.addVertex("category", "b", "name", "ignore");
+        this.sqlgGraph.addVertex("category", "a", "name", "world");
+        this.sqlgGraph.tx().commit();
+        GraphTraversal gt = this.sqlgGraph.traversal().V().group().by("category")
+                .unfold()
+                .where(__.select(Column.values).count(Scope.local).is(P.gt(1)))
+                .select(Column.values)
+                .unfold()
+                .<String>values("name");
+        printTraversalForm(gt);
+        List<String> values = gt.toList();
+        Assert.assertEquals(2, values.size());
+        Assert.assertTrue(values.contains("hello"));
+        Assert.assertTrue(values.contains("world"));
+    }
 
     @Test
     public void edgeUpdate() {
@@ -30,9 +52,9 @@ public class TestGithub extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        assertEquals("someValue", found_a2b.property("someKey").value());
-        assertEquals("anotherValue", found_a2b.property("anotherKey").value());
-        assertEquals("someValue", a2b.property("someKey").value());
+        Assert.assertEquals("someValue", found_a2b.property("someKey").value());
+        Assert.assertEquals("anotherValue", found_a2b.property("anotherKey").value());
+        Assert.assertEquals("someValue", a2b.property("someKey").value());
     }
 
     @Test
@@ -67,7 +89,7 @@ public class TestGithub extends BaseTest {
                 .outE("e")
                 .or(__.has("p", "x"), __.has("p", "y"))
                 .inV().has("p", "c");
-        assertEquals(c, results.next());
+        Assert.assertEquals(c, results.next());
     }
 
     @Test
@@ -91,7 +113,7 @@ public class TestGithub extends BaseTest {
                 .where(__.out("hasData").out("contains").has("__type", "structuredData")
                         .has("__structuredDataKey", "primitives").out("contains").has("__type", "structuredData"));
 
-        assertEquals(de, results.next());
+        Assert.assertEquals(de, results.next());
     }
 
 }

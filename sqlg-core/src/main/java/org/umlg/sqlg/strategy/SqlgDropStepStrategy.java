@@ -40,8 +40,4 @@ public class SqlgDropStepStrategy extends AbstractTraversalStrategy<TraversalStr
         ).collect(Collectors.toSet());
     }
 
-//    @Override
-//    public Set<Class<? extends OptimizationStrategy>> applyPost() {
-//        return null;
-//    }
 }

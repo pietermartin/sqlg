@@ -37,7 +37,9 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
             Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
-                ((SqlgTraverser) start).setRequiresOneBulk(true);
+                if (start instanceof SqlgTraverser) {
+                    ((SqlgTraverser) start).setRequiresOneBulk(true);
+                }
                 List<Object> startObjects = start.path().objects();
                 StringBuilder recordIdConcatenated = new StringBuilder();
                 for (Object startObject : startObjects) {

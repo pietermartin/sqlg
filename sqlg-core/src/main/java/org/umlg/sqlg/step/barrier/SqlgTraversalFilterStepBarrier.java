@@ -44,7 +44,9 @@ public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> im
                 //This requirement says no bulking must happen.
                 //If the strategy finds TraverserRequirement.ONE_BULK it will set requiredOneBulk = true on the traverser.
                 //However the traverser might have been created from a step and strategy that does not care for TraverserRequirement.ONE_BULK so we force it here.
-                ((SqlgTraverser) start).setRequiresOneBulk(true);
+                if (start instanceof SqlgTraverser) {
+                    ((SqlgTraverser) start).setRequiresOneBulk(true);
+                }
                 List<Object> startObjects = start.path().objects();
                 StringBuilder recordIdConcatenated = new StringBuilder();
                 for (Object startObject : startObjects) {
