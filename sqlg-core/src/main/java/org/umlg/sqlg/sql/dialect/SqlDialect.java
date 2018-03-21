@@ -653,6 +653,17 @@ public interface SqlDialect {
     List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
                                                           String tableNamePattern, String columnNamePattern);
 
+    /**
+     * Return the table's primary keys.
+     *
+     * @param metaData         JDBC meta data.
+     * @param catalog          The db catalog.
+     * @param schemaPattern    The schema name.
+     * @param tableNamePattern The table name.
+     * @return A list of primary key column names.
+     */
+    List<String> getPrimaryKeys(DatabaseMetaData metaData, String catalog, String schemaPattern, String tableNamePattern);
+
     List<Triple<String, Boolean, String>> getIndexInfo(DatabaseMetaData metaData, String catalog,
                                                        String schema, String table, boolean unique, boolean approximate);
 

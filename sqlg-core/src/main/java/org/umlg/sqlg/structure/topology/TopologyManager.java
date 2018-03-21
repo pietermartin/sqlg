@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure.topology;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -159,11 +160,11 @@ public class TopologyManager {
         }
     }
 
-    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
-        addVertexLabel(sqlgGraph, schema, tableName, columns, PartitionType.NONE, null);
+    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+        addVertexLabel(sqlgGraph, schema, tableName, columns, identifiers, PartitionType.NONE, null);
     }
 
-    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns, PartitionType partitionType, String partitionExpression) {
+    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             //get the schema vertex
@@ -205,6 +206,15 @@ public class TopologyManager {
                         Topology.CREATED_ON, LocalDateTime.now()
                 );
                 vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
+
+                int i = 0;
+                for (String identifier : identifiers) {
+                    if (identifier.equals(columnEntry.getKey())) {
+                        vertex.addEdge(SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE, property, SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE, i);
+                    }
+                    i++;
+                }
+
             }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
@@ -508,9 +518,10 @@ public class TopologyManager {
             String prefixedTable,
             SchemaTable foreignKeyOut,
             SchemaTable foreignKeyIn,
-            Map<String, PropertyType> columns) {
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers) {
 
-        addEdgeLabel(sqlgGraph, schema, prefixedTable, foreignKeyOut, foreignKeyIn, columns, PartitionType.NONE, null);
+        addEdgeLabel(sqlgGraph, schema, prefixedTable, foreignKeyOut, foreignKeyIn, columns, identifiers, PartitionType.NONE, null);
     }
 
     public static void addEdgeLabel(
@@ -520,8 +531,11 @@ public class TopologyManager {
             SchemaTable foreignKeyOut,
             SchemaTable foreignKeyIn,
             Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
+
+        Vertex edgeVertex = addEdgeLabel(sqlgGraph, prefixedTable, columns, identifiers, partitionType, partitionExpression);
 
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -560,6 +574,23 @@ public class TopologyManager {
             Preconditions.checkState(inVertices.size() == 1, "Multiple in vertices %s found in Sqlg's topology. BUG!!!", foreignKeyIn.toString());
             Vertex inVertex = inVertices.get(0);
 
+            outVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
+            inVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static Vertex addEdgeLabel(
+            SqlgGraph sqlgGraph,
+            String prefixedTable,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
             Vertex edgeVertex;
             if (partitionExpression != null) {
                 Preconditions.checkState(partitionType != PartitionType.NONE, "If the partitionExpression is not null then the PartitionType may not be NONE. Found %s", partitionType.name());
@@ -576,11 +607,7 @@ public class TopologyManager {
                         "name", prefixedTable.substring(EDGE_PREFIX.length()),
                         CREATED_ON, LocalDateTime.now(),
                         Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PartitionType.NONE.name());
-
             }
-
-            outVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
-            inVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
 
             for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
                 Vertex property = sqlgGraph.addVertex(
@@ -590,7 +617,16 @@ public class TopologyManager {
                         CREATED_ON, LocalDateTime.now()
                 );
                 edgeVertex.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
+                //add in the identifiers if there are any.
+                int i = 0;
+                for (String identifier : identifiers) {
+                    if (identifier.equals(columnEntry.getKey())) {
+                        edgeVertex.addEdge(SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE, property, SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, i);
+                    }
+                    i++;
+                }
             }
+            return edgeVertex;
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
@@ -657,6 +693,54 @@ public class TopologyManager {
             Preconditions.checkState(!edgeVertices.isEmpty(), "Edge vertex '%s' does not exist in schema '%s'", prefixedTable.substring(EDGE_PREFIX.length()), schema);
             Preconditions.checkState(edgeVertices.size() == 1, "Multiple edge vertices %s found in Sqlg's topology. BUG!!!", foreignKey.toString());
             Vertex edgeVertex = edgeVertices.get(0);
+
+            String foreignKeyVertexTable;
+            if (in) {
+                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.IN_VERTEX_COLUMN_END.length());
+            } else {
+                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.OUT_VERTEX_COLUMN_END.length());
+            }
+            List<Vertex> foreignKeyVertices = traversalSource.V(foreignKeySchemaVertex)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", foreignKeyVertexTable)
+                    .toList();
+            Preconditions.checkState(!foreignKeyVertices.isEmpty(), "Out vertex %s does not exist in Sqlg's topology. BUG!!!", foreignKey.toString());
+            Preconditions.checkState(foreignKeyVertices.size() == 1, "Multiple out vertices %s found in Sqlg's topology. BUG!!!", foreignKey.toString());
+            Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
+            Vertex foreignKeyVertex = foreignKeyVertices.get(0);
+
+            if (in) {
+                foreignKeyVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+            } else {
+                foreignKeyVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
+            }
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static void addLabelToEdge(SqlgGraph sqlgGraph, Vertex edgeVertex, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> schemas = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .toList();
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", schema);
+
+            String foreignKeySchema = foreignKey.getSchema();
+            schemas = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", foreignKeySchema)
+                    .toList();
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", foreignKeySchema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", foreignKeySchema);
+            Vertex foreignKeySchemaVertex = schemas.get(0);
+
+            Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
 
             String foreignKeyVertexTable;
             if (in) {
@@ -940,13 +1024,13 @@ public class TopologyManager {
         }
     }
 
-    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column) {
+    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column, ListOrderedSet<String> primaryKeys) {
         for (Map.Entry<String, PropertyType> stringPropertyTypeEntry : column.entrySet()) {
-            addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyTypeEntry);
+            addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyTypeEntry, primaryKeys);
         }
     }
 
-    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column) {
+    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column, ListOrderedSet<String> identifiers) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(EDGE_PREFIX), "prefixedTable must be for an edge. prefixedTable = " + prefixedTable);
@@ -975,6 +1059,13 @@ public class TopologyManager {
                     CREATED_ON, LocalDateTime.now()
             );
             edge.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
+            int i = 0;
+            for (String identifier : identifiers) {
+                if (identifier.equals(column.getKey())) {
+                    edge.addEdge(SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE, property, SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, i);
+                }
+                i++;
+            }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -61,6 +62,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
+    public static SqlgVertex of(SqlgGraph sqlgGraph, ListOrderedSet<Object> identifiers, String schema, String table) {
+        if (!sqlgGraph.tx().isInBatchMode()) {
+            return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
+        } else {
+            return new SqlgVertex(sqlgGraph, identifiers, schema, table);
+        }
+    }
+
     /**
      * This is the primary constructor to createVertexLabel a vertex that already exist
      *
@@ -71,6 +80,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      */
     SqlgVertex(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
+    }
+
+    SqlgVertex(SqlgGraph sqlgGraph, ListOrderedSet<Object> identifiers, String schema, String table) {
+        super(sqlgGraph, identifiers, schema, table);
     }
 
     @Override
@@ -319,11 +332,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
         Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = null;
+        VertexLabel vertexLabel = null;
         if (!temporary) {
-            propertyColumns = this.sqlgGraph.getTopology()
+            vertexLabel = this.sqlgGraph.getTopology()
                     .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                    .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
-                    .getProperties();
+                    .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)));
+            propertyColumns = vertexLabel.getProperties();
         }
         if (!keyValueMap.isEmpty()) {
             if (!temporary) {
@@ -361,11 +375,19 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
             preparedStatement.executeUpdate();
-            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
+            if (!temporary && !vertexLabel.getIdentifiers().isEmpty()) {
+                ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                for (String identifier : vertexLabel.getIdentifiers()) {
+                    identifiers.add(propertyTypeValueMap.get(identifier).getRight());
+                }
+                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             } else {
-                throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", Topology.VERTICES));
+                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
+                } else {
+                    throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", Topology.VERTICES));
+                }
             }
             if (!temporary) {
                 insertGlobalUniqueIndex(keyValueMap, propertyColumns);

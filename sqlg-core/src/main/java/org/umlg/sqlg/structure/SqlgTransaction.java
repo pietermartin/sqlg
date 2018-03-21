@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -265,6 +266,10 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, Long id) {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, id);
+    }
+
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Object> identifiers) {
+        return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
     }
 
     //Called for vertices that exist but are not yet in the transaction cache

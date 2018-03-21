@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
@@ -104,6 +106,22 @@ class TransactionCache {
         return sqlgVertex;
     }
 
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Object> identifiers) {
+        RecordId recordId = RecordId.from(SchemaTable.of(schema, table), identifiers);
+        SqlgVertex sqlgVertex;
+        if (this.cacheVertices) {
+            sqlgVertex = this.vertexCache.get(recordId);
+            if (sqlgVertex == null) {
+                sqlgVertex = new SqlgVertex(sqlgGraph, identifiers, schema, table);
+                this.vertexCache.put(recordId, sqlgVertex);
+                return sqlgVertex;
+            }
+        } else {
+            sqlgVertex = new SqlgVertex(sqlgGraph, identifiers, schema, table);
+        }
+        return sqlgVertex;
+    }
+
     SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
         RecordId vertexRecordId = (RecordId)sqlgVertex.id();
         SqlgVertex sqlgVertexFromCache;
@@ -130,7 +148,12 @@ class TransactionCache {
             throw new IllegalStateException("The vertex cache should never already contain a new vertex!");
         } else {
             SchemaTable schemaTable = vertexRecordId.getSchemaTable();
-            RecordId recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getId());
+            RecordId recordId;
+            if (vertexRecordId.hasId()) {
+                recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getId());
+            } else {
+                recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getIdentifiers());
+            }
             this.vertexCache.put(recordId, sqlgVertex);
         }
     }

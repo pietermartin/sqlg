@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -226,6 +227,22 @@ public class Topology {
      */
     public static final String SQLG_SCHEMA_EDGE_PROPERTIES_EDGE = "edge_property";
     /**
+     * Edge table for the vertex's identifier properties. i.e. user defined primary key columns
+     */
+    public static final String SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE = "vertex_identifier";
+    /**
+     * Indicates the primary key order.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE = "identifier_index";
+    /**
+     * Edge table for the edge's identifier properties. i.e. user defined primary key columns
+     */
+    public static final String SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE = "edge_identifier";
+    /**
+     * Indicates the primary key order.
+     */
+    public static final String SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE = "identifier_index";
+    /**
      * Property table's name property
      */
     @SuppressWarnings("WeakerAccess")
@@ -311,6 +328,8 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PARTITION_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PARTITION_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_PARTITION_PARTITION_EDGE,
@@ -367,7 +386,7 @@ public class Topology {
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(edgeVertexLabel);
 
-        VertexLabel partitionVertexLabel = null;
+        VertexLabel partitionVertexLabel;
         columns.clear();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
@@ -418,6 +437,17 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(vertexPropertyEdgeLabel);
         EdgeLabel edgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(edgePropertyEdgeLabel);
+
+        columns.put(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE, PropertyType.INTEGER);
+        EdgeLabel vertexIdentifierEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexIdentifierEdgeLabel);
+        columns.clear();
+
+        columns.put(SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, PropertyType.INTEGER);
+        EdgeLabel edgeIdentifierEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgeIdentifierEdgeLabel);
+        columns.clear();
+
         EdgeLabel vertexIndexEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexIndexEdgeLabel);
         EdgeLabel edgeIndexEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertexLabel, columns);
@@ -649,6 +679,10 @@ public class Topology {
         return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
     }
 
+    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+        return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns, identifiers);
+    }
+
     /**
      * Ensures that the schema, vertex table exist in the db.
      * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
@@ -681,6 +715,27 @@ public class Topology {
         return schema.ensureVertexLabelExist(label, properties);
     }
 
+    /**
+     * Ensures that the schema, vertex table and property columns exist in the db.
+     * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
+     * see if the element has not been added in the mean time.
+     *
+     * @param schemaName  The schema the vertex is in.
+     * @param label       The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
+     * @param properties  The properties with their types.
+     * @param identifiers The Vertex's identifiers. i.e. it will be the primary key.
+     * @see PropertyType
+     */
+    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+        Objects.requireNonNull(schemaName, "Given tables must not be null");
+        Objects.requireNonNull(label, "Given table must not be null");
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
+
+        Schema schema = this.ensureSchemaExist(schemaName);
+        Preconditions.checkState(schema != null, "Schema must be present after calling ensureSchemaExist");
+        return schema.ensureVertexLabelExist(label, properties, identifiers);
+    }
+
     public void ensureTemporaryVertexTableExist(final String schema, final String label, final Map<String, PropertyType> properties) {
         Objects.requireNonNull(schema, "Given schema may not be null");
         Preconditions.checkState(schema.equals(this.sqlgGraph.getSqlDialect().getPublicSchema()), "Temporary vertices may only be created in the '" + this.sqlgGraph.getSqlDialect().getPublicSchema() + "' schema. Found + " + schema);
@@ -703,11 +758,34 @@ public class Topology {
      * @return The {@link EdgeLabel}
      */
     public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, new ListOrderedSet<>());
+    }
+
+    /**
+     * Ensures that the edge table with out and in {@link VertexLabel}s and property columns exists.
+     * The edge table will reside in the out vertex's schema.
+     * If a table, a foreign key or a column needs to be created a lock is first obtained.
+     *
+     * @param edgeLabelName  The label of the edge for which a table will be created.
+     * @param outVertexLabel The edge's out {@link VertexLabel}
+     * @param inVertexLabel  The edge's in {@link VertexLabel}
+     * @param properties     The edge's properties with their type.
+     * @param identifiers    The edge's user supplied identifiers. They will make up the edge's primary key.
+     * @return The {@link EdgeLabel}
+     */
+    public EdgeLabel ensureEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties,
+            ListOrderedSet<String> identifiers) {
+
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel must not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel must not be null");
+        Objects.requireNonNull(identifiers, "Given identifiers must not be null");
         Schema outVertexSchema = outVertexLabel.getSchema();
-        return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties);
+        return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, identifiers);
     }
 
     /**
@@ -973,7 +1051,7 @@ public class Topology {
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
             Optional<Schema> schemaOptional = getSchema(schemaName);
-            Preconditions.checkState(schemaOptional.isPresent(), "schema %s must be present when loading in edges.", schemaName);
+            Preconditions.checkState(schemaOptional.isPresent(), "schema \"%s\" must be present when loading in edges.", schemaName);
             @SuppressWarnings("OptionalGetWithoutIsPresent")
             Schema schema = schemaOptional.get();
             schema.loadInEdgeLabels(traversalSource, schemaVertex);

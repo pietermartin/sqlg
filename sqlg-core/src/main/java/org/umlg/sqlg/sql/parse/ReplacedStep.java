@@ -443,7 +443,7 @@ public class ReplacedStep<S, E> {
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
             HasContainer labelHasContainer = this.labelHasContainers.get(0);
             String table = (String) labelHasContainer.getValue();
-            SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(isVertex ? VERTEX_PREFIX : EDGE_PREFIX);
+            SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(VERTEX_PREFIX);
             if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
                 collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
             }

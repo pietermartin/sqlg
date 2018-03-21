@@ -125,7 +125,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             } else {
                 sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                         sqlgGraph.getSqlDialect().temporaryTablePrefix() +
-                        VERTEX_PREFIX + schemaTable.getTable()));
+                                VERTEX_PREFIX + schemaTable.getTable()));
             }
 
             Map<String, PropertyColumn> propertyColumns = null;
@@ -716,6 +716,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
     @Override
     public List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
                                                                  String tableNamePattern, String columnNamePattern) {
+
         List<Triple<String, Integer, String>> columns = new ArrayList<>();
         try (ResultSet rs = metaData.getColumns(catalog, schemaPattern, tableNamePattern, columnNamePattern)) {
             while (rs.next()) {
@@ -728,6 +729,21 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             throw new RuntimeException(e);
         }
         return columns;
+    }
+
+    @Override
+    public List<String> getPrimaryKeys(DatabaseMetaData metaData, String catalog, String schemaPattern, String tableNamePattern) {
+        List<String> primaryKeys = new ArrayList<>();
+        try (ResultSet rs = metaData.getPrimaryKeys(catalog, schemaPattern, tableNamePattern)) {
+            while (rs.next()) {
+                String columnName = rs.getString(4);
+                int index = rs.getShort(5);
+                primaryKeys.add(index - 1, columnName);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return primaryKeys;
     }
 
     @Override
@@ -1092,11 +1108,12 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
     /**
      * escape quotes by doubling them when we need a string inside quotes
+     *
      * @param o
      * @return
      */
-    protected String escapeQuotes(Object o){
-        if (o!=null){
+    protected String escapeQuotes(Object o) {
+        if (o != null) {
             return o.toString().replace("'", "''");
         }
         return null;

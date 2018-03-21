@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -21,6 +22,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  * Date: 2016/09/14
  * Time: 11:19 AM
  */
+@SuppressWarnings("Duplicates")
 public abstract class AbstractLabel implements TopologyInf {
 
     private static Logger logger = LoggerFactory.getLogger(AbstractLabel.class);
@@ -28,8 +30,11 @@ public abstract class AbstractLabel implements TopologyInf {
     protected String label;
     protected SqlgGraph sqlgGraph;
     protected Map<String, PropertyColumn> properties = new HashMap<>();
-    Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
+    protected Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
     Set<String> uncommittedRemovedProperties = new HashSet<>();
+
+    private ListOrderedSet<String> identifiers = new ListOrderedSet<>();
+    private ListOrderedSet<String> uncommittedIdentifiers = new ListOrderedSet<>();
 
     private Map<String, PropertyColumn> globalUniqueIndexProperties = new HashMap<>();
     private Map<String, PropertyColumn> uncommittedGlobalUniqueIndexProperties = new HashMap<>();
@@ -52,13 +57,30 @@ public abstract class AbstractLabel implements TopologyInf {
     private Map<String, Partition> uncommittedPartitions = new HashMap<>();
     private Set<String> uncommittedRemovedPartitions = new HashSet<>();
 
+//    /**
+//     * Only called for a new vertex/edge label being added.
+//     *
+//     * @param label      The vertex or edge's label.
+//     * @param properties The vertex's properties.
+//     */
+//    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties) {
+//        this.sqlgGraph = sqlgGraph;
+//        this.label = label;
+//        for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
+//            PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
+//            property.setCommitted(false);
+//            this.uncommittedProperties.put(propertyEntry.getKey(), property);
+//        }
+//    }
+
     /**
      * Only called for a new vertex/edge label being added.
      *
-     * @param label      The vertex or edge's label.
-     * @param properties The vertex's properties.
+     * @param label       The vertex or edge's label.
+     * @param properties  The vertex's properties.
+     * @param identifiers The vertex or edge's identifiers
      */
-    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties) {
+    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
         this.sqlgGraph = sqlgGraph;
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
@@ -66,6 +88,7 @@ public abstract class AbstractLabel implements TopologyInf {
             property.setCommitted(false);
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
+        this.uncommittedIdentifiers.addAll(identifiers);
     }
 
     /**
@@ -405,6 +428,14 @@ public abstract class AbstractLabel implements TopologyInf {
         return result;
     }
 
+    public ListOrderedSet<String> getIdentifiers() {
+        ListOrderedSet<String> result = ListOrderedSet.listOrderedSet(this.identifiers);
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
+            result.addAll(this.uncommittedIdentifiers);
+        }
+        return result;
+    }
+
     public Map<String, PropertyColumn> getGlobalUniqueIndexProperties() {
         Map<String, PropertyColumn> result = new HashMap<>();
         result.putAll(this.globalUniqueIndexProperties);
@@ -476,20 +507,48 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
+    static void buildColumns(SqlgGraph sqlgGraph, ListOrderedSet<String> identifiers, Map<String, PropertyType> columns, StringBuilder sql) {
         int i = 1;
         //This is to make the columns sorted
         List<String> keys = new ArrayList<>(columns.keySet());
         Collections.sort(keys);
+        //if there are identifiers, do them first.
+        for (String identifier : identifiers) {
+            PropertyType propertyType = columns.get(identifier);
+            int count = 1;
+            String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                if (count > 1) {
+                    sql.append("\n\t");
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier + propertyType.getPostFixes()[count - 2])).append(" ").append(sqlDefinition);
+                } else {
+                    //The first column existVertexLabel no postfix
+                    sql.append("\n\t");
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier)).append(" ").append(sqlDefinition);
+                }
+                if (count++ < propertyTypeToSqlDefinition.length) {
+                    sql.append(", ");
+                }
+            }
+            if (i++ < identifiers.size()) {
+                sql.append(", ");
+            }
+        }
+        if (!identifiers.isEmpty() && columns.size() > identifiers.size()) {
+            sql.append(", ");
+        }
+        keys.removeAll(identifiers);
         for (String column : keys) {
             PropertyType propertyType = columns.get(column);
             int count = 1;
             String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             for (String sqlDefinition : propertyTypeToSqlDefinition) {
                 if (count > 1) {
+                    sql.append("\n\t");
                     sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2])).append(" ").append(sqlDefinition);
                 } else {
                     //The first column existVertexLabel no postfix
+                    sql.append("\n\t");
                     sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(sqlDefinition);
                 }
                 if (count++ < propertyTypeToSqlDefinition.length) {
@@ -502,7 +561,7 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    protected void addColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
+    void addColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
         int count = 1;
         String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(keyValue.getRight());
         for (String sqlDefinition : propertyTypeToSqlDefinition) {
@@ -540,6 +599,15 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread());
         PropertyColumn property = new PropertyColumn(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
+    }
+
+    void addIdentifier(String propertyName, int index) {
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread());
+        if (index > this.identifiers.size() - 1) {
+            this.identifiers.add(propertyName);
+        } else {
+            this.identifiers.add(index, propertyName);
+        }
     }
 
     Partition addPartition(Vertex partitionVertex) {
@@ -597,6 +665,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 this.propertyTypeMap = null;
             }
         }
+        this.identifiers.addAll(this.uncommittedIdentifiers);
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedGlobalUniqueIndexProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
             this.globalUniqueIndexProperties.put(entry.getKey(), entry.getValue());
@@ -648,6 +717,7 @@ public abstract class AbstractLabel implements TopologyInf {
             }
         }
         this.uncommittedRemovedProperties.clear();
+        this.uncommittedIdentifiers.clear();
         this.uncommittedGlobalUniqueIndexProperties.clear();
         for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Index> entry = it.next();
@@ -685,13 +755,14 @@ public abstract class AbstractLabel implements TopologyInf {
             for (String property : this.uncommittedRemovedProperties) {
                 removedPropertyArrayNode.add(property);
             }
-
+            ArrayNode identifierArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (String identifier : this.uncommittedIdentifiers) {
+                identifierArrayNode.add(identifier);
+            }
             ArrayNode uncommittedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Partition partition : this.uncommittedPartitions.values()) {
                 Optional<ObjectNode> json = partition.toUncommitedPartitionNotifyJson();
-                if (json.isPresent()) {
-                    uncommittedPartitionArrayNode.add(json.get());
-                }
+                json.ifPresent(uncommittedPartitionArrayNode::add);
             }
             ArrayNode removedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String partition : this.uncommittedRemovedPartitions) {
@@ -701,9 +772,7 @@ public abstract class AbstractLabel implements TopologyInf {
             //Need to check for nested uncommitted partitions
             for (Partition partition : this.partitions.values()) {
                 Optional<ObjectNode> json = partition.toCommittedPartitionNotifyJson();
-                if (json.isPresent()) {
-                    committedPartitionArrayNode.add(json.get());
-                }
+                json.ifPresent(committedPartitionArrayNode::add);
             }
 
             ArrayNode indexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
@@ -720,12 +789,14 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             result.set("uncommittedProperties", propertyArrayNode);
             result.set("uncommittedRemovedProperties", removedPropertyArrayNode);
+            result.set("uncommittedIdentifiers", identifierArrayNode);
             result.set("uncommittedPartitions", uncommittedPartitionArrayNode);
             result.set("partitions", committedPartitionArrayNode);
             result.set("uncommittedRemovedPartitions", removedPartitionArrayNode);
             result.set("uncommittedIndexes", indexArrayNode);
             result.set("uncommittedRemovedIndexes", removedIndexArrayNode);
             if (propertyArrayNode.size() == 0 && removedPropertyArrayNode.size() == 0 &&
+                    identifierArrayNode.size() == 0 &&
                     uncommittedPartitionArrayNode.size() == 0 && removedPartitionArrayNode.size() == 0 && committedPartitionArrayNode.size() == 0 &&
                     indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0) {
                 return Optional.empty();
@@ -749,6 +820,12 @@ public abstract class AbstractLabel implements TopologyInf {
                 if (fire && old == null) {
                     this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
                 }
+            }
+        }
+        ArrayNode identifiersNode = (ArrayNode) vertexLabelJson.get("uncommittedIdentifiers");
+        if (identifiersNode != null) {
+            for (JsonNode identifierNode : identifiersNode) {
+                this.identifiers.add(identifierNode.asText());
             }
         }
         ArrayNode removedPropertyArrayNode = (ArrayNode) vertexLabelJson.get("uncommittedRemovedProperties");
@@ -927,5 +1004,9 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.DELETE);
         }
+    }
+
+    public boolean hasIDPrimaryKey() {
+        return this.identifiers.isEmpty() && this.uncommittedIdentifiers.isEmpty();
     }
 }
