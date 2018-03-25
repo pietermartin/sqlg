@@ -66,7 +66,7 @@ public class TestSimpleJoinGremlin extends BaseTest {
         Assert.assertEquals(address1, personAddressMap.get(0).get("address"));
     }
 
-    @Test
+//    @Test
     public void testEdgeStep() {
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
@@ -100,6 +100,16 @@ public class TestSimpleJoinGremlin extends BaseTest {
 
         List<Edge>  livesAtEdges = this.sqlgGraph.traversal().V().hasLabel("Person").outE().toList();
         Assert.assertEquals(1, livesAtEdges.size());
+    }
+
+    @Test
+    public void testDuplicatePath() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        a1.addEdge("aa", a2, "name", "ee");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").out().toList();
     }
 
 //    @Test
