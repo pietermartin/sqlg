@@ -505,12 +505,12 @@ public class ReplacedStep<S, E> {
                 this.sqlgComparatorHolder.getComparators(),
                 this.sqlgRangeHolder,
                 SchemaTableTree.STEP_TYPE.GRAPH_STEP,
-                ReplacedStep.this.emit,
-                ReplacedStep.this.untilFirst,
-                ReplacedStep.this.leftJoin,
-                ReplacedStep.this.drop,
+                this.emit,
+                this.untilFirst,
+                this.leftJoin,
+                this.drop,
                 replacedStepDepth,
-                ReplacedStep.this.labels
+                this.labels
         );
 
         result.add(schemaTableTree);
