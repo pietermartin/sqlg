@@ -1020,4 +1020,12 @@ public interface SqlDialect {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * get the default fetch size
+     * @return the default fetch size, maybe null if we want to use the default from the driver
+     */
+    default Integer getDefaultFetchSize(){
+    	return null;
+    }
 }
