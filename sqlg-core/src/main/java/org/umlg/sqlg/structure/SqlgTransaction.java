@@ -36,7 +36,13 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     private final ThreadLocal<PreparedStatementCache> threadLocalPreparedStatementTx = ThreadLocal.withInitial(PreparedStatementCache::new);
 
-    SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
+    /**
+     * default fetch size
+     */
+    private Integer fetchSize = null;
+
+
+	SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
         super(sqlgGraph);
         this.sqlgGraph = (SqlgGraph) sqlgGraph;
         this.cacheVertices = cacheVertices;
@@ -303,4 +309,13 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     	readWrite();
     	this.threadLocalTx.get().setLazyQueries(lazy);
     }
+    
+    
+    public Integer getFetchSize() {
+		return fetchSize;
+	}
+
+	public void setFetchSize(Integer fetchSize) {
+		this.fetchSize = fetchSize;
+	}
 }

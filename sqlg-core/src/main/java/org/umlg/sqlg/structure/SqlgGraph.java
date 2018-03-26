@@ -291,6 +291,9 @@ public class SqlgGraph implements Graph {
             throw new RuntimeException(e);
         }
         this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
+        // read fetch size from configuration, use default as specified in the dialect
+        this.sqlgTransaction.setFetchSize(this.configuration.getInteger("fetch.size", this.sqlDialect.getDefaultFetchSize()));
+        
         this.tx().readWrite();
         //Instantiating Topology will create the 'public' schema if it does not exist.
         this.topology = new Topology(this);
