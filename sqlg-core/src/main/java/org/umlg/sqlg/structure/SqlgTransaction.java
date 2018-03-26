@@ -36,7 +36,13 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     private final ThreadLocal<PreparedStatementCache> threadLocalPreparedStatementTx = ThreadLocal.withInitial(PreparedStatementCache::new);
 
-    SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
+    /**
+     * default fetch size
+     */
+    private Integer defaultFetchSize = null;
+
+
+	SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
         super(sqlgGraph);
         this.sqlgGraph = (SqlgGraph) sqlgGraph;
         this.cacheVertices = cacheVertices;
@@ -55,11 +61,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 }
                 // read default setting for laziness
                 boolean lazy=this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY,true);
+                TransactionCache tc=null;
                 if (supportsBatchMode()) {
-                    this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy));
+                   tc = TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy);
                 } else {
-                    this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, lazy));
+                   tc = TransactionCache.of(this.cacheVertices, connection, lazy);
                 }
+                tc.setFetchSize(getDefaultFetchSize());
+                this.threadLocalTx.set(tc);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -303,4 +312,38 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     	readWrite();
     	this.threadLocalTx.get().setLazyQueries(lazy);
     }
+    
+    /**
+     * get default fetch size
+     * @return
+     */
+    public Integer getDefaultFetchSize() {
+		return defaultFetchSize;
+	}
+
+    /**
+     * set default fetch size
+     * @param fetchSize
+     */
+	public void setDefaultFetchSize(Integer fetchSize) {
+		this.defaultFetchSize = fetchSize;
+	}
+	
+	/**
+	 * get fetch size for current transaction
+	 * @return
+	 */
+	public Integer getFetchSize() {
+		readWrite();
+		return this.threadLocalTx.get().getFetchSize();
+	}
+
+	/**
+	 * set fetch size for current transaction
+	 * @param fetchSize
+	 */
+	public void setFetchSize(Integer fetchSize) {
+		readWrite();
+    	this.threadLocalTx.get().setFetchSize(fetchSize);
+	}
 }

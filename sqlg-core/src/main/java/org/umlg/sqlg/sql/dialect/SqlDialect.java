@@ -985,4 +985,12 @@ public interface SqlDialect {
     default boolean supportsTruncateMultipleTablesTogether() {
         return false;
     }
+    
+    /**
+     * get the default fetch size
+     * @return the default fetch size, maybe null if we want to use the default from the driver
+     */
+    default Integer getDefaultFetchSize(){
+    	return null;
+    }
 }

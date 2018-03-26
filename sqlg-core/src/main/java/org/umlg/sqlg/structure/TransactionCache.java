@@ -23,6 +23,11 @@ class TransactionCache {
      */
     private boolean lazyQueries;
 
+    /**
+     * default fetch size
+     */
+    private Integer fetchSize = null;
+    
 
 	static TransactionCache of(boolean cacheVertices, Connection connection, BatchManager batchManager,boolean lazyQueries) {
         return new TransactionCache(cacheVertices, connection, batchManager,lazyQueries);
@@ -149,6 +154,14 @@ class TransactionCache {
      */
 	public void setLazyQueries(boolean lazyQueries) {
 		this.lazyQueries = lazyQueries;
+	}
+
+	public Integer getFetchSize() {
+		return fetchSize;
+	}
+
+	public void setFetchSize(Integer fetchSize) {
+		this.fetchSize = fetchSize;
 	}
 
 }
