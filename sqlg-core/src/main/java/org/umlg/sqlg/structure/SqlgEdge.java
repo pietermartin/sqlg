@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Topology;
@@ -333,20 +334,40 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    public void loadInVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
-        SchemaTable inVertexColumnName = SchemaTable.from(this.sqlgGraph, label);
+    public void loadInVertex(ResultSet resultSet, SchemaTable inVertexSchemaTable, int columnIdx) throws SQLException {
         Long inId = resultSet.getLong(columnIdx);
         if (!resultSet.wasNull()) {
-            this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+            this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexSchemaTable.getSchema(), inVertexSchemaTable.getTable());
         }
     }
 
-    public void loadOutVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
-        SchemaTable outVertexColumnName = SchemaTable.from(this.sqlgGraph, label);
+    public void loadInVertex(ResultSet resultSet, List<ColumnList.Column> inForeignKeyColumns) {
+        List<Object> identifiers = SqlgUtil.getValue(resultSet, inForeignKeyColumns);
+        ColumnList.Column column = inForeignKeyColumns.get(0);
+        this.inVertex = SqlgVertex.of(
+                this.sqlgGraph,
+                ListOrderedSet.listOrderedSet(identifiers),
+                column.getForeignSchemaTable().getSchema(),
+                column.getForeignSchemaTable().getTable()
+        );
+    }
+
+    public void loadOutVertex(ResultSet resultSet, SchemaTable outVertexSchemaTable, int columnIdx) throws SQLException {
         Long outId = resultSet.getLong(columnIdx);
         if (!resultSet.wasNull()) {
-            this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+            this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexSchemaTable.getSchema(), outVertexSchemaTable.getTable());
         }
+    }
+
+    public void loadOutVertex(ResultSet resultSet, List<ColumnList.Column> outForeignKeyColumns) {
+        List<Object> identifiers = SqlgUtil.getValue(resultSet, outForeignKeyColumns);
+        ColumnList.Column column = outForeignKeyColumns.get(0);
+        this.outVertex = SqlgVertex.of(
+                this.sqlgGraph,
+                ListOrderedSet.listOrderedSet(identifiers),
+                column.getForeignSchemaTable().getSchema(),
+                column.getForeignSchemaTable().getTable()
+        );
     }
 
     @Override

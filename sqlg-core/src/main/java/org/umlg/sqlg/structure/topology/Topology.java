@@ -1715,6 +1715,7 @@ public class Topology {
     void addToEdgeForeignKeyCache(String name, String foreignKey) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
+        //noinspection Java8MapApi
         if (foreignKeys == null) {
             foreignKeys = new HashSet<>();
             this.edgeForeignKeyCache.put(name, foreignKeys);
@@ -1774,6 +1775,7 @@ public class Topology {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
+        //noinspection Java8MapApi
         if (foreignKeys == null) {
             foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
             this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);

@@ -1,20 +1,21 @@
 package org.umlg.sqlg.sql.parse;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.Topology;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * List of column, managing serialization to SQL
  *
  * @author jpmoresmau
+ * @author pieter
  */
 public class ColumnList {
     /**
@@ -65,10 +66,45 @@ public class ColumnList {
      * @param stepDepth
      * @param alias
      */
-    private void add(String schema, String table, String column, int stepDepth, String alias) {
+    private Column add(String schema, String table, String column, int stepDepth, String alias) {
         Column c = new Column(schema, table, column, this.filteredAllTables.get(schema + "." + table).get(column), stepDepth);
         this.columns.put(c, alias);
         this.aliases.put(alias, c);
+        return c;
+    }
+
+    /**
+     * add a new column
+     *
+     * @param schema          The column's schema
+     * @param table           The column's table
+     * @param column          The column
+     * @param stepDepth       The column's step depth.
+     * @param alias           The column's alias.
+     * @param foreignKeyParts The foreign key column broken up into its parts. schema, table and for user supplied identifiers the property name.
+     */
+    private void addForeignKey(String schema, String table, String column, int stepDepth, String alias, String[] foreignKeyParts) {
+        Column c = add(schema, table, column, stepDepth, alias);
+        c.isForeignKey = true;
+        if (foreignKeyParts.length == 3) {
+            Map<String, PropertyType> properties = this.filteredAllTables.get(foreignKeyParts[0] + "." + Topology.VERTEX_PREFIX + foreignKeyParts[1]);
+            if (foreignKeyParts[2].endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+                c.propertyType = properties.get(foreignKeyParts[2].substring(0, foreignKeyParts[2].length() - Topology.IN_VERTEX_COLUMN_END.length()));
+                c.foreignKeyDirection = Direction.IN;
+                c.foreignSchemaTable = SchemaTable.of(foreignKeyParts[0], foreignKeyParts[1]);
+                c.foreignKeyProperty = foreignKeyParts[2];
+            } else {
+                c.propertyType = properties.get(foreignKeyParts[2].substring(0, foreignKeyParts[2].length() - Topology.OUT_VERTEX_COLUMN_END.length()));
+                c.foreignKeyDirection = Direction.OUT;
+                c.foreignSchemaTable = SchemaTable.of(foreignKeyParts[0], foreignKeyParts[1]);
+                c.foreignKeyProperty = foreignKeyParts[2];
+            }
+        } else {
+            c.propertyType = PropertyType.LONG;
+            c.foreignKeyDirection = (column.endsWith(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT);
+            c.foreignSchemaTable = SchemaTable.of(foreignKeyParts[0], foreignKeyParts[1].substring(0, foreignKeyParts[1].length() - Topology.IN_VERTEX_COLUMN_END.length()));
+            c.foreignKeyProperty = null;
+        }
     }
 
     /**
@@ -92,6 +128,12 @@ public class ColumnList {
      */
     public void add(SchemaTable st, String column, int stepDepth, String alias) {
         add(st.getSchema(), st.getTable(), column, stepDepth, alias);
+    }
+
+    public void addForeignKey(SchemaTableTree stt, String column, String alias) {
+        String[] foreignKeyParts = column.split("\\.");
+        Preconditions.checkState(foreignKeyParts.length == 2 || foreignKeyParts.length == 3, "Edge table foreign must be schema.table__I\\O or schema.table.property__I\\O. Found %s", column);
+        addForeignKey(stt.getSchemaTable().getSchema(), stt.getSchemaTable().getTable(), column, stt.getStepDepth(), alias, foreignKeyParts);
     }
 
     /**
@@ -150,10 +192,6 @@ public class ColumnList {
         return sb.toString();
     }
 
-    public Column getColumn(String alias) {
-        return this.aliases.get(alias);
-    }
-
     public Pair<String, PropertyType> getPropertyType(String alias) {
         Column column = this.aliases.get(alias);
         if (column != null) {
@@ -178,6 +216,25 @@ public class ColumnList {
             }
         }
         return sb.toString();
+    }
+
+    public Map<SchemaTable, List<Column>> getInForeignKeys(int stepDepth, SchemaTable schemaTable) {
+        return getForeignKeys(stepDepth, schemaTable, Direction.IN);
+    }
+
+    public Map<SchemaTable, List<Column>> getOutForeignKeys(int stepDepth, SchemaTable schemaTable) {
+        return getForeignKeys(stepDepth, schemaTable, Direction.OUT);
+    }
+
+    private Map<SchemaTable, List<Column>> getForeignKeys(int stepDepth, SchemaTable schemaTable, Direction direction) {
+        Map<SchemaTable, List<Column>> result = new HashMap<>();
+        for (Column column : this.columns.keySet()) {
+            if (column.isForeignKey && column.foreignKeyDirection == direction && column.isFor(stepDepth, schemaTable)) {
+                List<Column> columns = result.computeIfAbsent(column.getForeignSchemaTable(), (k) -> new ArrayList<>());
+                columns.add(column);
+            }
+        }
+        return result;
     }
 
     public LinkedHashMap<Column, String> getFor(int stepDepth, SchemaTable schemaTable) {
@@ -217,12 +274,19 @@ public class ColumnList {
         private String schema;
         private String table;
         private String column;
-        private int stepDepth = -1;
+        private int stepDepth;
         private PropertyType propertyType;
         private boolean ID;
         private int columnIndex = -1;
 
-        public Column(String schema, String table, String column, PropertyType propertyType, int stepDepth) {
+        //Foreign key properties
+        private boolean isForeignKey;
+        private Direction foreignKeyDirection;
+        private SchemaTable foreignSchemaTable;
+        //Only set for user identifier primary keys
+        private String foreignKeyProperty;
+
+        Column(String schema, String table, String column, PropertyType propertyType, int stepDepth) {
             super();
             this.schema = schema;
             this.table = table;
@@ -307,6 +371,22 @@ public class ColumnList {
             return columnIndex;
         }
 
+        public boolean isForeignKey() {
+            return isForeignKey;
+        }
+
+        public Direction getForeignKeyDirection() {
+            return foreignKeyDirection;
+        }
+
+        public SchemaTable getForeignSchemaTable() {
+            return foreignSchemaTable;
+        }
+
+        public String getForeignKeyProperty() {
+            return foreignKeyProperty;
+        }
+
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
@@ -328,6 +408,10 @@ public class ColumnList {
         }
 
         public boolean isFor(int stepDepth, SchemaTable schemaTable) {
+            return this.stepDepth == stepDepth && this.schema.equals(schemaTable.getSchema()) && this.table.equals(schemaTable.getTable());
+        }
+
+        public boolean isForeignKey(int stepDepth, SchemaTable schemaTable) {
             return this.stepDepth == stepDepth && this.schema.equals(schemaTable.getSchema()) && this.table.equals(schemaTable.getTable());
         }
 

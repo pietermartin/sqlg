@@ -521,7 +521,6 @@ public abstract class SqlgElement implements Element {
 
     @Override
     public <V> Iterator<? extends Property<V>> properties(final String... propertyKeys) {
-//        SqlgElement.this.sqlgGraph.tx().readWrite();
         return SqlgElement.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
@@ -534,7 +533,6 @@ public abstract class SqlgElement implements Element {
             return;
         }
         switch (propertyType) {
-
             case BOOLEAN:
                 boolean aBoolean = resultSet.getBoolean(columnIndex);
                 if (!resultSet.wasNull()) {

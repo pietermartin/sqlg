@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.PropertyReference;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
+import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.BaseStrategy;
@@ -76,7 +77,7 @@ public class SqlgUtil {
      * @param subQueryStacks
      * @param first
      * @param idColumnCountMap
-     * @param forParent             Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
+     * @param forParent           Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
      * @return A list of @{@link Emit}s that represent a single @{@link org.apache.tinkerpop.gremlin.process.traversal.Path}
      * @throws SQLException
      */
@@ -199,11 +200,13 @@ public class SqlgUtil {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
                             sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
                         } else {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
                             sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            schemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
                         }
-                        schemaTableTree.loadProperty(resultSet, sqlgElement);
                     }
                 } else {
                     ListOrderedSet<Object> identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
@@ -212,12 +215,14 @@ public class SqlgUtil {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
                             sqlgElement = (E) SqlgVertex.of(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
                         } else {
                             throw new RuntimeException("//TODO");
 //                            String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
 //                            sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+//                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+//                            schemaTableTree.loadEdgeInOutVertices(resultSet, sqlgElement);
                         }
-                        schemaTableTree.loadProperty(resultSet, sqlgElement);
                     }
                 }
                 if (!resultSetWasNull) {
@@ -266,11 +271,13 @@ public class SqlgUtil {
         if (schemaTable.isVertexTable()) {
             String rawLabel = schemaTable.getTable().substring(VERTEX_PREFIX.length());
             sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+            leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
         } else {
             String rawLabel = schemaTable.getTable().substring(EDGE_PREFIX.length());
             sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+            leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
+            leafSchemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
         }
-        leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
         return (E) sqlgElement;
     }
 
@@ -673,38 +680,7 @@ public class SqlgUtil {
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
     }
 
-    /**
-     * Transforms the key values into 2 maps. One for all values and one for where the values are not null.
-     * The not null values map is needed to set the properties on the {@link SqlgElement}
-     *
-     * @param keyValues The properties as a key value array.
-     * @return A {@link Pair} left is a map of all key values and right is a map where the value of the key is not null.
-     */
-    public static Pair<Map<String, Object>, Map<String, Object>> transformToInsertValues(Object... keyValues) {
-        Map<String, Object> resultAllValues = new LinkedHashMap<>();
-        Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
-        int i = 1;
-        Object key = null;
-        for (Object keyValue : keyValues) {
-            if (i++ % 2 != 0) {
-                //key
-                key = keyValue;
-            } else {
-                //value
-                //skip the label as that is not a property but the table
-                if (key == label || key == T.id) {
-                    continue;
-                }
-                if (keyValue != null) {
-                    resultNotNullValues.put((String) key, keyValue);
-                }
-                resultAllValues.put((String) key, keyValue);
-            }
-        }
-        return Pair.of(resultAllValues, resultNotNullValues);
-    }
-
-    public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
+    private static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
         List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
         for (Map.Entry<String, Object> entry : keyValues.entries()) {
             Object value = entry.getValue();
@@ -718,7 +694,7 @@ public class SqlgUtil {
             // we transform id in ID
             if (key.equals(T.id.getAccessor()) || "ID".equals(key)) {
                 if (value instanceof Long) {
-                    result.add(ImmutablePair.of(PropertyType.LONG, (Long) value));
+                    result.add(ImmutablePair.of(PropertyType.LONG, value));
                 } else {
                     RecordId id;
                     if (!(value instanceof RecordId)) {
@@ -756,7 +732,7 @@ public class SqlgUtil {
      * @param value
      * @return
      */
-    public static Object[] transformArrayToInsertValue(PropertyType propertyType, Object value) {
+    private static Object[] transformArrayToInsertValue(PropertyType propertyType, Object value) {
         return getArray(propertyType, value);
     }
 
@@ -1174,6 +1150,26 @@ public class SqlgUtil {
             return label.substring(indexOfLabel + BaseStrategy.EMIT_LABEL_SUFFIX.length());
         }
         throw new IllegalStateException("originalLabel must only be called on labels with Sqlg's path prepended to it");
+    }
+
+    public static List<Object> getValue(ResultSet resultSet, List<ColumnList.Column> columns) {
+        List<Object> result = new ArrayList<>();
+        try {
+            for (ColumnList.Column column : columns) {
+                PropertyType propertyType = column.getPropertyType();
+                switch (propertyType) {
+                    case STRING:
+                        String s = resultSet.getString(column.getColumnIndex());
+                        result.add(s);
+                        break;
+                    default:
+                        throw new IllegalStateException(String.format("PropertyType %s is not implemented.", propertyType.name()));
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

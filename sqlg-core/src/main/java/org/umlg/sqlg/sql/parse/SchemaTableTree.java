@@ -586,7 +586,7 @@ public class SchemaTableTree {
      * As the path contains the same label more than once its been split into a List of Stacks.
      */
     private String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists, Set<SchemaTableTree> leftJoinOn) {
-        String singlePathSql = "\nFROM (";
+        StringBuilder singlePathSql = new StringBuilder("\nFROM (");
         int count = 1;
         SchemaTableTree lastOfPrevious = null;
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
@@ -606,20 +606,20 @@ public class SchemaTableTree {
             } else {
                 sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, firstOfNext);
             }
-            singlePathSql += sql;
+            singlePathSql.append(sql);
             if (count == 1) {
-                singlePathSql += "\n) a" + count++ + " INNER JOIN (";
+                singlePathSql.append("\n) a").append(count++).append(" INNER JOIN (");
             } else {
                 //join the last with the first
-                singlePathSql += "\n) a" + count + " ON ";
-                singlePathSql += constructSectionedJoin(sqlgGraph, lastOfPrevious, firstSchemaTableTree, count);
+                singlePathSql.append("\n) a").append(count).append(" ON ");
+                singlePathSql.append(constructSectionedJoin(sqlgGraph, lastOfPrevious, firstSchemaTableTree, count));
                 if (count++ < subQueryLinkedLists.size()) {
-                    singlePathSql += " INNER JOIN (";
+                    singlePathSql.append(" INNER JOIN (");
                 }
             }
             lastOfPrevious = subQueryLinkedList.getLast();
         }
-        singlePathSql += constructOuterOrderByClause(sqlgGraph, subQueryLinkedLists);
+        singlePathSql.append(constructOuterOrderByClause(sqlgGraph, subQueryLinkedLists));
         String result = "SELECT\n\t" + constructOuterFromClause(subQueryLinkedLists);
         return result + singlePathSql;
     }
@@ -1538,21 +1538,6 @@ public class SchemaTableTree {
         return columnList.toString();
     }
 
-
-    private String printLabeledOuterFromClause(String sql, int counter, Map<String, String> columnNameAliasMapCopy) {
-        sql += " a" + counter + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.labeledMappedAliasIdForOuterFromClause(columnNameAliasMapCopy));
-        Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.getSchemaTable().toString());
-        if (!propertyTypeMap.isEmpty()) {
-            sql += ", ";
-        }
-        sql = this.printLabeledOuterFromClauseFor(sql, counter, columnNameAliasMapCopy);
-        if (this.getSchemaTable().isEdgeTable()) {
-            sql += ", ";
-            sql = printLabeledEdgeInOutVertexIdOuterFromClauseFor(sql, counter, columnNameAliasMapCopy);
-        }
-        return sql;
-    }
-
     private static void constructAllLabeledFromClause(LinkedList<SchemaTableTree> distinctQueryStack, ColumnList cols) {
         List<SchemaTableTree> labeled = distinctQueryStack.stream().filter(d -> !d.getLabels().isEmpty()).collect(Collectors.toList());
         for (SchemaTableTree schemaTableTree : labeled) {
@@ -1698,8 +1683,9 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             if (firstSchemaTableTree == null || !firstSchemaTableTree.equals(lastSchemaTableTree) ||
                     firstSchemaTableTree.getDirection() != getDirectionForForeignKey(edgeForeignKey)) {
+
                 String alias = lastSchemaTableTree.calculateAliasPropertyName(edgeForeignKey);
-                cols.add(lastSchemaTableTree, edgeForeignKey, alias);
+                cols.addForeignKey(lastSchemaTableTree, edgeForeignKey, alias);
             }
         }
 
@@ -1709,21 +1695,6 @@ public class SchemaTableTree {
         return edgeForeignKey.endsWith(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
     }
 
-    private String printLabeledEdgeInOutVertexIdOuterFromClauseFor(String sql, int counter, Map<String, String> columnNameAliasMapCopy) {
-        Preconditions.checkState(this.getSchemaTable().isEdgeTable());
-
-        Set<String> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
-        int propertyCount = 1;
-        for (String edgeForeignKey : edgeForeignKeys) {
-            sql += " a" + counter + ".";
-            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.labeledMappedAliasPropertyNameForOuterFromClause(edgeForeignKey, columnNameAliasMapCopy));
-            if (propertyCount++ < edgeForeignKeys.size()) {
-                sql += ",\n\t";
-            }
-        }
-        return sql;
-    }
-
     private void printLabeledEdgeInOutVertexIdFromClauseFor(ColumnList cols) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
 
@@ -1731,7 +1702,7 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             String alias = cols.getAlias(this.getSchemaTable(), edgeForeignKey, this.stepDepth);
             if (alias == null) {
-                cols.add(this.getSchemaTable(), edgeForeignKey, this.stepDepth, this.calculateLabeledAliasPropertyName(edgeForeignKey));
+                cols.addForeignKey(this, edgeForeignKey, this.calculateLabeledAliasPropertyName(edgeForeignKey));
             } else {
                 this.calculateLabeledAliasPropertyName(edgeForeignKey, alias);
             }
@@ -2415,15 +2386,37 @@ public class SchemaTableTree {
                 if (!column.getColumn().equals("index")) {
                     String propertyName = column.getColumn();
                     PropertyType propertyType = column.getPropertyType();
-                    if (!column.isID()) {
-                        if (propertyName.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                            ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, column.getColumnIndex());
-                        } else if (propertyName.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                            ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, column.getColumnIndex());
-                        } else {
-                            sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, propertyType);
-                        }
+                    if (!column.isID() && !column.isForeignKey()) {
+                        sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, propertyType);
                     }
+                }
+            }
+        }
+    }
+
+    public void loadEdgeInOutVertices(ResultSet resultSet, SqlgEdge sqlgEdge) throws SQLException {
+        Preconditions.checkState(this.schemaTable.isEdgeTable());
+        for (ColumnList columnList : this.getColumnListStack()) {
+            Map<SchemaTable, List<ColumnList.Column>> inForeignKeyColumns = columnList.getInForeignKeys(this.stepDepth, this.schemaTable);
+            for (Map.Entry<SchemaTable, List<ColumnList.Column>> schemaTableColumnsEntry : inForeignKeyColumns.entrySet()) {
+                SchemaTable schemaTable = schemaTableColumnsEntry.getKey();
+                List<ColumnList.Column> columns = schemaTableColumnsEntry.getValue();
+                if (columns.size() == 1) {
+                    ColumnList.Column column = columns.get(0);
+                    sqlgEdge.loadInVertex(resultSet, column.getForeignSchemaTable(), column.getColumnIndex());
+                } else {
+                    sqlgEdge.loadInVertex(resultSet, columns);
+                }
+            }
+            Map<SchemaTable, List<ColumnList.Column>> outForeignKeyColumns = columnList.getOutForeignKeys(this.stepDepth, this.schemaTable);
+            for (Map.Entry<SchemaTable, List<ColumnList.Column>> schemaTableColumnsEntry : outForeignKeyColumns.entrySet()) {
+                SchemaTable schemaTable = schemaTableColumnsEntry.getKey();
+                List<ColumnList.Column> columns = schemaTableColumnsEntry.getValue();
+                if (columns.size() == 1) {
+                    ColumnList.Column column = columns.get(0);
+                    sqlgEdge.loadOutVertex(resultSet, column.getForeignSchemaTable(), column.getColumnIndex());
+                } else {
+                    sqlgEdge.loadOutVertex(resultSet, columns);
                 }
             }
         }
