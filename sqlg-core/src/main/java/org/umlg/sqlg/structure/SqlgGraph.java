@@ -291,7 +291,11 @@ public class SqlgGraph implements Graph {
             throw new RuntimeException(e);
         }
         this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
+        
         // read fetch size from configuration, use default as specified in the dialect
+        // this can be very useful for Postgres since according to < https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor>
+        // Postgres JDBC will load the whole result in memory
+        // so if there are massive queries, setting the fetch size will avoid out of memory errors
         this.sqlgTransaction.setDefaultFetchSize(this.configuration.getInteger("fetch.size", this.sqlDialect.getDefaultFetchSize()));
         
         this.tx().readWrite();
