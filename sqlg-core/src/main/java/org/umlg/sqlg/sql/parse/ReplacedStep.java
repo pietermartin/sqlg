@@ -293,7 +293,8 @@ public class ReplacedStep<S, E> {
         //For user defined ids many columns can be used as the primary keys.
         //i.e. many __I columns.
         //We are only interested here in the distinct SchemaTables.
-        Set<SchemaTable> schemaTables = new HashSet<>();
+//        Set<SchemaTable> schemaTables = new HashSet<>();
+        List<SchemaTable> schemaTables = new ArrayList<>();
         for (String foreignKey : foreignKeys) {
             String[] split = foreignKey.split("\\.");
             String foreignKeySchema = split[0];

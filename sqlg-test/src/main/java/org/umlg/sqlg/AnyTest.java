@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSimpleJoinGremlin.class,
+        TestGremlinCompileWithHas.class,
+//        TestSimpleJoinGremlin.class,
 //        TestUserSuppliedPKTopology.class,
 //        TestPartitioning.class
 //        TestSimpleVertexGremlin.class
