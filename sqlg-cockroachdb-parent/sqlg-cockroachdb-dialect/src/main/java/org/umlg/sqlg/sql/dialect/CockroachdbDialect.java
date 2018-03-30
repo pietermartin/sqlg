@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.topology.ForeignKey;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -774,86 +773,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
             default:
                 // noop
                 break;
-        }
-    }
-
-
-    private void dropForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-
-        Map<String, Set<ForeignKey>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<ForeignKey>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<ForeignKey> foreignKeys = edgeForeignKey.getValue();
-            String[] schemaTableArray = edgeTable.split("\\.");
-
-            for (ForeignKey foreignKey : foreignKeys) {
-                if (foreignKey.isFor(schemaTable)) {
-
-                    Set<String> foreignKeyNames = getForeignKeyConstraintNames(sqlgGraph, schemaTableArray[0], schemaTableArray[1]);
-                    for (String foreignKeyName : foreignKeyNames) {
-
-                        StringBuilder sql = new StringBuilder();
-                        sql.append("ALTER TABLE ");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                        sql.append(".");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                        sql.append(" DROP CONSTRAINT ");
-                        sql.append(maybeWrapInQoutes(foreignKeyName));
-                        if (needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        Connection conn = sqlgGraph.tx().getConnection();
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-
-    private void createForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-        Map<String, Set<ForeignKey>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<ForeignKey>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<ForeignKey> foreignKeys = edgeForeignKey.getValue();
-            for (ForeignKey foreignKey : foreignKeys) {
-                if (foreignKey.isFor(schemaTable)) {
-                    String[] schemaTableArray = edgeTable.split("\\.");
-                    StringBuilder sql = new StringBuilder();
-                    sql.append("ALTER TABLE ");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                    sql.append(" ADD FOREIGN KEY (");
-                    sql.append(maybeWrapInQoutes(foreignKey.first()));
-                    sql.append(") REFERENCES ");
-                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
-                    sql.append(" MATCH SIMPLE");
-                    if (needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    Connection conn = sqlgGraph.tx().getConnection();
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
         }
     }
 
