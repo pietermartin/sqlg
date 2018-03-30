@@ -1,7 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,10 +18,7 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
-import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.security.SecureRandom;
@@ -326,27 +322,6 @@ public class SchemaTableTree {
         }
     }
 
-    private Map<String, Pair<String, PropertyType>> getColumnNamePropertyName() {
-        if (this.columnNamePropertyName == null) {
-            this.columnNamePropertyName = new HashMap<>();
-            for (Map.Entry<String, String> entry : getRoot().aliasMapHolder.getAliasColumnNameMap().entrySet()) {
-                String alias = entry.getKey();
-                String columnName = entry.getValue();
-                //only load the labelled columns
-                if (!columnName.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID) &&
-                        (columnName.contains(BaseStrategy.PATH_LABEL_SUFFIX) || columnName.contains(BaseStrategy.EMIT_LABEL_SUFFIX))) {
-
-                    if (containsLabelledColumn(columnName)) {
-                        String propertyName = propertyNameFromLabeledAlias(columnName);
-                        PropertyType propertyType = this.sqlgGraph.getTopology().getTableFor(getSchemaTable()).get(propertyName);
-                        this.columnNamePropertyName.put(alias, Pair.of(propertyName, propertyType));
-                    }
-                }
-            }
-        }
-        return this.columnNamePropertyName;
-    }
-
     private boolean hasParent() {
         return this.parent != null;
     }
@@ -375,7 +350,7 @@ public class SchemaTableTree {
         return this.optionalLeftJoin;
     }
 
-    public void setOptionalLeftJoin(boolean optionalLeftJoin) {
+    void setOptionalLeftJoin(boolean optionalLeftJoin) {
         this.optionalLeftJoin = optionalLeftJoin;
     }
 
@@ -383,18 +358,6 @@ public class SchemaTableTree {
         this.aliasMapHolder.clear();
         this.rootAliasCounter = 1;
         this.columnListStack.clear();
-    }
-
-    private boolean containsLabelledColumn(String columnName) {
-        if (columnName.startsWith(this.stepDepth + ALIAS_SEPARATOR + this.reducedLabels() + ALIAS_SEPARATOR)) {
-            String column = columnName.substring((this.stepDepth + ALIAS_SEPARATOR + this.reducedLabels() + ALIAS_SEPARATOR).length());
-            Iterator<String> split = Splitter.on(ALIAS_SEPARATOR).split(column).iterator();
-            String schema = split.next();
-            String table = split.next();
-            return schema.equals(this.schemaTable.getSchema()) && table.equals(this.schemaTable.getTable());
-        } else {
-            return false;
-        }
     }
 
     public SchemaTable getSchemaTable() {
@@ -476,7 +439,6 @@ public class SchemaTableTree {
             }
         }
         return result;
-
     }
 
     private boolean hasNoEdgeLabels(SchemaTable schemaTable) {
@@ -678,33 +640,6 @@ public class SchemaTableTree {
         return result;
     }
 
-    private String printOuterFromClause(int count, Map<String, String> columnNameAliasMapCopy, SchemaTableTree previousSchemaTableTree) {
-        String sql = "";
-        Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.toString());
-        Optional<String> optional = this.lastMappedAliasIdForOuterFrom(columnNameAliasMapCopy);
-        if (optional.isPresent()) {
-            sql = "a" + count + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(optional.get());
-            if (propertyTypeMap.size() > 0) {
-                sql += ", ";
-            }
-        }
-        int propertyCount = 1;
-        for (Map.Entry<String, PropertyType> propertyNameEntry : propertyTypeMap.entrySet()) {
-            sql += "a" + count + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.mappedAliasPropertyName(propertyNameEntry.getKey(), columnNameAliasMapCopy));
-            for (String postFix : propertyNameEntry.getValue().getPostFixes()) {
-                sql += ", ";
-                sql += "a" + count + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.mappedAliasPropertyName(propertyNameEntry.getKey() + postFix, columnNameAliasMapCopy));
-            }
-            if (propertyCount++ < propertyTypeMap.size()) {
-                sql += ", ";
-            }
-        }
-        if (this.getSchemaTable().isEdgeTable()) {
-            sql = printEdgeInOutVertexIdOuterFromClauseFor("a" + count, sql, previousSchemaTableTree);
-        }
-        return sql;
-    }
-
     private static String constructSectionedJoin(SqlgGraph sqlgGraph, SchemaTableTree fromSchemaTableTree, SchemaTableTree toSchemaTableTree, int count) {
         if (toSchemaTableTree.direction == Direction.BOTH) {
             throw new IllegalStateException("Direction may not be BOTH!");
@@ -818,7 +753,6 @@ public class SchemaTableTree {
         }
         return result.toString();
     }
-
 
     private String constructSinglePathSql(
             SqlgGraph sqlgGraph,
@@ -1265,7 +1199,7 @@ public class SchemaTableTree {
                 //TODO redo this via SqlgOrderGlobalStep
             } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
                     && comparator.getValue1() instanceof Order) {
-                Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>) comparator.getValue0();
+                Traversal.Admin<?, ?> t = comparator.getValue0();
                 String prefix = String.valueOf(this.stepDepth);
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.reducedLabels();
@@ -1395,7 +1329,7 @@ public class SchemaTableTree {
     }
 
     private SchemaTableTree findSelectSchemaTable(String select) {
-        return this.walkUp((t) -> t.stream().filter(a -> a.endsWith(BaseStrategy.PATH_LABEL_SUFFIX + select)).findAny().isPresent());
+        return this.walkUp((t) -> t.stream().anyMatch(a -> a.endsWith(BaseStrategy.PATH_LABEL_SUFFIX + select)));
     }
 
     private SchemaTableTree walkUp(Predicate<Set<String>> predicate) {
@@ -1747,53 +1681,32 @@ public class SchemaTableTree {
         }
     }
 
-    private String printEdgeInOutVertexIdOuterFromClauseFor(String prepend, String sql, SchemaTableTree previousSchemaTableTree) {
-        Preconditions.checkState(this.getSchemaTable().isEdgeTable());
-        //Do not print all the edge foreign key ids. Only the edge ids that this outer clause is for.
-        Set<String> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString())
-                .stream().filter(foreignKeyName ->
-                        foreignKeyName.equals(previousSchemaTableTree.getSchemaTable().withOutPrefix().toString() + Topology.IN_VERTEX_COLUMN_END)
-                                ||
-                                foreignKeyName.equals(previousSchemaTableTree.getSchemaTable().withOutPrefix() + Topology.OUT_VERTEX_COLUMN_END))
-                .collect(Collectors.toSet());
-        for (String edgeForeignKey : edgeForeignKeys) {
-            sql += ", ";
-            sql += prepend;
-            sql += ".";
-            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.mappedAliasPropertyName(edgeForeignKey, this.getColumnNameAliasMap()));
-        }
-        return sql;
-    }
-
     private static void printEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree firstSchemaTableTree, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Preconditions.checkState(lastSchemaTableTree.getSchemaTable().isEdgeTable());
-
-        Set<String> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
-        for (String edgeForeignKey : edgeForeignKeys) {
+        Set<ForeignKey> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
+        for (ForeignKey edgeForeignKey : edgeForeignKeys) {
             if (firstSchemaTableTree == null || !firstSchemaTableTree.equals(lastSchemaTableTree) ||
-                    firstSchemaTableTree.getDirection() != getDirectionForForeignKey(edgeForeignKey)) {
+                    firstSchemaTableTree.getDirection() != edgeForeignKey.getDirection()) {
 
-                String alias = lastSchemaTableTree.calculateAliasPropertyName(edgeForeignKey);
-                cols.addForeignKey(lastSchemaTableTree, edgeForeignKey, alias);
+                for (String foreignKey : edgeForeignKey.getCompositeKeys()) {
+                    String alias = lastSchemaTableTree.calculateAliasPropertyName(foreignKey);
+                    cols.addForeignKey(lastSchemaTableTree, foreignKey, alias);
+                }
             }
         }
-
-    }
-
-    private static Direction getDirectionForForeignKey(String edgeForeignKey) {
-        return edgeForeignKey.endsWith(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
     }
 
     private void printLabeledEdgeInOutVertexIdFromClauseFor(ColumnList cols) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
-
-        Set<String> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
-        for (String edgeForeignKey : edgeForeignKeys) {
-            String alias = cols.getAlias(this.getSchemaTable(), edgeForeignKey, this.stepDepth);
-            if (alias == null) {
-                cols.addForeignKey(this, edgeForeignKey, this.calculateLabeledAliasPropertyName(edgeForeignKey));
-            } else {
-                this.calculateLabeledAliasPropertyName(edgeForeignKey, alias);
+        Set<ForeignKey> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
+        for (ForeignKey edgeForeignKey : edgeForeignKeys) {
+            for (String foreignKey : edgeForeignKey.getCompositeKeys()) {
+                String alias = cols.getAlias(this.getSchemaTable(), foreignKey, this.stepDepth);
+                if (alias == null) {
+                    cols.addForeignKey(this, foreignKey, this.calculateLabeledAliasPropertyName(foreignKey));
+                } else {
+                    this.calculateLabeledAliasPropertyName(foreignKey, alias);
+                }
             }
         }
     }
@@ -1886,16 +1799,6 @@ public class SchemaTableTree {
         return this.getColumnNameAliasMap().get(result);
     }
 
-    private Optional<String> lastMappedAliasIdForOuterFrom(Map<String, String> columnNameAliasMapCopy) {
-        String result = this.stepDepth + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + Topology.ID;
-        return Optional.ofNullable(columnNameAliasMapCopy.get(result));
-    }
-
-    private String mappedAliasPropertyName(String propertyName, Map<String, String> columnNameAliasMapCopy) {
-        String result = this.stepDepth + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
-        return columnNameAliasMapCopy.get(result);
-    }
-
     private String lastMappedAliasId() {
         String result = this.stepDepth + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + Topology.ID;
         return this.getColumnNameAliasMap().get(result);
@@ -1914,7 +1817,7 @@ public class SchemaTableTree {
         return this.getColumnNameAliasMap().get(result);
     }
 
-    public String labeledAliasIdentifier(String identifier) {
+    private String labeledAliasIdentifier(String identifier) {
         String reducedLabels = reducedLabels();
         return this.stepDepth + ALIAS_SEPARATOR + reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + identifier;
     }
@@ -1929,13 +1832,6 @@ public class SchemaTableTree {
         } else {
             return this;
         }
-    }
-
-    private String propertyNameFromLabeledAlias(String alias) {
-        //this code is optimized for speed, used to use String.replace but its slow
-        String reducedLabels = reducedLabels();
-        int lengthToWack = (this.stepDepth + ALIAS_SEPARATOR + reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR).length();
-        return alias.substring(lengthToWack);
     }
 
     private String reducedLabels() {
@@ -2250,28 +2146,6 @@ public class SchemaTableTree {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
                 if (hasContainer.getKey().equals(label.getAccessor())) {
                     Preconditions.checkState(false, "label hasContainers should have been removed by now.");
-//                    if (hasContainer.getValue() instanceof Collection) {
-//                        Collection<String> labels = (Collection<String>) hasContainer.getValue();
-//                        Set<SchemaTable> labelSchemaTables = labels.stream().map(l -> SchemaTable.from(this.sqlgGraph, l)).collect(Collectors.toSet());
-//                        BiPredicate<SchemaTable, Collection<SchemaTable>> biPredicate  = (BiPredicate<SchemaTable, Collection<SchemaTable>>) hasContainer.getBiPredicate();
-//                        boolean whatever = biPredicate.test(schemaTableTree.getSchemaTable().withOutPrefix(), labelSchemaTables);
-//                        if (!whatever) {
-//                            return true;
-//                        }
-//                    } else {
-//                        SchemaTable labelSchemaTable = SchemaTable.from(this.sqlgGraph, (String)hasContainer.getValue());
-//                        BiPredicate<SchemaTable, SchemaTable> biPredicate  = (BiPredicate<SchemaTable, SchemaTable>) hasContainer.getBiPredicate();
-//                        boolean whatever = biPredicate.test(schemaTableTree.getSchemaTable().withOutPrefix(), labelSchemaTable);
-//                        if (!whatever) {
-//                            return true;
-//                        }
-//                    }
-////                    // we may have been given a type in a schema
-////                    SchemaTable predicateSchemaTable = SchemaTable.from(this.sqlgGraph, hasContainer.getValue().toString());
-////                    SchemaTable hasContainerLabelSchemaTable = getHasContainerSchemaTable(schemaTableTree, predicateSchemaTable);
-////                    if (hasContainer.getBiPredicate().equals(Compare.eq) && !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
-////                        return true;
-////                    }
                 } else if (hasContainer.getKey().equals(T.id.getAccessor())) {
                     if (hasContainer.getBiPredicate().equals(Compare.eq)) {
                         Object value = hasContainer.getValue();
@@ -2496,7 +2370,6 @@ public class SchemaTableTree {
         for (ColumnList columnList : this.getColumnListStack()) {
             Map<SchemaTable, List<ColumnList.Column>> inForeignKeyColumns = columnList.getInForeignKeys(this.stepDepth, this.schemaTable);
             for (Map.Entry<SchemaTable, List<ColumnList.Column>> schemaTableColumnsEntry : inForeignKeyColumns.entrySet()) {
-                SchemaTable schemaTable = schemaTableColumnsEntry.getKey();
                 List<ColumnList.Column> columns = schemaTableColumnsEntry.getValue();
                 if (columns.size() == 1) {
                     ColumnList.Column column = columns.get(0);
@@ -2507,7 +2380,6 @@ public class SchemaTableTree {
             }
             Map<SchemaTable, List<ColumnList.Column>> outForeignKeyColumns = columnList.getOutForeignKeys(this.stepDepth, this.schemaTable);
             for (Map.Entry<SchemaTable, List<ColumnList.Column>> schemaTableColumnsEntry : outForeignKeyColumns.entrySet()) {
-                SchemaTable schemaTable = schemaTableColumnsEntry.getKey();
                 List<ColumnList.Column> columns = schemaTableColumnsEntry.getValue();
                 if (columns.size() == 1) {
                     ColumnList.Column column = columns.get(0);
@@ -2590,7 +2462,7 @@ public class SchemaTableTree {
         return identifiers;
     }
 
-    public List<ColumnList> getColumnListStack() {
+    private List<ColumnList> getColumnListStack() {
         return this.getRoot().columnListStack;
     }
 

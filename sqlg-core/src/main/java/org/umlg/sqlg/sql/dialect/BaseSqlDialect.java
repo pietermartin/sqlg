@@ -529,20 +529,11 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
     @Override
     public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
-
         if (!removeVertexCache.isEmpty()) {
-
-
             //split the list of vertices, postgres existVertexLabel a 2 byte limit in the in clause
             for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
-
                 SchemaTable schemaTable = schemaVertices.getKey();
-
                 Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = sqlgGraph.getTopology().getTableLabels(SchemaTable.of(schemaTable.getSchema(), VERTEX_PREFIX + schemaTable.getTable()));
-
-                //This is causing dead locks under load
-//                dropForeignKeys(sqlgGraph, schemaTable);
-
                 List<SqlgVertex> vertices = schemaVertices.getValue();
                 int numberOfLoops = (vertices.size() / sqlInParameterLimit());
                 int previous = 0;
@@ -599,7 +590,6 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                         }
                     }
                 }
-//                createForeignKeys(sqlgGraph, schemaTable);
             }
         }
     }

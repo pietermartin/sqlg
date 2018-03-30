@@ -23,6 +23,7 @@ import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.ForeignKey;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -193,8 +194,8 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             } else {
-                Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
-                Set<String> foreignKeys = edgeForeignKeys.get(inEdgeLabelToTravers.toString());
+                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
+                Set<ForeignKey> foreignKeys = edgeForeignKeys.get(inEdgeLabelToTravers.toString());
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
                 //Use this set to filter the foreignKeys.
@@ -202,11 +203,13 @@ public class ReplacedStep<S, E> {
                 //i.e. many __I columns.
                 //We are only interested here in the distinct SchemaTables.
                 Set<SchemaTable> schemaTables = new HashSet<>();
-                for (String foreignKey : foreignKeys) {
-                    if (foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                        String[] split = foreignKey.split("\\.");
-                        String foreignKeySchema = split[0];
-                        String foreignKeyTable = split[1];
+                for (ForeignKey foreignKey : foreignKeys) {
+                    if (foreignKey.isOut()) {
+//                        String[] split = foreignKey.split("\\.");
+//                        String foreignKeySchema = split[0];
+//                        String foreignKeyTable = split[1];
+                        String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
+                        String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
                         if (schemaTables.add(schemaTableTo) && passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
                             if (first) {
@@ -244,22 +247,23 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             } else {
-                Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
-                Set<String> foreignKeys = edgeForeignKeys.get(outEdgeLabelToTravers.toString());
+                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
+                Set<ForeignKey> foreignKeys = edgeForeignKeys.get(outEdgeLabelToTravers.toString());
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
                 //Use this set to filter the foreignKeys.
                 //For user defined ids many columns can be used as the primary keys.
                 //i.e. many __I columns.
                 //We are only interested here in the distinct SchemaTables.
-                Set<SchemaTable> schemaTables = new HashSet<>();
-                for (String foreignKey : foreignKeys) {
-                    if (foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                        String[] split = foreignKey.split("\\.");
-                        String foreignKeySchema = split[0];
-                        String foreignKeyTable = split[1];
+                for (ForeignKey foreignKey : foreignKeys) {
+                    if (foreignKey.isIn()) {
+//                        String[] split = foreignKey.split("\\.");
+//                        String foreignKeySchema = split[0];
+//                        String foreignKeyTable = split[1];
+                        String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
+                        String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
-                        if (schemaTables.add(schemaTableTo) && passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
+                        if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
                             if (first) {
                                 first = false;
                                 schemaTableTreeChild = schemaTableTree.addChild(
@@ -284,9 +288,9 @@ public class ReplacedStep<S, E> {
         Map<SchemaTable, List<Multimap<BiPredicate, RecordId>>> groupedIds = groupIdsBySchemaTable();
 
         Set<SchemaTableTree> result = new HashSet<>();
-        Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
+        Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
         //join from the edge table to the incoming vertex table
-        Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
+        Set<ForeignKey> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
         //Every foreignKey for the given direction must be joined on
 
         //Use this set to filter the foreignKeys.
@@ -294,14 +298,18 @@ public class ReplacedStep<S, E> {
         //i.e. many __I columns.
         //We are only interested here in the distinct SchemaTables.
 //        Set<SchemaTable> schemaTables = new HashSet<>();
-        List<SchemaTable> schemaTables = new ArrayList<>();
-        for (String foreignKey : foreignKeys) {
-            String[] split = foreignKey.split("\\.");
-            String foreignKeySchema = split[0];
-            String foreignKeyTable = split[1];
-            if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+//        List<SchemaTable> schemaTables = new ArrayList<>();
+        for (ForeignKey foreignKey : foreignKeys) {
+//            String[] split = foreignKey.split("\\.");
+//            String foreignKeySchema = split[0];
+//            String foreignKeyTable = split[1];
+
+            String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
+            String foreignKeyTable = foreignKey.getSchemaTable().getTable();
+
+            if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.isOut()) {
                 SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
-                if (schemaTables.add(schemaTable) && passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
+                if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             schemaTable,
                             Direction.OUT,
@@ -315,9 +323,9 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             }
-            if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+            if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.isIn()) {
                 SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
-                if (schemaTables.add(schemaTable) && passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
+                if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             schemaTable,
                             Direction.IN,

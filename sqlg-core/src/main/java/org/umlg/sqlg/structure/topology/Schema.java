@@ -635,8 +635,8 @@ public class Schema implements TopologyInf {
         return result;
     }
 
-    Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
-        Map<String, Set<String>> result = new HashMap<>();
+    Map<String, Set<ForeignKey>> getUncommittedEdgeForeignKeys() {
+        Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
             result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
         }
@@ -726,8 +726,8 @@ public class Schema implements TopologyInf {
         return result;
     }
 
-    Map<String, Set<String>> getAllEdgeForeignKeys() {
-        Map<String, Set<String>> result = new HashMap<>();
+    Map<String, Set<ForeignKey>> getAllEdgeForeignKeys() {
+        Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Map.Entry<String, EdgeLabel> stringEdgeLabelEntry : getEdgeLabels().entrySet()) {
             String edgeSchemaAndLabel = stringEdgeLabelEntry.getKey();
             EdgeLabel edgeLabel = stringEdgeLabelEntry.getValue();

@@ -548,44 +548,65 @@ public class EdgeLabel extends AbstractLabel {
         return false;
     }
 
-    Set<String> getAllEdgeForeignKeys() {
-        Set<String> result = new HashSet<>();
+    Set<ForeignKey> getAllEdgeForeignKeys() {
+        Set<ForeignKey> result = new HashSet<>();
         for (VertexLabel vertexLabel : this.getInVertexLabels()) {
             if (!this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() || !this.uncommittedRemovedInVertexLabels.contains(vertexLabel)) {
-                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END);
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    result.add(ForeignKey.of(vertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
+                } else {
+                    ForeignKey foreignKey = new ForeignKey();
+                    for (String identifier : vertexLabel.getIdentifiers()) {
+                        foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                    }
+                    result.add(foreignKey);
+                }
             }
         }
         for (VertexLabel vertexLabel : this.getOutVertexLabels()) {
             if (!this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() || !this.uncommittedRemovedOutVertexLabels.contains(vertexLabel)) {
-                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    result.add(ForeignKey.of(vertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
+                } else {
+                    ForeignKey foreignKey = new ForeignKey();
+                    for (String identifier : vertexLabel.getIdentifiers()) {
+                        foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+
+                    }
+                    result.add(foreignKey);
+                }
             }
         }
         return result;
     }
 
-    Set<String> getUncommittedEdgeForeignKeys() {
-        Set<String> result = new HashSet<>();
+    Set<ForeignKey> getUncommittedEdgeForeignKeys() {
+        Set<ForeignKey> result = new HashSet<>();
         //noinspection Duplicates
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
                 if (!this.uncommittedRemovedInVertexLabels.contains(vertexLabel)) {
                     if (vertexLabel.hasIDPrimaryKey()) {
-                        result.add(vertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END);
+                        result.add(ForeignKey.of(vertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
                     } else {
+                        ForeignKey foreignKey = new ForeignKey();
                         for (String identifier : vertexLabel.getIdentifiers()) {
-                            result.add(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                            foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
                         }
+                        result.add(foreignKey);
                     }
                 }
             }
             for (VertexLabel vertexLabel : this.uncommittedOutVertexLabels) {
                 if (!this.uncommittedRemovedOutVertexLabels.contains(vertexLabel)) {
                     if (vertexLabel.hasIDPrimaryKey()) {
-                        result.add(vertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
+                        result.add(ForeignKey.of(vertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
                     } else {
+                        ForeignKey foreignKey = new ForeignKey();
                         for (String identifier : vertexLabel.getIdentifiers()) {
-                            result.add(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
                         }
+                        result.add(foreignKey);
                     }
                 }
             }
@@ -598,8 +619,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     public Set<VertexLabel> getOutVertexLabels() {
-        Set<VertexLabel> result = new HashSet<>();
-        result.addAll(this.outVertexLabels);
+        Set<VertexLabel> result = new HashSet<>(this.outVertexLabels);
         if (isValid() && this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedOutVertexLabels);
             result.removeAll(this.uncommittedRemovedOutVertexLabels);

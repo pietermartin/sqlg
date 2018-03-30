@@ -63,7 +63,7 @@ public class Topology {
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
-    private Map<String, Set<String>> edgeForeignKeyCache;
+    private Map<String, Set<ForeignKey>> edgeForeignKeyCache;
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     private Map<String, Schema> schemas = new HashMap<>();
 
@@ -953,9 +953,9 @@ public class Topology {
                     }
                 }
 
-                Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
-                for (Map.Entry<String, Set<String>> entry : uncommittedEdgeForeignKeys.entrySet()) {
-                    Set<String> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
+                Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+                for (Map.Entry<String, Set<ForeignKey>> entry : uncommittedEdgeForeignKeys.entrySet()) {
+                    Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
                     if (foreignKeys == null) {
                         this.edgeForeignKeyCache.put(entry.getKey(), entry.getValue());
                     } else {
@@ -1469,11 +1469,11 @@ public class Topology {
         }
     }
 
-    private Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
+    private Map<String, Set<ForeignKey>> getUncommittedEdgeForeignKeys() {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread(), "getUncommittedEdgeForeignKeys must be called with the lock held");
         z_internalTopologyMapReadLock();
         try {
-            Map<String, Set<String>> result = new HashMap<>();
+            Map<String, Set<ForeignKey>> result = new HashMap<>();
             for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
                 Schema schema = stringSchemaEntry.getValue();
                 result.putAll(schema.getUncommittedEdgeForeignKeys());
@@ -1674,20 +1674,17 @@ public class Topology {
         return getTableLabels().get(schemaTable);
     }
 
-    public Set<String> getEdgeForeignKeys(String schemaTable) {
-        return getAllEdgeForeignKeys().get(schemaTable);
-    }
 
-    public Map<String, Set<String>> getAllEdgeForeignKeys() {
+    public Map<String, Set<ForeignKey>> getAllEdgeForeignKeys() {
         z_internalTopologyMapReadLock();
         try {
             if (this.isSqlWriteLockHeldByCurrentThread()) {
-                Map<String, Set<String>> committed = new HashMap<>(this.edgeForeignKeyCache);
-                Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
-                for (Map.Entry<String, Set<String>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
-                    Set<String> committedForeignKeys = committed.get(uncommittedEntry.getKey());
+                Map<String, Set<ForeignKey>> committed = new HashMap<>(this.edgeForeignKeyCache);
+                Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+                for (Map.Entry<String, Set<ForeignKey>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
+                    Set<ForeignKey> committedForeignKeys = committed.get(uncommittedEntry.getKey());
                     if (committedForeignKeys != null) {
-                        Set<String> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
+                        Set<ForeignKey> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
                         originalPlusUncommittedForeignKeys.addAll(uncommittedEntry.getValue());
                         committed.put(uncommittedEntry.getKey(), originalPlusUncommittedForeignKeys);
                     } else {
@@ -1703,18 +1700,18 @@ public class Topology {
         }
     }
 
-    private Map<String, Set<String>> loadAllEdgeForeignKeys() {
+    private Map<String, Set<ForeignKey>> loadAllEdgeForeignKeys() {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread());
-        Map<String, Set<String>> result = new HashMap<>();
+        Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Schema schema : this.schemas.values()) {
             result.putAll(schema.getAllEdgeForeignKeys());
         }
         return result;
     }
 
-    void addToEdgeForeignKeyCache(String name, String foreignKey) {
+    void addToEdgeForeignKeyCache(String name, ForeignKey foreignKey) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
-        Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
+        Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(name);
         //noinspection Java8MapApi
         if (foreignKeys == null) {
             foreignKeys = new HashSet<>();
@@ -1724,9 +1721,9 @@ public class Topology {
 
     }
 
-    void removeFromEdgeForeignKeyCache(String name, String foreignKey) {
+    void removeFromEdgeForeignKeyCache(String name, ForeignKey foreignKey) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
-        Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
+        Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(name);
         if (foreignKeys != null) {
             foreignKeys.remove(foreignKey);
             if (foreignKeys.isEmpty()) {
@@ -1756,12 +1753,9 @@ public class Topology {
     void addOutForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
-        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
-        if (foreignKeys == null) {
-            foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
-            this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
-
-        }
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.computeIfAbsent(
+                schemaTable, k -> Pair.of(new HashSet<>(), new HashSet<>())
+        );
         foreignKeys.getRight().add(SchemaTable.of(vertexLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
@@ -1774,12 +1768,9 @@ public class Topology {
     void addInForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
-        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
-        //noinspection Java8MapApi
-        if (foreignKeys == null) {
-            foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
-            this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
-        }
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.computeIfAbsent(
+                schemaTable, k -> Pair.of(new HashSet<>(), new HashSet<>())
+        );
         foreignKeys.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
@@ -1823,23 +1814,40 @@ public class Topology {
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         this.schemaTableForeignKeyCache.remove(schemaTable);
         this.allTableCache.remove(schemaTable.toString());
+        //out
+        ForeignKey foreignKey;
+        if (vertexLabel.hasIDPrimaryKey()) {
+            foreignKey = ForeignKey.of(vertexLabel.getFullName() + OUT_VERTEX_COLUMN_END);
+        } else {
+            foreignKey = new ForeignKey();
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                foreignKey.add(vertexLabel.getFullName() + "." + identifier + OUT_VERTEX_COLUMN_END);
+            }
+        }
         for (EdgeLabel lbl : vertexLabel.getOutEdgeLabels().values()) {
             removeFromEdgeForeignKeyCache(
                     lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                    vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + OUT_VERTEX_COLUMN_END);
+                    foreignKey
+            );
+        }
+        //in
+        if (vertexLabel.hasIDPrimaryKey()) {
+            foreignKey = ForeignKey.of(vertexLabel.getFullName() + IN_VERTEX_COLUMN_END);
+        } else {
+            foreignKey = new ForeignKey();
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                foreignKey.add(vertexLabel.getFullName() + "." + identifier + IN_VERTEX_COLUMN_END);
+            }
         }
         for (EdgeLabel lbl : vertexLabel.getInEdgeLabels().values()) {
             if (lbl.isValid()) {
                 removeFromEdgeForeignKeyCache(
                         lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                        vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + IN_VERTEX_COLUMN_END);
+                        foreignKey
+                );
             }
         }
     }
-    
-    /*void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
-        this.uncommittedGlobalUniqueIndexes.add(globalUniqueIndex);
-    }*/
 
     public void registerListener(TopologyListener topologyListener) {
         this.topologyListeners.add(topologyListener);

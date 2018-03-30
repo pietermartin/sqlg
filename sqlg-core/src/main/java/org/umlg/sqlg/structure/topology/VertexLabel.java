@@ -525,25 +525,41 @@ public class VertexLabel extends AbstractLabel {
             String s = it.next();
             EdgeLabel lbl = this.outEdgeLabels.remove(s);
             if (lbl != null) {
+                ForeignKey foreignKey;
+                if (hasIDPrimaryKey()) {
+                    foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
+                } else {
+                    foreignKey = new ForeignKey();
+                    for (String identifier : this.getIdentifiers()) {
+                        foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                    }
+                }
                 this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                         lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                        this.getSchema().getName() + "." + this.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
+                        foreignKey);
                 this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, lbl);
 
             }
             it.remove();
-
         }
 
         for (Iterator<String> it = this.uncommittedRemovedInEdgeLabels.keySet().iterator(); it.hasNext(); ) {
             String s = it.next();
             EdgeLabel lbl = this.inEdgeLabels.remove(s);
             if (lbl != null) {
+                ForeignKey foreignKey;
+                if (this.hasIDPrimaryKey()) {
+                    foreignKey = ForeignKey.of(this.getFullName() + Topology.IN_VERTEX_COLUMN_END);
+                } else {
+                    foreignKey = new ForeignKey();
+                    for (String identifier : this.getIdentifiers()) {
+                        foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                    }
+                }
                 this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                         lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                        this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
+                        foreignKey);
                 this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, lbl);
-
             }
             it.remove();
         }
@@ -760,9 +776,19 @@ public class VertexLabel extends AbstractLabel {
                     this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyTypeMap());
                     this.getSchema().addToAllEdgeCache(edgeLabel);
                     this.getSchema().getTopology().addOutForeignKeysToVertexLabel(this, edgeLabel);
+                    ForeignKey foreignKey;
+                    if (this.hasIDPrimaryKey()) {
+                        foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
+                    } else {
+                        foreignKey = new ForeignKey();
+                        for (String identifier : this.getIdentifiers()) {
+                            foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                        }
+                    }
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
                             this.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
-                            this.getSchema().getName() + "." + this.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
+                            foreignKey
+                    );
                     // fire only applies to top level, fire for new edges
                     if (!edgeLabelOptional.isPresent()) {
                         this.getSchema().getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
@@ -776,9 +802,19 @@ public class VertexLabel extends AbstractLabel {
                 EdgeLabel lbl = this.outEdgeLabels.remove(n.get("label").asText());
                 if (lbl != null) {
                     EdgeRemoveType ert = EdgeRemoveType.valueOf(n.get("type").asText());
+                    ForeignKey foreignKey;
+                    if (this.hasIDPrimaryKey()) {
+                        foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
+                    } else {
+                        foreignKey = new ForeignKey();
+                        for (String identifier : this.getIdentifiers()) {
+                            foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                        }
+                    }
                     this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                             lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                            this.getSchema().getName() + "." + this.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
+                            foreignKey
+                    );
                     this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, lbl);
                     lbl.outVertexLabels.remove(this);
 
@@ -816,9 +852,20 @@ public class VertexLabel extends AbstractLabel {
                     this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
                     edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel, false);
                     this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
+                    ForeignKey foreignKey;
+                    if (this.hasIDPrimaryKey()) {
+                        foreignKey = ForeignKey.of(this.getFullName() + Topology.IN_VERTEX_COLUMN_END);
+                    } else {
+                        foreignKey = new ForeignKey();
+                        for (String identifier : this.getIdentifiers()) {
+                            foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                        }
+
+                    }
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
                             edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
-                            this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
+                            foreignKey
+                    );
                 }
             }
         }
@@ -829,9 +876,19 @@ public class VertexLabel extends AbstractLabel {
                 if (lbl != null) {
                     EdgeRemoveType ert = EdgeRemoveType.valueOf(n.get("type").asText());
                     if (lbl.isValid()) {
+                        ForeignKey foreignKey;
+                        if (this.hasIDPrimaryKey()) {
+                            foreignKey = ForeignKey.of(this.getFullName() + Topology.IN_VERTEX_COLUMN_END);
+                        } else {
+                            foreignKey = new ForeignKey();
+                            for (String identifier : this.getIdentifiers()) {
+                                foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                            }
+                        }
                         this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                                 lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                                this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
+                                foreignKey
+                        );
                         this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, lbl);
                     }
                     lbl.inVertexLabels.remove(this);
