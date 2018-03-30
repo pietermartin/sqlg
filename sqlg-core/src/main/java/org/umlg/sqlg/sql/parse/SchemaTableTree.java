@@ -609,15 +609,14 @@ public class SchemaTableTree {
     }
 
     private static String constructOuterOrderByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         int countOuter = 1;
         // last table list with order as last step wins
         int winningOrder = 0;
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
             if (!subQueryLinkedList.isEmpty()) {
                 SchemaTableTree schemaTableTree = subQueryLinkedList.peekLast();
-                if (!schemaTableTree.getDbComparators().isEmpty()
-                        ) {
+                if (!schemaTableTree.getDbComparators().isEmpty()) {
                     winningOrder = countOuter;
                 }
             }
@@ -630,20 +629,18 @@ public class SchemaTableTree {
             if (!subQueryLinkedList.isEmpty()) {
                 SchemaTableTree schemaTableTree = subQueryLinkedList.peekLast();
                 if (countOuter == winningOrder) {
-                    result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
+                    result.append(schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter));
                 }
                 // support range without order
-                result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy);
+                result.append(schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy));
             }
             countOuter++;
         }
-        return result;
+        return result.toString();
     }
 
     private static String constructSectionedJoin(SqlgGraph sqlgGraph, SchemaTableTree fromSchemaTableTree, SchemaTableTree toSchemaTableTree, int count) {
-        if (toSchemaTableTree.direction == Direction.BOTH) {
-            throw new IllegalStateException("Direction may not be BOTH!");
-        }
+        Preconditions.checkState(toSchemaTableTree.direction != Direction.BOTH, "Direction may not be BOTH!");
         String rawToLabel;
         if (toSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)) {
             rawToLabel = toSchemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
@@ -660,14 +657,23 @@ public class SchemaTableTree {
         StringBuilder result = new StringBuilder();
         if (fromSchemaTableTree.getSchemaTable().isEdgeTable()) {
             if (toSchemaTableTree.isEdgeVertexStep()) {
-                if (toSchemaTableTree.direction == Direction.OUT) {
+                if (toSchemaTableTree.hasIDPrimaryKey) {
                     result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + Topology.OUT_VERTEX_COLUMN_END));
+                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + (toSchemaTableTree.direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
                     result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasId()));
                 } else {
-                    result = new StringBuilder("a" + (count - 1) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + Topology.IN_VERTEX_COLUMN_END));
-                    result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasId()));
+                    ListOrderedSet<String> identifiers = toSchemaTableTree.getIdentifiers();
+                    int i = 1;
+                    for (String identifier : identifiers) {
+                        result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                fromSchemaTableTree.getSchemaTable().getSchema() + "." +
+                                        fromSchemaTableTree.getSchemaTable().getTable() + "." +
+                                        toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + "." + identifier + (toSchemaTableTree.direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                        result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasIdentifier(identifier)));
+                        if (i++ < identifiers.size()) {
+                            result.append(" AND ");
+                        }
+                    }
                 }
             } else {
                 if (toSchemaTableTree.direction == Direction.OUT) {
@@ -685,9 +691,7 @@ public class SchemaTableTree {
                                     fromSchemaTableTree.getSchemaTable().getSchema() + "." +
                                             fromSchemaTableTree.getSchemaTable().getTable() + "." +
                                             toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
-                            result.append(" = a").append(count).append(".").append(
-                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasIdentifier(identifier))
-                            );
+                            result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasIdentifier(identifier)));
                             if (i++ < identifiers.size()) {
                                 result.append(" AND ");
                             }
@@ -715,38 +719,19 @@ public class SchemaTableTree {
                 }
             }
         } else {
-            if (toSchemaTableTree.direction == Direction.OUT) {
-                if (fromSchemaTableTree.hasIDPrimaryKey) {
-                    result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + Topology.ID));
-                    result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel)));
-                } else {
-                    ListOrderedSet<String> identifiers = fromSchemaTableTree.getIdentifiers();
-                    int i = 1;
-                    for (String identifier : identifiers) {
-                        result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                                fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + identifier));
-                        result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                                toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel, identifier)));
-                        if (i++ < identifiers.size()) {
-                            result.append(" AND ");
-                        }
-                    }
-                }
+            if (fromSchemaTableTree.hasIDPrimaryKey) {
+                result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + Topology.ID));
+                result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel)));
             } else {
-                if (fromSchemaTableTree.hasIDPrimaryKey) {
-                    result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + Topology.ID));
-                    result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel)));
-                } else {
-                    ListOrderedSet<String> identifiers = fromSchemaTableTree.getIdentifiers();
-                    int i = 1;
-                    for (String identifier : identifiers) {
-                        result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                                fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + identifier));
-                        result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                                toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel, identifier)));
-                        if (i++ < identifiers.size()) {
-                            result.append(" AND ");
-                        }
+                ListOrderedSet<String> identifiers = fromSchemaTableTree.getIdentifiers();
+                int i = 1;
+                for (String identifier : identifiers) {
+                    result.append("a").append(count - 1).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                            fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + identifier));
+                    result.append(" = a").append(count).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                            toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel, identifier)));
+                    if (i++ < identifiers.size()) {
+                        result.append(" AND ");
                     }
                 }
             }
@@ -1407,18 +1392,17 @@ public class SchemaTableTree {
         Preconditions.checkState(!(previousSchemaTableTree != null && previousSchemaTableTree.direction == Direction.BOTH), "Direction should never be BOTH");
         Preconditions.checkState(!(nextSchemaTableTree != null && nextSchemaTableTree.direction == Direction.BOTH), "Direction should never be BOTH");
         //The join is always between an edge and vertex or vertex and edge table.
-        Preconditions.checkState(!(nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(VERTEX_PREFIX)&& nextSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)), "Join can not be between 2 vertex tables!");
-        Preconditions.checkState(!(nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(EDGE_PREFIX)&& nextSchemaTableTree.getSchemaTable().getTable().startsWith(EDGE_PREFIX)), "Join can not be between 2 edge tables!");
-        Preconditions.checkState(!(previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(VERTEX_PREFIX)&& previousSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)), "Join can not be between 2 vertex tables!");
-        Preconditions.checkState(!(previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(EDGE_PREFIX)&& previousSchemaTableTree.getSchemaTable().getTable().startsWith(EDGE_PREFIX)), "Join can not be between 2 edge tables!");
+        Preconditions.checkState(!(nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(VERTEX_PREFIX) && nextSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)), "Join can not be between 2 vertex tables!");
+        Preconditions.checkState(!(nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(EDGE_PREFIX) && nextSchemaTableTree.getSchemaTable().getTable().startsWith(EDGE_PREFIX)), "Join can not be between 2 edge tables!");
+        Preconditions.checkState(!(previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(VERTEX_PREFIX) && previousSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)), "Join can not be between 2 vertex tables!");
+        Preconditions.checkState(!(previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(EDGE_PREFIX) && previousSchemaTableTree.getSchemaTable().getTable().startsWith(EDGE_PREFIX)), "Join can not be between 2 edge tables!");
 
         boolean printedId = false;
 
         //join to the previous label/table
         if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(EDGE_PREFIX)) {
-            if (!previousSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX)) {
-                throw new IllegalStateException("Expected table to start with " + VERTEX_PREFIX);
-            }
+
+            Preconditions.checkState(previousSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX), "Expected table to start with %s", VERTEX_PREFIX);
             String previousRawLabel = previousSchemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
             if (firstSchemaTableTree.direction == Direction.OUT) {
                 if (previousSchemaTableTree.hasIDPrimaryKey) {
@@ -1465,79 +1449,54 @@ public class SchemaTableTree {
             Preconditions.checkState(nextSchemaTableTree.getSchemaTable().getTable().startsWith(VERTEX_PREFIX), "Expected table to start with %s", VERTEX_PREFIX);
 
             String nextRawLabel = nextSchemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
-            if (nextSchemaTableTree.direction == Direction.OUT) {
-                if (nextSchemaTableTree.isEdgeVertexStep()) {
+            if (nextSchemaTableTree.isEdgeVertexStep()) {
+                if (nextSchemaTableTree.hasIDPrimaryKey) {
                     columnList.add(lastSchemaTable,
                             nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                    nextRawLabel + Topology.OUT_VERTEX_COLUMN_END,
+                                    nextRawLabel + (nextSchemaTableTree.direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END),
                             nextSchemaTableTree.stepDepth,
                             lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                                     nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                    nextRawLabel + Topology.OUT_VERTEX_COLUMN_END);
+                                    nextRawLabel + (nextSchemaTableTree.direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END));
 
-                    constructAllLabeledFromClause(distinctQueryStack, columnList);
                 } else {
-                    if (nextSchemaTableTree.hasIDPrimaryKey) {
-                        columnList.add(lastSchemaTable,
-                                nextSchemaTableTree.getSchemaTable().getSchema() + "." + nextRawLabel + Topology.IN_VERTEX_COLUMN_END,
-                                nextSchemaTableTree.stepDepth,
-                                lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
-                                        nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        nextRawLabel + Topology.IN_VERTEX_COLUMN_END);
-                    } else {
-                        ListOrderedSet<String> identifiers = nextSchemaTableTree.getIdentifiers();
-                        for (String identifier : identifiers) {
-                            columnList.add(lastSchemaTable,
-                                    nextSchemaTableTree.getSchemaTable().getSchema() + "." + nextRawLabel + "." + identifier + Topology.IN_VERTEX_COLUMN_END,
-                                    nextSchemaTableTree.stepDepth,
-                                    lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
-                                            nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                            nextRawLabel + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
-
-                        }
-                    }
-                    constructAllLabeledFromClause(distinctQueryStack, columnList);
-                    constructEmitEdgeIdFromClause(distinctQueryStack, columnList);
-                }
-            } else {
-                if (nextSchemaTableTree.isEdgeVertexStep()) {
-                    columnList.add(lastSchemaTable,
-                            nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                    nextRawLabel + Topology.IN_VERTEX_COLUMN_END,
-                            nextSchemaTableTree.stepDepth,
-                            lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
-                                    nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                    nextRawLabel + Topology.IN_VERTEX_COLUMN_END);
-
-                    constructAllLabeledFromClause(distinctQueryStack, columnList);
-                } else {
-                    if (nextSchemaTableTree.hasIDPrimaryKey) {
+                    ListOrderedSet<String> identifiers = nextSchemaTableTree.getIdentifiers();
+                    for (String identifier : identifiers) {
                         columnList.add(lastSchemaTable,
                                 nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        nextRawLabel + Topology.OUT_VERTEX_COLUMN_END,
+                                        nextRawLabel + "." + identifier + (nextSchemaTableTree.direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END),
                                 nextSchemaTableTree.stepDepth,
                                 lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                                         nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        nextRawLabel + Topology.OUT_VERTEX_COLUMN_END);
-
-                    } else {
-                        ListOrderedSet<String> identifiers = nextSchemaTableTree.getIdentifiers();
-                        for (String identifier : identifiers) {
-                            columnList.add(lastSchemaTable,
-                                    nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                            nextRawLabel + "." + identifier + Topology.OUT_VERTEX_COLUMN_END,
-                                    nextSchemaTableTree.stepDepth,
-                                    lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
-                                            nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                            nextRawLabel + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
-                        }
+                                        nextRawLabel + "." + identifier + (nextSchemaTableTree.direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END));
                     }
-                    constructAllLabeledFromClause(distinctQueryStack, columnList);
-                    constructEmitEdgeIdFromClause(distinctQueryStack, columnList);
+
                 }
+                constructAllLabeledFromClause(distinctQueryStack, columnList);
+            } else {
+                if (nextSchemaTableTree.hasIDPrimaryKey) {
+                    columnList.add(lastSchemaTable,
+                            nextSchemaTableTree.getSchemaTable().getSchema() + "." + nextRawLabel + (nextSchemaTableTree.direction == Direction.OUT ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END),
+                            nextSchemaTableTree.stepDepth,
+                            lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                                    nextSchemaTableTree.getSchemaTable().getSchema() + "." +
+                                    nextRawLabel + (nextSchemaTableTree.direction == Direction.OUT ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
+                } else {
+                    ListOrderedSet<String> identifiers = nextSchemaTableTree.getIdentifiers();
+                    for (String identifier : identifiers) {
+                        columnList.add(lastSchemaTable,
+                                nextSchemaTableTree.getSchemaTable().getSchema() + "." + nextRawLabel + "." + identifier + (nextSchemaTableTree.direction == Direction.OUT ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END),
+                                nextSchemaTableTree.stepDepth,
+                                lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                                        nextSchemaTableTree.getSchemaTable().getSchema() + "." +
+                                        nextRawLabel + "." + identifier + (nextSchemaTableTree.direction == Direction.OUT ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
+
+                    }
+                }
+                constructAllLabeledFromClause(distinctQueryStack, columnList);
+                constructEmitEdgeIdFromClause(distinctQueryStack, columnList);
             }
         } else if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(VERTEX_PREFIX)) {
-
             if (lastSchemaTableTree.hasIDPrimaryKey) {
                 columnList.add(lastSchemaTable,
                         Topology.ID,

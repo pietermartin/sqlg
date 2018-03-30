@@ -11,7 +11,10 @@ import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -125,6 +128,12 @@ public class TestSimpleJoinGremlin extends BaseTest {
         Assert.assertEquals(2, vertices.size());
         vertices = this.sqlgGraph.traversal().V().hasLabel("Person").in().toList();
         Assert.assertEquals(2, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").outE().inV().toList();
+        Assert.assertEquals(2, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").outE().outV().toList();
+        Assert.assertEquals(2, vertices.size());
     }
 
     @Test
@@ -133,15 +142,17 @@ public class TestSimpleJoinGremlin extends BaseTest {
                 "A",
                 new HashMap<String, PropertyType>(){{
                     put("name", PropertyType.STRING);
+                    put("name2", PropertyType.STRING);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+                ListOrderedSet.listOrderedSet(Arrays.asList("name", "name2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
                 new HashMap<String, PropertyType>(){{
                     put("name", PropertyType.STRING);
+                    put("name2", PropertyType.STRING);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+                ListOrderedSet.listOrderedSet(Arrays.asList("name", "name2"))
         );
         @SuppressWarnings("unused")
         EdgeLabel livesAt = aVertexLabel.ensureEdgeLabelExist(
@@ -150,10 +161,10 @@ public class TestSimpleJoinGremlin extends BaseTest {
         );
         this.sqlgGraph.tx().commit();
 
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "name2", "a11");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1", "name2", "b11");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "name2", "a22");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2", "name2", "b22");
         a1.addEdge("ab", b1);
         a2.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
