@@ -4002,12 +4002,4 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    /**
-     * https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
-     * this is critical to use a cursor, otherwise we load everything into memory
-     */
-    @Override
-    public Integer getDefaultFetchSize() {
-    	return 1_000;
-    };
 }

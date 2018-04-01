@@ -1,4 +1,5 @@
 ##1.5.1
+* Add the ability to set the `fetchSize` on the jdbc `java.sql.Statement`.
 * Fix bug [#272](https://github.com/pietermartin/sqlg/issues/272)
 * Make gremlin console work. Tinkerpop made some minor changes to the console that made it stop working.
 
