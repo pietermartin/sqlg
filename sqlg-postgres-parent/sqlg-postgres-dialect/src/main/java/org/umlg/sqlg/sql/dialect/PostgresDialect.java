@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -214,9 +215,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
             String sql = internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, schemaTable.isTemporary(), schemaTable.getSchema(), schemaTable.getTable(), vertices.getLeft());
+            VertexLabel vertexLabel = null;
+            if (!schemaTable.isTemporary()) {
+                vertexLabel = sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(
+                        () -> new IllegalStateException(String.format("VertexLabel %s not found.", schemaTable.toString())));
+            }
             int numberInserted = 0;
             try (Writer writer = streamSql(sqlgGraph, sql)) {
-                for (Map<String, Object> keyValueMap : vertices.getRight().values()) {
+                for (Map.Entry<SqlgVertex, Map<String, Object>> sqlgVertexKeyValueMapEntry : vertices.getRight().entrySet()) {
+                    SqlgVertex sqlgVertex = sqlgVertexKeyValueMapEntry.getKey();
+                    Map<String, Object> keyValueMap = sqlgVertexKeyValueMapEntry.getValue();
                     //The map must contain all the keys, so make a copy with it all.
                     LinkedHashMap<String, Object> values = new LinkedHashMap<>();
                     for (String key : vertices.getLeft()) {
@@ -224,11 +232,19 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                     writeStreamingVertex(writer, values);
                     numberInserted++;
+                    if (vertexLabel != null && !vertexLabel.getIdentifiers().isEmpty()) {
+                        ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                        for (String identifier : vertexLabel.getIdentifiers()) {
+                            identifiers.add(values.get(identifier));
+                        }
+                        sqlgVertex.setInternalPrimaryKey(RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), identifiers));
+                    }
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            if (!schemaTable.isTemporary() && numberInserted > 0) {
+            //noinspection ConstantConditions
+            if (!schemaTable.isTemporary() && numberInserted > 0 && vertexLabel.getIdentifiers().isEmpty()) {
                 long endHigh;
                 sql = "SELECT CURRVAL('" + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq") + "');";
                 if (logger.isDebugEnabled()) {
@@ -344,6 +360,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         Connection con = sqlgGraph.tx().getConnection();
         try {
             for (MetaEdge metaEdge : edgeCache.keySet()) {
+
+                SchemaTable outSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getOutLabel());
+                SchemaTable inSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getInLabel());
+                VertexLabel outVertexLabel = sqlgGraph.getTopology().getVertexLabel(outSchemaTable.getSchema(), outSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", outSchemaTable.getSchema(), outSchemaTable.getTable())));
+                VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
+
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
 
@@ -355,9 +377,30 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(" (");
                 for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
                     int count = 1;
-                    sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + Topology.OUT_VERTEX_COLUMN_END));
+
+                    if (outVertexLabel.hasIDPrimaryKey()) {
+                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + Topology.OUT_VERTEX_COLUMN_END));
+                    } else {
+                        int i = 1;
+                        for (String identifier : outVertexLabel.getIdentifiers()) {
+                            sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                            if (i++ < outVertexLabel.getIdentifiers().size()) {
+                                sql.append(" AND ");
+                            }
+                        }
+                    }
                     sql.append(", ");
-                    sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + Topology.IN_VERTEX_COLUMN_END));
+                    if (inVertexLabel.hasIDPrimaryKey()) {
+                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + Topology.IN_VERTEX_COLUMN_END));
+                    } else {
+                        int i = 1;
+                        for (String identifier : inVertexLabel.getIdentifiers()) {
+                            sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                            if (i++ < inVertexLabel.getIdentifiers().size()) {
+                                sql.append(" AND ");
+                            }
+                        }
+                    }
                     for (String key : triples.getLeft()) {
                         if (count <= triples.getLeft().size()) {
                             sql.append(", ");
@@ -389,7 +432,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         for (String key : triples.getLeft()) {
                             values.put(key, outInVertexKeyValueMap.getRight().get(key));
                         }
-                        writeStreamingEdge(writer, sqlgEdge, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
+                        writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
                         numberInserted++;
                     }
                 }
@@ -1304,7 +1347,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(sqlgEdge.getSchema(), EDGE_PREFIX + sqlgEdge.getTable()));
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
@@ -1312,9 +1355,30 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append(".");
         sql.append(maybeWrapInQoutes(EDGE_PREFIX + sqlgEdge.getTable()));
         sql.append(" (");
-        sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + Topology.OUT_VERTEX_COLUMN_END));
+        if (outVertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + Topology.OUT_VERTEX_COLUMN_END));
+        } else {
+            int i = 1;
+            for (String identifier : outVertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                if (i++ < outVertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
         sql.append(", ");
-        sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + Topology.IN_VERTEX_COLUMN_END));
+        if (inVertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + Topology.IN_VERTEX_COLUMN_END));
+        } else {
+            int i = 1;
+            for (String identifier : inVertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                if (i++ < inVertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+
+        }
         int count = 1;
         for (String key : keyValueMap.keySet()) {
             if (count <= keyValueMap.size()) {
@@ -1443,12 +1507,37 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         try {
             String encoding = "UTF-8";
-            writer.write(((RecordId) outVertex.id()).getId().toString());
-            writer.write(COPY_COMMAND_DELIMITER);
-            writer.write(((RecordId) inVertex.id()).getId().toString());
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                writer.write(((RecordId) outVertex.id()).getId().toString());
+                writer.write(COPY_COMMAND_DELIMITER);
+            } else {
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    Object value = outVertex.value(identifier);
+                    PropertyType propertyType = outVertexLabel.getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, outVertexLabel.getFullName()))
+                    ).getPropertyType();
+                    valueToStreamBytes(writer, propertyType, value);
+                    writer.write(COPY_COMMAND_DELIMITER);
+                }
+            }
+            if (inVertexLabel.hasIDPrimaryKey()) {
+                writer.write(((RecordId) inVertex.id()).getId().toString());
+            } else {
+                int i = 1;
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    Object value = inVertex.value(identifier);
+                    PropertyType propertyType = inVertexLabel.getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, inVertexLabel.getFullName()))
+                    ).getPropertyType();
+                    valueToStreamBytes(writer, propertyType, value);
+                    if (i++ < inVertexLabel.getIdentifiers().size()) {
+                        writer.write(COPY_COMMAND_DELIMITER);
+                    }
+                }
+            }
             for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
                 writer.write(COPY_COMMAND_DELIMITER);
                 Object value = entry.getValue();

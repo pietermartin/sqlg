@@ -222,7 +222,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestDeadLock.class,
         TestLabelLength.class,
         TestAddTemporaryVertex.class,
-        TestBatchTemporaryVertex.class,
         TestIoEdge.class,
         TestBatchTemporaryVertex.class,
         TestUnoptimizedRepeatStep.class,

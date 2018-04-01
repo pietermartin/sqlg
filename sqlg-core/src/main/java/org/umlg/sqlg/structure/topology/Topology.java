@@ -1622,12 +1622,6 @@ public class Topology {
         if (result != null) {
             return Collections.unmodifiableMap(result);
         }
-//        if (isSqlWriteLockHeldByCurrentThread()) {
-//            Map<String, PropertyType> temporaryPropertyMap = this.threadLocalTemporaryTables.get().get(schemaTable.getTable());
-//            if (temporaryPropertyMap != null) {
-//                return Collections.unmodifiableMap(temporaryPropertyMap);
-//            }
-//        }
         return Collections.emptyMap();
     }
 

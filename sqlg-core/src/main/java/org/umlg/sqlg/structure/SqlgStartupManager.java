@@ -274,7 +274,20 @@ class SqlgStartupManager {
                 if (primaryKeys.size() == 1 && primaryKeys.get(0).equals(Topology.ID)) {
                     TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns, new ListOrderedSet<>());
                 } else {
-                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns, ListOrderedSet.listOrderedSet(primaryKeys));
+                    //partitioned tables have no pk and must have identifiers.
+                    //however we can not tell which columns are the identifiers so ahem???
+                    //we do a little hardcoding. ID,uid and uuid are determined to be identifiers.
+                    if (primaryKeys.isEmpty()) {
+                        ListOrderedSet<String> identifiers = new ListOrderedSet<>();
+                        for (String s : columns.keySet()) {
+                            if (s.equalsIgnoreCase("ID") || s.equalsIgnoreCase("uid") || s.equalsIgnoreCase("uuid")) {
+                                identifiers.add(s);
+                            }
+                        }
+                        TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns, identifiers);
+                    } else {
+                        TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns, ListOrderedSet.listOrderedSet(primaryKeys));
+                    }
                 }
                 if (indices != null) {
                     String key = tblCat + "." + schema + "." + table;
@@ -305,14 +318,27 @@ class SqlgStartupManager {
                 if (this.sqlDialect.getSpacialRefTable().contains(table)) {
                     continue;
                 }
+                List<Triple<String, Integer, String>> edgeColumns = this.sqlDialect.getTableColumns(metadata, edgCat, schema, table, null);
                 List<String> primaryKeys = this.sqlDialect.getPrimaryKeys(metadata, edgCat, schema, table);
                 Vertex edgeVertex;
                 if (hasIDPrimaryKey(primaryKeys)) {
                     edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), new ListOrderedSet<>(), PartitionType.NONE, null);
                 } else {
-                    edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), ListOrderedSet.listOrderedSet(primaryKeys), PartitionType.NONE, null);
+                    //partitioned tables have no pk and must have identifiers.
+                    //however we can not tell which columns are the identifiers so ahem???
+                    //we do a little hardcoding. ID,uid and uuid are determined to be identifiers.
+                    if (primaryKeys.isEmpty()) {
+                        ListOrderedSet<String> identifiers = new ListOrderedSet<>();
+                        for (Triple<String, Integer, String> s : edgeColumns) {
+                            if (s.getLeft().equalsIgnoreCase("ID") || s.getLeft().equalsIgnoreCase("uid") || s.getLeft().equalsIgnoreCase("uuid")) {
+                                identifiers.add(s.getLeft());
+                            }
+                        }
+                        edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), identifiers, PartitionType.NONE, null);
+                    } else {
+                        edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), ListOrderedSet.listOrderedSet(primaryKeys), PartitionType.NONE, null);
+                    }
                 }
-                List<Triple<String, Integer, String>> edgeColumns = this.sqlDialect.getTableColumns(metadata, edgCat, schema, table, null);
                 for (Triple<String, Integer, String> edgeColumn : edgeColumns) {
                     String column = edgeColumn.getLeft();
                     if (table.startsWith(EDGE_PREFIX) && (column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END))) {
@@ -321,11 +347,22 @@ class SqlgStartupManager {
                         if (hasIDPrimaryKey(primaryKeys)) {
                             foreignKey = SchemaTable.of(split[0], split[1]);
                         } else {
+                            //There could be no ID pk because of user defined pk or because partioned tables have no pk.
                             //This logic is because in TopologyManager.addLabelToEdge the '__I' or '__O' is assumed to be present and gets trimmed.
                             if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                                foreignKey = SchemaTable.of(split[0], split[1] + Topology.IN_VERTEX_COLUMN_END);
+                                if (split.length == 3) {
+                                    //user defined pk
+                                    foreignKey = SchemaTable.of(split[0], split[1] + Topology.IN_VERTEX_COLUMN_END);
+                                } else {
+                                    foreignKey = SchemaTable.of(split[0], split[1]);
+                                }
                             } else {
-                                foreignKey = SchemaTable.of(split[0], split[1] + Topology.OUT_VERTEX_COLUMN_END);
+                                if (split.length == 3) {
+                                    //user defined pk
+                                    foreignKey = SchemaTable.of(split[0], split[1] + Topology.OUT_VERTEX_COLUMN_END);
+                                } else {
+                                    foreignKey = SchemaTable.of(split[0], split[1]);
+                                }
                             }
                         }
                         if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
@@ -600,7 +637,6 @@ class SqlgStartupManager {
     }
 
     private boolean hasIDPrimaryKey(List<String> primaryKeys) {
-        //empty is for partitioned tables.
-        return primaryKeys.isEmpty() || (primaryKeys.size() == 1 && primaryKeys.get(0).equals(Topology.ID));
+        return primaryKeys.size() == 1 && primaryKeys.get(0).equals(Topology.ID);
     }
 }

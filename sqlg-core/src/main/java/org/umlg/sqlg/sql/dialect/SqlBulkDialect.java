@@ -3,6 +3,7 @@ package org.umlg.sqlg.sql.dialect;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -70,7 +71,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    default String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
@@ -78,7 +79,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
+    default void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 

@@ -1,17 +1,17 @@
 package org.umlg.sqlg.test.usersuppliedpk.topology;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -37,7 +37,7 @@ public class TestSimpleVertexGremlin extends BaseTest {
         try {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
             Assert.fail("Primary Key not specified, query suppose to fail!");
-        } catch (Exception  e) {
+        } catch (Exception e) {
             //ignore
         }
         this.sqlgGraph.tx().rollback();
@@ -48,7 +48,7 @@ public class TestSimpleVertexGremlin extends BaseTest {
         Assert.assertEquals(1, persons.size());
         Vertex person = persons.get(0);
         RecordId recordId = (RecordId) person.id();
-        Assert.assertTrue(recordId.getId() == null);
+        Assert.assertNull(recordId.getId());
         Assert.assertEquals(2, recordId.getIdentifiers().size());
         Assert.assertEquals("John", recordId.getIdentifiers().get(0));
         Assert.assertEquals("Smith", recordId.getIdentifiers().get(1));
@@ -61,6 +61,50 @@ public class TestSimpleVertexGremlin extends BaseTest {
         person = this.sqlgGraph.traversal().V().hasLabel("Person").toList().get(0);
         Assert.assertTrue(person.property("country").isPresent());
         Assert.assertEquals("moon", person.value("country"));
+    }
+
+    @Test
+    public void testEdgeInsertUpdate() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(),
+                "A",
+                new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(),
+                "B",
+                new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("country", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+        );
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "A1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "A1");
+        Edge e = a1.addEdge("ab", b1, "name", "halo", "country", "earth");
+        this.sqlgGraph.tx().commit();
+
+        List<Edge> edges = this.sqlgGraph.traversal().V().hasLabel("A").outE().toList();
+        Assert.assertEquals(1, edges.size());
+        Assert.assertEquals("earth", edges.get(0).value("country"));
+
+        e.property("country", "moon");
+        this.sqlgGraph.tx().commit();
+
+        edges = this.sqlgGraph.traversal().V().hasLabel("A").outE().toList();
+        Assert.assertEquals(1, edges.size());
+        Assert.assertEquals("moon", edges.get(0).value("country"));
     }
 
 

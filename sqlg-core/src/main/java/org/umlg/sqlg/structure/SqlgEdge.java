@@ -41,7 +41,15 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * @param outVertex       The edge's out vertex.
      * @param keyValueMapPair A pair of properties of the edge. Left contains all the properties and right the null valued properties.
      */
-    public SqlgEdge(SqlgGraph sqlgGraph, boolean streaming, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+    public SqlgEdge(
+            SqlgGraph sqlgGraph,
+            boolean streaming,
+            String schema,
+            String table,
+            SqlgVertex inVertex,
+            SqlgVertex outVertex,
+            Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+
         super(sqlgGraph, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
@@ -66,6 +74,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
      */
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
+    }
+
+    public SqlgEdge(SqlgGraph sqlgGraph, ListOrderedSet<Object> identifiers, String schema, String table) {
+        super(sqlgGraph, identifiers, schema, table);
     }
 
     private Iterator<Vertex> internalGetVertices(Direction direction) {
@@ -213,7 +225,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 }
             }
         }
-//        sql.append("?, ?");
         sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -226,33 +237,33 @@ public class SqlgEdge extends SqlgElement implements Edge {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
 
-            if (edgeLabel.getIdentifiers().isEmpty()) {
-                if (inVertexLabel.getIdentifiers().isEmpty()) {
-                    preparedStatement.setLong(i++, this.inVertex.recordId.getId());
-                } else {
-                    for (String identifier : inVertexLabel.getIdentifiers()) {
-                        i = SqlgUtil.setKeyValueAsParameter(
-                                this.sqlgGraph,
-                                false,
-                                i,
-                                preparedStatement,
-                                ImmutablePair.of(inVertexLabel.getProperty(identifier).get().getPropertyType(), inVertex.value(identifier)));
-                    }
+            if (inVertexLabel.getIdentifiers().isEmpty()) {
+                preparedStatement.setLong(i++, this.inVertex.recordId.getId());
+            } else {
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    i = SqlgUtil.setKeyValueAsParameter(
+                            this.sqlgGraph,
+                            false,
+                            i,
+                            preparedStatement,
+                            ImmutablePair.of(inVertexLabel.getProperty(identifier).get().getPropertyType(), inVertex.value(identifier)));
                 }
-                if (outVertexLabel.getIdentifiers().isEmpty()) {
-                    preparedStatement.setLong(i, this.outVertex.recordId.getId());
-                } else {
-                    for (String identifier : outVertexLabel.getIdentifiers()) {
-                        i = SqlgUtil.setKeyValueAsParameter(
-                                this.sqlgGraph,
-                                false,
-                                i,
-                                preparedStatement,
-                                ImmutablePair.of(outVertexLabel.getProperty(identifier).get().getPropertyType(), outVertex.value(identifier)));
-                    }
+            }
+            if (outVertexLabel.getIdentifiers().isEmpty()) {
+                preparedStatement.setLong(i, this.outVertex.recordId.getId());
+            } else {
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    i = SqlgUtil.setKeyValueAsParameter(
+                            this.sqlgGraph,
+                            false,
+                            i,
+                            preparedStatement,
+                            ImmutablePair.of(outVertexLabel.getProperty(identifier).get().getPropertyType(), outVertex.value(identifier)));
                 }
-                preparedStatement.executeUpdate();
-                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+            }
+            preparedStatement.executeUpdate();
+            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+            if (edgeLabel.hasIDPrimaryKey()) {
                 if (generatedKeys.next()) {
                     this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
                 } else {
@@ -263,7 +274,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 for (String identifier : edgeLabel.getIdentifiers()) {
                     identifiers.add(propertyTypeValueMap.get(identifier).getRight());
                 }
-                preparedStatement.executeUpdate();
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             }
             if (!keyValueMap.isEmpty()) {

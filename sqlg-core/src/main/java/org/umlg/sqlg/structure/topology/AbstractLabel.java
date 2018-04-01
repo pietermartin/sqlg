@@ -74,6 +74,18 @@ public abstract class AbstractLabel implements TopologyInf {
 //    }
 
     /**
+     * Only called for a partitioned vertex/edge label being added.
+     *
+     * @param label       The vertex or edge's label.
+     */
+    AbstractLabel(SqlgGraph sqlgGraph, String label, PartitionType partitionType, String partitionExpression) {
+        this.sqlgGraph = sqlgGraph;
+        this.label = label;
+        this.partitionType = partitionType;
+        this.partitionExpression = partitionExpression;
+    }
+
+    /**
      * Only called for a new vertex/edge label being added.
      *
      * @param label       The vertex or edge's label.
@@ -95,13 +107,15 @@ public abstract class AbstractLabel implements TopologyInf {
      * Only called for a new partitioned vertex/edge label being added.
      *
      * @param label               The vertex or edge's label.
-     * @param properties          The vertex's properties.
+     * @param properties          The element's properties.
+     * @param identifiers         The element's identifiers.
      * @param partitionType       The partition type. i.e. RANGE or LIST.
      * @param partitionExpression The sql fragment to express the partition column or expression.
      */
-    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, PartitionType partitionType, String partitionExpression) {
+    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
         Preconditions.checkArgument(partitionType == PartitionType.RANGE || partitionType == PartitionType.LIST, "Only RANGE and LIST partitions are supported. Found %s", partitionType.name());
         Preconditions.checkArgument(!partitionExpression.isEmpty(), "partitionExpression may not be an empty string.");
+        Preconditions.checkArgument(!identifiers.isEmpty(), "Partitioned labels must have at least one identifier.");
         this.sqlgGraph = sqlgGraph;
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
@@ -109,6 +123,7 @@ public abstract class AbstractLabel implements TopologyInf {
             property.setCommitted(false);
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
+        this.uncommittedIdentifiers.addAll(identifiers);
         this.partitionType = partitionType;
         this.partitionExpression = partitionExpression;
     }

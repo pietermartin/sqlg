@@ -4,6 +4,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -141,6 +142,10 @@ public class BatchManager {
 
     void addEdge(boolean streaming, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         SchemaTable outSchemaTable = SchemaTable.of(outVertex.getSchema(), sqlgEdge.getTable());
+        SchemaTable outVertexLabelSchemaTable = SchemaTable.of(outVertex.getSchema(), outVertex.getTable());
+        SchemaTable inSchemaTable = SchemaTable.of(inVertex.getSchema(), inVertex.getTable());
+        VertexLabel outVertexLabel = sqlgGraph.getTopology().getVertexLabel(outVertexLabelSchemaTable.getSchema(), outVertexLabelSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", outVertexLabelSchemaTable.getSchema(), outVertexLabelSchemaTable.getTable())));
+        VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
         MetaEdge metaEdge = MetaEdge.from(outSchemaTable, outVertex, inVertex);
         if (!streaming) {
             Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = this.edgeCache.get(metaEdge);
@@ -172,12 +177,12 @@ public class BatchManager {
             }
             Writer writer = this.streamingEdgeOutputStreamCache.get(outSchemaTable);
             if (writer == null) {
-                String sql = this.sqlDialect.constructCompleteCopyCommandSqlEdge(sqlgGraph, sqlgEdge, outVertex, inVertex, keyValueMap);
+                String sql = this.sqlDialect.constructCompleteCopyCommandSqlEdge(sqlgGraph, sqlgEdge, outVertexLabel, inVertexLabel, outVertex, inVertex, keyValueMap);
                 writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
                 this.streamingEdgeOutputStreamCache.put(outSchemaTable, writer);
             }
             try {
-                this.sqlDialect.writeStreamingEdge(writer, sqlgEdge, outVertex, inVertex, keyValueMap);
+                this.sqlDialect.writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outVertex, inVertex, keyValueMap);
                 if (this.isInStreamingModeWithLock()) {
                     this.batchCount++;
                 }

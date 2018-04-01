@@ -64,15 +64,6 @@ public class VertexLabel extends AbstractLabel {
         return vertexLabel;
     }
 
-//    static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns) {
-//        Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
-//        VertexLabel vertexLabel = new VertexLabel(schema, label, columns);
-//        vertexLabel.createVertexLabelOnDb(columns, new ListOrderedSet<>());
-//        TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns);
-//        vertexLabel.committed = false;
-//        return vertexLabel;
-//    }
-
     static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
         Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns, identifiers);
@@ -82,13 +73,22 @@ public class VertexLabel extends AbstractLabel {
         return vertexLabel;
     }
 
-    static VertexLabel createPartitionedVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns, PartitionType partitionType, String partitionExpression) {
+    static VertexLabel createPartitionedVertexLabel(
+            SqlgGraph sqlgGraph,
+            Schema schema,
+            String label,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
+            PartitionType partitionType,
+            String partitionExpression) {
+
         Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(partitionType != PartitionType.NONE, "PartitionType must be RANGE or LIST. Found NONE.");
         Preconditions.checkArgument(!StringUtils.isEmpty(partitionExpression), "partitionExpression may not be null or empty when creating a partitioned vertex label.");
-        VertexLabel vertexLabel = new VertexLabel(schema, label, columns, partitionType, partitionExpression);
-        vertexLabel.createPartitionedVertexLabelOnDb(columns);
-        TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns, new ListOrderedSet<>(), partitionType, partitionExpression);
+        Preconditions.checkArgument(!identifiers.isEmpty(), "Partitioned label must have at least one identifier.");
+        VertexLabel vertexLabel = new VertexLabel(schema, label, columns, identifiers, partitionType, partitionExpression);
+        vertexLabel.createPartitionedVertexLabelOnDb(columns, identifiers);
+        TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns, identifiers, partitionType, partitionExpression);
         vertexLabel.committed = false;
         return vertexLabel;
     }
@@ -97,18 +97,6 @@ public class VertexLabel extends AbstractLabel {
         super(schema.getSqlgGraph(), label);
         this.schema = schema;
     }
-
-//    /**
-//     * Only called for a new label being added.
-//     *
-//     * @param schema     The schema.
-//     * @param label      The vertex's label.
-//     * @param properties The vertex's properties.
-//     */
-//    private VertexLabel(Schema schema, String label, Map<String, PropertyType> properties) {
-//        super(schema.getSqlgGraph(), label, properties);
-//        this.schema = schema;
-//    }
 
     /**
      * Only called for a new label being added.
@@ -123,15 +111,28 @@ public class VertexLabel extends AbstractLabel {
     }
 
     /**
+     * Called for a partitioned vertex label loaded on startup.
+     *
+     * @param schema        The schema.
+     * @param label         The vertex's label.
+     * @param partitionType The vertex's partition strategy. i.e. RANGE or LIST.
+     */
+    VertexLabel(Schema schema, String label, PartitionType partitionType, String partitionExpression) {
+        super(schema.getSqlgGraph(), label, partitionType, partitionExpression);
+        this.schema = schema;
+    }
+
+    /**
      * Called for a new partitioned vertex label being added and when partitioned vertices are loaded on startup.
      *
      * @param schema        The schema.
      * @param label         The vertex's label.
      * @param properties    The vertex's properties.
+     * @param identifiers   The vertex's identifiers.
      * @param partitionType The vertex's partition strategy. i.e. RANGE or LIST.
      */
-    VertexLabel(Schema schema, String label, Map<String, PropertyType> properties, PartitionType partitionType, String partitionExpression) {
-        super(schema.getSqlgGraph(), label, properties, partitionType, partitionExpression);
+    VertexLabel(Schema schema, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
+        super(schema.getSqlgGraph(), label, properties, identifiers, partitionType, partitionExpression);
         this.schema = schema;
     }
 
@@ -293,16 +294,32 @@ public class VertexLabel extends AbstractLabel {
      * @param edgeLabelName The EdgeLabel's label's name.
      * @param inVertexLabel The edge's in VertexLabel.
      * @param properties    The EdgeLabel's properties
-     * @return
+     * @return The EdgeLabel
      */
     public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties);
+    }
+
+    /**
+     * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exists.
+     * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
+     * This method is equivalent to {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map, ListOrderedSet)}
+     *
+     * @param edgeLabelName The EdgeLabel's label's name.
+     * @param inVertexLabel The edge's in VertexLabel.
+     * @param properties    The EdgeLabel's properties.
+     * @param identifiers The EdgeLabel's identifiers.
+     * @return The EdgeLabel
+     */
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+        return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties, identifiers);
     }
 
     public EdgeLabel ensurePartitionedEdgeLabelExist(
             final String edgeLabelName,
             final VertexLabel inVertexLabel,
             Map<String, PropertyType> properties,
+            ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
 
@@ -311,22 +328,25 @@ public class VertexLabel extends AbstractLabel {
                 this,
                 inVertexLabel,
                 properties,
+                identifiers,
                 partitionType,
                 partitionExpression);
     }
 
     EdgeLabel addPartitionedEdgeLabel(
-            String edgeLabelName,
-            VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
-            PartitionType partitionType,
-            String partitionExpression) {
+            final String edgeLabelName,
+            final VertexLabel inVertexLabel,
+            final Map<String, PropertyType> properties,
+            final ListOrderedSet<String> identifiers,
+            final PartitionType partitionType,
+            final String partitionExpression) {
 
         EdgeLabel edgeLabel = EdgeLabel.createPartitionedEdgeLabel(
                 edgeLabelName,
                 this,
                 inVertexLabel,
                 properties,
+                identifiers,
                 partitionType,
                 partitionExpression);
         if (this.schema.isSqlgSchema()) {
@@ -408,6 +428,7 @@ public class VertexLabel extends AbstractLabel {
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + getLabel()));
         sql.append(" (");
+
         if (identifiers.isEmpty()) {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" ");
@@ -443,20 +464,15 @@ public class VertexLabel extends AbstractLabel {
         }
     }
 
-    private void createPartitionedVertexLabelOnDb(Map<String, PropertyType> columns) {
+    private void createPartitionedVertexLabelOnDb(Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+        Preconditions.checkState(!identifiers.isEmpty(), "Partitioned table must have identifiers.");
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + getLabel()));
         sql.append(" (");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" ");
-        sql.append(this.sqlgGraph.getSqlDialect().getAutoIncrement());
-        if (columns.size() > 0) {
-            sql.append(", ");
-        }
-        //TODO identifiers
         buildColumns(this.sqlgGraph, new ListOrderedSet<>(), columns, sql);
+        //nothing to do with the identifiers as partitioned tables do not have primary keys.
         sql.append(") PARTITION BY ");
         sql.append(this.partitionType.name());
         sql.append(" (");

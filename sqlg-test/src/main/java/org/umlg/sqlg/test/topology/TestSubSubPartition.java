@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -12,10 +13,7 @@ import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -51,10 +49,12 @@ public class TestSubSubPartition extends BaseTest {
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.RANGE,
                 "int1");
         Partition p1 = a.ensureRangePartitionWithSubPartitionExists("int1", "1", "5", PartitionType.RANGE, "int2");
@@ -82,8 +82,8 @@ public class TestSubSubPartition extends BaseTest {
         this.sqlgGraph.tx().commit();
         Thread.sleep(2000);
 
-        this.sqlgGraph.addVertex(T.label, "A", "int1", 1, "int2", 1, "int3", 1);
-        this.sqlgGraph.addVertex(T.label, "A", "int1", 5, "int2", 5, "int3", 5);
+        this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "int1", 1, "int2", 1, "int3", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "int1", 5, "int2", 5, "int3", 5);
 
         this.sqlgGraph.tx().commit();
 
@@ -199,10 +199,12 @@ public class TestSubSubPartition extends BaseTest {
                 "ab",
                 b,
                 new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.RANGE,
                 "int1");
         this.sqlgGraph.tx().commit();
@@ -229,7 +231,7 @@ public class TestSubSubPartition extends BaseTest {
         for (int i = 1; i < 10; i++) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-            a1.addEdge("ab", b1, "int1", i, "int2", i, "int3", i);
+            a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString(), "int1", i, "int2", i, "int3", i);
         }
         this.sqlgGraph.tx().commit();
         assert_edgePartitions(this.sqlgGraph);
@@ -361,10 +363,12 @@ public class TestSubSubPartition extends BaseTest {
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
                 "int1");
         Partition p1 = a.ensureListPartitionWithSubPartitionExists("int1", "1,2,3,4,5", PartitionType.LIST, "int2");
@@ -385,8 +389,8 @@ public class TestSubSubPartition extends BaseTest {
         p2_2.ensureListPartitionExists("int222", "6,7,8,9,10");
         this.sqlgGraph.tx().commit();
 
-        this.sqlgGraph.addVertex(T.label, "A", "int1", 1, "int2", 1, "int3", 1);
-        this.sqlgGraph.addVertex(T.label, "A", "int1", 5, "int2", 5, "int3", 5);
+        this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "int1", 1, "int2", 1, "int3", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "int1", 5, "int2", 5, "int3", 5);
 
         this.sqlgGraph.tx().commit();
 
@@ -412,12 +416,10 @@ public class TestSubSubPartition extends BaseTest {
         a = this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
         int222 = a.getPartition("int222");
         Assert.assertTrue(int222.isPresent());
-
-
     }
 
     @Test
-    public void testEdgeSubSubPartitionList() throws InterruptedException {
+    public void testEdgeSubSubPartitionList() throws Exception {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensureVertexLabelExist("A");
         VertexLabel b = publicSchema.ensureVertexLabelExist("B");
@@ -425,10 +427,12 @@ public class TestSubSubPartition extends BaseTest {
                 "ab",
                 b,
                 new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
                 "int1");
 
@@ -452,7 +456,7 @@ public class TestSubSubPartition extends BaseTest {
         for (int i = 1; i < 10; i++) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-            a1.addEdge("ab", b1, "int1", i, "int2", i, "int3", i);
+            a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString(), "int1", i, "int2", i, "int3", i);
         }
         this.sqlgGraph.tx().commit();
 
@@ -477,5 +481,14 @@ public class TestSubSubPartition extends BaseTest {
         ab = this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get();
         p = ab.getPartition("int222");
         Assert.assertTrue(p.isPresent());
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        }
     }
 }

@@ -488,7 +488,17 @@ public class Partition implements TopologyInf {
             sql.append(".");
             sql.append(sqlDialect.maybeWrapInQoutes(tableName));
             sql.append(" (");
-            sql.append(sqlDialect.maybeWrapInQoutes(inEdgeRole.getVertexLabel().getSchema().getName() + "." + inEdgeRole.getVertexLabel().getLabel() + Topology.IN_VERTEX_COLUMN_END));
+            if (inEdgeRole.getVertexLabel().hasIDPrimaryKey()) {
+                sql.append(sqlDialect.maybeWrapInQoutes(inEdgeRole.getVertexLabel().getSchema().getName() + "." + inEdgeRole.getVertexLabel().getLabel() + Topology.IN_VERTEX_COLUMN_END));
+            } else {
+               int i = 1;
+                for (String identifier : inEdgeRole.getVertexLabel().getIdentifiers()) {
+                    sql.append(sqlDialect.maybeWrapInQoutes(inEdgeRole.getVertexLabel().getSchema().getName() + "." + inEdgeRole.getVertexLabel().getLabel() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                    if (i++ < inEdgeRole.getVertexLabel().getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(");");
         }
         Set<EdgeRole> outEdgeRoles = edgeLabel.getOutEdgeRoles();
@@ -509,7 +519,17 @@ public class Partition implements TopologyInf {
             sql.append(".");
             sql.append(sqlDialect.maybeWrapInQoutes(tableName));
             sql.append(" (");
-            sql.append(sqlDialect.maybeWrapInQoutes(outEdgeRole.getVertexLabel().getSchema().getName() + "." + outEdgeRole.getVertexLabel().getLabel() + Topology.OUT_VERTEX_COLUMN_END));
+            if (outEdgeRole.getVertexLabel().hasIDPrimaryKey()) {
+                sql.append(sqlDialect.maybeWrapInQoutes(outEdgeRole.getVertexLabel().getSchema().getName() + "." + outEdgeRole.getVertexLabel().getLabel() + Topology.OUT_VERTEX_COLUMN_END));
+            } else {
+                int i = 1;
+                for (String identifier : outEdgeRole.getVertexLabel().getIdentifiers()) {
+                    sql.append(sqlDialect.maybeWrapInQoutes(outEdgeRole.getVertexLabel().getSchema().getName() + "." + outEdgeRole.getVertexLabel().getLabel() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                    if (i++ < outEdgeRole.getVertexLabel().getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(");");
         }
         return sql.toString();

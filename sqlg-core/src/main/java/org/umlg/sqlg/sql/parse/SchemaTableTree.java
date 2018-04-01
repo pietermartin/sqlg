@@ -2330,7 +2330,7 @@ public class SchemaTableTree {
             Map<SchemaTable, List<ColumnList.Column>> inForeignKeyColumns = columnList.getInForeignKeys(this.stepDepth, this.schemaTable);
             for (Map.Entry<SchemaTable, List<ColumnList.Column>> schemaTableColumnsEntry : inForeignKeyColumns.entrySet()) {
                 List<ColumnList.Column> columns = schemaTableColumnsEntry.getValue();
-                if (columns.size() == 1) {
+                if (columns.size() == 1 && !columns.get(0).isForeignKeyProperty()) {
                     ColumnList.Column column = columns.get(0);
                     sqlgEdge.loadInVertex(resultSet, column.getForeignSchemaTable(), column.getColumnIndex());
                 } else {
@@ -2340,7 +2340,7 @@ public class SchemaTableTree {
             Map<SchemaTable, List<ColumnList.Column>> outForeignKeyColumns = columnList.getOutForeignKeys(this.stepDepth, this.schemaTable);
             for (Map.Entry<SchemaTable, List<ColumnList.Column>> schemaTableColumnsEntry : outForeignKeyColumns.entrySet()) {
                 List<ColumnList.Column> columns = schemaTableColumnsEntry.getValue();
-                if (columns.size() == 1) {
+                if (columns.size() == 1 && !columns.get(0).isForeignKeyProperty()) {
                     ColumnList.Column column = columns.get(0);
                     sqlgEdge.loadOutVertex(resultSet, column.getForeignSchemaTable(), column.getColumnIndex());
                 } else {

@@ -73,12 +73,13 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     static EdgeLabel createPartitionedEdgeLabel(
-            String edgeLabelName,
-            VertexLabel outVertexLabel,
-            VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
-            PartitionType partitionType,
-            String partitionExpression) {
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            final Map<String, PropertyType> properties,
+            final ListOrderedSet<String> identifiers,
+            final PartitionType partitionType,
+            final String partitionExpression) {
 
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
@@ -88,10 +89,10 @@ public class EdgeLabel extends AbstractLabel {
                 outVertexLabel,
                 inVertexLabel,
                 properties,
+                identifiers,
                 partitionType,
                 partitionExpression);
-        //TODO
-        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, new ListOrderedSet<>());
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -105,15 +106,16 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     private EdgeLabel(
-            boolean forSqlgSchema,
-            String edgeLabelName,
-            VertexLabel outVertexLabel,
-            VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
-            PartitionType partitionType,
-            String partitionExpression) {
+            final boolean forSqlgSchema,
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            final Map<String, PropertyType> properties,
+            final ListOrderedSet<String> identifiers,
+            final PartitionType partitionType,
+            final String partitionExpression) {
 
-        super(outVertexLabel.getSchema().getSqlgGraph(), edgeLabelName, properties, partitionType, partitionExpression);
+        super(outVertexLabel.getSchema().getSqlgGraph(), edgeLabelName, properties, identifiers, partitionType, partitionExpression);
         if (forSqlgSchema) {
             this.outVertexLabels.add(outVertexLabel);
             this.inVertexLabels.add(inVertexLabel);
@@ -160,13 +162,12 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     EdgeLabel(Topology topology, String edgeLabelName) {
-        //TODO the identifiers need to come from the topology
         super(topology.getSqlgGraph(), edgeLabelName, Collections.emptyMap(), new ListOrderedSet<>());
         this.topology = topology;
     }
 
     EdgeLabel(Topology topology, String edgeLabelName, PartitionType partitionType, String partitionExpression) {
-        super(topology.getSqlgGraph(), edgeLabelName, Collections.emptyMap(), partitionType, partitionExpression);
+        super(topology.getSqlgGraph(), edgeLabelName, partitionType, partitionExpression);
         this.topology = topology;
     }
 
@@ -209,6 +210,10 @@ public class EdgeLabel extends AbstractLabel {
             Map<String, PropertyType> columns,
             ListOrderedSet<String> identifiers) {
 
+        if (!this.partitionType.isNone() && identifiers.isEmpty()) {
+            throw new IllegalStateException("Partitioned table must have identifiers.");
+        }
+
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
 
@@ -218,7 +223,7 @@ public class EdgeLabel extends AbstractLabel {
         sql.append(sqlDialect.maybeWrapInQoutes(schema));
         sql.append(".");
         sql.append(sqlDialect.maybeWrapInQoutes(tableName));
-        if (identifiers.isEmpty()) {
+        if (this.partitionType.isNone() && identifiers.isEmpty()) {
             sql.append("(\n\t");
             sql.append(sqlDialect.maybeWrapInQoutes("ID"));
             sql.append(" ");
@@ -234,7 +239,7 @@ public class EdgeLabel extends AbstractLabel {
             sql.append("(\n\t");
         }
         buildColumns(this.sqlgGraph, identifiers, columns, sql);
-        if (!identifiers.isEmpty()) {
+        if (this.partitionType.isNone() && !identifiers.isEmpty()) {
             sql.append(",\n\tPRIMARY KEY(");
             int count = 1;
             for (String identifier : identifiers) {

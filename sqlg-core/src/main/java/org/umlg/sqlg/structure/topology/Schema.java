@@ -205,6 +205,7 @@ public class Schema implements TopologyInf {
     public VertexLabel ensurePartitionedVertexLabelExist(
             final String label,
             final Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifers,
             PartitionType partitionType,
             String partitionExpression) {
 
@@ -216,11 +217,9 @@ public class Schema implements TopologyInf {
         if (!vertexLabelOptional.isPresent()) {
             this.topology.lock();
             vertexLabelOptional = this.getVertexLabel(label);
-            if (!vertexLabelOptional.isPresent()) {
-                return this.createPartitionedVertexLabel(label, columns, partitionType, partitionExpression);
-            } else {
-                return vertexLabelOptional.get();
-            }
+            return vertexLabelOptional.orElseGet(
+                    () -> this.createPartitionedVertexLabel(label, columns, identifers, partitionType, partitionExpression)
+            );
         } else {
             VertexLabel vertexLabel = vertexLabelOptional.get();
             //check if all the columns are there.
@@ -278,6 +277,7 @@ public class Schema implements TopologyInf {
             final VertexLabel outVertexLabel,
             final VertexLabel inVertexLabel,
             Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
 
@@ -297,6 +297,7 @@ public class Schema implements TopologyInf {
                         outVertexLabel,
                         inVertexLabel,
                         columns,
+                        identifiers,
                         partitionType,
                         partitionExpression);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
@@ -324,6 +325,7 @@ public class Schema implements TopologyInf {
             final VertexLabel outVertexLabel,
             final VertexLabel inVertexLabel,
             final Map<String, PropertyType> columns,
+            final ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
 
@@ -346,8 +348,7 @@ public class Schema implements TopologyInf {
                 foreignKeyOut,
                 foreignKeyIn,
                 columns,
-                //TODO identifiers
-                new ListOrderedSet<>(),
+                identifiers,
                 partitionType,
                 partitionExpression);
         if (this.sqlgGraph.getSqlDialect().needsSchemaCreationPrecommit()) {
@@ -361,6 +362,7 @@ public class Schema implements TopologyInf {
                 edgeLabelName,
                 inVertexLabel,
                 columns,
+                identifiers,
                 partitionType,
                 partitionExpression);
 
@@ -424,11 +426,25 @@ public class Schema implements TopologyInf {
         return vertexLabel;
     }
 
-    private VertexLabel createPartitionedVertexLabel(String vertexLabelName, Map<String, PropertyType> columns, PartitionType partitionType, String partitionExpression) {
+    private VertexLabel createPartitionedVertexLabel(
+            String vertexLabelName,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifers,
+            PartitionType partitionType,
+            String partitionExpression) {
+
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
         this.uncommittedRemovedVertexLabels.remove(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-        VertexLabel vertexLabel = VertexLabel.createPartitionedVertexLabel(this.sqlgGraph, this, vertexLabelName, columns, partitionType, partitionExpression);
+        VertexLabel vertexLabel = VertexLabel.createPartitionedVertexLabel(
+                this.sqlgGraph,
+                this,
+                vertexLabelName,
+                columns,
+                identifers,
+                partitionType,
+                partitionExpression
+        );
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
         this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
         return vertexLabel;
@@ -916,7 +932,7 @@ public class Schema implements TopologyInf {
             vertexLabel = this.vertexLabels.get(schemaName + "." + VERTEX_PREFIX + tableName);
             if (vertexLabel == null) {
                 if (!partitionType.isNone()) {
-                    vertexLabel = new VertexLabel(this, tableName, Collections.emptyMap(), partitionType, partitionExpression.value());
+                    vertexLabel = new VertexLabel(this, tableName, partitionType, partitionExpression.value());
                 } else {
                     vertexLabel = new VertexLabel(this, tableName);
                 }
@@ -1381,7 +1397,7 @@ public class Schema implements TopologyInf {
                             vertexLabel = new VertexLabel(this, vertexLabelName);
                         } else {
                             String partitionExpression = vertexLabelJson.get("partitionExpression").asText();
-                            vertexLabel = new VertexLabel(this, vertexLabelName, Collections.emptyMap(), partitionType, partitionExpression);
+                            vertexLabel = new VertexLabel(this, vertexLabelName, partitionType, partitionExpression);
                         }
                         this.vertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
                         this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);

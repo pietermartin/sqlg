@@ -217,11 +217,10 @@ public class SqlgUtil {
                             sqlgElement = (E) SqlgVertex.of(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                             schemaTableTree.loadProperty(resultSet, sqlgElement);
                         } else {
-                            throw new RuntimeException("//TODO");
-//                            String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
-//                            sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-//                            schemaTableTree.loadProperty(resultSet, sqlgElement);
-//                            schemaTableTree.loadEdgeInOutVertices(resultSet, sqlgElement);
+                            String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
+                            sqlgElement = (E) new SqlgEdge(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            schemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -11,11 +12,9 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -37,8 +36,9 @@ public class TestPartitioning extends BaseTest {
                 new HashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
                 "int1,int2");
         this.sqlgGraph.tx().commit();
@@ -64,8 +64,9 @@ public class TestPartitioning extends BaseTest {
                 new HashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
                 "int1,int2");
         a.ensureRangePartitionExists("part1", "1,1", "5,5");
@@ -83,12 +84,12 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals("int1,int2", a.getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
 
-            Optional<Partition> part1 =  a.getPartition("part1");
+            Optional<Partition> part1 = a.getPartition("part1");
             Assert.assertTrue(part1.isPresent());
             Assert.assertNull(part1.get().getPartitionExpression());
             Assert.assertEquals("1, 1", part1.get().getFrom());
             Assert.assertEquals("5, 5", part1.get().getTo());
-            Optional<Partition> part2 =  a.getPartition("part2");
+            Optional<Partition> part2 = a.getPartition("part2");
             Assert.assertTrue(part2.isPresent());
             Assert.assertNull(part2.get().getPartitionExpression());
             Assert.assertEquals("5, 5", part2.get().getFrom());
@@ -106,6 +107,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
                 PartitionType.RANGE,
                 "int1,int2");
         Partition part1 = a.ensureRangePartitionWithSubPartitionExists("part1", "1,1", "5,5", PartitionType.RANGE, "int3");
@@ -127,7 +129,7 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals("int1,int2", a.getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
 
-            Optional<Partition> p1 =  a.getPartition("part1");
+            Optional<Partition> p1 = a.getPartition("part1");
             Assert.assertTrue(p1.isPresent());
             Assert.assertEquals("int3", p1.get().getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, p1.get().getPartitionType());
@@ -141,7 +143,7 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals("1", p11.get().getFrom());
             Assert.assertEquals("5", p11.get().getTo());
 
-            Optional<Partition> p2 =  a.getPartition("part2");
+            Optional<Partition> p2 = a.getPartition("part2");
             Assert.assertTrue(p2.isPresent());
             Assert.assertEquals("int3", p2.get().getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, p2.get().getPartitionType());
@@ -176,6 +178,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
                 PartitionType.RANGE,
                 "int1,int2"
         );
@@ -215,6 +218,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
                 PartitionType.LIST,
                 "int1"
         );
@@ -268,6 +272,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
                 PartitionType.LIST,
                 "int1"
         );
@@ -335,10 +340,13 @@ public class TestPartitioning extends BaseTest {
     @Test
     public void testPartitioningRange() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
-        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
+        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
+                "Measurement",
+                new HashMap<String, PropertyType>() {{
                     put("date", PropertyType.LOCALDATE);
                     put("temp", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
                 PartitionType.RANGE,
                 "date");
         partitionedVertexLabel.ensureRangePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
@@ -376,6 +384,7 @@ public class TestPartitioning extends BaseTest {
                     put("name", PropertyType.STRING);
                     put("population", PropertyType.LONG);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
                 PartitionType.LIST,
                 "left(lower(name), 1)");
         partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'a'");
@@ -416,6 +425,7 @@ public class TestPartitioning extends BaseTest {
                     put("name", PropertyType.STRING);
                     put("population", PropertyType.LONG);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
                 PartitionType.LIST,
                 "name");
         partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'London'");
@@ -458,6 +468,7 @@ public class TestPartitioning extends BaseTest {
                     put("date", PropertyType.LOCALDATE);
                     put("temp", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
                 PartitionType.RANGE,
                 "date");
         partitionedVertexLabel.ensureRangePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'");
@@ -501,9 +512,15 @@ public class TestPartitioning extends BaseTest {
     public void testPartitionedEdgesRange() {
         VertexLabel person = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person");
         VertexLabel address = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address");
-        EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist("liveAt", address, new HashMap<String, PropertyType>() {{
-            put("date", PropertyType.LOCALDATE);
-        }}, PartitionType.RANGE, "date");
+        EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist(
+                "liveAt",
+                address,
+                new HashMap<String, PropertyType>() {{
+                    put("date", PropertyType.LOCALDATE);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
+                PartitionType.RANGE,
+                "date");
         Partition p1 = livedAt.ensureRangePartitionExists("livedAt1", "'2016-07-01'", "'2016-08-01'");
         Partition p2 = livedAt.ensureRangePartitionExists("livedAt2", "'2016-08-01'", "'2016-09-01'");
         this.sqlgGraph.tx().commit();
@@ -540,9 +557,15 @@ public class TestPartitioning extends BaseTest {
     public void testPartitionedEdgesList() {
         VertexLabel person = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person");
         VertexLabel address = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address");
-        EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist("liveAt", address, new HashMap<String, PropertyType>() {{
-            put("date", PropertyType.LOCALDATE);
-        }}, PartitionType.LIST, "date");
+        EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist(
+                "liveAt",
+                address,
+                new HashMap<String, PropertyType>() {{
+                    put("date", PropertyType.LOCALDATE);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
+                PartitionType.LIST,
+                "date");
         Partition p1 = livedAt.ensureListPartitionExists("livedAt1", "'2016-07-01'");
         Partition p2 = livedAt.ensureListPartitionExists("livedAt2", "'2016-07-02'");
         Partition p3 = livedAt.ensureListPartitionExists("livedAt2", "'2016-07-03'");
@@ -577,6 +600,7 @@ public class TestPartitioning extends BaseTest {
                     put("peaktemp", PropertyType.INTEGER);
                     put("unitsales", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
                 PartitionType.RANGE,
                 "logdate");
 
@@ -590,11 +614,11 @@ public class TestPartitioning extends BaseTest {
 
         this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 2, 1),
                 "peaktemp", 1, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 2, 2),
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement2", "logdate", LocalDate.of(2006, 2, 2),
                 "peaktemp", 1, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 3, 1),
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement3", "logdate", LocalDate.of(2006, 3, 1),
                 "peaktemp", 1, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "logdate", LocalDate.of(2006, 3, 2),
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement4", "logdate", LocalDate.of(2006, 3, 2),
                 "peaktemp", 2, "unitsales", 1);
         this.sqlgGraph.tx().commit();
 
@@ -615,6 +639,7 @@ public class TestPartitioning extends BaseTest {
                     put("list2", PropertyType.INTEGER);
                     put("unitsales", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
                 PartitionType.LIST,
                 "list1");
 
@@ -632,20 +657,20 @@ public class TestPartitioning extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 1, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 2, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 3, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "1", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement2", "list1", "1", "list2", 2, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement3", "list1", "1", "list2", 3, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement4", "list1", "1", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement5", "list1", "1", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement6", "list1", "1", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement7", "list1", "1", "list2", 4, "unitsales", 1);
 
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 1, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 2, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 3, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
-        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement1", "list1", "2", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement8", "list1", "2", "list2", 1, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement9", "list1", "2", "list2", 2, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement10", "list1", "2", "list2", 3, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement11", "list1", "2", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement12", "list1", "2", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement13", "list1", "2", "list2", 4, "unitsales", 1);
+        this.sqlgGraph.addVertex(T.label, "Measurement", "name", "measurement14", "list1", "2", "list2", 4, "unitsales", 1);
 
         this.sqlgGraph.tx().commit();
 
@@ -675,6 +700,7 @@ public class TestPartitioning extends BaseTest {
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
                 "int1");
         Partition p11 = ab.ensureRangePartitionWithSubPartitionExists("int1_1_4", "1", "4", PartitionType.RANGE, "int2");
@@ -703,7 +729,7 @@ public class TestPartitioning extends BaseTest {
             a1.addEdge("ab", b1, "int1", 2, "int2", 2);
             a1.addEdge("ab", b1, "int1", 6, "int2", 6);
             a1.addEdge("ab", b1, "int1", 10, "int2", 10);
-            a1.addEdge("ab", b1, "int1", 10, "int2", 14);
+            a1.addEdge("ab", b1, "int1", 11, "int2", 14);
             sqlgGraph1.tx().commit();
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -715,7 +741,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testEdgeSubPartitioningList() {
+    public void testEdgeSubPartitioningList() throws UnsupportedEncodingException {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensureVertexLabelExist("A");
         VertexLabel b = publicSchema.ensureVertexLabelExist("B");
@@ -723,9 +749,11 @@ public class TestPartitioning extends BaseTest {
                 "ab",
                 b,
                 new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
                 "int1");
         Partition p11 = ab.ensureListPartitionWithSubPartitionExists("int1_1_5", "1,2,3,4,5", PartitionType.LIST, "int2");
@@ -742,10 +770,10 @@ public class TestPartitioning extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex a1 = sqlgGraph1.addVertex(T.label, "A");
             Vertex b1 = sqlgGraph1.addVertex(T.label, "B");
-            a1.addEdge("ab", b1, "int1", 2, "int2", 12);
-            a1.addEdge("ab", b1, "int1", 6, "int2", 13);
-            a1.addEdge("ab", b1, "int1", 10, "int2", 14);
-            a1.addEdge("ab", b1, "int1", 10, "int2", 15);
+            a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString(), "int1", 2, "int2", 12);
+            a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString(), "int1", 6, "int2", 13);
+            a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString(), "int1", 10, "int2", 14);
+            a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString(), "int1", 10, "int2", 15);
             sqlgGraph1.tx().commit();
         } catch (Exception e) {
             Assert.fail(e.getMessage());

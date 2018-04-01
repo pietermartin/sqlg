@@ -383,8 +383,8 @@ public class ColumnList {
             return foreignSchemaTable;
         }
 
-        public String getForeignKeyProperty() {
-            return foreignKeyProperty;
+        public boolean isForeignKeyProperty() {
+            return foreignKeyProperty != null;
         }
 
         @Override

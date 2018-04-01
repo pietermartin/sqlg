@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.tuple.Triple;
@@ -10,13 +11,9 @@ import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
-import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTest;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -51,7 +48,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
 
     @Test
     public void testNotifyPartitionedVertexLabel() {
-        TopologyListenerTest tlt = new TopologyListenerTest(topologyListenerTriple);
+        TestTopologyChangeListener.TopologyListenerTest tlt = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(tlt);
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
 
@@ -59,9 +56,11 @@ public class TestPartitionMultipleGraphs extends BaseTest {
             VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist(
                     "Measurement",
                     new HashMap<String, PropertyType>() {{
+                        put("uid", PropertyType.STRING);
                         put("date", PropertyType.LOCALDATE);
                         put("temp", PropertyType.INTEGER);
                     }},
+                    ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                     PartitionType.RANGE,
                     "date");
             Partition p1 = measurement.ensureRangePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
@@ -96,7 +95,6 @@ public class TestPartitionMultipleGraphs extends BaseTest {
 
             Assert.assertEquals(1, sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("Measurement").get().getPartitions().size(), 0);
 
-
         } catch (Exception e) {
             Assert.fail(e.getMessage());
         }
@@ -104,7 +102,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
 
     @Test
     public void testNotifyPartitionedEdgeLabel() {
-        TopologyListenerTest tlt = new TopologyListenerTest(topologyListenerTriple);
+        TestTopologyChangeListener.TopologyListenerTest tlt = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(tlt);
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
 
@@ -115,8 +113,10 @@ public class TestPartitionMultipleGraphs extends BaseTest {
                     "livesAt",
                     address,
                     new HashMap<String, PropertyType>() {{
+                        put("uid", PropertyType.STRING);
                         put("date", PropertyType.LOCALDATE);
                     }},
+                    ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                     PartitionType.RANGE,
                     "date");
             Partition p1 = livesAt.ensureRangePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
@@ -157,17 +157,19 @@ public class TestPartitionMultipleGraphs extends BaseTest {
 
     @Test
     public void testNotificationSubSubPartitions() throws InterruptedException {
-        TopologyListenerTest tlt = new TopologyListenerTest(topologyListenerTriple);
+        TestTopologyChangeListener.TopologyListenerTest tlt = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(tlt);
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel a = aSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>(){{
+                    put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                     put("int4", PropertyType.INTEGER);
                 }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
                 "int1"
         );

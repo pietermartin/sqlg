@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -26,7 +27,6 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class SqlgVertex extends SqlgElement implements Vertex {
 
-    public static final String WHERE = " WHERE ";
     private static Logger logger = LoggerFactory.getLogger(SqlgVertex.class);
 
     /**
@@ -37,7 +37,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param table           The table name.
      * @param keyValueMapPair The properties.
      */
-    public SqlgVertex(SqlgGraph sqlgGraph, boolean temporary, boolean streaming, String schema, String table, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+    public SqlgVertex(
+            SqlgGraph sqlgGraph,
+            boolean temporary,
+            boolean streaming,
+            String schema,
+            String table,
+            Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+
         super(sqlgGraph, schema, table);
         insertVertex(temporary, streaming, keyValueMapPair);
         if (!sqlgGraph.tx().isInBatchMode()) {
@@ -137,8 +144,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
 
         ElementHelper.validateLabel(label);
-        if (label.contains("."))
-            throw new IllegalStateException(String.format("Edge label may not contain a '.' , the edge will be stored in the schema of the owning vertex. label = %s", new Object[]{label}));
+
+        Preconditions.checkArgument(!label.contains("."), String.format("Edge label may not contain a '.' , the edge will be stored in the schema of the owning vertex. label = %s", label));
 
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
@@ -161,7 +168,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", this.schema + "." + this.table);
         Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", ((SqlgVertex) inVertex).schema + "." + ((SqlgVertex) inVertex).table);
         //noinspection OptionalGetWithoutIsPresent
-        this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
+        if (!edgeLabel.hasIDPrimaryKey()) {
+            Preconditions.checkArgument(columns.keySet().containsAll(edgeLabel.getIdentifiers()), "identifiers must be present %s", edgeLabel.getIdentifiers());
+        }
         return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValueMapPair);
     }
 
@@ -280,7 +290,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getSchema()));
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getTable()));
-        sql.append(WHERE);
+        sql.append(" WHERE ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
         sql.append(" = ?");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
