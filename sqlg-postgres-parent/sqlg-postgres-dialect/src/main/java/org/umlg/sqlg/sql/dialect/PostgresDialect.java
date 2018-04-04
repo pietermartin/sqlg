@@ -47,7 +47,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  * Time: 1:42 PM
  */
 @SuppressWarnings("unused")
-public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
+public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect, CitusDialect {
 
     private static final String BATCH_NULL = "";
     private static final String COPY_COMMAND_DELIMITER = "\t";
@@ -96,7 +96,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public Set<String> getInternalSchemas() {
-        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "information_schema", "tiger", "tiger_data", "topology"));
+        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "information_schema", "tiger", "tiger_data", "topology", "citus"));
     }
 
     @Override
@@ -365,6 +365,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 SchemaTable inSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getInLabel());
                 VertexLabel outVertexLabel = sqlgGraph.getTopology().getVertexLabel(outSchemaTable.getSchema(), outSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", outSchemaTable.getSchema(), outSchemaTable.getTable())));
                 VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
+                EdgeLabel edgeLabel = sqlgGraph.getTopology().getEdgeLabel(metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel not found for %s.%s", metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable())));
 
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
@@ -385,7 +386,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         for (String identifier : outVertexLabel.getIdentifiers()) {
                             sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
                             if (i++ < outVertexLabel.getIdentifiers().size()) {
-                                sql.append(" AND ");
+                                sql.append(", ");
                             }
                         }
                     }
@@ -397,7 +398,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         for (String identifier : inVertexLabel.getIdentifiers()) {
                             sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
                             if (i++ < inVertexLabel.getIdentifiers().size()) {
-                                sql.append(" AND ");
+                                sql.append(",");
                             }
                         }
                     }
@@ -434,24 +435,33 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         }
                         writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
                         numberInserted++;
+                        if (!edgeLabel.getIdentifiers().isEmpty()) {
+                            ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                            for (String identifier : edgeLabel.getIdentifiers()) {
+                                identifiers.add(values.get(identifier));
+                            }
+                            sqlgEdge.setInternalPrimaryKey(RecordId.from(SchemaTable.of(metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable()), identifiers));
+                        }
                     }
                 }
-                long endHigh;
-                sql.setLength(0);
-                sql.append("SELECT CURRVAL('" + maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()) + "." + maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq") + "');");
-                if(logger.isDebugEnabled()) {
-                    logger.debug(sql.toString());
-                }
-                try (PreparedStatement preparedStatement = con.prepareStatement(sql.toString())) {
-                    ResultSet resultSet = preparedStatement.executeQuery();
-                    resultSet.next();
-                    endHigh = resultSet.getLong(1);
-                    resultSet.close();
-                }
-                //set the id on the vertex
-                long id = endHigh - numberInserted + 1;
-                for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
-                    sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
+                if (edgeLabel.getIdentifiers().isEmpty()) {
+                    long endHigh;
+                    sql.setLength(0);
+                    sql.append("SELECT CURRVAL('" + maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()) + "." + maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq") + "');");
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    try (PreparedStatement preparedStatement = con.prepareStatement(sql.toString())) {
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        resultSet.next();
+                        endHigh = resultSet.getLong(1);
+                        resultSet.close();
+                    }
+                    //set the id on the vertex
+                    long id = endHigh - numberInserted + 1;
+                    for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
+                        sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -3997,6 +4007,22 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 result.add(row);
             }
             return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int getShardCount(SqlgGraph sqlgGraph, AbstractLabel label) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM pg_dist_shard " +
+                    "WHERE logicalrelid = '\"" + label.getSchema().getName() + "\".\"" + label.getPrefix() + label.getLabel() + "\"'::regclass;");
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            } else {
+                return 0;
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

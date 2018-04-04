@@ -997,7 +997,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     @Override
-    protected String getPrefix() {
+    public String getPrefix() {
         return EDGE_PREFIX;
     }
 

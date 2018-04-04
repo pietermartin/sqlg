@@ -55,7 +55,7 @@ import org.umlg.sqlg.test.topology.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
-import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexGremlin;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexEdgeGremlin;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKTopology;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
@@ -245,7 +245,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestIndexOnPartition.class,
         TestUserSuppliedPKTopology.class,
         TestSimpleJoinGremlin.class,
-        TestSimpleVertexGremlin.class
+        TestSimpleVertexEdgeGremlin.class
 })
 public class AllTest {
 

@@ -76,7 +76,7 @@ public abstract class AbstractLabel implements TopologyInf {
     /**
      * Only called for a partitioned vertex/edge label being added.
      *
-     * @param label       The vertex or edge's label.
+     * @param label The vertex or edge's label.
      */
     AbstractLabel(SqlgGraph sqlgGraph, String label, PartitionType partitionType, String partitionExpression) {
         this.sqlgGraph = sqlgGraph;
@@ -932,7 +932,7 @@ public abstract class AbstractLabel implements TopologyInf {
 
     protected abstract List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException;
 
-    protected abstract String getPrefix();
+    public abstract String getPrefix();
 
     /**
      * remove a given property
@@ -1023,5 +1023,110 @@ public abstract class AbstractLabel implements TopologyInf {
 
     public boolean hasIDPrimaryKey() {
         return this.identifiers.isEmpty() && this.uncommittedIdentifiers.isEmpty();
+    }
+
+    public void distribute(String distributionColumn, AbstractLabel colocate) {
+        Preconditions.checkArgument(getProperty(distributionColumn).isPresent(), "Distribution column %s does not exist.", distributionColumn);
+        Connection conn = sqlgGraph.tx().getConnection();
+        distribute(conn, distributionColumn, colocate);
+    }
+
+    public void distribute(int shard_count, String distributionColumn, AbstractLabel colocate) {
+        Preconditions.checkArgument(getProperty(distributionColumn).isPresent(), "Distribution column %s does not exist.", distributionColumn);
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("SET citus.shard_count = " + shard_count + ";");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        distribute(conn, distributionColumn, colocate);
+    }
+
+    /**
+     * Distributes this label by calling 'create_distributed_table'
+     * This is using the default hash partitioning.
+     *
+     * @param shard_count        Sets the shard_count.
+     * @param distributionColumn The distribution column.
+     */
+    public void distribute(int shard_count, String distributionColumn) {
+        Preconditions.checkArgument(getProperty(distributionColumn).isPresent(), "Distribution column %s does not exist.", distributionColumn);
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("SET citus.shard_count = " + shard_count + ";");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        distribute(conn, distributionColumn);
+    }
+
+    /**
+     * Distributes this label by calling 'create_distributed_table'
+     * This is using the default hash partitioning.
+     * The default shard_count (32) will be used.
+     *
+     * @param distributionColumn The distribution column.
+     */
+    public void distribute(String distributionColumn) {
+        Preconditions.checkArgument(getProperty(distributionColumn).isPresent(), "Distribution column %s does not exist.", distributionColumn);
+        Connection conn = sqlgGraph.tx().getConnection();
+        distribute(conn, distributionColumn);
+    }
+
+    private void distribute(Connection connection, String distributionColumn) {
+        StringBuilder sql = new StringBuilder();
+        //If its not the public schema then first make sure the schema exist on all workers
+        if (!this.getSchema().getName().equals(this.sqlgGraph.getSqlDialect().getPublicSchema())) {
+            sql.append("SELECT run_command_on_workers($cmd$CREATE SCHEMA IF NOT EXISTS \"").append(getSchema().getName()).append("\"$cmd$);\n");
+        }
+        sql.append("SELECT create_distributed_table('");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchema().getName()));
+        sql.append(".");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getPrefix() + getLabel()));
+        sql.append("', '");
+        sql.append(distributionColumn);
+        sql.append("')");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void distribute(Connection connection, String distributionColumn, AbstractLabel colocate) {
+        StringBuilder sql = new StringBuilder();
+        //If its not the public schema then first make sure the schema exist on all workers
+        if (!this.getSchema().getName().equals(this.sqlgGraph.getSqlDialect().getPublicSchema())) {
+            sql.append("SELECT run_command_on_workers($cmd$CREATE SCHEMA IF NOT EXISTS \"").append(getSchema().getName()).append("\"$cmd$);\n");
+        }
+        sql.append("SELECT create_distributed_table('");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchema().getName()));
+        sql.append(".");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getPrefix() + getLabel()));
+        sql.append("', '");
+        sql.append(distributionColumn);
+        sql.append("', ");
+        sql.append("colocate_with => '");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(colocate.getSchema().getName()));
+        sql.append(".");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(colocate.getPrefix() + colocate.getLabel()));
+        sql.append("')");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

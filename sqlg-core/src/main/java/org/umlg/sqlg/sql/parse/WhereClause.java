@@ -71,11 +71,23 @@ public class WhereClause {
             return result;
         } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
+                if (schemaTableTree.isHasIDPrimaryKey()) {
+                    result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
+                    result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
+                } else {
+                    int i = 1;
+                    for (String identifier : schemaTableTree.getIdentifiers()) {
+                        result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier);
+                        result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
+                        if (i++ < schemaTableTree.getIdentifiers().size()) {
+                            result += " AND ";
+                        }
+                    }
+                }
             } else {
                 result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+                result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
             }
-            result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
             return result;
         } else if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
             result += " tmp" + (schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
@@ -267,7 +279,14 @@ public class WhereClause {
             Collection<?> values = (Collection<?>) hasContainer.getValue();
             for (Object value : values) {
                 if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                    keyValueMap.put("ID", value);
+                    if (schemaTableTree.isHasIDPrimaryKey()) {
+                        keyValueMap.put("ID", value);
+                    } else {
+                        int i = 0;
+                        for (String identifier : schemaTableTree.getIdentifiers()) {
+                            keyValueMap.put(identifier, ((RecordId)value).getIdentifiers().get(i++));
+                        }
+                    }
                 } else {
                     keyValueMap.put(hasContainer.getKey(), value);
                 }

@@ -983,7 +983,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     @Override
-    protected String getPrefix() {
+    public String getPrefix() {
         return VERTEX_PREFIX;
     }
 
