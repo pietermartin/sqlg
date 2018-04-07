@@ -7,7 +7,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -16,9 +18,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/08/17
@@ -36,9 +35,9 @@ public class TestIndex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         Optional<VertexLabel> personVertexOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
-        assertTrue(personVertexOptional.isPresent());
+        Assert.assertTrue(personVertexOptional.isPresent());
         Optional<PropertyColumn> namePropertyOptional = personVertexOptional.get().getProperty("name");
-        assertTrue(namePropertyOptional.isPresent());
+        Assert.assertTrue(namePropertyOptional.isPresent());
         Optional<Index> indexOptional = personVertexOptional.get().getIndex("name");
         Assert.assertFalse(indexOptional.isPresent());
 
@@ -49,17 +48,17 @@ public class TestIndex extends BaseTest {
 
         Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
         this.sqlgGraph.tx().commit();
-        assertTrue(index.getIndexType() == IndexType.NON_UNIQUE);
+        Assert.assertTrue(index.getIndexType() == IndexType.NON_UNIQUE);
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
             if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
                 ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name\" = 'john'");
-                assertTrue(rs.next());
+                Assert.assertTrue(rs.next());
                 String result = rs.getString(1);
                 System.out.println(result);
-                assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+                Assert.assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             }
         } catch (SQLException e) {
             Assert.fail(e.getMessage());
@@ -73,9 +72,9 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         this.sqlgGraph.tx().commit();
         Optional<VertexLabel> personVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
-        assertTrue(personVertexLabelOptional.isPresent());
+        Assert.assertTrue(personVertexLabelOptional.isPresent());
         Optional<PropertyColumn> propertyOptional = personVertexLabelOptional.get().getProperty("name");
-        assertTrue(propertyOptional.isPresent());
+        Assert.assertTrue(propertyOptional.isPresent());
 
         personVertexLabelOptional.get().ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyOptional.get()));
         this.sqlgGraph.tx().commit();
@@ -101,10 +100,10 @@ public class TestIndex extends BaseTest {
         try (Statement statement = conn.createStatement()) {
             if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
                 ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name\" = 'john50'");
-                assertTrue(rs.next());
+                Assert.assertTrue(rs.next());
                 String result = rs.getString(1);
                 System.out.println(result);
-                assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+                Assert.assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
                 statement.close();
             }
         } catch (SQLException e) {
@@ -124,17 +123,17 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john" + i);
         }
         this.sqlgGraph.tx().commit();
-        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", "john50").count().next(), 0);
-        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", P.eq("john50")).count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", P.eq("john50")).count().next().intValue());
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name\" = 'john50'");
-            assertTrue(rs.next());
+            Assert.assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            Assert.assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
         }
         this.sqlgGraph.tx().rollback();
@@ -148,17 +147,17 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
         }
         this.sqlgGraph.tx().commit();
-        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
-        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", P.eq("john50")).count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", P.eq("john50")).count().next().intValue());
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
-            assertTrue(rs.next());
+            Assert.assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            Assert.assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
         }
         this.sqlgGraph.tx().rollback();
@@ -174,14 +173,14 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
         }
         this.sqlgGraph.tx().commit();
-        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
         Connection conn = this.sqlgGraph.getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
-            assertTrue(rs.next());
+            Assert.assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            Assert.assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
@@ -197,14 +196,14 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "MySchema.Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
         }
         this.sqlgGraph.tx().commit();
-        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "MySchema.Person").has("name1", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "MySchema.Person").has("name1", "john50").count().next(), 0);
         Connection conn = this.sqlgGraph.getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"MySchema\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
-            assertTrue(rs.next());
+            Assert.assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            Assert.assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
@@ -266,9 +265,9 @@ public class TestIndex extends BaseTest {
             Connection conn = this.sqlgGraph.getConnection();
             Statement statement = conn.createStatement();
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"E_person_address\" a WHERE a.\"name\" = 'address1001'");
-            assertTrue(rs.next());
+            Assert.assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            Assert.assertTrue(result, result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
@@ -295,7 +294,7 @@ public class TestIndex extends BaseTest {
         edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
         this.sqlgGraph.tx().commit();
 
-        assertEquals(IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name"))).get().getIndexType());
+        Assert.assertEquals(IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name"))).get().getIndexType());
         Assert.assertFalse(edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("B", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name"))).isPresent());
 
         try {
@@ -324,18 +323,18 @@ public class TestIndex extends BaseTest {
         Assert.assertEquals(IndexType.NON_UNIQUE, it2);
 
     }
-    
+
     @Test
     public void testLongIndexName() throws Exception {
     	String i1=buildLongIndex(sqlgGraph);
     	String i2=buildLongIndex(sqlgGraph);
-    	assertEquals(i1,i2);
+    	Assert.assertEquals(i1,i2);
     	sqlgGraph.close();
     	sqlgGraph=SqlgGraph.open(getConfigurationClone());
     	String i3=buildLongIndex(sqlgGraph);
-    	assertEquals(i1,i3);
+    	Assert.assertEquals(i1,i3);
     }
-    
+
     private String buildLongIndex(SqlgGraph g){
     	Schema sch=g.getTopology().ensureSchemaExist("longIndex");
     	Map<String,PropertyType> columns=new HashMap<String, PropertyType>();
@@ -348,22 +347,22 @@ public class TestIndex extends BaseTest {
     			,label.getProperty("longpropertyname2").get()
     			,label.getProperty("longpropertyname3").get());
     	Index idx=label.ensureIndexExists(IndexType.NON_UNIQUE, properties);
-    	
+
     	g.tx().commit();
     	return idx.getName();
     }
-    
+
     @Test
     public void testShortIndexName() throws Exception {
     	String i1=buildShortIndex(sqlgGraph);
     	String i2=buildShortIndex(sqlgGraph);
-    	assertEquals(i1,i2);
+    	Assert.assertEquals(i1,i2);
     	sqlgGraph.close();
     	sqlgGraph=SqlgGraph.open(getConfigurationClone());
     	String i3=buildShortIndex(sqlgGraph);
-    	assertEquals(i1,i3);
+    	Assert.assertEquals(i1,i3);
     }
-    
+
     private String buildShortIndex(SqlgGraph g){
     	Schema sch=g.getTopology().ensureSchemaExist("longIndex");
     	Map<String,PropertyType> columns=new HashMap<String, PropertyType>();
@@ -376,8 +375,37 @@ public class TestIndex extends BaseTest {
     			,label.getProperty("short2").get()
     			,label.getProperty("short3").get());
     	Index idx=label.ensureIndexExists(IndexType.NON_UNIQUE, properties);
-    	
+
     	g.tx().commit();
     	return idx.getName();
+    }
+
+    @Test
+    public void testMultipleIndexesOnLabel() throws Exception {
+
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "Person",
+                new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("surname", PropertyType.STRING);
+                }}
+        );
+        PropertyColumn propertyColumn = vertexLabel.getProperty("name").orElseThrow(()->new RuntimeException("its a bug"));
+        vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(propertyColumn));
+        this.sqlgGraph.tx().commit();
+
+        propertyColumn = vertexLabel.getProperty("surname").orElseThrow(()->new RuntimeException("its a bug"));
+        vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(propertyColumn));
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "surname", "Smith");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Optional<VertexLabel> vertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Person");
+        Assert.assertTrue(vertexLabelOptional.isPresent());
+        Map<String, Index> indexMap = vertexLabelOptional.get().getIndexes();
+        Assert.assertEquals(2, indexMap.size());
     }
 }
