@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.complex.TestGithub;
+import org.umlg.sqlg.test.batch.TestBatchTemporaryVertex;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.complex.TestGithub;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGithub.class
+        TestBatchTemporaryVertex.class
 })
 public class AnyTest {
 }

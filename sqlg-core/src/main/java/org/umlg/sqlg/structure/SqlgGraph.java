@@ -443,7 +443,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
-        Preconditions.checkState(this.sqlDialect.supportsStreamingBatchMode());
+        Preconditions.checkState(this.sqlDialect.supportsStreamingBatchMode(), "Streaming batch mode is not supported.");
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);
 

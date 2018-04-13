@@ -1,39 +1,9 @@
 package org.umlg.sqlg.sql.dialect;
 
-import static org.umlg.sqlg.structure.PropertyType.BOOLEAN_ARRAY;
-import static org.umlg.sqlg.structure.PropertyType.BYTE_ARRAY;
-import static org.umlg.sqlg.structure.PropertyType.SHORT_ARRAY;
-import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
-
-import java.io.IOException;
-import java.sql.Array;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
@@ -44,19 +14,19 @@ import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgExceptions;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import java.io.IOException;
+import java.sql.*;
+import java.sql.Date;
+import java.time.*;
+import java.util.*;
+
+import static org.umlg.sqlg.structure.PropertyType.*;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -803,86 +773,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
             default:
                 // noop
                 break;
-        }
-    }
-
-
-    private void dropForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-
-        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<String> foreignKeys = edgeForeignKey.getValue();
-            String[] schemaTableArray = edgeTable.split("\\.");
-
-            for (String foreignKey : foreignKeys) {
-                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
-
-                    Set<String> foreignKeyNames = getForeignKeyConstraintNames(sqlgGraph, schemaTableArray[0], schemaTableArray[1]);
-                    for (String foreignKeyName : foreignKeyNames) {
-
-                        StringBuilder sql = new StringBuilder();
-                        sql.append("ALTER TABLE ");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                        sql.append(".");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                        sql.append(" DROP CONSTRAINT ");
-                        sql.append(maybeWrapInQoutes(foreignKeyName));
-                        if (needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        Connection conn = sqlgGraph.tx().getConnection();
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-
-    private void createForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<String> foreignKeys = edgeForeignKey.getValue();
-            for (String foreignKey : foreignKeys) {
-                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
-                    String[] schemaTableArray = edgeTable.split("\\.");
-                    StringBuilder sql = new StringBuilder();
-                    sql.append("ALTER TABLE ");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                    sql.append(" ADD FOREIGN KEY (");
-                    sql.append(maybeWrapInQoutes(foreignKey));
-                    sql.append(") REFERENCES ");
-                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
-                    sql.append(" MATCH SIMPLE");
-                    if (needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    Connection conn = sqlgGraph.tx().getConnection();
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
         }
     }
 

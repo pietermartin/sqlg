@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -128,6 +129,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return "BIGSERIAL PRIMARY KEY";
     }
 
+    @Override
+    public String getAutoIncrement() {
+        return "BIGSERIAL NOT NULL";
+    }
+
     public void assertTableName(String tableName) {
         if (!StringUtils.isEmpty(tableName) && tableName.length() > 63) {
             throw SqlgExceptions.invalidTableName(String.format("Postgres table names must be 63 characters or less! Given table name is %s", tableName));
@@ -209,9 +215,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
             String sql = internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, schemaTable.isTemporary(), schemaTable.getSchema(), schemaTable.getTable(), vertices.getLeft());
+            VertexLabel vertexLabel = null;
+            if (!schemaTable.isTemporary()) {
+                vertexLabel = sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(
+                        () -> new IllegalStateException(String.format("VertexLabel %s not found.", schemaTable.toString())));
+            }
             int numberInserted = 0;
             try (Writer writer = streamSql(sqlgGraph, sql)) {
-                for (Map<String, Object> keyValueMap : vertices.getRight().values()) {
+                for (Map.Entry<SqlgVertex, Map<String, Object>> sqlgVertexKeyValueMapEntry : vertices.getRight().entrySet()) {
+                    SqlgVertex sqlgVertex = sqlgVertexKeyValueMapEntry.getKey();
+                    Map<String, Object> keyValueMap = sqlgVertexKeyValueMapEntry.getValue();
                     //The map must contain all the keys, so make a copy with it all.
                     LinkedHashMap<String, Object> values = new LinkedHashMap<>();
                     for (String key : vertices.getLeft()) {
@@ -219,11 +232,19 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                     writeStreamingVertex(writer, values);
                     numberInserted++;
+                    if (vertexLabel != null && !vertexLabel.getIdentifiers().isEmpty()) {
+                        ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                        for (String identifier : vertexLabel.getIdentifiers()) {
+                            identifiers.add(values.get(identifier));
+                        }
+                        sqlgVertex.setInternalPrimaryKey(RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), identifiers));
+                    }
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            if (!schemaTable.isTemporary() && numberInserted > 0) {
+            //noinspection ConstantConditions
+            if (!schemaTable.isTemporary() && numberInserted > 0 && vertexLabel.getIdentifiers().isEmpty()) {
                 long endHigh;
                 sql = "SELECT CURRVAL('" + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq") + "');";
                 if (logger.isDebugEnabled()) {
@@ -339,6 +360,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         Connection con = sqlgGraph.tx().getConnection();
         try {
             for (MetaEdge metaEdge : edgeCache.keySet()) {
+
+                SchemaTable outSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getOutLabel());
+                SchemaTable inSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getInLabel());
+                VertexLabel outVertexLabel = sqlgGraph.getTopology().getVertexLabel(outSchemaTable.getSchema(), outSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", outSchemaTable.getSchema(), outSchemaTable.getTable())));
+                VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
+
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
 
@@ -350,9 +377,30 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(" (");
                 for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
                     int count = 1;
-                    sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + Topology.OUT_VERTEX_COLUMN_END));
+
+                    if (outVertexLabel.hasIDPrimaryKey()) {
+                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + Topology.OUT_VERTEX_COLUMN_END));
+                    } else {
+                        int i = 1;
+                        for (String identifier : outVertexLabel.getIdentifiers()) {
+                            sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                            if (i++ < outVertexLabel.getIdentifiers().size()) {
+                                sql.append(" AND ");
+                            }
+                        }
+                    }
                     sql.append(", ");
-                    sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + Topology.IN_VERTEX_COLUMN_END));
+                    if (inVertexLabel.hasIDPrimaryKey()) {
+                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + Topology.IN_VERTEX_COLUMN_END));
+                    } else {
+                        int i = 1;
+                        for (String identifier : inVertexLabel.getIdentifiers()) {
+                            sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                            if (i++ < inVertexLabel.getIdentifiers().size()) {
+                                sql.append(" AND ");
+                            }
+                        }
+                    }
                     for (String key : triples.getLeft()) {
                         if (count <= triples.getLeft().size()) {
                             sql.append(", ");
@@ -384,7 +432,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         for (String key : triples.getLeft()) {
                             values.put(key, outInVertexKeyValueMap.getRight().get(key));
                         }
-                        writeStreamingEdge(writer, sqlgEdge, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
+                        writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
                         numberInserted++;
                     }
                 }
@@ -1299,7 +1347,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(sqlgEdge.getSchema(), EDGE_PREFIX + sqlgEdge.getTable()));
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
@@ -1307,9 +1355,30 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append(".");
         sql.append(maybeWrapInQoutes(EDGE_PREFIX + sqlgEdge.getTable()));
         sql.append(" (");
-        sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + Topology.OUT_VERTEX_COLUMN_END));
+        if (outVertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + Topology.OUT_VERTEX_COLUMN_END));
+        } else {
+            int i = 1;
+            for (String identifier : outVertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                if (i++ < outVertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
         sql.append(", ");
-        sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + Topology.IN_VERTEX_COLUMN_END));
+        if (inVertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + Topology.IN_VERTEX_COLUMN_END));
+        } else {
+            int i = 1;
+            for (String identifier : inVertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                if (i++ < inVertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+
+        }
         int count = 1;
         for (String key : keyValueMap.keySet()) {
             if (count <= keyValueMap.size()) {
@@ -1438,12 +1507,37 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         try {
             String encoding = "UTF-8";
-            writer.write(((RecordId) outVertex.id()).getId().toString());
-            writer.write(COPY_COMMAND_DELIMITER);
-            writer.write(((RecordId) inVertex.id()).getId().toString());
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                writer.write(((RecordId) outVertex.id()).getId().toString());
+                writer.write(COPY_COMMAND_DELIMITER);
+            } else {
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    Object value = outVertex.value(identifier);
+                    PropertyType propertyType = outVertexLabel.getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, outVertexLabel.getFullName()))
+                    ).getPropertyType();
+                    valueToStreamBytes(writer, propertyType, value);
+                    writer.write(COPY_COMMAND_DELIMITER);
+                }
+            }
+            if (inVertexLabel.hasIDPrimaryKey()) {
+                writer.write(((RecordId) inVertex.id()).getId().toString());
+            } else {
+                int i = 1;
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    Object value = inVertex.value(identifier);
+                    PropertyType propertyType = inVertexLabel.getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, inVertexLabel.getFullName()))
+                    ).getPropertyType();
+                    valueToStreamBytes(writer, propertyType, value);
+                    if (i++ < inVertexLabel.getIdentifiers().size()) {
+                        writer.write(COPY_COMMAND_DELIMITER);
+                    }
+                }
+            }
             for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
                 writer.write(COPY_COMMAND_DELIMITER);
                 Object value = entry.getValue();
@@ -1688,86 +1782,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
         }
     }
-
-    private void dropForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-
-        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<String> foreignKeys = edgeForeignKey.getValue();
-            String[] schemaTableArray = edgeTable.split("\\.");
-
-            for (String foreignKey : foreignKeys) {
-                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
-
-                    Set<String> foreignKeyNames = getForeignKeyConstraintNames(sqlgGraph, schemaTableArray[0], schemaTableArray[1]);
-                    for (String foreignKeyName : foreignKeyNames) {
-
-                        StringBuilder sql = new StringBuilder();
-                        sql.append("ALTER TABLE ");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                        sql.append(".");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                        sql.append(" DROP CONSTRAINT ");
-                        sql.append(maybeWrapInQoutes(foreignKeyName));
-                        if (needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        Connection conn = sqlgGraph.tx().getConnection();
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-
-    private void createForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<String> foreignKeys = edgeForeignKey.getValue();
-            for (String foreignKey : foreignKeys) {
-                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
-                    String[] schemaTableArray = edgeTable.split("\\.");
-                    StringBuilder sql = new StringBuilder();
-                    sql.append("ALTER TABLE ");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                    sql.append(" ADD FOREIGN KEY (");
-                    sql.append(maybeWrapInQoutes(foreignKey));
-                    sql.append(") REFERENCES ");
-                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
-                    sql.append(" MATCH SIMPLE");
-                    if (needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    Connection conn = sqlgGraph.tx().getConnection();
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-    }
-
 
     @Override
     public String getBatchNull() {
@@ -2792,10 +2806,29 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT, \"dbVersion\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"schemaVertex\" TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"name\" TEXT, \"schemaVertex\" TEXT, " +
+                "\"partitionType\" TEXT, " +
+                "\"partitionExpression\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"name\" TEXT, " +
+                "\"partitionType\" TEXT, " +
+                "\"partitionExpression\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"name\" TEXT, " +
+                "\"from\" TEXT, " +
+                "\"to\" TEXT, " +
+                "\"in\" TEXT, " +
+                "\"partitionType\" TEXT, " +
+                "\"partitionExpression\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"index_type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
@@ -2823,6 +2856,31 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"E_edge_property_property__I_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"E_edge_property_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
 
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_identifier\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, \"identifier_index\" INTEGER, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\") DEFERRABLE);");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_identifier_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.vertex__O\");");
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_identifier\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, \"identifier_index\" INTEGER, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\") DEFERRABLE);");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_identifier_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.edge__O\");");
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\") DEFERRABLE);");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_partition_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.vertex__O\");");
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\") DEFERRABLE);");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_partition_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.edge__O\");");
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_partition_partition\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.partition__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE);");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__O_idx\" ON \"sqlg_schema\".\"E_partition_partition\" (\"sqlg_schema.partition__O\");");
+
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\") DEFERRABLE);");
         result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_index_index__I_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.index__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.vertex__O\");");
@@ -2844,13 +2902,47 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT);";
+        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT, \"dbVersion\" TEXT);";
     }
 
     @Override
     public String sqlgAddIndexEdgeSequenceColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
+    }
 
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionType\" TEXT DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionExpression\" TEXT;",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionType\" TEXT DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionExpression\" TEXT;",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
+                        "\"ID\" SERIAL PRIMARY KEY, " +
+                        "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                        "\"name\" TEXT, " +
+                        "\"from\" TEXT, " +
+                        "\"to\" TEXT, " +
+                        "\"in\" TEXT, " +
+                        "\"partitionType\" TEXT, " +
+                        "\"partitionExpression\" TEXT);",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\") DEFERRABLE);",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.vertex__O\");",
+
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\") DEFERRABLE);",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.edge__O\");",
+
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_partition_partition\"(" +
+                        "\"ID\" SERIAL PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.partition__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\") DEFERRABLE);",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");",
+                "CREATE INDEX IF NOT EXISTS \"E_vertex_partition_partition__O_idx\" ON \"sqlg_schema\".\"E_partition_partition\" (\"sqlg_schema.partition__O\");"
+        );
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
@@ -2899,9 +2991,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case boolean_ARRAY:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
             case SHORT_ARRAY:
-                return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
             case short_ARRAY:
-                return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[]) array.getArray());
             case INTEGER_ARRAY:
                 return array.getArray();
             case int_ARRAY:
@@ -3787,7 +3879,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String alterForeignKeyToDeferrable(String schema, String table, String foreignKeyName) {
-        return "alter table \n" +
+        return "ALTER TABLE \n" +
                 "\t\"" + schema + "\".\"" + table + "\" \n" +
                 "ALTER CONSTRAINT \n" +
                 "\t\"" + foreignKeyName + "\" DEFERRABLE;";
@@ -3846,5 +3938,68 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public boolean supportsTruncateMultipleTablesTogether() {
         return true;
     }
-    
+
+    @Override
+    public boolean supportsPartitioning() {
+        return true;
+    }
+
+    @Override
+    public List<Map<String, String>> getPartitions(Connection connection) {
+        List<Map<String, String>> result = new ArrayList<>();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("with pg_partitioned_table as (select \n" +
+                    "    p.partrelid,\n" +
+                    "    p.partstrat as partitionType,\n" +
+                    "    p.partnatts,\n" +
+                    "    string_agg(a.attname, ',' order by a.attnum) \"partitionExpression1\",\n" +
+                    "    pg_get_expr(p.partexprs, p.partrelid) \"partitionExpression2\"\n" +
+                    "from \n" +
+                    "(select \n" +
+                    "\tpartrelid,\n" +
+                    "    partstrat,\n" +
+                    "    partnatts,\n" +
+                    "    unnest(partattrs) partattrs,\n" +
+                    "    partexprs\n" +
+                    "from \n" +
+                    "\tpg_catalog.pg_partitioned_table\n" +
+                    ") p left join\n" +
+                    "\tpg_catalog.pg_attribute a on partrelid = a.attrelid and p.partattrs = a.attnum\n" +
+                    "group by \n" +
+                    "\t1,2,3,5\n" +
+                    ")\n" +
+                    "SELECT\n" +
+                    "\tn.nspname as schema,\n" +
+                    "\t(i.inhparent::regclass)::text as parent,\n" +
+                    "\t(cl.oid::regclass)::text as child,\n" +
+                    "    p.partitionType,\n" +
+                    "    p.\"partitionExpression1\",\n" +
+                    "    p.\"partitionExpression2\",\n" +
+                    "    pg_get_expr(cl.relpartbound, cl.oid, true) as \"fromToIn\"\n" +
+                    "FROM\n" +
+                    "    sqlg_schema.\"V_schema\" s join\n" +
+                    "\tpg_catalog.pg_namespace n on s.name = n.nspname join\n" +
+                    "    pg_catalog.pg_class cl on cl.relnamespace = n.oid left join\n" +
+                    "    pg_catalog.pg_inherits i on i.inhrelid = cl.oid left join\n" +
+                    "    pg_partitioned_table p on p.partrelid = cl.relfilenode\n" +
+                    "WHERE\n" +
+                    "\tcl.relkind <> 'S' AND " +
+                    "(p.\"partitionExpression1\" is not null or p.\"partitionExpression2\" is not null or cl.relpartbound is not null)");
+            while (resultSet.next()) {
+                Map<String, String> row = new HashMap<>();
+                row.put("schema", resultSet.getString("schema"));
+                row.put("parent", resultSet.getString("parent"));
+                row.put("child", resultSet.getString("child"));
+                row.put("partitionType", resultSet.getString("partitionType"));
+                row.put("partitionExpression1", resultSet.getString("partitionExpression1"));
+                row.put("partitionExpression2", resultSet.getString("partitionExpression2"));
+                row.put("fromToIn", resultSet.getString("fromToIn"));
+                result.add(row);
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

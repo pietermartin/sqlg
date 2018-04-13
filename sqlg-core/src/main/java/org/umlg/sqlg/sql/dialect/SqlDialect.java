@@ -63,6 +63,10 @@ public interface SqlDialect {
 
     String getAutoIncrementPrimaryKeyConstruct();
 
+    default String getAutoIncrement() {
+        throw new RuntimeException("Not yet implemented.");
+    }
+
     String[] propertyTypeToSqlDefinition(PropertyType propertyType);
 
     int[] propertyTypeToJavaSqlType(PropertyType propertyType);
@@ -649,6 +653,17 @@ public interface SqlDialect {
     List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
                                                           String tableNamePattern, String columnNamePattern);
 
+    /**
+     * Return the table's primary keys.
+     *
+     * @param metaData         JDBC meta data.
+     * @param catalog          The db catalog.
+     * @param schemaPattern    The schema name.
+     * @param tableNamePattern The table name.
+     * @return A list of primary key column names.
+     */
+    List<String> getPrimaryKeys(DatabaseMetaData metaData, String catalog, String schemaPattern, String tableNamePattern);
+
     List<Triple<String, Boolean, String>> getIndexInfo(DatabaseMetaData metaData, String catalog,
                                                        String schema, String table, boolean unique, boolean approximate);
 
@@ -985,7 +1000,27 @@ public interface SqlDialect {
     default boolean supportsTruncateMultipleTablesTogether() {
         return false;
     }
-    
+
+    default boolean supportsPartitioning() {
+        return false;
+    }
+
+    default List<Map<String, String>> getPartitions(Connection connection) {
+        throw new IllegalStateException("Partitioning is not supported.");
+    }
+
+    default List<String> addPartitionTables() {
+        throw new IllegalStateException("Partitioning is not supported.");
+    }
+
+    default String addDbVersionToGraph(DatabaseMetaData metadata) {
+        try {
+            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * get the default fetch size
      * @return the default fetch size, maybe null if we want to use the default from the driver

@@ -1106,7 +1106,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     }
 
     @Test
-    public void testY() throws IOException {
+    public void testY() {
         Graph g = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);

@@ -1,12 +1,20 @@
 package org.umlg.sqlg.structure.topology;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.BatchManager;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -19,24 +27,25 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class TopologyManager {
 
-    public static final String CREATED_ON = "createdOn";
-    public static final String UPDATED_ON = "updatedOn";
-    public static final String DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG = " does not exist in Sqlg's topology. BUG!!!";
-    public static final String SCHEMA = "Schema ";
-    public static final String FOUND_IN_SQLG_S_TOPOLOGY_BUG = " found in Sqlg's topology. BUG!!!";
-    public static final String MULTIPLE = "Multiple ";
 
     private TopologyManager() {
     }
 
     public static Vertex addGraph(SqlgGraph sqlgGraph, String version) {
-        LocalDateTime now = LocalDateTime.now();
-        return sqlgGraph.addVertex(
-                T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GRAPH,
-                "version", version,
-                CREATED_ON, now,
-                UPDATED_ON, now
-        );
+        Connection conn = sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            LocalDateTime now = LocalDateTime.now();
+            return sqlgGraph.addVertex(
+                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GRAPH,
+                    SQLG_SCHEMA_GRAPH_VERSION, version,
+                    SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion(),
+                    CREATED_ON, now,
+                    UPDATED_ON, now
+            );
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -47,14 +56,21 @@ public class TopologyManager {
      * @return The old version.
      */
     public static String updateGraph(SqlgGraph sqlgGraph, String version) {
-        GraphTraversalSource traversalSource = sqlgGraph.topology();
-        List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
-        Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
-        Vertex graph = graphVertices.get(0);
-        String oldVersion = graph.value("version");
-        graph.property("version", version);
-        graph.property(UPDATED_ON, LocalDateTime.now());
-        return oldVersion;
+        Connection conn = sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
+            Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
+            Vertex graph = graphVertices.get(0);
+            String oldVersion = graph.value(SQLG_SCHEMA_GRAPH_VERSION);
+            graph.property(SQLG_SCHEMA_GRAPH_VERSION, version);
+            graph.property(SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion());
+            graph.property(UPDATED_ON, LocalDateTime.now());
+            return oldVersion;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
@@ -144,7 +160,11 @@ public class TopologyManager {
         }
     }
 
-    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
+    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+        addVertexLabel(sqlgGraph, schema, tableName, columns, identifiers, PartitionType.NONE, null);
+    }
+
+    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             //get the schema vertex
@@ -153,45 +173,67 @@ public class TopologyManager {
                     .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
                     .toList();
-            Preconditions.checkState(!schemas.isEmpty(), SCHEMA + schema + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(schemas.size() == 1, MULTIPLE + schema + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", schema);
             Preconditions.checkState(!tableName.startsWith(VERTEX_PREFIX));
             Vertex schemaVertex = schemas.get(0);
 
-            Vertex vertex = sqlgGraph.addVertex(
-                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL,
-                    SQLG_SCHEMA_VERTEX_LABEL_NAME, tableName,
-                    SCHEMA_VERTEX_DISPLAY, schema + "." + VERTEX_PREFIX + tableName, //this is here for display when in pgadmin
-                    CREATED_ON, LocalDateTime.now()
-            );
+            Vertex vertex;
+            if (partitionExpression != null) {
+                Preconditions.checkState(partitionType != PartitionType.NONE, "If the partitionExpression is not null then the PartitionType may not be NONE. Found %s", partitionType.name());
+                vertex = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL,
+                        SQLG_SCHEMA_VERTEX_LABEL_NAME, tableName,
+                        SCHEMA_VERTEX_DISPLAY, schema + "." + VERTEX_PREFIX + tableName, //this is here for display when in pgadmin
+                        Topology.CREATED_ON, LocalDateTime.now(),
+                        Topology.SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, partitionType.name(),
+                        Topology.SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION, partitionExpression);
+            } else {
+                Preconditions.checkState(partitionType == PartitionType.NONE, "If the partitionExpression is null then the PartitionType must be NONE. Found %s", partitionType.name());
+                vertex = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL,
+                        SQLG_SCHEMA_VERTEX_LABEL_NAME, tableName,
+                        SCHEMA_VERTEX_DISPLAY, schema + "." + VERTEX_PREFIX + tableName, //this is here for display when in pgadmin
+                        Topology.CREATED_ON, LocalDateTime.now(),
+                        Topology.SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, PartitionType.NONE.name());
+            }
             schemaVertex.addEdge(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
             for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
                 Vertex property = sqlgGraph.addVertex(
                         T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                         "name", columnEntry.getKey(),
                         "type", columnEntry.getValue().name(),
-                        CREATED_ON, LocalDateTime.now()
+                        Topology.CREATED_ON, LocalDateTime.now()
                 );
                 vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
+
+                int i = 0;
+                for (String identifier : identifiers) {
+                    if (identifier.equals(columnEntry.getKey())) {
+                        vertex.addEdge(SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE, property, SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE, i);
+                    }
+                    i++;
+                }
+
             }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
 
-    public static void removeVertexLabel(SqlgGraph sqlgGraph, VertexLabel lbl) {
+    public static void removeVertexLabel(SqlgGraph sqlgGraph, VertexLabel vertexLabel) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
-                    .has("name", lbl.getSchema().getName())
+                    .has("name", vertexLabel.getSchema().getName())
                     .toList();
             if (schemas.size() > 0) {
                 Vertex schemaVertex = schemas.get(0);
                 List<Vertex> vertices = traversalSource.V(schemaVertex)
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                        .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, lbl.getLabel())
+                        .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, vertexLabel.getLabel())
                         .toList();
                 if (vertices.size() > 0) {
                     Vertex vertex = vertices.get(0);
@@ -206,7 +248,295 @@ public class TopologyManager {
         }
     }
 
-    public static void addEdgeLabel(SqlgGraph sqlgGraph, String schema, String prefixedTable, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
+    public static void addVertexLabelPartition(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String abstractLabel,
+            String name,
+            String from,
+            String to,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", abstractLabel)
+                    .toList();
+            if (vertices.size() == 0) {
+                throw new IllegalStateException("Found no vertex for " + schema + "." + abstractLabel);
+            }
+            if (vertices.size() > 1) {
+                throw new IllegalStateException("Found more than one vertex for " + schema + "." + abstractLabel);
+            }
+            Vertex vertex = vertices.get(0);
+
+            Vertex partition;
+            if (partitionExpression != null) {
+                Preconditions.checkState(!partitionType.isNone());
+                partition = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_FROM, from,
+                        SQLG_SCHEMA_PARTITION_TO, to,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
+                        CREATED_ON, LocalDateTime.now()
+                );
+            } else {
+                Preconditions.checkState(partitionType.isNone());
+                partition = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_FROM, from,
+                        SQLG_SCHEMA_PARTITION_TO, to,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        CREATED_ON, LocalDateTime.now()
+                );
+            }
+            vertex.addEdge(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, partition);
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static void addVertexLabelPartition(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String abstractLabel,
+            String name,
+            String in,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", abstractLabel)
+                    .toList();
+            if (vertices.size() == 0) {
+                throw new IllegalStateException("Found no vertex for " + schema + "." + abstractLabel);
+            }
+            if (vertices.size() > 1) {
+                throw new IllegalStateException("Found more than one vertex for " + schema + "." + abstractLabel);
+            }
+            Vertex vertex = vertices.get(0);
+
+            Vertex partition;
+            if (partitionExpression != null) {
+                Preconditions.checkState(!partitionType.isNone());
+                partition = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_IN, in,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
+                        CREATED_ON, LocalDateTime.now()
+                );
+            } else {
+                Preconditions.checkState(partitionType.isNone());
+                partition = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_IN, in,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        CREATED_ON, LocalDateTime.now()
+                );
+            }
+            vertex.addEdge(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, partition);
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static void addEdgeLabelPartition(
+            SqlgGraph sqlgGraph,
+            AbstractLabel abstractLabel,
+            String name,
+            String from,
+            String to,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        addEdgeLabelPartition(
+                sqlgGraph,
+                abstractLabel.getSchema().getName(),
+                abstractLabel.getName(),
+                name,
+                from,
+                to,
+                partitionType,
+                partitionExpression);
+    }
+
+    public static void addEdgeLabelPartition(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String abstractLabel,
+            String name,
+            String from,
+            String to,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .has("name", abstractLabel)
+                    .toList();
+            if (vertices.size() == 0) {
+                throw new IllegalStateException("Found no vertex for " + schema + "." + abstractLabel);
+            }
+            if (vertices.size() > 1) {
+                throw new IllegalStateException("Found more than one vertex for " + schema + "." + abstractLabel);
+            }
+            Vertex vertex = vertices.get(0);
+
+            Vertex property;
+            if (partitionExpression != null) {
+                Preconditions.checkState(!partitionType.isNone());
+                property = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_FROM, from,
+                        SQLG_SCHEMA_PARTITION_TO, to,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
+                        CREATED_ON, LocalDateTime.now()
+                );
+            } else {
+                Preconditions.checkState(partitionType.isNone());
+                property = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_FROM, from,
+                        SQLG_SCHEMA_PARTITION_TO, to,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        CREATED_ON, LocalDateTime.now()
+                );
+            }
+            vertex.addEdge(SQLG_SCHEMA_EDGE_PARTITION_EDGE, property);
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static void addEdgeLabelPartition(
+            SqlgGraph sqlgGraph,
+            AbstractLabel abstractLabel,
+            String name,
+            String in,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        addEdgeLabelPartition(
+                sqlgGraph,
+                abstractLabel.getSchema().getName(),
+                abstractLabel.getName(),
+                name,
+                in,
+                partitionType,
+                partitionExpression
+        );
+    }
+
+    public static void addEdgeLabelPartition(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String abstractLabel,
+            String name,
+            String in,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .has("name", abstractLabel)
+                    .toList();
+            if (vertices.size() == 0) {
+                throw new IllegalStateException("Found no vertex for " + schema + "." + abstractLabel);
+            }
+            if (vertices.size() > 1) {
+                throw new IllegalStateException("Found more than one vertex for " + schema + "." + abstractLabel);
+            }
+            Vertex vertex = vertices.get(0);
+
+            Vertex property;
+            if (partitionExpression != null) {
+                Preconditions.checkState(!partitionType.isNone());
+                property = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_IN, in,
+                        CREATED_ON, LocalDateTime.now(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression
+                );
+            } else {
+                Preconditions.checkState(partitionType.isNone());
+                property = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_IN, in,
+                        CREATED_ON, LocalDateTime.now(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name()
+                );
+            }
+            vertex.addEdge(SQLG_SCHEMA_EDGE_PARTITION_EDGE, property);
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
+
+    public static void addEdgeLabel(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String prefixedTable,
+            SchemaTable foreignKeyOut,
+            SchemaTable foreignKeyIn,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers) {
+
+        addEdgeLabel(sqlgGraph, schema, prefixedTable, foreignKeyOut, foreignKeyIn, columns, identifiers, PartitionType.NONE, null);
+    }
+
+    public static void addEdgeLabel(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String prefixedTable,
+            SchemaTable foreignKeyOut,
+            SchemaTable foreignKeyIn,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        Vertex edgeVertex = addEdgeLabel(sqlgGraph, prefixedTable, columns, identifiers, partitionType, partitionExpression);
+
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
@@ -214,8 +544,8 @@ public class TopologyManager {
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
                     .toList();
-            Preconditions.checkState(!schemas.isEmpty(), SCHEMA + schema + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(schemas.size() == 1, MULTIPLE + schema + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", schema);
             Vertex schemaVertex = schemas.get(0);
 
             List<Vertex> outVertices = traversalSource.V(schemaVertex)
@@ -223,7 +553,7 @@ public class TopologyManager {
                     .has("name", foreignKeyOut.getTable())
                     .toList();
             Preconditions.checkState(!outVertices.isEmpty(), "Schema %s does not contain vertex label %s ", schema, foreignKeyOut.getTable());
-            Preconditions.checkState(outVertices.size() == 1, "Multiple out vertices " + foreignKeyOut.toString() + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(outVertices.size() == 1, "Multiple out vertices %s found in Sqlg's topology. BUG!!!", foreignKeyOut.toString());
             Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
             Vertex outVertex = outVertices.get(0);
 
@@ -232,26 +562,52 @@ public class TopologyManager {
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
                     .has("name", foreignKeyIn.getSchema())
                     .toList();
-            Preconditions.checkState(!schemas.isEmpty(), SCHEMA + schema + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(schemas.size() == 1, MULTIPLE + schema + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", schema);
             Vertex schemaInVertex = schemas.get(0);
 
             List<Vertex> inVertices = traversalSource.V(schemaInVertex)
                     .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", foreignKeyIn.getTable())
                     .toList();
-            Preconditions.checkState(!inVertices.isEmpty(), "In vertex " + foreignKeyIn.toString() + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(inVertices.size() == 1, "Multiple in vertices " + foreignKeyIn.toString() + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!inVertices.isEmpty(), "In vertex %s does not exist in Sqlg's topology. BUG!!!", foreignKeyIn.toString());
+            Preconditions.checkState(inVertices.size() == 1, "Multiple in vertices %s found in Sqlg's topology. BUG!!!", foreignKeyIn.toString());
             Vertex inVertex = inVertices.get(0);
-
-            Vertex edgeVertex = sqlgGraph.addVertex(
-                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL,
-                    "name", prefixedTable.substring(EDGE_PREFIX.length()),
-                    CREATED_ON, LocalDateTime.now()
-            );
 
             outVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
             inVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static Vertex addEdgeLabel(
+            SqlgGraph sqlgGraph,
+            String prefixedTable,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Vertex edgeVertex;
+            if (partitionExpression != null) {
+                Preconditions.checkState(partitionType != PartitionType.NONE, "If the partitionExpression is not null then the PartitionType may not be NONE. Found %s", partitionType.name());
+                edgeVertex = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL,
+                        "name", prefixedTable.substring(EDGE_PREFIX.length()),
+                        CREATED_ON, LocalDateTime.now(),
+                        Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, partitionType.name(),
+                        Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, partitionExpression);
+            } else {
+                Preconditions.checkState(partitionType == PartitionType.NONE, "If the partitionExpression is null then the PartitionType must be NONE. Found %s", partitionType.name());
+                edgeVertex = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL,
+                        "name", prefixedTable.substring(EDGE_PREFIX.length()),
+                        CREATED_ON, LocalDateTime.now(),
+                        Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PartitionType.NONE.name());
+            }
 
             for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
                 Vertex property = sqlgGraph.addVertex(
@@ -261,7 +617,16 @@ public class TopologyManager {
                         CREATED_ON, LocalDateTime.now()
                 );
                 edgeVertex.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
+                //add in the identifiers if there are any.
+                int i = 0;
+                for (String identifier : identifiers) {
+                    if (identifier.equals(columnEntry.getKey())) {
+                        edgeVertex.addEdge(SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE, property, SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, i);
+                    }
+                    i++;
+                }
             }
+            return edgeVertex;
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
@@ -303,16 +668,16 @@ public class TopologyManager {
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
                     .toList();
-            Preconditions.checkState(!schemas.isEmpty(), SCHEMA + schema + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(schemas.size() == 1, MULTIPLE + schema + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", schema);
 
             String foreignKeySchema = foreignKey.getSchema();
             schemas = traversalSource.V()
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
                     .has("name", foreignKeySchema)
                     .toList();
-            Preconditions.checkState(!schemas.isEmpty(), SCHEMA + foreignKeySchema + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(schemas.size() == 1, MULTIPLE + foreignKeySchema + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", foreignKeySchema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", foreignKeySchema);
             Vertex foreignKeySchemaVertex = schemas.get(0);
 
             Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
@@ -326,7 +691,7 @@ public class TopologyManager {
                     .dedup()
                     .toList();
             Preconditions.checkState(!edgeVertices.isEmpty(), "Edge vertex '%s' does not exist in schema '%s'", prefixedTable.substring(EDGE_PREFIX.length()), schema);
-            Preconditions.checkState(edgeVertices.size() == 1, "Multiple edge vertices " + foreignKey.toString() + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(edgeVertices.size() == 1, "Multiple edge vertices %s found in Sqlg's topology. BUG!!!", foreignKey.toString());
             Vertex edgeVertex = edgeVertices.get(0);
 
             String foreignKeyVertexTable;
@@ -339,8 +704,56 @@ public class TopologyManager {
                     .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", foreignKeyVertexTable)
                     .toList();
-            Preconditions.checkState(!foreignKeyVertices.isEmpty(), "Out vertex " + foreignKey.toString() + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(foreignKeyVertices.size() == 1, "Multiple out vertices " + foreignKey.toString() + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
+            Preconditions.checkState(!foreignKeyVertices.isEmpty(), "Out vertex %s does not exist in Sqlg's topology. BUG!!!", foreignKey.toString());
+            Preconditions.checkState(foreignKeyVertices.size() == 1, "Multiple out vertices %s found in Sqlg's topology. BUG!!!", foreignKey.toString());
+            Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
+            Vertex foreignKeyVertex = foreignKeyVertices.get(0);
+
+            if (in) {
+                foreignKeyVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+            } else {
+                foreignKeyVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
+            }
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static void addLabelToEdge(SqlgGraph sqlgGraph, Vertex edgeVertex, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> schemas = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .toList();
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", schema);
+
+            String foreignKeySchema = foreignKey.getSchema();
+            schemas = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", foreignKeySchema)
+                    .toList();
+            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", foreignKeySchema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", foreignKeySchema);
+            Vertex foreignKeySchemaVertex = schemas.get(0);
+
+            Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
+
+            String foreignKeyVertexTable;
+            if (in) {
+                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.IN_VERTEX_COLUMN_END.length());
+            } else {
+                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.OUT_VERTEX_COLUMN_END.length());
+            }
+            List<Vertex> foreignKeyVertices = traversalSource.V(foreignKeySchemaVertex)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", foreignKeyVertexTable)
+                    .toList();
+            Preconditions.checkState(!foreignKeyVertices.isEmpty(), "Out vertex %s does not exist in Sqlg's topology. BUG!!!", foreignKey.toString());
+            Preconditions.checkState(foreignKeyVertices.size() == 1, "Multiple out vertices %s found in Sqlg's topology. BUG!!!", foreignKey.toString());
             Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
             Vertex foreignKeyVertex = foreignKeyVertices.get(0);
 
@@ -611,13 +1024,13 @@ public class TopologyManager {
         }
     }
 
-    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column) {
+    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column, ListOrderedSet<String> primaryKeys) {
         for (Map.Entry<String, PropertyType> stringPropertyTypeEntry : column.entrySet()) {
-            addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyTypeEntry);
+            addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyTypeEntry, primaryKeys);
         }
     }
 
-    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column) {
+    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column, ListOrderedSet<String> identifiers) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(EDGE_PREFIX), "prefixedTable must be for an edge. prefixedTable = " + prefixedTable);
@@ -646,6 +1059,13 @@ public class TopologyManager {
                     CREATED_ON, LocalDateTime.now()
             );
             edge.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
+            int i = 0;
+            for (String identifier : identifiers) {
+                if (identifier.equals(column.getKey())) {
+                    edge.addEdge(SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE, property, SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, i);
+                }
+                i++;
+            }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
@@ -744,5 +1164,228 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NONE);
         }
         return batchModeType;
+    }
+
+    public static void removePartition(SqlgGraph sqlgGraph, Partition partition) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            AbstractLabel abstractLabel = partition.getAbstractLabel();
+            List<Vertex> partitions;
+            if (abstractLabel instanceof VertexLabel) {
+                partitions = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                        .has("name", abstractLabel.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, abstractLabel.getName())
+                        .repeat(__.out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                        .until(__.has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()))
+                        .toList();
+
+            } else {
+                partitions = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                        .has("name", abstractLabel.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .has(SQLG_SCHEMA_EDGE_LABEL_NAME, abstractLabel.getName())
+                        .repeat(__.out(SQLG_SCHEMA_EDGE_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                        .until(__.has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()))
+                        .toList();
+            }
+            Preconditions.checkState(partitions.size() == 1);
+            Vertex partitionVertex = partitions.get(0);
+            partitionVertex.remove();
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
+
+    /**
+     * Adds the partition to a partition. A new Vertex with label Partition is added and in linked to its parent with
+     * the SQLG_SCHEMA_PARTITION_PARTITION_EDGE edge label.
+     *
+     * @param sqlgGraph
+     */
+    public static void addSubPartition(SqlgGraph sqlgGraph, Partition partition) {
+        AbstractLabel abstractLabel = partition.getAbstractLabel();
+        addSubPartition(
+                sqlgGraph,
+                partition.getParentPartition().getParentPartition() != null,
+                abstractLabel instanceof VertexLabel,
+                abstractLabel.getSchema().getName(),
+                abstractLabel.getName(),
+                partition.getParentPartition().getName(),
+                partition.getName(),
+                partition.getPartitionType(),
+                partition.getPartitionExpression(),
+                partition.getFrom(),
+                partition.getTo(),
+                partition.getIn()
+        );
+
+    }
+
+    public static void addSubPartition(
+            SqlgGraph sqlgGraph,
+            boolean isSubSubPartition,
+            boolean isVertexLabel,
+            String schema,
+            String abstractLabel,
+            String partitionParent,
+            String partitionName,
+            PartitionType partitionType,
+            String partitionExpression,
+            String from,
+            String to,
+            String in) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices;
+            if (isVertexLabel) {
+                if (!isSubSubPartition) {
+                    vertices = traversalSource.V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                            .has("name", schema)
+                            .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                            .has("name", abstractLabel)
+                            .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE)
+                            .has("name", partitionParent)
+                            .toList();
+                } else {
+                    vertices = traversalSource.V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                            .has("name", schema)
+                            .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                            .has("name", abstractLabel)
+                            .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE)
+                            .repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                            .until(__.has("name", partitionParent))
+                            .toList();
+                }
+            } else {
+                if (!isSubSubPartition) {
+                    vertices = traversalSource.V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                            .has("name", schema)
+                            .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                            .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .has("name", abstractLabel)
+                            .out(SQLG_SCHEMA_EDGE_PARTITION_EDGE)
+                            .has("name", partitionParent)
+                            .toList();
+                } else {
+                    vertices = traversalSource.V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                            .has("name", schema)
+                            .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                            .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .has("name", abstractLabel)
+                            .out(SQLG_SCHEMA_EDGE_PARTITION_EDGE)
+                            .repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                            .until(__.has("name", partitionParent))
+                            .toList();
+                }
+            }
+            if (vertices.size() == 0) {
+                throw new IllegalStateException(String.format("Found no vertex for %s.%s#%s", schema, abstractLabel, partitionParent));
+            }
+            if (vertices.size() > 1) {
+                throw new IllegalStateException(String.format("Found more than one vertex for %s.%s#%s", schema, abstractLabel, partitionParent));
+            }
+            Vertex vertex = vertices.get(0);
+
+            Vertex subPartition;
+            if (partitionExpression != null) {
+                if (from != null) {
+                    Preconditions.checkState(to != null);
+                    subPartition = sqlgGraph.addVertex(
+                            T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                            SQLG_SCHEMA_PARTITION_NAME, partitionName,
+                            SQLG_SCHEMA_PARTITION_FROM, from,
+                            SQLG_SCHEMA_PARTITION_TO, to,
+                            SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                            SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
+                            CREATED_ON, LocalDateTime.now()
+                    );
+                } else {
+                    Preconditions.checkState(in != null);
+                    subPartition = sqlgGraph.addVertex(
+                            T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                            SQLG_SCHEMA_PARTITION_NAME, partitionName,
+                            SQLG_SCHEMA_PARTITION_IN, in,
+                            SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                            SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
+                            CREATED_ON, LocalDateTime.now()
+                    );
+                }
+            } else {
+                if (from != null) {
+                    Preconditions.checkState(to != null);
+                    subPartition = sqlgGraph.addVertex(
+                            T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                            SQLG_SCHEMA_PARTITION_NAME, partitionName,
+                            SQLG_SCHEMA_PARTITION_FROM, from,
+                            SQLG_SCHEMA_PARTITION_TO, to,
+                            SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                            CREATED_ON, LocalDateTime.now()
+                    );
+                } else {
+                    Preconditions.checkState(in != null);
+                    subPartition = sqlgGraph.addVertex(
+                            T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                            SQLG_SCHEMA_PARTITION_NAME, partitionName,
+                            SQLG_SCHEMA_PARTITION_IN, in,
+                            SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                            CREATED_ON, LocalDateTime.now()
+                    );
+                }
+            }
+            vertex.addEdge(SQLG_SCHEMA_PARTITION_PARTITION_EDGE, subPartition);
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
+
+    public static void updateVertexLabelPartitionTypeAndExpression(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String name,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        GraphTraversalSource traversalSource = sqlgGraph.topology();
+        List<Vertex> vertexLabels = traversalSource
+                .V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA).has(Topology.SQLG_SCHEMA_SCHEMA_NAME, schema)
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, name)
+                .toList();
+        Preconditions.checkState(vertexLabels.size() == 1, "BUG: There can only ever be one VertexLabel vertex, found %s", vertexLabels.size());
+        Vertex vertexLabel = vertexLabels.get(0);
+        vertexLabel.property(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, partitionType.name());
+        vertexLabel.property(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION, partitionExpression);
+    }
+
+    public static void updateEdgeLabelPartitionTypeAndExpression(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String name,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        GraphTraversalSource traversalSource = sqlgGraph.topology();
+        List<Vertex> edgeLabels = traversalSource
+                .V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA).has(Topology.SQLG_SCHEMA_SCHEMA_NAME, schema)
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, name)
+                .toList();
+        Preconditions.checkState(edgeLabels.size() == 1, "BUG: There can only ever be one EdgeLabel vertex, found %s", edgeLabels.size());
+        Vertex vertexLabel = edgeLabels.get(0);
+        vertexLabel.property(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, partitionType.name());
+        vertexLabel.property(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, partitionExpression);
     }
 }

@@ -2,16 +2,14 @@ package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
@@ -125,7 +123,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             } else {
                 sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                         sqlgGraph.getSqlDialect().temporaryTablePrefix() +
-                        VERTEX_PREFIX + schemaTable.getTable()));
+                                VERTEX_PREFIX + schemaTable.getTable()));
             }
 
             Map<String, PropertyColumn> propertyColumns = null;
@@ -240,6 +238,12 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
     @Override
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         for (MetaEdge metaEdge : edgeCache.keySet()) {
+
+            SchemaTable outSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getOutLabel());
+            SchemaTable inSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getInLabel());
+            VertexLabel outVertexLabel = sqlgGraph.getTopology().getVertexLabel(outSchemaTable.getSchema(), outSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", outSchemaTable.getSchema(), outSchemaTable.getTable())));
+            VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
+
             Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
             Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
             SortedSet<String> columns = triples.getLeft();
@@ -278,9 +282,29 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             if (!columns.isEmpty()) {
                 sql.append(", ");
             }
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(metaEdge.getOutLabel() + OUT_VERTEX_COLUMN_END));
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(metaEdge.getOutLabel() + OUT_VERTEX_COLUMN_END));
+            } else {
+                int j = 1;
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(metaEdge.getOutLabel() + "." + identifier + OUT_VERTEX_COLUMN_END));
+                    if (j++ < outVertexLabel.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(", ");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(metaEdge.getInLabel() + IN_VERTEX_COLUMN_END));
+            if (inVertexLabel.hasIDPrimaryKey()) {
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(metaEdge.getInLabel() + IN_VERTEX_COLUMN_END));
+            } else {
+                int j = 1;
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(metaEdge.getInLabel() + "." + identifier + IN_VERTEX_COLUMN_END));
+                    if (j++ < inVertexLabel.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(") VALUES (");
 
             i = 1;
@@ -306,7 +330,29 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             if (!columns.isEmpty()) {
                 sql.append(", ");
             }
-            sql.append("?, ?");
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                sql.append("?");
+            } else {
+                int j = 1;
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    sql.append("?");
+                    if (j++ < outVertexLabel.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
+            sql.append(", ");
+            if (inVertexLabel.hasIDPrimaryKey()) {
+                sql.append("?");
+            } else {
+                int j = 1;
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    sql.append("?");
+                    if (j++ < inVertexLabel.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(")");
             if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
@@ -328,8 +374,35 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                         typeAndValues.add(Pair.of(propertyColumn.getPropertyType(), parameterValueMap.getRight().get(column)));
                     }
                     i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, typeAndValues);
-                    preparedStatement.setLong(i++, ((RecordId) parameterValueMap.getLeft().id()).getId());
-                    preparedStatement.setLong(i, ((RecordId) parameterValueMap.getMiddle().id()).getId());
+
+                    if (outVertexLabel.hasIDPrimaryKey()) {
+                        preparedStatement.setLong(i++, ((RecordId) parameterValueMap.getLeft().id()).getId());
+                    } else {
+                        for (String identifier : outVertexLabel.getIdentifiers()) {
+                            i = SqlgUtil.setKeyValueAsParameter(
+                                    sqlgGraph,
+                                    false,
+                                    i,
+                                    preparedStatement,
+                                    ImmutablePair.of(outVertexLabel.getProperty(identifier).orElseThrow(
+                                            () -> new IllegalStateException(String.format("Property for identifier %s not found", identifier))
+                                    ).getPropertyType(), parameterValueMap.getLeft().value(identifier)));
+                        }
+                    }
+                    if (inVertexLabel.hasIDPrimaryKey()) {
+                        preparedStatement.setLong(i, ((RecordId) parameterValueMap.getMiddle().id()).getId());
+                    } else {
+                        for (String identifier : inVertexLabel.getIdentifiers()) {
+                            i = SqlgUtil.setKeyValueAsParameter(
+                                    sqlgGraph,
+                                    false,
+                                    i,
+                                    preparedStatement,
+                                    ImmutablePair.of(inVertexLabel.getProperty(identifier).orElseThrow(
+                                            () -> new IllegalStateException(String.format("Property for identifier %s not found", identifier))
+                                    ).getPropertyType(), parameterValueMap.getMiddle().value(identifier)));
+                        }
+                    }
                     preparedStatement.addBatch();
                 }
                 preparedStatement.executeBatch();
@@ -529,20 +602,11 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
     @Override
     public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
-
         if (!removeVertexCache.isEmpty()) {
-
-
             //split the list of vertices, postgres existVertexLabel a 2 byte limit in the in clause
             for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
-
                 SchemaTable schemaTable = schemaVertices.getKey();
-
                 Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = sqlgGraph.getTopology().getTableLabels(SchemaTable.of(schemaTable.getSchema(), VERTEX_PREFIX + schemaTable.getTable()));
-
-                //This is causing dead locks under load
-//                dropForeignKeys(sqlgGraph, schemaTable);
-
                 List<SqlgVertex> vertices = schemaVertices.getValue();
                 int numberOfLoops = (vertices.size() / sqlInParameterLimit());
                 int previous = 0;
@@ -599,7 +663,6 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                         }
                     }
                 }
-//                createForeignKeys(sqlgGraph, schemaTable);
             }
         }
     }
@@ -716,6 +779,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
     @Override
     public List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
                                                                  String tableNamePattern, String columnNamePattern) {
+
         List<Triple<String, Integer, String>> columns = new ArrayList<>();
         try (ResultSet rs = metaData.getColumns(catalog, schemaPattern, tableNamePattern, columnNamePattern)) {
             while (rs.next()) {
@@ -728,6 +792,21 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             throw new RuntimeException(e);
         }
         return columns;
+    }
+
+    @Override
+    public List<String> getPrimaryKeys(DatabaseMetaData metaData, String catalog, String schemaPattern, String tableNamePattern) {
+        List<String> primaryKeys = new ArrayList<>();
+        try (ResultSet rs = metaData.getPrimaryKeys(catalog, schemaPattern, tableNamePattern)) {
+            while (rs.next()) {
+                String columnName = rs.getString(4);
+                int index = rs.getShort(5);
+                primaryKeys.add(index - 1, columnName);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return primaryKeys;
     }
 
     @Override
@@ -1092,11 +1171,12 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
     /**
      * escape quotes by doubling them when we need a string inside quotes
+     *
      * @param o
      * @return
      */
-    protected String escapeQuotes(Object o){
-        if (o!=null){
+    protected String escapeQuotes(Object o) {
+        if (o != null) {
             return o.toString().replace("'", "''");
         }
         return null;

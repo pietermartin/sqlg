@@ -630,10 +630,30 @@ public class MariadbDialect extends BaseSqlDialect {
         List<String> result = new ArrayList<>();
 
         //SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT, `dbVersion` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_schema` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_vertex` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `schemaVertex` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_edge` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_vertex` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT, " +
+                "`schemaVertex` TEXT, " +
+                "`partitionType` TEXT, " +
+                "`partitionExpression` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_edge` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT, " +
+                "`partitionType` TEXT, " +
+                "`partitionExpression` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT," +
+                "`from` TEXT, " +
+                "`to` TEXT, " +
+                "`in` TEXT, " +
+                "`partitionType` TEXT, " +
+                "`partitionExpression` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_property` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `type` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_index` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `index_type` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_globalUniqueIndex` (" +
@@ -716,12 +736,31 @@ public class MariadbDialect extends BaseSqlDialect {
 
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_log`(`ID` SERIAL PRIMARY KEY, `timestamp` DATETIME, `pid` INTEGER, `log` TEXT);");
 
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_partition`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`));");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_partition`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`));");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_partition_partition`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.partition__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.partition__O`) REFERENCES `sqlg_schema`.`V_partition` (`ID`));");
+
         return result;
     }
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);";
+        return "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT, `dbVersion` TEXT);";
     }
 
     @Override
@@ -914,6 +953,50 @@ public class MariadbDialect extends BaseSqlDialect {
         return "SET FOREIGN_KEY_CHECKS=1";
     }
 
+    @Override
+    public String addDbVersionToGraph(DatabaseMetaData metadata) {
+        return "ALTER TABLE `sqlg_schema`.`V_graph` ADD COLUMN `dbVersion` TEXT;";
+    }
+
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_vertex` SET `partitionType` = 'NONE';",
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionExpression` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_edge` SET `partitionType` = 'NONE';",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionExpression` TEXT;",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`createdOn` DATETIME, " +
+                        "`name` TEXT, " +
+                        "`from` TEXT, " +
+                        "`to` TEXT, " +
+                        "`in` TEXT, " +
+                        "`partitionType` TEXT, " +
+                        "`partitionExpression` TEXT);",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`));",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_partition_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.partition__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.partition__O`) REFERENCES `sqlg_schema`.`V_partition` (`ID`));"
+        );
+    }
     /**
      * Hardcoded the rows to return. MariaDB does nto support just an offset.
      * @param skip The number of rows to skip. i.e. OFFSET

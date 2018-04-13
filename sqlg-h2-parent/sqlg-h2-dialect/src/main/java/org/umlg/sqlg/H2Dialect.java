@@ -63,7 +63,7 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column,
-                                              int sqlType, String typeName,  ListIterator<Triple<String, Integer, String>> metaDataIter) {
+                                              int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -98,6 +98,7 @@ public class H2Dialect extends BaseSqlDialect {
      * All this is because H2 does not return the TYPE_NAME for column meta data.
      * The strategy is to actualy query the table get the column's value and interrogate it to get its type.
      * If the column has no data then we are stuffed and an exception is thrown.
+     *
      * @param typeName
      * @param sqlgGraph
      * @param schema
@@ -135,7 +136,7 @@ public class H2Dialect extends BaseSqlDialect {
                         return PropertyType.STRING_ARRAY;
                     } else if (o1 instanceof Timestamp) {
                         //ja well this sucks but I know of no other way to distinguish between LocalDateTime and LocalDate
-                        Timestamp timestamp = (Timestamp)o1;
+                        Timestamp timestamp = (Timestamp) o1;
                         LocalDateTime localDateTime = timestamp.toLocalDateTime();
                         if (localDateTime.getHour() == 0 && localDateTime.getMinute() == 0 && localDateTime.getSecond() == 0 && localDateTime.getNano() == 0) {
                             return PropertyType.LOCALDATE_ARRAY;
@@ -204,7 +205,7 @@ public class H2Dialect extends BaseSqlDialect {
         if (value instanceof Duration || value instanceof Duration[]) {
             return;
         }
-        if (value instanceof JsonNode|| value instanceof JsonNode[]) {
+        if (value instanceof JsonNode || value instanceof JsonNode[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -572,10 +573,35 @@ public class H2Dialect extends BaseSqlDialect {
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"updatedOn\" TIMESTAMP, \"version\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"updatedOn\" TIMESTAMP, " +
+                "\"version\" VARCHAR, " +
+                "\"dbVersion\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"schemaVertex\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"schemaVertex\" VARCHAR," +
+                "\"partitionType\" VARCHAR, " +
+                "\"partitionExpression\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"partitionType\" VARCHAR, " +
+                "\"partitionExpression\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"from\" VARCHAR, " +
+                "\"to\" VARCHAR, " +
+                "\"in\" VARCHAR, " +
+                "\"partitionType\" VARCHAR, " +
+                "\"partitionExpression\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"type\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"index_type\" VARCHAR);");
 
@@ -589,6 +615,24 @@ public class H2Dialect extends BaseSqlDialect {
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_partition\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_partition\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_partition_partition\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.partition__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_index\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, \"sequence\" INTEGER, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
@@ -608,7 +652,7 @@ public class H2Dialect extends BaseSqlDialect {
     public String sqlgAddIndexEdgeSequenceColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
     }
-    
+
     @Override
     public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
         switch (propertyType) {
@@ -772,5 +816,51 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public String sqlToTurnOnReferentialConstraintCheck(String tableName) {
         return "SET REFERENTIAL_INTEGRITY TRUE";
+    }
+
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionType\" VARCHAR DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionExpression\" VARCHAR;",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionType\" VARCHAR DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionExpression\" VARCHAR;",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"createdOn\" TIMESTAMP, " +
+                        "\"name\" VARCHAR, " +
+                        "\"from\" VARCHAR, " +
+                        "\"to\" VARCHAR, " +
+                        "\"in\" VARCHAR, " +
+                        "\"partitionType\" VARCHAR, " +
+                        "\"partitionExpression\" VARCHAR);",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_partition\"(" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_partition\"(" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_partition_partition\"(" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.partition__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));"
+        );
+    }
+
+    @Override
+    public String addDbVersionToGraph(DatabaseMetaData metadata) {
+        try {
+            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" VARCHAR DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

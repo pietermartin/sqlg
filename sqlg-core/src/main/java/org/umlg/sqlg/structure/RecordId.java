@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
@@ -31,6 +32,7 @@ public class RecordId implements KryoSerializable, Comparable {
     public final static String RECORD_ID_DELIMITER = ":::";
     private SchemaTable schemaTable;
     private Long id;
+    private ListOrderedSet<Object> identifiers;
 
     //For Kryo
     public RecordId() {
@@ -46,8 +48,17 @@ public class RecordId implements KryoSerializable, Comparable {
         this.id = id;
     }
 
+    private RecordId(SchemaTable schemaTable, ListOrderedSet<Object> identifiers) {
+        this.schemaTable = schemaTable;
+        this.identifiers = identifiers;
+    }
+
     public static RecordId from(SchemaTable schemaTable, Long id) {
         return new RecordId(schemaTable, id);
+    }
+
+    public static RecordId from(SchemaTable schemaTable, ListOrderedSet<Object> identifiers) {
+        return new RecordId(schemaTable, identifiers);
     }
 
     public static List<RecordId> from(Object... elementId) {
@@ -95,6 +106,10 @@ public class RecordId implements KryoSerializable, Comparable {
         return id;
     }
 
+    public ListOrderedSet<Object> getIdentifiers() {
+        return identifiers;
+    }
+
     static Map<SchemaTable, List<Long>> normalizeIds(List<RecordId> vertexId) {
         Map<SchemaTable, List<Long>> result = new HashMap<>();
         for (RecordId recordId : vertexId) {
@@ -112,13 +127,21 @@ public class RecordId implements KryoSerializable, Comparable {
     public String toString() {
         return this.schemaTable.toString() +
                 RECORD_ID_DELIMITER +
-                this.id.toString();
+                (this.id != null ? this.id.toString() : this.identifiers.toString());
     }
 
     @Override
     public int hashCode() {
         int result = this.schemaTable.hashCode();
-        return result ^ this.id.hashCode();
+        if (this.id != null) {
+            return result ^ this.id.hashCode();
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (Object identifier : this.identifiers) {
+                sb.append(identifier.toString());
+            }
+            return result ^ sb.toString().hashCode();
+        }
     }
 
     @Override
@@ -133,7 +156,13 @@ public class RecordId implements KryoSerializable, Comparable {
             return false;
         }
         RecordId otherRecordId = (RecordId) other;
-        return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.id.equals(otherRecordId.getId());
+        if (this.id != null && otherRecordId.id != null) {
+            return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.id.equals(otherRecordId.getId());
+        } else if (this.id == null && otherRecordId.id == null) {
+            return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.identifiers.equals(otherRecordId.identifiers);
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -160,6 +189,10 @@ public class RecordId implements KryoSerializable, Comparable {
             return first;
         }
         return this.getId().compareTo(other.getId());
+    }
+
+    public boolean hasId() {
+        return this.id != null;
     }
 
     @SuppressWarnings("DuplicateThrows")

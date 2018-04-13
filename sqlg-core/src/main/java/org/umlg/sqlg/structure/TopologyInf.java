@@ -18,4 +18,8 @@ public interface TopologyInf {
      * @param preserveData if true we don't delete at the SQL level
      */
     void remove(boolean preserveData);
+
+    default void remove() {
+        remove(false);
+    }
 }

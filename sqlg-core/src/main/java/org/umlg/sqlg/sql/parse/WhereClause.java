@@ -14,6 +14,7 @@ import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -50,11 +51,23 @@ public class WhereClause {
         	return result;
         } else if (p.getBiPredicate() instanceof Compare) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
+                if (schemaTableTree.isHasIDPrimaryKey()) {
+                    result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
+                    result += compareToSql((Compare) p.getBiPredicate());
+                } else {
+                    int i = 1;
+                    for (String identifier : schemaTableTree.getIdentifiers()) {
+                        result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier);
+                        result += compareToSql((Compare) p.getBiPredicate());
+                        if (i++ < schemaTableTree.getIdentifiers().size()) {
+                            result += " AND ";
+                        }
+                    }
+                }
             } else {
                 result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+                result += compareToSql((Compare) p.getBiPredicate());
             }
-            result += compareToSql((Compare) p.getBiPredicate());
             return result;
         } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
@@ -235,7 +248,7 @@ public class WhereClause {
         return prefix + result;
     }
 
-    public void putKeyValueMap(HasContainer hasContainer, Multimap<String, Object> keyValueMap) {
+    public void putKeyValueMap(HasContainer hasContainer, Multimap<String, Object> keyValueMap, SchemaTableTree schemaTableTree) {
         if (p instanceof OrP) {
             OrP<?> orP = (OrP<?>) p;
             Preconditions.checkState(orP.getPredicates().size() == 2, "Only handling OrP with 2 predicates!");
@@ -268,6 +281,15 @@ public class WhereClause {
             keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue());
         } else if (p.getBiPredicate() instanceof Existence){
         	// no value
+        } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
+                hasContainer.getValue() instanceof RecordId &&
+                !((RecordId)hasContainer.getValue()).hasId()) {
+
+            RecordId recordId = (RecordId)hasContainer.getValue();
+            int i = 0;
+            for (Object identifier : recordId.getIdentifiers()) {
+                keyValueMap.put(schemaTableTree.getIdentifiers().get(i++), identifier);
+            }
         } else {
             keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
         }
