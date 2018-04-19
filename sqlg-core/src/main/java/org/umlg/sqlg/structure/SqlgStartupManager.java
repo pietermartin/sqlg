@@ -177,7 +177,7 @@ class SqlgStartupManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String[] types = new String[]{"TABLE"};
             //load the vertices
-            try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, types)) {
+            try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, Topology.VERTEX_PREFIX +  Topology.GRAPH, types)) {
                 if (!vertexRs.next()) {
                     try (Statement statement = conn.createStatement()) {
                         String sql = this.sqlDialect.sqlgCreateTopologyGraph();
@@ -186,7 +186,7 @@ class SqlgStartupManager {
                     }
                 } else {
                     //Need to check if dbVersion has been added
-                    try (ResultSet columnRs = metadata.getColumns(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, Topology.SQLG_SCHEMA_GRAPH_DB_VERSION)) {
+                    try (ResultSet columnRs = metadata.getColumns(null, Schema.SQLG_SCHEMA, Topology.VERTEX_PREFIX + Topology.GRAPH, Topology.SQLG_SCHEMA_GRAPH_DB_VERSION)) {
                         if (!columnRs.next()) {
                             try (Statement statement = conn.createStatement()) {
                                 statement.execute(sqlDialect.addDbVersionToGraph(metadata));
@@ -207,9 +207,9 @@ class SqlgStartupManager {
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
-            String schemaPattern = "sqlg_schema";
+            String schemaPattern = Topology.SQLG_SCHEMA;
             @SuppressWarnings("ConstantConditions")
-            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "E_index_property", SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
+            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, Topology.EDGE_PREFIX + "index_property", SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
             if (columns.isEmpty()) {
                 try (Statement statement = conn.createStatement()) {
                     String sql = this.sqlDialect.sqlgAddIndexEdgeSequenceColumn();

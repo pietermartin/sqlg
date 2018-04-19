@@ -184,9 +184,10 @@ public abstract class SqlgElement implements Element {
     @Override
     public <V> Property<V> property(String key) {
         if (this.removed) {
-            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+            throw new IllegalStateException(String.format("%s with id %s was removed.", getClass().getSimpleName(), id().toString()));
         } else {
             load();
+            @SuppressWarnings("unchecked")
             V propertyValue = (V) this.properties.get(key);
             if (propertyValue != null) {
                 return instantiateProperty(key, propertyValue);
@@ -340,7 +341,6 @@ public abstract class SqlgElement implements Element {
                     }
                 }
                 preparedStatement.executeUpdate();
-                preparedStatement.close();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -355,7 +355,7 @@ public abstract class SqlgElement implements Element {
     public boolean equals(final Object object) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            if (this.id() != null && object != null && (object instanceof SqlgElement) && ((SqlgElement) object).id() != null) {
+            if (this.id() != null && (object instanceof SqlgElement) && ((SqlgElement) object).id() != null) {
                 return ElementHelper.areEqual(this, object);
             } else {
                 return super.equals(object);
@@ -396,6 +396,7 @@ public abstract class SqlgElement implements Element {
         if (propertyKeys.length > 0) {
             for (String propertyKey : propertyKeys) {
                 if (!propertyKey.equals(Topology.ID)) {
+                    @SuppressWarnings("unchecked")
                     V propertyValue = (V) this.properties.get(propertyKey);
                     if (propertyValue != null) {
                         properties.put(propertyKey, instantiateProperty(propertyKey, propertyValue));
@@ -405,6 +406,7 @@ public abstract class SqlgElement implements Element {
         } else {
             for (Map.Entry<String, Object> propertyEntry : this.properties.entrySet()) {
                 String key = propertyEntry.getKey();
+                @SuppressWarnings("unchecked")
                 V propertyValue = (V) propertyEntry.getValue();
                 if (key.equals(Topology.ID) || propertyValue == null) {
                     continue;
@@ -415,7 +417,7 @@ public abstract class SqlgElement implements Element {
         return properties;
     }
 
-    protected void writeColumnNames(Map<String, Pair<PropertyType, Object>> keyValueMap, StringBuilder sql) {
+    void writeColumnNames(Map<String, Pair<PropertyType, Object>> keyValueMap, StringBuilder sql) {
         int i = 1;
         for (String column : keyValueMap.keySet()) {
             Pair<PropertyType, Object> propertyColumnValue = keyValueMap.get(column);
@@ -438,13 +440,14 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    protected void writeColumnParameters(Map<String, Pair<PropertyType, Object>> keyValueMap, StringBuilder sql) {
+    @SuppressWarnings("Duplicates")
+    void writeColumnParameters(Map<String, Pair<PropertyType, Object>> keyValueMap, StringBuilder sql) {
         int i = 1;
         for (String column : keyValueMap.keySet()) {
             PropertyType propertyType = keyValueMap.get(column).getLeft();
             String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             int count = 1;
-            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+            for (String ignore : sqlDefinitions) {
                 if (count > 1) {
                     sql.append("?");
                 } else {
@@ -460,7 +463,7 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    protected void insertGlobalUniqueIndex(Map<String, Object> keyValueMap, Map<String, PropertyColumn> propertyColumns) {
+    void insertGlobalUniqueIndex(Map<String, Object> keyValueMap, Map<String, PropertyColumn> propertyColumns) {
         for (PropertyColumn propertyColumn : propertyColumns.values()) {
             for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
                 Object value = keyValueMap.get(propertyColumn.getName());
@@ -886,5 +889,20 @@ public abstract class SqlgElement implements Element {
 
     public void setInternalStartTraverserIndex(long internalStartTraverserIndex) {
         this.internalStartTraverserIndex = internalStartTraverserIndex;
+    }
+
+    void appendProperties(AbstractLabel edgeLabel, StringBuilder sql) {
+        for (PropertyColumn propertyColumn : edgeLabel.getProperties().values()) {
+            sql.append(", ");
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
+            // additional columns for time zone, etc.
+            String[] ps = propertyColumn.getPropertyType().getPostFixes();
+            if (ps != null) {
+                for (String p : propertyColumn.getPropertyType().getPostFixes()) {
+                    sql.append(", ");
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName() + p));
+                }
+            }
+        }
     }
 }

@@ -422,6 +422,15 @@ public class VertexLabel extends AbstractLabel {
         }
     }
 
+    public void ensureDistributed(int shardCount, PropertyColumn distributionPropertyColumn) {
+        ensureDistributed(shardCount, distributionPropertyColumn, null);
+    }
+
+
+    public void ensureDistributed(PropertyColumn distributionPropertyColumn, AbstractLabel colocate) {
+        ensureDistributed(-1, distributionPropertyColumn, colocate);
+    }
+
     private void createVertexLabelOnDb(Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));

@@ -61,14 +61,14 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
         String[] types = new String[]{"TABLE"};
         try {
             //load the vertices
-            try (ResultSet vertexRs = metaData.getTables(null, null, "V_%", types)) {
+            try (ResultSet vertexRs = metaData.getTables(null, null, Topology.VERTEX_PREFIX + "%", types)) {
                 while (vertexRs.next()) {
                     String tblCat = vertexRs.getString(1);
                     String schema = vertexRs.getString(2);
                     String table = vertexRs.getString(3);
 
                     //verify the table name matches our pattern
-                    if (!table.startsWith("V_")) {
+                    if (!table.startsWith(Topology.VERTEX_PREFIX)) {
                         continue;
                     }
                     vertexTables.add(Triple.of(tblCat, schema, table));
@@ -86,13 +86,13 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
         String[] types = new String[]{"TABLE"};
         try {
             //load the edges without their properties
-            try (ResultSet edgeRs = metaData.getTables(null, null, "E_%", types)) {
+            try (ResultSet edgeRs = metaData.getTables(null, null, Topology.EDGE_PREFIX + "%", types)) {
                 while (edgeRs.next()) {
                     String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
                     //verify the table name matches our pattern
-                    if (!table.startsWith("E_")) {
+                    if (!table.startsWith(Topology.EDGE_PREFIX)) {
                         continue;
                     }
                     edgeTables.add(Triple.of(edgCat, schema, table));
