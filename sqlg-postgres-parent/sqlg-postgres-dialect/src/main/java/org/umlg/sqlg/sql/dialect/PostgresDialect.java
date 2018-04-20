@@ -2899,9 +2899,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case boolean_ARRAY:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
             case SHORT_ARRAY:
-                return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
             case short_ARRAY:
-                return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[])array.getArray());
             case INTEGER_ARRAY:
                 return array.getArray();
             case int_ARRAY:
