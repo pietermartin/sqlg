@@ -999,7 +999,9 @@ public class EdgeLabel extends AbstractLabel {
             if (abstractLabelNode.get().get("uncommittedDistributionPropertyColumn") != null) {
                 edgeLabelNode.set("uncommittedDistributionPropertyColumn", abstractLabelNode.get().get("uncommittedDistributionPropertyColumn"));
             }
-            edgeLabelNode.set("uncommittedShardCount", abstractLabelNode.get().get("uncommittedShardCount"));
+            if (abstractLabelNode.get().get("uncommittedShardCount") != null) {
+                edgeLabelNode.set("uncommittedShardCount", abstractLabelNode.get().get("uncommittedShardCount"));
+            }
             if (abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel") != null) {
                 edgeLabelNode.set("uncommittedDistributionColocateAbstractLabel", abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel"));
             }

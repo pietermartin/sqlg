@@ -688,7 +688,9 @@ public class VertexLabel extends AbstractLabel {
             if (abstractLabelNode.get().get("uncommittedDistributionPropertyColumn") != null) {
                 vertexLabelNode.set("uncommittedDistributionPropertyColumn", abstractLabelNode.get().get("uncommittedDistributionPropertyColumn"));
             }
-            vertexLabelNode.set("uncommittedShardCount", abstractLabelNode.get().get("uncommittedShardCount"));
+            if (abstractLabelNode.get().get("uncommittedShardCount") != null) {
+                vertexLabelNode.set("uncommittedShardCount", abstractLabelNode.get().get("uncommittedShardCount"));
+            }
             if (abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel") != null) {
                 vertexLabelNode.set("uncommittedDistributionColocateAbstractLabel", abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel"));
             }
