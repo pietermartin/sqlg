@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
+import org.umlg.sqlg.test.sharding.TestShardingGremlin;
 
 /**
  * Date: 2014/07/16
@@ -11,13 +11,13 @@ import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestSharding.class,
+        TestShardingGremlin.class,
 //        TestSimpleJoinGremlin.class,
-//        TestShardingGremlin.class,
 //        TestSimpleVertexEdgeGremlin.class,
 //        TestUserSuppliedPKBulkMode.class,
 //        TestMultipleIDQuery.class,
 
-        TestTopologyUpgrade.class
+//        TestTopologyUpgrade.class
 
 })
 public class AnyTest {

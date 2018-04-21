@@ -1,18 +1,18 @@
 package org.umlg.sqlg.test.sharding;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.net.URL;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +25,22 @@ import java.util.UUID;
  */
 public class TestSharding extends BaseTest {
 
+    @SuppressWarnings("Duplicates")
+    @BeforeClass
+    public static void beforeClass() {
+        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+        try {
+            configuration = new PropertiesConfiguration(sqlProperties);
+            Assume.assumeTrue(isPostgres());
+            configuration.addProperty("distributed", true);
+            if (!configuration.containsKey("jdbc.url"))
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Before
     public void before() throws Exception {
         super.before();
@@ -32,7 +48,7 @@ public class TestSharding extends BaseTest {
     }
 
     @Test
-    public void testSharding1() throws Exception {
+    public void testShardingVertex() throws Exception {
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
@@ -62,6 +78,7 @@ public class TestSharding extends BaseTest {
         );
         dist = bVertexLabel.getProperty("dist").orElseThrow(() -> new RuntimeException("BUG"));
         bVertexLabel.ensureDistributed(8, dist, aVertexLabel);
+
         distributionPropertyColumn = this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("B").get().getDistributionPropertyColumn();
         Assert.assertNotNull(distributionPropertyColumn);
         Assert.assertEquals(8, this.sqlgGraph.getSqlDialect().getShardCount(this.sqlgGraph, bVertexLabel));
@@ -71,12 +88,36 @@ public class TestSharding extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
+        //check meta data is on sqlgGraph1
+        Thread.sleep(1000);
+
         Assert.assertEquals(8, this.sqlgGraph.getSqlDialect().getShardCount(this.sqlgGraph, aVertexLabel));
         distributionPropertyColumn = this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("A").get().getDistributionPropertyColumn();
         Assert.assertNotNull(distributionPropertyColumn);
         Assert.assertEquals("dist", distributionPropertyColumn.getName());
         Assert.assertNull(this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("A").get().getDistributionColocate());
         Assert.assertEquals(8, this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("A").get().getShardCount());
+
+        distributionPropertyColumn = this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("B").get().getDistributionPropertyColumn();
+        Assert.assertNotNull(distributionPropertyColumn);
+        Assert.assertEquals("dist", distributionPropertyColumn.getName());
+        Assert.assertNotNull(this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("B").get().getDistributionColocate());
+        Assert.assertEquals(aVertexLabel, this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("B").get().getDistributionColocate());
+        Assert.assertEquals(8, this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("A").get().getShardCount());
+
+        Assert.assertEquals(8, this.sqlgGraph1.getSqlDialect().getShardCount(this.sqlgGraph1, aVertexLabel));
+        distributionPropertyColumn = this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get().getDistributionPropertyColumn();
+        Assert.assertNotNull(distributionPropertyColumn);
+        Assert.assertEquals("dist", distributionPropertyColumn.getName());
+        Assert.assertNull(this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get().getDistributionColocate());
+        Assert.assertEquals(8, this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get().getShardCount());
+
+        distributionPropertyColumn = this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("B").get().getDistributionPropertyColumn();
+        Assert.assertNotNull(distributionPropertyColumn);
+        Assert.assertEquals("dist", distributionPropertyColumn.getName());
+        Assert.assertNotNull(this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("B").get().getDistributionColocate());
+        Assert.assertEquals(aVertexLabel, this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("B").get().getDistributionColocate());
+        Assert.assertEquals(8, this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get().getShardCount());
 
         char[] alphabet = "abcd".toCharArray();
         this.sqlgGraph.tx().streamingBatchModeOn();
@@ -107,8 +148,9 @@ public class TestSharding extends BaseTest {
         Assert.assertEquals(8, this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("B").get().getShardCount());
     }
 
+
     @Test
-    public void testSharding2() throws Exception {
+    public void testShardingEdge() throws Exception {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{
@@ -150,6 +192,8 @@ public class TestSharding extends BaseTest {
         Edge e = a.addEdge("ab", b, "uid", UUID.randomUUID().toString(), "dist", tenantId, "value", Integer.toString(i));
         this.sqlgGraph.tx().commit();
 
+        Thread.sleep(1000);
+
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").toList().size());
         Assert.assertEquals(a, this.sqlgGraph.traversal().V().hasLabel("A").toList().get(0));
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").toList().size());
@@ -157,11 +201,24 @@ public class TestSharding extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("ab").toList().size());
         Assert.assertEquals(e, this.sqlgGraph.traversal().E().hasLabel("ab").toList().get(0));
 
+        Assert.assertEquals(1, this.sqlgGraph1.traversal().V().hasLabel("A").toList().size());
+        Assert.assertEquals(a, this.sqlgGraph1.traversal().V().hasLabel("A").toList().get(0));
+        Assert.assertEquals(1, this.sqlgGraph1.traversal().V().hasLabel("B").toList().size());
+        Assert.assertEquals(b, this.sqlgGraph1.traversal().V().hasLabel("B").toList().get(0));
+        Assert.assertEquals(1, this.sqlgGraph1.traversal().E().hasLabel("ab").toList().size());
+        Assert.assertEquals(e, this.sqlgGraph1.traversal().E().hasLabel("ab").toList().get(0));
+
         PropertyColumn distributionPropertyColumn = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getDistributionPropertyColumn();
         Assert.assertNotNull(distributionPropertyColumn);
         Assert.assertEquals(4, this.sqlgGraph.getSqlDialect().getShardCount(this.sqlgGraph, aVertexLabel));
         Assert.assertNull(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getDistributionColocate());
         Assert.assertEquals(4, this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getShardCount());
+
+        distributionPropertyColumn = this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get().getDistributionPropertyColumn();
+        Assert.assertNotNull(distributionPropertyColumn);
+        Assert.assertEquals(4, this.sqlgGraph1.getSqlDialect().getShardCount(this.sqlgGraph, aVertexLabel));
+        Assert.assertNull(this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get().getDistributionColocate());
+        Assert.assertEquals(4, this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get().getShardCount());
 
         distributionPropertyColumn = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").get().getDistributionPropertyColumn();
         Assert.assertNotNull(distributionPropertyColumn);
@@ -170,12 +227,26 @@ public class TestSharding extends BaseTest {
         Assert.assertEquals(aVertexLabel, this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").get().getDistributionColocate());
         Assert.assertEquals(4, this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").get().getShardCount());
 
+        distributionPropertyColumn = this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").get().getDistributionPropertyColumn();
+        Assert.assertNotNull(distributionPropertyColumn);
+        Assert.assertEquals(4, this.sqlgGraph1.getSqlDialect().getShardCount(this.sqlgGraph1, bVertexLabel));
+        Assert.assertNotNull(this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").get().getDistributionColocate());
+        Assert.assertEquals(aVertexLabel, this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").get().getDistributionColocate());
+        Assert.assertEquals(4, this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").get().getShardCount());
+
         distributionPropertyColumn = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionPropertyColumn();
         Assert.assertNotNull(distributionPropertyColumn);
         Assert.assertEquals(4, this.sqlgGraph.getSqlDialect().getShardCount(this.sqlgGraph, bVertexLabel));
         Assert.assertNotNull(this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
         Assert.assertEquals(aVertexLabel, this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
         Assert.assertEquals(4, this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getShardCount());
+
+        distributionPropertyColumn = this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionPropertyColumn();
+        Assert.assertNotNull(distributionPropertyColumn);
+        Assert.assertEquals(4, this.sqlgGraph1.getSqlDialect().getShardCount(this.sqlgGraph1, bVertexLabel));
+        Assert.assertNotNull(this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
+        Assert.assertEquals(aVertexLabel, this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
+        Assert.assertEquals(4, this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get().getShardCount());
 
         this.sqlgGraph.tx().commit();
 
@@ -200,6 +271,10 @@ public class TestSharding extends BaseTest {
         Assert.assertNotNull(this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
         Assert.assertEquals(aVertexLabel, this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
         Assert.assertEquals(4, this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getShardCount());
+        
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").toList().size());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").toList().size());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("ab").toList().size());
     }
 
     @Test

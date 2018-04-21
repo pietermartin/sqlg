@@ -627,7 +627,9 @@ public class EdgeLabel extends AbstractLabel {
                 } else {
                     ForeignKey foreignKey = new ForeignKey();
                     for (String identifier : vertexLabel.getIdentifiers()) {
-                        foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                        if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                            foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                        }
                     }
                     result.add(foreignKey);
                 }
@@ -640,7 +642,9 @@ public class EdgeLabel extends AbstractLabel {
                 } else {
                     ForeignKey foreignKey = new ForeignKey();
                     for (String identifier : vertexLabel.getIdentifiers()) {
-                        foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                        if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                            foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                        }
 
                     }
                     result.add(foreignKey);
@@ -992,6 +996,13 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
             edgeLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
             edgeLabelNode.set("partitions", abstractLabelNode.get().get("partitions"));
+            if (abstractLabelNode.get().get("uncommittedDistributionPropertyColumn") != null) {
+                edgeLabelNode.set("uncommittedDistributionPropertyColumn", abstractLabelNode.get().get("uncommittedDistributionPropertyColumn"));
+            }
+            edgeLabelNode.set("uncommittedShardCount", abstractLabelNode.get().get("uncommittedShardCount"));
+            if (abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel") != null) {
+                edgeLabelNode.set("uncommittedDistributionColocateAbstractLabel", abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel"));
+            }
             edgeLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
             edgeLabelNode.set("uncommittedRemovedPartitions", abstractLabelNode.get().get("uncommittedRemovedPartitions"));
             edgeLabelNode.set("uncommittedRemovedIndexes", abstractLabelNode.get().get("uncommittedRemovedIndexes"));

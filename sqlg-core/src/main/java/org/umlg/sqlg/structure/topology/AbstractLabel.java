@@ -818,6 +818,21 @@ public abstract class AbstractLabel implements TopologyInf {
                 Optional<ObjectNode> json = partition.toCommittedPartitionNotifyJson();
                 json.ifPresent(committedPartitionArrayNode::add);
             }
+            ObjectNode uncommittedDistributionPropertyColumnObjectNode = null;
+            if (this.uncommittedDistributionPropertyColumn != null) {
+                uncommittedDistributionPropertyColumnObjectNode = this.uncommittedDistributionPropertyColumn.toNotifyJson();
+            }
+            ObjectNode uncommittedDistributionColocateAbstractLabelObjectNode = null;
+            if (this.uncommittedDistributionColocateAbstractLabel != null) {
+                String colocateLabel = this.uncommittedDistributionColocateAbstractLabel.label;
+                uncommittedDistributionColocateAbstractLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                uncommittedDistributionColocateAbstractLabelObjectNode.put("colocateLabel", colocateLabel);
+            }
+            ObjectNode uncommittedShardCountObjectNode = null;
+            if (this.uncommittedShardCount != -1) {
+                uncommittedShardCountObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                uncommittedShardCountObjectNode.put("uncommittedShardCount", this.uncommittedShardCount);
+            }
 
             ArrayNode indexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Index index : this.uncommittedIndexes.values()) {
@@ -837,12 +852,22 @@ public abstract class AbstractLabel implements TopologyInf {
             result.set("uncommittedPartitions", uncommittedPartitionArrayNode);
             result.set("partitions", committedPartitionArrayNode);
             result.set("uncommittedRemovedPartitions", removedPartitionArrayNode);
+            if (uncommittedDistributionPropertyColumnObjectNode != null) {
+                result.set("uncommittedDistributionPropertyColumn", uncommittedDistributionPropertyColumnObjectNode);
+            }
+            if (uncommittedDistributionColocateAbstractLabelObjectNode != null) {
+                result.set("uncommittedDistributionColocateAbstractLabel", uncommittedDistributionColocateAbstractLabelObjectNode);
+            }
+            if (uncommittedShardCountObjectNode != null) {
+                result.set("uncommittedShardCount", uncommittedShardCountObjectNode);
+            }
             result.set("uncommittedIndexes", indexArrayNode);
             result.set("uncommittedRemovedIndexes", removedIndexArrayNode);
             if (propertyArrayNode.size() == 0 && removedPropertyArrayNode.size() == 0 &&
                     identifierArrayNode.size() == 0 &&
                     uncommittedPartitionArrayNode.size() == 0 && removedPartitionArrayNode.size() == 0 && committedPartitionArrayNode.size() == 0 &&
-                    indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0) {
+                    indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0 &&
+                    uncommittedDistributionPropertyColumnObjectNode == null && uncommittedShardCountObjectNode == null && uncommittedDistributionColocateAbstractLabelObjectNode != null) {
                 return Optional.empty();
             }
             return Optional.of(result);
@@ -916,6 +941,22 @@ public abstract class AbstractLabel implements TopologyInf {
                 }
             }
         }
+
+        ObjectNode distributionPropertyColumnObjectNode = (ObjectNode) vertexLabelJson.get("uncommittedDistributionPropertyColumn");
+        if (distributionPropertyColumnObjectNode != null) {
+            this.distributionPropertyColumn = PropertyColumn.fromNotifyJson(this, distributionPropertyColumnObjectNode);
+        }
+        ObjectNode distributionColocateAbstractLabelObjectNode = (ObjectNode) vertexLabelJson.get("uncommittedDistributionColocateAbstractLabel");
+        if (distributionColocateAbstractLabelObjectNode != null) {
+            Optional<VertexLabel> colocateVertexLabelOpt = getSchema().getVertexLabel(distributionColocateAbstractLabelObjectNode.get("colocateLabel").asText());
+            Preconditions.checkState(colocateVertexLabelOpt.isPresent());
+            this.distributionColocateAbstractLabel = colocateVertexLabelOpt.get();
+        }
+        ObjectNode shardCountObjectNode = (ObjectNode) vertexLabelJson.get("uncommittedShardCount");
+        if (shardCountObjectNode != null) {
+            this.shardCount = shardCountObjectNode.get("uncommittedShardCount").asInt();
+        }
+
         ArrayNode indexNodes = (ArrayNode) vertexLabelJson.get("uncommittedIndexes");
         if (indexNodes != null) {
             for (JsonNode indexNode : indexNodes) {

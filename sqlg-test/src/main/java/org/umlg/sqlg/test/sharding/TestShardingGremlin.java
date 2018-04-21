@@ -1,18 +1,20 @@
 package org.umlg.sqlg.test.sharding;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -21,8 +23,30 @@ import java.util.*;
  */
 public class TestShardingGremlin extends BaseTest {
 
+    @SuppressWarnings("Duplicates")
+    @BeforeClass
+    public static void beforeClass() {
+        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+        try {
+            configuration = new PropertiesConfiguration(sqlProperties);
+            Assume.assumeTrue(isPostgres());
+            configuration.addProperty("distributed", true);
+            if (!configuration.containsKey("jdbc.url"))
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Before
+    public void before() throws Exception {
+        super.before();
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsSharding());
+    }
+
     @Test
-    public void testSinglePath() {
+    public void testSinglePath() throws InterruptedException {
         @SuppressWarnings("Duplicates")
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
@@ -112,10 +136,24 @@ public class TestShardingGremlin extends BaseTest {
         Assert.assertEquals(address1, result.get(0).get("a"));
         Assert.assertEquals(livesAt1, result.get(0).get("b"));
         Assert.assertEquals(person1, result.get(0).get("c"));
+
+        Thread.sleep(1000);
+
+        result = this.sqlgGraph1.traversal()
+                .V().hasLabel("Address").as("a")
+                .inE().as("b")
+                .otherV().as("c")
+                .select("a", "b", "c")
+                .toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(3, result.get(0).size());
+        Assert.assertEquals(address1, result.get(0).get("a"));
+        Assert.assertEquals(livesAt1, result.get(0).get("b"));
+        Assert.assertEquals(person1, result.get(0).get("c"));
     }
 
     @Test
-    public void testDuplicatePath() {
+    public void testDuplicatePath() throws InterruptedException {
         @SuppressWarnings("Duplicates")
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
@@ -157,10 +195,23 @@ public class TestShardingGremlin extends BaseTest {
 
         vertices = this.sqlgGraph.traversal().V().hasLabel("Person").outE().outV().toList();
         Assert.assertEquals(2, vertices.size());
+
+        Thread.sleep(1000);
+
+        vertices = this.sqlgGraph1.traversal().V().hasLabel("Person").out().toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph1.traversal().V().hasLabel("Person").in().toList();
+        Assert.assertEquals(2, vertices.size());
+
+        vertices = this.sqlgGraph1.traversal().V().hasLabel("Person").outE().inV().toList();
+        Assert.assertEquals(2, vertices.size());
+
+        vertices = this.sqlgGraph1.traversal().V().hasLabel("Person").outE().outV().toList();
+        Assert.assertEquals(2, vertices.size());
     }
 
     @Test
-    public void testDuplicatePath2() {
+    public void testDuplicatePath2() throws InterruptedException {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>(){{
@@ -215,9 +266,6 @@ public class TestShardingGremlin extends BaseTest {
         stopWatch.start();
         List<Vertex> vertices = this.sqlgGraph.traversal()
                 .V().hasLabel("A").has("country", "SA")
-//                .out().has("country", "SA")
-//                .in().has("country", "SA")
-//                .V().hasLabel("A")
                 .out()
                 .in()
                 .toList();
@@ -229,9 +277,26 @@ public class TestShardingGremlin extends BaseTest {
 
         vertices = this.sqlgGraph.traversal()
                 .V().hasLabel("B").has("country", "SA")
-//                .in().has("country", "SA")
-//                .out().has("country", "SA")
-//                .V().hasLabel("B")
+                .in()
+                .out()
+                .toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(b1));
+        Assert.assertTrue(vertices.contains(b2));
+
+        Thread.sleep(1000);
+
+        vertices = this.sqlgGraph1.traversal()
+                .V().hasLabel("A").has("country", "SA")
+                .out()
+                .in()
+                .toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(a1));
+        Assert.assertTrue(vertices.contains(a2));
+
+        vertices = this.sqlgGraph1.traversal()
+                .V().hasLabel("B").has("country", "SA")
                 .in()
                 .out()
                 .toList();

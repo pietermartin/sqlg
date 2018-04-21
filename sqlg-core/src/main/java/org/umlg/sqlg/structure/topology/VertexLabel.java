@@ -684,6 +684,14 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             vertexLabelNode.set("uncommittedIdentifiers", abstractLabelNode.get().get("uncommittedIdentifiers"));
             vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
+            vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
+            if (abstractLabelNode.get().get("uncommittedDistributionPropertyColumn") != null) {
+                vertexLabelNode.set("uncommittedDistributionPropertyColumn", abstractLabelNode.get().get("uncommittedDistributionPropertyColumn"));
+            }
+            vertexLabelNode.set("uncommittedShardCount", abstractLabelNode.get().get("uncommittedShardCount"));
+            if (abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel") != null) {
+                vertexLabelNode.set("uncommittedDistributionColocateAbstractLabel", abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel"));
+            }
             vertexLabelNode.set("partitions", abstractLabelNode.get().get("partitions"));
             vertexLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
             vertexLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
@@ -807,7 +815,10 @@ public class VertexLabel extends AbstractLabel {
                     } else {
                         foreignKey = new ForeignKey();
                         for (String identifier : this.getIdentifiers()) {
-                            foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            }
                         }
                     }
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
@@ -833,7 +844,10 @@ public class VertexLabel extends AbstractLabel {
                     } else {
                         foreignKey = new ForeignKey();
                         for (String identifier : this.getIdentifiers()) {
-                            foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            }
                         }
                     }
                     this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
@@ -883,7 +897,10 @@ public class VertexLabel extends AbstractLabel {
                     } else {
                         foreignKey = new ForeignKey();
                         for (String identifier : this.getIdentifiers()) {
-                            foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                            }
                         }
 
                     }
