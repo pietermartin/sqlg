@@ -2816,8 +2816,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT, \"dbVersion\" TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "schema\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "graph\" (" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"updatedOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"version\" TEXT, " +
+                "\"dbVersion\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "schema\" (" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
@@ -2841,66 +2849,104 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"in\" TEXT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"type\" TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"index_type\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"name\" TEXT, " +
+                "\"type\" TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"name\" TEXT, " +
+                "\"index_type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "globalUniqueIndex\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
                 "\"name\" TEXT, " +
                 "CONSTRAINT propertyUniqueConstraint UNIQUE(name));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "schema_vertex\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, " +
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "schema_vertex\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.schema__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "schema\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_schema_vertex_vertex__I_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.vertex__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_schema_vertex_schema__O_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.schema__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_schema_vertex_vertex__I_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.vertex__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_schema_vertex_schema__O_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.schema__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "in_edges\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, \"foreignKey\" TEXT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "in_edges\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_in_edges_edge__I_ix\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.edge__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_in_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_in_edges_edge__I_ix\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.edge__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_in_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "out_edges\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, \"foreignKey\" TEXT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "out_edges\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_out_edges_edge__I_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.edge__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_out_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_out_edges_edge__I_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.edge__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_out_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_property\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_property_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.property__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_property_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_property_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_property_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_property\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_property_property__I_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.property__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_property_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_property_property__I_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_property_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_identifier\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, \"identifier_index\" INTEGER, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_identifier\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "\"identifier_index\" INTEGER, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.property__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_identifier\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_identifier\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, \"identifier_index\" INTEGER, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_identifier\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "\"identifier_index\" INTEGER, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.property__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_identifier_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.edge__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_partition\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.vertex__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_partition\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.partition__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_partition\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.edge__O\");");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "partition_partition\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
@@ -2908,8 +2954,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"sqlg_schema.partition__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__O_idx\" ON \"sqlg_schema\".\"E_partition_partition\" (\"sqlg_schema.partition__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_vertex_partition\" (\"sqlg_schema.partition__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__O_idx\" ON \"sqlg_schema\".\"E_partition_partition\" (\"sqlg_schema.partition__O\");");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_distribution\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
@@ -2917,8 +2963,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_distribution_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_distribution\" (\"sqlg_schema.property__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_distribution_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_distribution\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_distribution_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_distribution\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_distribution_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_distribution\" (\"sqlg_schema.vertex__O\");");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_colocate\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
@@ -2926,8 +2972,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_colocate_vertex__I_idx\" ON \"sqlg_schema\".\"E_vertex_colocate\" (\"sqlg_schema.vertex__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_colocate_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_colocate\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_colocate_vertex__I_idx\" ON \"sqlg_schema\".\"E_vertex_colocate\" (\"sqlg_schema.vertex__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_colocate_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_colocate\" (\"sqlg_schema.vertex__O\");");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_distribution\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
@@ -2935,8 +2981,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"sqlg_schema.edge__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_distribution_property__I_idx\" ON \"sqlg_schema\".\"E_edge_distribution\" (\"sqlg_schema.property__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_distribution_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_distribution\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_distribution_property__I_idx\" ON \"sqlg_schema\".\"E_edge_distribution\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_distribution_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_distribution\" (\"sqlg_schema.edge__O\");");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_colocate\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
@@ -2944,33 +2990,40 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"sqlg_schema.edge__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_vertex__I_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.vertex__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_vertex__I_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.vertex__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.edge__O\");");
 
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_index\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_index_index__I_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.index__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_index_index__I_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.index__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.vertex__O\");");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_index\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_index_index__I_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.index__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_index_index__I_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.index__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.edge__O\");");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "index_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, \"sequence\" INTEGER, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (\"ID\") DEFERRABLE);");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_index_property_property__I_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.property__I\");");
-//        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_index_property_index__O_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.index__O\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_index_property_property__I_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.property__I\");");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_index_property_index__O_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.index__O\");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "globalUniqueIndex_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.globalUniqueIndex__O\" BIGINT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "globalUniqueIndex_property\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.globalUniqueIndex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "globalUniqueIndex\" (\"ID\") DEFERRABLE);");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "log\"(\"ID\" SERIAL PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" JSONB);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "log\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"timestamp\" TIMESTAMP, " +
+                "\"pid\" INTEGER, " +
+                "\"log\" JSONB);");
 
         return result;
     }

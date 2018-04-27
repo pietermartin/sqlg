@@ -277,19 +277,29 @@ public class WhereClause {
             keyValueMap.put(hasContainer.getKey(), p2.getValue());
         } else if (p.getBiPredicate() == Contains.within || p.getBiPredicate() == Contains.without) {
             Collection<?> values = (Collection<?>) hasContainer.getValue();
-            for (Object value : values) {
-                if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                    if (schemaTableTree.isHasIDPrimaryKey()) {
-                        keyValueMap.put("ID", value);
+            if (schemaTableTree.isHasIDPrimaryKey()) {
+                for (Object value : values) {
+                    if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                        if (schemaTableTree.isHasIDPrimaryKey()) {
+                            keyValueMap.put("ID", value);
+                        }
                     } else {
-                        int i = 0;
-                        for (String identifier : schemaTableTree.getIdentifiers()) {
-                            keyValueMap.put(identifier, ((RecordId)value).getIdentifiers().get(i++));
+                        keyValueMap.put(hasContainer.getKey(), value);
+                    }
+                }
+            } else {
+                int i = 0;
+                for (String identifier : schemaTableTree.getIdentifiers()) {
+                    for (Object value : values) {
+                        if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                            keyValueMap.put(identifier, ((RecordId) value).getIdentifiers().get(i));
+                        } else {
+                            keyValueMap.put(hasContainer.getKey(), value);
                         }
                     }
-                } else {
-                    keyValueMap.put(hasContainer.getKey(), value);
+                    i++;
                 }
+
             }
         } else if (p.getBiPredicate() == Text.contains || p.getBiPredicate() == Text.ncontains ||
                 p.getBiPredicate() == Text.containsCIS || p.getBiPredicate() == Text.ncontainsCIS) {

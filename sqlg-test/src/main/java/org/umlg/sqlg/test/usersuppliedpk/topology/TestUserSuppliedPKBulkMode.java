@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.usersuppliedpk.topology;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -9,11 +8,13 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgVertex;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -127,53 +128,4 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("A").out().toList().size());
     }
 
-    @Test
-    public void testSharding2() {
-        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
-                "A",
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
-                }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
-        );
-        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
-                "B",
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
-                }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
-        );
-        EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist(
-                "ab",
-                bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
-                }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
-        );
-        this.sqlgGraph.tx().commit();
-
-        List<String> tenantIds = Arrays.asList("RNC1", "RNC2", "RNC3", "RNC4");
-        this.sqlgGraph.tx().normalBatchModeOn();
-        Set<Edge> edges = new HashSet<>();
-        for (int i = 0; i < 100; i++) {
-            int j = i % 4;
-            String tenantId = tenantIds.get(j);
-            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "dist", tenantId, "value", Integer.toString(i));
-            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "dist", tenantId, "value", Integer.toString(i));
-            Edge e = a.addEdge("ab", b, "uid", UUID.randomUUID().toString(), "dist", tenantId, "value", Integer.toString(i));
-            edges.add(e);
-        }
-        this.sqlgGraph.tx().commit();
-        for (Edge edge : edges) {
-            Edge other = this.sqlgGraph.traversal().E(edge.id()).next();
-            Assert.assertEquals(edge, other);
-        }
-    }
 }
