@@ -232,7 +232,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                     writeStreamingVertex(writer, values);
                     numberInserted++;
-                    if (vertexLabel != null && !vertexLabel.getIdentifiers().isEmpty()) {
+                    if (vertexLabel != null && !vertexLabel.hasIDPrimaryKey()) {
                         ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
                         for (String identifier : vertexLabel.getIdentifiers()) {
                             identifiers.add(values.get(identifier));
@@ -244,7 +244,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 throw new RuntimeException(e);
             }
             //noinspection ConstantConditions
-            if (!schemaTable.isTemporary() && numberInserted > 0 && vertexLabel.getIdentifiers().isEmpty()) {
+            if (!schemaTable.isTemporary() && numberInserted > 0 && vertexLabel.hasIDPrimaryKey()) {
                 long endHigh;
                 sql = "SELECT CURRVAL('" + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq") + "');";
                 if (logger.isDebugEnabled()) {
@@ -435,7 +435,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         }
                         writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
                         numberInserted++;
-                        if (!edgeLabel.getIdentifiers().isEmpty()) {
+                        if (!edgeLabel.hasIDPrimaryKey()) {
                             ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
                             for (String identifier : edgeLabel.getIdentifiers()) {
                                 identifiers.add(values.get(identifier));
@@ -2993,8 +2993,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_vertex__I_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.vertex__I\");");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_colocate_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_colocate\" (\"sqlg_schema.edge__O\");");
 
-
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_index\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, " +
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_index\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.index__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (\"ID\") DEFERRABLE, " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\") DEFERRABLE);");
         result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_vertex_index_index__I_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.index__I\");");

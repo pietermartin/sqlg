@@ -252,6 +252,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
             SchemaTable outSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getOutLabel());
             SchemaTable inSchemaTable = SchemaTable.from(sqlgGraph, metaEdge.getInLabel());
+            EdgeLabel edgeLabel = sqlgGraph.getTopology().getEdgeLabel(metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel not found for %s.%s", metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable())));
             VertexLabel outVertexLabel = sqlgGraph.getTopology().getVertexLabel(outSchemaTable.getSchema(), outSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", outSchemaTable.getSchema(), outSchemaTable.getTable())));
             VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
 
@@ -414,13 +415,22 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                                     ).getPropertyType(), parameterValueMap.getMiddle().value(identifier)));
                         }
                     }
+                    if (!edgeLabel.hasIDPrimaryKey()) {
+                        ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                        for (String identifier : edgeLabel.getIdentifiers()) {
+                            identifiers.add(parameterValueMap.getRight().get(identifier));
+                        }
+                        sqlgEdge.setInternalPrimaryKey(RecordId.from(SchemaTable.of(metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable()), identifiers));
+                    }
                     preparedStatement.addBatch();
                 }
                 preparedStatement.executeBatch();
-                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                i = 0;
-                while (generatedKeys.next()) {
-                    sqlgEdges.get(i++).setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), generatedKeys.getLong(1)));
+                if (edgeLabel.hasIDPrimaryKey()) {
+                    ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                    i = 0;
+                    while (generatedKeys.next()) {
+                        sqlgEdges.get(i++).setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), generatedKeys.getLong(1)));
+                    }
                 }
 //                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
             } catch (SQLException e) {
