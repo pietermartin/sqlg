@@ -3998,7 +3998,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             return result;
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+        	// pre 10 postgres
+            if ("42P01".equals(e.getSQLState()) && e.getMessage().contains("pg_catalog.pg_partitioned_table")){
+            	return new ArrayList<>();
+            }
+        	throw new RuntimeException(e);
+        	
         }
     }
 
