@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchTemporaryVertex;
+import org.umlg.sqlg.test.topology.TestValidateTopology;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,16 @@ import org.umlg.sqlg.test.batch.TestBatchTemporaryVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchTemporaryVertex.class
+//        TestSharding.class,
+//        TestShardingGremlin.class,
+//        TestSimpleJoinGremlin.class,
+//        TestSimpleVertexEdgeGremlin.class,
+//        TestUserSuppliedPKBulkMode.class,
+//        TestMultipleIDQuery.class,
+//        TestTopologyUpgrade.class,
+//        TestGremlinCompileWithHas.class
+        TestValidateTopology.class
+
 })
 public class AnyTest {
 }

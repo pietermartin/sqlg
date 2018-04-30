@@ -981,10 +981,12 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 return value.toString();
             case byte_ARRAY:
                 //Mssql likes to have 0x prefix for binary literal
+                //not compiling with java 10
                 return "0x" + DatatypeConverter.printHexBinary((byte[]) value);
             case BYTE_ARRAY:
                 //Mssql likes to have 0x prefix for binary literal
                 byte[] bytes = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value);
+                //not compiling with java 10
                 return "0x" + DatatypeConverter.printHexBinary(bytes);
             case BOOLEAN:
                 Boolean b = (Boolean) value;

@@ -17,7 +17,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/03/18
  */
-public class TestSimpleVertexGremlin extends BaseTest {
+public class TestSimpleVertexEdgeGremlin extends BaseTest {
 
     @Test
     public void testSimpleVertexInsertAndUpdateAndQuery() {
@@ -105,6 +105,44 @@ public class TestSimpleVertexGremlin extends BaseTest {
         edges = this.sqlgGraph.traversal().V().hasLabel("A").outE().toList();
         Assert.assertEquals(1, edges.size());
         Assert.assertEquals("moon", edges.get(0).value("country"));
+    }
+
+    @Test
+    public void testGetEdgeById() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(),
+                "A",
+                new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(),
+                "B",
+                new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("country", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
+        );
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "A1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "A1");
+        Edge e = a1.addEdge("ab", b1, "name", "halo", "country", "earth");
+        this.sqlgGraph.tx().commit();
+
+        Vertex otherV = this.sqlgGraph.traversal().V(a1.id()).next();
+        Assert.assertEquals(a1, otherV);
+        Edge other = this.sqlgGraph.traversal().E(e.id()).next();
+        Assert.assertEquals(e, other);
     }
 
 

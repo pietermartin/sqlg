@@ -24,6 +24,7 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
 
     @Test
     public void testVertexLabelUserSuppliedBulkMode() {
+        //noinspection Duplicates
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{
@@ -42,6 +43,7 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
 
     @Test
     public void testVertexAndEdgeLabelUserSuppliedBulkMode() {
+        @SuppressWarnings("Duplicates")
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{
@@ -125,4 +127,5 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
 
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("A").out().toList().size());
     }
+
 }

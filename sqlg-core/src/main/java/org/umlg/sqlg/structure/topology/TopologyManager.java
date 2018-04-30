@@ -512,7 +512,7 @@ public class TopologyManager {
 
     }
 
-    public static void addEdgeLabel(
+    static void addEdgeLabel(
             SqlgGraph sqlgGraph,
             String schema,
             String prefixedTable,
@@ -524,7 +524,7 @@ public class TopologyManager {
         addEdgeLabel(sqlgGraph, schema, prefixedTable, foreignKeyOut, foreignKeyIn, columns, identifiers, PartitionType.NONE, null);
     }
 
-    public static void addEdgeLabel(
+    static void addEdgeLabel(
             SqlgGraph sqlgGraph,
             String schema,
             String prefixedTable,
@@ -1387,5 +1387,91 @@ public class TopologyManager {
         Vertex vertexLabel = edgeLabels.get(0);
         vertexLabel.property(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, partitionType.name());
         vertexLabel.property(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, partitionExpression);
+    }
+
+    static void distributeAbstractLabel(
+            SqlgGraph sqlgGraph,
+            AbstractLabel abstractLabel,
+            int shardCount,
+            PropertyColumn distributionPropertyColumn,
+            AbstractLabel colocate) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            //get the vertex
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices;
+            if (abstractLabel instanceof VertexLabel) {
+                vertices = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has("name", abstractLabel.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", abstractLabel.getName())
+                        .toList();
+            } else {
+                vertices = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
+                        .has("name", abstractLabel.label)
+                        .as("a")
+                        .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", abstractLabel.getSchema().getName())
+                        .<Vertex>select("a")
+                        .toList();
+                if (vertices.size() == 0) {
+                    throw new IllegalStateException(String.format("Found no edge for %s", abstractLabel.label));
+                }
+                if (vertices.size() > 1) {
+                    throw new IllegalStateException(String.format("Found more than one edge for %s", abstractLabel.label));
+                }
+            }
+
+            Preconditions.checkState(vertices.size() != 0, "Found no vertex for %s", abstractLabel.getFullName());
+            Preconditions.checkState(vertices.size() == 1, "Found more than one vertex for %s", abstractLabel.getFullName());
+            Vertex vertex = vertices.get(0);
+
+            //get the distributionPropertyColumn's vertex
+            List<Vertex> distributionColumnPropertyVertices = traversalSource.V(vertex)
+                    .out((abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE))
+                    .has(SQLG_SCHEMA_PROPERTY_NAME, distributionPropertyColumn.getName())
+                    .toList();
+            Preconditions.checkState(distributionColumnPropertyVertices.size() == 1, "VertexLabel %s must have one and only only one property with name %s", abstractLabel.getFullName(), distributionPropertyColumn.getName());
+            Vertex distributionPropertyVertex = distributionColumnPropertyVertices.get(0);
+
+            if (abstractLabel instanceof VertexLabel) {
+                vertex.addEdge(Topology.SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE, distributionPropertyVertex);
+            } else {
+                vertex.addEdge(Topology.SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE, distributionPropertyVertex);
+            }
+
+            //get the colocate's vertex
+            if (colocate != null) {
+                List<Vertex> colocateVertices = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has("name", colocate.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", colocate.getName())
+                        .toList();
+                Preconditions.checkState(colocateVertices.size() == 1, "Did not find the colocate %s vertex", colocate.getFullName());
+                Vertex colocateVertex = colocateVertices.get(0);
+                if (abstractLabel instanceof VertexLabel) {
+                    vertex.addEdge(Topology.SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE, colocateVertex);
+                } else {
+                    vertex.addEdge(Topology.SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE, colocateVertex);
+                }
+            }
+
+            //set the shard_count
+            if (shardCount > -1) {
+                if (abstractLabel instanceof VertexLabel) {
+                    vertex.property(SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT, shardCount);
+                } else {
+                    vertex.property(SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT, shardCount);
+                }
+            }
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
     }
 }

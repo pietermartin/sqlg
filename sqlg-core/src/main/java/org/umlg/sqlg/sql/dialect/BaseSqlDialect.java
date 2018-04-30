@@ -2,6 +2,7 @@ package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -61,14 +62,14 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
         String[] types = new String[]{"TABLE"};
         try {
             //load the vertices
-            try (ResultSet vertexRs = metaData.getTables(null, null, "V_%", types)) {
+            try (ResultSet vertexRs = metaData.getTables(null, null, Topology.VERTEX_PREFIX + "%", types)) {
                 while (vertexRs.next()) {
                     String tblCat = vertexRs.getString(1);
                     String schema = vertexRs.getString(2);
                     String table = vertexRs.getString(3);
 
                     //verify the table name matches our pattern
-                    if (!table.startsWith("V_")) {
+                    if (!table.startsWith(Topology.VERTEX_PREFIX)) {
                         continue;
                     }
                     vertexTables.add(Triple.of(tblCat, schema, table));
@@ -86,13 +87,13 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
         String[] types = new String[]{"TABLE"};
         try {
             //load the edges without their properties
-            try (ResultSet edgeRs = metaData.getTables(null, null, "E_%", types)) {
+            try (ResultSet edgeRs = metaData.getTables(null, null, Topology.EDGE_PREFIX + "%", types)) {
                 while (edgeRs.next()) {
                     String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
                     //verify the table name matches our pattern
-                    if (!table.startsWith("E_")) {
+                    if (!table.startsWith(Topology.EDGE_PREFIX)) {
                         continue;
                     }
                     edgeTables.add(Triple.of(edgCat, schema, table));
@@ -126,14 +127,14 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                                 VERTEX_PREFIX + schemaTable.getTable()));
             }
 
+            VertexLabel vertexLabel = null;
             Map<String, PropertyColumn> propertyColumns = null;
             Map<String, PropertyType> properties = null;
             if (!schemaTable.isTemporary()) {
-                propertyColumns = sqlgGraph.getTopology()
+                vertexLabel = sqlgGraph.getTopology()
                         .getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", schemaTable.getSchema())))
-                        .getVertexLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", schemaTable.getTable())))
-                        .getProperties();
-
+                        .getVertexLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", schemaTable.getTable())));
+                propertyColumns = vertexLabel.getProperties();
             } else {
                 properties = sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + schemaTable.getTable());
             }
@@ -202,7 +203,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 logger.debug(sql.toString());
             }
             Connection conn = sqlgGraph.tx().getConnection();
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement preparedStatement = (vertexLabel != null && !vertexLabel.hasIDPrimaryKey() ? conn.prepareStatement(sql.toString()) : conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS))) {
                 List<SqlgVertex> sqlgVertices = new ArrayList<>();
                 for (Map.Entry<SqlgVertex, Map<String, Object>> rowEntry : rows.entrySet()) {
                     int i = 1;
@@ -219,15 +220,25 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                                 typeAndValues.add(Pair.of(properties.get(column), parameterValueMap.get(column)));
                             }
                         }
+                        if (vertexLabel != null && !vertexLabel.hasIDPrimaryKey()) {
+                            ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                            for (String identifier : vertexLabel.getIdentifiers()) {
+                                identifiers.add(parameterValueMap.get(identifier));
+                            }
+                            sqlgVertex.setInternalPrimaryKey(RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), identifiers));
+
+                        }
                         SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, typeAndValues);
                     }
                     preparedStatement.addBatch();
                 }
                 preparedStatement.executeBatch();
-                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                int i = 0;
-                while (generatedKeys.next()) {
-                    sqlgVertices.get(i++).setInternalPrimaryKey(RecordId.from(schemaTable, generatedKeys.getLong(1)));
+                if (vertexLabel == null || vertexLabel.hasIDPrimaryKey()) {
+                    ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                    int i = 0;
+                    while (generatedKeys.next()) {
+                        sqlgVertices.get(i++).setInternalPrimaryKey(RecordId.from(schemaTable, generatedKeys.getLong(1)));
+                    }
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

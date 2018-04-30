@@ -94,6 +94,6 @@ public class ForeignKey {
     }
 
     public ListOrderedSet<String> getCompositeKeys() {
-        return compositeKeys;
+        return this.compositeKeys;
     }
 }

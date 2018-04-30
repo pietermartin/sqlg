@@ -680,10 +680,13 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpgradeIndex() throws Exception {
         //with topology
-        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
-            put("firstName", PropertyType.STRING);
-            put("lastName", PropertyType.STRING);
-        }});
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                "Person",
+                new HashMap<String, PropertyType>() {{
+                    put("firstName", PropertyType.STRING);
+                    put("lastName", PropertyType.STRING);
+                }}
+        );
         personVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(personVertexLabel.getProperties().values()));
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
@@ -742,7 +745,7 @@ public class TestTopologyUpgrade extends BaseTest {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
             statement.execute("DROP TABLE IF EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
-            this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("EVENT"));
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("EVENT"));
         }
         try (Statement statement = conn.createStatement()) {
             statement.execute("DROP TABLE IF EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +

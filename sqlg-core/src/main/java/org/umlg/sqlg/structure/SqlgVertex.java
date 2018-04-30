@@ -141,7 +141,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     private Edge addEdgeInternal(boolean complete, String label, Vertex inVertex, Object... keyValues) {
         if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
+        if (this.removed) {
+            throw new IllegalStateException(String.format("Vertex with id %s was removed.", id().toString()));
+        }
 
         ElementHelper.validateLabel(label);
 
@@ -187,7 +189,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     public <V> VertexProperty<V> property(final String key) {
         this.sqlgGraph.tx().readWrite();
         if (this.removed) {
-            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+            throw new IllegalStateException(String.format("Vertex with id %s was removed.", id().toString()));
         } else {
             if (!sqlgGraph.tx().isInBatchMode()) {
                 SqlgVertex sqlgVertex = this.sqlgGraph.tx().putVertexIfAbsent(this);
@@ -203,7 +205,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @SuppressWarnings("unchecked")
     @Override
     public <V> VertexProperty<V> property(final String key, final V value) {
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
+        if (this.removed) {
+            throw new IllegalStateException(String.format("Vertex with id %s was removed.", id().toString()));
+        }
         ElementHelper.validateProperty(key, value);
         this.sqlgGraph.tx().readWrite();
         return (VertexProperty<V>) super.property(key, value);
@@ -228,6 +232,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return new SqlgVertexProperty<>(this.sqlgGraph, this, key, value);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected Property emptyProperty() {
         return VertexProperty.empty();
@@ -258,7 +263,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         this.sqlgGraph.tx().readWrite();
 
         if (this.removed)
-            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+            throw new IllegalStateException(String.format("Vertex with id %s was removed.", id().toString()));
 
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeVertex(this.schema, this.table, this);
@@ -267,21 +272,21 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed());
             //in edges
             for (SchemaTable schemaTable : foreignKeys.getLeft()) {
-                deleteEdgesWithInKey(schemaTable, this.id());
+                deleteEdgesWithInKey(schemaTable);
             }
             //out edges
             for (SchemaTable schemaTable : foreignKeys.getRight()) {
-                deleteEdgesWithOutKey(schemaTable, this.id());
+                deleteEdgesWithOutKey(schemaTable);
             }
             super.remove();
         }
     }
 
-    private void deleteEdgesWithOutKey(SchemaTable edgeSchemaTable, Object id) {
+    private void deleteEdgesWithOutKey(SchemaTable edgeSchemaTable) {
         deleteEdges(Direction.OUT, edgeSchemaTable);
     }
 
-    private void deleteEdgesWithInKey(SchemaTable edgeSchemaTable, Object id) {
+    private void deleteEdgesWithInKey(SchemaTable edgeSchemaTable) {
         deleteEdges(Direction.IN, edgeSchemaTable);
     }
 
@@ -337,7 +342,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         } else {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                     this.sqlgGraph.getSqlDialect().temporaryTablePrefix() +
-                    VERTEX_PREFIX + this.table));
+                            VERTEX_PREFIX + this.table));
         }
 
         Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
@@ -422,21 +427,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             //Generate the columns to prevent 'ERROR: cached plan must not change result type" error'
             //This happens when the schema changes after the statement is prepared.
             @SuppressWarnings("OptionalGetWithoutIsPresent")
-            VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).get().getVertexLabel(this.table).get();
+            VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema))).getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)));
             StringBuilder sql = new StringBuilder("SELECT\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            for (PropertyColumn propertyColumn : vertexLabel.getProperties().values()) {
-                sql.append(", ");
-                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
-                // additional columns for time zone, etc.
-                String[] ps = propertyColumn.getPropertyType().getPostFixes();
-                if (ps != null) {
-                    for (String p : propertyColumn.getPropertyType().getPostFixes()) {
-                        sql.append(", ");
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName() + p));
-                    }
-                }
-            }
+            appendProperties(vertexLabel, sql);
             sql.append("\nFROM\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
@@ -457,7 +451,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 if (resultSet.next()) {
                     loadResultSet(resultSet);
                 } else {
-                    throw new IllegalStateException(String.format("Vertex with label %s and id %d does not exist.", new Object[]{this.schema + "." + this.table, this.recordId.getId()}));
+                    throw new IllegalStateException(String.format("Vertex with label %s and id %d does not exist.", this.schema + "." + this.table, this.recordId.getId()));
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

@@ -198,6 +198,35 @@ public class Topology {
      * Partition table for the partition's partitions.
      */
     public static final String SQLG_SCHEMA_PARTITION_PARTITION_EDGE = "partition_partition";
+
+    /**
+     * Edge table for the vertex's distribution column.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE = "vertex_distribution";
+    /**
+     * Edge table for the vertex's colocate label.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE = "vertex_colocate";
+    /**
+     * vertex's shard_count property.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT= "shardCount";
+
+
+    /**
+     * Edge table for the edge's distribution column.
+     */
+    public static final String SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE = "edge_distribution";
+    /**
+     * Edge table for the edge's colocate label. The edge's co-locate will always be to its incoming vertex label.
+     */
+    public static final String SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE = "edge_colocate";
+    /**
+     * Edge's shard_count property.
+     */
+    public static final String SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT= "shardCount";
+
+
     /**
      * Table storing the graphs element properties.
      */
@@ -333,6 +362,10 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PARTITION_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PARTITION_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_PARTITION_PARTITION_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_INDEX_PROPERTY_EDGE,
@@ -370,11 +403,12 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(schemaVertexLabel);
 
         columns = new HashMap<>();
-        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT, PropertyType.INTEGER);
         VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(vertexVertexLabel);
 
@@ -383,6 +417,7 @@ public class Topology {
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT, PropertyType.INTEGER);
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(edgeVertexLabel);
 
@@ -432,6 +467,15 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(edgePartitionEdgeLabel);
         EdgeLabel partitionPartitionEdgeLabel = partitionVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_PARTITION_PARTITION_EDGE, partitionVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(partitionPartitionEdgeLabel);
+        EdgeLabel vertexDistributionPropertyColumnEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexDistributionPropertyColumnEdgeLabel);
+        EdgeLabel vertexColocatePropertyColumnEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE, vertexVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexColocatePropertyColumnEdgeLabel);
+
+        EdgeLabel edgeDistributionPropertyColumnEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgeDistributionPropertyColumnEdgeLabel);
+        EdgeLabel edgeColocatePropertyColumnEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE, vertexVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgeColocatePropertyColumnEdgeLabel);
 
         EdgeLabel vertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexPropertyEdgeLabel);

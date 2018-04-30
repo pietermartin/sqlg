@@ -422,6 +422,15 @@ public class VertexLabel extends AbstractLabel {
         }
     }
 
+    public void ensureDistributed(int shardCount, PropertyColumn distributionPropertyColumn) {
+        ensureDistributed(shardCount, distributionPropertyColumn, null);
+    }
+
+
+    public void ensureDistributed(PropertyColumn distributionPropertyColumn, AbstractLabel colocate) {
+        ensureDistributed(-1, distributionPropertyColumn, colocate);
+    }
+
     private void createVertexLabelOnDb(Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
@@ -675,6 +684,16 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             vertexLabelNode.set("uncommittedIdentifiers", abstractLabelNode.get().get("uncommittedIdentifiers"));
             vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
+            vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
+            if (abstractLabelNode.get().get("uncommittedDistributionPropertyColumn") != null) {
+                vertexLabelNode.set("uncommittedDistributionPropertyColumn", abstractLabelNode.get().get("uncommittedDistributionPropertyColumn"));
+            }
+            if (abstractLabelNode.get().get("uncommittedShardCount") != null) {
+                vertexLabelNode.set("uncommittedShardCount", abstractLabelNode.get().get("uncommittedShardCount"));
+            }
+            if (abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel") != null) {
+                vertexLabelNode.set("uncommittedDistributionColocateAbstractLabel", abstractLabelNode.get().get("uncommittedDistributionColocateAbstractLabel"));
+            }
             vertexLabelNode.set("partitions", abstractLabelNode.get().get("partitions"));
             vertexLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
             vertexLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
@@ -798,7 +817,10 @@ public class VertexLabel extends AbstractLabel {
                     } else {
                         foreignKey = new ForeignKey();
                         for (String identifier : this.getIdentifiers()) {
-                            foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            }
                         }
                     }
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
@@ -824,7 +846,10 @@ public class VertexLabel extends AbstractLabel {
                     } else {
                         foreignKey = new ForeignKey();
                         for (String identifier : this.getIdentifiers()) {
-                            foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            }
                         }
                     }
                     this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
@@ -874,7 +899,10 @@ public class VertexLabel extends AbstractLabel {
                     } else {
                         foreignKey = new ForeignKey();
                         for (String identifier : this.getIdentifiers()) {
-                            foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                            }
                         }
 
                     }
@@ -983,7 +1011,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     @Override
-    protected String getPrefix() {
+    public String getPrefix() {
         return VERTEX_PREFIX;
     }
 

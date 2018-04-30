@@ -12,10 +12,7 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
-import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 
 import java.sql.*;
 import java.util.*;
@@ -1027,5 +1024,13 @@ public interface SqlDialect {
      */
     default Integer getDefaultFetchSize(){
     	return null;
+    }
+
+    default int getShardCount(SqlgGraph sqlgGraph, AbstractLabel label) {
+        throw new IllegalStateException("Sharding is not supported.");
+    }
+
+    default boolean supportsSharding() {
+        return false;
     }
 }
