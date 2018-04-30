@@ -64,6 +64,11 @@ public class ReplacedStep<S, E> {
     private boolean joinToLeftJoin;
     private boolean drop;
 
+    /**
+     * restrict properties to only a subset if not null
+     */
+    private Set<String> restrictedProperties = null;
+    
     private ReplacedStep() {
     }
 
@@ -536,7 +541,7 @@ public class ReplacedStep<S, E> {
                 replacedStepDepth,
                 this.labels
         );
-
+        schemaTableTree.setRestrictedProperties(getRestrictedProperties());
         result.add(schemaTableTree);
     }
 
@@ -797,4 +802,12 @@ public class ReplacedStep<S, E> {
     public void markAsDrop(List<EventCallback<Event>> mutatingCallbacks) {
         this.drop = true;
     }
+
+	public Set<String> getRestrictedProperties() {
+		return restrictedProperties;
+	}
+
+	public void setRestrictedProperties(Set<String> restrictedColumns) {
+		this.restrictedProperties = restrictedColumns;
+	}
 }

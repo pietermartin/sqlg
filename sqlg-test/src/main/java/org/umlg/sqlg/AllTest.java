@@ -45,6 +45,7 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStep;
 import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
 import org.umlg.sqlg.test.process.dropstep.TestDropStepTruncate;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
+import org.umlg.sqlg.test.properties.TestPropertyValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 import org.umlg.sqlg.test.rollback.TestRollback;
@@ -251,7 +252,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSimpleVertexEdgeGremlin.class,
         TestMultipleIDQuery.class,
         TestSharding.class,
-        TestShardingGremlin.class
+        TestShardingGremlin.class,
+        TestPropertyValues.class
 })
 public class AllTest {
 

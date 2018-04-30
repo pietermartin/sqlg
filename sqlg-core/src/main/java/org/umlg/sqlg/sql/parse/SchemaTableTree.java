@@ -107,6 +107,9 @@ public class SchemaTableTree {
 
     private List<ColumnList> columnListStack = new ArrayList<>();
 
+    private Set<String> restrictedProperties = null;
+    
+    
     public void removeTopologyStrategyHasContainer() {
         SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
         for (SchemaTableTree child : children) {
@@ -1700,12 +1703,14 @@ public class SchemaTableTree {
         }
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
             if (!identifiers.contains(propertyTypeMapEntry.getKey())) {
-                String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
-                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
-                for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
-                }
+            	if (lastSchemaTableTree.shouldSelectProperty(propertyTypeMapEntry.getKey())){
+	                String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
+	                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
+	                for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
+	                }
+            	}
             }
         }
     }
@@ -1725,21 +1730,23 @@ public class SchemaTableTree {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
             String col = propertyTypeMapEntry.getKey();
-            String alias = cols.getAlias(lastSchemaTableTree, col);
-            if (alias == null) {
-                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
-                cols.add(lastSchemaTableTree, col, alias);
-            } else {
-                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
-            }
-            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                col = propertyTypeMapEntry.getKey() + postFix;
-                alias = cols.getAlias(lastSchemaTableTree, col);
-                // postfix do not use labeled methods
-                if (alias == null) {
-                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                    cols.add(lastSchemaTableTree, col, alias);
-                }
+            if (lastSchemaTableTree.shouldSelectProperty(col)){
+	            String alias = cols.getAlias(lastSchemaTableTree, col);
+	            if (alias == null) {
+	                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
+	                cols.add(lastSchemaTableTree, col, alias);
+	            } else {
+	                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
+	            }
+	            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+	                col = propertyTypeMapEntry.getKey() + postFix;
+	                alias = cols.getAlias(lastSchemaTableTree, col);
+	                // postfix do not use labeled methods
+	                if (alias == null) {
+	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	                    cols.add(lastSchemaTableTree, col, alias);
+	                }
+	            }
             }
         }
     }
@@ -2566,4 +2573,58 @@ public class SchemaTableTree {
         return this.distributionColumn != null;
     }
 
+	public Set<String> getRestrictedProperties() {
+		return restrictedProperties;
+	}
+
+	public void setRestrictedProperties(Set<String> restrictedColumns) {
+		this.restrictedProperties = restrictedColumns;
+	}
+
+	/**
+	 * should we select the given property?
+	 * @param property the property name
+	 * @return true if the property should be part of the select clause, false otherwise
+	 */
+	public boolean shouldSelectProperty(String property){
+		// no restriction
+		if (restrictedProperties==null){
+			return true;
+		}
+		// explicit restriction
+		if (restrictedProperties.contains(property)){
+			return true;
+		}
+		// we use aliases for ordering, so we need the property in the select clause
+        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.getDbComparators()) {
+            
+            if (comparator.getValue1() instanceof ElementValueComparator) {
+               if (property.equals(((ElementValueComparator<?>)comparator.getValue1()).getPropertyKey())){
+            	   return true;
+               }
+               
+                //TODO redo this via SqlgOrderGlobalStep
+            } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
+                    && comparator.getValue1() instanceof Order) {
+                Traversal.Admin<?, ?> t = comparator.getValue0();
+                String key;
+                if (t instanceof ElementValueTraversal) {
+                    ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal<?>) t;
+                    key = elementValueTraversal.getPropertyKey();
+                } else {
+                    TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
+                    // see calculateLabeledAliasId
+                    if (tokenTraversal.getToken().equals(T.id)) {
+                        key = Topology.ID;
+                    } else {
+                        key = tokenTraversal.getToken().getAccessor();
+                    }
+                }
+                if (property.equals(key)){
+             	   return true;
+                }
+            }
+        }
+		return false;
+	}
 }
