@@ -86,7 +86,8 @@ public class TestPropertyValues extends BaseTest {
                 .V().hasLabel("person")
                 .order().by("age").skip(1).values("name");
         printTraversalForm(traversal);
-        checkRestrictedProperties(traversal,"name");
+        // name because explicitly requested, age because we order on it
+        checkRestrictedProperties(traversal,"name","age");
         assertTrue(traversal.hasNext());
         assertEquals(Arrays.asList("marko", "josh", "peter"), traversal.toList());
     }
