@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.properties;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -56,7 +57,7 @@ public class TestPropertyValues extends BaseTest {
 	public void testValuesOne(){
 		loadModern();
 		final Traversal<Vertex, String> traversal = sqlgGraph.traversal().V().hasLabel("person").values("name");
-		printTraversalForm(traversal);
+		checkColumnsNotPresent(traversal,"age");
 		checkRestrictedProperties(traversal,"name");
     	Set<String> names=new HashSet<>();
     	while (traversal.hasNext()){
@@ -69,7 +70,7 @@ public class TestPropertyValues extends BaseTest {
 	public void testValuesOneWhere(){
 		loadModern();
 		final Traversal<Vertex, String> traversal = sqlgGraph.traversal().V().hasLabel("person").has("age",29).values("name");
-		printTraversalForm(traversal);
+		checkColumnsNotPresent(traversal,"age");
 		checkRestrictedProperties(traversal,"name");
     	Set<String> names=new HashSet<>();
     	while (traversal.hasNext()){
@@ -100,7 +101,7 @@ public class TestPropertyValues extends BaseTest {
                 .V().hasLabel("person")
                 .out("created")
                 .values("name");
-        printTraversalForm(traversal);
+        checkColumnsNotPresent(traversal,"language");
         checkRestrictedProperties(traversal,"name");
     	Set<String> names=new HashSet<>();
     	while (traversal.hasNext()){
@@ -109,6 +110,29 @@ public class TestPropertyValues extends BaseTest {
     	assertEquals(new HashSet<>(Arrays.asList("lop","ripple")),names);
 	}
 	
+	/**
+	 * check provided columns/properties are not selected in the SQL
+	 * @param t the traversal
+	 * @param properties the properties to check for absence
+	 */
+	private void checkColumnsNotPresent(Traversal<?, ?> t, String... properties){
+		 String sql=getSQL(t);
+	     assertNotNull(sql);
+	     sql = sql.trim();
+	     assertTrue(sql.startsWith("SELECT"));
+	     int ix=sql.indexOf("FROM");
+	     assertTrue(ix>0);
+	     String select=sql.substring(0, ix);
+	     for (String p:properties){
+	        assertFalse(select.contains(p));
+	     }
+	}
+	
+	/**
+	 * check the replaced steps has the specified restricted properties
+	 * @param t the traversal
+	 * @param properties the properties
+	 */
 	@SuppressWarnings({ "resource", "unchecked" })
 	private void checkRestrictedProperties(Traversal<?, ?> t, String... properties){
 		boolean found=false;
@@ -122,4 +146,5 @@ public class TestPropertyValues extends BaseTest {
 		}
 		assertTrue(found);
 	}
+	
 }

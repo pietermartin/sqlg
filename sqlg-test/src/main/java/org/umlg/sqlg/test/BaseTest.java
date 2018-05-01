@@ -1,34 +1,7 @@
 package org.umlg.sqlg.test;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.Io;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.hamcrest.CoreMatchers;
-import org.junit.*;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.parse.ReplacedStep;
-import org.umlg.sqlg.step.SqlgGraphStep;
-import org.umlg.sqlg.step.SqlgStep;
-import org.umlg.sqlg.step.SqlgVertexStep;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.util.SqlgUtil;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -38,12 +11,55 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.log4j.Level;
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.hamcrest.CoreMatchers;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.TestAppender;
+import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgStep;
+import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.strategy.SqlgSqlExecutor;
+import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 /**
  * Date: 2014/07/12
@@ -240,6 +256,10 @@ public abstract class BaseTest {
 
     }
 
+    /**
+     * print the traversal before and after execution
+     * @param traversal
+     */
     protected void printTraversalForm(final Traversal<?, ?> traversal) {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 
@@ -248,6 +268,28 @@ public abstract class BaseTest {
         if (!muted) System.out.println("  post-strategy:" + traversal);
     }
 
+    /**
+     * print the traversal before and after execution, and return the last SQL generated
+     * @param traversal
+     * @return the SQL or null
+     */
+    protected String getSQL(final Traversal<?, ?> traversal){
+    	org.apache.log4j.Logger l=org.apache.log4j.Logger.getLogger(SqlgSqlExecutor.class);
+    	Level old=l.getLevel();
+    	try {
+    		l.setLevel(Level.DEBUG);
+	    	printTraversalForm(traversal);
+	    	org.apache.log4j.spi.LoggingEvent evt=TestAppender.getLast(SqlgSqlExecutor.class.getName());
+	    	if (evt!=null){
+	    		return String.valueOf(evt.getMessage());
+	    	}
+    	return null;
+    	} finally {
+    		l.setLevel(old);
+    	}
+    	
+    }
+    
     protected void loadModern(SqlgGraph sqlgGraph) {
         Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0);
         final GraphReader reader = sqlgGraph.io(builder).reader().create();
