@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.batch;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -7,8 +8,10 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;
@@ -568,6 +571,53 @@ public class TestBatch extends BaseTest {
         }
     }
 
+    @Test
+    //TODO need to deal with missing properties, set them to null
+    public void testRemovePropertyUserSuppliedPK() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                            put("name", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "Friend",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                    put("weight", PropertyType.INTEGER);
+                }}
+        );
+        personVertexLabel.ensureEdgeLabelExist(
+                "Colleague",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                    put("toRemove", PropertyType.STRING);
+                }}
+        );
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        marko.addEdge("Friend", john, "weight", 1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge colleague = marko.addEdge("Colleague", john, "toRemove", "a", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        marko.property("name").remove();
+        colleague.property("toRemove").remove();
+        this.sqlgGraph.tx().commit();
+
+        testRemoveProperty_assert(this.sqlgGraph, marko);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testRemoveProperty_assert(this.sqlgGraph1, marko);
+        }
+    }
+
     private void testRemoveProperty_assert(SqlgGraph sqlgGraph, Vertex marko) {
         marko = sqlgGraph.traversal().V(marko.id()).next();
         Assert.assertFalse(marko.property("name").isPresent());
@@ -971,12 +1021,53 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
-    public void testBatchRemoveEdges() throws InterruptedException {
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge edge1 = v1.addEdge("test", v2);
-        Edge edge2 = v1.addEdge("test", v3);
+    public void testBatchRemoveVertexUsersSuppliedPK() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveVertex_assert();
+    }
+
+    @Test
+    public void testBatchRemoveEdges_UserSuppliedPK() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge1 = v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge2 = v1.addEdge("test", v3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
         edge1.remove();
@@ -995,7 +1086,66 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
+    public void testBatchRemoveEdges() throws InterruptedException {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
+        Edge edge1 = v1.addEdge("test", v2);
+        Edge edge2 = v1.addEdge("test", v3);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        edge1.remove();
+        edge2.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveEdges_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveEdges_assert(this.sqlgGraph1);
+        }
+    }
+
+    @Test
     public void testBatchRemoveVerticesAndEdges() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge1 = v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge2 = v1.addEdge("test", v3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        edge1.remove();
+        edge2.remove();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveVerticesAndEdges_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveVerticesAndEdges_assert(this.sqlgGraph1);
+        }
+    }
+
+    @Test
+    public void testBatchRemoveVerticesAndEdgesUserSuppliedPK() throws InterruptedException {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
@@ -1028,6 +1178,44 @@ public class TestBatch extends BaseTest {
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
         v1.addEdge("test", v2);
         v1.addEdge("test", v3);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveVerticesEdgesMustBeGone_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveVerticesEdgesMustBeGone_assert(this.sqlgGraph1);
+        }
+    }
+
+    @Test
+    public void testBatchRemoveVerticesEdgesMustBeGoneUserSuppliedPK() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        v1.addEdge("test", v3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
         v1.remove();

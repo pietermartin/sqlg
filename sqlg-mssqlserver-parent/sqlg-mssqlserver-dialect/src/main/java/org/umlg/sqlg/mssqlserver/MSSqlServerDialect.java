@@ -963,9 +963,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     for (Map.Entry<SqlgVertex, Map<String, Object>> sqlgVertexMapEntry : vertices.getRight().entrySet()) {
                         SqlgVertex sqlgVertex = sqlgVertexMapEntry.getKey();
                         Map<String, Object> values = sqlgVertexMapEntry.getValue();
-                        ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                        ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
                         for (String identifier : vertexLabel.getIdentifiers()) {
-                            identifiers.add(values.get(identifier));
+                            identifiers.add((Comparable) values.get(identifier));
                         }
                         sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, identifiers));
                     }
@@ -1019,9 +1019,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                         for (Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleEntry : triples.getRight().entrySet()) {
                             SqlgEdge sqlgEdge = sqlgEdgeTripleEntry.getKey();
                             Map<String, Object> values = sqlgEdgeTripleEntry.getValue().getRight();
-                            ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
                             for (String identifier : edgeLabel.getIdentifiers()) {
-                                identifiers.add(values.get(identifier));
+                                identifiers.add((Comparable) values.get(identifier));
                             }
                             sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, identifiers));
                         }
@@ -1270,7 +1270,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<Long> ids, boolean mutatingCallbacks) {
+    public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
@@ -1286,12 +1286,14 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                         + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
         sql.append(" IN (\n");
         int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
-            if (count++ < ids.size()) {
-                sql.append(",");
-            }
-        }
+        if (true)
+            throw new RuntimeException("handle ID");
+//        for (Long id : ids) {
+//            sql.append(Long.toString(id));
+//            if (count++ < ids.size()) {
+//                sql.append(",");
+//            }
+//        }
         sql.append(")");
         return sql.toString();
     }

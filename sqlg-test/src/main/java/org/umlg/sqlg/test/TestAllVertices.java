@@ -6,12 +6,13 @@ import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
 /**
  * Date: 2014/07/13
@@ -63,6 +64,19 @@ public class TestAllVertices extends BaseTest {
     }
 
     public static void validateException(final Throwable expected, final Throwable actual) {
-        assertThat(actual, instanceOf(expected.getClass()));
+        Assert.assertThat(actual, instanceOf(expected.getClass()));
+    }
+
+    @Test
+    public void testSqlgGraphVertices() {
+        List<RecordId> recordIds = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            Vertex v = this.sqlgGraph.addVertex(T.label, "A");
+            recordIds.add((RecordId) v.id());
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> result = new ArrayList<>();
+        this.sqlgGraph.vertices(recordIds.toArray()).forEachRemaining(result::add);
+        Assert.assertEquals(10, result.size());
     }
 }

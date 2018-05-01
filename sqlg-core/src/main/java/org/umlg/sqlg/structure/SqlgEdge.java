@@ -4,15 +4,15 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ColumnList;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -76,7 +76,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         super(sqlgGraph, id, schema, table);
     }
 
-    public SqlgEdge(SqlgGraph sqlgGraph, ListOrderedSet<Object> identifiers, String schema, String table) {
+    public SqlgEdge(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
         super(sqlgGraph, identifiers, schema, table);
     }
 
@@ -238,7 +238,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
 
             if (inVertexLabel.getIdentifiers().isEmpty()) {
-                preparedStatement.setLong(i++, this.inVertex.recordId.getId());
+                preparedStatement.setLong(i++, this.inVertex.recordId.sequenceId());
             } else {
                 for (String identifier : inVertexLabel.getIdentifiers()) {
                     if (!inVertexLabel.isDistributed() || !inVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
@@ -251,8 +251,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     }
                 }
             }
-            if (outVertexLabel.getIdentifiers().isEmpty()) {
-                preparedStatement.setLong(i, this.outVertex.recordId.getId());
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                preparedStatement.setLong(i, this.outVertex.recordId.sequenceId());
             } else {
                 for (String identifier : outVertexLabel.getIdentifiers()) {
                     if (!outVertexLabel.isDistributed() || !outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
@@ -274,9 +274,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     throw new RuntimeException("Could not retrieve the id after an insert into " + Topology.VERTICES);
                 }
             } else {
-                ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
                 for (String identifier : edgeLabel.getIdentifiers()) {
-                    identifiers.add(propertyTypeValueMap.get(identifier).getRight());
+                    //noinspection unchecked
+                    identifiers.add((Comparable<Object>) propertyTypeValueMap.get(identifier).getRight());
                 }
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             }
@@ -330,8 +331,21 @@ public class SqlgEdge extends SqlgElement implements Edge {
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + this.table));
             sql.append(" WHERE ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(" = ?");
+            //noinspection Duplicates
+            if (edgeLabel.hasIDPrimaryKey()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                sql.append(" = ?");
+            } else {
+                int count = 1;
+                for (String identifier : edgeLabel.getIdentifiers()) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    sql.append(" = ?");
+                    if (count++ < edgeLabel.getIdentifiers().size()) {
+                        sql.append(" AND ");
+                    }
+
+                }
+            }
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
@@ -340,7 +354,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, this.recordId.getId());
+                if (edgeLabel.hasIDPrimaryKey()) {
+                    preparedStatement.setLong(1, this.recordId.sequenceId());
+                } else {
+                    int count = 1;
+                    for (Comparable identifierValue : this.recordId.getIdentifiers()) {
+                        preparedStatement.setObject(count++, identifierValue);
+                    }
+                }
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
                     loadResultSet(resultSet);
@@ -360,7 +381,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     public void loadInVertex(ResultSet resultSet, List<ColumnList.Column> inForeignKeyColumns) {
-        List<Object> identifiers = SqlgUtil.getValue(resultSet, inForeignKeyColumns);
+        List<Comparable> identifiers = SqlgUtil.getValue(resultSet, inForeignKeyColumns);
         ColumnList.Column column = inForeignKeyColumns.get(0);
         this.inVertex = SqlgVertex.of(
                 this.sqlgGraph,
@@ -378,7 +399,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     public void loadOutVertex(ResultSet resultSet, List<ColumnList.Column> outForeignKeyColumns) {
-        List<Object> identifiers = SqlgUtil.getValue(resultSet, outForeignKeyColumns);
+        List<Comparable> identifiers = SqlgUtil.getValue(resultSet, outForeignKeyColumns);
         ColumnList.Column column = outForeignKeyColumns.get(0);
         this.outVertex = SqlgVertex.of(
                 this.sqlgGraph,
@@ -437,5 +458,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
     @Override
     public SchemaTable getSchemaTablePrefixed() {
         return SchemaTable.of(this.getSchema(), EDGE_PREFIX + this.getTable());
+    }
+
+    @Override
+    AbstractLabel getAbstractLabel(Schema schema) {
+        return schema.getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found.", this.table)));
     }
 }

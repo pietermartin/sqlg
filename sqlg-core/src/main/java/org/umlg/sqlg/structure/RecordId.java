@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
@@ -17,6 +18,10 @@ import org.apache.tinkerpop.shaded.kryo.Kryo;
 import org.apache.tinkerpop.shaded.kryo.KryoSerializable;
 import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.apache.tinkerpop.shaded.kryo.io.Output;
+import org.umlg.sqlg.structure.topology.AbstractLabel;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
@@ -31,8 +36,7 @@ public class RecordId implements KryoSerializable, Comparable {
     @SuppressWarnings("WeakerAccess")
     public final static String RECORD_ID_DELIMITER = ":::";
     private SchemaTable schemaTable;
-    private Long id;
-    private ListOrderedSet<Object> identifiers;
+    private ID id;
 
     //For Kryo
     public RecordId() {
@@ -40,25 +44,37 @@ public class RecordId implements KryoSerializable, Comparable {
 
     private RecordId(SchemaTable schemaTable, Long id) {
         this.schemaTable = schemaTable;
-        this.id = id;
+        this.id = ID.from(id);
+    }
+
+    private RecordId(SchemaTable schemaTable, ListOrderedSet<Comparable> identifiers) {
+        this.schemaTable = schemaTable;
+        this.id = ID.from(identifiers);
     }
 
     private RecordId(String label, Long id) {
         this.schemaTable = SqlgUtil.parseLabel(label);
-        this.id = id;
-    }
-
-    private RecordId(SchemaTable schemaTable, ListOrderedSet<Object> identifiers) {
-        this.schemaTable = schemaTable;
-        this.identifiers = identifiers;
+        this.id = ID.from(id);
     }
 
     public static RecordId from(SchemaTable schemaTable, Long id) {
         return new RecordId(schemaTable, id);
     }
 
-    public static RecordId from(SchemaTable schemaTable, ListOrderedSet<Object> identifiers) {
+    public static RecordId from(SchemaTable schemaTable, ListOrderedSet<Comparable> identifiers) {
         return new RecordId(schemaTable, identifiers);
+    }
+
+    public static List<RecordId> from(SqlgGraph sqlgGraph, Object... elementId) {
+        List<RecordId> result = new ArrayList<>(elementId.length);
+        for (Object o : elementId) {
+            if (o instanceof RecordId) {
+                result.add((RecordId) o);
+            } else {
+                result.add(RecordId.from(sqlgGraph, o));
+            }
+        }
+        return result;
     }
 
     public static List<RecordId> from(Object... elementId) {
@@ -73,27 +89,105 @@ public class RecordId implements KryoSerializable, Comparable {
         return result;
     }
 
-    public static RecordId from(Object vertexId) {
+    public static RecordId from(SqlgGraph sqlgGraph, Object vertexId) {
         if (vertexId instanceof Element) {
-            return (RecordId) ((SqlgElement)vertexId).id();
+            return (RecordId) ((SqlgElement) vertexId).id();
         }
         if (vertexId instanceof RecordId) {
-            return (RecordId)vertexId;
+            return (RecordId) vertexId;
         }
         if (!(vertexId instanceof String)) {
             throw SqlgExceptions.invalidId(vertexId.toString());
         }
         String stringId = (String) vertexId;
         String[] splittedId = stringId.split(RECORD_ID_DELIMITER);
-        if (splittedId.length != 2) {
+        if (splittedId.length == 2) {
+            String label = splittedId[0];
+            String id = splittedId[1];
+            if (id.startsWith("[") && id.endsWith("]")) {
+                return recordIdFromIdentifiers(sqlgGraph, label, id);
+            } else {
+                try {
+                    Long labelId = Long.valueOf(id);
+                    return new RecordId(label, labelId);
+                } catch (NumberFormatException e) {
+                    throw SqlgExceptions.invalidId(vertexId.toString());
+                }
+            }
+        } else if (splittedId.length > 2) {
+            String label = splittedId[0];
+            String id = splittedId[1];
+            if (id.startsWith("[") && id.endsWith("]")) {
+                return recordIdFromIdentifiers(sqlgGraph, label, id);
+            } else {
+                throw SqlgExceptions.invalidId(vertexId.toString());
+            }
+        } else {
             throw SqlgExceptions.invalidId(vertexId.toString());
         }
-        String label = splittedId[0];
-        String id = splittedId[1];
-        try {
-            Long labelId = Long.valueOf(id);
-            return new RecordId(label, labelId);
-        } catch (NumberFormatException e) {
+    }
+
+    private static RecordId recordIdFromIdentifiers(SqlgGraph sqlgGraph, String label, String id) {
+        SchemaTable schemaTable = SqlgUtil.parseLabel(label);
+        id = id.substring(1, id.length() - 1);
+        String[] identifiers = id.split(",");
+        AbstractLabel abstractLabel;
+        Optional<VertexLabel> vertexLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", schemaTable.getSchema())))
+                .getVertexLabel(schemaTable.getTable());
+        if (!vertexLabel.isPresent()) {
+            Optional<EdgeLabel> edgeLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", schemaTable.getSchema())))
+                    .getEdgeLabel(schemaTable.getTable());
+            if (!edgeLabel.isPresent()) {
+                throw new IllegalStateException(String.format("SchemaTable %s not found", schemaTable.toString()));
+            }
+            abstractLabel = edgeLabel.get();
+        } else {
+            abstractLabel = vertexLabel.get();
+        }
+        Preconditions.checkArgument(abstractLabel.getIdentifiers().size() == identifiers.length, "%d identifiers expected in the RecordId. Found %d. given id = %s", abstractLabel.getIdentifiers().size(), identifiers.length, label + id);
+        ListOrderedSet<Comparable> identifierValues = new ListOrderedSet<>();
+        int count = 0;
+        for (String identifier : abstractLabel.getIdentifiers()) {
+            Optional<PropertyColumn> propertyColumn = abstractLabel.getProperty(identifier);
+            if (propertyColumn.isPresent()) {
+                PropertyType propertyType = propertyColumn.get().getPropertyType();
+                Comparable value = (Comparable) SqlgUtil.stringValueToType(propertyType, identifiers[count++].trim());
+                identifierValues.add(value);
+            } else {
+                throw new IllegalStateException(String.format("identifier %s for %s not found", identifier, schemaTable.toString()));
+            }
+        }
+        return RecordId.from(schemaTable, identifierValues);
+    }
+
+    public static RecordId from(Object vertexId) {
+        if (vertexId instanceof Element) {
+            return (RecordId) ((SqlgElement) vertexId).id();
+        }
+        if (vertexId instanceof RecordId) {
+            return (RecordId) vertexId;
+        }
+        if (!(vertexId instanceof String)) {
+            throw SqlgExceptions.invalidId(vertexId.toString());
+        }
+        String stringId = (String) vertexId;
+        String[] splittedId = stringId.split(RECORD_ID_DELIMITER);
+        if (splittedId.length == 2) {
+            String label = splittedId[0];
+            String id = splittedId[1];
+            if (id.startsWith("[") && id.endsWith("]")) {
+                throw SqlgExceptions.invalidFromRecordId(vertexId.toString());
+            } else {
+                try {
+                    Long labelId = Long.valueOf(id);
+                    return new RecordId(label, labelId);
+                } catch (NumberFormatException e) {
+                    throw SqlgExceptions.invalidId(vertexId.toString());
+                }
+            }
+        } else if (splittedId.length > 2) {
+            throw SqlgExceptions.invalidFromRecordId(vertexId.toString());
+        } else {
             throw SqlgExceptions.invalidId(vertexId.toString());
         }
     }
@@ -102,46 +196,27 @@ public class RecordId implements KryoSerializable, Comparable {
         return schemaTable;
     }
 
-    public Long getId() {
-        return id;
+    public ID getId() {
+        return this.id;
     }
 
-    public ListOrderedSet<Object> getIdentifiers() {
-        return identifiers;
+    public ListOrderedSet<Comparable> getIdentifiers() {
+        return this.id.identifiers;
     }
 
-    static Map<SchemaTable, List<Long>> normalizeIds(List<RecordId> vertexId) {
-        Map<SchemaTable, List<Long>> result = new HashMap<>();
-        for (RecordId recordId : vertexId) {
-            List<Long> ids = result.get(recordId.getSchemaTable());
-            if (ids == null) {
-                ids = new ArrayList<>();
-                result.put(recordId.getSchemaTable(), ids);
-            }
-            ids.add(recordId.getId());
-        }
-        return result;
+    public Long sequenceId() {
+        return this.id.sequenceId;
     }
 
     @Override
     public String toString() {
-        return this.schemaTable.toString() +
-                RECORD_ID_DELIMITER +
-                (this.id != null ? this.id.toString() : this.identifiers.toString());
+        return this.schemaTable.toString() + RECORD_ID_DELIMITER + this.id.toString();
     }
 
     @Override
     public int hashCode() {
         int result = this.schemaTable.hashCode();
-        if (this.id != null) {
-            return result ^ this.id.hashCode();
-        } else {
-            StringBuilder sb = new StringBuilder();
-            for (Object identifier : this.identifiers) {
-                sb.append(identifier.toString());
-            }
-            return result ^ sb.toString().hashCode();
-        }
+        return result ^ this.id.hashCode();
     }
 
     @Override
@@ -156,26 +231,41 @@ public class RecordId implements KryoSerializable, Comparable {
             return false;
         }
         RecordId otherRecordId = (RecordId) other;
-        if (this.id != null && otherRecordId.id != null) {
-            return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.id.equals(otherRecordId.getId());
-        } else if (this.id == null && otherRecordId.id == null) {
-            return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.identifiers.equals(otherRecordId.identifiers);
-        } else {
-            return false;
-        }
+        return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.id.equals(otherRecordId.getId());
     }
 
     @Override
     public void write(Kryo kryo, Output output) {
         output.writeString(this.getSchemaTable().getSchema());
         output.writeString(this.getSchemaTable().getTable());
-        output.writeLong(this.getId());
+        if (hasSequenceId()) {
+            output.writeString("s");
+            output.writeLong(this.getId().sequenceId);
+        } else {
+            output.writeString("i");
+            output.writeInt(getIdentifiers().size());
+            for (Comparable identifier : getIdentifiers()) {
+                output.writeString((CharSequence) identifier);
+            }
+        }
     }
 
     @Override
     public void read(Kryo kryo, Input input) {
         this.schemaTable = SchemaTable.of(input.readString(), input.readString());
-        this.id = input.readLong();
+        String s = input.readString();
+        if (s.equals("s")) {
+            //sequence
+            this.id = ID.from(input.readLong());
+        } else {
+            int size = input.readInt();
+            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+            for (int i = 0; i < size; i++) {
+                String identifier = input.readString();
+                identifiers.add(identifier);
+            }
+            this.id = ID.from(identifiers);
+        }
     }
 
     @Override
@@ -183,7 +273,7 @@ public class RecordId implements KryoSerializable, Comparable {
         if (!(o instanceof RecordId)) {
             return -1;
         }
-        RecordId other = (RecordId)o;
+        RecordId other = (RecordId) o;
         int first = this.getSchemaTable().compareTo(other.getSchemaTable());
         if (first != 0) {
             return first;
@@ -191,8 +281,8 @@ public class RecordId implements KryoSerializable, Comparable {
         return this.getId().compareTo(other.getId());
     }
 
-    public boolean hasId() {
-        return this.id != null;
+    public boolean hasSequenceId() {
+        return this.id.hasSequenceId();
     }
 
     @SuppressWarnings("DuplicateThrows")
@@ -220,7 +310,11 @@ public class RecordId implements KryoSerializable, Comparable {
             typeSerializer.writeTypePrefixForScalar(recordId, jsonGenerator);
             final Map<String, Object> m = new LinkedHashMap<>();
             m.put("schemaTable", recordId.getSchemaTable());
-            m.put("id", recordId.getId());
+            if (recordId.hasSequenceId()) {
+                m.put("id", recordId.sequenceId());
+            } else {
+                m.put("id", recordId.getIdentifiers());
+            }
             jsonGenerator.writeObject(m);
             typeSerializer.writeTypeSuffixForScalar(recordId, jsonGenerator);
         }
@@ -233,7 +327,13 @@ public class RecordId implements KryoSerializable, Comparable {
 
         @Override
         public RecordId createObject(final Map data) {
-            return RecordId.from((SchemaTable) data.get("schemaTable"), (Long) data.get("id"));
+            SchemaTable schemaTable = (SchemaTable) data.get("schemaTable");
+            if (data.get("id") instanceof Long) {
+                return RecordId.from(schemaTable, (Long) data.get("id"));
+            } else {
+                ListOrderedSet identifiers = ListOrderedSet.listOrderedSet((List<Comparable>)data.get("id"));
+                return RecordId.from(schemaTable, identifiers);
+            }
         }
     }
 
@@ -244,10 +344,14 @@ public class RecordId implements KryoSerializable, Comparable {
 
         @Override
         public void serialize(final RecordId recordId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
-                throws IOException, JsonGenerationException {
+                throws IOException {
             final Map<String, Object> m = new HashMap<>();
             m.put("schemaTable", recordId.getSchemaTable());
-            m.put("id", recordId.getId());
+            if (recordId.hasSequenceId()) {
+                m.put("id", recordId.sequenceId());
+            } else {
+                m.put("id", recordId.getIdentifiers());
+            }
             jsonGenerator.writeObject(m);
         }
 
@@ -261,12 +365,101 @@ public class RecordId implements KryoSerializable, Comparable {
         @Override
         public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
             final Map<String, Object> data = deserializationContext.readValue(jsonParser, Map.class);
-            return RecordId.from((SchemaTable) data.get("schemaTable"), (Long) data.get("id"));
+            SchemaTable schemaTable = (SchemaTable) data.get("schemaTable");
+            if (data.get("id") instanceof Long) {
+                return RecordId.from(schemaTable, (Long) data.get("id"));
+            } else {
+                ListOrderedSet identifiers = ListOrderedSet.listOrderedSet((Set<Comparable>)data.get("id"));
+                return RecordId.from(schemaTable, identifiers);
+            }
         }
 
         @Override
         public boolean isCachable() {
             return true;
+        }
+    }
+
+    public static final class ID implements Comparable<ID> {
+
+        private Long sequenceId;
+        private ListOrderedSet<Comparable> identifiers;
+
+        private ID(ListOrderedSet<Comparable> identifiers) {
+            this.identifiers = identifiers;
+        }
+
+        private ID(Long id) {
+            this.sequenceId = id;
+        }
+
+        public static ID from(Long sequenceId) {
+            ID id = new ID(sequenceId);
+            return id;
+        }
+
+        public static ID from(ListOrderedSet<Comparable> identifiers) {
+            ID id = new ID(identifiers);
+            return id;
+        }
+
+        @Override
+        public int compareTo(ID id) {
+            if (this.sequenceId != null) {
+                return this.sequenceId.compareTo(id.sequenceId);
+            } else {
+                int count = 0;
+                for (Comparable identifier : identifiers) {
+                    int i = identifier.compareTo(id.identifiers.get(count++));
+                    if (i != 0) {
+                        return i;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return this.sequenceId != null ? this.sequenceId.toString() : this.identifiers.toString();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other == null || !(other instanceof ID)) {
+                return false;
+            }
+            ID otherID = (ID) other;
+            if (this.sequenceId != null) {
+                return this.sequenceId.equals(otherID.sequenceId);
+            } else {
+                return this.identifiers.equals(otherID.identifiers);
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            if (this.sequenceId != null) {
+                return this.sequenceId.hashCode();
+            } else {
+                StringBuilder sb = new StringBuilder();
+                for (Object identifier : this.identifiers) {
+                    sb.append(identifier.toString());
+                }
+                return sb.toString().hashCode();
+            }
+        }
+
+        public boolean hasSequenceId() {
+            return this.sequenceId != null;
+        }
+
+        public Long getSequenceId() {
+            return sequenceId;
+        }
+
+        public ListOrderedSet<Comparable> getIdentifiers() {
+            return identifiers;
         }
     }
 

@@ -233,9 +233,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     writeStreamingVertex(writer, values);
                     numberInserted++;
                     if (vertexLabel != null && !vertexLabel.hasIDPrimaryKey()) {
-                        ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                        ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
                         for (String identifier : vertexLabel.getIdentifiers()) {
-                            identifiers.add(values.get(identifier));
+                            identifiers.add((Comparable) values.get(identifier));
                         }
                         sqlgVertex.setInternalPrimaryKey(RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), identifiers));
                     }
@@ -436,9 +436,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
                         numberInserted++;
                         if (!edgeLabel.hasIDPrimaryKey()) {
-                            ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
                             for (String identifier : edgeLabel.getIdentifiers()) {
-                                identifiers.add(values.get(identifier));
+                                identifiers.add((Comparable) values.get(identifier));
                             }
                             sqlgEdge.setInternalPrimaryKey(RecordId.from(SchemaTable.of(metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable()), identifiers));
                         }
@@ -3899,7 +3899,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public String drop(VertexLabel vertexLabel, Collection<Long> ids) {
+    public String drop(VertexLabel vertexLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName()));
@@ -3908,21 +3908,55 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append(" AS a USING\n");
         sql.append("(VALUES");
         int count = 1;
-        for (Long id : ids) {
+        for (RecordId.ID id : ids) {
             sql.append("(");
-            sql.append(Long.toString(id));
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId().toString());
+            } else {
+                int cnt = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append("'");
+                    sql.append(identifierValue);
+                    sql.append("'");
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(")");
             if (count++ < ids.size()) {
                 sql.append(",");
             }
         }
-        sql.append(") as b(id)\nWHERE b.id = a.");
-        sql.append(maybeWrapInQoutes("ID"));
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(") as b(id)\nWHERE b.id = a.");
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            sql.append(") as b(");
+            int cnt = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(", ");
+                }
+            }
+            sql.append(")\nWHERE ");
+            cnt = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append("b.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
         return sql.toString();
     }
 
     @Override
-    public String drop(EdgeLabel edgeLabel, Collection<Long> ids) {
+    public String drop(EdgeLabel edgeLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
@@ -3931,21 +3965,55 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append(" AS a USING\n");
         sql.append("(VALUES");
         int count = 1;
-        for (Long id : ids) {
+        for (RecordId.ID id : ids) {
             sql.append("(");
-            sql.append(Long.toString(id));
+            if (edgeLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId().toString());
+            } else {
+                int cnt = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append("'");
+                    sql.append(identifierValue);
+                    sql.append("'");
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(")");
             if (count++ < ids.size()) {
                 sql.append(",");
             }
         }
-        sql.append(") as b(id)\nWHERE b.id = a.");
-        sql.append(maybeWrapInQoutes("ID"));
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append(") as b(id)\nWHERE b.id = a.");
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            sql.append(") as b(");
+            int cnt = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(", ");
+                }
+            }
+            sql.append(")\nWHERE ");
+            cnt = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append("b.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
         return sql.toString();
     }
 
     @Override
-    public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<Long> ids, boolean mutatingCallbacks) {
+    public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
@@ -3954,17 +4022,54 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append(" AS a USING\n");
         sql.append("(VALUES");
         int count = 1;
-        for (Long id : ids) {
+        for (RecordId.ID id : ids) {
             sql.append("(");
-            sql.append(Long.toString(id));
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId());
+            } else {
+                int cnt = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append("'");
+                    sql.append(identifierValue);
+                    sql.append("'");
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(")");
             if (count++ < ids.size()) {
                 sql.append(",");
             }
         }
-        sql.append(") as b(id)\nWHERE b.id = a.");
-        sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() +
-                (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(") as b(id)\nWHERE b.id = a.");
+            sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() +
+                    (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        } else {
+            sql.append(") as b(");
+            int cnt = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + "." + identifier +
+                    (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                if (cnt++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(", ");
+                }
+            }
+            sql.append(")\nWHERE\n\t");
+            cnt = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append("b.");
+                sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + "." + identifier +
+                        (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + "." + identifier +
+                        (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                if (cnt++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
         if (mutatingCallbacks) {
             sql.append(" RETURNING\n \"ID\"");
         }

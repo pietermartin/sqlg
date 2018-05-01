@@ -251,7 +251,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSimpleVertexEdgeGremlin.class,
         TestMultipleIDQuery.class,
         TestSharding.class,
-        TestShardingGremlin.class
+        TestShardingGremlin.class,
+        TestRecordId.class
 })
 public class AllTest {
 

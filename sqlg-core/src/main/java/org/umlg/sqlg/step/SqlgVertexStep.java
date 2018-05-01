@@ -44,7 +44,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
 
     //This holds, for each SchemaTable, a list of RecordId's ids and the start elements' index.
     //It is used to generate the select statements, 'VALUES' and ORDER BY 'index' sql
-    private Map<SchemaTable, List<Pair<Long, Long>>> schemaTableParentIds = new LinkedHashMap<>();
+    private Map<SchemaTable, List<Pair<RecordId.ID, Long>>> schemaTableParentIds = new LinkedHashMap<>();
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
@@ -127,15 +127,15 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
             Traverser.Admin<E> h = this.starts.next();
             E value = h.get();
             SchemaTable schemaTable = value.getSchemaTablePrefixed();
-//            List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
             List<Traverser.Admin<E>> traverserList = this.heads.get(schemaTable);
+            //noinspection Java8MapApi
             if (traverserList == null) {
                 traverserList = new ArrayList<>();
                 this.heads.put(schemaTable, traverserList);
             }
             traverserList.add(h);
-//            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
-            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.get(schemaTable);
+            List<Pair<RecordId.ID, Long>> parentIdList = this.schemaTableParentIds.get(schemaTable);
+            //noinspection Java8MapApi
             if (parentIdList == null) {
                 parentIdList = new ArrayList<>();
                 this.schemaTableParentIds.put(schemaTable, parentIdList);

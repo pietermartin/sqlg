@@ -209,7 +209,7 @@ public class SqlgUtil {
                         }
                     }
                 } else {
-                    ListOrderedSet<Object> identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
+                    ListOrderedSet<Comparable> identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
                     resultSetWasNull = resultSet.wasNull();
                     if (!resultSetWasNull) {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
@@ -701,7 +701,7 @@ public class SqlgUtil {
                     } else {
                         id = (RecordId) value;
                     }
-                    result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
+                    result.add(ImmutablePair.of(PropertyType.LONG, id.sequenceId()));
                 }
             } else {
                 result.add(ImmutablePair.of(PropertyType.from(value), value));
@@ -1151,8 +1151,8 @@ public class SqlgUtil {
         throw new IllegalStateException("originalLabel must only be called on labels with Sqlg's path prepended to it");
     }
 
-    public static List<Object> getValue(ResultSet resultSet, List<ColumnList.Column> columns) {
-        List<Object> result = new ArrayList<>();
+    public static List<Comparable> getValue(ResultSet resultSet, List<ColumnList.Column> columns) {
+        List<Comparable> result = new ArrayList<>();
         try {
             for (ColumnList.Column column : columns) {
                 PropertyType propertyType = column.getPropertyType();
@@ -1168,6 +1168,15 @@ public class SqlgUtil {
             return result;
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static Object stringValueToType(PropertyType propertyType, String value) {
+        switch (propertyType) {
+            case STRING:
+                return value;
+            default:
+                throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
         }
     }
 

@@ -885,7 +885,7 @@ public interface SqlDialect {
     }
 
 
-    default String drop(VertexLabel vertexLabel, Collection<Long> ids) {
+    default String drop(VertexLabel vertexLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName()));
@@ -895,17 +895,20 @@ public interface SqlDialect {
         sql.append(maybeWrapInQoutes("ID"));
         sql.append(" IN (\n");
         int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
-            if (count++ < ids.size()) {
-                sql.append(",");
-            }
-        }
+        //TODO
+        if (true)
+            throw new RuntimeException("handle ID");
+//        for (Long id : ids) {
+//            sql.append(Long.toString(id));
+//            if (count++ < ids.size()) {
+//                sql.append(",");
+//            }
+//        }
         sql.append(")");
         return sql.toString();
     }
 
-    default String drop(EdgeLabel edgeLabel, Collection<Long> ids) {
+    default String drop(EdgeLabel edgeLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
@@ -915,17 +918,20 @@ public interface SqlDialect {
         sql.append(maybeWrapInQoutes("ID"));
         sql.append(" IN (\n");
         int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
-            if (count++ < ids.size()) {
-                sql.append(",");
-            }
-        }
+        //TODO
+        if (true)
+            throw new RuntimeException("handle ID");
+//        for (Long id : ids) {
+//            sql.append(Long.toString(id));
+//            if (count++ < ids.size()) {
+//                sql.append(",");
+//            }
+//        }
         sql.append(")");
         return sql.toString();
     }
 
-    default String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<Long> ids, boolean mutatingCallbacks) {
+    default String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
@@ -937,12 +943,15 @@ public interface SqlDialect {
                         + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
         sql.append(" IN (\n");
         int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
-            if (count++ < ids.size()) {
-                sql.append(",");
-            }
-        }
+        //TODO
+        if (true)
+            throw new RuntimeException("handle ID");
+//        for (Long id : ids) {
+//            sql.append(Long.toString(id));
+//            if (count++ < ids.size()) {
+//                sql.append(",");
+//            }
+//        }
         sql.append(")");
         if (mutatingCallbacks) {
             sql.append(" RETURNING *");
