@@ -92,6 +92,23 @@ public class TestPropertyValues extends BaseTest {
         assertEquals(Arrays.asList("marko", "josh", "peter"), traversal.toList());
     }
 	
+	@Test
+	public void testOut(){
+		loadModern();
+
+        final Traversal<Vertex, String> traversal =  this.sqlgGraph.traversal()
+                .V().hasLabel("person")
+                .out("created")
+                .values("name");
+        printTraversalForm(traversal);
+        checkRestrictedProperties(traversal,"name");
+    	Set<String> names=new HashSet<>();
+    	while (traversal.hasNext()){
+    		names.add(traversal.next());
+    	}
+    	assertEquals(new HashSet<>(Arrays.asList("lop","ripple")),names);
+	}
+	
 	@SuppressWarnings({ "resource", "unchecked" })
 	private void checkRestrictedProperties(Traversal<?, ?> t, String... properties){
 		boolean found=false;

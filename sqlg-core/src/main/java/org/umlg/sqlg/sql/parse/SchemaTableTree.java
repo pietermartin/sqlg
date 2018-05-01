@@ -224,6 +224,7 @@ public class SchemaTableTree {
                 replacedStep.getSqlgComparatorHolder(),
                 replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
+                replacedStep.getRestrictedProperties(),
                 replacedStep.getDepth(),
                 isEdgeVertexStep,
                 replacedStep.isEmit(),
@@ -260,6 +261,7 @@ public class SchemaTableTree {
                 replacedStep.getSqlgComparatorHolder(),
                 replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
+                replacedStep.getRestrictedProperties(),
                 replacedStep.getDepth(),
                 false,
                 emit,
@@ -278,6 +280,7 @@ public class SchemaTableTree {
             SqlgComparatorHolder sqlgComparatorHolder,
             List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
             SqlgRangeHolder sqlgRangeHolder,
+            Set<String> restrictedProperties,
             int stepDepth,
             boolean isEdgeVertexStep,
             boolean emit,
@@ -304,6 +307,7 @@ public class SchemaTableTree {
         schemaTableTree.untilFirst = untilFirst;
         schemaTableTree.optionalLeftJoin = leftJoin;
         schemaTableTree.drop = drop;
+        schemaTableTree.setRestrictedProperties(restrictedProperties);
         return schemaTableTree;
     }
 
@@ -836,6 +840,11 @@ public class SchemaTableTree {
 
         // calculate restrictions on properties once and for all
         calculatePropertyRestrictions();
+        for (SchemaTableTree stt:distinctQueryStack){
+        	if (stt!=this){
+        		stt.calculatePropertyRestrictions();
+        	}
+        }
         /*
          *columnList holds the columns per sub query.
          */
