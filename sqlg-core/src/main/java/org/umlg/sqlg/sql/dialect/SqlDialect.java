@@ -892,19 +892,44 @@ public interface SqlDialect {
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()));
         sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes("ID"));
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int cnt = 1;
+            sql.append("(");
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")");
+        }
         sql.append(" IN (\n");
         int count = 1;
-        //TODO
-        if (true)
-            throw new RuntimeException("handle ID");
-//        for (Long id : ids) {
-//            sql.append(Long.toString(id));
-//            if (count++ < ids.size()) {
-//                sql.append(",");
-//            }
-//        }
+        for (RecordId.ID id : ids) {
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId());
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            } else {
+                int cnt = 1;
+                sql.append("(");
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
         sql.append(")");
+
         return sql.toString();
     }
 
@@ -915,18 +940,42 @@ public interface SqlDialect {
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
         sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes("ID"));
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int cnt = 1;
+            sql.append("(");
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")");
+        }
         sql.append(" IN (\n");
         int count = 1;
-        //TODO
-        if (true)
-            throw new RuntimeException("handle ID");
-//        for (Long id : ids) {
-//            sql.append(Long.toString(id));
-//            if (count++ < ids.size()) {
-//                sql.append(",");
-//            }
-//        }
+        for (RecordId.ID id : ids) {
+            if (edgeLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId());
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            } else {
+                int cnt = 1;
+                sql.append("(");
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
         sql.append(")");
         return sql.toString();
     }
@@ -938,20 +987,44 @@ public interface SqlDialect {
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
         sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes(
-                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
-                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes(
+                    vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
+                            + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        } else {
+            sql.append("(");
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(
+                        vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + "." + identifier
+                                + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")");
+
+        }
         sql.append(" IN (\n");
         int count = 1;
-        //TODO
-        if (true)
-            throw new RuntimeException("handle ID");
-//        for (Long id : ids) {
-//            sql.append(Long.toString(id));
-//            if (count++ < ids.size()) {
-//                sql.append(",");
-//            }
-//        }
+        for (RecordId.ID id : ids) {
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId());
+            } else {
+                int cnt = 1;
+                sql.append("(");
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+            }
+            if (count++ < ids.size()) {
+                sql.append(",");
+            }
+        }
         sql.append(")");
         if (mutatingCallbacks) {
             sql.append(" RETURNING *");
@@ -1029,10 +1102,11 @@ public interface SqlDialect {
 
     /**
      * get the default fetch size
+     *
      * @return the default fetch size, maybe null if we want to use the default from the driver
      */
-    default Integer getDefaultFetchSize(){
-    	return null;
+    default Integer getDefaultFetchSize() {
+        return null;
     }
 
     default int getShardCount(SqlgGraph sqlgGraph, AbstractLabel label) {
@@ -1041,5 +1115,10 @@ public interface SqlDialect {
 
     default boolean supportsSharding() {
         return false;
+    }
+
+    //TODO this is very lazy do properly
+    default String toRDBSStringLiteral(Object value) {
+        return "'" + value.toString() + "'";
     }
 }

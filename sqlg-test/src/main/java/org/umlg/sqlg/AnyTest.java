@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexEdgeGremlin;
+import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,9 @@ import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexEdgeGremlin;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestAndStepBarrier.class,
-        TestSimpleVertexEdgeGremlin.class
+        TestAndStepBarrier.class
+//        TestBatch.class,
+//        TestSimpleVertexEdgeGremlin.class
 //        TestSharding.class,
 //        TestShardingGremlin.class,
 //        TestSimpleJoinGremlin.class,

@@ -64,7 +64,7 @@ public class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord i
         }
         if (outVertexLabel.hasIDPrimaryKey()) {
             bulkCopy.addColumnMapping(i, metaEdge.getOutLabel() + Topology.OUT_VERTEX_COLUMN_END);
-            this.columnMetadata.put(i, new ColumnMetadata(
+            this.columnMetadata.put(i++, new ColumnMetadata(
                     metaEdge.getOutLabel() + Topology.OUT_VERTEX_COLUMN_END,
                     sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(PropertyType.LONG)[0],
                     0,
@@ -73,10 +73,10 @@ public class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord i
                     PropertyType.LONG
             ));
         } else {
-            for (String identifier : inVertexLabel.getIdentifiers()) {
+            for (String identifier : outVertexLabel.getIdentifiers()) {
                 PropertyType propertyType = outVertexLabel.getProperty(identifier).orElseThrow(() -> new IllegalStateException(String.format("BUG: Did not find the identifier property %s.", identifier))).getPropertyType();
                 bulkCopy.addColumnMapping(i, metaEdge.getOutLabel() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
-                this.columnMetadata.put(i, new ColumnMetadata(
+                this.columnMetadata.put(i++, new ColumnMetadata(
                         metaEdge.getOutLabel() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END,
                         sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
                         0,
@@ -93,18 +93,18 @@ public class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord i
     }
 
     @Override
-    public Object[] getRowData() throws SQLServerException {
+    public Object[] getRowData() {
         List<Object> values = new ArrayList<>();
         addValues(values);
         if (this.inVertexLabel.hasIDPrimaryKey()) {
-            values.add(((RecordId) this.currentRow.getMiddle().id()).getId());
+            values.add(((RecordId) this.currentRow.getMiddle().id()).sequenceId());
         } else {
             for (Object identifier : ((RecordId) this.currentRow.getMiddle().id()).getIdentifiers()) {
                 values.add(identifier);
             }
         }
         if (this.outVertexLabel.hasIDPrimaryKey()) {
-            values.add(((RecordId) this.currentRow.getLeft().id()).getId());
+            values.add(((RecordId) this.currentRow.getLeft().id()).sequenceId());
         } else {
             for (Object identifier : ((RecordId) this.currentRow.getLeft().id()).getIdentifiers()) {
                 values.add(identifier);
@@ -114,7 +114,7 @@ public class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord i
     }
 
     @Override
-    public boolean next() throws SQLServerException {
+    public boolean next() {
         if (this.rowIter.hasNext()) {
             Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> entry = this.rowIter.next();
             this.currentRow = entry.getValue();

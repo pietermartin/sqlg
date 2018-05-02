@@ -246,6 +246,7 @@ public class TestAndStepBarrier extends BaseTest {
         Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "country", "SA");
         a3.addEdge("abbb", b3, "uid", UUID.randomUUID().toString(), "country", "SA");
 
+        this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
                 __.out("ab"),

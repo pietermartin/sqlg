@@ -857,7 +857,11 @@ public class SchemaTableTree {
                 if (sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
                     singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
                 } else {
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C2"));
+                    if (firstSchemaTableTree.hasIDPrimaryKey) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C2"));
+                    } else {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C" + (firstSchemaTableTree.getIdentifiers().size() + 1)));
+                    }
                 }
                 singlePathSql.append(" as ");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
@@ -977,13 +981,29 @@ public class SchemaTableTree {
                 } else {
                     //This really is only for H2
                     singlePathSql.append(") ON ");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-                    singlePathSql.append(".");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-                    singlePathSql.append(".");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
-                    singlePathSql.append(" = ");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C1"));
+                    if (firstSchemaTableTree.hasIDPrimaryKey) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                        singlePathSql.append(" = ");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C1"));
+                    } else {
+                        int cnt = 1;
+                        for (String identifier : firstSchemaTableTree.getIdentifiers()) {
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                            singlePathSql.append(".");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                            singlePathSql.append(".");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                            singlePathSql.append(" = ");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C" + cnt));
+                            if (cnt++ < firstSchemaTableTree.getIdentifiers().size()) {
+                                singlePathSql.append(" AND ");
+                            }
+                        }
+                    }
                 }
             } else if (this.parentIdsAndIndexes.size() != 1 && !sqlgGraph.getSqlDialect().supportsValuesExpression()) {
                 //Mariadb lo and behold does not support VALUES

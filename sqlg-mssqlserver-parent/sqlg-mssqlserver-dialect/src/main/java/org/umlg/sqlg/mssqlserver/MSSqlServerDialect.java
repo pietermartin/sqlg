@@ -1272,29 +1272,116 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();
-        sql.append("DELETE FROM\n\t");
+        sql.append("WITH todelete(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as (\nSELECT * FROM (VALUES");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            int count = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                sql.append(id.getSequenceId());
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        } else {
+            int cnt = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                int count = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (count++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (cnt++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as tmp(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append("))\n");
+
+        sql.append("DELETE a FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+        sql.append(" a ");
         if (mutatingCallbacks) {
             sql.append("\nOUTPUT DELETED.");
             sql.append(maybeWrapInQoutes("ID"));
         }
-        sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes(
-                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
-                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
-        sql.append(" IN (\n");
-        int count = 1;
-        if (true)
-            throw new RuntimeException("handle ID");
+        sql.append("JOIN todelete on ");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append("todelete.");
+            sql.append(maybeWrapInQoutes("ID"));
+            sql.append(" = a.");
+            sql.append(maybeWrapInQoutes(
+                    vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
+                            + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append("todelete.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(
+                        vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + "." + identifier
+                                + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
+
+
+//        sql.append("DELETE a FROM\n\t");
+//        sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+//        sql.append(".");
+//        sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+//        if (mutatingCallbacks) {
+//            sql.append("\nOUTPUT DELETED.");
+//            sql.append(maybeWrapInQoutes("ID"));
+//        }
+//        sql.append(" WHERE ");
+//        sql.append(maybeWrapInQoutes(
+//                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
+//                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+//        sql.append(" IN (\n");
+//        int count = 1;
+//        if (true)
+//            throw new RuntimeException("handle ID");
 //        for (Long id : ids) {
 //            sql.append(Long.toString(id));
 //            if (count++ < ids.size()) {
 //                sql.append(",");
 //            }
 //        }
-        sql.append(")");
+//        sql.append(")");
         return sql.toString();
     }
 
@@ -1343,5 +1430,169 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public String drop(VertexLabel vertexLabel, Collection<RecordId.ID> ids) {
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("WITH todelete(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as (\nSELECT * FROM (VALUES");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            int count = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                sql.append(id.getSequenceId());
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        } else {
+            int cnt = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                int count = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (count++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (cnt++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as tmp(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append("))\n");
+        sql.append("DELETE a FROM\n\t");
+        sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()));
+        sql.append(" a JOIN todelete on ");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append("todelete.");
+            sql.append(maybeWrapInQoutes("ID"));
+            sql.append(" = a.");
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append("todelete.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
+        return sql.toString();
+    }
+
+    @Override
+    public String drop(EdgeLabel edgeLabel, Collection<RecordId.ID> ids) {
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("WITH todelete(");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as (\nSELECT * FROM (VALUES");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            int count = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                sql.append(id.getSequenceId());
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        } else {
+            int cnt = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                int count = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (count++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (cnt++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as tmp(");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append("))\n");
+        sql.append("DELETE a FROM\n\t");
+        sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+        sql.append(" a JOIN todelete on ");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append("todelete.");
+            sql.append(maybeWrapInQoutes("ID"));
+            sql.append(" = a.");
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append("todelete.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
+        return sql.toString();
     }
 }

@@ -647,6 +647,50 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
+    public void testGetEdgesUserSuppliedPK() {
+        VertexLabel rootVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "ROOT",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                            put("dummy", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        VertexLabel godVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "God",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                            put("dummy", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        rootVertexLabel.ensureEdgeLabelExist(
+                "rootGod",
+                godVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a", "uid1", "root111", "uid2", "root222");
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a", "uid1", "god111", "uid2", "god222");
+        Edge sqlgEdge = root.addEdge("rootGod", god, "uid1", "edge111", "uid2", "edge222");
+        Assert.assertNull(sqlgEdge.id());
+        this.sqlgGraph.tx().commit();
+        Edge rootGodEdge = vertexTraversal(this.sqlgGraph, root).outE("rootGod").next();
+        //Querying triggers the cache to be flushed, so the result will have an id
+        Assert.assertNotNull(rootGodEdge);
+        Assert.assertNotNull(rootGodEdge.id());
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
     public void testGetVertices() {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a");
@@ -1105,7 +1149,7 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
-    public void testBatchRemoveVerticesAndEdges() throws InterruptedException {
+    public void testBatchRemoveVerticesAndEdgesUserSuppliedPK() throws InterruptedException {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
@@ -1145,7 +1189,7 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
-    public void testBatchRemoveVerticesAndEdgesUserSuppliedPK() throws InterruptedException {
+    public void testBatchRemoveVerticesAndEdges() throws InterruptedException {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
@@ -1498,6 +1542,48 @@ public class TestBatch extends BaseTest {
         for (int i = 0; i < 100000; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
             v1.addEdge("test", v2);
+        }
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
+        Assert.assertEquals(100000, this.sqlgGraph.traversal().E().count().next().intValue());
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        vertexTraversal(this.sqlgGraph, v1).outE("test").forEachRemaining(Edge::remove);
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveManyEdgesTestPostgresLimit_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveManyEdgesTestPostgresLimit_assert(this.sqlgGraph1);
+        }
+    }
+
+    @Test
+    public void testBatchRemoveManyEdgesTestPostgresLimitUserSuppliedPK() throws InterruptedException {
+        Assume.assumeTrue(!isMsSqlServer());
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                            put("dummy", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        for (int i = 0; i < 100000; i++) {
+            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+            v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         }
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());

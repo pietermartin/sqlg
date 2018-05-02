@@ -454,10 +454,10 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
             sql.append(" SET ");
 
-            Map<String, PropertyColumn> propertyColumns = sqlgGraph.getTopology()
+            VertexLabel vertexLabel = sqlgGraph.getTopology()
                     .getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", schemaTable.getSchema())))
-                    .getVertexLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", schemaTable.getTable())))
-                    .getProperties();
+                    .getVertexLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", schemaTable.getTable())));
+            Map<String, PropertyColumn> propertyColumns = vertexLabel.getProperties();
             if (!columns.isEmpty()) {
                 Map<String, PropertyType> propertyTypeMap = new HashMap<>();
                 for (String column : columns) {
@@ -489,8 +489,15 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 }
             }
             sql.append(" WHERE ");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
-            sql.append(" = ?");
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                sql.append(" = ?");
+            } else {
+                for (String identifier : vertexLabel.getIdentifiers()) {
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    sql.append(" = ?");
+                }
+            }
             if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
@@ -519,10 +526,14 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                             typeAndValues.add(Pair.of(propertyColumn.getPropertyType(), value));
                         }
                         i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, typeAndValues);
-                        //TODO
-                        if (true)
-                            throw new RuntimeException("handle ID");
-                        preparedStatement.setLong(i, ((RecordId) sqlgVertex.id()).sequenceId());
+                        RecordId recordId = ((RecordId) sqlgVertex.id());
+                        if (recordId.hasSequenceId()) {
+                            preparedStatement.setLong(i, ((RecordId) sqlgVertex.id()).sequenceId());
+                        } else {
+                            for (Comparable identifierValue : recordId.getIdentifiers()) {
+                                preparedStatement.setObject(i, identifierValue);
+                            }
+                        }
                     }
                     preparedStatement.addBatch();
                 }
@@ -548,10 +559,10 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + schemaTable.getTable()));
             sql.append(" SET ");
 
-            Map<String, PropertyColumn> propertyColumns = sqlgGraph.getTopology()
+            EdgeLabel edgeLabel = sqlgGraph.getTopology()
                     .getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", schemaTable.getSchema())))
-                    .getEdgeLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", schemaTable.getTable())))
-                    .getProperties();
+                    .getEdgeLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", schemaTable.getTable())));
+            Map<String, PropertyColumn> propertyColumns = edgeLabel.getProperties();
             if (!columns.isEmpty()) {
                 Map<String, PropertyType> propertyTypeMap = new HashMap<>();
                 for (String column : columns) {
@@ -583,8 +594,15 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 }
             }
             sql.append(" WHERE ");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
-            sql.append(" = ?");
+            if (edgeLabel.hasIDPrimaryKey()) {
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                sql.append(" = ?");
+            } else {
+                for (String identifier : edgeLabel.getIdentifiers()) {
+                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    sql.append(" = ?");
+                }
+            }
             if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
@@ -613,10 +631,14 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                             typeAndValues.add(Pair.of(propertyColumn.getPropertyType(), value));
                         }
                         i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, typeAndValues);
-                        //TODO
-                        if (true)
-                            throw new RuntimeException("handle ID");
-                        preparedStatement.setLong(i, ((RecordId) sqlgEdge.id()).sequenceId());
+                        RecordId recordId = (RecordId) sqlgEdge.id();
+                        if (recordId.hasSequenceId()) {
+                            preparedStatement.setLong(i, recordId.sequenceId());
+                        } else {
+                            for (Comparable identifierValue : recordId.getIdentifiers()) {
+                                preparedStatement.setObject(i, identifierValue);
+                            }
+                        }
                     }
                     preparedStatement.addBatch();
                 }
@@ -640,7 +662,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 //TODO refacor to remove looping.
                 List<RecordId.ID> ids = new ArrayList<>();
                 for (SqlgVertex vertex : schemaVertices.getValue()) {
-                    ids.add(((RecordId)vertex.id()).getId());
+                    ids.add(((RecordId) vertex.id()).getId());
                 }
                 Map<String, EdgeLabel> outEdgeLabels = vertexLabel.getOutEdgeLabels();
                 for (Map.Entry<String, EdgeLabel> stringEdgeLabelEntry : outEdgeLabels.entrySet()) {
@@ -751,8 +773,8 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
                 //TODO refacor to remove looping.
                 List<RecordId.ID> ids = new ArrayList<>();
-                for (SqlgEdge edge: schemaEdges.getValue()) {
-                    ids.add(((RecordId)edge.id()).getId());
+                for (SqlgEdge edge : schemaEdges.getValue()) {
+                    ids.add(((RecordId) edge.id()).getId());
                 }
                 String sql = drop(edgeLabel, ids);
                 if (logger.isDebugEnabled()) {
