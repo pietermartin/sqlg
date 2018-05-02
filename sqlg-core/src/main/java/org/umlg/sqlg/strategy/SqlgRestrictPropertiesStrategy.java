@@ -77,17 +77,20 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
     }
     
     private Collection<String> getRestrictedProperties(Step<?,?> step){
-    	
+    	Collection<String> ret=null;
     	if (step instanceof PropertiesStep<?> ){
         	PropertiesStep<?> ps=(PropertiesStep<?>)step;
-        	return Arrays.asList(ps.getPropertyKeys());
-    	}
-    	if (step instanceof PropertyMapStep<?,?> ){
+        	ret=Arrays.asList(ps.getPropertyKeys());
+    	} else	if (step instanceof PropertyMapStep<?,?> ){
     		PropertyMapStep<?,?> pms=(PropertyMapStep<?,?>)step;
-        	return Arrays.asList(pms.getPropertyKeys());
+        	ret= Arrays.asList(pms.getPropertyKeys());
+    	}
+    	// if no property keys are provided, all properties should be returned
+    	if (ret!=null && ret.isEmpty()){
+    		ret=null;
     	}
     	
-    	return null;
+    	return ret;
     }
 
     @Override

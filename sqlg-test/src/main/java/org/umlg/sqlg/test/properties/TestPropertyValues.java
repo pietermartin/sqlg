@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.properties;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -32,7 +33,7 @@ public class TestPropertyValues extends BaseTest {
 	public void testValueMapOneObject(){
 		loadModern();
 		final Traversal<Vertex, Map<String,Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap("name");
-		printTraversalForm(traversal);
+		checkColumnsNotPresent(traversal,"age");
 		checkRestrictedProperties(traversal,"name");
     	Set<String> names=new HashSet<>();
     	while (traversal.hasNext()){
@@ -52,6 +53,41 @@ public class TestPropertyValues extends BaseTest {
     	assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names);
 	}
 	
+	@Test
+	public void testValueMapAllObject(){
+		loadModern();
+		final Traversal<Vertex, Map<String,Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap();
+		printTraversalForm(traversal);
+		checkNoRestrictedProperties(traversal);
+    	Set<String> names=new HashSet<>();
+    	Set<Integer> ages=new HashSet<>();
+    	while (traversal.hasNext()){
+    		Map<String,Object> m=traversal.next();
+    		assertNotNull(m);
+    		assertEquals(2, m.size());
+    		assertTrue(m.containsKey("name"));
+    		Object v=m.get("name");
+    		// "It is important to note that the map of a vertex maintains a list of values for each key."
+    		assertTrue(v instanceof List<?>);
+    		List<?> l=(List<?>)v;
+    		assertEquals(1,l.size());
+    		Object v1=l.get(0);
+    		assertTrue(v1 instanceof String);
+    		names.add((String)v1);
+    		assertTrue(m.containsKey("age"));
+    		v=m.get("age");
+    		// "It is important to note that the map of a vertex maintains a list of values for each key."
+    		assertTrue(v instanceof List<?>);
+    		l=(List<?>)v;
+    		assertEquals(1,l.size());
+    		v1=l.get(0);
+    		assertTrue(v1 instanceof Integer);
+    		ages.add((Integer)v1);
+    	}
+    	assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names);
+    	assertEquals(new HashSet<>(Arrays.asList(29,27,32,35)),ages);
+	}
+	
 	
 	@Test
 	public void testValuesOne(){
@@ -67,6 +103,20 @@ public class TestPropertyValues extends BaseTest {
 	}
 	
 	@Test
+	public void testValuesAll(){
+		loadModern();
+		final Traversal<Vertex, Object> traversal = sqlgGraph.traversal().V().hasLabel("person").values();
+		printTraversalForm(traversal);
+		checkNoRestrictedProperties(traversal);
+    	Set<Object> values=new HashSet<>();
+    	while (traversal.hasNext()){
+    		values.add(traversal.next());
+    	}
+    	assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter",29,27,32,35)),values);
+	}
+	
+	
+	@Test
 	public void testValuesOneWhere(){
 		loadModern();
 		final Traversal<Vertex, String> traversal = sqlgGraph.traversal().V().hasLabel("person").has("age",29).values("name");
@@ -78,7 +128,7 @@ public class TestPropertyValues extends BaseTest {
     	}
     	assertEquals(new HashSet<>(Arrays.asList("marko")),names);
 	}
-	 
+
 	@Test
     public void g_V_hasLabelXpersonX_order_byXageX_skipX1X_valuesXnameX() {
         loadModern();
@@ -141,6 +191,25 @@ public class TestPropertyValues extends BaseTest {
 				SqlgGraphStep<?,SqlgElement> gs=(SqlgGraphStep<?, SqlgElement>)s;
 				ReplacedStep<?, ?> rs=gs.getReplacedSteps().get(gs.getReplacedSteps().size()-1);
 				assertEquals(new HashSet<>(Arrays.asList(properties)),rs.getRestrictedProperties());
+				found=true;
+			}
+		}
+		assertTrue(found);
+	}
+	
+	/**
+	 * check the replaced steps has the specified restricted properties
+	 * @param t the traversal, EVALUATED (ie call printTraversalForm or getSQL first)
+	 * @param properties the properties
+	 */
+	@SuppressWarnings({ "resource", "unchecked" })
+	private void checkNoRestrictedProperties(Traversal<?, ?> t){
+		boolean found=false;
+		for (Step<?, ?> s:((Admin<?, ?>)t).getSteps()){
+			if (s instanceof SqlgGraphStep){
+				SqlgGraphStep<?,SqlgElement> gs=(SqlgGraphStep<?, SqlgElement>)s;
+				ReplacedStep<?, ?> rs=gs.getReplacedSteps().get(gs.getReplacedSteps().size()-1);
+				assertNull(String.valueOf(rs.getRestrictedProperties()),rs.getRestrictedProperties());
 				found=true;
 			}
 		}
