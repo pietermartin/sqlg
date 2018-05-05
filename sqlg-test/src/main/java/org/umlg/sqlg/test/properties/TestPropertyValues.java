@@ -88,6 +88,65 @@ public class TestPropertyValues extends BaseTest {
     	assertEquals(new HashSet<>(Arrays.asList(29,27,32,35)),ages);
 	}
 	
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testValueMapAliasVertex(){
+		loadModern();
+		final Traversal<Vertex, Map<String,Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").as("a").valueMap("name").as("b").select("a","b");
+		printTraversalForm(traversal);
+		checkNoRestrictedProperties(traversal);
+		Set<String> names1=new HashSet<>();
+		Set<String> names2=new HashSet<>();
+		Set<Integer> ages=new HashSet<>();
+		while (traversal.hasNext()){
+    		Map<String,Object> m=traversal.next();
+    		assertNotNull(m);
+    		assertEquals(2, m.size());
+    		assertTrue(m.containsKey("a"));
+    		assertTrue(m.containsKey("b"));
+    		Vertex v=(Vertex)m.get("a");
+    		assertTrue(v.property("name").isPresent());
+    		assertTrue(v.property("age").isPresent());
+    		names1.add((String)v.property("name").value());
+    		ages.add((Integer)v.property("age").value());
+    		
+    		Map<String,Object> m2=(Map<String,Object>)m.get("b");
+    		Object o=m2.get("name");
+    		// "It is important to note that the map of a vertex maintains a list of values for each key."
+    		assertTrue(o instanceof List<?>);
+    		List<?> l=(List<?>)o;
+    		assertEquals(1,l.size());
+    		Object v1=l.get(0);
+    		assertTrue(v1 instanceof String);
+    		names2.add((String)v1);
+		}
+		assertEquals(names1,names2);
+		assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names1);
+		assertEquals(new HashSet<>(Arrays.asList(29,27,32,35)),ages);
+	}
+
+	@Test
+	public void testValueMapAlias(){
+		loadModern();
+		final Traversal<Vertex, Map<String,Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap("name").as("b").select("b");
+		checkColumnsNotPresent(traversal,"age");
+		checkRestrictedProperties(traversal,"name");
+		Set<String> names=new HashSet<>();
+		while (traversal.hasNext()){
+    		Map<String,Object> m=traversal.next();
+    		assertNotNull(m);
+    		assertEquals(1, m.size());
+    		Object o=m.get("name");
+    		// "It is important to note that the map of a vertex maintains a list of values for each key."
+    		assertTrue(o instanceof List<?>);
+    		List<?> l=(List<?>)o;
+    		assertEquals(1,l.size());
+    		Object v1=l.get(0);
+    		assertTrue(v1 instanceof String);
+    		names.add((String)v1);
+		}
+		assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names);
+	}
 	
 	@Test
 	public void testValuesOne(){
