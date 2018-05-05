@@ -277,7 +277,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, id);
     }
 
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Object> identifiers) {
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Comparable> identifiers) {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
     }
 

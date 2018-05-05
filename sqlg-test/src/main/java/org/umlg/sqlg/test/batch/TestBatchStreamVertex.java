@@ -78,7 +78,11 @@ public class TestBatchStreamVertex extends BaseTest {
             properties.clear();
         }
         RecordId recordId = (RecordId) v1.id();
-        Assert.assertEquals("a1", SqlgVertex.of(this.sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable()).value("name"));
+        Assert.assertEquals("a1", SqlgVertex.of(
+                this.sqlgGraph,
+                recordId.sequenceId(),
+                recordId.getSchemaTable().getSchema(),
+                recordId.getSchemaTable().getTable()).value("name"));
         this.sqlgGraph.tx().commit();
     }
 

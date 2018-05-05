@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerConnection;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -515,23 +516,31 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_graph\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"updatedOn\" DATETIME, \"version\" VARCHAR(255), \"dbVersion\" VARCHAR(255));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_schema\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_graph\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"updatedOn\" DATETIME, " +
+                "\"version\" VARCHAR(255), " +
+                "\"dbVersion\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_schema\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"name\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_vertex\" (" +
                 "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" DATETIME, " +
                 "\"name\" VARCHAR(255), " +
                 "\"schemaVertex\" VARCHAR(255), " +
                 "\"partitionType\" VARCHAR(255), " +
-                "\"partitionExpression\" VARCHAR(255)" +
-                ");");
+                "\"partitionExpression\" VARCHAR(255), " +
+                "\"shardCount\" INTEGER);");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_edge\" (" +
                 "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" DATETIME, " +
                 "\"name\" VARCHAR(255), " +
                 "\"partitionType\" VARCHAR(255), " +
-                "\"partitionExpression\" VARCHAR(255)" +
-                ");");
+                "\"partitionExpression\" VARCHAR(255), " +
+                "\"shardCount\" INTEGER);");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_partition\" (" +
                 "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" DATETIME, " +
@@ -542,18 +551,66 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 "\"partitionType\" VARCHAR(255), " +
                 "\"partitionExpression\" VARCHAR(255)" +
                 ");");
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_property\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"type\" VARCHAR(255));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_index\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"index_type\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_property\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"name\" VARCHAR(255), " +
+                "\"type\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_index\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"name\" VARCHAR(255), " +
+                "\"index_type\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
                 "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" DATETIME, " +
                 "\"name\" VARCHAR(255));");
 
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_in_edges\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_out_edges\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_schema_vertex\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.schema__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_in_edges\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_out_edges\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_property\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_property\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_identifier\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "\"identifier_index\" INTEGER, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_identifier\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "\"identifier_index\" INTEGER, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\"));");
 
         result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_partition\"(" +
                 "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
@@ -574,14 +631,66 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
                 "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));");
 
+        result.add("CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_distribution\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"));");
 
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_index\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_index\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_index_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, \"sequence\" INTEGER, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_colocate\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"));");
 
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_log\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" VARCHAR);");
+        result.add("CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_distribution\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\"));");
 
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_globalUniqueIndex_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.globalUniqueIndex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_colocate\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\"));");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_index\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.index__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_index\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.index__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_index_property\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.index__O\" BIGINT, " +
+                "\"sequence\" INTEGER, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_log\" (" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"timestamp\" TIMESTAMP, " +
+                "\"pid\" INTEGER, " +
+                "\"log\" VARCHAR);");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_globalUniqueIndex_property\"(" +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.globalUniqueIndex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
         return result;
     }
 
@@ -800,6 +909,11 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         Connection connection = sqlgGraph.tx().getConnection();
         for (Map.Entry<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> entry : vertexCache.entrySet()) {
             SchemaTable schemaTable = entry.getKey();
+            VertexLabel vertexLabel = null;
+            if (!schemaTable.isTemporary()) {
+                vertexLabel = sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(
+                        () -> new IllegalStateException(String.format("VertexLabel %s not found.", schemaTable.toString())));
+            }
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = entry.getValue();
             if (vertices.getLeft().isEmpty()) {
                 Map<String, PropertyType> columns = new HashMap<>();
@@ -823,25 +937,37 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     }
                     bulkCopy.writeToServer(new SQLServerVertexCacheBulkRecord(bulkCopy, sqlgGraph, schemaTable, vertices));
                 }
-                int numberInserted = vertices.getRight().size();
-                if (!schemaTable.isTemporary() && numberInserted > 0) {
-                    long endHigh;
-                    //TODO this is not guaranteed to be correct.
-                    //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
-                    try (PreparedStatement preparedStatement = connection.prepareStatement(
-                            "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
-                                    VERTEX_PREFIX + schemaTable.getTable() + "')")) {
-                        ResultSet resultSet = preparedStatement.executeQuery();
-                        resultSet.next();
-                        endHigh = resultSet.getLong(1);
-                        resultSet.close();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
+                if (vertexLabel != null && vertexLabel.hasIDPrimaryKey()) {
+                    int numberInserted = vertices.getRight().size();
+                    if (!schemaTable.isTemporary() && numberInserted > 0) {
+                        long endHigh;
+                        //TODO this is not guaranteed to be correct.
+                        //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
+                        try (PreparedStatement preparedStatement = connection.prepareStatement(
+                                "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
+                                        VERTEX_PREFIX + schemaTable.getTable() + "')")) {
+                            ResultSet resultSet = preparedStatement.executeQuery();
+                            resultSet.next();
+                            endHigh = resultSet.getLong(1);
+                            resultSet.close();
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                        //set the id on the vertex
+                        long id = endHigh - numberInserted + 1;
+                        for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
+                            sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                        }
                     }
-                    //set the id on the vertex
-                    long id = endHigh - numberInserted + 1;
-                    for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
-                        sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                } else if (vertexLabel != null) {
+                    for (Map.Entry<SqlgVertex, Map<String, Object>> sqlgVertexMapEntry : vertices.getRight().entrySet()) {
+                        SqlgVertex sqlgVertex = sqlgVertexMapEntry.getKey();
+                        Map<String, Object> values = sqlgVertexMapEntry.getValue();
+                        ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                        for (String identifier : vertexLabel.getIdentifiers()) {
+                            identifiers.add((Comparable) values.get(identifier));
+                        }
+                        sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, identifiers));
                     }
                 }
             } catch (SQLException e) {
@@ -856,6 +982,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         try {
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 SchemaTable schemaTable = metaEdge.getSchemaTable();
+                EdgeLabel edgeLabel = sqlgGraph.getTopology().getEdgeLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel not found for %s.%s", schemaTable.getSchema(), schemaTable.getTable())));
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 try {
                     SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
@@ -866,27 +993,40 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                         bulkCopy.writeToServer(new SQLServerEdgeCacheBulkRecord(bulkCopy, sqlgGraph, metaEdge, schemaTable, triples));
                     }
 
-                    int numberInserted = triples.getRight().size();
-                    if (!schemaTable.isTemporary() && numberInserted > 0) {
-                        long endHigh;
-                        //TODO this is not guaranteed to be correct.
-                        //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
-                        try (PreparedStatement preparedStatement = connection.prepareStatement(
-                                "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
-                                        EDGE_PREFIX + schemaTable.getTable() + "')")) {
-                            ResultSet resultSet = preparedStatement.executeQuery();
-                            resultSet.next();
-                            endHigh = resultSet.getLong(1);
-                            resultSet.close();
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
+                    if (edgeLabel.hasIDPrimaryKey()) {
+                        int numberInserted = triples.getRight().size();
+                        if (!schemaTable.isTemporary() && numberInserted > 0) {
+                            long endHigh;
+                            //TODO this is not guaranteed to be correct.
+                            //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
+                            try (PreparedStatement preparedStatement = connection.prepareStatement(
+                                    "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
+                                            EDGE_PREFIX + schemaTable.getTable() + "')")) {
+                                ResultSet resultSet = preparedStatement.executeQuery();
+                                resultSet.next();
+                                endHigh = resultSet.getLong(1);
+                                resultSet.close();
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                            //set the id on the vertex
+                            long id = endHigh - numberInserted + 1;
+                            for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
+                                sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                            }
                         }
-                        //set the id on the vertex
-                        long id = endHigh - numberInserted + 1;
-                        for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
-                            sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                    } else {
+                        for (Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleEntry : triples.getRight().entrySet()) {
+                            SqlgEdge sqlgEdge = sqlgEdgeTripleEntry.getKey();
+                            Map<String, Object> values = sqlgEdgeTripleEntry.getValue().getRight();
+                            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                            for (String identifier : edgeLabel.getIdentifiers()) {
+                                identifiers.add((Comparable) values.get(identifier));
+                            }
+                            sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, identifiers));
                         }
                     }
+
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
@@ -1130,29 +1270,118 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<Long> ids, boolean mutatingCallbacks) {
+    public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();
-        sql.append("DELETE FROM\n\t");
+        sql.append("WITH todelete(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as (\nSELECT * FROM (VALUES");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            int count = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                sql.append(id.getSequenceId());
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        } else {
+            int cnt = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                int count = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (count++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (cnt++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as tmp(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append("))\n");
+
+        sql.append("DELETE a FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+        sql.append(" a ");
         if (mutatingCallbacks) {
             sql.append("\nOUTPUT DELETED.");
             sql.append(maybeWrapInQoutes("ID"));
         }
-        sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes(
-                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
-                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
-        sql.append(" IN (\n");
-        int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
-            if (count++ < ids.size()) {
-                sql.append(",");
+        sql.append("JOIN todelete on ");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append("todelete.");
+            sql.append(maybeWrapInQoutes("ID"));
+            sql.append(" = a.");
+            sql.append(maybeWrapInQoutes(
+                    vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
+                            + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append("todelete.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(
+                        vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + "." + identifier
+                                + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
             }
         }
-        sql.append(")");
+
+
+//        sql.append("DELETE a FROM\n\t");
+//        sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+//        sql.append(".");
+//        sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+//        if (mutatingCallbacks) {
+//            sql.append("\nOUTPUT DELETED.");
+//            sql.append(maybeWrapInQoutes("ID"));
+//        }
+//        sql.append(" WHERE ");
+//        sql.append(maybeWrapInQoutes(
+//                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
+//                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+//        sql.append(" IN (\n");
+//        int count = 1;
+//        if (true)
+//            throw new RuntimeException("handle ID");
+//        for (Long id : ids) {
+//            sql.append(Long.toString(id));
+//            if (count++ < ids.size()) {
+//                sql.append(",");
+//            }
+//        }
+//        sql.append(")");
         return sql.toString();
     }
 
@@ -1201,5 +1430,169 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public String drop(VertexLabel vertexLabel, Collection<RecordId.ID> ids) {
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("WITH todelete(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as (\nSELECT * FROM (VALUES");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            int count = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                sql.append(id.getSequenceId());
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        } else {
+            int cnt = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                int count = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (count++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (cnt++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as tmp(");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append("))\n");
+        sql.append("DELETE a FROM\n\t");
+        sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()));
+        sql.append(" a JOIN todelete on ");
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append("todelete.");
+            sql.append(maybeWrapInQoutes("ID"));
+            sql.append(" = a.");
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append("todelete.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
+        return sql.toString();
+    }
+
+    @Override
+    public String drop(EdgeLabel edgeLabel, Collection<RecordId.ID> ids) {
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("WITH todelete(");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as (\nSELECT * FROM (VALUES");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            int count = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                sql.append(id.getSequenceId());
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        } else {
+            int cnt = 1;
+            for (RecordId.ID id : ids) {
+                sql.append("(");
+                int count = 1;
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (count++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (cnt++ < ids.size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append(") as tmp(");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+        }
+        sql.append("))\n");
+        sql.append("DELETE a FROM\n\t");
+        sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+        sql.append(" a JOIN todelete on ");
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append("todelete.");
+            sql.append(maybeWrapInQoutes("ID"));
+            sql.append(" = a.");
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int count = 1;
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append("todelete.");
+                sql.append(maybeWrapInQoutes(identifier));
+                sql.append(" = a.");
+                sql.append(maybeWrapInQoutes(identifier));
+                if (count++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
+        return sql.toString();
     }
 }

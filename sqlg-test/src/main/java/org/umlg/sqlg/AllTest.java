@@ -253,7 +253,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestMultipleIDQuery.class,
         TestSharding.class,
         TestShardingGremlin.class,
+        TestRecordId.class,
         TestPropertyValues.class
+
 })
 public class AllTest {
 

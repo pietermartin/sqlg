@@ -29,13 +29,13 @@ class TransactionCache {
      * default fetch size
      */
     private Integer fetchSize = null;
-    
 
-	static TransactionCache of(boolean cacheVertices, Connection connection, BatchManager batchManager,boolean lazyQueries) {
-        return new TransactionCache(cacheVertices, connection, batchManager,lazyQueries);
+
+    static TransactionCache of(boolean cacheVertices, Connection connection, BatchManager batchManager, boolean lazyQueries) {
+        return new TransactionCache(cacheVertices, connection, batchManager, lazyQueries);
     }
 
-    static TransactionCache of(boolean cacheVertices, Connection connection,boolean lazyQueries) {
+    static TransactionCache of(boolean cacheVertices, Connection connection, boolean lazyQueries) {
         return new TransactionCache(cacheVertices, connection, lazyQueries);
     }
 
@@ -55,7 +55,7 @@ class TransactionCache {
             BatchManager batchManager,
             boolean lazyQueries) {
 
-	    this(cacheVertices, connection, lazyQueries);
+        this(cacheVertices, connection, lazyQueries);
         this.batchManager = batchManager;
     }
 
@@ -93,7 +93,6 @@ class TransactionCache {
      * @param sqlgGraph The graph
      * @return the vertex. If cacheVertices is true and the vertex is cached then the cached vertex will be returned else
      * a the vertex will be instantiated.
-     *
      */
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, Long id) {
         RecordId recordId = RecordId.from(SchemaTable.of(schema, table), id);
@@ -111,7 +110,7 @@ class TransactionCache {
         return sqlgVertex;
     }
 
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Object> identifiers) {
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Comparable> identifiers) {
         RecordId recordId = RecordId.from(SchemaTable.of(schema, table), identifiers);
         SqlgVertex sqlgVertex;
         if (this.cacheVertices) {
@@ -128,14 +127,19 @@ class TransactionCache {
     }
 
     SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
-        RecordId vertexRecordId = (RecordId)sqlgVertex.id();
+        RecordId vertexRecordId = (RecordId) sqlgVertex.id();
         SqlgVertex sqlgVertexFromCache;
         if (this.cacheVertices) {
             sqlgVertexFromCache = this.vertexCache.get(vertexRecordId);
             if (sqlgVertexFromCache == null) {
                 //copy the RecordId so that the WeakHashMap value does not reference the key
                 SchemaTable schemaTable = vertexRecordId.getSchemaTable();
-                RecordId recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getId());
+                RecordId recordId;
+                if (vertexRecordId.hasSequenceId()) {
+                    recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.sequenceId());
+                } else {
+                    recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getIdentifiers());
+                }
                 this.vertexCache.put(recordId, sqlgVertex);
                 return sqlgVertex;
             } else {
@@ -154,37 +158,39 @@ class TransactionCache {
         } else {
             SchemaTable schemaTable = vertexRecordId.getSchemaTable();
             RecordId recordId;
-            if (vertexRecordId.hasId()) {
-                recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getId());
+            if (vertexRecordId.hasSequenceId()) {
+                recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.sequenceId());
             } else {
                 recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getIdentifiers());
             }
             this.vertexCache.put(recordId, sqlgVertex);
         }
     }
-    
+
     /**
      * are we reading the SQL query results laszily?
+     *
      * @return true if we are processing the results lazily, false otherwise
      */
     public boolean isLazyQueries() {
-		return lazyQueries;
-	}
+        return lazyQueries;
+    }
 
     /**
      * set the laziness on query result reading
-     * @param lazy
+     *
+     * @param lazyQueries
      */
-	public void setLazyQueries(boolean lazyQueries) {
-		this.lazyQueries = lazyQueries;
-	}
+    public void setLazyQueries(boolean lazyQueries) {
+        this.lazyQueries = lazyQueries;
+    }
 
-	public Integer getFetchSize() {
-		return fetchSize;
-	}
+    public Integer getFetchSize() {
+        return fetchSize;
+    }
 
-	public void setFetchSize(Integer fetchSize) {
-		this.fetchSize = fetchSize;
-	}
+    public void setFetchSize(Integer fetchSize) {
+        this.fetchSize = fetchSize;
+    }
 
 }

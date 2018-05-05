@@ -42,8 +42,6 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 import static org.apache.tinkerpop.gremlin.structure.Graph.OptIn;
 import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 
@@ -369,7 +367,10 @@ public class SqlgGraph implements Graph {
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
             SchemaTable schemaTablePair = SchemaTable.from(this, label);
             this.tx().readWrite();
-            this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
+            VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
+            if (!vertexLabel.hasIDPrimaryKey()) {
+                Preconditions.checkArgument(columns.keySet().containsAll(vertexLabel.getIdentifiers()), "identifiers must be present %s", vertexLabel.getIdentifiers());
+            }
             return new SqlgVertex(this, false, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
         }
     }
@@ -521,7 +522,7 @@ public class SqlgGraph implements Graph {
                 if (!Stream.of(ids).map(Object::getClass).allMatch(firstClass::equals))
                     throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
 
-                List<RecordId> recordIds = RecordId.from(ids);
+                List<RecordId> recordIds = RecordId.from(this, ids);
                 Iterable<T> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);
                 return elementIterable.iterator();
             }
@@ -539,7 +540,7 @@ public class SqlgGraph implements Graph {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         logger.debug(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
         if (this.tx().isOpen())
             this.tx().close();
@@ -1168,100 +1169,108 @@ public class SqlgGraph implements Graph {
     }
 
     private <T extends Element> Iterable<T> elements(boolean returnVertices, final List<RecordId> elementIds) {
-        List<T> sqlgElements = new ArrayList<>();
-        if (elementIds.size() > 0) {
-            Map<SchemaTable, List<Long>> distinctTableIdMap = RecordId.normalizeIds(elementIds);
-            for (Map.Entry<SchemaTable, List<Long>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
-                SchemaTable schemaTable = schemaTableListEntry.getKey();
-                String tableName = (returnVertices ? VERTEX_PREFIX : EDGE_PREFIX) + schemaTable.getTable();
-                if (this.getTopology().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
-                    List<Long> schemaTableIds = schemaTableListEntry.getValue();
-                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    String table = "";
-                    if (returnVertices) {
-                        table += VERTEX_PREFIX;
-                    } else {
-                        table += EDGE_PREFIX;
-                    }
-                    table += schemaTable.getTable();
-                    sql.append(this.sqlDialect.maybeWrapInQoutes(table));
-                    sql.append(" WHERE ");
-                    sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-                    sql.append(" IN (");
-                    int count = 1;
-                    for (Long id : schemaTableIds) {
-                        sql.append(id.toString());
-                        if (count++ < schemaTableIds.size()) {
-                            sql.append(",");
-                        }
-                    }
-                    sql.append(")");
-                    if (this.getSqlDialect().needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    Connection conn = this.tx().getConnection();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    try (Statement statement = conn.createStatement()) {
-                        statement.execute(sql.toString());
-                        ResultSet resultSet = statement.getResultSet();
-                        while (resultSet.next()) {
-                            long id = resultSet.getLong("ID");
-                            SqlgElement sqlgElement;
-                            if (returnVertices) {
-                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable());
-                            } else {
-                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable());
-                            }
-                            sqlgElement.loadResultSet(resultSet);
-                            sqlgElements.add((T) sqlgElement);
-                        }
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
+
+
+        if (returnVertices) {
+            return (Iterable<T>) this.traversal().V(elementIds).toList();
         } else {
-            //TODO use a union query
-            Set<String> tables = this.getTopology().getAllTables().keySet();
-            for (String table : tables) {
-                SchemaTable schemaTable = SchemaTable.from(this, table);
-                if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
-                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getTable()));
-                    if (this.getSqlDialect().needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    Connection conn = this.tx().getConnection();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    try (Statement statement = conn.createStatement()) {
-                        statement.execute(sql.toString());
-                        ResultSet resultSet = statement.getResultSet();
-                        while (resultSet.next()) {
-                            long id = resultSet.getLong("ID");
-                            SqlgElement sqlgElement;
-                            if (returnVertices) {
-                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(VERTEX_PREFIX.length()));
-                            } else {
-                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(EDGE_PREFIX.length()));
-                            }
-                            sqlgElement.loadResultSet(resultSet);
-                            sqlgElements.add((T) sqlgElement);
-                        }
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
+            return (Iterable<T>) this.traversal().E(elementIds).toList();
         }
-        return sqlgElements;
+
+//        List<T> sqlgElements = new ArrayList<>();
+//        if (elementIds.size() > 0) {
+//            Map<SchemaTable, List<RecordId.ID>> distinctTableIdMap = RecordId.normalizeIds(elementIds);
+//            for (Map.Entry<SchemaTable, List<RecordId.ID>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
+//                SchemaTable schemaTable = schemaTableListEntry.getKey();
+//                String tableName = (returnVertices ? VERTEX_PREFIX : EDGE_PREFIX) + schemaTable.getTable();
+//                if (this.getTopology().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
+//                    List<RecordId.ID> schemaTableIds = schemaTableListEntry.getValue();
+//                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
+//                    sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+//                    sql.append(".");
+//                    String table = "";
+//                    if (returnVertices) {
+//                        table += VERTEX_PREFIX;
+//                    } else {
+//                        table += EDGE_PREFIX;
+//                    }
+//                    table += schemaTable.getTable();
+//                    sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+//                    sql.append(" WHERE ");
+//                    sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+//                    sql.append(" IN (");
+//                    int count = 1;
+//                    for (RecordId.ID id : schemaTableIds) {
+//                        sql.append(id.toString());
+//                        if (count++ < schemaTableIds.size()) {
+//                            sql.append(",");
+//                        }
+//                    }
+//                    sql.append(")");
+//                    if (this.getSqlDialect().needsSemicolon()) {
+//                        sql.append(";");
+//                    }
+//                    Connection conn = this.tx().getConnection();
+//                    if (logger.isDebugEnabled()) {
+//                        logger.debug(sql.toString());
+//                    }
+//                    try (Statement statement = conn.createStatement()) {
+//                        statement.execute(sql.toString());
+//                        ResultSet resultSet = statement.getResultSet();
+//                        while (resultSet.next()) {
+//                            long id = resultSet.getLong("ID");
+//                            SqlgElement sqlgElement;
+//                            if (returnVertices) {
+//                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable());
+//                            } else {
+//                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable());
+//                            }
+//                            sqlgElement.loadResultSet(resultSet);
+//                            sqlgElements.add((T) sqlgElement);
+//                        }
+//                    } catch (SQLException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }
+//            }
+//        } else {
+//            //TODO use a union query
+//            Set<String> tables = this.getTopology().getAllTables().keySet();
+//            for (String table : tables) {
+//                SchemaTable schemaTable = SchemaTable.from(this, table);
+//                if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
+//                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
+//                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+//                    sql.append(".");
+//                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getTable()));
+//                    if (this.getSqlDialect().needsSemicolon()) {
+//                        sql.append(";");
+//                    }
+//                    Connection conn = this.tx().getConnection();
+//                    if (logger.isDebugEnabled()) {
+//                        logger.debug(sql.toString());
+//                    }
+//                    try (Statement statement = conn.createStatement()) {
+//                        statement.execute(sql.toString());
+//                        ResultSet resultSet = statement.getResultSet();
+//                        while (resultSet.next()) {
+//                            long id = resultSet.getLong("ID");
+//                            SqlgElement sqlgElement;
+//                            if (returnVertices) {
+//                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(VERTEX_PREFIX.length()));
+//                            } else {
+//                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(EDGE_PREFIX.length()));
+//                            }
+//                            sqlgElement.loadResultSet(resultSet);
+//                            sqlgElements.add((T) sqlgElement);
+//                        }
+//                    } catch (SQLException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }
+//            }
+//        }
+//        return sqlgElements;
     }
 
     public Connection getConnection() throws SQLException {

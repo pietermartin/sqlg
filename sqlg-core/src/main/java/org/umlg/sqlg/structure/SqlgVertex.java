@@ -6,14 +6,12 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -69,7 +67,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    public static SqlgVertex of(SqlgGraph sqlgGraph, ListOrderedSet<Object> identifiers, String schema, String table) {
+    public static SqlgVertex of(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
         if (!sqlgGraph.tx().isInBatchMode()) {
             return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
         } else {
@@ -89,7 +87,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         super(sqlgGraph, id, schema, table);
     }
 
-    SqlgVertex(SqlgGraph sqlgGraph, ListOrderedSet<Object> identifiers, String schema, String table) {
+    SqlgVertex(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
         super(sqlgGraph, identifiers, schema, table);
     }
 
@@ -296,8 +294,22 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getTable()));
         sql.append(" WHERE ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
-        sql.append(" = ?");
+        AbstractLabel abstractLabel;
+        if (this.recordId.hasSequenceId()) {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+            sql.append(" = ?");
+        } else {
+            int count = 1;
+            Schema schema = this.sqlgGraph.getTopology().getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", this.schema)));
+            abstractLabel = getAbstractLabel(schema);
+            for (String identifier : abstractLabel.getIdentifiers()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + "." + identifier + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                sql.append(" = ?");
+                if (count++ < this.recordId.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
@@ -306,7 +318,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, ((RecordId) this.id()).getId());
+            if (this.recordId.hasSequenceId()) {
+                preparedStatement.setLong(1, this.recordId.sequenceId());
+            } else {
+                int count = 1;
+                for (Comparable identifierValue : this.recordId.getIdentifiers()) {
+                    preparedStatement.setObject(count++, identifierValue);
+                }
+            }
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -391,9 +410,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
             preparedStatement.executeUpdate();
             if (!temporary && !vertexLabel.getIdentifiers().isEmpty()) {
-                ListOrderedSet<Object> identifiers = new ListOrderedSet<>();
+                ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
                 for (String identifier : vertexLabel.getIdentifiers()) {
-                    identifiers.add(propertyTypeValueMap.get(identifier).getRight());
+                    //noinspection unchecked
+                    identifiers.add((Comparable) propertyTypeValueMap.get(identifier).getRight());
                 }
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             } else {
@@ -436,8 +456,20 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + this.table));
             sql.append("\nWHERE\n\t");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(" = ?");
+            //noinspection Duplicates
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                sql.append(" = ?");
+            } else {
+                int count = 1;
+                for (String identifier : vertexLabel.getIdentifiers()) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    sql.append(" = ?");
+                    if (count++ < vertexLabel.getIdentifiers().size()) {
+                        sql.append(" AND ");
+                    }
+                }
+            }
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
@@ -446,12 +478,19 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, this.recordId.getId());
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    preparedStatement.setLong(1, this.recordId.sequenceId());
+                } else {
+                    int count = 1;
+                    for (Comparable identifierValue : this.recordId.getIdentifiers()) {
+                        preparedStatement.setObject(count++, identifierValue);
+                    }
+                }
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
                     loadResultSet(resultSet);
                 } else {
-                    throw new IllegalStateException(String.format("Vertex with label %s and id %d does not exist.", this.schema + "." + this.table, this.recordId.getId()));
+                    throw new IllegalStateException(String.format("Vertex with label %s and id %s does not exist.", this.schema + "." + this.table, this.recordId.getId().toString()));
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -517,6 +556,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     SchemaTable getSchemaTable() {
         return SchemaTable.of(this.getSchema(), this.getTable());
+    }
+
+    @Override
+    AbstractLabel getAbstractLabel(Schema schema) {
+        return schema.getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found.", this.table)));
     }
 
     @Override

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestValidateTopology;
+import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -10,6 +10,9 @@ import org.umlg.sqlg.test.topology.TestValidateTopology;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        TestAndStepBarrier.class
+//        TestBatch.class,
+//        TestSimpleVertexEdgeGremlin.class
 //        TestSharding.class,
 //        TestShardingGremlin.class,
 //        TestSimpleJoinGremlin.class,
@@ -17,9 +20,10 @@ import org.umlg.sqlg.test.topology.TestValidateTopology;
 //        TestUserSuppliedPKBulkMode.class,
 //        TestMultipleIDQuery.class,
 //        TestTopologyUpgrade.class,
-//        TestGremlinCompileWithHas.class
-        TestValidateTopology.class
-
+//        TestGremlinCompileWithHas.class,
+//        TestValidateTopology.class,
+//        TestGremlinCompileTextPredicate.class
+//        TestAndStepBarrier.class
 })
 public class AnyTest {
 }

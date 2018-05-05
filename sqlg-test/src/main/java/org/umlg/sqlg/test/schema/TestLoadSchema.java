@@ -134,7 +134,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadSchemaWithByteArray() throws Exception {
+    public void testLoadSchemaWithByteArray() {
         this.sqlgGraph.addVertex(T.label, "Person", "byteArray", new byte[]{1,2,3,4});
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();

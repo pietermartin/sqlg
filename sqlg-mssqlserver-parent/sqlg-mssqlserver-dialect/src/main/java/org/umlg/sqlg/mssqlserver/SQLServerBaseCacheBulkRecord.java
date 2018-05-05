@@ -34,7 +34,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
         int columnType;
         int precision;
         int scale;
-        DateTimeFormatter dateTimeFormatter = null;
+        DateTimeFormatter dateTimeFormatter;
         PropertyType propertyType;
 
         ColumnMetadata(String name,

@@ -64,7 +64,7 @@ public abstract class SqlgElement implements Element {
 //        }
     }
 
-    public SqlgElement(SqlgGraph sqlgGraph, ListOrderedSet<Object> identifiers, String schema, String table) {
+    public SqlgElement(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
         if (table.startsWith(VERTEX_PREFIX) || table.startsWith(EDGE_PREFIX)) {
             throw new IllegalStateException("SqlgElement.table may not be prefixed with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }
@@ -123,8 +123,21 @@ public abstract class SqlgElement implements Element {
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? VERTEX_PREFIX : EDGE_PREFIX) + this.table));
         sql.append(" WHERE ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?");
+        if (this.recordId.hasSequenceId()) {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" = ?");
+        } else {
+            int count = 1;
+            Schema schema = this.sqlgGraph.getTopology().getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", this.schema)));
+            AbstractLabel abstractLabel = getAbstractLabel(schema);
+            for (String identifier : abstractLabel.getIdentifiers()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                sql.append(" = ?");
+                if (count++ < this.recordId.getIdentifiers().size()) {
+                    sql.append(" AND ");
+                }
+            }
+        }
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
@@ -133,7 +146,14 @@ public abstract class SqlgElement implements Element {
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, ((RecordId) this.id()).getId());
+            if (this.recordId.hasSequenceId()) {
+                preparedStatement.setLong(1, this.recordId.sequenceId());
+            } else {
+                int count = 1;
+                for (Comparable identifier : this.recordId.getIdentifiers()) {
+                    preparedStatement.setObject(count++, identifier);
+                }
+            }
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -332,7 +352,7 @@ public abstract class SqlgElement implements Element {
                 // the index of the id column in the statement depend on how many columns we had to use to store that data type
                 int idx = setKeyValuesAsParameter(this.sqlgGraph, 1, preparedStatement, keyValue);
                 if (abstractLabel.hasIDPrimaryKey()) {
-                    preparedStatement.setLong(idx, ((RecordId) this.id()).getId());
+                    preparedStatement.setLong(idx, ((RecordId) this.id()).sequenceId());
                 } else {
                     for (String identifier : abstractLabel.getIdentifiers()) {
                         keyValue = new HashMap<>(abstractLabel.getIdentifiers().size());
@@ -905,4 +925,6 @@ public abstract class SqlgElement implements Element {
             }
         }
     }
+
+    abstract AbstractLabel getAbstractLabel(Schema schema);
 }

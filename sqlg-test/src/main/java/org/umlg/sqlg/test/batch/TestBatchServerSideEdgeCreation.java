@@ -235,7 +235,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         for (int i = 0; i < 1_000; i++) {
             Vertex v = sqlgGraph.addVertex("RealWorkspaceElement", properties);
             RecordId recordId = (RecordId) v.id();
-            Pair<Long, Long> idPair = Pair.of(recordId.getId(), ((RecordId) virtualGroup.id()).getId());
+            Pair<Long, Long> idPair = Pair.of(recordId.sequenceId(), ((RecordId) virtualGroup.id()).sequenceId());
             ids.add(idPair);
         }
         sqlgGraph.tx().commit();
@@ -261,7 +261,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "B", "cmuid", "a2");
         this.sqlgGraph.tx().commit();
         List<Pair<Long, String>> ids = new ArrayList<>();
-        Pair<Long, String> idCmUidPair = Pair.of(((RecordId)v1.id()).getId(), "a2");
+        Pair<Long, String> idCmUidPair = Pair.of(((RecordId)v1.id()).sequenceId(), "a2");
         ids.add(idCmUidPair);
 
         this.sqlgGraph.tx().streamingBatchModeOn();

@@ -33,10 +33,10 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
     private SqlgGraph sqlgGraph;
     private boolean first = true;
     private Set<RecordId> idsToDelete = new HashSet<>();
-    private MultiValuedMap<Pair<EdgeLabel, VertexLabel>, Long> foreignKeyOutEdgesToDelete = new HashSetValuedHashMap<>();
-    private MultiValuedMap<Pair<EdgeLabel, VertexLabel>, Long> foreignKeyInEdgesToDelete = new HashSetValuedHashMap<>();
-    private MultiValuedMap<EdgeLabel, Long> edgesToDelete = new HashSetValuedHashMap<>();
-    private MultiValuedMap<VertexLabel, Long> verticesToDelete = new HashSetValuedHashMap<>();
+    private MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyOutEdgesToDelete = new HashSetValuedHashMap<>();
+    private MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyInEdgesToDelete = new HashSetValuedHashMap<>();
+    private MultiValuedMap<EdgeLabel, RecordId.ID> edgesToDelete = new HashSetValuedHashMap<>();
+    private MultiValuedMap<VertexLabel, RecordId.ID> verticesToDelete = new HashSetValuedHashMap<>();
 
     public SqlgDropStepBarrier(final Traversal.Admin traversal, CallbackRegistry<Event> callbackRegistry) {
         super(traversal);
@@ -59,7 +59,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                     SqlgElement sqlgElement = (SqlgElement) object;
                     RecordId recordId = (RecordId) sqlgElement.id();
                     SchemaTable schemaTable = recordId.getSchemaTable();
-                    Long id = recordId.getId();
+                    RecordId.ID id = recordId.getId();
                     if (sqlgElement instanceof SqlgVertex) {
                         Optional<VertexLabel> vertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable());
                         Preconditions.checkState(vertexLabelOptional.isPresent());
@@ -139,24 +139,24 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
         for (Pair<EdgeLabel, VertexLabel> edgeLabelVertexLabelPair : this.foreignKeyOutEdgesToDelete.keySet()) {
             EdgeLabel outEdgeLabel = edgeLabelVertexLabelPair.getKey();
             VertexLabel vertexLabel = edgeLabelVertexLabelPair.getValue();
-            Collection<Long> ids = this.foreignKeyOutEdgesToDelete.get(edgeLabelVertexLabelPair);
+            Collection<RecordId.ID> ids = this.foreignKeyOutEdgesToDelete.get(edgeLabelVertexLabelPair);
             String sql = this.sqlgGraph.getSqlDialect().dropWithForeignKey(true, outEdgeLabel, vertexLabel, ids, !this.callbackRegistry.getCallbacks().isEmpty());
             SqlgSqlExecutor.executeDropEdges(this.sqlgGraph,  outEdgeLabel, sql, this.callbackRegistry.getCallbacks());
         }
         for (Pair<EdgeLabel, VertexLabel> edgeLabelVertexLabelPair : this.foreignKeyInEdgesToDelete.keySet()) {
             EdgeLabel inEdgeLabel = edgeLabelVertexLabelPair.getKey();
             VertexLabel vertexLabel = edgeLabelVertexLabelPair.getValue();
-            Collection<Long> ids = this.foreignKeyInEdgesToDelete.get(edgeLabelVertexLabelPair);
+            Collection<RecordId.ID> ids = this.foreignKeyInEdgesToDelete.get(edgeLabelVertexLabelPair);
             String sql = this.sqlgGraph.getSqlDialect().dropWithForeignKey(false, inEdgeLabel, vertexLabel, ids, !this.callbackRegistry.getCallbacks().isEmpty());
             SqlgSqlExecutor.executeDropEdges(this.sqlgGraph, inEdgeLabel, sql, this.callbackRegistry.getCallbacks());
         }
         for (EdgeLabel edgeLabel : this.edgesToDelete.keySet()) {
-            Collection<Long> ids = this.edgesToDelete.get(edgeLabel);
+            Collection<RecordId.ID> ids = this.edgesToDelete.get(edgeLabel);
             String sql = this.sqlgGraph.getSqlDialect().drop(edgeLabel, ids);
             SqlgSqlExecutor.executeDrop(this.sqlgGraph, sql);
         }
         for (VertexLabel vertexLabel : this.verticesToDelete.keySet()) {
-            Collection<Long> ids = this.verticesToDelete.get(vertexLabel);
+            Collection<RecordId.ID> ids = this.verticesToDelete.get(vertexLabel);
             String sql = this.sqlgGraph.getSqlDialect().drop(vertexLabel, ids);
             SqlgSqlExecutor.executeDrop(this.sqlgGraph, sql);
         }

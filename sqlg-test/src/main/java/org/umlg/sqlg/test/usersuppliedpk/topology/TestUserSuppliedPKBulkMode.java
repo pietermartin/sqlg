@@ -11,10 +11,7 @@ import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -58,13 +55,20 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
-        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
+                    put("country", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
             Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
-            a1.addEdge("ab", b1);
+            a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString(), "country", "SA");
         }
         this.sqlgGraph.tx().commit();
 
@@ -74,7 +78,7 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
     @Test
     public void testVertexBatchStreamMode() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
-        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+        this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{
                     put("name1", PropertyType.STRING);

@@ -804,8 +804,10 @@ public class CockroachdbDialect extends BaseSqlDialect {
             Connection conn = sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 count = 1;
+                if (true)
+                    throw new RuntimeException("handle ID");
                 for (Vertex vertexToDelete : subVertices) {
-                    preparedStatement.setLong(count++, ((RecordId) vertexToDelete.id()).getId());
+                    preparedStatement.setLong(count++, ((RecordId) vertexToDelete.id()).sequenceId());
                 }
                 int deleted = preparedStatement.executeUpdate();
                 if (logger.isDebugEnabled()) {

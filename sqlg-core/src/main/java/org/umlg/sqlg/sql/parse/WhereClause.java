@@ -312,7 +312,7 @@ public class WhereClause {
         	// no value
         } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
                 hasContainer.getValue() instanceof RecordId &&
-                !((RecordId)hasContainer.getValue()).hasId()) {
+                !((RecordId)hasContainer.getValue()).hasSequenceId()) {
 
             RecordId recordId = (RecordId)hasContainer.getValue();
             int i = 0;

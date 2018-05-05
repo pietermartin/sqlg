@@ -48,7 +48,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
         Assert.assertEquals(1, persons.size());
         Vertex person = persons.get(0);
         RecordId recordId = (RecordId) person.id();
-        Assert.assertNull(recordId.getId());
+        Assert.assertNull(recordId.getId().getSequenceId());
         Assert.assertEquals(2, recordId.getIdentifiers().size());
         Assert.assertEquals("John", recordId.getIdentifiers().get(0));
         Assert.assertEquals("Smith", recordId.getIdentifiers().get(1));
@@ -144,6 +144,5 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
         Edge other = this.sqlgGraph.traversal().E(e.id()).next();
         Assert.assertEquals(e, other);
     }
-
 
 }

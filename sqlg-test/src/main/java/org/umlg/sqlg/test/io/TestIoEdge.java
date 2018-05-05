@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.io;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -11,17 +12,22 @@ import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoVersion;
+import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
@@ -36,10 +42,10 @@ public class TestIoEdge extends BaseTest {
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"graphson-v1", false, false,
-                        (Function<Graph,GraphReader>) g -> g.io(GraphSONIo.build(GraphSONVersion.V1_0)).reader().create(),
+                        (Function<Graph, GraphReader>) g -> g.io(GraphSONIo.build(GraphSONVersion.V1_0)).reader().create(),
                         (Function<Graph, GraphWriter>) g -> g.io(GraphSONIo.build(GraphSONVersion.V1_0)).writer().create()},
                 {"graphson-v1-embedded", true, true,
-                        (Function<Graph,GraphReader>) g -> g.io(GraphSONIo.build(GraphSONVersion.V1_0)).reader().mapper(g.io(GraphSONIo.build(GraphSONVersion.V2_0)).mapper().typeInfo(TypeInfo.PARTIAL_TYPES).create()).create(),
+                        (Function<Graph, GraphReader>) g -> g.io(GraphSONIo.build(GraphSONVersion.V1_0)).reader().mapper(g.io(GraphSONIo.build(GraphSONVersion.V2_0)).mapper().typeInfo(TypeInfo.PARTIAL_TYPES).create()).create(),
                         (Function<Graph, GraphWriter>) g -> g.io(GraphSONIo.build(GraphSONVersion.V1_0)).writer().mapper(g.io(GraphSONIo.build(GraphSONVersion.V2_0)).mapper().typeInfo(TypeInfo.PARTIAL_TYPES).create()).create()},
                 {"graphson-v2", false, false,
                         (Function<Graph, GraphReader>) g -> g.io(GraphSONIo.build(GraphSONVersion.V2_0)).reader().mapper(g.io(GraphSONIo.build(GraphSONVersion.V2_0)).mapper().typeInfo(TypeInfo.NO_TYPES).create()).create(),
@@ -51,10 +57,10 @@ public class TestIoEdge extends BaseTest {
                         (Function<Graph, GraphReader>) g -> g.io(GraphSONIo.build(GraphSONVersion.V3_0)).reader().mapper(g.io(GraphSONIo.build(GraphSONVersion.V3_0)).mapper().create()).create(),
                         (Function<Graph, GraphWriter>) g -> g.io(GraphSONIo.build(GraphSONVersion.V3_0)).writer().mapper(g.io(GraphSONIo.build(GraphSONVersion.V3_0)).mapper().create()).create()},
                 {"gryo-v1", true, true,
-                        (Function<Graph,GraphReader>) g -> g.io(GryoIo.build(GryoVersion.V1_0)).reader().create(),
+                        (Function<Graph, GraphReader>) g -> g.io(GryoIo.build(GryoVersion.V1_0)).reader().create(),
                         (Function<Graph, GraphWriter>) g -> g.io(GryoIo.build(GryoVersion.V1_0)).writer().create()},
                 {"gryo-v3", true, true,
-                        (Function<Graph,GraphReader>) g -> g.io(GryoIo.build(GryoVersion.V3_0)).reader().create(),
+                        (Function<Graph, GraphReader>) g -> g.io(GryoIo.build(GryoVersion.V3_0)).reader().create(),
                         (Function<Graph, GraphWriter>) g -> g.io(GryoIo.build(GryoVersion.V3_0)).writer().create()}
         });
     }
@@ -83,23 +89,52 @@ public class TestIoEdge extends BaseTest {
         assertEdge(v1, v2, e, true);
     }
 
-//    @Test
-//    public void shouldReadWriteDetachedEdge() throws Exception {
-//        final Vertex v1 = this.sqlgGraph.addVertex(T.label, "person");
-//        final Vertex v2 = this.sqlgGraph.addVertex(T.label, "person");
-//        final Edge e = DetachedFactory.detach(v1.addEdge("friend", v2, "weight", 0.5d, "acl", "rw"), true);
-//
-//        assertEdge(v1, v2, e, true);
-//    }
-//
-//    @Test
-//    public void shouldReadWriteDetachedEdgeAsReference() throws Exception {
-//        final Vertex v1 = this.sqlgGraph.addVertex(T.label, "person");
-//        final Vertex v2 = this.sqlgGraph.addVertex(T.label, "person");
-//        final Edge e = DetachedFactory.detach(v1.addEdge("friend", v2, "weight", 0.5d, "acl", "rw"), false);
-//
-//        assertEdge(v1, v2, e, false);
-//    }
+    @Test
+    public void shouldReadWriteEdgeUserSuppliedPK() throws Exception {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().
+                ensureVertexLabelExist(
+                        "person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.STRING);
+                            put("uid2", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "friend",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                    put("weight", PropertyType.DOUBLE);
+                    put("acl", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        final Vertex v1 = this.sqlgGraph.addVertex(T.label, "person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        final Vertex v2 = this.sqlgGraph.addVertex(T.label, "person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        final Edge e = v1.addEdge("friend", v2, "weight", 0.5d, "acl", "rw", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+
+        assertEdge(v1, v2, e, true);
+    }
+
+    @Test
+    public void shouldReadWriteDetachedEdge() throws Exception {
+        final Vertex v1 = this.sqlgGraph.addVertex(T.label, "person");
+        final Vertex v2 = this.sqlgGraph.addVertex(T.label, "person");
+        final Edge e = DetachedFactory.detach(v1.addEdge("friend", v2, "weight", 0.5d, "acl", "rw"), true);
+
+        assertEdge(v1, v2, e, true);
+    }
+
+    @Test
+    public void shouldReadWriteDetachedEdgeAsReference() throws Exception {
+        final Vertex v1 = this.sqlgGraph.addVertex(T.label, "person");
+        final Vertex v2 = this.sqlgGraph.addVertex(T.label, "person");
+        final Edge e = DetachedFactory.detach(v1.addEdge("friend", v2, "weight", 0.5d, "acl", "rw"), false);
+
+        assertEdge(v1, v2, e, false);
+    }
 
     private void assertEdge(final Vertex v1, final Vertex v2, final Edge e, final boolean assertProperties) throws IOException {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {

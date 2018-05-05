@@ -103,7 +103,7 @@ public class SchemaTableTree {
      */
     private SqlgRangeHolder sqlgRangeHolder;
     //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
-    private List<Pair<Long, Long>> parentIdsAndIndexes;
+    private List<Pair<RecordId.ID, Long>> parentIdsAndIndexes;
 
     private List<ColumnList> columnListStack = new ArrayList<>();
 
@@ -871,7 +871,11 @@ public class SchemaTableTree {
                 if (sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
                     singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
                 } else {
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C2"));
+                    if (firstSchemaTableTree.hasIDPrimaryKey) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C2"));
+                    } else {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C" + (firstSchemaTableTree.getIdentifiers().size() + 1)));
+                    }
                 }
                 singlePathSql.append(" as ");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
@@ -928,11 +932,23 @@ public class SchemaTableTree {
             if (this.parentIdsAndIndexes.size() != 1 && sqlgGraph.getSqlDialect().supportsValuesExpression()) {
                 singlePathSql.append(" INNER JOIN\n\t(VALUES");
                 int count = 1;
-                for (Pair<Long, Long> parentIdAndIndex : this.parentIdsAndIndexes) {
+                for (Pair<RecordId.ID, Long> parentIdAndIndex : this.parentIdsAndIndexes) {
+                    RecordId.ID id = parentIdAndIndex.getKey();
+                    Long index = parentIdAndIndex.getValue();
                     singlePathSql.append("(");
-                    singlePathSql.append(parentIdAndIndex.getLeft());
-                    singlePathSql.append(", ");
-                    singlePathSql.append(parentIdAndIndex.getRight());
+                    if (id.hasSequenceId()) {
+                        singlePathSql.append(id.getSequenceId());
+                        singlePathSql.append(", ");
+                        singlePathSql.append(index);
+                    } else {
+                        for (Comparable identifierValue : id.getIdentifiers()) {
+                            singlePathSql.append("'");
+                            singlePathSql.append(identifierValue);
+                            singlePathSql.append("'");
+                            singlePathSql.append(", ");
+                        }
+                        singlePathSql.append(index);
+                    }
                     singlePathSql.append(")");
                     if (count++ < this.parentIdsAndIndexes.size()) {
                         singlePathSql.append(",");
@@ -941,28 +957,67 @@ public class SchemaTableTree {
 
                 if (sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
                     singlePathSql.append(") AS tmp (");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
-                    singlePathSql.append(", ");
+                    if (firstSchemaTableTree.hasIDPrimaryKey) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                        singlePathSql.append(", ");
+                    } else {
+                        for (String identifier : firstSchemaTableTree.getIdentifiers()) {
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                            singlePathSql.append(", ");
+                        }
+                    }
                     singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
                     singlePathSql.append(") ON ");
 
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-                    singlePathSql.append(".");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-                    singlePathSql.append(".");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
-                    singlePathSql.append(" = tmp.");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                    if (firstSchemaTableTree.hasIDPrimaryKey) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                        singlePathSql.append(" = tmp.");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                    } else {
+                        int cnt = 1;
+                        for (String identifier : firstSchemaTableTree.getIdentifiers()) {
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                            singlePathSql.append(".");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                            singlePathSql.append(".");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                            singlePathSql.append(" = tmp.");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                            if (cnt++ < firstSchemaTableTree.getIdentifiers().size()) {
+                                singlePathSql.append(" AND ");
+                            }
+                        }
+                    }
                 } else {
                     //This really is only for H2
                     singlePathSql.append(") ON ");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-                    singlePathSql.append(".");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-                    singlePathSql.append(".");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
-                    singlePathSql.append(" = ");
-                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C1"));
+                    if (firstSchemaTableTree.hasIDPrimaryKey) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                        singlePathSql.append(" = ");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C1"));
+                    } else {
+                        int cnt = 1;
+                        for (String identifier : firstSchemaTableTree.getIdentifiers()) {
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                            singlePathSql.append(".");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                            singlePathSql.append(".");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                            singlePathSql.append(" = ");
+                            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C" + cnt));
+                            if (cnt++ < firstSchemaTableTree.getIdentifiers().size()) {
+                                singlePathSql.append(" AND ");
+                            }
+                        }
+                    }
                 }
             } else if (this.parentIdsAndIndexes.size() != 1 && !sqlgGraph.getSqlDialect().supportsValuesExpression()) {
                 //Mariadb lo and behold does not support VALUES
@@ -972,7 +1027,10 @@ public class SchemaTableTree {
                 random.nextBytes(bytes);
                 String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
                 sqlgGraph.tx().normalBatchModeOn();
-                for (Pair<Long, Long> parentIdsAndIndex : this.parentIdsAndIndexes) {
+                //TODO
+                if (true)
+                    throw new RuntimeException("handle ID");
+                for (Pair<RecordId.ID, Long> parentIdsAndIndex : this.parentIdsAndIndexes) {
                     sqlgGraph.addTemporaryVertex(T.label, tmpTableIdentified, "tmpId", parentIdsAndIndex.getLeft(), "index", parentIdsAndIndex.getRight());
                 }
                 sqlgGraph.tx().flush();
@@ -1077,7 +1135,7 @@ public class SchemaTableTree {
                             identifierCount++;
                         }
                     } else {
-                        withInOutValue = recordId.getId();
+                        withInOutValue = recordId.sequenceId();
                         PropertyType propertyType = PropertyType.from(withInOutValue);
                         sb.append(sqlgGraph.getSqlDialect().valueToValuesString(propertyType, withInOutValue));
                     }
@@ -2507,12 +2565,12 @@ public class SchemaTableTree {
         }
     }
 
-    public ListOrderedSet<Object> loadIdentifierObjects(Map<String, Integer> idColumnCountMap, ResultSet resultSet) throws SQLException {
-        ListOrderedSet<Object> identifierObjects = new ListOrderedSet<>();
+    public ListOrderedSet<Comparable> loadIdentifierObjects(Map<String, Integer> idColumnCountMap, ResultSet resultSet) throws SQLException {
+        ListOrderedSet<Comparable> identifierObjects = new ListOrderedSet<>();
         for (String identifier : this.identifiers) {
             String labelledAliasIdentifier = labeledAliasIdentifier(identifier);
             int count = idColumnCountMap.get(labelledAliasIdentifier);
-            identifierObjects.add(resultSet.getObject(count));
+            identifierObjects.add((Comparable) resultSet.getObject(count));
         }
         return identifierObjects;
     }
@@ -2547,7 +2605,7 @@ public class SchemaTableTree {
         this.fakeEmit = fakeEmit;
     }
 
-    public void setParentIdsAndIndexes(List<Pair<Long, Long>> parentIdsAndIndexes) {
+    public void setParentIdsAndIndexes(List<Pair<RecordId.ID, Long>> parentIdsAndIndexes) {
         this.parentIdsAndIndexes = parentIdsAndIndexes;
     }
 
@@ -2555,7 +2613,7 @@ public class SchemaTableTree {
         return this.stepType;
     }
 
-    public List<Pair<Long, Long>> getParentIdsAndIndexes() {
+    public List<Pair<RecordId.ID, Long>> getParentIdsAndIndexes() {
         return this.parentIdsAndIndexes;
     }
 

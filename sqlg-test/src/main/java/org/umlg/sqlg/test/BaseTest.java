@@ -145,6 +145,10 @@ public abstract class BaseTest {
         return configuration.getString("jdbc.url").contains("postgresql");
     }
 
+    public static boolean isMsSqlServer() {
+        return configuration.getString("jdbc.url").contains("sqlserver");
+    }
+
     /**
      * return a clone of the configuration
      *
