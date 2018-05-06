@@ -1,15 +1,5 @@
 package org.umlg.sqlg.strategy;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
@@ -20,6 +10,10 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.strategy.barrier.SqlgVertexStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Restricts the set of properties to read for a given vertex or edge, if we determine that we don't need them all for the rest of the traversal
@@ -45,7 +39,7 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
         if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
             sqlgGraph.tx().flush();
         }
-        List<Step<?,?>> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+        List<Step<?,?>> steps = new ArrayList(traversal.asAdmin().getSteps());
         ListIterator<Step<?,?>> stepIterator = steps.listIterator();
         stepIterator = steps.listIterator();
         Step<?,?> previous=null;
