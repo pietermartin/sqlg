@@ -196,6 +196,11 @@ public class SqlgGraph implements Graph {
     private Configuration configuration = new BaseConfiguration();
     private final ISqlGFeatures features = new SqlGFeatures();
 
+    /**
+     * the build version of sqlg
+     */
+    private String buildVersion;
+    
     //This has some static suckness
     static {
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
@@ -233,6 +238,7 @@ public class SqlgGraph implements Graph {
         SqlgGraph sqlgGraph = new SqlgGraph(configuration, dataSourceFactory);
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
+        sqlgGraph.buildVersion=sqlgStartupManager.getBuildVersion();
         return (G) sqlgGraph;
     }
 
@@ -1264,11 +1270,19 @@ public class SqlgGraph implements Graph {
     }
 
     public Connection getConnection() throws SQLException {
-        return this.sqlgDataSource.getDatasource().getConnection();
+    	return this.sqlgDataSource.getDatasource().getConnection();
     }
 
     public SqlgDataSource getSqlgDataSource() {
         return sqlgDataSource;
     }
 
+    /**
+     * get the sqlg build version
+     * @return the build version
+     */
+    public String getBuildVersion() {
+		return buildVersion;
+	}
+    
 }

@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 /**
@@ -99,9 +100,13 @@ public abstract class BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
+        assertNotNull(this.sqlgGraph);
+        assertNotNull(this.sqlgGraph.getBuildVersion());
         this.gt = this.sqlgGraph.traversal();
         if (configuration.getBoolean("distributed", false)) {
             this.sqlgGraph1 = SqlgGraph.open(configuration);
+            assertNotNull(this.sqlgGraph1);
+            assertEquals(this.sqlgGraph.getBuildVersion(),this.sqlgGraph1.getBuildVersion());
         }
         stopWatch.stop();
         logger.info("Startup time for test = " + stopWatch.toString());
