@@ -212,6 +212,7 @@ public class SqlgGraph implements Graph {
                         new SqlgNotStepStepStrategy(),
                         new SqlgHasStepStrategy(),
                         new SqlgDropStepStrategy(),
+                        new SqlgRestrictPropertiesStrategy(),
                         TopologyStrategy.build().create())
                 .removeStrategies(
                         PathRetractionStrategy.class)
