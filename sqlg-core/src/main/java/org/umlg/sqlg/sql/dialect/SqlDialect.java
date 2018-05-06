@@ -1146,7 +1146,7 @@ public interface SqlDialect {
                 Double doubleValue = (Double)value;
                 return doubleValue.toString();
             case STRING:
-                return value.toString();
+                return "'" + value.toString() + "'";
             case LOCALDATE:
                 LocalDate localDateValue = (LocalDate)value;
                 return localDateValue.toString();
