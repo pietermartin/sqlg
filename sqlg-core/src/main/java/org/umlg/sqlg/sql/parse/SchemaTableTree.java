@@ -107,6 +107,9 @@ public class SchemaTableTree {
 
     private List<ColumnList> columnListStack = new ArrayList<>();
 
+    private Set<String> restrictedProperties = null;
+    
+    
     public void removeTopologyStrategyHasContainer() {
         SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
         for (SchemaTableTree child : children) {
@@ -209,7 +212,7 @@ public class SchemaTableTree {
             SchemaTable schemaTable,
             Direction direction,
             Class<? extends Element> elementClass,
-            ReplacedStep replacedStep,
+            ReplacedStep<?,?> replacedStep,
             boolean isEdgeVertexStep,
             Set<String> labels) {
         return addChild(
@@ -221,6 +224,7 @@ public class SchemaTableTree {
                 replacedStep.getSqlgComparatorHolder(),
                 replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
+                replacedStep.getRestrictedProperties(),
                 replacedStep.getDepth(),
                 isEdgeVertexStep,
                 replacedStep.isEmit(),
@@ -234,7 +238,7 @@ public class SchemaTableTree {
             SchemaTable schemaTable,
             Direction direction,
             Class<? extends Element> elementClass,
-            ReplacedStep replacedStep,
+            ReplacedStep<?,?> replacedStep,
             Set<String> labels) {
 
         Preconditions.checkState(replacedStep.getStep() instanceof VertexStep, "addChild can only be called for a VertexStep, found %s", replacedStep.getStep().getClass().getSimpleName());
@@ -257,6 +261,7 @@ public class SchemaTableTree {
                 replacedStep.getSqlgComparatorHolder(),
                 replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
+                replacedStep.getRestrictedProperties(),
                 replacedStep.getDepth(),
                 false,
                 emit,
@@ -275,6 +280,7 @@ public class SchemaTableTree {
             SqlgComparatorHolder sqlgComparatorHolder,
             List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
             SqlgRangeHolder sqlgRangeHolder,
+            Set<String> restrictedProperties,
             int stepDepth,
             boolean isEdgeVertexStep,
             boolean emit,
@@ -301,6 +307,7 @@ public class SchemaTableTree {
         schemaTableTree.untilFirst = untilFirst;
         schemaTableTree.optionalLeftJoin = leftJoin;
         schemaTableTree.drop = drop;
+        schemaTableTree.setRestrictedProperties(restrictedProperties);
         return schemaTableTree;
     }
 
@@ -515,7 +522,7 @@ public class SchemaTableTree {
         if (current.isOptionalLeftJoin() && (current.getStepDepth() < current.getReplacedStepDepth())) {
             Set<SchemaTableTree> leftyChildren = new HashSet<>();
             leftyChildren.addAll(current.children);
-            Pair p = Pair.of(stack, leftyChildren);
+            Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> p = Pair.of(stack, leftyChildren);
             result.add(p);
         }
         for (SchemaTableTree child : current.children) {
@@ -831,6 +838,13 @@ public class SchemaTableTree {
 
         Preconditions.checkState(this.parent == null, "constructSelectSinglePathSql may only be called on the root SchemaTableTree");
 
+        // calculate restrictions on properties once and for all
+        calculatePropertyRestrictions();
+        for (SchemaTableTree stt:distinctQueryStack){
+        	if (stt!=this){
+        		stt.calculatePropertyRestrictions();
+        	}
+        }
         /*
          *columnList holds the columns per sub query.
          */
@@ -1082,7 +1096,8 @@ public class SchemaTableTree {
         return this.hasContainers.stream().anyMatch(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h));
     }
 
-    private String bulkWithJoin(SqlgGraph sqlgGraph) {
+    @SuppressWarnings("unchecked")
+	private String bulkWithJoin(SqlgGraph sqlgGraph) {
         StringBuilder sb = new StringBuilder();
         List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).collect(Collectors.toList());
         for (HasContainer hasContainer : bulkHasContainers) {
@@ -1365,7 +1380,7 @@ public class SchemaTableTree {
             } else {
                 Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
-                SelectOneStep selectOneStep = (SelectOneStep) comparator.getValue0().getSteps().get(0);
+                SelectOneStep<?,?> selectOneStep = (SelectOneStep<?,?>) comparator.getValue0().getSteps().get(0);
                 Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                 Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                 Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>) selectOneStep.getLocalChildren().get(0);
@@ -1758,12 +1773,14 @@ public class SchemaTableTree {
         }
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
             if (!identifiers.contains(propertyTypeMapEntry.getKey())) {
-                String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
-                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
-                for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
-                }
+            	if (lastSchemaTableTree.shouldSelectProperty(propertyTypeMapEntry.getKey())){
+	                String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
+	                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
+	                for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
+	                }
+            	}
             }
         }
     }
@@ -1783,21 +1800,23 @@ public class SchemaTableTree {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
             String col = propertyTypeMapEntry.getKey();
-            String alias = cols.getAlias(lastSchemaTableTree, col);
-            if (alias == null) {
-                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
-                cols.add(lastSchemaTableTree, col, alias);
-            } else {
-                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
-            }
-            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                col = propertyTypeMapEntry.getKey() + postFix;
-                alias = cols.getAlias(lastSchemaTableTree, col);
-                // postfix do not use labeled methods
-                if (alias == null) {
-                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                    cols.add(lastSchemaTableTree, col, alias);
-                }
+            if (lastSchemaTableTree.shouldSelectProperty(col)){
+	            String alias = cols.getAlias(lastSchemaTableTree, col);
+	            if (alias == null) {
+	                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
+	                cols.add(lastSchemaTableTree, col, alias);
+	            } else {
+	                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
+	            }
+	            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+	                col = propertyTypeMapEntry.getKey() + postFix;
+	                alias = cols.getAlias(lastSchemaTableTree, col);
+	                // postfix do not use labeled methods
+	                if (alias == null) {
+	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	                    cols.add(lastSchemaTableTree, col, alias);
+	                }
+	            }
             }
         }
     }
@@ -2295,7 +2314,8 @@ public class SchemaTableTree {
      * @param schemaTableTree
      * @return true if any has container does NOT match, false if everything is fine
      */
-    private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
+    @SuppressWarnings("unchecked")
+	private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
                 if (hasContainer.getKey().equals(label.getAccessor())) {
@@ -2346,7 +2366,7 @@ public class SchemaTableTree {
     @SuppressWarnings("SimplifiableIfStatement")
     private boolean hasEmptyWithin(HasContainer hasContainer) {
         if (hasContainer.getBiPredicate() == Contains.within) {
-            return ((Collection) hasContainer.getPredicate().getValue()).isEmpty();
+            return ((Collection<?>) hasContainer.getPredicate().getValue()).isEmpty();
         } else {
             return false;
         }
@@ -2624,4 +2644,64 @@ public class SchemaTableTree {
         return this.distributionColumn != null;
     }
 
+	public Set<String> getRestrictedProperties() {
+		return restrictedProperties;
+	}
+
+	public void setRestrictedProperties(Set<String> restrictedColumns) {
+		this.restrictedProperties = restrictedColumns;
+	}
+
+	/**
+	 * should we select the given property?
+	 * @param property the property name
+	 * @return true if the property should be part of the select clause, false otherwise
+	 */
+	public boolean shouldSelectProperty(String property){
+		// no restriction
+		if (restrictedProperties==null){
+			return true;
+		}
+		// explicit restriction
+		if (restrictedProperties.contains(property)){
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * calculate property restrictions from explicit restrictions and required properties
+	 */
+	private void calculatePropertyRestrictions(){
+		if (restrictedProperties==null){
+			return;
+		}
+		// we use aliases for ordering, so we need the property in the select clause
+        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.getDbComparators()) {
+            
+            if (comparator.getValue1() instanceof ElementValueComparator) {
+            	restrictedProperties.add(((ElementValueComparator<?>)comparator.getValue1()).getPropertyKey());
+              
+            } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
+                    && comparator.getValue1() instanceof Order) {
+                Traversal.Admin<?, ?> t = comparator.getValue0();
+                String key;
+                if (t instanceof ElementValueTraversal) {
+                    ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal<?>) t;
+                    key = elementValueTraversal.getPropertyKey();
+                } else {
+                    TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
+                    // see calculateLabeledAliasId
+                    if (tokenTraversal.getToken().equals(T.id)) {
+                        key = Topology.ID;
+                    } else {
+                        key = tokenTraversal.getToken().getAccessor();
+                    }
+                }
+                if (key!=null){
+                	restrictedProperties.add(key);
+                }
+            }
+        }
+	}
 }
