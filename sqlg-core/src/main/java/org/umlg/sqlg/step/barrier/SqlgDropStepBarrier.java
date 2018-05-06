@@ -59,7 +59,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                     SqlgElement sqlgElement = (SqlgElement) object;
                     RecordId recordId = (RecordId) sqlgElement.id();
                     SchemaTable schemaTable = recordId.getSchemaTable();
-                    RecordId.ID id = recordId.getId();
+                    RecordId.ID id = recordId.getID();
                     if (sqlgElement instanceof SqlgVertex) {
                         Optional<VertexLabel> vertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable());
                         Preconditions.checkState(vertexLabelOptional.isPresent());
@@ -79,7 +79,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                                     SchemaTable schemaTableEdge = ((SqlgEdge)edge).getSchemaTablePrefixed().withOutPrefix();
                                     Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(schemaTableEdge.getSchema(), schemaTableEdge.getTable());
                                     Preconditions.checkState(edgeLabelOptional.isPresent());
-                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getId());
+                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getID());
                                     if (added) {
                                         final Event removeEvent = new Event.EdgeRemovedEvent(eventStrategy.detach(edge));
                                         this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
@@ -99,7 +99,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                                     SchemaTable schemaTableEdge = ((SqlgEdge)edge).getSchemaTablePrefixed().withOutPrefix();
                                     Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(schemaTableEdge.getSchema(), schemaTableEdge.getTable());
                                     Preconditions.checkState(edgeLabelOptional.isPresent());
-                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getId());
+                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getID());
                                     if (added) {
                                         final Event removeEvent = new Event.EdgeRemovedEvent(eventStrategy.detach(edge));
                                         this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));

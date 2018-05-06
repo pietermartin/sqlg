@@ -194,7 +194,7 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             } else {
-                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
+                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getEdgeForeignKeys();
                 Set<ForeignKey> foreignKeys = edgeForeignKeys.get(inEdgeLabelToTravers.toString());
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
@@ -247,7 +247,7 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             } else {
-                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
+                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getEdgeForeignKeys();
                 Set<ForeignKey> foreignKeys = edgeForeignKeys.get(outEdgeLabelToTravers.toString());
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
@@ -288,7 +288,7 @@ public class ReplacedStep<S, E> {
         Map<SchemaTable, List<Multimap<BiPredicate, RecordId>>> groupedIds = groupIdsBySchemaTable();
 
         Set<SchemaTableTree> result = new HashSet<>();
-        Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
+        Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getEdgeForeignKeys();
         //join from the edge table to the incoming vertex table
         Set<ForeignKey> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
         //Every foreignKey for the given direction must be joined on

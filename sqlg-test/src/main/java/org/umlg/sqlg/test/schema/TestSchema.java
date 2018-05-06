@@ -152,7 +152,7 @@ public class TestSchema extends BaseTest {
         Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
         Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
-        Map<String, Set<ForeignKey>> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys();
+        Map<String, Set<ForeignKey>> edgeForeignKeys = this.sqlgGraph.getTopology().getEdgeForeignKeys();
         Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
 
         Vertex car = this.sqlgGraph.addVertex(T.label, "Car");
@@ -164,7 +164,7 @@ public class TestSchema extends BaseTest {
         labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
         Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
-        edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys();
+        edgeForeignKeys = this.sqlgGraph.getTopology().getEdgeForeignKeys();
         Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
 
         this.sqlgGraph.tx().rollback();

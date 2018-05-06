@@ -15,6 +15,9 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 public interface SqlDialect {
@@ -1119,6 +1122,103 @@ public interface SqlDialect {
 
     //TODO this is very lazy do properly
     default String toRDBSStringLiteral(Object value) {
+        PropertyType propertyType = PropertyType.from(value);
+        switch (propertyType) {
+            case BOOLEAN:
+                Boolean b = (Boolean)value;
+                return b.toString();
+            case BYTE:
+                Byte byteValue = (Byte)value;
+                return byteValue.toString();
+            case SHORT:
+                Short shortValue = (Short)value;
+                return shortValue.toString();
+            case INTEGER:
+                Integer intValue = (Integer)value;
+                return intValue.toString();
+            case LONG:
+                Long longValue = (Long)value;
+                return longValue.toString();
+            case FLOAT:
+                Float floatValue = (Float)value;
+                return floatValue.toString();
+            case DOUBLE:
+                Double doubleValue = (Double)value;
+                return doubleValue.toString();
+            case STRING:
+                return value.toString();
+            case LOCALDATE:
+                LocalDate localDateValue = (LocalDate)value;
+                return localDateValue.toString();
+            case LOCALDATETIME:
+                LocalDateTime localDateTimeValue = (LocalDateTime)value;
+                return localDateTimeValue.toString();
+            case LOCALTIME:
+                LocalTime localTimeValue = (LocalTime)value;
+                return localTimeValue.toString();
+            case ZONEDDATETIME:
+                break;
+            case PERIOD:
+                break;
+            case DURATION:
+                break;
+            case JSON:
+                break;
+            case POINT:
+                break;
+            case LINESTRING:
+                break;
+            case POLYGON:
+                break;
+            case GEOGRAPHY_POINT:
+                break;
+            case GEOGRAPHY_POLYGON:
+                break;
+            case boolean_ARRAY:
+                break;
+            case BOOLEAN_ARRAY:
+                break;
+            case byte_ARRAY:
+                break;
+            case BYTE_ARRAY:
+                break;
+            case short_ARRAY:
+                break;
+            case SHORT_ARRAY:
+                break;
+            case int_ARRAY:
+                break;
+            case INTEGER_ARRAY:
+                break;
+            case long_ARRAY:
+                break;
+            case LONG_ARRAY:
+                break;
+            case float_ARRAY:
+                break;
+            case FLOAT_ARRAY:
+                break;
+            case double_ARRAY:
+                break;
+            case DOUBLE_ARRAY:
+                break;
+            case STRING_ARRAY:
+                break;
+            case LOCALDATETIME_ARRAY:
+                break;
+            case LOCALDATE_ARRAY:
+                break;
+            case LOCALTIME_ARRAY:
+                break;
+            case ZONEDDATETIME_ARRAY:
+                break;
+            case DURATION_ARRAY:
+                break;
+            case PERIOD_ARRAY:
+                break;
+            case JSON_ARRAY:
+                break;
+        }
         return "'" + value.toString() + "'";
     }
 }

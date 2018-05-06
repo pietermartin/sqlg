@@ -662,7 +662,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 //TODO refacor to remove looping.
                 List<RecordId.ID> ids = new ArrayList<>();
                 for (SqlgVertex vertex : schemaVertices.getValue()) {
-                    ids.add(((RecordId) vertex.id()).getId());
+                    ids.add(((RecordId) vertex.id()).getID());
                 }
                 Map<String, EdgeLabel> outEdgeLabels = vertexLabel.getOutEdgeLabels();
                 for (Map.Entry<String, EdgeLabel> stringEdgeLabelEntry : outEdgeLabels.entrySet()) {
@@ -774,7 +774,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 //TODO refacor to remove looping.
                 List<RecordId.ID> ids = new ArrayList<>();
                 for (SqlgEdge edge : schemaEdges.getValue()) {
-                    ids.add(((RecordId) edge.id()).getId());
+                    ids.add(((RecordId) edge.id()).getID());
                 }
                 String sql = drop(edgeLabel, ids);
                 if (logger.isDebugEnabled()) {

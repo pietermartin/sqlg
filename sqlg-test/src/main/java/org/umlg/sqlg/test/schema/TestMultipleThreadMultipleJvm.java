@@ -359,7 +359,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                                         try {
                                             while (keepReading.get()) {
                                                 sqlgGraphAsync.getTopology().getAllTables();
-                                                sqlgGraphAsync.getTopology().getAllEdgeForeignKeys();
+                                                sqlgGraphAsync.getTopology().getEdgeForeignKeys();
                                                 Thread.sleep(100);
                                             }
                                         } catch (Exception e) {

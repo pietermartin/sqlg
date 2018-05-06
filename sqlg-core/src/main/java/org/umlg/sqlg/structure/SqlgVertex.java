@@ -490,7 +490,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 if (resultSet.next()) {
                     loadResultSet(resultSet);
                 } else {
-                    throw new IllegalStateException(String.format("Vertex with label %s and id %s does not exist.", this.schema + "." + this.table, this.recordId.getId().toString()));
+                    throw new IllegalStateException(String.format("Vertex with label %s and id %s does not exist.", this.schema + "." + this.table, this.recordId.getID().toString()));
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

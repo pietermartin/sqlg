@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
+import org.umlg.sqlg.test.sharding.TestSharding;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAndStepBarrier.class
+        TestSharding.class
+//        TestLoadSchema.class
 //        TestBatch.class,
 //        TestSimpleVertexEdgeGremlin.class
 //        TestSharding.class,

@@ -3,6 +3,8 @@ package org.umlg.sqlg.test.sharding;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -14,10 +16,12 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -271,7 +275,7 @@ public class TestSharding extends BaseTest {
         Assert.assertNotNull(this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
         Assert.assertEquals(aVertexLabel, this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getDistributionColocate());
         Assert.assertEquals(4, this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getShardCount());
-        
+
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").toList().size());
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").toList().size());
         Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("ab").toList().size());
@@ -398,6 +402,130 @@ public class TestSharding extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "dist", "b", "date", localDate2, "value", "1");
         this.sqlgGraph.tx().commit();
 
+    }
+
+//    @Test
+    public void test() {
+        List<LocalDateTime> times = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            LocalDateTime locaDateTime = LocalDateTime.now().minus(i, ChronoUnit.SECONDS);
+            times.add(locaDateTime);
+            this.sqlgGraph.addVertex(T.label, "A", "dateTime", locaDateTime);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("dateTime", P.within(times)).toList();
+        Assert.assertEquals(1000, vertices.size());
+    }
+
+    @Test
+    public void testShardRNC() {
+//        VertexLabel rncVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+//                "ObjectType1",
+//                new HashMap<String, PropertyType>() {{
+//                    put("rncId", PropertyType.STRING);
+//                    put("cellId", PropertyType.STRING);
+//                    put("dateTime", PropertyType.LOCALDATETIME);
+//                    put("date", PropertyType.LOCALDATE);
+//                    put("count1", PropertyType.LONG);
+//                    put("count2", PropertyType.LONG);
+//                    put("count3", PropertyType.LONG);
+//                    put("count4", PropertyType.LONG);
+//                    put("count5", PropertyType.LONG);
+//                    put("count6", PropertyType.LONG);
+//                    put("count7", PropertyType.LONG);
+//                    put("count8", PropertyType.LONG);
+//                    put("count9", PropertyType.LONG);
+//                    put("count10", PropertyType.LONG);
+//                }},
+//                ListOrderedSet.listOrderedSet(Arrays.asList("rncId", "cellId"))
+//        );
+        VertexLabel rncVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "ObjectType1",
+                new HashMap<String, PropertyType>() {{
+                    put("rncId", PropertyType.STRING);
+                    put("cellId", PropertyType.STRING);
+                    put("dateTime", PropertyType.LOCALDATETIME);
+                    put("date", PropertyType.LOCALDATE);
+                    put("count1", PropertyType.LONG);
+                    put("count2", PropertyType.LONG);
+                    put("count3", PropertyType.LONG);
+                    put("count4", PropertyType.LONG);
+                    put("count5", PropertyType.LONG);
+                    put("count6", PropertyType.LONG);
+                    put("count7", PropertyType.LONG);
+                    put("count8", PropertyType.LONG);
+                    put("count9", PropertyType.LONG);
+                    put("count10", PropertyType.LONG);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("rncId", "cellId")),
+                PartitionType.RANGE,
+                "date"
+        );
+        rncVertexLabel.ensureRangePartitionExists("day1", "'2018-05-03'", "'2018-05-04'");
+        rncVertexLabel.ensureRangePartitionExists("day2", "'2018-05-04'", "'2018-05-05'");
+        rncVertexLabel.ensureRangePartitionExists("day3", "'2018-05-05'", "'2018-05-06'");
+        rncVertexLabel.ensureRangePartitionExists("day4", "'2018-05-06'", "'2018-05-07'");
+        rncVertexLabel.ensureRangePartitionExists("day5", "'2018-05-07'", "'2018-05-08'");
+        rncVertexLabel.ensureRangePartitionExists("day6", "'2018-05-08'", "'2018-05-09'");
+        rncVertexLabel.ensureRangePartitionExists("day7", "'2018-05-09'", "'2018-05-10'");
+        rncVertexLabel.ensureRangePartitionExists("day8", "'2018-05-10'", "'2018-05-11'");
+        rncVertexLabel.ensureRangePartitionExists("day9", "'2018-05-11'", "'2018-05-12'");
+        rncVertexLabel.ensureRangePartitionExists("day10", "'2018-05-12'", "'2018-05-13'");
+        rncVertexLabel.ensureRangePartitionExists("day11", "'2018-05-13'", "'2018-05-14'");
+        rncVertexLabel.ensureRangePartitionExists("day12", "'2018-05-14'", "'2018-05-15'");
+        rncVertexLabel.ensureRangePartitionExists("day13", "'2018-05-15'", "'2018-05-16'");
+
+        rncVertexLabel.ensureDistributed(32, rncVertexLabel.getProperty("rncId").get());
+        this.sqlgGraph.tx().commit();
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        List<String> rncs = Arrays.asList("RNC1", "RNC2", "RNC3", "RNC4", "RNC5", "RNC6", "RNC7", "RNC8", "RNC9", "RNC10");
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+//        ExecutorService executor = Executors.newFixedThreadPool(1);
+        List<Future<Boolean>> futures = new ArrayList<>();
+        LocalDateTime start = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        for (String rnc : rncs) {
+            futures.add(executor.submit(() -> {
+                sqlgGraph.tx().normalBatchModeOn();
+                for (long i = 1; i <= 1_000_000; i++) {
+                    LocalDateTime next = start.plusSeconds(i);
+                    sqlgGraph.addVertex(T.label, "ObjectType1",
+                            "rncId", rnc,
+                            "cellId", "cellId_" + i,
+                            "dateTime", next,
+                            "date", next.toLocalDate(),
+                            "count1", i,
+                            "count2", i,
+                            "count3", i,
+                            "count4", i,
+                            "count5", i,
+                            "count6", i,
+                            "count7", i,
+                            "count8", i,
+                            "count9", i,
+                            "count10", i
+                    );
+                    if (i % 10_000 == 0) {
+                        sqlgGraph.tx().flush();
+                    }
+                }
+                sqlgGraph.tx().commit();
+                return true;
+            }));
+
+        }
+        executor.shutdown();
+        for (Future<Boolean> future : futures) {
+            try {
+                future.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Assert.fail(e.getMessage());
+            }
+        }
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
     }
 
 }

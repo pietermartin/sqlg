@@ -1236,7 +1236,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             for (SqlgElement sqlgElement : vertexPropertyCache.keySet()) {
                 Map<String, Object> properties = vertexPropertyCache.get(sqlgElement);
                 sql.append("(");
-                sql.append(((RecordId) sqlgElement.id()).getId());
+                sql.append(((RecordId) sqlgElement.id()).getID());
                 sql.append(", ");
                 int countProperties = 1;
                 for (String key : keys) {
@@ -1521,7 +1521,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         try {
             String encoding = "UTF-8";
             if (outVertexLabel.hasIDPrimaryKey()) {
-                writer.write(((RecordId) outVertex.id()).getId().toString());
+                writer.write(((RecordId) outVertex.id()).getID().toString());
                 writer.write(COPY_COMMAND_DELIMITER);
             } else {
                 for (String identifier : outVertexLabel.getIdentifiers()) {
@@ -1534,7 +1534,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             }
             if (inVertexLabel.hasIDPrimaryKey()) {
-                writer.write(((RecordId) inVertex.id()).getId().toString());
+                writer.write(((RecordId) inVertex.id()).getID().toString());
             } else {
                 int i = 1;
                 for (String identifier : inVertexLabel.getIdentifiers()) {

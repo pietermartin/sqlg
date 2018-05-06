@@ -196,8 +196,17 @@ public class RecordId implements KryoSerializable, Comparable {
         return schemaTable;
     }
 
-    public ID getId() {
+    public ID getID() {
         return this.id;
+    }
+
+    /**
+     * @deprecated Replaced with {@link RecordId#getID()}
+     */
+    @Deprecated
+    public Long getId() {
+        Preconditions.checkState(this.id.hasSequenceId(), "getId() can not be called for user supplied primary keys! Use getID() instead.");
+        return this.id.sequenceId;
     }
 
     public ListOrderedSet<Comparable> getIdentifiers() {
@@ -231,7 +240,7 @@ public class RecordId implements KryoSerializable, Comparable {
             return false;
         }
         RecordId otherRecordId = (RecordId) other;
-        return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.id.equals(otherRecordId.getId());
+        return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.id.equals(otherRecordId.getID());
     }
 
     @Override
@@ -240,7 +249,7 @@ public class RecordId implements KryoSerializable, Comparable {
         output.writeString(this.getSchemaTable().getTable());
         if (hasSequenceId()) {
             output.writeString("s");
-            output.writeLong(this.getId().sequenceId);
+            output.writeLong(this.getID().sequenceId);
         } else {
             output.writeString("i");
             output.writeInt(getIdentifiers().size());
@@ -278,7 +287,7 @@ public class RecordId implements KryoSerializable, Comparable {
         if (first != 0) {
             return first;
         }
-        return this.getId().compareTo(other.getId());
+        return this.getID().compareTo(other.getID());
     }
 
     public boolean hasSequenceId() {

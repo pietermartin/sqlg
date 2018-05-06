@@ -8,7 +8,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
@@ -257,8 +259,8 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
             assertEquals(1, sqlgGraph.traversal().V(realBscWE.id()).in("workspaceElement").count().next().intValue());
-            assertEquals(2, sqlgGraph.getTopology().getAllEdgeForeignKeys().get("plan.E_workspaceElement").size());
-            assertEquals(2, sqlgGraph.getTopology().getAllEdgeForeignKeys().get("real.E_workspaceElement").size());
+            assertEquals(2, sqlgGraph.getTopology().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
+            assertEquals(2, sqlgGraph.getTopology().getEdgeForeignKeys().get("real.E_workspaceElement").size());
         }
     }
 

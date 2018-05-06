@@ -1712,8 +1712,24 @@ public class Topology {
         return getTableLabels().get(schemaTable);
     }
 
+    //This is for backward compatibility.
+    public Map<String, Set<String>> getAllEdgeForeignKeys() {
+        Map<String, Set<String>> result = new HashMap<>();
+        Map<String, Set<ForeignKey>> allEdgeForiegnKeys = getEdgeForeignKeys();
+        for (Map.Entry<String, Set<ForeignKey>> stringSetEntry : allEdgeForiegnKeys.entrySet()) {
 
-    public Map<String, Set<ForeignKey>> getAllEdgeForeignKeys() {
+            String key = stringSetEntry.getKey();
+            Set<ForeignKey> foreignKeys = stringSetEntry.getValue();
+            Set<String> foreignKeySet = new HashSet<>();
+            result.put(key, foreignKeySet);
+            for (ForeignKey foreignKey : foreignKeys) {
+                foreignKeySet.add(foreignKey.getCompositeKeys().get(0));
+            }
+        }
+        return result;
+    }
+
+    public Map<String, Set<ForeignKey>> getEdgeForeignKeys() {
         z_internalTopologyMapReadLock();
         try {
             if (this.isSqlWriteLockHeldByCurrentThread()) {

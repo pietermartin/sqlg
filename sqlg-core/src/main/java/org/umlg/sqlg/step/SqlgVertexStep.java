@@ -140,7 +140,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 parentIdList = new ArrayList<>();
                 this.schemaTableParentIds.put(schemaTable, parentIdList);
             }
-            parentIdList.add(Pair.of(((RecordId) value.id()).getId(), this.startIndex));
+            parentIdList.add(Pair.of(((RecordId) value.id()).getID(), this.startIndex));
             this.startIndexTraverserAdminMap.put(this.startIndex++, h);
         }
     }

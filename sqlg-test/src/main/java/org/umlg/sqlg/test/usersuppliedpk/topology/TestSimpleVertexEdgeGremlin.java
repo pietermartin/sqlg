@@ -48,7 +48,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
         Assert.assertEquals(1, persons.size());
         Vertex person = persons.get(0);
         RecordId recordId = (RecordId) person.id();
-        Assert.assertNull(recordId.getId().getSequenceId());
+        Assert.assertNull(recordId.getID().getSequenceId());
         Assert.assertEquals(2, recordId.getIdentifiers().size());
         Assert.assertEquals("John", recordId.getIdentifiers().get(0));
         Assert.assertEquals("Smith", recordId.getIdentifiers().get(1));

@@ -1804,7 +1804,7 @@ public class SchemaTableTree {
 
     private static void printEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree firstSchemaTableTree, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Preconditions.checkState(lastSchemaTableTree.getSchemaTable().isEdgeTable());
-        Set<ForeignKey> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
+        Set<ForeignKey> edgeForeignKeys = sqlgGraph.getTopology().getEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
         for (ForeignKey edgeForeignKey : edgeForeignKeys) {
             if (firstSchemaTableTree == null || !firstSchemaTableTree.equals(lastSchemaTableTree) ||
                     firstSchemaTableTree.getDirection() != edgeForeignKey.getDirection()) {
@@ -1819,7 +1819,7 @@ public class SchemaTableTree {
 
     private void printLabeledEdgeInOutVertexIdFromClauseFor(ColumnList cols) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
-        Set<ForeignKey> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
+        Set<ForeignKey> edgeForeignKeys = this.sqlgGraph.getTopology().getEdgeForeignKeys().get(this.getSchemaTable().toString());
         for (ForeignKey edgeForeignKey : edgeForeignKeys) {
             for (String foreignKey : edgeForeignKey.getCompositeKeys()) {
                 String alias = cols.getAlias(this.getSchemaTable(), foreignKey, this.stepDepth);
