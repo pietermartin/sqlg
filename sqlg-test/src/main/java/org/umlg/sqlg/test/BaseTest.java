@@ -61,6 +61,22 @@ import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 /**
  * Date: 2014/07/12
  * Time: 5:44 PM
@@ -115,9 +131,13 @@ public abstract class BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
+        assertNotNull(this.sqlgGraph);
+        assertNotNull(this.sqlgGraph.getBuildVersion());
         this.gt = this.sqlgGraph.traversal();
         if (configuration.getBoolean("distributed", false)) {
             this.sqlgGraph1 = SqlgGraph.open(configuration);
+            assertNotNull(this.sqlgGraph1);
+            assertEquals(this.sqlgGraph.getBuildVersion(),this.sqlgGraph1.getBuildVersion());
         }
         stopWatch.stop();
         logger.info("Startup time for test = " + stopWatch.toString());
@@ -291,9 +311,9 @@ public abstract class BaseTest {
     	} finally {
     		l.setLevel(old);
     	}
-    	
+
     }
-    
+
     protected void loadModern(SqlgGraph sqlgGraph) {
         Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0);
         final GraphReader reader = sqlgGraph.io(builder).reader().create();

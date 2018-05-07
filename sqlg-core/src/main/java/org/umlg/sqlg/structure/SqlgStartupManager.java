@@ -37,6 +37,8 @@ class SqlgStartupManager {
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
 
+    private String buildVersion;
+
     SqlgStartupManager(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlgGraph.getSqlDialect();
@@ -634,6 +636,28 @@ class SqlgStartupManager {
             throw new RuntimeException(e);
         }
         return v;
+    String getBuildVersion() {
+    	if (buildVersion==null){
+	        Properties prop = new Properties();
+	        try {
+	        	// try system
+	        	URL u=ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
+	        	if(u==null){
+	        		// try own class loader
+	        		u=getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
+	        	}
+	        	if (u!=null){
+	        		try (InputStream is=u.openStream()){
+	        			prop.load(is);
+	        		}
+	        		buildVersion=prop.getProperty(APPLICATION_VERSION);
+
+	        	}
+	        } catch (IOException e) {
+	            throw new RuntimeException(e);
+	        }
+    	}
+       return buildVersion;
     }
 
     private boolean hasIDPrimaryKey(List<String> primaryKeys) {

@@ -151,6 +151,19 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                              <Specification-Version>${tinkerpop.version}</Specification-Version>  
+                                <Implementation-Version>${sqlg.version}</Implementation-Version>
+                                <Build-Timestamp> ${maven.build.timestamp}</Build-Timestamp>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
