@@ -3614,7 +3614,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
             case LOCALDATETIME:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return toRDBSStringLiteral(LOCALDATETIME, value) + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case LOCALDATETIME_ARRAY:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();

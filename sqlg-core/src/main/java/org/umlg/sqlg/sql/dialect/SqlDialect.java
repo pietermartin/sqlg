@@ -18,9 +18,11 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public interface SqlDialect {
+
 
     static final String INDEX_POSTFIX = "_sqlgIdx";
 
@@ -1120,41 +1122,45 @@ public interface SqlDialect {
         return false;
     }
 
-    //TODO this is very lazy do properly
     default String toRDBSStringLiteral(Object value) {
         PropertyType propertyType = PropertyType.from(value);
+        return toRDBSStringLiteral(propertyType, value);
+    }
+
+    //TODO this is very lazy do properly
+    default String toRDBSStringLiteral(PropertyType propertyType, Object value) {
         switch (propertyType) {
             case BOOLEAN:
-                Boolean b = (Boolean)value;
+                Boolean b = (Boolean) value;
                 return b.toString();
             case BYTE:
-                Byte byteValue = (Byte)value;
+                Byte byteValue = (Byte) value;
                 return byteValue.toString();
             case SHORT:
-                Short shortValue = (Short)value;
+                Short shortValue = (Short) value;
                 return shortValue.toString();
             case INTEGER:
-                Integer intValue = (Integer)value;
+                Integer intValue = (Integer) value;
                 return intValue.toString();
             case LONG:
-                Long longValue = (Long)value;
+                Long longValue = (Long) value;
                 return longValue.toString();
             case FLOAT:
-                Float floatValue = (Float)value;
+                Float floatValue = (Float) value;
                 return floatValue.toString();
             case DOUBLE:
-                Double doubleValue = (Double)value;
+                Double doubleValue = (Double) value;
                 return doubleValue.toString();
             case STRING:
                 return "'" + value.toString() + "'";
             case LOCALDATE:
-                LocalDate localDateValue = (LocalDate)value;
+                LocalDate localDateValue = (LocalDate) value;
                 return localDateValue.toString();
             case LOCALDATETIME:
-                LocalDateTime localDateTimeValue = (LocalDateTime)value;
-                return localDateTimeValue.toString();
+                LocalDateTime localDateTimeValue = (LocalDateTime) value;
+                return "'" + localDateTimeValue.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
             case LOCALTIME:
-                LocalTime localTimeValue = (LocalTime)value;
+                LocalTime localTimeValue = (LocalTime) value;
                 return localTimeValue.toString();
             case ZONEDDATETIME:
                 break;
