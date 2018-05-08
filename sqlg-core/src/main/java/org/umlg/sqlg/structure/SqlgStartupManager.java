@@ -615,27 +615,6 @@ class SqlgStartupManager {
      *
      * @return the build version, or null if unknown
      */
-    private String getBuildVersion() {
-        Properties prop = new Properties();
-        String v = null;
-        try {
-            // try system
-            URL u = ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
-            if (u == null) {
-                // try own class loader
-                u = getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
-            }
-            if (u != null) {
-                try (InputStream is = u.openStream()) {
-                    prop.load(is);
-                }
-                v = prop.getProperty(APPLICATION_VERSION);
-
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return v;
     String getBuildVersion() {
     	if (buildVersion==null){
 	        Properties prop = new Properties();
