@@ -1155,13 +1155,13 @@ public interface SqlDialect {
                 return "'" + value.toString() + "'";
             case LOCALDATE:
                 LocalDate localDateValue = (LocalDate) value;
-                return localDateValue.toString();
+                return "'" + localDateValue.toString() + "'";
             case LOCALDATETIME:
                 LocalDateTime localDateTimeValue = (LocalDateTime) value;
                 return "'" + localDateTimeValue.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
             case LOCALTIME:
                 LocalTime localTimeValue = (LocalTime) value;
-                return localTimeValue.toString();
+                return "'" + localTimeValue.toString() + "'";
             case ZONEDDATETIME:
                 break;
             case PERIOD:
