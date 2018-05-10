@@ -532,9 +532,6 @@ public abstract class AbstractLabel implements TopologyInf {
 
     static void buildColumns(SqlgGraph sqlgGraph, ListOrderedSet<String> identifiers, Map<String, PropertyType> columns, StringBuilder sql) {
         int i = 1;
-        //This is to make the columns sorted
-        List<String> keys = new ArrayList<>(columns.keySet());
-        Collections.sort(keys);
         //if there are identifiers, do them first.
         for (String identifier : identifiers) {
             PropertyType propertyType = columns.get(identifier);
@@ -560,6 +557,7 @@ public abstract class AbstractLabel implements TopologyInf {
         if (!identifiers.isEmpty() && columns.size() > identifiers.size()) {
             sql.append(", ");
         }
+        Set<String> keys = columns.keySet();
         keys.removeAll(identifiers);
         for (String column : keys) {
             PropertyType propertyType = columns.get(column);
