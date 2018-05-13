@@ -17,7 +17,7 @@ import java.util.*;
  */
 @SuppressWarnings("unused")
 public class MariadbDialect extends BaseSqlDialect {
-    
+
     @Override
     public int getMaximumSchemaNameLength() {
         return 63;
@@ -1027,9 +1027,11 @@ public class MariadbDialect extends BaseSqlDialect {
                 "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionType` TEXT;",
                 "UPDATE `sqlg_schema`.`V_vertex` SET `partitionType` = 'NONE';",
                 "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionExpression` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `shardCount` INTEGER;",
                 "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionType` TEXT;",
                 "UPDATE `sqlg_schema`.`V_edge` SET `partitionType` = 'NONE';",
                 "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionExpression` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `shardCount` INTEGER;",
                 "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
                         "`ID` SERIAL PRIMARY KEY, " +
                         "`createdOn` DATETIME, " +
@@ -1057,11 +1059,57 @@ public class MariadbDialect extends BaseSqlDialect {
                         "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
                         "`sqlg_schema.partition__O` BIGINT UNSIGNED, " +
                         "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
-                        "FOREIGN KEY (`sqlg_schema.partition__O`) REFERENCES `sqlg_schema`.`V_partition` (`ID`));"
+                        "FOREIGN KEY (`sqlg_schema.partition__O`) REFERENCES `sqlg_schema`.`V_partition` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_identifier`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "`identifier_index` INTEGER, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_identifier`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "`identifier_index` INTEGER, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_distribution`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_colocate`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_distribution`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_colocate`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));"
         );
     }
+
     /**
      * Hardcoded the rows to return. MariaDB does nto support just an offset.
+     *
      * @param skip The number of rows to skip. i.e. OFFSET
      * @return The sql fragment.
      */

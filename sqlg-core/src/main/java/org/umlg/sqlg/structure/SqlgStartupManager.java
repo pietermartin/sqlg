@@ -118,7 +118,7 @@ class SqlgStartupManager {
                 upgradeForeignKeysToDeferrable();
             }
         }
-        if (v.isUnknownVersion() || v.compareTo(new Version(1, 6, 0, null, null, null)) < 0) {
+        if (v.isUnknownVersion() || v.compareTo(new Version(2, 0, 0, null, null, null)) < 0) {
             addPartitionSupportToSqlgSchema();
         }
     }

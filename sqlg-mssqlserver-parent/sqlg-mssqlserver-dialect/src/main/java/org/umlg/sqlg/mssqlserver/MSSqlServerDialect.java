@@ -1390,8 +1390,10 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return Arrays.asList(
                 "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE' WITH VALUES;",
                 "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"partitionExpression\" VARCHAR(255);",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD \"shardCount\" INTEGER;",
                 "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"partitionType\" VARCHAR(255) DEFAULT 'NONE' WITH VALUES;",
                 "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"partitionExpression\" VARCHAR(255);",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD \"shardCount\" INTEGER;",
                 "CREATE TABLE \"sqlg_schema\".\"V_partition\" (" +
                         "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
                         "\"createdOn\" DATETIME, " +
@@ -1419,7 +1421,51 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                         "\"sqlg_schema.partition__I\" BIGINT, " +
                         "\"sqlg_schema.partition__O\" BIGINT, " +
                         "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"),  " +
-                        "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));"
+                        "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));",
+
+
+                "CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_identifier\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "\"identifier_index\" INTEGER, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"));",
+                "CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_identifier\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "\"identifier_index\" INTEGER, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\"));",
+                "CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_distribution\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"));",
+
+                "CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "vertex_colocate\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.vertex__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"));",
+
+                "CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_distribution\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\"));",
+
+                "CREATE TABLE \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "edge_colocate\"(" +
+                        "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.vertex__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\"));"
+
         );
     }
 
