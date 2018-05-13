@@ -417,28 +417,8 @@ public class TestSharding extends BaseTest {
         Assert.assertEquals(1000, vertices.size());
     }
 
-    @Test
+//    @Test
     public void testShardRNC() {
-//        VertexLabel rncVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
-//                "ObjectType1",
-//                new HashMap<String, PropertyType>() {{
-//                    put("rncId", PropertyType.STRING);
-//                    put("cellId", PropertyType.STRING);
-//                    put("dateTime", PropertyType.LOCALDATETIME);
-//                    put("date", PropertyType.LOCALDATE);
-//                    put("count1", PropertyType.LONG);
-//                    put("count2", PropertyType.LONG);
-//                    put("count3", PropertyType.LONG);
-//                    put("count4", PropertyType.LONG);
-//                    put("count5", PropertyType.LONG);
-//                    put("count6", PropertyType.LONG);
-//                    put("count7", PropertyType.LONG);
-//                    put("count8", PropertyType.LONG);
-//                    put("count9", PropertyType.LONG);
-//                    put("count10", PropertyType.LONG);
-//                }},
-//                ListOrderedSet.listOrderedSet(Arrays.asList("rncId", "cellId"))
-//        );
         VertexLabel rncVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "ObjectType1",
                 new HashMap<String, PropertyType>() {{
@@ -474,6 +454,7 @@ public class TestSharding extends BaseTest {
         rncVertexLabel.ensureRangePartitionExists("day11", "'2018-05-13'", "'2018-05-14'");
         rncVertexLabel.ensureRangePartitionExists("day12", "'2018-05-14'", "'2018-05-15'");
         rncVertexLabel.ensureRangePartitionExists("day13", "'2018-05-15'", "'2018-05-16'");
+        rncVertexLabel.ensureRangePartitionExists("day14", "'2018-05-16'", "'2018-05-17'");
 
         rncVertexLabel.ensureDistributed(32, rncVertexLabel.getProperty("rncId").get());
         this.sqlgGraph.tx().commit();
@@ -482,9 +463,8 @@ public class TestSharding extends BaseTest {
         stopWatch.start();
         List<String> rncs = Arrays.asList("RNC1", "RNC2", "RNC3", "RNC4", "RNC5", "RNC6", "RNC7", "RNC8", "RNC9", "RNC10");
         ExecutorService executor = Executors.newFixedThreadPool(10);
-//        ExecutorService executor = Executors.newFixedThreadPool(1);
         List<Future<Boolean>> futures = new ArrayList<>();
-        LocalDateTime start = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime start = LocalDateTime.of(2018, 5, 4, 0, 0);
         for (String rnc : rncs) {
             futures.add(executor.submit(() -> {
                 sqlgGraph.tx().normalBatchModeOn();
