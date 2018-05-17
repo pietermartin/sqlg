@@ -115,4 +115,44 @@ public class TestAndandOrStep extends BaseTest {
         Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a2)));
 
     }
+
+    @Test
+    public void testAndWithHasNot() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "s2");
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+                .and(
+                        __.hasNot("surname"),
+                        __.has("name", "a1")
+                );
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(v));
+    }
+
+    @Test
+    public void testAndOrNestedWithHasAndHasNot() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "surname", "s2");
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+                .or(
+                        __.and(
+                                __.hasNot("surname"),
+                                __.has("name", "a1")
+                        ),
+                        __.and(
+                                __.has("surname"),
+                                __.has("name", "a2")
+                        )
+                );
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a2)));
+    }
 }

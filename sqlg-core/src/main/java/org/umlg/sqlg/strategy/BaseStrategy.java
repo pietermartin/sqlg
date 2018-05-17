@@ -595,7 +595,7 @@ public abstract class BaseStrategy {
         AndOrHasContainer outerAndOrHasContainer = new AndOrHasContainer(type);
         List<Traversal.Admin<?, ?>> localTraversals = connectiveStep.getLocalChildren();
         for (Traversal.Admin<?, ?> localTraversal : localTraversals) {
-            if (!TraversalHelper.hasAllStepsOfClass(localTraversal, HasStep.class, ConnectiveStep.class)) {
+            if (!TraversalHelper.hasAllStepsOfClass(localTraversal, HasStep.class, ConnectiveStep.class, TraversalFilterStep.class, NotStep.class)) {
                 return Optional.empty();
             }
             AndOrHasContainer andOrHasContainer = new AndOrHasContainer(AndOrHasContainer.TYPE.NONE);
@@ -630,6 +630,20 @@ public abstract class BaseStrategy {
                         } else {
                             return Optional.empty();
                         }
+                    }
+                } else if (step instanceof TraversalFilterStep) {
+                    String notNullKey = isNotNullStep(step);
+                    if (notNullKey != null) {
+                        andOrHasContainer.addHasContainer(new HasContainer(notNullKey, new P<>(Existence.NOTNULL, null)));
+                    } else {
+                        return Optional.empty();
+                    }
+                }  else if (step instanceof NotStep) {
+                    String nullKey = isNullStep(step);
+                    if (nullKey != null) {
+                        andOrHasContainer.addHasContainer(new HasContainer(nullKey, new P<>(Existence.NULL, null)));
+                    } else {
+                        return Optional.empty();
                     }
                 } else {
                     ConnectiveStep connectiveStepLocalChild = (ConnectiveStep) step;
