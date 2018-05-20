@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.sharding.TestSharding;
+import org.umlg.sqlg.test.schema.TestGlobalUniqueIndex;
 
 /**
  * Date: 2014/07/16
@@ -10,21 +10,7 @@ import org.umlg.sqlg.test.sharding.TestSharding;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSharding.class
-//        TestLoadSchema.class
-//        TestBatch.class,
-//        TestSimpleVertexEdgeGremlin.class
-//        TestSharding.class,
-//        TestShardingGremlin.class,
-//        TestSimpleJoinGremlin.class,
-//        TestSimpleVertexEdgeGremlin.class,
-//        TestUserSuppliedPKBulkMode.class,
-//        TestMultipleIDQuery.class,
-//        TestTopologyUpgrade.class,
-//        TestGremlinCompileWithHas.class,
-//        TestValidateTopology.class,
-//        TestGremlinCompileTextPredicate.class
-//        TestAndStepBarrier.class
+        TestGlobalUniqueIndex.class
 })
 public class AnyTest {
 }

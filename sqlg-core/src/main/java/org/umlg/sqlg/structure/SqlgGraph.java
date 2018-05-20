@@ -341,11 +341,11 @@ public class SqlgGraph implements Graph {
     }
 
     public GraphTraversalSource topology() {
-        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(this.getTopology().getSqlgSchemaAbstractLabels()).create());
+        return this.traversal().withStrategies(TopologyStrategy.build().sqlgSchema().create());
     }
 
     public GraphTraversalSource globalUniqueIndexes() {
-        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(this.getTopology().getGlobalUniqueIndexes()).create());
+        return this.traversal().withStrategies(TopologyStrategy.build().globallyUniqueIndexes().create());
     }
 
     @Override

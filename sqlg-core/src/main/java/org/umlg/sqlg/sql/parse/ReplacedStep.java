@@ -68,6 +68,8 @@ public class ReplacedStep<S, E> {
      * restrict properties to only a subset if not null
      */
     private Set<String> restrictedProperties = null;
+
+    private boolean isForSqlgSchema;
     
     private ReplacedStep() {
     }
@@ -105,7 +107,7 @@ public class ReplacedStep<S, E> {
     }
 
     public List<AndOrHasContainer> getAndOrHasContainers() {
-        return andOrHasContainers;
+        return this.andOrHasContainers;
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
@@ -210,9 +212,6 @@ public class ReplacedStep<S, E> {
                 Set<SchemaTable> schemaTables = new HashSet<>();
                 for (ForeignKey foreignKey : foreignKeys) {
                     if (foreignKey.isOut()) {
-//                        String[] split = foreignKey.split("\\.");
-//                        String foreignKeySchema = split[0];
-//                        String foreignKeyTable = split[1];
                         String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
                         String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
@@ -262,9 +261,6 @@ public class ReplacedStep<S, E> {
                 //We are only interested here in the distinct SchemaTables.
                 for (ForeignKey foreignKey : foreignKeys) {
                     if (foreignKey.isIn()) {
-//                        String[] split = foreignKey.split("\\.");
-//                        String foreignKeySchema = split[0];
-//                        String foreignKeyTable = split[1];
                         String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
                         String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
@@ -302,12 +298,7 @@ public class ReplacedStep<S, E> {
         //For user defined ids many columns can be used as the primary keys.
         //i.e. many __I columns.
         //We are only interested here in the distinct SchemaTables.
-//        Set<SchemaTable> schemaTables = new HashSet<>();
-//        List<SchemaTable> schemaTables = new ArrayList<>();
         for (ForeignKey foreignKey : foreignKeys) {
-//            String[] split = foreignKey.split("\\.");
-//            String foreignKeySchema = split[0];
-//            String foreignKeyTable = split[1];
 
             String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
             String foreignKeyTable = foreignKey.getSchemaTable().getTable();
@@ -466,7 +457,7 @@ public class ReplacedStep<S, E> {
         }
 
         //All tables depending on the strategy, topology tables only or the rest.
-        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterSqlgSchemaHasContainers(this.topology, this.hasContainers, false);
+        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
 
         //Optimization for the simple case of only one label specified.
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
@@ -810,4 +801,8 @@ public class ReplacedStep<S, E> {
 	public void setRestrictedProperties(Set<String> restrictedColumns) {
 		this.restrictedProperties = restrictedColumns;
 	}
+
+    public void markForSqlgSchema() {
+        this.isForSqlgSchema = true;
+    }
 }

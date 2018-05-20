@@ -312,7 +312,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 , "The first step must a VertexStep, EdgeVertexStep, EdgeOtherVertexStep or GraphStep, found " + this.replacedSteps.get(1).getStep().getClass().toString());
         SchemaTableTree rootSchemaTableTree = null;
         try {
-            rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
+            rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedStepTree);
             //Regular
             List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
             //Optional

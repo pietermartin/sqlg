@@ -76,7 +76,7 @@ public class ReplacedStepTree {
             if (replacedStep.getStep() instanceof GraphStep) {
                 continue;
             }
-            if (!(replacedStep.getStep() instanceof OrderGlobalStep) && !(replacedStep.getStep() instanceof RangeGlobalStep)) {
+            if (!replacedStep.isFake() && !(replacedStep.getStep() instanceof OrderGlobalStep) && !(replacedStep.getStep() instanceof RangeGlobalStep)) {
                 //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
                 schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }

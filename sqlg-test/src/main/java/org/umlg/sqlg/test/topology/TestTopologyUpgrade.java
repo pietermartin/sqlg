@@ -288,9 +288,7 @@ public class TestTopologyUpgrade extends BaseTest {
         god.addEdge("universe", universe);
         this.sqlgGraph.tx().commit();
         GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
-                TopologyStrategy.build().selectFrom(
-                        this.sqlgGraph.getTopology().getSqlgSchemaAbstractLabels()
-                ).create()
+                TopologyStrategy.build().sqlgSchema().create()
         );
         List<Vertex> schemas = traversalSource.V()
                 .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
@@ -302,7 +300,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradePropertiesAcrossSchema() throws Exception {
+    public void testUpgradePropertiesAcrossSchema() {
         this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "name1", "a11");
         this.sqlgGraph.addVertex(T.label, "B.A", "name", "b1", "name2", "b22");
         this.sqlgGraph.tx().commit();

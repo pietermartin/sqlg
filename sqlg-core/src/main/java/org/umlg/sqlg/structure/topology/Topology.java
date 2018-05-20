@@ -60,6 +60,7 @@ public class Topology {
     private ReentrantReadWriteLock topologyMapLock;
 
     private Map<String, Map<String, PropertyType>> allTableCache = new HashMap<>();
+    private Map<String, Map<String, PropertyType>> sqlgSchemaTableCache = new HashMap<>();
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
@@ -519,8 +520,8 @@ public class Topology {
         //populate the schema's allEdgesCache
         sqlgSchema.cacheEdgeLabels();
         //populate the allTablesCache
-        sqlgSchema.getVertexLabels().values().forEach((v) -> this.allTableCache.put(v.getSchema().getName() + "." + VERTEX_PREFIX + v.getLabel(), v.getPropertyTypeMap()));
-        sqlgSchema.getEdgeLabels().values().forEach((e) -> this.allTableCache.put(e.getSchema().getName() + "." + EDGE_PREFIX + e.getLabel(), e.getPropertyTypeMap()));
+        sqlgSchema.getVertexLabels().values().forEach((v) -> this.sqlgSchemaTableCache.put(v.getSchema().getName() + "." + VERTEX_PREFIX + v.getLabel(), v.getPropertyTypeMap()));
+        sqlgSchema.getEdgeLabels().values().forEach((e) -> this.sqlgSchemaTableCache.put(e.getSchema().getName() + "." + EDGE_PREFIX + e.getLabel(), e.getPropertyTypeMap()));
 
         sqlgSchema.getVertexLabels().values().forEach((v) -> {
             SchemaTable vertexLabelSchemaTable = SchemaTable.of(v.getSchema().getName(), VERTEX_PREFIX + v.getLabel());
@@ -1545,104 +1546,48 @@ public class Topology {
     /**
      * get all tables by schema, with their properties
      *
-     * @param withSqlgSchema do we want the sqlg_schema tables?
-     * @return
+     * @param sqlgSchema do we want the sqlg_schema tables?
+     * @return a map of all tables and their properties.
      */
-    public Map<String, Map<String, PropertyType>> getAllTables(boolean withSqlgSchema) {
-        z_internalTopologyMapReadLock();
-        try {
-            //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
-            Map<String, Map<String, PropertyType>> result;
-            if (this.isSqlWriteLockHeldByCurrentThread()) {
-                result = new HashMap<>();
-                for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
-                    result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
-                }
-                Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
-                for (String table : uncommittedLabels.keySet()) {
-                    if (result.containsKey(table)) {
-                        result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
-                    } else {
-                        result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
+    public Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema) {
+        if (sqlgSchema) {
+            return Collections.unmodifiableMap(this.sqlgSchemaTableCache);
+        } else {
+            z_internalTopologyMapReadLock();
+            try {
+                //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
+                Map<String, Map<String, PropertyType>> result;
+                if (this.isSqlWriteLockHeldByCurrentThread()) {
+                    result = new HashMap<>();
+                    for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
+                        result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
                     }
-                }
-                for (Schema s : this.schemas.values()) {
-                    for (String removed : s.uncommittedRemovedVertexLabels) {
-                        result.remove(removed);
+                    Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
+                    for (String table : uncommittedLabels.keySet()) {
+                        if (result.containsKey(table)) {
+                            result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
+                        } else {
+                            result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
+                        }
                     }
-                    for (String removed : s.uncommittedRemovedEdgeLabels) {
-                        result.remove(removed);
-                    }
+                    for (Schema s : this.schemas.values()) {
+                        for (String removed : s.uncommittedRemovedVertexLabels) {
+                            result.remove(removed);
+                        }
+                        for (String removed : s.uncommittedRemovedEdgeLabels) {
+                            result.remove(removed);
+                        }
 
-                }
-            } else {
-                if (!withSqlgSchema) {
-                    result = new HashMap<>(this.allTableCache);
+                    }
+                    return Collections.unmodifiableMap(result);
                 } else {
-                    result = this.allTableCache;
+                    return Collections.unmodifiableMap(this.allTableCache);
                 }
+            } finally {
+                z_internalTopologyMapReadUnLock();
             }
-            if (!withSqlgSchema) {
-                for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
-                    result.remove(sqlgSchemaSchemaTable);
-                }
-            }
-            return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalTopologyMapReadUnLock();
-        }
-    }
 
-    /**
-     * Returns the topology schema elements with the filter schema elements removed.
-     *
-     * @param filter The objects not to include in the result.
-     * @return A map without the filter elements present.
-     */
-    public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
-        Map<String, Map<String, PropertyType>> result = new HashMap<>(getAllTables());
-        for (TopologyInf f : filter) {
-            if (f instanceof AbstractLabel) {
-                AbstractLabel abstractLabel = (AbstractLabel) f;
-                Schema schema = abstractLabel.getSchema();
-                result.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel());
-            }
         }
-        return Collections.unmodifiableMap(result);
-    }
-
-    public Map<String, Map<String, PropertyType>> getAllTablesFrom(Set<TopologyInf> selectFrom) {
-        Map<String, Map<String, PropertyType>> tbls = getAllTables(true);
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
-        for (TopologyInf f : selectFrom) {
-            if (f instanceof AbstractLabel) {
-                AbstractLabel abstractLabel = (AbstractLabel) f;
-                if (abstractLabel.isValid()) {
-                    Schema schema = abstractLabel.getSchema();
-                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
-                    Map<String, PropertyType> tmp = tbls.get(key);
-                    if (tmp != null) {
-                        result.put(key, tmp);
-                    }
-                }
-//            } else if (f instanceof Partition) {
-//                Partition partition = (Partition) f;
-//                Schema schema = partition.getAbstractLabel().getSchema();
-//                String key = schema.getName() + "." + (partition.getAbstractLabel() instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
-//                Map<String, PropertyType> tmp = tbls.get(key);
-//                if (tmp != null) {
-//                    result.put(key, tmp);
-//                }
-            } else if (f instanceof GlobalUniqueIndex) {
-                GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
-                String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + VERTEX_PREFIX + globalUniqueIndex.getName();
-                Map<String, PropertyType> tmp = tbls.get(key);
-                if (tmp != null) {
-                    result.put(key, tmp);
-                }
-            }
-        }
-        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
@@ -1662,7 +1607,7 @@ public class Topology {
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        Map<String, PropertyType> result = getAllTables(true).get(schemaTable.toString());
+        Map<String, PropertyType> result = getAllTables(schemaTable.getSchema().equals(Topology.SQLG_SCHEMA)).get(schemaTable.toString());
         if (result != null) {
             return Collections.unmodifiableMap(result);
         }

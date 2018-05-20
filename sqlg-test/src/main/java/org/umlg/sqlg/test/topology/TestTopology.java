@@ -10,14 +10,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.TopologyInf;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -95,27 +92,6 @@ public class TestTopology extends BaseTest {
     }
 
     @Test
-    public void testTopologyWithoutFilter() {
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "asd");
-        this.sqlgGraph.addVertex(T.label, "Dog", "name", "asd");
-        this.sqlgGraph.addVertex(T.label, "Cat", "name", "asd");
-        this.sqlgGraph.tx().commit();
-        Optional<VertexLabel> personVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(),"Person");
-        Assert.assertTrue(personVertexLabelOptional.isPresent());
-        Map<String, Map<String, PropertyType>> labelAndProperties = this.sqlgGraph.getTopology().getAllTablesWithout(new HashSet<TopologyInf>() {{
-            add(personVertexLabelOptional.get());
-
-        }});
-        Assert.assertEquals(2, labelAndProperties.size());
-        Assert.assertTrue(labelAndProperties.containsKey(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_Dog"));
-        Assert.assertTrue(labelAndProperties.containsKey(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_Cat"));
-        Assert.assertTrue(labelAndProperties.get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_Dog").containsKey("name"));
-        Assert.assertTrue(labelAndProperties.get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_Cat").containsKey("name"));
-        Assert.assertTrue(labelAndProperties.get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_Dog").get("name") == PropertyType.STRING);
-        Assert.assertTrue(labelAndProperties.get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_Cat").get("name") == PropertyType.STRING);
-    }
-
-    @Test
     public void testAddColumns(){
     	//Create Schema
         Topology topology = sqlgGraph.getTopology();
@@ -135,15 +111,13 @@ public class TestTopology extends BaseTest {
         columns.put("Test2", "T2");
         
         //Add the data
-        Vertex vv = sqlgGraph.addVertex("TEST" + "." + "TEST_Table", columns);
+        sqlgGraph.addVertex("TEST" + "." + "TEST_Table", columns);
         sqlgGraph.tx().commit();
 
         //Simulating second load
         //Remove the whole table label
         Optional<VertexLabel> tableVertexLabel = sqlgGraph.getTopology().getVertexLabel("TEST", "TEST_Table");
-        if (tableVertexLabel.isPresent()) {
-            tableVertexLabel.get().remove(false);
-        }
+        tableVertexLabel.ifPresent(vertexLabel -> vertexLabel.remove(false));
 
         columns = new HashMap<>();
         columns.put("Test1", "");

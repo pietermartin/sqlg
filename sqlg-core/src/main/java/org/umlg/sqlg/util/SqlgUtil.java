@@ -784,46 +784,12 @@ public class SqlgUtil {
         }
     }
 
-    /**
-     * return tables in their schema with their properties, matching the given hasContainers
-     *
-     * @param topology
-     * @param hasContainers
-     * @param withSqlgSchema do we want the sqlg schema tables too?
-     * @return
-     */
-    public static Map<String, Map<String, PropertyType>> filterSqlgSchemaHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
-        HasContainer fromHasContainer = null;
-        HasContainer withoutHasContainer = null;
-
-        for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
-                fromHasContainer = hasContainer;
-                break;
-            } else if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)) {
-                withoutHasContainer = hasContainer;
-                break;
-            }
-        }
-
-        //from and without are mutually exclusive, only one will ever be set.
-        Map<String, Map<String, PropertyType>> filteredAllTables;
-        if (fromHasContainer != null) {
-            filteredAllTables = topology.getAllTablesFrom((Set<TopologyInf>) fromHasContainer.getPredicate().getValue());
-        } else if (withoutHasContainer != null) {
-            filteredAllTables = topology.getAllTablesWithout((Set<TopologyInf>) withoutHasContainer.getPredicate().getValue());
-        } else {
-            filteredAllTables = topology.getAllTables(withSqlgSchema);
-        }
-        return filteredAllTables;
-    }
-
     public static void removeTopologyStrategyHasContainer(List<HasContainer> hasContainers) {
         //remove the TopologyStrategy hasContainer
-        Optional<HasContainer> fromHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
-        Optional<HasContainer> withoutHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
-        fromHasContainer.ifPresent(hasContainers::remove);
-        withoutHasContainer.ifPresent(hasContainers::remove);
+        Optional<HasContainer> sqlgSchemaHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)).findAny();
+        Optional<HasContainer> globalUniqueIndexHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)).findAny();
+        sqlgSchemaHasContainer.ifPresent(hasContainers::remove);
+        globalUniqueIndexHasContainer.ifPresent(hasContainers::remove);
     }
 
     public static void dropDb(SqlDialect sqlDialect, Connection conn) {
