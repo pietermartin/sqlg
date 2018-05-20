@@ -29,11 +29,11 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testReloadVertexLabelWithNoPartitions() throws Exception {
+    public void testReloadVertexLabelWithNoPartitions() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
@@ -61,7 +61,7 @@ public class TestPartitioning extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
@@ -102,7 +102,7 @@ public class TestPartitioning extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
@@ -173,7 +173,7 @@ public class TestPartitioning extends BaseTest {
         a.ensurePartitionedEdgeLabelExist(
                 "ab",
                 b,
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
@@ -213,7 +213,7 @@ public class TestPartitioning extends BaseTest {
         EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
                 "ab",
                 b,
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
@@ -267,7 +267,7 @@ public class TestPartitioning extends BaseTest {
         EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
                 "ab",
                 b,
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
@@ -342,7 +342,7 @@ public class TestPartitioning extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
                 "Measurement",
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("date", PropertyType.LOCALDATE);
                     put("temp", PropertyType.INTEGER);
                 }},
@@ -380,7 +380,8 @@ public class TestPartitioning extends BaseTest {
     @Test
     public void testPartitioningList() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
-        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities", new HashMap<String, PropertyType>() {{
+        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities",
+                new LinkedHashMap<String, PropertyType>() {{
                     put("name", PropertyType.STRING);
                     put("population", PropertyType.LONG);
                 }},
@@ -421,7 +422,8 @@ public class TestPartitioning extends BaseTest {
     @Test
     public void testPartitioningListSimple() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
-        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities", new HashMap<String, PropertyType>() {{
+        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities",
+                new LinkedHashMap<String, PropertyType>() {{
                     put("name", PropertyType.STRING);
                     put("population", PropertyType.LONG);
                 }},
@@ -464,7 +466,8 @@ public class TestPartitioning extends BaseTest {
     @Test
     public void testPartitionRangeInSchema() {
         Schema testSchema = this.sqlgGraph.getTopology().ensureSchemaExist("test");
-        VertexLabel partitionedVertexLabel = testSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
+        VertexLabel partitionedVertexLabel = testSchema.ensurePartitionedVertexLabelExist("Measurement",
+                new LinkedHashMap<String, PropertyType>() {{
                     put("date", PropertyType.LOCALDATE);
                     put("temp", PropertyType.INTEGER);
                 }},
@@ -515,7 +518,7 @@ public class TestPartitioning extends BaseTest {
         EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist(
                 "liveAt",
                 address,
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("date", PropertyType.LOCALDATE);
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
@@ -560,7 +563,7 @@ public class TestPartitioning extends BaseTest {
         EdgeLabel livedAt = person.ensurePartitionedEdgeLabelExist(
                 "liveAt",
                 address,
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("date", PropertyType.LOCALDATE);
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
@@ -594,7 +597,8 @@ public class TestPartitioning extends BaseTest {
     @Test
     public void testSubPartitioningRange() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
-        VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
+        VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist("Measurement",
+                new LinkedHashMap<String, PropertyType>() {{
                     put("name", PropertyType.STRING);
                     put("logdate", PropertyType.LOCALDATE);
                     put("peaktemp", PropertyType.INTEGER);
@@ -633,7 +637,8 @@ public class TestPartitioning extends BaseTest {
     @Test
     public void testSubPartitioningList() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
-        VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist("Measurement", new HashMap<String, PropertyType>() {{
+        VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist("Measurement",
+                new LinkedHashMap<String, PropertyType>() {{
                     put("name", PropertyType.STRING);
                     put("list1", PropertyType.STRING);
                     put("list2", PropertyType.INTEGER);
@@ -696,7 +701,7 @@ public class TestPartitioning extends BaseTest {
         EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
                 "ab",
                 b,
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                 }},
@@ -748,7 +753,7 @@ public class TestPartitioning extends BaseTest {
         EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
                 "ab",
                 b,
-                new HashMap<String, PropertyType>() {{
+                new LinkedHashMap<String, PropertyType>() {{
                     put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
