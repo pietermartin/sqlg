@@ -1591,9 +1591,15 @@ public class SchemaTableTree {
     private String printLabeledOuterFromClauseFor(String sql, int counter, Map<String, String> columnNameAliasMapCopy) {
         Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.getSchemaTable().toString());
         int count = 1;
-        for (String propertyName : propertyTypeMap.keySet()) {
+        for (Map.Entry<String, PropertyType> property : propertyTypeMap.entrySet()) {
             sql += " a" + counter + ".";
-            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.labeledMappedAliasPropertyNameForOuterFromClause(propertyName, columnNameAliasMapCopy));
+            String alias = this.labeledMappedAliasPropertyNameForOuterFromClause(property.getKey(), columnNameAliasMapCopy);
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+            for (String postFix : property.getValue().getPostFixes()) {
+                sql += ", ";
+                alias = this.mappedAliasPropertyName(property.getKey() + postFix, columnNameAliasMapCopy);
+                sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+            }
             if (count++ < propertyTypeMap.size()) {
                 sql += ", ";
             }
