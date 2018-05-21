@@ -6,9 +6,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.*;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IncidentToAdjacentStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.MatchPredicateStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.RepeatUnrollStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
+import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.List;
@@ -30,7 +34,7 @@ public class SqlgOptionalStepStrategy<S> extends AbstractTraversalStrategy<Trave
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
         //noinspection OptionalGetWithoutIsPresent
-        if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         List<OptionalStep> optionalSteps = TraversalHelper.getStepsOfAssignableClass(OptionalStep.class, traversal);
@@ -75,6 +79,7 @@ public class SqlgOptionalStepStrategy<S> extends AbstractTraversalStrategy<Trave
     @Override
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(
+                SqlgGraphStepStrategy.class,
                 SqlgVertexStepStrategy.class
         ).collect(Collectors.toSet());
     }

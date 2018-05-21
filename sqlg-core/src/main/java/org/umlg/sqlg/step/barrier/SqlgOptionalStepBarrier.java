@@ -58,7 +58,7 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
                     for (Object optionObject : optionObjects) {
                         Element e = (Element) optionObject;
                         startId += e.id().toString();
-                        if (startRecordIds.removeAll(startId).isEmpty()) {
+                        if (!startRecordIds.removeAll(startId).isEmpty()) {
                             break;
                         }
                     }
@@ -71,14 +71,6 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
                 this.results.add(start);
                 //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
                 start.setBulk(1L);
-            }
-            //Now travers the options. The starts have been set.
-            while (true) {
-                if (this.optionalTraversal.hasNext()) {
-                    this.results.add(optionalTraversal.nextTraverser());
-                } else {
-                    break;
-                }
             }
             //Sort the results, this is to ensure the the incoming start order is not lost.
             this.results.sort((o1, o2) -> {

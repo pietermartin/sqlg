@@ -108,8 +108,8 @@ public class SchemaTableTree {
     private List<ColumnList> columnListStack = new ArrayList<>();
 
     private Set<String> restrictedProperties = null;
-    
-    
+
+
     public void removeTopologyStrategyHasContainer() {
         SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
         for (SchemaTableTree child : children) {
@@ -1781,6 +1781,29 @@ public class SchemaTableTree {
 	                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
 	                }
             	}
+            String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
+            cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
+            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+                alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
+            }
+        }
+    }
+
+    private String printLabeledOuterFromClauseFor(String sql, int counter, Map<String, String> columnNameAliasMapCopy) {
+        Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.getSchemaTable().toString());
+        int count = 1;
+        for (Map.Entry<String, PropertyType> property : propertyTypeMap.entrySet()) {
+            sql += " a" + counter + ".";
+            String alias = this.labeledMappedAliasPropertyNameForOuterFromClause(property.getKey(), columnNameAliasMapCopy);
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+            for (String postFix : property.getValue().getPostFixes()) {
+                sql += ", ";
+                alias = this.mappedAliasPropertyName(property.getKey() + postFix, columnNameAliasMapCopy);
+                sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+            }
+            if (count++ < propertyTypeMap.size()) {
+                sql += ", ";
             }
         }
     }
@@ -2668,7 +2691,7 @@ public class SchemaTableTree {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * calculate property restrictions from explicit restrictions and required properties
 	 */
@@ -2678,10 +2701,10 @@ public class SchemaTableTree {
 		}
 		// we use aliases for ordering, so we need the property in the select clause
         for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.getDbComparators()) {
-            
+
             if (comparator.getValue1() instanceof ElementValueComparator) {
             	restrictedProperties.add(((ElementValueComparator<?>)comparator.getValue1()).getPropertyKey());
-              
+
             } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
                     && comparator.getValue1() instanceof Order) {
                 Traversal.Admin<?, ?> t = comparator.getValue0();

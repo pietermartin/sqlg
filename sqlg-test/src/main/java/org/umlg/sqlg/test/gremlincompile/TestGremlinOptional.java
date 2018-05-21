@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.junit.Assert;
@@ -19,6 +20,29 @@ import java.util.function.Predicate;
  * Time: 6:36 PM
  */
 public class TestGremlinOptional extends BaseTest {
+
+    @Test
+    public void testOptionalWithNestedOptionalAndRepeat() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        a1.addEdge("ab", b1);
+        b1.addEdge("bc", c1);
+        this.sqlgGraph.tx().commit();
+
+        GraphTraversal<Vertex, Path> gt = this.sqlgGraph.traversal().V().hasLabel("A")
+                .out("ab").as("b")
+                .optional(
+                        __.outE("bc").otherV().as("c")
+                                .optional(
+                                        __.repeat(__.out("cd")).times(3)
+                                )
+                )
+                .path();
+
+        List<Path> paths = gt.toList();
+        Assert.assertEquals(1, paths.size());
+    }
 
     @Test
     public void testOptionalWithHasContainer() {
