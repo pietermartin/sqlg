@@ -29,7 +29,7 @@ public class VertexStrategy extends BaseStrategy {
 
     private static Logger logger = LoggerFactory.getLogger(VertexStrategy.class);
 
-    public VertexStrategy(Traversal.Admin<?, ?> traversal) {
+    private VertexStrategy(Traversal.Admin<?, ?> traversal) {
         super(traversal);
     }
 
@@ -40,14 +40,14 @@ public class VertexStrategy extends BaseStrategy {
 
     public void apply() {
         //Only optimize graph step.
-        if (!(this.traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(this.traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
             this.sqlgGraph.tx().flush();
         }
         if (this.canNotBeOptimized()) {
-            this.logger.debug("gremlin not optimized due to path or tree step. " + this.traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            logger.debug("gremlin not optimized due to path or tree step. " + this.traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
         combineSteps();
@@ -83,14 +83,15 @@ public class VertexStrategy extends BaseStrategy {
     /**
      * EdgeOtherVertexStep can not be optimized as the direction information is lost.
      *
-     * @param stepIterator
-     * @param step
-     * @param pathCount
-     * @return
+     * @param stepIterator The steps to iterate. Unused for the VertexStrategy
+     * @param step The current step.
+     * @param pathCount The path count.
+     * @return true if the optimization can continue else false.
      */
     @Override
     protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
-        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof ChooseStep || step instanceof OptionalStep)) {
+        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof ChooseStep ||
+                step instanceof OptionalStep)) {
             return false;
         }
         if (step instanceof OptionalStep) {
