@@ -57,7 +57,7 @@ public class GraphStrategy extends BaseStrategy {
             }
         }
         if (this.canNotBeOptimized()) {
-            this.logger.debug("gremlin not optimized due to path or tree step. " + this.traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            logger.debug("gremlin not optimized due to path or tree step. " + this.traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
         combineSteps();
