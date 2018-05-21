@@ -270,6 +270,36 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
+    public void testLabelledZonedDateWithDuplicatedEntitiesInPath() {
+        ZonedDateTime now = ZonedDateTime.now();
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "now", now);
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "now", now);
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "now", now);
+        a.addEdge("ab", b);
+        b.addEdge("bc", c);
+        c.addEdge("ca", a);
+        this.sqlgGraph.tx().commit();
+
+        List<Map<String, Vertex>> result = this.sqlgGraph.traversal().V()
+                .hasLabel("A").as("a")
+                .out().as("b")
+                .out().as("c")
+                .out().as("a_again")
+                .<Vertex>select("a", "b", "c", "a_again").toList();
+        Assert.assertEquals(1, result.size());
+        Map<String, Vertex> path = result.get(0);
+
+        // Check all entities are found
+        List<Vertex> entities = Arrays.asList(path.get("a"), path.get("b"), path.get("c"), path.get("a_again"));
+        Assert.assertEquals(Arrays.asList(a, b, c, a), entities);
+        
+        Assert.assertEquals(now, path.get("a").value("now"));
+        Assert.assertEquals(now, path.get("b").value("now"));
+        Assert.assertEquals(now, path.get("c").value("now"));
+        Assert.assertEquals(now, path.get("a_again").value("now"));
+    }
+
+    @Test
     public void testLabelledZonedDateOnEdge() throws InterruptedException {
         ZonedDateTime now = ZonedDateTime.now();
         Thread.sleep(1000);
