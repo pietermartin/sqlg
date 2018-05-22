@@ -587,27 +587,27 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
-        throw new UnsupportedOperationException("Hsqldb does not support table locking!");
+        throw new UnsupportedOperationException("MariaDb does not support table locking!");
     }
 
     @Override
     public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, String sequence, int batchSize) {
-        throw new UnsupportedOperationException("Hsqldb does not support alterSequenceCacheSize!");
+        throw new UnsupportedOperationException("MariaDb does not support alterSequenceCacheSize!");
     }
 
     @Override
     public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
-        throw new UnsupportedOperationException("Hsqldb does not support nextSequenceVal!");
+        throw new UnsupportedOperationException("MariaDb does not support nextSequenceVal!");
     }
 
     @Override
     public long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
-        throw new UnsupportedOperationException("Hsqldb does not support currSequenceVal!");
+        throw new UnsupportedOperationException("MariaDb does not support currSequenceVal!");
     }
 
     @Override
     public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
-        throw new UnsupportedOperationException("Hsqldb does not support sequenceName!");
+        throw new UnsupportedOperationException("MariaDb does not support sequenceName!");
     }
 
     @Override
