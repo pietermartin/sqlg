@@ -5,6 +5,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -27,20 +29,23 @@ public class TopologyStrategy extends AbstractTraversalStrategy<TraversalStrateg
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         Preconditions.checkState(!(this.sqlgSchema && this.globalUniqueIndex), "sqlgSchema and globalUnique are mutually exclusive. Both can not be true.");
-        if (this.sqlgSchema) {
-            TraversalHelper.insertAfterStep(
-                    new HasStep(traversal, new HasContainer(TOPOLOGY_SELECTION_SQLG_SCHEMA, P.eq(this.sqlgSchema))),
-                    traversal.getStartStep(),
-                    traversal
-            );
+        if (!TraversalHelper.getStepsOfAssignableClass(GraphStep.class, traversal).isEmpty() || !TraversalHelper.getStepsOfAssignableClass(VertexStep.class, traversal).isEmpty()) {
+            if (this.sqlgSchema) {
+                TraversalHelper.insertAfterStep(
+                        new HasStep(traversal, new HasContainer(TOPOLOGY_SELECTION_SQLG_SCHEMA, P.eq(this.sqlgSchema))),
+                        traversal.getStartStep(),
+                        traversal
+                );
+            }
+            if (this.globalUniqueIndex) {
+                TraversalHelper.insertAfterStep(
+                        new HasStep(traversal, new HasContainer(TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX, P.eq(this.globalUniqueIndex))),
+                        traversal.getStartStep(),
+                        traversal
+                );
+            }
         }
-        if (this.globalUniqueIndex) {
-            TraversalHelper.insertAfterStep(
-                    new HasStep(traversal, new HasContainer(TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX, P.eq(this.globalUniqueIndex))),
-                    traversal.getStartStep(),
-                    traversal
-            );
-        }
+
     }
 
     public static Builder build() {

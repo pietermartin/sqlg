@@ -69,8 +69,15 @@ public class ReplacedStep<S, E> {
      */
     private Set<String> restrictedProperties = null;
 
+    /**
+     * If the query is a for sqlg_schema only. i.e. sqlgGraph.topology().V()....
+     */
     private boolean isForSqlgSchema;
-    
+    /**
+     * If the query is a for gui_schema only. i.e. sqlgGraph.globalUniqueIndexes().V()....
+     */
+    private boolean isForGuiSchema;
+
     private ReplacedStep() {
     }
 
@@ -457,7 +464,7 @@ public class ReplacedStep<S, E> {
         }
 
         //All tables depending on the strategy, topology tables only or the rest.
-        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
+        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema, this.isForGuiSchema);
 
         //Optimization for the simple case of only one label specified.
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
@@ -804,5 +811,9 @@ public class ReplacedStep<S, E> {
 
     public void markForSqlgSchema() {
         this.isForSqlgSchema = true;
+    }
+
+    public void markForGuiSchema() {
+        this.isForGuiSchema = true;
     }
 }

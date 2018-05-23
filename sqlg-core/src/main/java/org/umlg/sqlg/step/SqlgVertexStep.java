@@ -201,8 +201,6 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         for (SchemaTable schemaTable : this.heads.keySet()) {
             SchemaTableTree rootSchemaTableTree = parseForStrategy(schemaTable);
 
-            rootSchemaTableTree.removeTopologyStrategyHasContainer();
-
             //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
             if (this.replacedStepTree.hasOrderBy()) {
                 if (isForMultipleQueries() || !replacedStepTree.orderByIsOrder() || this.replacedStepTree.orderByHasSelectOneStepAndForLabelNotInTree()) {

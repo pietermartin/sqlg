@@ -13,8 +13,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
-import org.umlg.sqlg.step.barrier.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.barrier.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -66,7 +66,10 @@ public class TestRepeatStepGraphOut extends BaseTest {
         b1.addEdge("bc", c3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal t = (DefaultGraphTraversal) this.sqlgGraph.traversal().V().repeat(__.out()).until(__.hasLabel("C"));
+        DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").repeat(__.out()).until(__.hasLabel("C"));
+        t.toList();
+
+        t = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().repeat(__.out()).until(__.hasLabel("C"));
         Assert.assertEquals(2, t.getSteps().size());
         printTraversalForm(t);
         Assert.assertEquals(2, t.getSteps().size());
@@ -831,7 +834,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
     }
 
     @Test
-    public void g_V_repeatXoutX_timesX2X() throws IOException {
+    public void g_V_repeatXoutX_timesX2X() {
         final List<DefaultGraphTraversal<Vertex, Vertex>> traversals = new ArrayList<>();
         loadModern();
         Graph graph = this.sqlgGraph;
@@ -877,7 +880,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
     }
 
     @Test
-    public void g_V_repeatXoutX_timesX2X_emit_path() throws IOException {
+    public void g_V_repeatXoutX_timesX2X_emit_path() {
         loadModern();
         Graph graph = this.sqlgGraph;
         assertModernGraph(graph, true, false);

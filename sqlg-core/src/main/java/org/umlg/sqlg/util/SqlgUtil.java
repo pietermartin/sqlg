@@ -23,7 +23,6 @@ import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.Emit;
-import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Topology;
 
@@ -782,14 +781,6 @@ public class SqlgUtil {
         } else {
             return foreignKey;
         }
-    }
-
-    public static void removeTopologyStrategyHasContainer(List<HasContainer> hasContainers) {
-        //remove the TopologyStrategy hasContainer
-        Optional<HasContainer> sqlgSchemaHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)).findAny();
-        Optional<HasContainer> globalUniqueIndexHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)).findAny();
-        sqlgSchemaHasContainer.ifPresent(hasContainers::remove);
-        globalUniqueIndexHasContainer.ifPresent(hasContainers::remove);
     }
 
     public static void dropDb(SqlDialect sqlDialect, Connection conn) {

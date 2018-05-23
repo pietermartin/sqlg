@@ -233,8 +233,8 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         executorService.awaitTermination(5, TimeUnit.SECONDS);
-        //+ 1 for the public schema and gui_schema i.e. globalUniqueIndex
-        Assert.assertEquals(schemas.size() + 2, this.sqlgGraph.getTopology().getSchemas().size());
+        //+ 1 for the public schema
+        Assert.assertEquals(schemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());
     }
 
     /**

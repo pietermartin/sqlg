@@ -9,15 +9,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -558,6 +556,9 @@ public class Schema implements TopologyInf {
         if (result == null) {
             result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         }
+//        if (result == null) {
+//            result = this.uncommittedGlobalUniqueIndexes.get()
+//        }
         return Optional.ofNullable(result);
     }
 
@@ -930,6 +931,7 @@ public class Schema implements TopologyInf {
             Vertex vertexVertex = null;
             Vertex vertexPropertyPartitionVertex = null;
             Vertex partitionParentVertex = null;
+            Element partitionParentParentElement = null;
             Vertex subPartition = null;
             Edge edgeToIdentierOrColocate = null;
             List<Set<String>> labelsList = vertexPath.labels();
@@ -948,6 +950,7 @@ public class Schema implements TopologyInf {
                             Preconditions.checkState(vertexPropertyPartitionVertex != null);
                             subPartition = vertexPath.get("subPartition");
                             partitionParentVertex = vertexPath.get(vertexPath.size() - 2);
+                            partitionParentParentElement = vertexPath.get(vertexPath.size() - 3);
                             break;
                         case "edgeToProperty":
                             edgeToIdentierOrColocate = vertexPath.get("edgeToProperty");
@@ -978,7 +981,7 @@ public class Schema implements TopologyInf {
                 }
                 this.vertexLabels.put(schemaName + "." + VERTEX_PREFIX + tableName, vertexLabel);
             }
-            if (subPartition == null && vertexPropertyPartitionVertex != null) {
+            if (vertexPropertyPartitionVertex != null) {
                 if (vertexPropertyPartitionVertex.label().equals("sqlg_schema.property")) {
                     //load the property
                     //Because there are multiple edges to the same property, identifier and distribution properties will be loaded multiple times.
@@ -995,7 +998,7 @@ public class Schema implements TopologyInf {
                 } else if (edgeToIdentierOrColocate != null && edgeToIdentierOrColocate.label().equals("vertex_colocate")) {
                     Preconditions.checkState(vertexPropertyPartitionVertex.label().equals("sqlg_schema.vertex"));
                     vertexLabel.addDistributionColocate(vertexPropertyPartitionVertex);
-                } else {
+                } else if (!partitionMap.containsKey(vertexPropertyPartitionVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME)) && (partitionParentParentElement == null || partitionParentParentElement.label().equals("vertex_partition"))) {
                     Partition partition = vertexLabel.addPartition(vertexPropertyPartitionVertex);
                     partitionMap.put(partition.getName(), partition);
                 }
@@ -1038,6 +1041,7 @@ public class Schema implements TopologyInf {
             Vertex outEdgeVertex = null;
             Vertex edgePropertyPartitionVertex = null;
             Vertex partitionParentVertex = null;
+            Element partitionParentParentElement = null;
             Vertex subPartition = null;
             Edge edgeIdentifierEdge = null;
             for (Set<String> labels : labelsList) {
@@ -1056,6 +1060,7 @@ public class Schema implements TopologyInf {
                             Preconditions.checkState(edgePropertyPartitionVertex != null);
                             subPartition = outEdgePath.get("subPartition");
                             partitionParentVertex = outEdgePath.get(outEdgePath.size() - 2);
+                            partitionParentParentElement = outEdgePath.get(outEdgePath.size() - 3);
                             break;
                         case "sqlgPathFakeLabel":
                             break;
@@ -1097,7 +1102,7 @@ public class Schema implements TopologyInf {
                 if (shardCount.isPresent()) {
                     edgeLabel.setShardCount(shardCount.value());
                 }
-                if (subPartition == null && edgePropertyPartitionVertex != null) {
+                if (edgePropertyPartitionVertex != null) {
                     if (edgePropertyPartitionVertex.label().equals("sqlg_schema.property")) {
                         //load the property
                         edgeLabel.addProperty(edgePropertyPartitionVertex);
@@ -1110,7 +1115,7 @@ public class Schema implements TopologyInf {
                     } else if (edgeIdentifierEdge != null && edgeIdentifierEdge.label().equals("edge_colocate")) {
                         Preconditions.checkState(edgePropertyPartitionVertex.label().equals("sqlg_schema.vertex"));
                         edgeLabel.addDistributionColocate(edgePropertyPartitionVertex);
-                    } else {
+                    } else if (!partitionMap.containsKey(edgePropertyPartitionVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME)) && (partitionParentParentElement == null || partitionParentParentElement.label().equals("edge_partition"))) {
                         Partition partition = edgeLabel.addPartition(edgePropertyPartitionVertex);
                         partitionMap.put(partition.getName(), partition);
                     }
@@ -1539,7 +1544,7 @@ public class Schema implements TopologyInf {
                     Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(abstractLabelName);
                     if (!vertexLabelOptional.isPresent()) {
                         Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(abstractLabelName);
-                        Preconditions.checkState(edgeLabelOptional.isPresent(), "VertexLabel or EdgeLabl must be present for GlobalUniqueIndex fromNotifyJson");
+                        Preconditions.checkState(edgeLabelOptional.isPresent(), "VertexLabel or EdgeLabel \"%s\" must be present for GlobalUniqueIndex fromNotifyJson", abstractLabelName);
                         abstractLabel = edgeLabelOptional.get();
                     } else {
                         abstractLabel = vertexLabelOptional.get();

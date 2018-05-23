@@ -384,6 +384,7 @@ public abstract class BaseStrategy {
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
                 if (isNotWithMultipleColumnValue(hasContainerHolder)) {
                     toRemoveHasContainers.addAll(isForSqlgSchema(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(isForGuiSchema(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
                     //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                     //i.e. for neq and without 'or' logic
@@ -446,6 +447,16 @@ public abstract class BaseStrategy {
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)) {
                 currentReplacedStep.markForSqlgSchema();
+                return Collections.singletonList(hasContainer);
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private List<HasContainer> isForGuiSchema(ReplacedStep<?, ?> currentReplacedStep, List<HasContainer> hasContainers) {
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)) {
+                currentReplacedStep.markForGuiSchema();
                 return Collections.singletonList(hasContainer);
             }
         }
@@ -615,9 +626,10 @@ public abstract class BaseStrategy {
                 if (step instanceof HasStep) {
                     HasStep<?> hasStep = (HasStep) step;
                     for (HasContainer hasContainer : hasStep.getHasContainers()) {
-                        if (hasContainerKeyNotIdOrLabel(hasContainer) && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+                        boolean hasContainerKeyNotIdOrLabel = hasContainerKeyNotIdOrLabel(hasContainer);
+                        if (hasContainerKeyNotIdOrLabel && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
                             andOrHasContainer.addHasContainer(hasContainer);
-                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof AndP) {
+                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getPredicate() instanceof AndP) {
                             AndP<?> andP = (AndP) hasContainer.getPredicate();
                             List<? extends P<?>> predicates = andP.getPredicates();
                             if (predicates.size() == 2) {
@@ -627,7 +639,7 @@ public abstract class BaseStrategy {
                                     andOrHasContainer.addHasContainer(hasContainer);
                                 }
                             }
-                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof OrP) {
+                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getPredicate() instanceof OrP) {
                             OrP<?> orP = (OrP) hasContainer.getPredicate();
                             List<? extends P<?>> predicates = orP.getPredicates();
                             if (predicates.size() == 2) {
@@ -635,7 +647,7 @@ public abstract class BaseStrategy {
                                     andOrHasContainer.addHasContainer(hasContainer);
                                 }
                             }
-                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
+                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getBiPredicate() instanceof Text ||
                                 hasContainer.getBiPredicate() instanceof FullText) {
                             andOrHasContainer.addHasContainer(hasContainer);
                         } else {
@@ -760,7 +772,8 @@ public abstract class BaseStrategy {
     }
 
     private boolean hasContainerKeyNotIdOrLabel(HasContainer hasContainer) {
-        return !(hasContainer.getKey().equals(T.id.getAccessor()) || (hasContainer.getKey().equals(T.label.getAccessor())));
+        return !(hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) || hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX) ||
+                hasContainer.getKey().equals(T.id.getAccessor()) || (hasContainer.getKey().equals(T.label.getAccessor())));
     }
 
     private List<HasContainer> optimizeIdHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {

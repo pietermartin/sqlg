@@ -3,7 +3,6 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,7 +25,6 @@ public class GremlinParser {
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedStepTree.getDepth());
         Set<SchemaTableTree> toRemove = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
-            SqlgUtil.removeTopologyStrategyHasContainer(rootSchemaTableTree.getHasContainers());
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
             schemaTableTrees.add(rootSchemaTableTree);
             replacedStepTree.walkReplacedSteps(schemaTableTrees);

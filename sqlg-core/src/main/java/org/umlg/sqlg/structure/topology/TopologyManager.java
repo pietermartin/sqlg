@@ -173,8 +173,8 @@ public class TopologyManager {
                     .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
                     .toList();
-            Preconditions.checkState(!schemas.isEmpty(), "Schema %s does not exist in Sqlg's topology. BUG!!!", schema);
-            Preconditions.checkState(schemas.size() == 1, "Multiple %s found in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(!schemas.isEmpty(), "Schema \"%s\" does not exist in Sqlg's topology. BUG!!!", schema);
+            Preconditions.checkState(schemas.size() == 1, "Multiple \"%s\" found in Sqlg's topology. BUG!!!", schema);
             Preconditions.checkState(!tableName.startsWith(VERTEX_PREFIX));
             Vertex schemaVertex = schemas.get(0);
 

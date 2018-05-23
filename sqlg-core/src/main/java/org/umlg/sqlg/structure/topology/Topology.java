@@ -67,6 +67,7 @@ public class Topology {
     private Map<String, Set<ForeignKey>> edgeForeignKeyCache;
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     private Map<String, Schema> schemas = new HashMap<>();
+    private Map<String, Schema> globalUniqueIndexSchema = new HashMap<>();
 
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
     private Set<String> uncommittedRemovedSchemas = new HashSet<>();
@@ -515,7 +516,7 @@ public class Topology {
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(sqlgGraph, this, sqlgGraph.getSqlDialect().getPublicSchema()));
 
         //add the global unique index schema
-        this.schemas.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));
+        this.globalUniqueIndexSchema.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));
 
         //populate the schema's allEdgesCache
         sqlgSchema.cacheEdgeLabels();
@@ -564,7 +565,7 @@ public class Topology {
     }
 
     public List<TopologyValidationError> getValidationErrors() {
-        return validationErrors;
+        return this.validationErrors;
     }
 
     public boolean isImplementingForeignKeys() {
@@ -938,7 +939,7 @@ public class Topology {
 
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
-        Schema globalUniqueIndexSchema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA).orElseThrow(() -> new IllegalStateException("BUG: Global unique index schema " + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + " must exist"));
+        Schema globalUniqueIndexSchema = getGlobalUniqueIndexSchema();
         return globalUniqueIndexSchema.ensureGlobalUniqueIndexExist(properties);
     }
 
@@ -1010,6 +1011,9 @@ public class Topology {
                 for (Schema schema : this.schemas.values()) {
                     schema.afterCommit();
                 }
+                for (Schema schema : this.globalUniqueIndexSchema.values()) {
+                    schema.afterCommit();
+                }
             } finally {
                 z_internalInternalTopologyMapWriteUnLock();
                 z_internalSqlWriteUnlock();
@@ -1075,13 +1079,15 @@ public class Topology {
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
             Optional<Schema> schemaOptional = getSchema(schemaName);
-            if (schemaName.equals(SQLG_SCHEMA)) {
-                Preconditions.checkState(schemaOptional.isPresent(), "\"public\" schema must always be present.");
+            if (schemaName.equals(SQLG_SCHEMA) || schemaName.equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                Preconditions.checkState(schemaOptional.isPresent(), "\"%s\" schema must always be present.", schemaName);
             }
             Schema schema;
             if (!schemaOptional.isPresent()) {
                 schema = Schema.loadUserSchema(this, schemaName);
-                this.schemas.put(schemaName, schema);
+                if (!schema.getName().equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                    this.schemas.put(schemaName, schema);
+                }
             } else {
                 schema = schemaOptional.get();
 
@@ -1095,11 +1101,13 @@ public class Topology {
         schemaVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
-            Optional<Schema> schemaOptional = getSchema(schemaName);
-            Preconditions.checkState(schemaOptional.isPresent(), "schema \"%s\" must be present when loading in edges.", schemaName);
-            @SuppressWarnings("OptionalGetWithoutIsPresent")
-            Schema schema = schemaOptional.get();
-            schema.loadInEdgeLabels(traversalSource, schemaVertex);
+            if (!schemaName.equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                Optional<Schema> schemaOptional = getSchema(schemaName);
+                Preconditions.checkState(schemaOptional.isPresent(), "schema \"%s\" must be present when loading in edges.", schemaName);
+                @SuppressWarnings("OptionalGetWithoutIsPresent")
+                Schema schema = schemaOptional.get();
+                schema.loadInEdgeLabels(traversalSource, schemaVertex);
+            }
         }
 
         //Load the globalUniqueIndexes.
@@ -1254,6 +1262,23 @@ public class Topology {
                 }
                 topologyNode.set("uncommittedSchemas", unCommittedSchemaArrayNode);
             }
+            ArrayNode globalUniqueIndexCommittedSchemaArrayNode = null;
+            for (Schema schema : this.globalUniqueIndexSchema.values()) {
+                Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+                if (jsonNodeOptional.isPresent() && globalUniqueIndexCommittedSchemaArrayNode == null) {
+                    globalUniqueIndexCommittedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                if (jsonNodeOptional.isPresent()) {
+                    //noinspection ConstantConditions
+                    globalUniqueIndexCommittedSchemaArrayNode.add(jsonNodeOptional.get());
+                }
+            }
+            if (globalUniqueIndexCommittedSchemaArrayNode != null) {
+                if (topologyNode == null) {
+                    topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                topologyNode.set("globalUniqueIndexSchema", globalUniqueIndexCommittedSchemaArrayNode);
+            }
             if (topologyNode != null) {
                 return Optional.of(topologyNode);
             } else {
@@ -1293,7 +1318,7 @@ public class Topology {
         z_internalTopologyMapWriteLock();
         try {
             //First do all the out edges. The in edge logic assumes the out edges are present.
-            for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
+            for (String s : Arrays.asList("uncommittedSchemas", "schemas", "globalUniqueIndexSchema")) {
                 ArrayNode schemas = (ArrayNode) log.get(s);
                 if (schemas != null) {
                     //first load all the schema as they might be required later
@@ -1423,30 +1448,31 @@ public class Topology {
     }
 
     public Schema getGlobalUniqueIndexSchema() {
-        Optional<Schema> schema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
-        Preconditions.checkState(schema.isPresent(), "BUG: The global unique index schema %s must always be present", Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
-        //noinspection OptionalGetWithoutIsPresent
-        return schema.get();
+        return this.globalUniqueIndexSchema.get(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
     }
 
     public Optional<Schema> getSchema(String schema) {
         if (isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedSchemas.contains(schema)) {
             return Optional.empty();
         }
-        z_internalTopologyMapReadLock();
-        try {
-            Schema result = this.schemas.get(schema);
-            if (result == null) {
-                if (isSqlWriteLockHeldByCurrentThread()) {
-                    result = this.uncommittedSchemas.get(schema);
-                }
+        if (schema.equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+            return Optional.of(getGlobalUniqueIndexSchema());
+        } else {
+            z_internalTopologyMapReadLock();
+            try {
+                Schema result = this.schemas.get(schema);
                 if (result == null) {
-                    result = this.metaSchemas.get(schema);
+                    if (isSqlWriteLockHeldByCurrentThread()) {
+                        result = this.uncommittedSchemas.get(schema);
+                    }
+                    if (result == null) {
+                        result = this.metaSchemas.get(schema);
+                    }
                 }
+                return Optional.ofNullable(result);
+            } finally {
+                z_internalTopologyMapReadUnLock();
             }
-            return Optional.ofNullable(result);
-        } finally {
-            z_internalTopologyMapReadUnLock();
         }
     }
 
@@ -1543,15 +1569,31 @@ public class Topology {
         return getAllTables(false);
     }
 
+    public Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema) {
+        return getAllTables(sqlgSchema, false);
+    }
+
     /**
      * get all tables by schema, with their properties
      *
      * @param sqlgSchema do we want the sqlg_schema tables?
      * @return a map of all tables and their properties.
      */
-    public Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema) {
+    public Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema, boolean guiSchema) {
+        Preconditions.checkState(!(sqlgSchema && guiSchema), "Both sqlgSchema and guiSchema can not be true. Only one or none.");
         if (sqlgSchema) {
             return Collections.unmodifiableMap(this.sqlgSchemaTableCache);
+        } else if (guiSchema) {
+            Map<String, Map<String, PropertyType>> result = new HashMap<>();
+            for (GlobalUniqueIndex globalUniqueIndex : this.getGlobalUniqueIndexes()) {
+                Map<String, PropertyType> properties = new LinkedHashMap<String, PropertyType>() {{
+                    put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, globalUniqueIndex.getProperties().stream().findAny().orElseThrow(IllegalStateException::new).getPropertyType());
+                    put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, PropertyType.STRING);
+                    put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, PropertyType.STRING);
+                }};
+                result.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + Topology.VERTEX_PREFIX + globalUniqueIndex.getName(), properties);
+            }
+            return Collections.unmodifiableMap(result);
         } else {
             z_internalTopologyMapReadLock();
             try {
@@ -1607,7 +1649,7 @@ public class Topology {
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        Map<String, PropertyType> result = getAllTables(schemaTable.getSchema().equals(Topology.SQLG_SCHEMA)).get(schemaTable.toString());
+        Map<String, PropertyType> result = getAllTables(schemaTable.getSchema().equals(Topology.SQLG_SCHEMA), schemaTable.getSchema().equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)).get(schemaTable.toString());
         if (result != null) {
             return Collections.unmodifiableMap(result);
         }

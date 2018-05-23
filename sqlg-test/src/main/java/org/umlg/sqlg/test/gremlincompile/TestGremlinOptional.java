@@ -25,7 +25,7 @@ public class TestGremlinOptional extends BaseTest {
     public void testOptionalWithNestedOptionalAndRepeat() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "halo");
         a1.addEdge("ab", b1);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
@@ -628,6 +628,7 @@ public class TestGremlinOptional extends BaseTest {
         }
         Assert.assertTrue(paths.isEmpty());
     }
+
     @Test
     public void testOptionalToSelf() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

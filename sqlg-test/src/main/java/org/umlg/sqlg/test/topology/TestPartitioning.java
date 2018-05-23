@@ -12,7 +12,6 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -254,7 +253,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testReloadEdgeLabelWithSubPartitions() throws Exception {
+    public void testReloadEdgeLabelWithSubPartitions() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensureVertexLabelExist(
                 "A",
@@ -746,7 +745,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testEdgeSubPartitioningList() throws UnsupportedEncodingException {
+    public void testEdgeSubPartitioningList() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensureVertexLabelExist("A");
         VertexLabel b = publicSchema.ensureVertexLabelExist("B");

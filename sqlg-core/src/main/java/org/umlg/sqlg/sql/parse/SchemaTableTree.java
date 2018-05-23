@@ -109,15 +109,6 @@ public class SchemaTableTree {
 
     private Set<String> restrictedProperties = null;
 
-
-    public void removeTopologyStrategyHasContainer() {
-        SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
-        for (SchemaTableTree child : children) {
-            SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
-            child.removeTopologyStrategyHasContainer();
-        }
-    }
-
     public enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -133,7 +124,7 @@ public class SchemaTableTree {
         this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
-        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()), Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
     }
@@ -176,7 +167,7 @@ public class SchemaTableTree {
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
         this.drop = drop;
-        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()), Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
         initializeAliasColumnNameMaps();
@@ -1781,29 +1772,6 @@ public class SchemaTableTree {
 	                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
 	                }
             	}
-            String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
-            cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
-            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
-            }
-        }
-    }
-
-    private String printLabeledOuterFromClauseFor(String sql, int counter, Map<String, String> columnNameAliasMapCopy) {
-        Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.getSchemaTable().toString());
-        int count = 1;
-        for (Map.Entry<String, PropertyType> property : propertyTypeMap.entrySet()) {
-            sql += " a" + counter + ".";
-            String alias = this.labeledMappedAliasPropertyNameForOuterFromClause(property.getKey(), columnNameAliasMapCopy);
-            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
-            for (String postFix : property.getValue().getPostFixes()) {
-                sql += ", ";
-                alias = this.mappedAliasPropertyName(property.getKey() + postFix, columnNameAliasMapCopy);
-                sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
-            }
-            if (count++ < propertyTypeMap.size()) {
-                sql += ", ";
             }
         }
     }
@@ -2381,6 +2349,8 @@ public class SchemaTableTree {
                         return true;
                     }
                 }
+            } else {
+                throw new IllegalStateException();
             }
         }
         return false;
