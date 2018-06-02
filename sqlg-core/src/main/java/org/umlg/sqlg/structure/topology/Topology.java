@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -59,7 +60,7 @@ public class Topology {
     //allTableCache, schemaTableForeignKeyCache, edgeForeignKeyCache, metaSchemas and schemas are protected by the topologyMapLock.
     private ReentrantReadWriteLock topologyMapLock;
 
-    private Map<String, Map<String, PropertyType>> allTableCache = new HashMap<>();
+    private Map<String, Map<String, PropertyType>> allTableCache = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> sqlgSchemaTableCache = new HashMap<>();
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
