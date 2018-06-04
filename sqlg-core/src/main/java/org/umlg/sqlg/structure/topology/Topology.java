@@ -599,6 +599,7 @@ public class Topology {
                             ObjectNode log = logVertex.value("log");
                             fromNotifyJson(timestamp, log);
                         }
+                        this.notificationTimestamps.add(timestamp2);
                     }
                 }
             }
