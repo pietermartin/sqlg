@@ -349,6 +349,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         if (this.queryResult != null) {
             try {
                 this.queryResult.getRight().close();
+                this.sqlgGraph.tx().getPreparedStatementCache().remove(this.queryResult.getRight());
                 this.queryResult = null;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
