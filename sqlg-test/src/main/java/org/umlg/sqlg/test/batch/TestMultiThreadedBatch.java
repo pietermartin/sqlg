@@ -39,7 +39,7 @@ public class TestMultiThreadedBatch extends BaseTest {
     public void testMultiThreadAddVertex() throws InterruptedException {
         sqlgGraph.tx().rollback();
         Set<Integer> tables = new ConcurrentSkipListSet<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         for (int j = 0; j < 50; j++) {
             executorService.submit(() -> {
                 sqlgGraph.tx().rollback();
@@ -51,11 +51,13 @@ public class TestMultiThreadedBatch extends BaseTest {
                         Vertex v1 = sqlgGraph.addVertex(T.label, "Person" + String.valueOf(randomInt), "name", randomInt);
                         Vertex v2 = sqlgGraph.addVertex(T.label, "Person" + String.valueOf(randomInt), "name", randomInt);
                         v1.addEdge(String.valueOf(randomInt), v2, "name", randomInt);
-                        tables.add(randomInt);
+                        
                     }
+                    tables.add(randomInt);
                     sqlgGraph.tx().commit();
                     sqlgGraph.tx().normalBatchModeOn();
                 } catch (Exception e) {
+                	e.printStackTrace();
                     Assert.fail(e.getMessage());
                 }
             });
@@ -63,22 +65,74 @@ public class TestMultiThreadedBatch extends BaseTest {
         executorService.shutdown();
         executorService.awaitTermination(60000, TimeUnit.SECONDS);
         Assert.assertEquals(50, tables.size());
-        testNultiThreadAddVertex_assert(this.sqlgGraph, tables);
+        testMultiThreadAddVertex_assert(this.sqlgGraph, tables);
         if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
-            testNultiThreadAddVertex_assert(this.sqlgGraph1, tables);
+            testMultiThreadAddVertex_assert(this.sqlgGraph1, tables);
         }
     }
+    
 
-    private void testNultiThreadAddVertex_assert(SqlgGraph sqlgGraph, Set<Integer> tables) {
+    private void testMultiThreadAddVertex_assert(SqlgGraph sqlgGraph, Set<Integer> tables) {
         for (Integer i : tables) {
             Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + String.valueOf(i)).isPresent());
             Assert.assertEquals(2000, sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
-            List<Vertex> persons = sqlgGraph.traversal().V().<Vertex>has(T.label, "Person" + String.valueOf(i)).toList();
+            List<Vertex> persons = sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).toList();
             for (Vertex v : persons) {
                 Assert.assertEquals(i, v.value("name"));
             }
         }
     }
+    
+    @Test
+    public void testMultiThreadAddVertexSameLabel() throws InterruptedException {
+        sqlgGraph.tx().rollback();
+        Set<Integer> tables = new ConcurrentSkipListSet<>();
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        for (int j = 0; j < 50; j++) {
+            executorService.submit(() -> {
+                sqlgGraph.tx().rollback();
+                sqlgGraph.tx().normalBatchModeOn();
+                final Random random = new Random();
+                int randomInt = random.nextInt();
+                while (tables.contains(randomInt)) {
+                	randomInt = random.nextInt();
+                }
+                try {
+                    for (int i = 0; i < 1000; i++) {
+                    	 
+                        Vertex v1 = sqlgGraph.addVertex(T.label, "House" , "name", randomInt);
+                        Vertex v2 = sqlgGraph.addVertex(T.label, "Street" , "name", randomInt);
+                        v1.addEdge("Overlooks", v2, "name", randomInt);
+                       
+                    }
+                    sqlgGraph.tx().commit();
+                    tables.add(randomInt);
+                    sqlgGraph.tx().normalBatchModeOn();
+                } catch (Exception e) {
+                	e.printStackTrace();
+                    Assert.fail(e.getMessage());
+                }
+            });
+        }
+        executorService.shutdown();
+        executorService.awaitTermination(60000, TimeUnit.SECONDS);
+        Assert.assertEquals(50, tables.size());
+        testMultiThreadAddVertexSameLabel_assert(this.sqlgGraph, tables);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testMultiThreadAddVertexSameLabel_assert(this.sqlgGraph1, tables);
+        }
+    }
 
+    private void testMultiThreadAddVertexSameLabel_assert(SqlgGraph sqlgGraph, Set<Integer> tables) {
+    	 Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "House" ).isPresent());
+    	 Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "Street" ).isPresent());
+    	 
+    	for (Integer i : tables) {
+            Assert.assertEquals(String.valueOf(i),1000, sqlgGraph.traversal().V().has(T.label, "House").has("name", i).count().next().intValue());
+            Assert.assertEquals(String.valueOf(i),1000, sqlgGraph.traversal().V().has(T.label, "House").has("name", i).out("Overlooks").has("name",i).count().next().intValue());
+        	
+    	}
+    }
 }
