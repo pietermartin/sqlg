@@ -1,5 +1,4 @@
 package org.umlg.sqlg.structure;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -54,9 +53,17 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
+@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
+        method = "shouldGenerateCorrectTraversers",
+        reason = "Tests assumes traversers.")
+@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IncidentToAdjacentStrategyProcessTest",
+        method = "shouldGenerateCorrectTraversers",
+        reason = "Tests assumes traversers.")
 //Start remove these for 3.2.6
-@OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+        method = "shouldDetachVertexPropertyWhenRemoved",
+        reason = "Tests assumes elements are auto synchronized.")
+@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
         method = "shouldDetachVertexPropertyWhenRemoved",
         reason = "Tests assumes elements are auto synchronized.")
 @OptOut(
