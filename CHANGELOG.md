@@ -7,6 +7,9 @@ requested properties and not for all properties as is the default.
 * Remove auto sorting of columns on table creation. It should be done at the application level.
 
 ##1.5.1
+* Fix concurrency bug on Postgresql streaming batch mode. The id sequence is incremented before the copy insert happens.
+* Added MySql support. Uses MariaDb dialect but the MySql driver.
+* Improve memory consumption by removing closed prepared statements from the cache.
 * Add the ability to set the `fetchSize` on the jdbc `java.sql.Statement`.
 * Fix bug [#272](https://github.com/pietermartin/sqlg/issues/272)
 * Make gremlin console work. Tinkerpop made some minor changes to the console that made it stop working.

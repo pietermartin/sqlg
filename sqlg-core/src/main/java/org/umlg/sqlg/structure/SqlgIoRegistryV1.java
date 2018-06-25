@@ -8,17 +8,17 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
  * Date: 2015/05/07
  * Time: 8:05 PM
  */
-public class SqlgIoRegistry extends AbstractIoRegistry {
+public class SqlgIoRegistryV1 extends AbstractIoRegistry {
 
-    private static final SqlgIoRegistry INSTANCE = new SqlgIoRegistry();
+    private static final SqlgIoRegistryV1 INSTANCE = new SqlgIoRegistryV1();
 
-    private SqlgIoRegistry() {
-        final SqlgSimpleModule sqlgSimpleModule = new SqlgSimpleModule();
-        register(GraphSONIo.class, null, sqlgSimpleModule);
+    private SqlgIoRegistryV1() {
+        final SqlgSimpleModuleV1 sqlgSimpleModuleV1 = new SqlgSimpleModuleV1();
+        register(GraphSONIo.class, null, sqlgSimpleModuleV1);
         register(GryoIo.class, RecordId.class, null);
     }
 
-    public static SqlgIoRegistry instance() {
+    public static SqlgIoRegistryV1 instance() {
         return INSTANCE;
     }
 }
