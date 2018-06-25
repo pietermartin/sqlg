@@ -312,7 +312,7 @@ public class RecordId implements KryoSerializable, Comparable {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField(GraphSONTokens.CLASS, RecordId.class.getName());
             jsonGenerator.writeObjectField("schemaTable", recordId.getSchemaTable());
-            jsonGenerator.writeNumberField("id", recordId.getId());
+            jsonGenerator.writeNumberField("id", recordId.sequenceId());
             jsonGenerator.writeEndObject();
         }
     }
