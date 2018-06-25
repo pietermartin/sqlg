@@ -555,9 +555,9 @@ public class SqlgGraph implements Graph {
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
         if (builder.requiresVersion(GryoVersion.V1_0) || builder.requiresVersion(GraphSONVersion.V1_0))
-            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistry.instance())).create();
+            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistryV1.instance())).create();
         else if (builder.requiresVersion(GraphSONVersion.V2_0))   // there is no gryo v2
-            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistry.instance())).create();
+            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistryV2.instance())).create();
         else
             return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistryV3.instance())).create();
     }

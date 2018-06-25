@@ -1,11 +1,10 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
-import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
-import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
-import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
-import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.shaded.jackson.core.*;
 import org.apache.tinkerpop.shaded.jackson.databind.DeserializationContext;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
@@ -160,6 +159,54 @@ public class RecordId implements KryoSerializable, Comparable {
             return first;
         }
         return this.getId().compareTo(other.getId());
+    }
+
+    public static class RecordIdJacksonSerializerV1d0 extends StdSerializer<RecordId> {
+        public RecordIdJacksonSerializerV1d0() {
+            super(RecordId.class);
+        }
+
+        @Override
+        public void serialize(final RecordId recordId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
+                throws IOException, JsonGenerationException {
+            // when types are not embedded, stringify or resort to JSON primitive representations of the
+            // type so that non-jvm languages can better interoperate with the TinkerPop stack.
+            jsonGenerator.writeString(recordId.toString());
+        }
+
+        @Override
+        public void serializeWithType(final RecordId recordId, final JsonGenerator jsonGenerator,
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+
+            jsonGenerator.writeStartObject();
+            jsonGenerator.writeStringField(GraphSONTokens.CLASS, RecordId.class.getName());
+            jsonGenerator.writeObjectField("schemaTable", recordId.getSchemaTable());
+            jsonGenerator.writeNumberField("id", recordId.getId());
+            jsonGenerator.writeEndObject();
+        }
+    }
+
+    static class RecordIdJacksonDeserializerV1d0 extends StdDeserializer<RecordId> {
+        RecordIdJacksonDeserializerV1d0() {
+            super(RecordId.class);
+        }
+
+        @Override
+        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            org.apache.tinkerpop.shaded.jackson.core.JsonToken jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(JsonToken.START_OBJECT == jsonToken);
+            SchemaTable schemaTable = deserializationContext.readValue(jsonParser, SchemaTable.class);
+            jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(org.apache.tinkerpop.shaded.jackson.core.JsonToken.FIELD_NAME == jsonToken);
+            Preconditions.checkState("id".equals(jsonParser.getValueAsString()));
+            jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(JsonToken.VALUE_NUMBER_INT == jsonToken);
+            long id = jsonParser.getValueAsLong();
+            jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(org.apache.tinkerpop.shaded.jackson.core.JsonToken.END_OBJECT == jsonToken);
+            return RecordId.from(schemaTable, id);
+        }
+
     }
 
     @SuppressWarnings("DuplicateThrows")

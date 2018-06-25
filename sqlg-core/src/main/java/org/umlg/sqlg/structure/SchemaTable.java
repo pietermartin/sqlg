@@ -1,5 +1,8 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
@@ -10,8 +13,6 @@ import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StdDeserializer;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdScalarSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
-import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.umlg.sqlg.structure.topology.Topology;
 
 import java.io.IOException;
@@ -138,6 +139,57 @@ public class SchemaTable implements Serializable, Comparable {
 
     public boolean isWithPrefix() {
         return this.table.startsWith(Topology.VERTEX_PREFIX) || this.table.startsWith(Topology.EDGE_PREFIX);
+    }
+
+    static class SchemaTableIdJacksonSerializerV1d0 extends StdSerializer<SchemaTable> {
+        SchemaTableIdJacksonSerializerV1d0() {
+            super(SchemaTable.class);
+        }
+
+        @Override
+        public void serialize(final SchemaTable schemaTable, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
+                throws IOException, JsonGenerationException {
+            // when types are not embedded, stringify or resort to JSON primitive representations of the
+            // type so that non-jvm languages can better interoperate with the TinkerPop stack.
+            jsonGenerator.writeString(schemaTable.toString());
+        }
+
+        @Override
+        public void serializeWithType(final SchemaTable schemaTable, final JsonGenerator jsonGenerator,
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+            // when the type is included add "class" as a key and then try to utilize as much of the
+            // default serialization provided by jackson data-bind as possible.  for example, write
+            // the uuid as an object so that when jackson serializes it, it uses the uuid serializer
+            // to write it out with the type.  in this way, data-bind should be able to deserialize
+            // it back when types are embedded.
+            jsonGenerator.writeStartObject();
+            jsonGenerator.writeStringField(GraphSONTokens.CLASS, SchemaTable.class.getName());
+            jsonGenerator.writeStringField("schema", schemaTable.getSchema());
+            jsonGenerator.writeStringField("table", schemaTable.getTable());
+            jsonGenerator.writeEndObject();
+        }
+    }
+
+    static class SchemaTableIdJacksonDeserializerV1d0 extends StdDeserializer<SchemaTable> {
+        SchemaTableIdJacksonDeserializerV1d0() {
+            super(SchemaTable.class);
+        }
+
+        @Override
+        public SchemaTable deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            org.apache.tinkerpop.shaded.jackson.core.JsonToken jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(org.apache.tinkerpop.shaded.jackson.core.JsonToken.VALUE_STRING == jsonToken);
+            String schema = deserializationContext.readValue(jsonParser, String.class);
+            jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(org.apache.tinkerpop.shaded.jackson.core.JsonToken.FIELD_NAME == jsonToken);
+            jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(org.apache.tinkerpop.shaded.jackson.core.JsonToken.VALUE_STRING == jsonToken);
+            String table = deserializationContext.readValue(jsonParser, String.class);
+            jsonToken = jsonParser.nextToken();
+            Preconditions.checkState(org.apache.tinkerpop.shaded.jackson.core.JsonToken.END_OBJECT == jsonToken);
+            return SchemaTable.of(schema, table);
+        }
+
     }
 
     @SuppressWarnings("DuplicateThrows")
