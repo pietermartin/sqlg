@@ -51,7 +51,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        this.sqlgGraph.bulkAddEdges("A", "B", "AB", Pair.of("index", "index"), uids);
+        this.sqlgGraph.bulkAddEdges("A", "B", "AB", Pair.of("index", "index"), uids, "x", "y");
         this.sqlgGraph.tx().commit();
 
         testBulkEdges_assert(this.sqlgGraph);
@@ -64,6 +64,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
     private void testBulkEdges_assert(SqlgGraph sqlgGraph) { assertEquals(10, sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
         assertEquals(100, sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
         assertEquals(100, sqlgGraph.traversal().V().hasLabel("A").out().count().next(), 0);
+        assertEquals("y", sqlgGraph.traversal().E().hasLabel("AB").values("x").dedup().next());
     }
 
     @Test
