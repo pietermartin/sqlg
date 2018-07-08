@@ -2631,7 +2631,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable out, SchemaTable in, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable out, SchemaTable in, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids, Map<String, PropertyType> edgeColumns, Map<String, Object> edgePropertyMap) {
         if (!sqlgGraph.tx().isInStreamingBatchMode() && !sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
@@ -2669,7 +2669,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", in.toString());
 
             //noinspection OptionalGetWithoutIsPresent
-            sqlgGraph.getTopology().ensureEdgeLabelExist(edgeLabel, outVertexLabelOptional.get(), inVertexLabelOptional.get(), Collections.emptyMap());
+            sqlgGraph.getTopology().ensureEdgeLabelExist(edgeLabel, outVertexLabelOptional.get(), inVertexLabelOptional.get(), edgeColumns);
 
             StringBuilder sql = new StringBuilder("INSERT INTO \n");
             sql.append(this.maybeWrapInQoutes(out.getSchema()));
@@ -2679,12 +2679,20 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + Topology.OUT_VERTEX_COLUMN_END));
             sql.append(",");
             sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + Topology.IN_VERTEX_COLUMN_END));
+            edgePropertyMap.keySet().forEach(k -> sql.append(',').append(this.maybeWrapInQoutes(k)));
             sql.append(") \n");
             sql.append("select _out.\"ID\" as \"");
             sql.append(out.getSchema() + "." + out.getTable() + Topology.OUT_VERTEX_COLUMN_END);
             sql.append("\", _in.\"ID\" as \"");
             sql.append(in.getSchema() + "." + in.getTable() + Topology.IN_VERTEX_COLUMN_END);
-            sql.append("\" FROM ");
+            sql.append("\"");
+            edgePropertyMap.forEach((k, v) -> {
+                sql.append(',');
+                sql.append(this.valueToValuesString(edgeColumns.get(k), v));
+                sql.append(" as ");
+                sql.append(this.maybeWrapInQoutes(k));
+            });
+            sql.append(" FROM ");
             sql.append(this.maybeWrapInQoutes(in.getSchema()));
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(VERTEX_PREFIX + in.getTable()));
