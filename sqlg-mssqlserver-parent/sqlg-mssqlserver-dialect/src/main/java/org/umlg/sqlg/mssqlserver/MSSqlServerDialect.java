@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
+import com.microsoft.sqlserver.jdbc.SQLServerBulkCopyOptions;
 import com.microsoft.sqlserver.jdbc.SQLServerConnection;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.Range;
@@ -926,6 +927,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             try {
                 SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
                 try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
+                    SQLServerBulkCopyOptions options = new SQLServerBulkCopyOptions();
+                    options.setTableLock(true);
+                    bulkCopy.setBulkCopyOptions(options);
                     if (schemaTable.isTemporary()) {
                         bulkCopy.setDestinationTableName(
                                 sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().temporaryTablePrefix() + VERTEX_PREFIX + schemaTable.getTable())

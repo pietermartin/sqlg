@@ -476,7 +476,7 @@ public class SqlgGraph implements Graph {
     }
 
 
-    public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+    public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids, Object... keyValues) {
         if (!(this.sqlDialect instanceof SqlBulkDialect)) {
             throw new UnsupportedOperationException(String.format("Bulk mode is not supported for %s", this.sqlDialect.dialectName()));
         }
@@ -487,7 +487,8 @@ public class SqlgGraph implements Graph {
         if (!uids.isEmpty()) {
             SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel);
             SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel);
-            sqlBulkDialect.bulkAddEdges(this, outSchemaTable, inSchemaTable, edgeLabel, idFields, uids);
+            Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+            sqlBulkDialect.bulkAddEdges(this, outSchemaTable, inSchemaTable, edgeLabel, idFields, uids, keyValueMapTriple.getLeft(), keyValueMapTriple.getRight());
         }
     }
 

@@ -1,10 +1,10 @@
 dist: trusty
 sudo: required
+services:
+  - docker
 before_install:
-  - sudo sed -i -e 's/max_connections.*/max_connections = 1000/' /etc/postgresql/9.6/main/postgresql.conf
-  - sudo sed -i -e 's/#max_locks_per_transaction.*/max_locks_per_transaction = 256/' /etc/postgresql/9.6/main/postgresql.conf
-  - sudo sed -i -e 's/#shared_buffers.*/shared_buffers = 1024MB/' /etc/postgresql/9.6/main/postgresql.conf
-  - sudo /etc/init.d/postgresql restart
+  - sudo /etc/init.d/postgresql stop
+  - docker run -d -p 5432:5432 --name sqlg-testdb-postgres $(docker build -q sqlg-testdb-postgres/)
 language: java
 jdk:
   - oraclejdk8
@@ -15,20 +15,6 @@ script:
   - sudo rm /etc/mavenrc
   - export MAVEN_OPTS="-Djava.security.egd=file:/dev/./urandom -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx5012m"
   - mvn -e -T40 test
-addons:
-  postgresql: "9.6"
-before_script:
-  - psql -c 'create database "sqlgraphdb";' -U postgres
-  - psql -c 'create database "g1";' -U postgres
-  - psql -c 'create database "g2";' -U postgres
-  - psql -c 'create database "prototype";' -U postgres
-  - psql -c 'create database "readGraph";' -U postgres
-  - psql -c 'create database "standard";' -U postgres
-  - psql -c 'create database "subgraph";' -U postgres
-  - psql -c 'create database "temp";' -U postgres
-  - psql -c 'create database "temp1";' -U postgres
-  - psql -c 'create database "temp2";' -U postgres
-  - psql -c 'create database "target";' -U postgres
 
 notifications:
   email:

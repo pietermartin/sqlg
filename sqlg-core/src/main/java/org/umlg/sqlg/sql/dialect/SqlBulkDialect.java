@@ -55,7 +55,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+    default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids, Map<String, PropertyType> edgeColumns, Map<String, Object> edgePropertyMap) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
