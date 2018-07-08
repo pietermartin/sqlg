@@ -208,45 +208,45 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         Connection con = sqlgGraph.tx().getConnection();
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-            List<Long> ids=new LinkedList<>();
+            List<Long> ids = new LinkedList<>();
             if (!schemaTable.isTemporary()) {
-	            // get all ids from sequence first
-	            String sql = "SELECT NEXTVAL('" + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq") + "') from generate_series(1,"+vertices.getRight().values().size()+") ;";
-	            if (logger.isDebugEnabled()) {
-	                logger.debug(sql);
-	            }
-	           
-	            try (PreparedStatement preparedStatement = con.prepareStatement(sql)) {
-	                ResultSet resultSet = preparedStatement.executeQuery();
-	                while(resultSet.next()) {
-	                	ids.add(resultSet.getLong(1));
-	                }
-	               
-	                resultSet.close();
-	            } catch (SQLException e) {
-	                throw new RuntimeException(e);
-	            }
-	        }
-            Iterator<Long> it=ids.iterator();
-            
+                // get all ids from sequence first
+                String sql = "SELECT NEXTVAL('" + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq") + "') from generate_series(1," + vertices.getRight().values().size() + ") ;";
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql);
+                }
+
+                try (PreparedStatement preparedStatement = con.prepareStatement(sql)) {
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    while (resultSet.next()) {
+                        ids.add(resultSet.getLong(1));
+                    }
+
+                    resultSet.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            Iterator<Long> it = ids.iterator();
+
             String sql = internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, schemaTable.isTemporary(), schemaTable.getSchema(), schemaTable.getTable(), !schemaTable.isTemporary(), vertices.getLeft());
-            
+
             try (Writer writer = streamSql(sqlgGraph, sql)) {
-            	
+
                 for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
-                	Map<String, Object> keyValueMap = vertices.getRight().get(sqlgVertex);
-                	
+                    Map<String, Object> keyValueMap = vertices.getRight().get(sqlgVertex);
+
                     //The map must contain all the keys, so make a copy with it all.
                     LinkedHashMap<String, Object> values = new LinkedHashMap<>();
                     if (!schemaTable.isTemporary()) {
-	                    long id=it.next();
-	                	sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id));
-	                    values.put("ID",id);
+                        long id = it.next();
+                        sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id));
+                        values.put("ID", id);
                     }
                     for (String key : vertices.getLeft()) {
                         values.put(key, keyValueMap.get(key));
                     }
-         
+
                     writeStreamingVertex(writer, values);
                 }
             } catch (IOException e) {
@@ -348,31 +348,31 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         Connection con = sqlgGraph.tx().getConnection();
         try {
             for (MetaEdge metaEdge : edgeCache.keySet()) {
-            	Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
-                 
-            	List<Long> ids=new LinkedList<>();
-                
- 	            // get all ids from sequence first
- 	            String seqsql = "SELECT NEXTVAL('" + maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()) + "." + maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq") + "') from generate_series(1,"+triples.getRight().values().size()+") ;";
- 	            if (logger.isDebugEnabled()) {
- 	                logger.debug(seqsql);
- 	            }
- 	           
- 	            try (PreparedStatement preparedStatement = con.prepareStatement(seqsql)) {
- 	                ResultSet resultSet = preparedStatement.executeQuery();
- 	                while(resultSet.next()) {
- 	                	ids.add(resultSet.getLong(1));
- 	                }
- 	               
- 	                resultSet.close();
- 	            } catch (SQLException e) {
- 	                throw new RuntimeException(e);
- 	            }
- 	        
-                 Iterator<Long> it=ids.iterator();
-            	
-            	
-               Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
+                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
+
+                List<Long> ids = new LinkedList<>();
+
+                // get all ids from sequence first
+                String seqsql = "SELECT NEXTVAL('" + maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()) + "." + maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq") + "') from generate_series(1," + triples.getRight().values().size() + ") ;";
+                if (logger.isDebugEnabled()) {
+                    logger.debug(seqsql);
+                }
+
+                try (PreparedStatement preparedStatement = con.prepareStatement(seqsql)) {
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    while (resultSet.next()) {
+                        ids.add(resultSet.getLong(1));
+                    }
+
+                    resultSet.close();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
+                Iterator<Long> it = ids.iterator();
+
+
+                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
 
                 StringBuilder sql = new StringBuilder();
                 sql.append("COPY ");
@@ -380,9 +380,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(".");
                 sql.append(maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
                 sql.append(" (");
-               
+
                 for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
-                	int count = 1;
+                    int count = 1;
                     sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + Topology.OUT_VERTEX_COLUMN_END));
                     sql.append(", ");
                     sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + Topology.IN_VERTEX_COLUMN_END));
@@ -414,12 +414,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 try (Writer writer = streamSql(sqlgGraph, sql.toString())) {
                     for (Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleEntry : triples.getRight().entrySet()) {
                         SqlgEdge sqlgEdge = sqlgEdgeTripleEntry.getKey();
-                        long id=it.next();
-                    	sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id));
-                    
+                        long id = it.next();
+                        sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id));
+
                         Triple<SqlgVertex, SqlgVertex, Map<String, Object>> outInVertexKeyValueMap = sqlgEdgeTripleEntry.getValue();
                         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
-                        values.put("ID",id);
+                        values.put("ID", id);
                         for (String key : triples.getLeft()) {
                             values.put(key, outInVertexKeyValueMap.getRight().get(key));
                         }
@@ -1276,7 +1276,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, String schema, String table, Set<String> keys) {
-        return internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, false, schema, table,false , keys);
+        return internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, false, schema, table, false, keys);
     }
 
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, SqlgVertex vertex, boolean needID, Map<String, Object> keyValueMap) {
@@ -1285,12 +1285,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     /**
      * construct the copy command for a vertex
+     *
      * @param sqlgGraph the graph
-     * @param isTemp is the table temporary?
-     * @param schema the schema
-     * @param table the table name
-     * @param needID do we need the ID column to be copied?
-     * @param keys the property keys
+     * @param isTemp    is the table temporary?
+     * @param schema    the schema
+     * @param table     the table name
+     * @param needID    do we need the ID column to be copied?
+     * @param keys      the property keys
      * @return the SQL generated
      */
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, String schema, String table, boolean needID, Set<String> keys) {
@@ -1309,26 +1310,26 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append(maybeWrapInQoutes(VERTEX_PREFIX + table));
         sql.append(" (");
         if (needID) {
-        	sql.append("\"ID\"");
+            sql.append("\"ID\"");
         }
         if (keys.isEmpty()) {
-        	// if we had an ID, we don't need the dummy field
-        	if (!needID) {
-	            //copy command needs at least one field.
-	            //check if the dummy field exist, if not createVertexLabel it
-	            Map<String, PropertyType> columns = new HashMap<>();
-	            columns.put(COPY_DUMMY, PropertyType.from(0));
-	            sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
-	                    schema,
-	                    table,
-	                    columns
-	            );
-	            sql.append(maybeWrapInQoutes(COPY_DUMMY));
-        	}
+            // if we had an ID, we don't need the dummy field
+            if (!needID) {
+                //copy command needs at least one field.
+                //check if the dummy field exist, if not createVertexLabel it
+                Map<String, PropertyType> columns = new HashMap<>();
+                columns.put(COPY_DUMMY, PropertyType.from(0));
+                sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
+                        schema,
+                        table,
+                        columns
+                );
+                sql.append(maybeWrapInQoutes(COPY_DUMMY));
+            }
         } else {
-        	if (needID) {
-        		 sql.append(", ");
-        	}
+            if (needID) {
+                sql.append(", ");
+            }
             int count = 1;
             for (String key : keys) {
                 if (count > 1 && count <= keys.size()) {
@@ -2689,11 +2690,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append("\", _in.\"ID\" as \"");
             sql.append(in.getSchema() + "." + in.getTable() + Topology.IN_VERTEX_COLUMN_END);
             sql.append("\"");
-            edgePropertyMap.forEach((k,v) -> {
-            	sql.append(',');
-            	sql.append(this.valueToValuesString(edgeColumns.get(k), v));
-            	sql.append(" as ");
-            	sql.append(this.maybeWrapInQoutes(k));
+            edgePropertyMap.forEach((k, v) -> {
+                sql.append(',');
+                sql.append(this.valueToValuesString(edgeColumns.get(k), v));
+                sql.append(" as ");
+                sql.append(this.maybeWrapInQoutes(k));
             });
             sql.append(" FROM ");
             sql.append(this.maybeWrapInQoutes(in.getSchema()));
@@ -2967,7 +2968,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case SHORT_ARRAY:
                 return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
             case short_ARRAY:
-                return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[])array.getArray());
+                return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[]) array.getArray());
             case INTEGER_ARRAY:
                 return array.getArray();
             case int_ARRAY:
@@ -3912,5 +3913,5 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public boolean supportsTruncateMultipleTablesTogether() {
         return true;
     }
-    
+
 }
