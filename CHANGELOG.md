@@ -1,7 +1,13 @@
-##1.5.1
-* Fix concurrency bug on Postgresql streaming batch mode. The id sequence is incremented before the copy insert happens.
+##1.5.2
+* Upgrade to TinkerPop 3.3.3
+* Add docker image for Postgresql
+* Support additional properties on BulkAddEdge [#300](https://github.com/pietermartin/sqlg/issues/300)
+* Fix concurrency bug on MsSqlServer batch mode. Take table lock on BulkCopy.
+* Fix concurrency bug on Postgresql batch mode. The id sequence is incremented before the copy insert happens.
 * Added MySql support. Uses MariaDb dialect but the MySql driver.
 * Improve memory consumption by removing closed prepared statements from the cache.
+
+##1.5.1
 * Add the ability to set the `fetchSize` on the jdbc `java.sql.Statement`.
 * Fix bug [#272](https://github.com/pietermartin/sqlg/issues/272)
 * Make gremlin console work. Tinkerpop made some minor changes to the console that made it stop working.
