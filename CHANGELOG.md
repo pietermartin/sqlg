@@ -6,8 +6,6 @@
 requested properties and not for all properties as is the default.
 * Remove auto sorting of columns on table creation. It should be done at the application level.
 
-##1.5.1
-* Fix concurrency bug on Postgresql streaming batch mode. The id sequence is incremented before the copy insert happens.
 ##1.5.2
 * Upgrade to TinkerPop 3.3.3
 * Add docker image for Postgresql
