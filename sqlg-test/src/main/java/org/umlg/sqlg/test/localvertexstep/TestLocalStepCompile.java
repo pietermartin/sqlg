@@ -314,7 +314,7 @@ public class TestLocalStepCompile extends BaseTest {
         god.addEdge("godDream", fantasy3, "sequence", 3);
         god.addEdge("godDream", fantasy4, "sequence", 4);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal().V(god)
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(god)
                 .outE("godDream").as("e")
                 .inV().as("v")
                 .select("e", "v")
@@ -368,10 +368,10 @@ public class TestLocalStepCompile extends BaseTest {
         Vertex root = this.sqlgGraph.addVertex(T.label, "Root");
         Vertex folder1 = this.sqlgGraph.addVertex(T.label, "Folder");
         Vertex folder2 = this.sqlgGraph.addVertex(T.label, "Folder");
-        Edge e1 = root.addEdge("rootFolder", folder1);
-        Edge e2 = folder1.addEdge("subFolder", folder2, "sequence", 1);
+        root.addEdge("rootFolder", folder1);
+        folder1.addEdge("subFolder", folder2, "sequence", 1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal().V(folder1)
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(folder1)
                 .outE("subFolder").as("e")
                 .inV().as("v")
                 .select("e", "v")
@@ -384,6 +384,7 @@ public class TestLocalStepCompile extends BaseTest {
         Assert.assertEquals(1, result.size());
     }
 
+    @SuppressWarnings("Duplicates")
     @Test
     public void testOrderRangeAs() {
         Vertex god = this.sqlgGraph.addVertex(T.label, "God");
@@ -391,10 +392,10 @@ public class TestLocalStepCompile extends BaseTest {
         Vertex fantasy2 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan2");
         Vertex fantasy3 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan3");
         Vertex fantasy4 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan4");
-        Edge e1 = god.addEdge("godDream", fantasy1, "sequence", 1);
-        Edge e2 = god.addEdge("godDream", fantasy2, "sequence", 2);
-        Edge e3 = god.addEdge("godDream", fantasy3, "sequence", 3);
-        Edge e4 = god.addEdge("godDream", fantasy4, "sequence", 4);
+        god.addEdge("godDream", fantasy1, "sequence", 1);
+        god.addEdge("godDream", fantasy2, "sequence", 2);
+        god.addEdge("godDream", fantasy3, "sequence", 3);
+        god.addEdge("godDream", fantasy4, "sequence", 4);
 
         this.sqlgGraph.tx().commit();
         Traversal<Vertex, Map<String, Object>> traversal = this.sqlgGraph.traversal().V()
@@ -446,7 +447,7 @@ public class TestLocalStepCompile extends BaseTest {
                         by(__.group().by(__.select("p2n")).
                                 by(__.unfold().fold().project("numCoCreated", "coCreated").by(__.count(Scope.local)).by()));
 
-        traversal.hasNext();
+        Assert.assertTrue(traversal.hasNext());
     }
 
 }

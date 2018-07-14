@@ -194,9 +194,9 @@ public class ReplacedStepTree {
     }
 
     public class TreeNode {
-        private ReplacedStep replacedStep;
+        private final ReplacedStep replacedStep;
         private TreeNode parent;
-        private List<TreeNode> children = new ArrayList<>();
+        private final List<TreeNode> children = new ArrayList<>();
         private int depth = 0;
 
         TreeNode(ReplacedStep replacedStep) {

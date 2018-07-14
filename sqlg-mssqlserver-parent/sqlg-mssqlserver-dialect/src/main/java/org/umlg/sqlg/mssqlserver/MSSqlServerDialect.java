@@ -185,11 +185,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String getPrimaryKeyType() {
-        return "BIGINT NOT NULL PRIMARY KEY";
-    }
-
-    @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
         return "BIGINT IDENTITY NOT NULL PRIMARY KEY";
     }
@@ -1171,7 +1166,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, Optional<String> edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgeToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
@@ -1254,14 +1249,14 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         sb.append(")");
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
-        if (queryTraversesEdge) {
+        if (edgeToDelete != null && queryTraversesEdge) {
             sb = new StringBuilder();
             sb.append("DELETE FROM ");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
             sb.append("\nWHERE \"ID\" IN (\n\t");
-            sb.append(edgesToDelete.get());
+            sb.append(edgeToDelete);
             sb.append(")");
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }

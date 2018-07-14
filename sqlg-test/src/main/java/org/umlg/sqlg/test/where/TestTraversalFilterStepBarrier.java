@@ -48,7 +48,7 @@ public class TestTraversalFilterStepBarrier extends BaseTest {
 //    }
 
     @Test
-    public void testOutEWithAttributes() throws Exception {
+    public void testOutEWithAttributes() {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "p1");
         for (int j = 0; j < 10_000; j++) {
@@ -153,7 +153,7 @@ public class TestTraversalFilterStepBarrier extends BaseTest {
     }
 
     @Test
-    public void g_V_matchXa_created_lop_b__b_0created_29_c__c_whereXrepeatXoutX_timesX2XXX() throws Exception {
+    public void g_V_matchXa_created_lop_b__b_0created_29_c__c_whereXrepeatXoutX_timesX2XXX() {
         loadModern();
         final Traversal<Vertex, Map<String, String>> traversal = this.sqlgGraph.traversal().V().match(
                 __.as("a").out("created").has("name", "lop").as("b"),

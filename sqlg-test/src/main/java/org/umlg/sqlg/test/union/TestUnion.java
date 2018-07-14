@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
  * Date: 2016/05/30
  * Time: 9:01 PM
  */
+@SuppressWarnings("unchecked")
 public class TestUnion extends BaseTest {
 
     @Test
@@ -46,7 +47,7 @@ public class TestUnion extends BaseTest {
         loadModern();
 
 
-        Traversal<Vertex, Map<String, Long>> traversal = (Traversal) this.sqlgGraph.traversal().V().union(
+        Traversal<Vertex, Map<String, Long>> traversal = this.sqlgGraph.traversal().V().union(
                 repeat(union(
                         out("created"),
                         in("created"))).times(2),

@@ -23,7 +23,7 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
     private boolean first = true;
     private List<Traverser.Admin<S>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<S>> resultIterator;
-    private Traversal.Admin<S, ?> notTraversal;
+    private final Traversal.Admin<S, ?> notTraversal;
 
     public SqlgNotStepBarrier(final Traversal.Admin traversal, final Traversal<S, ?> notTraversal) {
         super(traversal);

@@ -38,6 +38,7 @@ public class SqlgOptionalStepStrategy<S> extends AbstractTraversalStrategy<Trave
             return;
         }
         List<OptionalStep> optionalSteps = TraversalHelper.getStepsOfAssignableClass(OptionalStep.class, traversal);
+        //noinspection unchecked
         for (OptionalStep<S> optionalStep : optionalSteps) {
 
             //The predicate branch step is a local traversal.
@@ -56,6 +57,7 @@ public class SqlgOptionalStepStrategy<S> extends AbstractTraversalStrategy<Trave
             for (String label : optionalStep.getLabels()) {
                 sqlgOptionalStepBarrier.addLabel(label);
             }
+            //noinspection unchecked
             TraversalHelper.replaceStep(
                     optionalStep,
                     sqlgOptionalStepBarrier,

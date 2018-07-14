@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.postgresql.util.PGbytea;
@@ -105,11 +105,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
     @Override
     public String getColumnEscapeKey() {
         return "\"";
-    }
-
-    @Override
-    public String getPrimaryKeyType() {
-        return "BIGINT NOT NULL PRIMARY KEY";
     }
 
     @Override
@@ -777,6 +772,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     private void deleteEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<SqlgVertex> subVertices, Set<SchemaTable> labels, boolean inDirection) {
+        //noinspection LoopStatementThatDoesntLoop
         for (SchemaTable inLabel : labels) {
 
             StringBuilder sql = new StringBuilder();

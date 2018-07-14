@@ -9,7 +9,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -73,7 +72,7 @@ public class TestHas extends BaseTest {
     }
 
     @Test
-    public void g_V_hasId() throws IOException {
+    public void g_V_hasId() {
         loadModern();
         assertModernGraph(this.sqlgGraph, true, false);
         GraphTraversalSource g = this.sqlgGraph.traversal();

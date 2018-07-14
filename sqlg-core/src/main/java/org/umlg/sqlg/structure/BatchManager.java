@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
-import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
@@ -19,26 +18,26 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class BatchManager {
 
-    private SqlgGraph sqlgGraph;
-    private SqlBulkDialect sqlDialect;
+    private final SqlgGraph sqlgGraph;
+    private final SqlBulkDialect sqlDialect;
 
     //map per label/keys, contains a map of vertices with a triple representing outLabels, inLabels and vertex properties
-    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache = new HashMap<>();
+    private final Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache = new HashMap<>();
     //map per label, contains a map edges. The triple is outVertex, inVertex, edge properties
 
-    private Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache = new HashMap<>();
+    private final Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache = new HashMap<>();
 
     //this is a cache of changes to properties that are already persisted, i.e. not in the vertexCache
-    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache = new LinkedHashMap<>();
-    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache = new LinkedHashMap<>();
+    private final Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache = new LinkedHashMap<>();
+    private final Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache = new LinkedHashMap<>();
 
     //map per label's vertices to delete
-    private Map<SchemaTable, List<SqlgVertex>> removeVertexCache = new LinkedHashMap<>();
+    private final Map<SchemaTable, List<SqlgVertex>> removeVertexCache = new LinkedHashMap<>();
     //map per label's edges to delete
-    private Map<SchemaTable, List<SqlgEdge>> removeEdgeCache = new LinkedHashMap<>();
+    private final Map<SchemaTable, List<SqlgEdge>> removeEdgeCache = new LinkedHashMap<>();
 
-    private Map<SchemaTable, Writer> streamingVertexOutputStreamCache = new LinkedHashMap<>();
-    private Map<SchemaTable, Writer> streamingEdgeOutputStreamCache = new LinkedHashMap<>();
+    private final Map<SchemaTable, Writer> streamingVertexOutputStreamCache = new LinkedHashMap<>();
+    private final Map<SchemaTable, Writer> streamingEdgeOutputStreamCache = new LinkedHashMap<>();
 
     //indicates what is being streamed
     private SchemaTable streamingBatchModeVertexSchemaTable;
@@ -181,13 +180,9 @@ public class BatchManager {
                 writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
                 this.streamingEdgeOutputStreamCache.put(outSchemaTable, writer);
             }
-            try {
-                this.sqlDialect.writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outVertex, inVertex, keyValueMap);
-                if (this.isInStreamingModeWithLock()) {
-                    this.batchCount++;
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            this.sqlDialect.writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outVertex, inVertex, keyValueMap);
+            if (this.isInStreamingModeWithLock()) {
+                this.batchCount++;
             }
         }
     }

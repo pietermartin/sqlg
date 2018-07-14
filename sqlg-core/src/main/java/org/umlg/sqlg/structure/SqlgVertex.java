@@ -25,7 +25,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class SqlgVertex extends SqlgElement implements Vertex {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgVertex.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgVertex.class);
 
     /**
      * @param sqlgGraph       The graph.

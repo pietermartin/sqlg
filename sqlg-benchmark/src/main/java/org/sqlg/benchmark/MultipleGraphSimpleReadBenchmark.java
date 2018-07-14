@@ -15,10 +15,10 @@ import java.util.Map;
 @Measurement(iterations = 10, time = 5)
 public class MultipleGraphSimpleReadBenchmark extends BaseBenchmark {
 
-    protected SqlgGraph sqlgGraph1;
-    protected SqlgGraph sqlgGraph2;
-    protected GraphTraversalSource gt1;
-    protected GraphTraversalSource gt2;
+    private SqlgGraph sqlgGraph1;
+    private SqlgGraph sqlgGraph2;
+    private GraphTraversalSource gt1;
+    private GraphTraversalSource gt2;
 
     @Group("multipleRead")
     @GroupThreads(10)
@@ -49,7 +49,7 @@ public class MultipleGraphSimpleReadBenchmark extends BaseBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void setup() throws Exception {
+    public void setup() {
         System.out.println("setup");
         this.sqlgGraph1 = getSqlgGraph(true);
         SqlgUtil.dropDb(this.sqlgGraph1);

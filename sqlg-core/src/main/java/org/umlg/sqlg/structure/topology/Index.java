@@ -25,14 +25,14 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class Index implements TopologyInf {
 
-    private static Logger logger = LoggerFactory.getLogger(Index.class);
-    private String name;
+    private static final Logger logger = LoggerFactory.getLogger(Index.class);
+    private final String name;
     private boolean committed = true;
-    private AbstractLabel abstractLabel;
+    private final AbstractLabel abstractLabel;
     private IndexType indexType;
-    private List<PropertyColumn> properties = new ArrayList<>();
+    private final List<PropertyColumn> properties = new ArrayList<>();
     private IndexType uncommittedIndexType;
-    private List<PropertyColumn> uncommittedProperties = new ArrayList<>();
+    private final List<PropertyColumn> uncommittedProperties = new ArrayList<>();
 
     /**
      * create uncommitted index
@@ -193,7 +193,7 @@ public class Index implements TopologyInf {
         }
     }
 
-    protected Optional<JsonNode> toNotifyJson() {
+    Optional<JsonNode> toNotifyJson() {
         Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         result.put("name", this.name);

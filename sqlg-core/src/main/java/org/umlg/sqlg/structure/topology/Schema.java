@@ -29,25 +29,25 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class Schema implements TopologyInf {
 
-    private static Logger logger = LoggerFactory.getLogger(Schema.class);
-    private SqlgGraph sqlgGraph;
-    private Topology topology;
-    private String name;
+    private static final Logger logger = LoggerFactory.getLogger(Schema.class);
+    private final SqlgGraph sqlgGraph;
+    private final Topology topology;
+    private final String name;
     private boolean committed = true;
     //The key is schema + "." + VERTEX_PREFIX + vertex label. i.e. "A.V_A"
-    private Map<String, VertexLabel> vertexLabels = new HashMap<>();
-    private Map<String, VertexLabel> uncommittedVertexLabels = new HashMap<>();
-    public Set<String> uncommittedRemovedVertexLabels = new HashSet<>();
+    private final Map<String, VertexLabel> vertexLabels = new HashMap<>();
+    private final Map<String, VertexLabel> uncommittedVertexLabels = new HashMap<>();
+    public final Set<String> uncommittedRemovedVertexLabels = new HashSet<>();
 
-    private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
-    private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
-    Set<String> uncommittedRemovedEdgeLabels = new HashSet<>();
+    private final Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
+    private final Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
+    final Set<String> uncommittedRemovedEdgeLabels = new HashSet<>();
 
     public static final String SQLG_SCHEMA = "sqlg_schema";
     public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
-    private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
-    private Set<String> uncommittedRemovedGlobalUniqueIndexes = new HashSet<>();
-    Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
+    private final Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
+    private final Set<String> uncommittedRemovedGlobalUniqueIndexes = new HashSet<>();
+    final Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
     private static final String MARKER = "~gremlin.incidentToAdjacent";
 
     //temporary table map. it is in a thread local as temporary tables are only valid per session/connection.
@@ -1403,9 +1403,7 @@ public class Schema implements TopologyInf {
             for (GlobalUniqueIndex globalUniqueIndex : this.uncommittedGlobalUniqueIndexes.values()) {
 
                 Optional<JsonNode> jsonNodeOptional = globalUniqueIndex.toNotifyJson();
-                if (jsonNodeOptional.isPresent()) {
-                    unCommittedGlobalUniqueIndexesArrayNode.add(jsonNodeOptional.get());
-                }
+                jsonNodeOptional.ifPresent(unCommittedGlobalUniqueIndexesArrayNode::add);
 
             }
             schemaNode.set("uncommittedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);

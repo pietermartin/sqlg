@@ -17,7 +17,7 @@ import java.util.Iterator;
 public class TestLoadArrayProperties extends BaseTest {
 
     @Test
-    public void testLoadSchemaWithArrays() throws Exception {
+    public void testLoadSchemaWithArrays() {
         Assume.assumeTrue(
                 this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues() &&
                         this.sqlgGraph.getSqlDialect().supportsFloatArrayValues() &&
@@ -65,7 +65,7 @@ public class TestLoadArrayProperties extends BaseTest {
     }
 
     @Test
-    public void testLoadSchemaWithArraysWithoutFloat() throws Exception {
+    public void testLoadSchemaWithArraysWithoutFloat() {
         Assume.assumeTrue(
                 this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues() &&
                         this.sqlgGraph.getSqlDialect().supportsLongArrayValues() &&

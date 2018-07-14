@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestTinkerPopJira extends BaseTest {
 
     //This return 3 for Sqlg and 2 on TinkerGraph
+    @SuppressWarnings("unchecked")
     @Test
     public void testLazy1AddE() {
         final Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
@@ -54,6 +55,7 @@ public class TestTinkerPopJira extends BaseTest {
         Assert.assertEquals(3, count.get());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testLazy2() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("A");

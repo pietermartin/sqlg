@@ -15,12 +15,12 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/08/06
  */
-public class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
+class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
 
-    private Iterator<Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> rowIter;
+    private final Iterator<Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> rowIter;
     private Triple<SqlgVertex, SqlgVertex, Map<String, Object>> currentRow;
-    private VertexLabel outVertexLabel;
-    private VertexLabel inVertexLabel;
+    private final VertexLabel outVertexLabel;
+    private final VertexLabel inVertexLabel;
 
     SQLServerEdgeCacheBulkRecord(SQLServerBulkCopy bulkCopy, SqlgGraph sqlgGraph, MetaEdge metaEdge, SchemaTable schemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples) throws SQLServerException {
         this.rowIter = triples.getRight().entrySet().iterator();

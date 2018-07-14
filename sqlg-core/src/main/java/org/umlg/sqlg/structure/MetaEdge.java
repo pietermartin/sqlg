@@ -6,9 +6,9 @@ package org.umlg.sqlg.structure;
  */
 public class MetaEdge {
 
-    private SchemaTable schemaTable;
-    private String outLabel;
-    private String inLabel;
+    private final SchemaTable schemaTable;
+    private final String outLabel;
+    private final String inLabel;
 
     private MetaEdge(SchemaTable schemaTable, String outLabel, String inLabel) {
         this.schemaTable = schemaTable;

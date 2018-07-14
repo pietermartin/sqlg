@@ -21,7 +21,7 @@ import java.util.*;
 public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implements TraversalParent {
 
     private final Traversal.Admin<S, S> optionalTraversal;
-    protected List<Traverser.Admin<S>> results = new ArrayList<>();
+    private final List<Traverser.Admin<S>> results = new ArrayList<>();
     private boolean first = true;
     private Iterator<Traverser.Admin<S>> resultIterator;
 
@@ -80,17 +80,19 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
             });
             this.resultIterator = this.results.iterator();
         }
-        while (this.resultIterator.hasNext()) {
+        if (this.resultIterator.hasNext()) {
             return this.resultIterator.next();
         }
         throw FastNoSuchElementException.instance();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, S>> getLocalChildren() {
         return Collections.singletonList(this.optionalTraversal);
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void reset() {
         super.reset();

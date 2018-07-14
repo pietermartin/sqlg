@@ -14,11 +14,11 @@ import java.util.WeakHashMap;
  */
 class TransactionCache {
 
-    private Connection connection;
-    private Map<ElementPropertyRollback, Object> elementPropertyRollbackFunctions = new WeakHashMap<>();
+    private final Connection connection;
+    private final Map<ElementPropertyRollback, Object> elementPropertyRollbackFunctions = new WeakHashMap<>();
     private BatchManager batchManager;
     private boolean cacheVertices = false;
-    private Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
+    private final Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
 
     /**
      * are query result processed lazily or not?

@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  */
 public class TestJNDIInitialization {
 
-    private static Logger logger = LoggerFactory.getLogger(TestJNDIInitialization.class);
+    private static final Logger logger = LoggerFactory.getLogger(TestJNDIInitialization.class);
 
     private static Configuration configuration;
     private static DataSource ds;

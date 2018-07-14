@@ -23,8 +23,7 @@ import java.util.*;
 
 public interface SqlDialect {
 
-
-    static final String INDEX_POSTFIX = "_sqlgIdx";
+    String INDEX_POSTFIX = "_sqlgIdx";
 
     default boolean supportsDistribution() {
         return false;
@@ -47,6 +46,7 @@ public interface SqlDialect {
 
     void validateProperty(Object key, Object value);
 
+    @SuppressWarnings("SameReturnValue")
     default boolean needsSemicolon() {
         return true;
     }
@@ -61,10 +61,13 @@ public interface SqlDialect {
 
     String getColumnEscapeKey();
 
-    String getPrimaryKeyType();
+    default String getPrimaryKeyType() {
+        return "BIGINT NOT NULL PRIMARY KEY";
+    }
 
     String getAutoIncrementPrimaryKeyConstruct();
 
+    @SuppressWarnings("SameReturnValue")
     default String getAutoIncrement() {
         throw new RuntimeException("Not yet implemented.");
     }
@@ -95,6 +98,7 @@ public interface SqlDialect {
         return true;
     }
 
+    @SuppressWarnings("SameReturnValue")
     default boolean supportsByteArrayValues() {
         return true;
     }
@@ -300,6 +304,7 @@ public interface SqlDialect {
 
     String getArrayDriverType(PropertyType booleanArray);
 
+    @SuppressWarnings("SameReturnValue")
     default String createTableStatement() {
         return "CREATE TABLE ";
     }
@@ -783,11 +788,11 @@ public interface SqlDialect {
      *
      * @param sqlgGraph            The graph.
      * @param leafElementsToDelete The leaf elements of the query. eg. g.V().out().out() The last vertices returned by the gremlin query.
-     * @param edgesToDelete
+     * @param edgeToDelete
      * @param distinctQueryStack   The query's SchemaTableTree stack as constructed by parsing.
      * @return
      */
-    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, Optional<String> edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgeToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
@@ -820,7 +825,7 @@ public interface SqlDialect {
             StringBuilder sb;
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getOutEdgeLabels().entrySet()) {
                 EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("DELETE FROM ");
@@ -837,7 +842,7 @@ public interface SqlDialect {
             }
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
                 EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("DELETE FROM ");
@@ -870,14 +875,14 @@ public interface SqlDialect {
         sb.append(")");
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), null));
 
-        if (queryTraversesEdge) {
+        if (edgeToDelete != null && queryTraversesEdge) {
             sb = new StringBuilder();
             sb.append("DELETE FROM ");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
             sb.append("\nWHERE \"ID\" IN (\n\t");
-            sb.append(edgesToDelete.get());
+            sb.append(edgeToDelete);
             sb.append(")");
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
@@ -1110,6 +1115,7 @@ public interface SqlDialect {
      *
      * @return the default fetch size, maybe null if we want to use the default from the driver
      */
+    @SuppressWarnings("SameReturnValue")
     default Integer getDefaultFetchSize() {
         return null;
     }

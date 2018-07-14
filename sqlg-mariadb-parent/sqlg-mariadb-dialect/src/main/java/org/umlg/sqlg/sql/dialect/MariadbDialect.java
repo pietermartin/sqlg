@@ -357,11 +357,6 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String getPrimaryKeyType() {
-        return "BIGINT NOT NULL PRIMARY KEY";
-    }
-
-    @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
         return "SERIAL PRIMARY KEY";
     }
@@ -568,11 +563,6 @@ public class MariadbDialect extends BaseSqlDialect {
     @Override
     public String createTableStatement() {
         return "CREATE TABLE ";
-    }
-
-    @Override
-    public void validateColumnName(String column) {
-        super.validateColumnName(column);
     }
 
     @Override

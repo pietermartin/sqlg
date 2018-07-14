@@ -10,8 +10,6 @@ import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -21,7 +19,7 @@ import java.util.List;
 public class TestGremlinCompileTextPredicate extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -42,7 +40,7 @@ public class TestGremlinCompileTextPredicate extends BaseTest {
     }
 
     private void testTextContains_assert(SqlgGraph sqlgGraph) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal)sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.contains("a"));
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.contains("a"));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());

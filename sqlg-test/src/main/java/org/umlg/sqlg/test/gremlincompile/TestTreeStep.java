@@ -11,7 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -118,12 +117,12 @@ public class TestTreeStep extends BaseTest {
     }
 
     @Test
-    public void g_VX1X_out_out_tree_byXnameX() throws IOException {
+    public void g_VX1X_out_out_tree_byXnameX() {
         Graph graph = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = this.sqlgGraph.traversal();
-        final List<DefaultGraphTraversal<Vertex, Tree>> traversals = Arrays.asList(
+        @SuppressWarnings("unchecked") final List<DefaultGraphTraversal<Vertex, Tree>> traversals = Arrays.asList(
                 (DefaultGraphTraversal)g.V(convertToVertexId("marko")).out().out().tree().by("name"),
                 (DefaultGraphTraversal)g.V(convertToVertexId("marko")).out().out().tree("a").by("name").both().both().cap("a")
         );

@@ -30,13 +30,13 @@ import java.util.*;
 public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutating<Event> {
 
     private CallbackRegistry<Event> callbackRegistry;
-    private SqlgGraph sqlgGraph;
+    private final SqlgGraph sqlgGraph;
     private boolean first = true;
-    private Set<RecordId> idsToDelete = new HashSet<>();
-    private MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyOutEdgesToDelete = new HashSetValuedHashMap<>();
-    private MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyInEdgesToDelete = new HashSetValuedHashMap<>();
-    private MultiValuedMap<EdgeLabel, RecordId.ID> edgesToDelete = new HashSetValuedHashMap<>();
-    private MultiValuedMap<VertexLabel, RecordId.ID> verticesToDelete = new HashSetValuedHashMap<>();
+    private final Set<RecordId> idsToDelete = new HashSet<>();
+    private final MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyOutEdgesToDelete = new HashSetValuedHashMap<>();
+    private final MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyInEdgesToDelete = new HashSetValuedHashMap<>();
+    private final MultiValuedMap<EdgeLabel, RecordId.ID> edgesToDelete = new HashSetValuedHashMap<>();
+    private final MultiValuedMap<VertexLabel, RecordId.ID> verticesToDelete = new HashSetValuedHashMap<>();
 
     public SqlgDropStepBarrier(final Traversal.Admin traversal, CallbackRegistry<Event> callbackRegistry) {
         super(traversal);

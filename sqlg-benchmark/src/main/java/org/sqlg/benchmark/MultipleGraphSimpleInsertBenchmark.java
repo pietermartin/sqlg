@@ -15,9 +15,8 @@ import java.util.Map;
 @Measurement(iterations = 10, time = 5)
 public class MultipleGraphSimpleInsertBenchmark extends BaseBenchmark {
 
-    protected SqlgGraph sqlgGraph1;
-    protected SqlgGraph sqlgGraph2;
-    protected GraphTraversalSource gt2;
+    private SqlgGraph sqlgGraph1;
+    private SqlgGraph sqlgGraph2;
 
     @Group("multipleInsert")
     @GroupThreads(10)
@@ -64,14 +63,14 @@ public class MultipleGraphSimpleInsertBenchmark extends BaseBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void setup() throws Exception {
+    public void setup() {
         System.out.println("setup");
         this.sqlgGraph1 = getSqlgGraph(true);
         SqlgUtil.dropDb(this.sqlgGraph1);
         this.sqlgGraph1.tx().commit();
         this.sqlgGraph1 = getSqlgGraph(true);
         this.sqlgGraph2 = getSqlgGraph(true);
-        this.gt2 = this.sqlgGraph2.traversal();
+        GraphTraversalSource gt2 = this.sqlgGraph2.traversal();
     }
 
     @TearDown(Level.Iteration)

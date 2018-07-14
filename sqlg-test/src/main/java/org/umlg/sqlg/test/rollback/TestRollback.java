@@ -72,7 +72,6 @@ public class TestRollback extends BaseTest {
             this.sqlgGraph.tx().rollback();
             fail("An exception should be thrown when read/write behavior is manual and no transaction is opened");
         } catch (Exception ex) {
-            validateException(Transaction.Exceptions.transactionMustBeOpenToReadWrite(), ex);
         }
     }
 
@@ -85,7 +84,4 @@ public class TestRollback extends BaseTest {
         assertFalse(v1.property("name").isPresent());
     }
 
-    public static void validateException(final Throwable expected, final Throwable actual) {
-        System.out.println(actual);
-    }
 }

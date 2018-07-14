@@ -18,7 +18,7 @@ import java.util.*;
 public class TestLocalDate extends BaseTest {
 
     @Test
-    public void testLocalDateTime() throws Exception {
+    public void testLocalDateTime() {
         LocalDateTime now = LocalDateTime.now();
         this.sqlgGraph.addVertex(T.label, "A", "dateTime", now);
         this.sqlgGraph.tx().commit();
@@ -33,7 +33,7 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
-    public void testLocalDateTimeUpdate() throws Exception {
+    public void testLocalDateTimeUpdate() {
         LocalDateTime now = LocalDateTime.now();
         Vertex v = this.sqlgGraph.addVertex(T.label, "A", "dateTime", now);
         this.sqlgGraph.tx().commit();
@@ -50,7 +50,7 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
-    public void testLocalDate() throws Exception {
+    public void testLocalDate() {
         LocalDate now = LocalDate.now();
         this.sqlgGraph.addVertex(T.label, "A", "date", now);
         this.sqlgGraph.tx().commit();
@@ -65,7 +65,7 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
-    public void testLocalTime() throws Exception {
+    public void testLocalTime() {
         LocalTime now = LocalTime.now();
         this.sqlgGraph.addVertex(T.label, "A", "time", now);
         this.sqlgGraph.tx().commit();
@@ -81,7 +81,7 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
-    public void testZonedDateTime() throws Exception {
+    public void testZonedDateTime() {
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);
         this.sqlgGraph.addVertex(T.label, "A", "zonedDateTime", zonedDateTimeAGT);
@@ -98,7 +98,7 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
-    public void testDuration() throws Exception {
+    public void testDuration() {
         Duration duration = Duration.ofHours(5);
         this.sqlgGraph.addVertex(T.label, "A", "duration", duration);
         this.sqlgGraph.tx().commit();
@@ -113,7 +113,7 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
-    public void testPeriod() throws Exception {
+    public void testPeriod() {
         Period period = Period.of(2016, 5, 5);
         this.sqlgGraph.addVertex(T.label, "A", "period", period);
         this.sqlgGraph.tx().commit();
@@ -373,7 +373,7 @@ public class TestLocalDate extends BaseTest {
     }
 
     @Test
-    public void testLoadDateTypes() throws Exception {
+    public void testLoadDateTypes() {
 
         LocalDateTime localDateTime = LocalDateTime.now();
         LocalDate localDate = LocalDate.now();

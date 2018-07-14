@@ -25,11 +25,12 @@ public class SqlgAndStepBarrier<S> extends SqlgConnectiveStep<S> {
     private boolean first = true;
     private List<Traverser.Admin<S>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<S>> resultIterator;
-    private List<Traversal.Admin<S, ?>> andTraversals = new ArrayList<>();
+    private final List<Traversal.Admin<S, ?>> andTraversals = new ArrayList<>();
 
     public SqlgAndStepBarrier(final Traversal.Admin traversal, final Collection<Traversal<S, ?>> traversals) {
         super(traversal, traversals);
         for (Traversal<S, ?> sTraversal : traversals) {
+            //noinspection unchecked
             this.andTraversals.add((Traversal.Admin<S, ?>) sTraversal);
         }
     }

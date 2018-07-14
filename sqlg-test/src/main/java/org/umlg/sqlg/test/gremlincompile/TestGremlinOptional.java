@@ -9,7 +9,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -409,7 +408,7 @@ public class TestGremlinOptional extends BaseTest {
     }
 
     @Test
-    public void g_VX2X_optionalXoutXknowsXX() throws IOException {
+    public void g_VX2X_optionalXoutXknowsXX() {
         Graph g = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         this.sqlgGraph.tx().commit();

@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +21,7 @@ import java.util.Map;
 public class TestAggregate extends BaseTest {
 
     @Test
-    public void testAggregate() throws IOException, InterruptedException {
+    public void testAggregate() throws InterruptedException {
         loadModern(this.sqlgGraph);
         testAggregate_assert(this.sqlgGraph);
         if (this.sqlgGraph1 != null) {

@@ -25,7 +25,7 @@ import java.util.Set;
  */
 public class SqlgSqlExecutor {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgSqlExecutor.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgSqlExecutor.class);
 
     private SqlgSqlExecutor() {
     }

@@ -33,7 +33,6 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.label;
 import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
@@ -43,9 +42,10 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  * Date: 2014/07/12
  * Time: 3:13 PM
  */
+@SuppressWarnings("Duplicates")
 public class SqlgUtil {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgUtil.class);
 
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
@@ -175,6 +175,7 @@ public class SqlgUtil {
      * @return
      * @throws SQLException
      */
+    @SuppressWarnings("unchecked")
     private static <E extends SqlgElement> List<Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph,
             final ResultSet resultSet,
@@ -255,6 +256,7 @@ public class SqlgUtil {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     private static <E> E loadElement(
             SqlgGraph sqlgGraph,
             Map<String, Integer> columnMap,
@@ -482,25 +484,19 @@ public class SqlgUtil {
                 case ZONEDDATETIME_ARRAY:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     if (mod) {
-                        List<String> zones = (Arrays.asList((ZonedDateTime[]) pair.right)).stream().map(z -> z.getZone().getId()).collect(Collectors.toList());
-                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, zones.toArray()));
+                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, Arrays.stream((ZonedDateTime[]) pair.right).map(z -> z.getZone().getId()).toArray()));
                     }
                     break;
                 case DURATION_ARRAY:
                     Duration[] durations = (Duration[]) pair.getRight();
-                    List<Long> seconds = Arrays.stream(durations).map(Duration::getSeconds).collect(Collectors.toList());
-                    List<Integer> nanos = Arrays.stream(durations).map(Duration::getNano).collect(Collectors.toList());
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(durations).map(Duration::getSeconds).toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(durations).map(Duration::getNano).toArray()));
                     break;
                 case PERIOD_ARRAY:
                     Period[] periods = (Period[]) pair.getRight();
-                    List<Integer> years = Arrays.stream(periods).map(Period::getYears).collect(Collectors.toList());
-                    List<Integer> months = Arrays.stream(periods).map(Period::getMonths).collect(Collectors.toList());
-                    List<Integer> days = Arrays.stream(periods).map(Period::getDays).collect(Collectors.toList());
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getYears).toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getMonths).toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getDays).toArray()));
                     break;
                 case JSON_ARRAY:
                     JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
@@ -517,7 +513,7 @@ public class SqlgUtil {
         Objects.requireNonNull(label, "label may not be null!");
         String[] schemaLabel = label.split("\\.");
         if (schemaLabel.length != 2) {
-            throw new IllegalStateException(String.format("label must be if the format 'schema.table', %s", new Object[]{label}));
+            throw new IllegalStateException(String.format("label must be if the format 'schema.table', %s", label));
         }
         return SchemaTable.of(schemaLabel[0], schemaLabel[1]);
     }

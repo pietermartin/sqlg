@@ -49,46 +49,46 @@ public class Topology {
     public static final String DURATION_NANOS = "~~~NANOS";
     public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
 
-    private SqlgGraph sqlgGraph;
-    private boolean distributed;
+    private final SqlgGraph sqlgGraph;
+    private final boolean distributed;
 
     //Used to ensure that only one thread can modify the topology.
-    private ReentrantLock topologySqlWriteLock;
+    private final ReentrantLock topologySqlWriteLock;
     //Used to protect the topology maps.
     //The maps are only updated during afterCommit.
     //afterCommit locks access to the map
     //allTableCache, schemaTableForeignKeyCache, edgeForeignKeyCache, metaSchemas and schemas are protected by the topologyMapLock.
-    private ReentrantReadWriteLock topologyMapLock;
+    private final ReentrantReadWriteLock topologyMapLock;
 
-    private Map<String, Map<String, PropertyType>> allTableCache = new ConcurrentHashMap<>();
-    private Map<String, Map<String, PropertyType>> sqlgSchemaTableCache = new HashMap<>();
+    private final Map<String, Map<String, PropertyType>> allTableCache = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, PropertyType>> sqlgSchemaTableCache = new HashMap<>();
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
-    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
-    private Map<String, Set<ForeignKey>> edgeForeignKeyCache;
+    private final Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
+    private final Map<String, Set<ForeignKey>> edgeForeignKeyCache;
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
-    private Map<String, Schema> schemas = new HashMap<>();
-    private Map<String, Schema> globalUniqueIndexSchema = new HashMap<>();
+    private final Map<String, Schema> schemas = new HashMap<>();
+    private final Map<String, Schema> globalUniqueIndexSchema = new HashMap<>();
 
-    private Map<String, Schema> uncommittedSchemas = new HashMap<>();
-    private Set<String> uncommittedRemovedSchemas = new HashSet<>();
-    private Map<String, Schema> metaSchemas = new HashMap<>();
+    private final Map<String, Schema> uncommittedSchemas = new HashMap<>();
+    private final Set<String> uncommittedRemovedSchemas = new HashSet<>();
+    private final Map<String, Schema> metaSchemas = new HashMap<>();
     //A cache of just the sqlg_schema's AbstractLabels
-    private Set<TopologyInf> sqlgSchemaAbstractLabels = new HashSet<>();
+    private final Set<TopologyInf> sqlgSchemaAbstractLabels = new HashSet<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public static final String SQLG_NOTIFICATION_CHANNEL = "SQLG_NOTIFY";
 
     //ownPids are the pids to ignore as it is what the graph sent a notification for.
-    private Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
+    private final Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
 
     //every notification will have a unique timestamp.
     //This is so because modification happen one at a time via the lock.
-    private SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
+    private final SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
 
-    private List<TopologyValidationError> validationErrors = new ArrayList<>();
-    private List<TopologyListener> topologyListeners = new ArrayList<>();
+    private final List<TopologyValidationError> validationErrors = new ArrayList<>();
+    private final List<TopologyListener> topologyListeners = new ArrayList<>();
 
     private static final int LOCK_TIMEOUT = 2;
 
@@ -671,7 +671,7 @@ public class Topology {
         return this.topologySqlWriteLock.isHeldByCurrentThread();
     }
 
-    boolean isTopologyMapWriteLockHeldByCurrentThread() {
+    private boolean isTopologyMapWriteLockHeldByCurrentThread() {
         return this.topologyMapLock.writeLock().isHeldByCurrentThread();
     }
 
@@ -847,7 +847,7 @@ public class Topology {
      * @param properties    The edge's properties with their type.
      * @return The {@link SchemaTable} that represents the edge.
      */
-    public SchemaTable ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties) {
+    public void ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(foreignKeyOut, "Given outTable must not be null");
         Objects.requireNonNull(foreignKeyIn, "Given inTable must not be null");
@@ -866,7 +866,7 @@ public class Topology {
 
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties);
-        return SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
+        SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
     }
 
     /**
@@ -1494,11 +1494,7 @@ public class Topology {
         if (schemaOptional.isPresent()) {
             Schema schema = schemaOptional.get();
             Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(edgeLabelName);
-            if (edgeLabelOptional.isPresent()) {
-                return edgeLabelOptional;
-            } else {
-                return Optional.empty();
-            }
+            return edgeLabelOptional;
         } else {
             return Optional.empty();
         }
@@ -1571,7 +1567,7 @@ public class Topology {
         return getAllTables(false);
     }
 
-    public Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema) {
+    private Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema) {
         return getAllTables(sqlgSchema, false);
     }
 
@@ -1636,18 +1632,12 @@ public class Topology {
 
     public Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
         Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-        if (schemaOptional.isPresent()) {
-            return Collections.unmodifiableMap(schemaOptional.get().getPropertiesFor(schemaTable));
-        }
-        return Collections.emptyMap();
+        return schemaOptional.map(schema -> Collections.unmodifiableMap(schema.getPropertiesFor(schemaTable))).orElse(Collections.emptyMap());
     }
 
     public Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
         Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-        if (schemaOptional.isPresent()) {
-            return Collections.unmodifiableMap(schemaOptional.get().getPropertiesWithGlobalUniqueIndexFor(schemaTable));
-        }
-        return Collections.emptyMap();
+        return schemaOptional.map(schema -> Collections.unmodifiableMap(schema.getPropertiesWithGlobalUniqueIndexFor(schemaTable))).orElse(Collections.emptyMap());
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
@@ -1942,7 +1932,7 @@ public class Topology {
     }
 
     public static class TopologyValidationError {
-        private TopologyInf error;
+        private final TopologyInf error;
 
         TopologyValidationError(TopologyInf error) {
             this.error = error;

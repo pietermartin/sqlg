@@ -24,11 +24,11 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class SqlgProperty<V> implements Property<V>, Serializable {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgProperty.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgProperty.class);
     private final String key;
-    private V value;
-    private SqlgElement element;
-    protected SqlgGraph sqlgGraph;
+    private final V value;
+    private final SqlgElement element;
+    private final SqlgGraph sqlgGraph;
 
     SqlgProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
         this.sqlgGraph = sqlgGraph;

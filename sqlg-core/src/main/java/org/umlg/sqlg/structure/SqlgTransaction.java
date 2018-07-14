@@ -26,11 +26,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     @SuppressWarnings("WeakerAccess")
     public static final String QUERY_LAZY = "query.lazy";
     
-    private SqlgGraph sqlgGraph;
+    private final SqlgGraph sqlgGraph;
     private BeforeCommit beforeCommitFunction;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
-    private static Logger logger = LoggerFactory.getLogger(SqlgTransaction.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgTransaction.class);
     private boolean cacheVertices = false;
 
     private final ThreadLocal<TransactionCache> threadLocalTx = ThreadLocal.withInitial(() -> null);
@@ -243,7 +243,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!this.isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode to flush");
         }
-        this.logger.debug("flushing transaction!!!");
+        logger.debug("flushing transaction!!!");
         if (!this.getBatchManager().isBusyFlushing()) {
             this.getBatchManager().flush();
         }
@@ -322,7 +322,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
      * get default fetch size
      * @return
      */
-    public Integer getDefaultFetchSize() {
+    private Integer getDefaultFetchSize() {
 		return defaultFetchSize;
 	}
 

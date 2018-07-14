@@ -17,7 +17,7 @@ import java.util.Map;
  * Date: 2017/04/17
  * Time: 11:30 AM
  */
-public class TestVertexStepPerformance extends BaseTest {
+class TestVertexStepPerformance extends BaseTest {
 
 //    @Test
     public void testLocalVertexStepNotOptimizedPerformance() {

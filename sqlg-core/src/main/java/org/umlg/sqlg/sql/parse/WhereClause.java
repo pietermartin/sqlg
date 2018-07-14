@@ -27,7 +27,7 @@ public class WhereClause {
 
     private static final String LIKE = " like ?";
     private static final String NOT_LIKE = " not like ?";
-    private P<?> p;
+    private final P<?> p;
 
     private WhereClause(P<?> p) {
         this.p = p;

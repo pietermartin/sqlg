@@ -8,9 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -35,8 +32,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
     private Traversal.Admin<S, S> repeatTraversal = null;
     private Traversal.Admin<S, ?> untilTraversal = null;
     private Traversal.Admin<S, ?> emitTraversal = null;
-    boolean untilFirst = false;
-    boolean emitFirst = false;
+    private boolean untilFirst = false;
+    private boolean emitFirst = false;
     private boolean first = true;
     private List<Iterator<Traverser.Admin<S>>> toReturn;
     //Special cache for untilTraverser
@@ -47,8 +44,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
     private SqlgRangeHolder sqlgRangeHolder;
     private long rangeCount = 0;
 
-    private boolean optimizeUntil = false;
-
+    @SuppressWarnings("unchecked")
     public SqlgRepeatStepBarrier(final Traversal.Admin traversal, RepeatStep<S> repeatStep) {
         super(traversal);
         this.repeatTraversal = repeatStep.getRepeatTraversal();
@@ -59,14 +55,6 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         List<RepeatStep.RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfAssignableClass(RepeatStep.RepeatEndStep.class, this.repeatTraversal);
         Preconditions.checkState(repeatEndSteps.size() == 1, "Only handling one RepeatEndStep! Found " + repeatEndSteps.size());
         TraversalHelper.replaceStep(repeatEndSteps.get(0), new SqlgRepeatStepBarrier.SqlgRepeatEndStepBarrier(this.repeatTraversal), this.repeatTraversal);
-        this.optimizeUntil = this.untilTraversal != null &&
-                (
-                        TraversalHelper.anyStepRecursively(
-                                (s) -> (s instanceof VertexStep) || (s instanceof EdgeVertexStep) || (s instanceof EdgeOtherVertexStep),
-                                this.untilTraversal
-                        ) ||
-                                true
-                );
     }
 
     public void setSqlgRangeHolder(SqlgRangeHolder sqlgRangeHolder) {
@@ -82,10 +70,12 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         return requirements;
     }
 
+    @SuppressWarnings("unchecked")
     public List<Traversal.Admin<S, S>> getGlobalChildren() {
         return null == this.repeatTraversal ? Collections.emptyList() : Collections.singletonList(this.repeatTraversal);
     }
 
+    @SuppressWarnings("unchecked")
     public List<Traversal.Admin<S, ?>> getLocalChildren() {
         final List<Traversal.Admin<S, ?>> list = new ArrayList<>(2);
         if (null != this.untilTraversal)
@@ -95,11 +85,11 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         return list;
     }
 
-    public final boolean doUntil(final Traverser.Admin<S> traverser, boolean utilFirst) {
+    private boolean doUntil(final Traverser.Admin<S> traverser, boolean utilFirst) {
         return utilFirst == this.untilFirst && null != this.untilTraversal && TraversalUtil.test(traverser, this.untilTraversal);
     }
 
-    public final boolean doEmit(final Traverser.Admin<S> traverser, boolean emitFirst) {
+    private boolean doEmit(final Traverser.Admin<S> traverser, boolean emitFirst) {
         return emitFirst == this.emitFirst && null != this.emitTraversal && TraversalUtil.test(traverser, this.emitTraversal);
     }
 
@@ -126,11 +116,11 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
             this.repeatTraversal.reset();
     }
 
-    private final String untilString() {
+    private String untilString() {
         return null == this.untilTraversal ? "until(false)" : "until(" + this.untilTraversal + ')';
     }
 
-    private final String emitString() {
+    private String emitString() {
         return null == this.emitTraversal ? "emit(false)" : "emit(" + this.emitTraversal + ')';
     }
 
@@ -257,15 +247,16 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         throw new IllegalStateException("computerAlgorithm not supported!");
     }
 
-    public class SqlgRepeatEndStepBarrier<S> extends SqlgComputerAwareStep<S, S> {
+    protected class SqlgRepeatEndStepBarrier<S> extends SqlgComputerAwareStep<S, S> {
 
-        private List<Iterator<Traverser.Admin<S>>> toReturn;
+        private final List<Iterator<Traverser.Admin<S>>> toReturn;
 
         SqlgRepeatEndStepBarrier(final Traversal.Admin traversal) {
             super(traversal);
             this.toReturn = new ArrayList<>();
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         protected Iterator<Traverser.Admin<S>> standardAlgorithm() throws NoSuchElementException {
             final SqlgRepeatStepBarrier<S> repeatStep = (SqlgRepeatStepBarrier<S>) this.getTraversal().getParent();
@@ -361,6 +352,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof HasStep) {
             if (this.untilHasContainers == null) {
                 HasStep hasStep = (HasStep) traversal.getSteps().get(0);
+                //noinspection unchecked
                 this.untilHasContainers = hasStep.getHasContainers();
                 if (this.untilHasContainers.size() == 1) {
                     this.untilHasContainer = this.untilHasContainers.get(0);

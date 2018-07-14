@@ -61,7 +61,7 @@ public class TestJsonUpdate extends BaseTest {
     }
 
     @Test
-    public void testUpdateJsonArray() throws IOException {
+    public void testUpdateJsonArray() {
         ObjectMapper objectMapper =  new ObjectMapper();
         ArrayNode jsonArray = new ArrayNode(objectMapper.getNodeFactory());
         ObjectNode john = new ObjectNode(objectMapper.getNodeFactory());

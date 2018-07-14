@@ -19,7 +19,7 @@ public abstract class SqlgComputerAwareStep<S, E> extends SqlgAbstractStep<S, E>
 
     private Iterator<Traverser.Admin<E>> previousIterator = EmptyIterator.instance();
 
-    public SqlgComputerAwareStep(final Traversal.Admin traversal) {
+    protected SqlgComputerAwareStep(final Traversal.Admin traversal) {
         super(traversal);
     }
 
@@ -50,7 +50,7 @@ public abstract class SqlgComputerAwareStep<S, E> extends SqlgAbstractStep<S, E>
 
     //////
 
-    public static class EndStep<S> extends AbstractStep<S, S> implements GraphComputing {
+    private static class EndStep<S> extends AbstractStep<S, S> implements GraphComputing {
 
         public EndStep(final Traversal.Admin traversal) {
             super(traversal);

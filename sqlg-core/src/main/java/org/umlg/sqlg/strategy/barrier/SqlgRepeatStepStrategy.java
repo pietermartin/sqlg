@@ -91,6 +91,7 @@ public class SqlgRepeatStepStrategy extends AbstractTraversalStrategy<TraversalS
                     }
                     traversal.removeStep(indexOfRepeatStep + 1);
                 }
+                //noinspection unchecked
                 TraversalHelper.replaceStep((Step) repeatStep, sqlgRepeatStepBarrier, traversal);
             } else {
                 break;

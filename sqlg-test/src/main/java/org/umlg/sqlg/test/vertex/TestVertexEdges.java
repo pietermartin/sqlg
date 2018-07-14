@@ -21,6 +21,7 @@ public class TestVertexEdges extends BaseTest {
 
     @BeforeClass
     public static void beforeClass() {
+        BaseTest.beforeClass();
         //This test only works on postgres.
         //it makes assumptions about iteration and query excution order.
 //        HSQLDB behaves differently.

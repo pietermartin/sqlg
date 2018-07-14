@@ -10,7 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 public abstract class SqlgMapStep<S, E> extends SqlgAbstractStep<S, E> {
 
 
-    public SqlgMapStep(final Traversal.Admin traversal) {
+    protected SqlgMapStep(final Traversal.Admin traversal) {
         super(traversal);
     }
 

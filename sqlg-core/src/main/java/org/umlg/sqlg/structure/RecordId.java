@@ -299,7 +299,7 @@ public class RecordId implements KryoSerializable, Comparable {
 
         @Override
         public void serialize(final RecordId recordId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
-                throws IOException, JsonGenerationException {
+                throws IOException {
             // when types are not embedded, stringify or resort to JSON primitive representations of the
             // type so that non-jvm languages can better interoperate with the TinkerPop stack.
             jsonGenerator.writeString(recordId.toString());
@@ -307,7 +307,7 @@ public class RecordId implements KryoSerializable, Comparable {
 
         @Override
         public void serializeWithType(final RecordId recordId, final JsonGenerator jsonGenerator,
-                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException {
 
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField(GraphSONTokens.CLASS, RecordId.class.getName());
@@ -323,7 +323,7 @@ public class RecordId implements KryoSerializable, Comparable {
         }
 
         @Override
-        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
             JsonToken jsonToken = jsonParser.nextToken();
             Preconditions.checkState(JsonToken.START_OBJECT == jsonToken);
             SchemaTable schemaTable = deserializationContext.readValue(jsonParser, SchemaTable.class);
@@ -354,6 +354,7 @@ public class RecordId implements KryoSerializable, Comparable {
             jsonGenerator.writeString(recordId.toString());
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public void serializeWithType(final RecordId recordId, final JsonGenerator jsonGenerator,
                                       final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
@@ -386,13 +387,15 @@ public class RecordId implements KryoSerializable, Comparable {
             if (data.get("id") instanceof Long) {
                 return RecordId.from(schemaTable, (Long) data.get("id"));
             } else {
-                ListOrderedSet identifiers = ListOrderedSet.listOrderedSet((List<Comparable>)data.get("id"));
+                @SuppressWarnings("unchecked")
+                ListOrderedSet<Comparable> identifiers = ListOrderedSet.listOrderedSet((List<Comparable>)data.get("id"));
                 return RecordId.from(schemaTable, identifiers);
             }
         }
     }
 
     static class RecordIdJacksonSerializerV3d0 extends StdScalarSerializer<RecordId> {
+        @SuppressWarnings("WeakerAccess")
         public RecordIdJacksonSerializerV3d0() {
             super(RecordId.class);
         }
@@ -413,18 +416,21 @@ public class RecordId implements KryoSerializable, Comparable {
     }
 
     static class RecordIdJacksonDeserializerV3d0 extends StdDeserializer<RecordId> {
+        @SuppressWarnings("WeakerAccess")
         public RecordIdJacksonDeserializerV3d0() {
             super(RecordId.class);
         }
 
         @Override
-        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
+            @SuppressWarnings("unchecked")
             final Map<String, Object> data = deserializationContext.readValue(jsonParser, Map.class);
             SchemaTable schemaTable = (SchemaTable) data.get("schemaTable");
             if (data.get("id") instanceof Long) {
                 return RecordId.from(schemaTable, (Long) data.get("id"));
             } else {
-                ListOrderedSet identifiers = ListOrderedSet.listOrderedSet((Set<Comparable>)data.get("id"));
+                @SuppressWarnings("unchecked")
+                ListOrderedSet<Comparable> identifiers = ListOrderedSet.listOrderedSet((Set<Comparable>)data.get("id"));
                 return RecordId.from(schemaTable, identifiers);
             }
         }
@@ -448,14 +454,12 @@ public class RecordId implements KryoSerializable, Comparable {
             this.sequenceId = id;
         }
 
-        public static ID from(Long sequenceId) {
-            ID id = new ID(sequenceId);
-            return id;
+        static ID from(Long sequenceId) {
+            return new ID(sequenceId);
         }
 
-        public static ID from(ListOrderedSet<Comparable> identifiers) {
-            ID id = new ID(identifiers);
-            return id;
+        static ID from(ListOrderedSet<Comparable> identifiers) {
+            return new ID(identifiers);
         }
 
         @Override
@@ -465,6 +469,7 @@ public class RecordId implements KryoSerializable, Comparable {
             } else {
                 int count = 0;
                 for (Comparable identifier : identifiers) {
+                    @SuppressWarnings("unchecked")
                     int i = identifier.compareTo(id.identifiers.get(count++));
                     if (i != 0) {
                         return i;
@@ -481,7 +486,7 @@ public class RecordId implements KryoSerializable, Comparable {
 
         @Override
         public boolean equals(Object other) {
-            if (other == null || !(other instanceof ID)) {
+            if (!(other instanceof ID)) {
                 return false;
             }
             ID otherID = (ID) other;

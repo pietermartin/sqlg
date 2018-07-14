@@ -17,12 +17,12 @@ import java.util.Set;
  */
 public class PropertyColumn implements TopologyInf {
 
-    private AbstractLabel abstractLabel;
-    private String name;
+    private final AbstractLabel abstractLabel;
+    private final String name;
     private boolean committed = true;
-    private PropertyType propertyType;
-    private Set<GlobalUniqueIndex> globalUniqueIndices = new HashSet<>();
-    private Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new HashSet<>();
+    private final PropertyType propertyType;
+    private final Set<GlobalUniqueIndex> globalUniqueIndices = new HashSet<>();
+    private final Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new HashSet<>();
 
     PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
         this.abstractLabel = abstractLabel;

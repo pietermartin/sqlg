@@ -13,7 +13,7 @@ import java.util.Set;
  */
 public class GremlinParser {
 
-    private SqlgGraph sqlgGraph;
+    private final SqlgGraph sqlgGraph;
 
     public GremlinParser(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;

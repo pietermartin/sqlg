@@ -33,9 +33,9 @@ class SqlgStartupManager {
 
     private static final String APPLICATION_VERSION = "application.version";
     private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
-    private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
-    private SqlgGraph sqlgGraph;
-    private SqlDialect sqlDialect;
+    private static final Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
+    private final SqlgGraph sqlgGraph;
+    private final SqlDialect sqlDialect;
 
     private String buildVersion;
 
@@ -445,7 +445,7 @@ class SqlgStartupManager {
                                 String schema,
                                 String table,
                                 String label,
-                                boolean isVertex) throws SQLException {
+                                boolean isVertex) {
 
         String lastIndexName = null;
         IndexType lastIndexType = null;
@@ -479,7 +479,7 @@ class SqlgStartupManager {
         }
     }
 
-    private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) throws SQLException {
+    private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         //check for ZONEDDATETIME, PERIOD, DURATION as they use more than one field to represent the type
         PropertyType propertyType = null;
         if (metaDataIter.hasNext()) {

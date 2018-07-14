@@ -14,11 +14,11 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/08/06
  */
-public class SQLServerVertexCacheBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
+class SQLServerVertexCacheBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
 
-    private Iterator<Map.Entry<SqlgVertex, Map<String, Object>>> rowIter;
+    private final Iterator<Map.Entry<SqlgVertex, Map<String, Object>>> rowIter;
     private Map<String, Object> currentRow;
-    private boolean dummy;
+    private final boolean dummy;
 
     SQLServerVertexCacheBulkRecord(SQLServerBulkCopy bulkCopy, SqlgGraph sqlgGraph, SchemaTable schemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices) throws SQLServerException {
         this.rowIter = vertices.getRight().entrySet().iterator();
@@ -49,7 +49,7 @@ public class SQLServerVertexCacheBulkRecord extends SQLServerBaseCacheBulkRecord
     }
 
     @Override
-    public Object[] getRowData() throws SQLServerException {
+    public Object[] getRowData() {
         if (this.dummy) {
             return new Object[]{1};
         } else {
@@ -64,7 +64,7 @@ public class SQLServerVertexCacheBulkRecord extends SQLServerBaseCacheBulkRecord
     }
 
     @Override
-    public boolean next() throws SQLServerException {
+    public boolean next() {
         if (this.rowIter.hasNext()) {
             Map.Entry<SqlgVertex, Map<String, Object>> entry = this.rowIter.next();
             this.currentRow = entry.getValue();

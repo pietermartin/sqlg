@@ -21,21 +21,21 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/08/09
  */
-public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
+abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
 
-    protected Map<Integer, ColumnMetadata> columnMetadata = new HashMap<>();
-    protected SortedSet<String> columns;
-    protected Map<String, PropertyColumn> propertyColumns;
+    final Map<Integer, ColumnMetadata> columnMetadata = new HashMap<>();
+    SortedSet<String> columns;
+    Map<String, PropertyColumn> propertyColumns;
     //Used for temp tables.
-    protected Map<String, PropertyType> properties;
+    Map<String, PropertyType> properties;
 
-    protected class ColumnMetadata {
-        String columnName;
-        int columnType;
-        int precision;
-        int scale;
-        DateTimeFormatter dateTimeFormatter;
-        PropertyType propertyType;
+    class ColumnMetadata {
+        final String columnName;
+        final int columnType;
+        final int precision;
+        final int scale;
+        final DateTimeFormatter dateTimeFormatter;
+        final PropertyType propertyType;
 
         ColumnMetadata(String name,
                        int type,
@@ -52,7 +52,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
         }
     }
 
-    protected int addMetaData(SQLServerBulkCopy bulkCopy, SqlgGraph sqlgGraph) throws SQLServerException {
+    int addMetaData(SQLServerBulkCopy bulkCopy, SqlgGraph sqlgGraph) throws SQLServerException {
         int i = 1;
         for (String column : this.columns) {
             PropertyType propertyType;
@@ -259,7 +259,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
 
     abstract Object getValue(String column);
 
-    protected void addValues(List<Object> values) {
+    void addValues(List<Object> values) {
         for (String column : this.columns) {
             PropertyType propertyType;
             if (this.propertyColumns != null) {

@@ -28,15 +28,15 @@ import java.util.function.Predicate;
  */
 public class TestIo extends BaseTest {
 
-    public String ioType;
+    private String ioType;
 
-    public boolean assertViaDirectEquality;
+    private boolean assertViaDirectEquality;
 
-    public boolean assertEdgesAtSameTimeAsVertex;
+    private boolean assertEdgesAtSameTimeAsVertex;
 
-    public Function<Graph, GraphReader> readerMaker;
+    private Function<Graph, GraphReader> readerMaker;
 
-    public Function<Graph, GraphWriter> writerMaker;
+    private Function<Graph, GraphWriter> writerMaker;
 
     @Test
     public void shouldReadWriteVertexWithBOTHEdges() throws Exception {

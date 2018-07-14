@@ -25,17 +25,17 @@ class BaseBenchmark {
         }
     }
 
-    protected SqlgGraph getSqlgGraph() {
+    SqlgGraph getSqlgGraph() {
         return getSqlgGraph(false);
     }
 
-    protected SqlgGraph getSqlgGraph(boolean distributed) {
+    SqlgGraph getSqlgGraph(boolean distributed) {
         Configuration configuration = getConfiguration();
         configuration.addProperty("distributed", distributed);
         return SqlgGraph.open(configuration);
     }
 
-    protected void closeSqlgGraph(SqlgGraph sqlgGraph) {
+    void closeSqlgGraph(SqlgGraph sqlgGraph) {
         sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         try {
             sqlgGraph.close();

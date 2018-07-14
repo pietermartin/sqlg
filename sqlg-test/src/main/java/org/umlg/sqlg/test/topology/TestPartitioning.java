@@ -56,7 +56,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testReloadVertexLabelWithPartitions() throws Exception {
+    public void testReloadVertexLabelWithPartitions() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
@@ -97,7 +97,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testReloadVertexLabelWithSubPartitions() throws Exception {
+    public void testReloadVertexLabelWithSubPartitions() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
@@ -159,7 +159,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testReloadEdgeLabelWithNoPartitions() throws Exception {
+    public void testReloadEdgeLabelWithNoPartitions() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensureVertexLabelExist(
                 "A",
@@ -199,7 +199,7 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testReloadEdgeLabelWithPartitions() throws Exception {
+    public void testReloadEdgeLabelWithPartitions() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensureVertexLabelExist(
                 "A",

@@ -30,18 +30,18 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
 	@SuppressWarnings("resource")
 	@Override
     public void apply(Traversal.Admin<?,?> traversal) {
-        if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
-        SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().orElseThrow(IllegalStateException::new);
         //This is because in normal BatchMode the new vertices are cached with it edges.
         //The query will read from the cache if this is for a cached vertex
         if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
             sqlgGraph.tx().flush();
         }
-        List<Step<?,?>> steps = new ArrayList(traversal.asAdmin().getSteps());
+        @SuppressWarnings("unchecked") List<Step<?,?>> steps = new ArrayList(traversal.asAdmin().getSteps());
         ListIterator<Step<?,?>> stepIterator = steps.listIterator();
-        stepIterator = steps.listIterator();
+//        stepIterator = steps.listIterator();
         Step<?,?> previous=null;
         while (stepIterator.hasNext()) {
             Step<?,?> step = stepIterator.next();

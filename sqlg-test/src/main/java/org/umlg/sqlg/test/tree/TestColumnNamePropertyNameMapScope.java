@@ -20,10 +20,9 @@ public class TestColumnNamePropertyNameMapScope extends BaseTest {
 
     /**
      * This tests a bug with the columnName/propertyName maps having the wrong scope.
-     * @throws Exception
      */
     @Test
-    public void testColumnNamePropertyNameMap() throws Exception {
+    public void testColumnNamePropertyNameMap() {
         Vertex group = this.sqlgGraph.addVertex(T.label, "Group", "name", "group1", "className", "this.that.Group", "uid", UUID.randomUUID().toString());
         Vertex network = this.sqlgGraph.addVertex(T.label, "Network", "name", "network1", "className", "this.that.Network", "uid", UUID.randomUUID().toString());
         group.addEdge("group_network", network);

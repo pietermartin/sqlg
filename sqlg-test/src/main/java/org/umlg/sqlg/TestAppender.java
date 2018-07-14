@@ -11,7 +11,7 @@ import org.apache.log4j.spi.LoggingEvent;
  * 
  */
 public class TestAppender extends AppenderSkeleton {
-	private static LinkedList<LoggingEvent> eventsList = new LinkedList<>();
+	private static final LinkedList<LoggingEvent> eventsList = new LinkedList<>();
 		
 	public static LinkedList<LoggingEvent> getEventsList() {
 		return eventsList;

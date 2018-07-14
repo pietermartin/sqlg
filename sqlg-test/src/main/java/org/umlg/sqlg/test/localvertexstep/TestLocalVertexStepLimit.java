@@ -21,7 +21,7 @@ public class TestLocalVertexStepLimit extends BaseTest {
     @Test
     public void testCount() {
         loadModern();
-        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal()
+        @SuppressWarnings("unchecked") DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal()
                 .V()
                 .local(
                         __.out().count()

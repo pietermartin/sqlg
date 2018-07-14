@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  */
 public class GraphStrategy extends BaseStrategy {
 
-    private static Logger logger = LoggerFactory.getLogger(GraphStrategy.class);
+    private static final Logger logger = LoggerFactory.getLogger(GraphStrategy.class);
 
     private GraphStrategy(Traversal.Admin<?, ?> traversal) {
         super(traversal);
@@ -52,6 +52,7 @@ public class GraphStrategy extends BaseStrategy {
             Object id = originalGraphStep.getIds()[0];
             if (id != null) {
                 Class clazz = id.getClass();
+                //noinspection unchecked
                 if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> clazz.isAssignableFrom(i.getClass())))
                     throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
             }
@@ -64,6 +65,7 @@ public class GraphStrategy extends BaseStrategy {
     }
 
     void combineSteps() {
+        @SuppressWarnings("unchecked")
         List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
         ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         MutableInt pathCount = new MutableInt(0);
@@ -86,6 +88,7 @@ public class GraphStrategy extends BaseStrategy {
     protected SqlgStep constructSqlgStep(Step startStep) {
         Preconditions.checkArgument(startStep instanceof GraphStep, "Expected a GraphStep, found instead a " + startStep.getClass().getName());
         GraphStep<?, ?> graphStep = (GraphStep) startStep;
+        //noinspection unchecked
         return new SqlgGraphStep(this.sqlgGraph, this.traversal, graphStep.getReturnClass(), graphStep.isStartStep(), graphStep.getIds());
     }
 
@@ -123,6 +126,7 @@ public class GraphStrategy extends BaseStrategy {
 
     @Override
     protected void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep) {
+        //noinspection unchecked
         TraversalHelper.replaceStep(stepToReplace, sqlgStep, this.traversal);
     }
 }

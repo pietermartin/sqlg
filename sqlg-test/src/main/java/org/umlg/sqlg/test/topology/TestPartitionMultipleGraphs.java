@@ -21,7 +21,7 @@ import java.util.*;
  */
 public class TestPartitionMultipleGraphs extends BaseTest {
 
-    private List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
+    private final List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
     @SuppressWarnings("Duplicates")
     @BeforeClass

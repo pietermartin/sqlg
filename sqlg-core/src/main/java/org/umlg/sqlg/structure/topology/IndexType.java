@@ -25,8 +25,8 @@ public class IndexType {
 		return it;
 	}
 	
-    private String name;
-    private Map<String,String> properties=new HashMap<>();
+    private final String name;
+    private final Map<String,String> properties=new HashMap<>();
     
 	public IndexType(String name) {
 		super();
@@ -69,12 +69,9 @@ public class IndexType {
 		} else if (!name.equals(other.name))
 			return false;
 		if (properties == null) {
-			if (other.properties != null)
-				return false;
-		} else if (!properties.equals(other.properties))
-			return false;
-		return true;
-	}
+            return other.properties == null;
+		} else return properties.equals(other.properties);
+    }
 
 	@Override
 	public String toString() {

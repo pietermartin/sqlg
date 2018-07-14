@@ -1,11 +1,5 @@
 package org.umlg.sqlg.test.topology;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Optional;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -18,6 +12,10 @@ import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.Optional;
+
+import static org.junit.Assert.*;
+
 /**
  * test deletion behavior in a specific scenarios
  *
@@ -27,14 +25,12 @@ public class TestTopologyDeleteSpecific extends BaseTest {
 
     /**
      * this failed with a NPE because we lost the table definition we're working on
-     *
-     * @throws Exception
      */
     @Test
-    public void testSchemaDelete() throws Exception {
+    public void testSchemaDelete() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());
         String schema = "willDelete";
-        Vertex v1 = sqlgGraph.addVertex(T.label, schema + ".t1", "name", "n1", "hello", "world");
+        sqlgGraph.addVertex(T.label, schema + ".t1", "name", "n1", "hello", "world");
         sqlgGraph.tx().commit();
         Configuration c = getConfigurationClone();
         c.setProperty(SqlgGraph.DISTRIBUTED, true);
@@ -42,7 +38,7 @@ public class TestTopologyDeleteSpecific extends BaseTest {
         sqlgGraph.getTopology().getSchema(schema).ifPresent((Schema s) -> s.remove(false));
         sqlgGraph.tx().commit();
 
-        v1 = sqlgGraph.addVertex(T.label, schema + ".t1", "name", "n1");
+        Vertex v1 = sqlgGraph.addVertex(T.label, schema + ".t1", "name", "n1");
         Vertex v2 = sqlgGraph.addVertex(T.label, schema + ".t2", "name", "n2");
         Edge e1 = v1.addEdge("e1", v2);
         sqlgGraph.tx().commit();
@@ -64,26 +60,18 @@ public class TestTopologyDeleteSpecific extends BaseTest {
     public void testRemoveAndAddInSameTransaction() {
         //remove it, it does not exist but duplicating work logic.
         Optional<EdgeLabel> aaEdgeLabelOpt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "aa");
-        if (aaEdgeLabelOpt.isPresent()) {
-            aaEdgeLabelOpt.get().remove(false);
-        }
+        aaEdgeLabelOpt.ifPresent(edgeLabel -> edgeLabel.remove(false));
         Optional<VertexLabel> aVertexLabelOpt = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
-        if (aVertexLabelOpt.isPresent()) {
-            aVertexLabelOpt.get().remove(false);
-        }
+        aVertexLabelOpt.ifPresent(vertexLabel -> vertexLabel.remove(false));
 
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("A");
         aVertexLabel.ensureEdgeLabelExist("aa", aVertexLabel);
         this.sqlgGraph.tx().commit();
 
         aaEdgeLabelOpt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "aa");
-        if (aaEdgeLabelOpt.isPresent()) {
-            aaEdgeLabelOpt.get().remove(false);
-        }
+        aaEdgeLabelOpt.ifPresent(edgeLabel -> edgeLabel.remove(false));
         aVertexLabelOpt = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
-        if (aVertexLabelOpt.isPresent()) {
-            aVertexLabelOpt.get().remove(false);
-        }
+        aVertexLabelOpt.ifPresent(vertexLabel -> vertexLabel.remove(false));
 
         aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("A");
         aVertexLabel.ensureEdgeLabelExist("aa", aVertexLabel);
@@ -97,7 +85,7 @@ public class TestTopologyDeleteSpecific extends BaseTest {
     }
     
     @Test
-    public void testRemoveSchemaWithCrossEdges() throws Exception {
+    public void testRemoveSchemaWithCrossEdges() {
     	  Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());
     	  Configuration c = getConfigurationClone();
           c.setProperty(SqlgGraph.DISTRIBUTED, true);

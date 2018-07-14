@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class PreparedStatementCache {
 
-    private Map<PreparedStatement,Boolean> cache = new IdentityHashMap<>();
+    private final Map<PreparedStatement,Boolean> cache = new IdentityHashMap<>();
 
     void add(PreparedStatement preparedStatement) {
         this.cache.put(preparedStatement,Boolean.TRUE);

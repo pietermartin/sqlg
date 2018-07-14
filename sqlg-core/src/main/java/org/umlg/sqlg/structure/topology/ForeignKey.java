@@ -16,7 +16,7 @@ import org.umlg.sqlg.structure.SchemaTable;
  */
 public class ForeignKey {
 
-    private ListOrderedSet<String> compositeKeys = new ListOrderedSet<>();
+    private final ListOrderedSet<String> compositeKeys = new ListOrderedSet<>();
     private String concatenatedIdentifiers = "";
     private Direction direction;
     private SchemaTable schemaTable;

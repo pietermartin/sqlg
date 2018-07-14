@@ -27,7 +27,7 @@ import java.util.ListIterator;
  */
 public class VertexStrategy extends BaseStrategy {
 
-    private static Logger logger = LoggerFactory.getLogger(VertexStrategy.class);
+    private static final Logger logger = LoggerFactory.getLogger(VertexStrategy.class);
 
     private VertexStrategy(Traversal.Admin<?, ?> traversal) {
         super(traversal);
@@ -53,6 +53,7 @@ public class VertexStrategy extends BaseStrategy {
         combineSteps();
     }
 
+    @SuppressWarnings("unchecked")
     void combineSteps() {
         List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
         ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
@@ -88,6 +89,7 @@ public class VertexStrategy extends BaseStrategy {
      * @param pathCount The path count.
      * @return true if the optimization can continue else false.
      */
+    @SuppressWarnings("unchecked")
     @Override
     protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
         if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof ChooseStep ||
@@ -122,6 +124,7 @@ public class VertexStrategy extends BaseStrategy {
         return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep) {
         if (this.traversal.getSteps().contains(stepToReplace)) {

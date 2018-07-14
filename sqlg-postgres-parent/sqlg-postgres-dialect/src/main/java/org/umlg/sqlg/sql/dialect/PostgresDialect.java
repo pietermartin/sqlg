@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.collections4.set.ListOrderedSet;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
@@ -117,11 +117,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public String getColumnEscapeKey() {
         return "\"";
-    }
-
-    @Override
-    public String getPrimaryKeyType() {
-        return "BIGINT NOT NULL PRIMARY KEY";
     }
 
     @Override
@@ -380,7 +375,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
-                
+
                 Iterator<Long> it = null;
                 if (edgeLabel.hasIDPrimaryKey()) {
                     List<Long> ids = new LinkedList<>();
@@ -407,7 +402,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(".");
                 sql.append(maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
                 sql.append(" (");
-                for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
+
+                Collection<Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> tripless = triples.getRight().values();
+                if (!tripless.isEmpty()) {
+                    Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple = tripless.iterator().next();
                     int count = 1;
 
                     if (outVertexLabel.hasIDPrimaryKey()) {
@@ -1599,7 +1597,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    private void valueToStreamBytes(Writer outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
+    private void valueToStreamBytes(Writer outputStream, PropertyType propertyType, Object value) {
         String s = valueToStringForBulkLoad(propertyType, value);
         try {
             outputStream.write(s);
@@ -1830,7 +1828,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
 
-    private InputStream mapVertexToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) throws SQLException {
+    private InputStream mapVertexToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
         //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
         int count = 1;
@@ -2835,11 +2833,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public <T> T getGis(SqlgGraph sqlgGraph) {
+    public <X> X getGis(SqlgGraph sqlgGraph) {
         Gis gis = Gis.GIS;
         gis.setSqlgGraph(sqlgGraph);
-        return (T) gis;
+        return (X) gis;
     }
 
     @Override
@@ -3455,7 +3454,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
          */
         private AtomicBoolean run = new AtomicBoolean(true);
 
-        TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
+        TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) {
             this.sqlgGraph = sqlgGraph;
             this.semaphore = semaphore;
         }
@@ -3890,7 +3889,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, Optional<String> edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgeToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
@@ -3921,7 +3920,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             //First delete all edges except for this edge traversed to get to the vertices.
             StringBuilder sb;
             for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("WITH todelete AS (");
@@ -3938,7 +3937,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             }
             for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("WITH todelete AS (");
@@ -3974,10 +3973,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sb.append(maybeWrapInQoutes("alias1"));
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
-        if (queryTraversesEdge) {
+        if (edgeToDelete != null && queryTraversesEdge) {
             sb = new StringBuilder();
             sb.append("WITH todelete AS (");
-            sb.append(edgesToDelete.get());
+            sb.append(edgeToDelete);
             sb.append("\n)\nDELETE FROM ");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");

@@ -16,8 +16,6 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
@@ -32,10 +30,10 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestMultipleThreadMultipleJvm extends BaseTest {
 
-    private static Logger logger = LoggerFactory.getLogger(TestMultipleThreadMultipleJvm.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(TestMultipleThreadMultipleJvm.class.getName());
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);

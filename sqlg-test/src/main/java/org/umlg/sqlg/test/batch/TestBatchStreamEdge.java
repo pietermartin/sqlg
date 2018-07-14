@@ -10,8 +10,6 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,7 +25,7 @@ public class TestBatchStreamEdge extends BaseTest {
     final private int NUMBER_OF_VERTICES = 1_000;
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);

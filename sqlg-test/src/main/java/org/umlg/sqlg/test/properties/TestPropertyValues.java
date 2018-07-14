@@ -1,17 +1,5 @@
 package org.umlg.sqlg.test.properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
@@ -21,6 +9,10 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.*;
+
+import static org.junit.Assert.*;
 
 /**
  * test behavior on property values
@@ -259,7 +251,6 @@ public class TestPropertyValues extends BaseTest {
 	/**
 	 * check the replaced steps has the specified restricted properties
 	 * @param t the traversal, EVALUATED (ie call printTraversalForm or getSQL first)
-	 * @param properties the properties
 	 */
 	@SuppressWarnings({ "resource", "unchecked" })
 	private void checkNoRestrictedProperties(Traversal<?, ?> t){

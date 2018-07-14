@@ -8,9 +8,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
-
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -20,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 public class TestBatchModeMultipleGraphs extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);

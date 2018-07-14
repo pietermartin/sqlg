@@ -282,7 +282,7 @@ public class TestSharding extends BaseTest {
     }
 
     @Test
-    public void testShardingDifferentInAndOut() throws Exception {
+    public void testShardingDifferentInAndOut() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{

@@ -12,21 +12,21 @@ public class EdgeRole implements TopologyInf {
 	/**
 	 * the vertex label
 	 */
-	private VertexLabel vertexLabel;
+	private final VertexLabel vertexLabel;
 	/**
 	 * the edge label
 	 */
-	private EdgeLabel edgeLabel;
+	private final EdgeLabel edgeLabel;
 	
 	/**
 	 * the direction of the edge for the vertex label
 	 */
-	private Direction direction;
+	private final Direction direction;
 	
 	/**
 	 * are we committed or still in a transaction?
 	 */
-	private boolean committed;
+	private final boolean committed;
 	
 	EdgeRole(VertexLabel vertexLabel, EdgeLabel edgeLabel, Direction direction, boolean committed) {
 		super();
@@ -71,12 +71,9 @@ public class EdgeRole implements TopologyInf {
 		} else if (!edgeLabel.equals(other.edgeLabel))
 			return false;
 		if (vertexLabel == null) {
-			if (other.vertexLabel != null)
-				return false;
-		} else if (!vertexLabel.equals(other.vertexLabel))
-			return false;
-		return true;
-	}
+            return other.vertexLabel == null;
+		} else return vertexLabel.equals(other.vertexLabel);
+    }
 
 	public Direction getDirection() {
 		return direction;

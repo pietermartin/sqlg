@@ -79,7 +79,7 @@ public class TinkerpopTest extends BaseTest {
         checkResults(list, traversal);
     }
 
-    public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
+    protected static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
         final List<T> results = traversal.toList();
         Assert.assertFalse(traversal.hasNext());
         if(expectedResults.size() != results.size()) {
@@ -90,7 +90,8 @@ public class TinkerpopTest extends BaseTest {
 
         for (T t : results) {
             if (t instanceof Map) {
-                Assert.assertTrue("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).filter(e -> checkMap((Map) e, (Map) t)).findAny().isPresent());
+                //noinspection unchecked
+                Assert.assertTrue("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).anyMatch(e -> checkMap((Map) e, (Map) t)));
             } else {
                 Assert.assertTrue("Checking result existence: " + t, expectedResults.contains(t));
             }
@@ -104,7 +105,7 @@ public class TinkerpopTest extends BaseTest {
         Assert.assertFalse(traversal.hasNext());
     }
 
-    public static <A, B> boolean checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
+    private static <A, B> boolean checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
         final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
         final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
 

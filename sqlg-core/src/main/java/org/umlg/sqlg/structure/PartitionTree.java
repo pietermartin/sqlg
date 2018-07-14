@@ -13,26 +13,26 @@ import java.util.Map;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/02/01
  */
-public class PartitionTree {
+class PartitionTree {
 
-    private String schema;
-    private String name;
+    private final String schema;
+    private final String name;
     /**
      * partitionExpression1 represents the partition columns.
      */
-    private String partitionExpression1;
+    private final String partitionExpression1;
     /**
      * partitionExpression2 is if the partition expression is an sql expression. i.e. not just specifying columns.
      */
-    private String partitionExpression2;
-    private String fromToIn;
-    private PartitionType partitionType;
+    private final String partitionExpression2;
+    private final String fromToIn;
+    private final PartitionType partitionType;
 
     private String parent;
-    private String schemaAndName;
+    private final String schemaAndName;
     private PartitionTree parentPartitionTree;
-    private List<PartitionTree> children = new ArrayList<>();
-    private static Map<String, PartitionTree> flattenedPartitionTrees = new HashMap<>();
+    private final List<PartitionTree> children = new ArrayList<>();
+    private static final Map<String, PartitionTree> flattenedPartitionTrees = new HashMap<>();
 
     static synchronized List<PartitionTree> build(List<Map<String, String>> partitions) {
         flattenedPartitionTrees.clear();
@@ -85,7 +85,7 @@ public class PartitionTree {
         partitionTree.parentPartitionTree = this;
     }
 
-    public PartitionTree(
+    private PartitionTree(
             String schemaAndName,
             String schema,
             String name,

@@ -17,8 +17,8 @@ import java.util.*;
  */
 public class GlobalUniqueIndex implements TopologyInf {
 
-    private Topology topology;
-    private String name;
+    private final Topology topology;
+    private final String name;
     private boolean committed = true;
     private Set<PropertyColumn> properties = new HashSet<>();
     private Set<PropertyColumn> uncommittedProperties = new HashSet<>();
@@ -151,7 +151,7 @@ public class GlobalUniqueIndex implements TopologyInf {
      * JSON representation of committed state
      * @return
      */
-    protected JsonNode toJson(){
+    private JsonNode toJson(){
     	ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (PropertyColumn property : this.properties) {

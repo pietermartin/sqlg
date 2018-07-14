@@ -17,6 +17,7 @@ import java.time.temporal.ChronoUnit;
  * Date: 2014/07/13
  * Time: 7:48 PM
  */
+@SuppressWarnings("UnnecessaryBoxing")
 public class TestSetProperty extends BaseTest {
 
     @Test
@@ -325,7 +326,7 @@ public class TestSetProperty extends BaseTest {
     }
 
     @Test
-    public void testDateTimeProperties() throws Exception {
+    public void testDateTimeProperties() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         LocalDateTime ldt = LocalDateTime.now();
         v.property("ldt", ldt);
@@ -407,7 +408,7 @@ public class TestSetProperty extends BaseTest {
     }
 
     @Test
-    public void testEdgeDateTimeProperties() throws Exception {
+    public void testEdgeDateTimeProperties() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
 
         Vertex vJ = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");

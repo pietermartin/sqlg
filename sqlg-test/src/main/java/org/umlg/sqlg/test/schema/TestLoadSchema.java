@@ -40,7 +40,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadingLocalDateTime() throws Exception {
+    public void testLoadingLocalDateTime() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDateTime.now());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -56,7 +56,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadingLocalDate() throws Exception {
+    public void testLoadingLocalDate() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDate.now());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -72,7 +72,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadingLocalTime() throws Exception {
+    public void testLoadingLocalTime() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalTime.now());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -88,7 +88,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadingJson() throws Exception {
+    public void testLoadingJson() {
         ObjectMapper objectMapper =  new ObjectMapper();
         ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
         json.put("username", "john");
@@ -106,7 +106,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testIdNotLoadedAsProperty() throws Exception {
+    public void testIdNotLoadedAsProperty() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -121,7 +121,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadPropertyColumnNames() throws Exception {
+    public void testLoadPropertyColumnNames() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -149,7 +149,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadSchema() throws Exception {
+    public void testLoadSchema() {
         this.sqlgGraph.addVertex(T.label, "Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
         this.sqlgGraph.tx().commit();
@@ -167,7 +167,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadMultipleSchemas() throws Exception {
+    public void testLoadMultipleSchemas() {
         this.sqlgGraph.addVertex(T.label, "Test1.Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
         this.sqlgGraph.addVertex(T.label, "Test2.Person", "aBoolean", true, "aShort", (short) 1,
@@ -188,7 +188,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void loadForeignKeys() throws Exception {
+    public void loadForeignKeys() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "bBoolean", true, "bShort", (short) 2,
@@ -245,7 +245,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemas() throws Exception {
+    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemas() {
         Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
         Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
         realBsc.addEdge("workspaceElement", realBscWE);
@@ -266,7 +266,7 @@ public class TestLoadSchema extends BaseTest {
 
     //TODO https://github.com/pietermartin/sqlg/issues/238
     @Test
-    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdges() throws Exception {
+    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdges() {
         Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isMssqlServer());
         Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
         Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
@@ -284,7 +284,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdgesOtherWayAround() throws Exception {
+    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdgesOtherWayAround() {
         Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
         Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
         Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
@@ -301,7 +301,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testSameEdgeToDifferentVertexLabels() throws Exception {
+    public void testSameEdgeToDifferentVertexLabels() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
         Vertex c1 = this.sqlgGraph.addVertex(T.label, "C.C", "name", "c1");
@@ -317,7 +317,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadSchemaSameTableDifferentSchema() throws Exception {
+    public void testLoadSchemaSameTableDifferentSchema() {
         @SuppressWarnings("unused")
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name1", "john");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Person", "name2", "john");
@@ -332,7 +332,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testMultipleInEdges() throws Exception {
+    public void testMultipleInEdges() {
         Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
         Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
         Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
@@ -348,7 +348,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testMultipleOutEdges() throws Exception {
+    public void testMultipleOutEdges() {
         Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
         Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
         Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
@@ -377,7 +377,7 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testLoadGlobalUniqueIndexes() throws Exception {
+    public void testLoadGlobalUniqueIndexes() {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("name1", PropertyType.STRING);
         properties.put("name2", PropertyType.STRING);

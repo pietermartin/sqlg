@@ -1,24 +1,5 @@
 package org.umlg.sqlg.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import java.beans.PropertyVetoException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -30,23 +11,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -61,7 +33,6 @@ import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -73,9 +44,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/07/12
@@ -83,7 +52,7 @@ import static org.junit.Assert.fail;
  */
 public abstract class BaseTest {
 
-    private static Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
     protected SqlgGraph sqlgGraph;
     protected SqlgGraph sqlgGraph1;
     protected GraphTraversalSource gt;
@@ -110,7 +79,7 @@ public abstract class BaseTest {
     };
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
@@ -144,7 +113,7 @@ public abstract class BaseTest {
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         try {
             this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
             this.sqlgGraph.close();
@@ -161,11 +130,11 @@ public abstract class BaseTest {
         }
     }
 
-    public static boolean isPostgres() {
+    protected static boolean isPostgres() {
         return configuration.getString("jdbc.url").contains("postgresql");
     }
 
-    public static boolean isMsSqlServer() {
+    protected static boolean isMsSqlServer() {
         return configuration.getString("jdbc.url").contains("sqlserver");
     }
 
@@ -184,7 +153,7 @@ public abstract class BaseTest {
         return conf;
     }
 
-    public void dropSqlgSchema(SqlgGraph sqlgGraph) {
+    protected void dropSqlgSchema(SqlgGraph sqlgGraph) {
         List<String> result = new ArrayList<>();
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_schema_vertex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_in_edges") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
@@ -348,7 +317,7 @@ public abstract class BaseTest {
      * @param vertexName a unique string that will identify a graph element within a graph
      * @return the id as generated by the graph
      */
-    public Object convertToVertexId(final String vertexName) {
+    protected Object convertToVertexId(final String vertexName) {
         return convertToVertexId(this.sqlgGraph, vertexName);
     }
 
@@ -359,7 +328,7 @@ public abstract class BaseTest {
      * @param vertexName a unique string that will identify a graph element within a graph
      * @return the id as generated by the graph
      */
-    public Object convertToVertexId(final Graph g, final String vertexName) {
+    protected Object convertToVertexId(final Graph g, final String vertexName) {
         return convertToVertex(g, vertexName).id();
     }
 
@@ -368,11 +337,11 @@ public abstract class BaseTest {
         return graph.traversal().V().has("name", vertexName).next();
     }
 
-    public Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
+    protected Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
         return graph.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).<Edge>select("e").next().id();
     }
 
-    public static void assertModernGraph(final Graph g1, final boolean assertDouble, final boolean lossyForId) {
+    protected static void assertModernGraph(final Graph g1, final boolean assertDouble, final boolean lossyForId) {
         assertToyGraph(g1, assertDouble, lossyForId, true);
     }
 
@@ -582,7 +551,8 @@ public abstract class BaseTest {
 
         for (T t : results) {
             if (t instanceof Map) {
-                Assert.assertThat("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).filter(e -> internalCheckMap((Map) e, (Map) t)).findAny().isPresent(), CoreMatchers.is(true));
+                //noinspection unchecked
+                Assert.assertThat("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).anyMatch(e -> internalCheckMap((Map) e, (Map) t)), CoreMatchers.is(true));
             } else {
                 Assert.assertThat("Checking result existence: " + t, expectedResults.contains(t), CoreMatchers.is(true));
             }
@@ -659,11 +629,12 @@ public abstract class BaseTest {
         Assert.assertEquals("comparatorsNotOnDb should be " + comparatorsNotOnDb, comparatorsNotOnDb, sqlgStep.getReplacedSteps().stream().allMatch(r -> r.getDbComparators().isEmpty()));
     }
 
-    public <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
+    protected <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
         final List<Map<A, B>> mapList = new ArrayList<>();
         for (int i = 0; i < keyValues.length; i = i + (2 * size)) {
             final Map<A, B> map = new HashMap<>();
             for (int j = 0; j < (2 * size); j = j + 2) {
+                //noinspection unchecked
                 map.put((A) keyValues[i + j], (B) keyValues[i + j + 1]);
             }
             mapList.add(map);

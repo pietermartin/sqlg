@@ -56,7 +56,7 @@ public class TestIoAgain extends BaseTest  {
         });
     }
 
-    @Parameterized.Parameter(value = 0)
+    @Parameterized.Parameter()
     public String ioType;
 
     @Parameterized.Parameter(value = 1)

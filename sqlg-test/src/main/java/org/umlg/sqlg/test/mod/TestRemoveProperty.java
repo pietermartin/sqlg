@@ -26,7 +26,7 @@ public class TestRemoveProperty extends BaseTest {
     @Parameterized.Parameter
     public Object value;
 
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Parameterized.Parameters(name = "{index}: value:{0}")
     public static Collection<Object[]> data() {

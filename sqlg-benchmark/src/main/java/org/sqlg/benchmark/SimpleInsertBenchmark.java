@@ -45,7 +45,7 @@ import java.util.Map;
 @Measurement(iterations = 10, time = 5)
 public class SimpleInsertBenchmark extends BaseBenchmark {
 
-    protected SqlgGraph sqlgGraph;
+    private SqlgGraph sqlgGraph;
 
     @Benchmark
     public long insert1000VerticesWith10Properties() {
@@ -68,7 +68,7 @@ public class SimpleInsertBenchmark extends BaseBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void setup() throws Exception {
+    public void setup() {
         this.sqlgGraph = getSqlgGraph();
         SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();

@@ -42,11 +42,11 @@ public class AndOrHasContainer {
         }
     }
 
-    private TYPE type;
+    private final TYPE type;
     //This represents the type's traversals.
     //i.e. g.V().or(__.traversal1, __.traversal2)
-    private List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
-    private List<HasContainer> hasContainers = new ArrayList<>();
+    private final List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
+    private final List<HasContainer> hasContainers = new ArrayList<>();
 
     public AndOrHasContainer(TYPE type) {
         this.type = type;

@@ -15,8 +15,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +22,11 @@ import java.util.Map;
 /**
  * Created by pieter on 2015/07/19.
  */
+@SuppressWarnings("unchecked")
 public class TestGremlinCompileGraphStep extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -35,7 +34,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
     }
 
     @Test
-    public void gg_V_asXaX_outXcreatedX_inXcreatedX_whereXneqXaXX_asXbX_selectXa_bX_addInEXa_codeveloper_b_year_2009X() throws IOException, InterruptedException {
+    public void gg_V_asXaX_outXcreatedX_inXcreatedX_whereXneqXaXX_asXbX_selectXa_bX_addInEXa_codeveloper_b_year_2009X() throws InterruptedException {
         Graph g = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
@@ -84,7 +83,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
     }
 
     @Test
-    public void g_V_asXaX_outXcreatedX_inXcreatedX_whereXneqXaXX_asXbX_selectXa_bX_addInEXa_codeveloper_b_year_2009X() throws IOException, InterruptedException {
+    public void g_V_asXaX_outXcreatedX_inXcreatedX_whereXneqXaXX_asXbX_selectXa_bX_addInEXa_codeveloper_b_year_2009X() throws InterruptedException {
         Graph g = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
@@ -123,7 +122,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
     }
 
     @Test
-    public void g_VX1X_outEXknowsX_hasXweight_1X_asXhereX_inV_hasXname_joshX_selectXhereX() throws IOException, InterruptedException {
+    public void g_VX1X_outEXknowsX_hasXweight_1X_asXhereX_inV_hasXname_joshX_selectXhereX() throws InterruptedException {
         Graph g = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(g, true, false);
@@ -165,7 +164,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
     }
 
     @Test
-    public void g_V_localXinEXknowsX_limitX2XX_outV_name() throws IOException {
+    public void g_V_localXinEXknowsX_limitX2XX_outV_name() {
         loadModern();
         assertModernGraph(this.sqlgGraph, true, false);
         DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal()

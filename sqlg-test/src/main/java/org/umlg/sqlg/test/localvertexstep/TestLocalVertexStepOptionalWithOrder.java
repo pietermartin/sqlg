@@ -189,40 +189,40 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals("g", v.value("name"));
 
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c2)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c2)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c2)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c3)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c3)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c3)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc1)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc1)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc1)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc2)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc2)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc2)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc3)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc3)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc3)).findAny().orElseThrow(IllegalStateException::new));
 
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb1)));
-        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb1)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb1)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb2)));
-        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb2)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb2)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb3)));
-        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb3)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb3)).findAny().orElseThrow(IllegalStateException::new));
 
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)));
-        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)).findAny().orElseThrow(IllegalStateException::new));
 
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a2)));
-        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a2)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a2)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a3)));
-        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a3)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a3)).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
     public void testOptionalWithOrderAndRange() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
 
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
@@ -299,8 +299,8 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
     @Test
     public void testOptionalWithOrderAndRange2() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
 
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
@@ -466,7 +466,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         p.get(2).equals(b1) &&
                         p.get(3).equals(bc3) &&
                         p.get(4).equals(c3)
-        ).findAny().get());
+        ).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertEquals(6, paths.size());
 
         Assert.assertTrue(paths.stream().anyMatch(
@@ -484,7 +484,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         p.get(2).equals(b1) &&
                         p.get(3).equals(bc2) &&
                         p.get(4).equals(c2)
-        ).findAny().get());
+        ).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertEquals(5, paths.size());
 
         Assert.assertTrue(paths.stream().anyMatch(
@@ -506,7 +506,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         p.get(4).equals(c1) &&
                         p.get(5).equals(cd1) &&
                         p.get(6).equals(d1)
-        ).findAny().get());
+        ).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertEquals(4, paths.size());
 
         Assert.assertTrue(paths.stream().anyMatch(
@@ -528,7 +528,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         p.get(4).equals(c1) &&
                         p.get(5).equals(cd2) &&
                         p.get(6).equals(d2)
-        ).findAny().get());
+        ).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertEquals(3, paths.size());
 
         Assert.assertTrue(paths.stream().anyMatch(
@@ -550,7 +550,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         p.get(4).equals(c1) &&
                         p.get(5).equals(cd3) &&
                         p.get(6).equals(d3)
-        ).findAny().get());
+        ).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertEquals(2, paths.size());
 
         Assert.assertTrue(paths.stream().anyMatch(
@@ -564,7 +564,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         p.get(0).equals(a1) &&
                         p.get(1).equals(ab2) &&
                         p.get(2).equals(b2)
-        ).findAny().get());
+        ).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertEquals(1, paths.size());
 
         Assert.assertTrue(paths.stream().anyMatch(
@@ -578,7 +578,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         p.get(0).equals(a1) &&
                         p.get(1).equals(ab3) &&
                         p.get(2).equals(b3)
-        ).findAny().get());
+        ).findAny().orElseThrow(IllegalStateException::new));
         Assert.assertEquals(0, paths.size());
     }
 
@@ -700,7 +700,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgLocalStepBarrier);
         SqlgLocalStepBarrier sqlgLocalStepBarrier = (SqlgLocalStepBarrier) traversal.getSteps().get(2);
-        DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
+        @SuppressWarnings("unchecked") DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
 
 //        First optional is a non optimized, optimized SqlgOptionalBarrierStep
         Assert.assertEquals(1, t.getSteps().size());
@@ -713,7 +713,8 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertTrue(optionalTraversal.getSteps().get(0) instanceof SqlgVertexStep);
         Assert.assertTrue(optionalTraversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);
 
-        SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) optionalTraversal.getSteps().get(1);
+        @SuppressWarnings("unused") SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) optionalTraversal.getSteps().get(1);
+        //noinspection unchecked
         t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier.getLocalChildren().get(0);
         //Second optional is a optimized
         Assert.assertEquals(1, t.getSteps().size());
@@ -722,57 +723,57 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
 
         Path pathX = paths.get(0);
         Assert.assertEquals(1, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a2));
+        Assert.assertEquals(pathX.get(0), a2);
 
         pathX = paths.get(1);
         Assert.assertEquals(3, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b3));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b3);
 
         pathX = paths.get(2);
         Assert.assertEquals(3, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b2));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b2);
 
         pathX = paths.get(3);
         Assert.assertEquals(5, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b1));
-        Assert.assertTrue(pathX.get(4).equals(c1));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b1);
+        Assert.assertEquals(pathX.get(4), c1);
 
         pathX = paths.get(4);
         Assert.assertEquals(5, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b1));
-        Assert.assertTrue(pathX.get(4).equals(c2));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b1);
+        Assert.assertEquals(pathX.get(4), c2);
 
         pathX = paths.get(5);
         Assert.assertEquals(5, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b1));
-        Assert.assertTrue(pathX.get(4).equals(c3));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b1);
+        Assert.assertEquals(pathX.get(4), c3);
 
         pathX = paths.get(6);
         Assert.assertEquals(5, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b1));
-        Assert.assertTrue(pathX.get(4).equals(cc3));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b1);
+        Assert.assertEquals(pathX.get(4), cc3);
 
         pathX = paths.get(7);
         Assert.assertEquals(5, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b1));
-        Assert.assertTrue(pathX.get(4).equals(cc2));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b1);
+        Assert.assertEquals(pathX.get(4), cc2);
 
         pathX = paths.get(8);
         Assert.assertEquals(5, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b1));
-        Assert.assertTrue(pathX.get(4).equals(cc1));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b1);
+        Assert.assertEquals(pathX.get(4), cc1);
 
         pathX = paths.get(9);
         Assert.assertEquals(3, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
+        Assert.assertEquals(pathX.get(0), a1);
 
         for (Path path : paths) {
             for (Object v : path.objects()) {
@@ -835,7 +836,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(2) instanceof LocalStep);
         LocalStep localStep = (LocalStep) traversal.getSteps().get(2);
-        DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) localStep.getLocalChildren().get(0);
+        @SuppressWarnings("unchecked") DefaultGraphTraversal<Vertex, Vertex> t = (DefaultGraphTraversal<Vertex, Vertex>) localStep.getLocalChildren().get(0);
 
         //First optional is a non optimized, optimized SqlgChooseBarrierStep
         Assert.assertEquals(1, t.getSteps().size());
@@ -848,6 +849,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertTrue(optionalTraversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);
 
         SqlgLocalStepBarrier sqlgLocalStepBarrier1 = (SqlgLocalStepBarrier) optionalTraversal.getSteps().get(1);
+        //noinspection unchecked
         t = (DefaultGraphTraversal<Vertex, Vertex>) sqlgLocalStepBarrier1.getLocalChildren().get(0);
         //Second optional is a optimized
         Assert.assertEquals(1, t.getSteps().size());
@@ -856,11 +858,11 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
 
         Path pathX = paths.get(0);
         Assert.assertEquals(1, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a2));
+        Assert.assertEquals(pathX.get(0), a2);
 
         pathX = paths.get(1);
         Assert.assertEquals(3, pathX.size());
-        Assert.assertTrue(pathX.get(0).equals(a1));
-        Assert.assertTrue(pathX.get(2).equals(b3));
+        Assert.assertEquals(pathX.get(0), a1);
+        Assert.assertEquals(pathX.get(2), b3);
     }
 }

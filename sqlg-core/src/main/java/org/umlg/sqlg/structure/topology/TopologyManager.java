@@ -31,12 +31,12 @@ public class TopologyManager {
     private TopologyManager() {
     }
 
-    public static Vertex addGraph(SqlgGraph sqlgGraph, String version) {
+    public static void addGraph(SqlgGraph sqlgGraph, String version) {
         Connection conn = sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             LocalDateTime now = LocalDateTime.now();
-            return sqlgGraph.addVertex(
+            sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GRAPH,
                     SQLG_SCHEMA_GRAPH_VERSION, version,
                     SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion(),
@@ -73,10 +73,10 @@ public class TopologyManager {
         }
     }
 
-    public static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
+    public static void addSchema(SqlgGraph sqlgGraph, String schema) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
-            return sqlgGraph.addVertex(
+            sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA,
                     "name", schema,
                     CREATED_ON, LocalDateTime.now()

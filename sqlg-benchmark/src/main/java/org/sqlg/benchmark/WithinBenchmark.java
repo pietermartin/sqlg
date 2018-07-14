@@ -52,12 +52,13 @@ import static org.junit.Assert.assertEquals;
 @Measurement(iterations = 10, time = 5)
 public class WithinBenchmark extends BaseBenchmark {
 
-    protected SqlgGraph sqlgGraph;
-    protected GraphTraversalSource gt;
-    private List<String> uids = new ArrayList<>();
-    private List<String> smallUidSet = new ArrayList<>();
-    private int count = 1;
+    private SqlgGraph sqlgGraph;
+    private GraphTraversalSource gt;
+    private final List<String> uids = new ArrayList<>();
+    private final List<String> smallUidSet = new ArrayList<>();
+    private final int count = 1;
 
+    @SuppressWarnings("SameReturnValue")
     @Benchmark
     public long withinWithIn() {
         this.sqlgGraph.configuration().setProperty("bulk.within.count", this.count);
@@ -66,6 +67,7 @@ public class WithinBenchmark extends BaseBenchmark {
         return 1000000;
     }
 
+    @SuppressWarnings("SameReturnValue")
     @Benchmark
     public long withinWithJoin() {
         this.sqlgGraph.configuration().setProperty("bulk.within.count", this.count - 1);
@@ -75,7 +77,7 @@ public class WithinBenchmark extends BaseBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void setup() throws Exception {
+    public void setup() {
         this.uids.clear();
         this.smallUidSet.clear();
         this.sqlgGraph = getSqlgGraph();

@@ -13,7 +13,6 @@ import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -508,7 +507,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
     }
 
     @Test
-    public void g_VX2X_optionalXoutXknowsXX() throws IOException {
+    public void g_VX2X_optionalXoutXknowsXX() {
         loadModern(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         Graph g = this.sqlgGraph;

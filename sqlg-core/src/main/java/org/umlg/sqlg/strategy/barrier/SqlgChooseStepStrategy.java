@@ -30,6 +30,7 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
         super();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.

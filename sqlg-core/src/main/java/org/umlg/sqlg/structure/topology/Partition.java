@@ -27,22 +27,22 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class Partition implements TopologyInf {
 
-    private static Logger logger = LoggerFactory.getLogger(Partition.class);
-    protected SqlgGraph sqlgGraph;
-    private String name;
+    private static final Logger logger = LoggerFactory.getLogger(Partition.class);
+    private final SqlgGraph sqlgGraph;
+    private final String name;
     private String from;
     private String to;
     private String in;
     private AbstractLabel abstractLabel;
-    protected boolean committed = true;
+    private boolean committed = true;
 
-    private PartitionType partitionType;
-    private String partitionExpression;
+    private final PartitionType partitionType;
+    private final String partitionExpression;
 
     private Partition parentPartition;
-    private Map<String, Partition> partitions = new HashMap<>();
-    private Map<String, Partition> uncommittedPartitions = new HashMap<>();
-    private Set<String> uncommittedRemovedPartitions = new HashSet<>();
+    private final Map<String, Partition> partitions = new HashMap<>();
+    private final Map<String, Partition> uncommittedPartitions = new HashMap<>();
+    private final Set<String> uncommittedRemovedPartitions = new HashSet<>();
 
     public Partition(
             SqlgGraph sqlgGraph,
@@ -664,7 +664,7 @@ public class Partition implements TopologyInf {
         return toNotifyJson(true);
     }
 
-    public Optional<ObjectNode> toNotifyJson(boolean committed) {
+    private Optional<ObjectNode> toNotifyJson(boolean committed) {
         boolean foundSomething = false;
         ObjectNode partitionObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         partitionObjectNode.put("name", this.name);
@@ -677,9 +677,7 @@ public class Partition implements TopologyInf {
         for (Partition partition : this.uncommittedPartitions.values()) {
             foundSomething = true;
             Optional<ObjectNode> json = partition.toNotifyJson(false);
-            if (json.isPresent()) {
-                uncommittedPartitions.add(json.get());
-            }
+            json.ifPresent(uncommittedPartitions::add);
         }
         if (uncommittedPartitions.size() > 0) {
             partitionObjectNode.set("uncommittedPartitions", uncommittedPartitions);
@@ -800,7 +798,7 @@ public class Partition implements TopologyInf {
         }
     }
 
-    PropertyColumn fromNotifyJson(JsonNode partitionNode, boolean fire) {
+    void fromNotifyJson(JsonNode partitionNode, boolean fire) {
         ArrayNode partitionsNode = (ArrayNode) partitionNode.get("partitions");
         if (partitionsNode != null) {
             for (JsonNode jsonNode : partitionsNode) {
@@ -829,7 +827,6 @@ public class Partition implements TopologyInf {
             }
         }
 
-        return null;
     }
 
     @Override
@@ -837,7 +834,7 @@ public class Partition implements TopologyInf {
         return this.name;
     }
 
-    public Partition ensureRangePartitionExists(String name, String from, String to) {
+    public void ensureRangePartitionExists(String name, String from, String to) {
         Objects.requireNonNull(name, "Sub-partition's \"name\" must not be null");
         Objects.requireNonNull(from, "Sub-partition's \"from\" must not be null");
         Objects.requireNonNull(to, "Sub-partition's \"to\" must not be null");
@@ -846,17 +843,13 @@ public class Partition implements TopologyInf {
         if (!partitionOptional.isPresent()) {
             this.getAbstractLabel().getSchema().getTopology().lock();
             partitionOptional = this.getPartition(name);
-            if (!partitionOptional.isPresent()) {
-                return this.createRangePartition(name, from, to);
-            } else {
-                return partitionOptional.get();
-            }
+            partitionOptional.orElseGet(() -> this.createRangePartition(name, from, to));
         } else {
-            return partitionOptional.get();
+            partitionOptional.get();
         }
     }
 
-    public Partition ensureListPartitionExists(String name, String in) {
+    public void ensureListPartitionExists(String name, String in) {
         Objects.requireNonNull(name, "Sub-partition's \"name\" must not be null");
         Objects.requireNonNull(in, "Sub-partition's \"in\" must not be null");
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureRangePartitionExists(String name, String in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
@@ -864,13 +857,9 @@ public class Partition implements TopologyInf {
         if (!partitionOptional.isPresent()) {
             this.getAbstractLabel().getSchema().getTopology().lock();
             partitionOptional = this.getPartition(name);
-            if (!partitionOptional.isPresent()) {
-                return this.createListPartition(name, in);
-            } else {
-                return partitionOptional.get();
-            }
+            partitionOptional.orElseGet(() -> this.createListPartition(name, in));
         } else {
-            return partitionOptional.get();
+            partitionOptional.get();
         }
     }
 
@@ -891,11 +880,7 @@ public class Partition implements TopologyInf {
         if (!partitionOptional.isPresent()) {
             this.getAbstractLabel().getSchema().getTopology().lock();
             partitionOptional = this.getPartition(name);
-            if (!partitionOptional.isPresent()) {
-                return this.createRangePartitionWithSubPartition(name, from, to, partitionType, partitionExpression);
-            } else {
-                return partitionOptional.get();
-            }
+            return partitionOptional.orElseGet(() -> this.createRangePartitionWithSubPartition(name, from, to, partitionType, partitionExpression));
         } else {
             return partitionOptional.get();
         }
@@ -916,11 +901,7 @@ public class Partition implements TopologyInf {
         if (!partitionOptional.isPresent()) {
             this.getAbstractLabel().getSchema().getTopology().lock();
             partitionOptional = this.getPartition(name);
-            if (!partitionOptional.isPresent()) {
-                return this.createListPartitionWithSubPartition(name, in, partitionType, partitionExpression);
-            } else {
-                return partitionOptional.get();
-            }
+            return partitionOptional.orElseGet(() -> this.createListPartitionWithSubPartition(name, in, partitionType, partitionExpression));
         } else {
             return partitionOptional.get();
         }

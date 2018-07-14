@@ -16,8 +16,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
  */
 public class TopologyStrategy extends AbstractTraversalStrategy<TraversalStrategy.DecorationStrategy> implements TraversalStrategy.DecorationStrategy {
 
-    private boolean sqlgSchema;
-    private boolean globalUniqueIndex;
+    private final boolean sqlgSchema;
+    private final boolean globalUniqueIndex;
     public static final String TOPOLOGY_SELECTION_SQLG_SCHEMA = "~~TopologySelectionSqlgSchema~~";
     public static final String TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX = "~~TopologySelectionGlobalUniqueIndex~~";
 
@@ -26,6 +26,7 @@ public class TopologyStrategy extends AbstractTraversalStrategy<TraversalStrateg
         this.globalUniqueIndex = builder.globalUniqueIndex;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         Preconditions.checkState(!(this.sqlgSchema && this.globalUniqueIndex), "sqlgSchema and globalUnique are mutually exclusive. Both can not be true.");

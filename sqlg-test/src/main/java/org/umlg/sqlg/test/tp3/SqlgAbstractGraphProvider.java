@@ -25,7 +25,7 @@ import java.util.Set;
  */
 public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
 
     private static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
         add(SqlgEdge.class);

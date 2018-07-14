@@ -13,11 +13,11 @@ import java.util.TreeMap;
  */
 public class SortedTree<T> extends TreeMap<T, SortedTree<T>> implements Serializable {
 
-    public SortedTree(Comparator<? super T> comparator) {
+    private SortedTree(Comparator<? super T> comparator) {
         super(comparator);
     }
 
-    public void addTree(final Tree<T> tree) {
+    void addTree(final Tree<T> tree) {
         tree.forEach((k, v) -> {
             if (this.containsKey(k)) {
                 this.get(k).addTree(v);

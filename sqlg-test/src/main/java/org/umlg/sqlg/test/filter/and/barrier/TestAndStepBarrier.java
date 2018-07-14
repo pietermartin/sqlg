@@ -40,7 +40,7 @@ public class TestAndStepBarrier extends BaseTest {
         );
 
         GraphTraversalSource g = this.sqlgGraph.traversal();
-        final SubgraphStrategy strategy = SubgraphStrategy.build().edgeCriterion(edgeCriterion).create();
+        final SubgraphStrategy strategy = SubgraphStrategy.build().edges(edgeCriterion).create();
         final GraphTraversalSource sg = g.withStrategies(strategy);
 
         // all vertices are here

@@ -11,9 +11,9 @@ import java.util.List;
  *
  */
 public class IndexRef {
-	private String indexName;
-	private IndexType indexType;
-	private List<String> columns;
+	private final String indexName;
+	private final IndexType indexType;
+	private final List<String> columns;
 	
 	public IndexRef(String indexName, IndexType indexType, List<String> columns) {
 		super();

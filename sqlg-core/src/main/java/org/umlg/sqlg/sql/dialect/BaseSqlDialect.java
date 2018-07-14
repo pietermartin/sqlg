@@ -6,7 +6,6 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.*;
@@ -26,9 +25,9 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlSchemaChangeDialect {
 
-    protected Logger logger = LoggerFactory.getLogger(getClass().getName());
+    final Logger logger = LoggerFactory.getLogger(getClass().getName());
 
-    public BaseSqlDialect() {
+    protected BaseSqlDialect() {
     }
 
     public void validateColumnName(String column) {
@@ -787,101 +786,6 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                     throw new RuntimeException(e);
                 }
 
-//                List<SqlgEdge> edges = schemaEdges.getValue();
-//                int numberOfLoops = (edges.size() / sqlInParameterLimit());
-//                int previous = 0;
-//                for (int i = 1; i <= numberOfLoops + 1; i++) {
-//
-//                    int subListTo = i * sqlInParameterLimit();
-//                    List<SqlgEdge> subEdges;
-//                    if (i <= numberOfLoops) {
-//                        subEdges = edges.subList(previous, subListTo);
-//                    } else {
-//                        subEdges = edges.subList(previous, edges.size());
-//                    }
-//                    previous = subListTo;
-//
-//                    if (!subEdges.isEmpty()) {
-//
-//                        for (SchemaTable schemaTable : removeEdgeCache.keySet()) {
-//                            StringBuilder sql = new StringBuilder("DELETE FROM ");
-//                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-//                            sql.append(".");
-//                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes((EDGE_PREFIX) + schemaTable.getTable()));
-//                            sql.append(" WHERE ");
-//                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//                            sql.append(" in (");
-//                            int count = 1;
-//                            for (@SuppressWarnings("unused") SqlgEdge sqlgEdge : subEdges) {
-//                                sql.append("?");
-//                                if (count++ < subEdges.size()) {
-//                                    sql.append(",");
-//                                }
-//                            }
-//                            sql.append(")");
-//                            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-//                                sql.append(";");
-//                            }
-//                            if (logger.isDebugEnabled()) {
-//                                logger.debug(sql.toString());
-//                            }
-//                            Connection conn = sqlgGraph.tx().getConnection();
-//                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                                count = 1;
-//                                for (SqlgEdge sqlgEdge : subEdges) {
-//                                    preparedStatement.setLong(count++, ((RecordId) sqlgEdge.id()).sequenceId());
-//                                }
-//                                preparedStatement.executeUpdate();
-//                            } catch (SQLException e) {
-//                                throw new RuntimeException(e);
-//                            }
-//                        }
-//                    }
-//                }
-            }
-        }
-    }
-
-    private void deleteEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<SqlgVertex> subVertices, Set<SchemaTable> labels, boolean inDirection) {
-        for (SchemaTable inLabel : labels) {
-
-            StringBuilder sql = new StringBuilder();
-            sql.append("DELETE FROM ");
-            sql.append(maybeWrapInQoutes(inLabel.getSchema()));
-            sql.append(".");
-            sql.append(maybeWrapInQoutes(inLabel.getTable()));
-            sql.append(" WHERE ");
-            sql.append(maybeWrapInQoutes(schemaTable.toString() + (inDirection ? IN_VERTEX_COLUMN_END : OUT_VERTEX_COLUMN_END)));
-            sql.append(" IN (");
-            int count = 1;
-            for (Vertex vertexToDelete : subVertices) {
-                sql.append("?");
-                if (count++ < subVertices.size()) {
-                    sql.append(",");
-                }
-            }
-            sql.append(")");
-            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
-            }
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            //TODO
-            if (true)
-                throw new RuntimeException("handle ID");
-            Connection conn = sqlgGraph.tx().getConnection();
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                count = 1;
-                for (Vertex vertexToDelete : subVertices) {
-                    preparedStatement.setLong(count++, ((RecordId) vertexToDelete.id()).sequenceId());
-                }
-                int deleted = preparedStatement.executeUpdate();
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Deleted " + deleted + " edges from " + inLabel.toString());
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
             }
         }
     }

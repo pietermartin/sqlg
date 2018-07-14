@@ -26,17 +26,17 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class EdgeLabel extends AbstractLabel {
 
-    private static Logger logger = LoggerFactory.getLogger(EdgeLabel.class);
+    private static final Logger logger = LoggerFactory.getLogger(EdgeLabel.class);
     //This just won't stick in my brain.
     //hand (out) ----<label>---- finger (in)
-    Set<VertexLabel> outVertexLabels = new HashSet<>();
-    Set<VertexLabel> inVertexLabels = new HashSet<>();
-    private Set<VertexLabel> uncommittedOutVertexLabels = new HashSet<>();
-    private Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
-    private Set<VertexLabel> uncommittedRemovedInVertexLabels = new HashSet<>();
-    private Set<VertexLabel> uncommittedRemovedOutVertexLabels = new HashSet<>();
+    final Set<VertexLabel> outVertexLabels = new HashSet<>();
+    final Set<VertexLabel> inVertexLabels = new HashSet<>();
+    private final Set<VertexLabel> uncommittedOutVertexLabels = new HashSet<>();
+    private final Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
+    private final Set<VertexLabel> uncommittedRemovedInVertexLabels = new HashSet<>();
+    private final Set<VertexLabel> uncommittedRemovedOutVertexLabels = new HashSet<>();
 
-    private Topology topology;
+    private final Topology topology;
 
     static EdgeLabel loadSqlgSchemaEdgeLabel(
             String edgeLabelName,
@@ -1062,7 +1062,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     @Override
-    public List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException {
+    public List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) {
         List<Topology.TopologyValidationError> validationErrors = new ArrayList<>();
         for (PropertyColumn propertyColumn : getProperties().values()) {
             List<Triple<String, Integer, String>> columns = this.sqlgGraph.getSqlDialect().getTableColumns(metadata, null, this.getSchema().getName(), "E_" + this.getLabel(), propertyColumn.getName());

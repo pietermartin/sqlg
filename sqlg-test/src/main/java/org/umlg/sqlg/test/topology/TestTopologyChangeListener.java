@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class TestTopologyChangeListener extends BaseTest {
 
-    private List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
+    private final List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
     @Before
     public void before() throws Exception {

@@ -42,7 +42,7 @@ public class TestDetachedEdge extends BaseTest {
         assertEquals(0.5d, detachedEdge.properties("weight").next().value());
     }
 
-    public Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
+    private Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
         return convertToEdgeId(this.sqlgGraph, outVertexName, edgeLabel, inVertexName);
     }
 

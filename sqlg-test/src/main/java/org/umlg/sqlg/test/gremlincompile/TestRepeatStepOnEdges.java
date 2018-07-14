@@ -32,7 +32,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Scope.local;
  */
 public class TestRepeatStepOnEdges extends BaseTest {
 
-    private Logger logger = LoggerFactory.getLogger(TestRepeatStepOnEdges.class);
+    private final Logger logger = LoggerFactory.getLogger(TestRepeatStepOnEdges.class);
 
 //    @Test
 //    public void test() {
@@ -74,7 +74,7 @@ public class TestRepeatStepOnEdges extends BaseTest {
         //check paths
         gp = query1(this.sqlgGraph.traversal());
         //check paths
-        List<List<Object>> paths = IteratorUtils.list(gp);
+        @SuppressWarnings("unchecked") List<List<Object>> paths = IteratorUtils.list(gp);
         List<Predicate<List<Object>>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 2 && p.get(0).equals("1") && ((Path) p.get(1)).get(0).equals(v0.id())
                         && ((Map) ((Path) p.get(1)).get(1)).containsKey("depTime") && ((Map) ((Path) p.get(1)).get(1)).get("depTime").equals(5L)

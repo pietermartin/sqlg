@@ -10,7 +10,6 @@ import org.umlg.sqlg.structure.BatchManager;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,7 +23,7 @@ import static org.junit.Assert.assertEquals;
 public class TestBatchJson extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);

@@ -72,6 +72,7 @@ public class SqlgLocalStepStrategy extends AbstractTraversalStrategy<TraversalSt
                 for (String label : localStep.getLabels()) {
                     sqlgLocalStepBarrier.addLabel(label);
                 }
+                //noinspection unchecked
                 TraversalHelper.replaceStep((Step) localStep, sqlgLocalStepBarrier, traversal);
             } else {
                 break;

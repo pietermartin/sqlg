@@ -29,10 +29,11 @@ public class SqlgNotStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
         //noinspection OptionalGetWithoutIsPresent
-        if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         List<NotStep> notSteps = TraversalHelper.getStepsOfAssignableClass(NotStep.class, traversal);
+        //noinspection unchecked
         for (NotStep<S> notStep : notSteps) {
 
             //reducing barrier steps like count does not work with Sqlg's barrier optimizations

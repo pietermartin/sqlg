@@ -32,8 +32,8 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class VertexLabel extends AbstractLabel {
 
-    private static Logger logger = LoggerFactory.getLogger(VertexLabel.class);
-    private Schema schema;
+    private static final Logger logger = LoggerFactory.getLogger(VertexLabel.class);
+    private final Schema schema;
 
     //hand (out) ----<label>---- finger (in)
     //The key of the map must include the schema.
@@ -41,12 +41,12 @@ public class VertexLabel extends AbstractLabel {
     //        B.B --ab-->A.B
     //In this case 2 EdgeLabels will exist A.ab and B.ab
     //A.B's inEdgeLabels will contain both EdgeLabels
-    Map<String, EdgeLabel> inEdgeLabels = new HashMap<>();
-    Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
-    private Map<String, EdgeLabel> uncommittedInEdgeLabels = new HashMap<>();
-    private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
-    private Map<String, EdgeRemoveType> uncommittedRemovedInEdgeLabels = new HashMap<>();
-    private Map<String, EdgeRemoveType> uncommittedRemovedOutEdgeLabels = new HashMap<>();
+    final Map<String, EdgeLabel> inEdgeLabels = new HashMap<>();
+    final Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
+    private final Map<String, EdgeLabel> uncommittedInEdgeLabels = new HashMap<>();
+    private final Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
+    private final Map<String, EdgeRemoveType> uncommittedRemovedInEdgeLabels = new HashMap<>();
+    private final Map<String, EdgeRemoveType> uncommittedRemovedOutEdgeLabels = new HashMap<>();
 
     private enum EdgeRemoveType {
         LABEL,
@@ -886,30 +886,32 @@ public class VertexLabel extends AbstractLabel {
                     Preconditions.checkState(schemaOptional.isPresent(), "Schema %s must be present", schemaName);
                     @SuppressWarnings("OptionalGetWithoutIsPresent")
                     Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(edgeLabelName);
-                    Preconditions.checkState(edgeLabelOptional.isPresent(), "edge label must be present as the in can not be there without the out. EdgeLabel: %s", edgeLabelName);
-                    @SuppressWarnings("OptionalGetWithoutIsPresent")
-                    EdgeLabel edgeLabel = edgeLabelOptional.get();
-                    edgeLabel.addToInVertexLabel(this);
-                    this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
-                    edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel, false);
-                    this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
-                    ForeignKey foreignKey;
-                    if (this.hasIDPrimaryKey()) {
-                        foreignKey = ForeignKey.of(this.getFullName() + Topology.IN_VERTEX_COLUMN_END);
-                    } else {
-                        foreignKey = new ForeignKey();
-                        for (String identifier : this.getIdentifiers()) {
-                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
-                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
-                                foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                    //The edgeLabel could have been deleted
+                    if (edgeLabelOptional.isPresent()) {
+                        @SuppressWarnings("OptionalGetWithoutIsPresent")
+                        EdgeLabel edgeLabel = edgeLabelOptional.get();
+                        edgeLabel.addToInVertexLabel(this);
+                        this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
+                        edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel, false);
+                        this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
+                        ForeignKey foreignKey;
+                        if (this.hasIDPrimaryKey()) {
+                            foreignKey = ForeignKey.of(this.getFullName() + Topology.IN_VERTEX_COLUMN_END);
+                        } else {
+                            foreignKey = new ForeignKey();
+                            for (String identifier : this.getIdentifiers()) {
+                                if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                                    //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                    foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                                }
                             }
                         }
+                        this.getSchema().getTopology().addToEdgeForeignKeyCache(
+                                edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
+                                foreignKey
+                        );
 
                     }
-                    this.getSchema().getTopology().addToEdgeForeignKeyCache(
-                            edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
-                            foreignKey
-                    );
                 }
             }
         }

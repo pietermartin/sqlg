@@ -382,7 +382,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
 
     //Lukas's tests
     @Test
-    public void testVertexSingleLabelUniqueConstraint() throws Exception {
+    public void testVertexSingleLabelUniqueConstraint() {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }};
@@ -405,7 +405,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    public void testVertexMultiLabelUniqueConstraint() throws Exception {
+    public void testVertexMultiLabelUniqueConstraint() {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }};
@@ -433,7 +433,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    public void testVertexMultipleConstraintsOnSingleProperty() throws Exception {
+    public void testVertexMultipleConstraintsOnSingleProperty() {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }};
@@ -472,7 +472,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    public void testUpdateUniqueProperty() throws Exception {
+    public void testUpdateUniqueProperty() {
 
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
@@ -497,7 +497,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
     }
 
     @Test
-    public void testDeleteUniqueProperty() throws Exception {
+    public void testDeleteUniqueProperty() {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }};

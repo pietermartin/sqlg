@@ -24,8 +24,8 @@ import java.util.*;
  */
 public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep implements SqlgStep {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class);
-    private SqlgGraph sqlgGraph;
+    private static final Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class);
+    private final SqlgGraph sqlgGraph;
 
     //This holds the head/start traversers per SchemaTable.
     //A query is executed per SchemaTable
@@ -46,7 +46,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     //It is used to generate the select statements, 'VALUES' and ORDER BY 'index' sql
     private Map<SchemaTable, List<Pair<RecordId.ID, Long>>> schemaTableParentIds = new LinkedHashMap<>();
 
-    private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
+    private final List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
 
     private Emit<E> toEmit = null;
@@ -124,7 +124,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         this.heads.clear();
         this.schemaTableParentIds.clear();
         while (this.starts.hasNext()) {
-            Traverser.Admin<E> h = this.starts.next();
+            @SuppressWarnings("unchecked") Traverser.Admin<E> h = this.starts.next();
             E value = h.get();
             SchemaTable schemaTable = value.getSchemaTablePrefixed();
             List<Traverser.Admin<E>> traverserList = this.heads.get(schemaTable);
@@ -176,6 +176,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 this.toEmit = emit;
                 E e = emit.getElement();
                 this.labels = emit.getLabels();
+                //noinspection unchecked
                 traverser = traverser.split(e, this);
                 if (traverser instanceof SqlgTraverser) {
                     ((SqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
@@ -266,7 +267,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
 
     @Override
     public SqlgVertexStep<E> clone() {
-        final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
+        @SuppressWarnings("unchecked") final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
         clone.heads = new LinkedHashMap<>();
         this.schemaTableElements = LinkedListMultimap.create();
         clone.schemaTableParentIds = new LinkedHashMap<>();

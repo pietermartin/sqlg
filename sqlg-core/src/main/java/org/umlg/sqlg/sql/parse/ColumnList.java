@@ -21,27 +21,27 @@ public class ColumnList {
     /**
      * Column -> alias
      */
-    private LinkedHashMap<Column, String> columns = new LinkedHashMap<>();
+    private final LinkedHashMap<Column, String> columns = new LinkedHashMap<>();
     /**
      * Alias -> Column
      */
-    private LinkedHashMap<String, Column> aliases = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Column> aliases = new LinkedHashMap<>();
 
     /**
      * Indicates that the query is for a {@link org.apache.tinkerpop.gremlin.process.traversal.step.filter.DropStep}
      * In this case only the first column will be returned.
      */
-    private boolean drop;
+    private final boolean drop;
 
     /**
      * the graph to have access to the SQL dialect
      */
-    private SqlgGraph sqlgGraph;
+    private final SqlgGraph sqlgGraph;
 
     /**
      * A map of all the properties and their types.
      */
-    private Map<String, Map<String, PropertyType>> filteredAllTables;
+    private final Map<String, Map<String, PropertyType>> filteredAllTables;
 
     /**
      * build a new empty column list
@@ -247,12 +247,12 @@ public class ColumnList {
         return result;
     }
 
-    public int indexColumns(int startColumnIndex) {
+    public void indexColumns(int startColumnIndex) {
         int i = startColumnIndex;
         for (Column column : columns.keySet()) {
             column.columnIndex = i++;
         }
-        return i++;
+        i++;
     }
 
     public int indexColumnsExcludeForeignKey(int startColumnIndex) {
@@ -271,12 +271,12 @@ public class ColumnList {
      * @author jpmoresmau
      */
     public class Column {
-        private String schema;
-        private String table;
-        private String column;
-        private int stepDepth;
+        private final String schema;
+        private final String table;
+        private final String column;
+        private final int stepDepth;
         private PropertyType propertyType;
-        private boolean ID;
+        private final boolean ID;
         private int columnIndex = -1;
 
         //Foreign key properties
@@ -334,9 +334,7 @@ public class ColumnList {
                     return false;
             } else if (!table.equals(other.table))
                 return false;
-            if (this.stepDepth != other.stepDepth)
-                return false;
-            return true;
+            return this.stepDepth == other.stepDepth;
         }
 
         private ColumnList getOuterType() {
@@ -399,7 +397,7 @@ public class ColumnList {
          *
          * @param sb
          */
-        public void toString(StringBuilder sb) {
+        void toString(StringBuilder sb) {
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sb.append(".");
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
@@ -407,7 +405,7 @@ public class ColumnList {
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
         }
 
-        public boolean isFor(int stepDepth, SchemaTable schemaTable) {
+        boolean isFor(int stepDepth, SchemaTable schemaTable) {
             return this.stepDepth == stepDepth && this.schema.equals(schemaTable.getSchema()) && this.table.equals(schemaTable.getTable());
         }
 

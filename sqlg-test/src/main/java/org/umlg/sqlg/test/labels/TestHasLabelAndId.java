@@ -273,7 +273,7 @@ public class TestHasLabelAndId extends BaseTest {
         vertices = traversal.toList();
         Assert.assertEquals(0, vertices.size());
 
-        traversal = traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(a2.id(), b.id(), c.id(), d.id()));
+        traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(a2.id(), b.id(), c.id(), d.id()));
         vertices = traversal.toList();
         Assert.assertEquals(0, vertices.size());
     }

@@ -17,8 +17,8 @@ import java.util.Map;
 @Measurement(iterations = 10, time = 5)
 public class ReadBenchmark extends BaseBenchmark {
 
-    protected SqlgGraph sqlgGraph;
-    protected GraphTraversalSource gt;
+    private SqlgGraph sqlgGraph;
+    private GraphTraversalSource gt;
 
     @Group("readGraphStep")
     @GroupThreads(10)
@@ -50,7 +50,7 @@ public class ReadBenchmark extends BaseBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void setup() throws Exception {
+    public void setup() {
         System.out.println("setup");
         this.sqlgGraph = getSqlgGraph();
         SqlgUtil.dropDb(this.sqlgGraph);

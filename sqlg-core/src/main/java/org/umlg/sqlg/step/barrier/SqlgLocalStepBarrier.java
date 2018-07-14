@@ -20,7 +20,7 @@ public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
 
     private boolean first = true;
     private Traversal.Admin<S, E> localTraversal;
-    private List<Traverser.Admin<E>> results = new ArrayList<>();
+    private final List<Traverser.Admin<E>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<E>> resultIterator;
 
     public SqlgLocalStepBarrier(final Traversal.Admin traversal, LocalStep<S, E> localStep) {
@@ -28,6 +28,7 @@ public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
         this.localTraversal = localStep.getLocalChildren().get(0);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, E>> getLocalChildren() {
         return Collections.singletonList(this.localTraversal);

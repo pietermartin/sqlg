@@ -11,6 +11,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
@@ -58,12 +59,12 @@ public class TestAllVertices extends BaseTest {
                 graph.vertices(oid).next();
                 Assert.fail("Vertex should not be found as close behavior was set to rollback");
             } catch (Exception ex) {
-                validateException(Graph.Exceptions.elementNotFound(Vertex.class, oid), ex);
+                validateException(new NoSuchElementException(), ex);
             }
         }
     }
 
-    public static void validateException(final Throwable expected, final Throwable actual) {
+    private static void validateException(final Throwable expected, final Throwable actual) {
         Assert.assertThat(actual, instanceOf(expected.getClass()));
     }
 

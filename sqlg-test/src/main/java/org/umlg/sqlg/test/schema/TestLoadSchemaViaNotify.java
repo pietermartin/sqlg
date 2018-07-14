@@ -17,8 +17,6 @@ import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -29,7 +27,7 @@ import java.util.*;
 public class TestLoadSchemaViaNotify extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);

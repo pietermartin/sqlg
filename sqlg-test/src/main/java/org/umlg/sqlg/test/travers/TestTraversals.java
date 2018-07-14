@@ -43,9 +43,9 @@ public class TestTraversals extends BaseTest {
     @Test
     public void g_V_out_out_treeXaX_capXaX() {
         loadModern();
-        Traversal t1 = (Traversal) gt.V().out().out().tree();
-        Traversal t2 = (Traversal) gt.V().out().out().tree("a").cap("a");
-        List<Traversal<Vertex, Tree>> traversals = Arrays.asList(t1, t2);
+        Traversal t1 = gt.V().out().out().tree();
+        Traversal t2 = gt.V().out().out().tree("a").cap("a");
+        @SuppressWarnings("unchecked") List<Traversal<Vertex, Tree>> traversals = Arrays.asList(t1, t2);
         traversals.forEach(traversal -> {
             printTraversalForm(traversal);
             final Tree tree = traversal.next();
@@ -62,8 +62,8 @@ public class TestTraversals extends BaseTest {
     @Test
     public void g_V_out_out_path_byXnameX_byXageX() {
         loadModern();
-        List<Vertex> vertices =  gt.V().out().out().toList();
-        List<Path> paths =  gt.V().out().out().path().toList();
+        gt.V().out().out().toList();
+        gt.V().out().out().path().toList();
         final Traversal<Vertex, Path> traversal =  gt.V().out().out().path().by("name").by("age");
         printTraversalForm(traversal);
         int counter = 0;

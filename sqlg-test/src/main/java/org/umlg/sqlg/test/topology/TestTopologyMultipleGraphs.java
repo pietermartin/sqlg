@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
 import java.net.URL;
 
 import static org.junit.Assert.*;
@@ -39,7 +38,7 @@ public class TestTopologyMultipleGraphs extends BaseTest {
     }
 
     @Test
-    public void testDeepEqualsPublicSchema() throws InterruptedException {
+    public void testDeepEqualsPublicSchema() {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
             this.sqlgGraph.tx().commit();
@@ -84,7 +83,7 @@ public class TestTopologyMultipleGraphs extends BaseTest {
     }
 
     @Test
-    public void testDeepEqualsAcrossSchema() throws InterruptedException, IOException {
+    public void testDeepEqualsAcrossSchema() {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
             this.sqlgGraph.tx().commit();

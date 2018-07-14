@@ -27,12 +27,12 @@ public class TestGithub extends BaseTest {
         this.sqlgGraph.addVertex("category", "b", "name", "ignore");
         this.sqlgGraph.addVertex("category", "a", "name", "world");
         this.sqlgGraph.tx().commit();
-        GraphTraversal gt = this.sqlgGraph.traversal().V().group().by("category")
+        GraphTraversal<Vertex, String> gt = this.sqlgGraph.traversal().V().group().by("category")
                 .unfold()
                 .where(__.select(Column.values).count(Scope.local).is(P.gt(1)))
                 .select(Column.values)
                 .unfold()
-                .<String>values("name");
+                .values("name");
         printTraversalForm(gt);
         List<String> values = gt.toList();
         Assert.assertEquals(2, values.size());
@@ -63,7 +63,7 @@ public class TestGithub extends BaseTest {
         Vertex b = sqlgGraph.addVertex(T.label, "B");
         Vertex c = sqlgGraph.addVertex(T.label, "C");
         Edge e1 = a.addEdge("e", b);
-        Edge e2 = b.addEdge("e", c);
+        b.addEdge("e", c);
         sqlgGraph.tx().commit();
         Iterator<Edge> results = gt
                 .V().hasLabel("A")

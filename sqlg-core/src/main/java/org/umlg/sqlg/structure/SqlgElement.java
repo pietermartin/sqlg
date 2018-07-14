@@ -27,14 +27,14 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public abstract class SqlgElement implements Element {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgVertex.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgVertex.class);
 
-    protected String schema;
-    protected String table;
+    String schema;
+    String table;
     RecordId recordId;
-    protected final SqlgGraph sqlgGraph;
+    final SqlgGraph sqlgGraph;
     //Multiple threads can access the same element
-    protected Map<String, Object> properties = new ConcurrentHashMap<>();
+    Map<String, Object> properties = new ConcurrentHashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     boolean removed = false;
     //Used in the SqlgBranchStepBarrier to sort the results by the start elements.
@@ -217,7 +217,7 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    protected <V> Property<V> emptyProperty() {
+    <V> Property<V> emptyProperty() {
         return Property.empty();
     }
 
@@ -253,7 +253,7 @@ public abstract class SqlgElement implements Element {
         return instantiateProperty(key, value);
     }
 
-    protected <V> SqlgProperty<V> instantiateProperty(String key, V value) {
+    <V> SqlgProperty<V> instantiateProperty(String key, V value) {
         return new SqlgProperty<>(this.sqlgGraph, this, key, value);
     }
 
@@ -408,7 +408,7 @@ public abstract class SqlgElement implements Element {
         return SqlgUtil.setKeyValuesAsParameter(sqlgGraph, true, parameterStartIndex, preparedStatement, typeAndValues);
     }
 
-    protected <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
+    <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
         load();
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
 

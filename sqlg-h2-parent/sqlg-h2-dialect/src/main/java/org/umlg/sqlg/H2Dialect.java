@@ -119,7 +119,8 @@ public class H2Dialect extends BaseSqlDialect {
                 java.sql.Array o = rs.getArray(1);
                 JdbcArray jdbcArray = (JdbcArray) o;
                 Object[] array = (Object[]) jdbcArray.getArray();
-                for (Object o1 : array) {
+                if (array.length > 0) {
+                    Object o1 = array[0];
                     if (o1 instanceof Byte) {
                         return PropertyType.BYTE_ARRAY;
                     } else if (o1 instanceof Short) {
@@ -214,11 +215,6 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public String getColumnEscapeKey() {
         return "\"";
-    }
-
-    @Override
-    public String getPrimaryKeyType() {
-        return "BIGINT NOT NULL PRIMARY KEY";
     }
 
     @Override

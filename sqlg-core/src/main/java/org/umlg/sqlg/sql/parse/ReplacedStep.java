@@ -14,8 +14,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallback;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
@@ -44,12 +42,12 @@ public class ReplacedStep<S, E> {
     private Topology topology;
     private AbstractStep<S, E> step;
     private Set<String> labels;
-    private List<HasContainer> hasContainers = new ArrayList<>();
-    private List<HasContainer> idHasContainers = new ArrayList<>();
-    private List<HasContainer> labelHasContainers = new ArrayList<>();
-    private List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
-    private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
-    private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
+    private final List<HasContainer> hasContainers = new ArrayList<>();
+    private final List<HasContainer> idHasContainers = new ArrayList<>();
+    private final List<HasContainer> labelHasContainers = new ArrayList<>();
+    private final List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
+    private final SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
+    private final List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
     /**
      * range limitation if any
      */
@@ -454,6 +452,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         Set<SchemaTableTree> result = new HashSet<>();
         final GraphStep graphStep = (GraphStep) this.step;
+        @SuppressWarnings("unchecked")
         final boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
         final boolean isEdge = !isVertex;
 
@@ -543,6 +542,7 @@ public class ReplacedStep<S, E> {
         result.add(schemaTableTree);
     }
 
+    @SuppressWarnings("unchecked")
     private boolean passesLabelHasContainers(SqlgGraph sqlgGraph, boolean isVertex, String table) {
         return this.labelHasContainers.stream().allMatch(h -> {
             BiPredicate biPredicate = h.getBiPredicate();
@@ -550,6 +550,7 @@ public class ReplacedStep<S, E> {
             if (predicateValue instanceof Collection) {
                 Collection<String> tableWithPrefixes = new ArrayList<>();
                 Collection<String> edgeTableWithoutSchemaAndPrefixes = new ArrayList<>();
+                @SuppressWarnings("unchecked")
                 Collection<String> predicateValues = (Collection<String>) predicateValue;
                 SchemaTable schemaTableWithOutPrefix = SchemaTable.from(sqlgGraph, table).withOutPrefix();
                 for (String value : predicateValues) {
@@ -593,6 +594,7 @@ public class ReplacedStep<S, E> {
         for (HasContainer idHasContainer : this.idHasContainers) {
 
             Map<SchemaTable, Boolean> newHasContainerMap = new HashMap<>();
+            @SuppressWarnings("unchecked")
             P<Object> idPredicate = (P<Object>) idHasContainer.getPredicate();
             BiPredicate biPredicate = idHasContainer.getBiPredicate();
             //This is statement is for g.V().hasId(Collection) where the logic is actually P.within not P.eq
@@ -602,6 +604,7 @@ public class ReplacedStep<S, E> {
             Multimap<BiPredicate, RecordId> biPredicateRecordIdMultimap;
             if (idPredicate.getValue() instanceof Collection) {
 
+                @SuppressWarnings("unchecked")
                 Collection<Object> ids = (Collection<Object>) idPredicate.getValue();
                 for (Object id : ids) {
                     RecordId recordId = RecordId.from(id);
@@ -682,6 +685,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(BaseStrategy.SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate()), "Only " + BaseStrategy.SUPPORTED_ID_BI_PREDICATE.toString() + " is supported, found " + hasContainer.getBiPredicate().getClass().toString());
         Object rawId = hasContainer.getValue();
         if (rawId instanceof Collection) {
+            @SuppressWarnings("unchecked")
             Collection<Object> ids = (Collection<Object>) rawId;
             Set<String> idLabels = new HashSet<>();
             for (Object id : ids) {
@@ -706,7 +710,7 @@ public class ReplacedStep<S, E> {
                     Object previousHasContainerLabels = this.labelHasContainers.get(this.labelHasContainers.size() - 1).getValue();
                     List<String> mergedLabels;
                     if (previousHasContainerLabels instanceof Collection) {
-                        Collection<String> labels = (Collection<String>) previousHasContainerLabels;
+                        @SuppressWarnings("unchecked") Collection<String> labels = (Collection<String>) previousHasContainerLabels;
                         mergedLabels = new ArrayList<>(labels);
                     } else {
                         String label = (String) previousHasContainerLabels;
@@ -736,7 +740,7 @@ public class ReplacedStep<S, E> {
                     Object previousHasContainerLabels = this.labelHasContainers.get(this.labelHasContainers.size() - 1).getValue();
                     List<String> mergedLabels;
                     if (previousHasContainerLabels instanceof Collection) {
-                        Collection<String> labels = (Collection<String>) previousHasContainerLabels;
+                        @SuppressWarnings("unchecked") Collection<String> labels = (Collection<String>) previousHasContainerLabels;
                         mergedLabels = new ArrayList<>(labels);
                     } else {
                         String label = (String) previousHasContainerLabels;
@@ -797,7 +801,7 @@ public class ReplacedStep<S, E> {
         this.joinToLeftJoin = true;
     }
 
-    public void markAsDrop(List<EventCallback<Event>> mutatingCallbacks) {
+    public void markAsDrop() {
         this.drop = true;
     }
 

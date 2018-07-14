@@ -16,8 +16,6 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +29,7 @@ import java.util.List;
 public class TestBatchStreamVertex extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -370,7 +368,7 @@ public class TestBatchStreamVertex extends BaseTest {
     public void streamJava8Style() throws InterruptedException {
         List<String> uids = Arrays.asList("1", "2", "3", "4", "5");
         this.sqlgGraph.tx().streamingBatchModeOn();
-        uids.stream().forEach(u->this.sqlgGraph.streamVertex(T.label, "Person", "name", u));
+        uids.forEach(u->this.sqlgGraph.streamVertex(T.label, "Person", "name", u));
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0L);
         if (this.sqlgGraph1 != null) {
@@ -502,7 +500,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testStreamDuration_assert(SqlgGraph sqlgGraph, Duration duration) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertEquals(duration, vertices.get(0).<Period>value("duration"));
+        Assert.assertEquals(duration, vertices.get(0).<Duration>value("duration"));
     }
 
     @Test
@@ -568,7 +566,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testSteamBooleanArray_assert(SqlgGraph sqlgGraph, boolean[] booleanArray) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertArrayEquals(booleanArray, vertices.get(0).<boolean[]>value("names"));
+        Assert.assertArrayEquals(booleanArray, vertices.get(0).value("names"));
     }
 
     @Test
@@ -589,7 +587,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testStreamIntArray_assert(SqlgGraph sqlgGraph, int[] intArray) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertArrayEquals(intArray, vertices.get(0).<int[]>value("names"));
+        Assert.assertArrayEquals(intArray, vertices.get(0).value("names"));
     }
 
     @Test
@@ -610,7 +608,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testStreamLongArray_assert(SqlgGraph sqlgGraph, long[] longArray) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertArrayEquals(longArray, vertices.get(0).<long[]>value("names"));
+        Assert.assertArrayEquals(longArray, vertices.get(0).value("names"));
     }
 
     @Test
@@ -631,7 +629,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testStreamFloatArray_assert(SqlgGraph sqlgGraph, float[] floatArray) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertArrayEquals(floatArray, vertices.get(0).<float[]>value("names"), 0f);
+        Assert.assertArrayEquals(floatArray, vertices.get(0).value("names"), 0f);
     }
 
     @Test
@@ -652,7 +650,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testStreamDoubleArray_assert(SqlgGraph sqlgGraph, double[] doubleArray) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertArrayEquals(doubleArray, vertices.get(0).<double[]>value("names"), 0d);
+        Assert.assertArrayEquals(doubleArray, vertices.get(0).value("names"), 0d);
     }
 
     @Test
@@ -673,7 +671,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testStreamShortArray_assert(SqlgGraph sqlgGraph, short[] shortArray) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertArrayEquals(shortArray, vertices.get(0).<short[]>value("names"));
+        Assert.assertArrayEquals(shortArray, vertices.get(0).value("names"));
     }
 
     @Test
@@ -694,7 +692,7 @@ public class TestBatchStreamVertex extends BaseTest {
     private void testStreamByteArray_assert(SqlgGraph sqlgGraph, byte[] byteArray) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
-        Assert.assertArrayEquals(byteArray, vertices.get(0).<byte[]>value("names"));
+        Assert.assertArrayEquals(byteArray, vertices.get(0).value("names"));
     }
 
     @Test

@@ -13,7 +13,7 @@ import javax.sql.DataSource;
  */
 public class JNDIDataSource implements SqlgDataSource {
 
-    public static final String JNDI_PREFIX = "jndi:";
+    private static final String JNDI_PREFIX = "jndi:";
 
     private final DataSource dataSource;
     private final String jdbcUrl;
@@ -37,7 +37,7 @@ public class JNDIDataSource implements SqlgDataSource {
         return new JNDIDataSource(url, ds);
     }
 
-    public JNDIDataSource(String jdbcUrl, DataSource dataSource) {
+    private JNDIDataSource(String jdbcUrl, DataSource dataSource) {
         this.dataSource = dataSource;
         this.jdbcUrl = jdbcUrl;
     }

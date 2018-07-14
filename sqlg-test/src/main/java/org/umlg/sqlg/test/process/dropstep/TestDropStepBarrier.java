@@ -31,11 +31,10 @@ public class TestDropStepBarrier extends BaseTest {
     public Boolean fkOn;
     @Parameterized.Parameter(1)
     public Boolean mutatingCallback;
-    private List<Vertex> removedVertices = new ArrayList<>();
-    private List<Edge> removedEdges = new ArrayList<>();
-    private List<VertexProperty> removedVertexProperties = new ArrayList<>();
-    private List<Property> removedEdgeProperties = new ArrayList<>();
-    private EventStrategy eventStrategy = null;
+    private final List<Vertex> removedVertices = new ArrayList<>();
+    private final List<Edge> removedEdges = new ArrayList<>();
+    private final List<VertexProperty> removedVertexProperties = new ArrayList<>();
+    private final List<Property> removedEdgeProperties = new ArrayList<>();
     private GraphTraversalSource dropTraversal;
 
     @Parameterized.Parameters(name = "foreign key implement foreign keys: {0}, callback {1}")
@@ -75,10 +74,10 @@ public class TestDropStepBarrier extends BaseTest {
                 }
             };
             final EventStrategy.Builder builder = EventStrategy.build().addListener(listener);
-            eventStrategy = builder.create();
+            EventStrategy eventStrategy = builder.create();
             this.dropTraversal = this.sqlgGraph.traversal();
             if (this.mutatingCallback) {
-                this.dropTraversal = this.dropTraversal.withStrategies(this.eventStrategy);
+                this.dropTraversal = this.dropTraversal.withStrategies(eventStrategy);
             }
         } else {
             this.dropTraversal = this.sqlgGraph.traversal();
@@ -220,7 +219,7 @@ public class TestDropStepBarrier extends BaseTest {
         Assert.assertTrue(count == 804 || count == 803);
     }
 
-    public GraphTraversal<Vertex, Vertex> getPlaylistPaths(GraphTraversalSource graphTraversal) {
+    private GraphTraversal<Vertex, Vertex> getPlaylistPaths(GraphTraversalSource graphTraversal) {
         return graphTraversal.V().has("name", "Bob_Dylan").in("sungBy").as("a").
                 repeat(__.out().order().by(Order.shuffle).simplePath().from("a")).
                 until(__.out("writtenBy").has("name", "Johnny_Cash")).limit(1).as("b").

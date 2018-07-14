@@ -35,7 +35,8 @@ public class TestComplex extends BaseTest {
         Assert.assertTrue(map.get("artists").contains("Grateful_Dead"));
     }
 
-    public Traversal<Vertex, Map<String, List<String>>> getPlaylistPaths() {
+    @SuppressWarnings("unchecked")
+    private Traversal<Vertex, Map<String, List<String>>> getPlaylistPaths() {
         return this.sqlgGraph.traversal().V().has("name", "Bob_Dylan").in("sungBy").as("a").
                 repeat(__.out().order().by(Order.shuffle).simplePath().from("a")).
                 until(__.out("writtenBy").has("name", "Johnny_Cash")).limit(1).as("b").
