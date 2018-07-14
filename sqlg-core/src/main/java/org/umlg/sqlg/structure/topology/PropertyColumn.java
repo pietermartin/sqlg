@@ -52,8 +52,7 @@ public class PropertyColumn implements TopologyInf {
     }
 
     public Set<GlobalUniqueIndex> getGlobalUniqueIndices() {
-        HashSet<GlobalUniqueIndex> result = new HashSet<>();
-        result.addAll(this.globalUniqueIndices);
+        HashSet<GlobalUniqueIndex> result = new HashSet<>(this.globalUniqueIndices);
         if (this.abstractLabel.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedGlobalUniqueIndices);
         }

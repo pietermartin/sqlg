@@ -511,7 +511,7 @@ public interface SqlDialect {
         return false;
     }
 
-    default <T> T getGis(SqlgGraph sqlgGraph) {
+    default <X> X getGis(SqlgGraph sqlgGraph) {
         throw SqlgExceptions.gisNotSupportedException();
     }
 

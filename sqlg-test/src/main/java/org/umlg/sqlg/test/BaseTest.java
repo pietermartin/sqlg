@@ -206,11 +206,13 @@ public abstract class BaseTest {
     }
 
     protected void assertDb(String table, int numberOfRows) {
-        Connection conn = null;
-        Statement stmt = null;
+        Connection conn;
         try {
             conn = this.sqlgGraph.getConnection();
-            stmt = conn.createStatement();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        try (Statement stmt = conn.createStatement()) {
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
             sql.append(".");
@@ -232,20 +234,8 @@ public abstract class BaseTest {
             conn.close();
         } catch (Exception e) {
             fail(e.getMessage());
-        } finally {
-            //noinspection EmptyCatchBlock
-            try {
-                if (stmt != null)
-                    stmt.close();
-            } catch (SQLException se2) {
-            }
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (SQLException se) {
-                fail(se.getMessage());
-            }
         }
+        //noinspection EmptyCatchBlock
 
     }
 
@@ -560,7 +550,7 @@ public abstract class BaseTest {
         final Map<T, Long> expectedResultsCount = new HashMap<>();
         final Map<T, Long> resultsCount = new HashMap<>();
         Assert.assertEquals("Checking indexing is equivalent", expectedResultsCount.size(), resultsCount.size());
-        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1l));
+        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1L));
         results.forEach(t -> MapHelper.incr(resultsCount, t, 1l));
         expectedResultsCount.forEach((k, v) -> Assert.assertEquals("Checking result group counts", v, resultsCount.get(k)));
         Assert.assertThat(traversal.hasNext(), CoreMatchers.is(false));

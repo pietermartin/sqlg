@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/07/12
@@ -96,7 +97,7 @@ public class TestVertexCreation extends BaseTest {
                     countRows++;
                 }
                 assertEquals(2, countRows);
-                assertEquals(boolean1, true);
+                assertTrue(boolean1);
                 assertEquals(short1, (short) 1);
                 assertEquals(integer1, 1);
                 assertEquals(long1, 1L);

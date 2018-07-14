@@ -509,12 +509,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         flushElementGlobalUniqueIndexPropertyCache(sqlgGraph, false, edgePropertyCache);
     }
 
-    private <T extends SqlgElement> void flushElementGlobalUniqueIndexPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<T, Map<String, Object>>>> schemaVertexPropertyCache) {
+    private <X extends SqlgElement> void flushElementGlobalUniqueIndexPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<X, Map<String, Object>>>> schemaVertexPropertyCache) {
 
         Connection conn = sqlgGraph.tx().getConnection();
         for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
 
-            Pair<SortedSet<String>, Map<T, Map<String, Object>>> vertexPropertyCache = schemaVertexPropertyCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<X, Map<String, Object>>> vertexPropertyCache = schemaVertexPropertyCache.get(schemaTable);
             Map<String, PropertyColumn> globalUniqueIndexPropertyMap = sqlgGraph.getTopology().getPropertiesWithGlobalUniqueIndexFor(schemaTable.withPrefix(VERTEX_PREFIX));
 
             for (Map.Entry<String, PropertyColumn> propertyColumnEntry : globalUniqueIndexPropertyMap.entrySet()) {
@@ -567,8 +567,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         if (value == null) {
                             if (sqlgElement.property(propertyColumn.getName()).isPresent()) {
                                 value = sqlgElement.value(propertyColumn.getName());
-                            } else {
-                                value = null;
                             }
                         }
                         PropertyType propertyType = propertyColumn.getPropertyType();
@@ -1202,12 +1200,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    private <T extends SqlgElement> void flushElementPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<T, Map<String, Object>>>> schemaVertexPropertyCache) {
+    private <X extends SqlgElement> void flushElementPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<X, Map<String, Object>>>> schemaVertexPropertyCache) {
 
         Connection conn = sqlgGraph.tx().getConnection();
         for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
 
-            Pair<SortedSet<String>, Map<T, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<X, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
             SortedSet<String> keys = vertexKeysPropertyCache.getLeft();
             Map<? extends SqlgElement, Map<String, Object>> vertexPropertyCache = vertexKeysPropertyCache.getRight();
 
@@ -1264,8 +1262,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     if (value == null) {
                         if (sqlgElement.property(key).isPresent()) {
                             value = sqlgElement.value(key);
-                        } else {
-                            value = null;
                         }
                     }
                     PropertyType propertyType = keyPropertyTypeMap.get(key);

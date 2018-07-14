@@ -511,8 +511,7 @@ public class SchemaTableTree {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //left joins but not the leave nodes as they are already present in the main sql result set.
         if (current.isOptionalLeftJoin() && (current.getStepDepth() < current.getReplacedStepDepth())) {
-            Set<SchemaTableTree> leftyChildren = new HashSet<>();
-            leftyChildren.addAll(current.children);
+            Set<SchemaTableTree> leftyChildren = new HashSet<>(current.children);
             Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> p = Pair.of(stack, leftyChildren);
             result.add(p);
         }

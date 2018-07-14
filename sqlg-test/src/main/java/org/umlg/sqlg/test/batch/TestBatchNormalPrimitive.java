@@ -419,8 +419,8 @@ public class TestBatchNormalPrimitive extends BaseTest {
         Set<Vertex> vertexSet = new HashSet<>();
         Set<Long> vertexNameSet = new HashSet<>();
         for (long i = 0; i < 10; i++) {
-            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", Long.valueOf(i)));
-            vertexNameSet.add(Long.valueOf(i));
+            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", i));
+            vertexNameSet.add(i);
         }
         this.sqlgGraph.tx().commit();
         testLong_assert(this.sqlgGraph, vertexSet, vertexNameSet);
@@ -446,8 +446,8 @@ public class TestBatchNormalPrimitive extends BaseTest {
         for (long i = 0; i < 10; i++) {
             Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "A");
-            edgeSet.add(vertex1.addEdge("test", vertex2, "name", Long.valueOf(i)));
-            edgeNameSet.add(Long.valueOf(i));
+            edgeSet.add(vertex1.addEdge("test", vertex2, "name", i));
+            edgeNameSet.add(i);
         }
         this.sqlgGraph.tx().commit();
         testLongEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);
@@ -526,8 +526,8 @@ public class TestBatchNormalPrimitive extends BaseTest {
         Set<Vertex> vertexSet = new HashSet<>();
         Set<Float> vertexNameSet = new HashSet<>();
         for (float i = 0; i < 10; i++) {
-            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", Float.valueOf(i)));
-            vertexNameSet.add(Float.valueOf(i));
+            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", i));
+            vertexNameSet.add(i);
         }
         this.sqlgGraph.tx().commit();
         testFloat_assert(this.sqlgGraph, vertexSet, vertexNameSet);
@@ -554,8 +554,8 @@ public class TestBatchNormalPrimitive extends BaseTest {
         for (float i = 0; i < 10; i++) {
             Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "A");
-            edgeSet.add(vertex1.addEdge("test", vertex2, "name", Float.valueOf(i)));
-            edgeNameSet.add(Float.valueOf(i));
+            edgeSet.add(vertex1.addEdge("test", vertex2, "name", i));
+            edgeNameSet.add(i);
         }
         this.sqlgGraph.tx().commit();
         testFloatEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);
@@ -635,8 +635,8 @@ public class TestBatchNormalPrimitive extends BaseTest {
         Set<Vertex> vertexSet = new HashSet<>();
         Set<Double> vertexNameSet = new HashSet<>();
         for (double i = 0; i < 10; i++) {
-            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", Double.valueOf(i)));
-            vertexNameSet.add(Double.valueOf(i));
+            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", i));
+            vertexNameSet.add(i);
         }
         this.sqlgGraph.tx().commit();
         testDouble_assert(this.sqlgGraph, vertexSet, vertexNameSet);
@@ -662,8 +662,8 @@ public class TestBatchNormalPrimitive extends BaseTest {
         for (double i = 0; i < 10; i++) {
             Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "A");
-            edgeSet.add(vertex1.addEdge("test", vertex2, "name", Double.valueOf(i)));
-            edgeNameSet.add(Double.valueOf(i));
+            edgeSet.add(vertex1.addEdge("test", vertex2, "name", i));
+            edgeNameSet.add(i);
         }
         this.sqlgGraph.tx().commit();
         testDoubleEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);

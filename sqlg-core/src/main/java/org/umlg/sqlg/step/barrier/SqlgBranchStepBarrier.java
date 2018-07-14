@@ -171,7 +171,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             });
             this.resultIterator = this.results.iterator();
         }
-        while (this.resultIterator.hasNext()) {
+        if (this.resultIterator.hasNext()) {
             return this.resultIterator.next();
         }
         throw FastNoSuchElementException.instance();

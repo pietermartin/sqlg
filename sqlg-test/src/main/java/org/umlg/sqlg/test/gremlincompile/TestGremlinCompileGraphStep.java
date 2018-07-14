@@ -33,6 +33,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Test
     public void gg_V_asXaX_outXcreatedX_inXcreatedX_whereXneqXaXX_asXbX_selectXa_bX_addInEXa_codeveloper_b_year_2009X() throws InterruptedException {
         Graph g = this.sqlgGraph;
@@ -65,9 +66,9 @@ public class TestGremlinCompileGraphStep extends BaseTest {
             Assert.assertEquals(1, IteratorUtils.count(edge.properties()));
             Assert.assertEquals("person", edge.inVertex().label());
             Assert.assertEquals("person", edge.outVertex().label());
-            Assert.assertFalse(edge.inVertex().value("name").equals("vadas"));
-            Assert.assertFalse(edge.outVertex().value("name").equals("vadas"));
-            Assert.assertFalse(edge.inVertex().equals(edge.outVertex()));
+            Assert.assertNotEquals("vadas", edge.inVertex().value("name"));
+            Assert.assertNotEquals("vadas", edge.outVertex().value("name"));
+            Assert.assertNotEquals(edge.inVertex(), edge.outVertex());
             count++;
         }
         Assert.assertEquals(4, traversal.getSteps().size());
@@ -104,9 +105,9 @@ public class TestGremlinCompileGraphStep extends BaseTest {
             Assert.assertEquals(1, IteratorUtils.count(edge.properties()));
             Assert.assertEquals("person", edge.inVertex().label());
             Assert.assertEquals("person", edge.outVertex().label());
-            Assert.assertFalse(edge.inVertex().value("name").equals("vadas"));
-            Assert.assertFalse(edge.outVertex().value("name").equals("vadas"));
-            Assert.assertFalse(edge.inVertex().equals(edge.outVertex()));
+            Assert.assertNotEquals("vadas", edge.inVertex().value("name"));
+            Assert.assertNotEquals("vadas", edge.outVertex().value("name"));
+            Assert.assertNotEquals(edge.inVertex(), edge.outVertex());
             count++;
         }
         Assert.assertEquals(4, traversal.getSteps().size());

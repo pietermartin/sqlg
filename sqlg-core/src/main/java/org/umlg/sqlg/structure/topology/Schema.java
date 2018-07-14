@@ -563,8 +563,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<String, EdgeLabel> getEdgeLabels() {
-        Map<String, EdgeLabel> result = new HashMap<>();
-        result.putAll(this.outEdgeLabels);
+        Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeLabels);
         if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
             for (String e : uncommittedRemovedEdgeLabels) {
@@ -810,8 +809,7 @@ public class Schema implements TopologyInf {
     }
 
     public Map<String, GlobalUniqueIndex> getGlobalUniqueIndexes() {
-        Map<String, GlobalUniqueIndex> result = new HashMap<>();
-        result.putAll(this.globalUniqueIndexes);
+        Map<String, GlobalUniqueIndex> result = new HashMap<>(this.globalUniqueIndexes);
         if (this.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedGlobalUniqueIndexes);
             for (String s : this.uncommittedRemovedGlobalUniqueIndexes) {

@@ -1423,8 +1423,7 @@ public class Topology {
     public Set<Schema> getSchemas() {
         z_internalTopologyMapReadLock();
         try {
-            Set<Schema> result = new HashSet<>();
-            result.addAll(this.schemas.values());
+            Set<Schema> result = new HashSet<>(this.schemas.values());
             if (this.isSqlWriteLockHeldByCurrentThread()) {
                 result.addAll(this.uncommittedSchemas.values());
                 if (uncommittedRemovedSchemas.size() > 0) {
