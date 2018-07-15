@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -198,7 +199,7 @@ public class SqlgGraph implements Graph {
     private String jdbcUrl;
     private final ObjectMapper mapper = new ObjectMapper();
     //    private boolean implementForeignKeys;
-    private Configuration configuration;
+    private Configuration configuration = new BaseConfiguration();
     private final ISqlGFeatures features = new SqlGFeatures();
 
     /**
@@ -525,23 +526,23 @@ public class SqlgGraph implements Graph {
     }
 
     @SuppressWarnings("unchecked")
-    private <X extends Element> Iterator<X> createElementIterator(final Class<X> clazz, final Object... ids) {
+    private <T extends Element> Iterator<T> createElementIterator(final Class<T> clazz, final Object... ids) {
         if (0 == ids.length) {
-            return (Iterator<X>) elements(Vertex.class.isAssignableFrom(clazz), Collections.EMPTY_LIST).iterator();
+            return (Iterator<T>) elements(Vertex.class.isAssignableFrom(clazz), Collections.EMPTY_LIST).iterator();
         } else {
             if (clazz.isAssignableFrom(ids[0].getClass())) {
                 // based on the first item assume all vertices in the argument list
                 if (!Stream.of(ids).allMatch(id -> clazz.isAssignableFrom(id.getClass())))
                     throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
 
-                return Stream.of(ids).map(id -> (X) id).iterator();
+                return Stream.of(ids).map(id -> (T) id).iterator();
             } else {
                 final Class<?> firstClass = ids[0].getClass();
                 if (!Stream.of(ids).map(Object::getClass).allMatch(firstClass::equals))
                     throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
 
                 List<RecordId> recordIds = RecordId.from(this, ids);
-                Iterable<X> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);
+                Iterable<T> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);
                 return elementIterable.iterator();
             }
         }
@@ -1118,7 +1119,7 @@ public class SqlgGraph implements Graph {
         List<PropertyColumn> properties = new ArrayList<>();
         List<String> keys = SqlgUtil.transformToKeyList(dummykeyValues);
         for (String key : keys) {
-            properties.add(vertexLabel.getProperty(key).orElseThrow(IllegalStateException::new));
+            properties.add(vertexLabel.getProperty(key).get());
         }
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, properties);
     }

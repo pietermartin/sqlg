@@ -184,6 +184,7 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
+//    @Override
     public void ensurePropertiesExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {

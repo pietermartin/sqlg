@@ -147,7 +147,7 @@ public class TestSchema extends BaseTest {
         person.addEdge("person_address", address);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertNotNull(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
+        Assert.assertTrue(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")) != null);
 
         Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
         Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));

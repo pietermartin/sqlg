@@ -43,40 +43,40 @@ public class TestTopologyMultipleGraphs extends BaseTest {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             a1.property("test", "asdasd");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             a1.addEdge("ab", b1);
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "bb1");
             a1.addEdge("ab", bb1);
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             Vertex aa1 = this.sqlgGraph.addVertex(T.label, "AA", "name", "aa1");
             Edge ab = aa1.addEdge("ab", bb1);
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             ab.property("test", "asdasd");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -88,39 +88,39 @@ public class TestTopologyMultipleGraphs extends BaseTest {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             a1.property("test", "asdasd");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             a1.addEdge("ab", b1);
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB.BB", "name", "bb1");
             a1.addEdge("ab", bb1);
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             Vertex aa1 = this.sqlgGraph.addVertex(T.label, "AA.AA", "name", "aa1");
             Edge ab = aa1.addEdge("ab", bb1);
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             ab.property("test", "asdasd");
             this.sqlgGraph.tx().commit();
             Thread.sleep(1_000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
 
             assertEquals(4, this.sqlgGraph.traversal().V().count().next(), 0);
             assertEquals(4, sqlgGraph1.traversal().V().count().next(), 0);
@@ -141,7 +141,7 @@ public class TestTopologyMultipleGraphs extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             loadModern();
             Thread.sleep(1000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -152,7 +152,7 @@ public class TestTopologyMultipleGraphs extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             loadGratefulDead();
             Thread.sleep(1000);
-            assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
+            assertTrue(this.sqlgGraph.getTopology().equals(sqlgGraph1.getTopology()));
         } catch (Exception e) {
             fail(e.getMessage());
         }

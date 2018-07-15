@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.postgresql.util.PGbytea;
@@ -105,6 +105,11 @@ public class CockroachdbDialect extends BaseSqlDialect {
     @Override
     public String getColumnEscapeKey() {
         return "\"";
+    }
+
+    @Override
+    public String getPrimaryKeyType() {
+        return "BIGINT NOT NULL PRIMARY KEY";
     }
 
     @Override
@@ -772,7 +777,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     private void deleteEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<SqlgVertex> subVertices, Set<SchemaTable> labels, boolean inDirection) {
-        //noinspection LoopStatementThatDoesntLoop
         for (SchemaTable inLabel : labels) {
 
             StringBuilder sql = new StringBuilder();
@@ -1338,14 +1342,13 @@ public class CockroachdbDialect extends BaseSqlDialect {
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "prefix must be " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         long result;
         Connection conn = sqlgGraph.tx().getConnection();
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT NEXTVAL('\"").append(schemaTable.getSchema()).append("\".\"").append(prefix).append(schemaTable.getTable()).append("_ID_seq\"');");
+        sql.append("SELECT NEXTVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -1360,14 +1363,13 @@ public class CockroachdbDialect extends BaseSqlDialect {
         return result;
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "prefix must be " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         long result;
         Connection conn = sqlgGraph.tx().getConnection();
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT CURRVAL('\"").append(schemaTable.getSchema()).append("\".\"").append(prefix).append(schemaTable.getTable()).append("_ID_seq\"');");
+        sql.append("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }

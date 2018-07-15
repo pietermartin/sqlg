@@ -443,7 +443,8 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public Map<String, PropertyColumn> getGlobalUniqueIndexProperties() {
-        Map<String, PropertyColumn> result = new HashMap<>(this.globalUniqueIndexProperties);
+        Map<String, PropertyColumn> result = new HashMap<>();
+        result.putAll(this.globalUniqueIndexProperties);
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedGlobalUniqueIndexProperties);
         }
@@ -460,7 +461,8 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public Map<String, Index> getIndexes() {
-        Map<String, Index> result = new HashMap<>(this.indexes);
+        Map<String, Index> result = new HashMap<>();
+        result.putAll(this.indexes);
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedIndexes);
             for (String i : this.uncommittedRemovedIndexes) {

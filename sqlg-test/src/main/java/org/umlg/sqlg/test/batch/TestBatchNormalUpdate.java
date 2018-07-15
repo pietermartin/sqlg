@@ -385,8 +385,8 @@ public class TestBatchNormalUpdate extends BaseTest {
 
     private void testBooleanUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
         e1 = sqlgGraph.traversal().E(e1.id()).next();
-        Assert.assertEquals(Boolean.FALSE, e1.value("name"));
-        Assert.assertEquals(e1.value("name").getClass(), Boolean.class);
+        Assert.assertEquals(Boolean.valueOf(false), e1.value("name"));
+        Assert.assertTrue(e1.value("name").getClass().equals(Boolean.class));
     }
 
     @Test

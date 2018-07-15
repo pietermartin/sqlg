@@ -14,6 +14,7 @@ import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 
+import javax.annotation.Nullable;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,7 +24,8 @@ import java.util.*;
 
 public interface SqlDialect {
 
-    String INDEX_POSTFIX = "_sqlgIdx";
+
+    static final String INDEX_POSTFIX = "_sqlgIdx";
 
     default boolean supportsDistribution() {
         return false;
@@ -46,7 +48,6 @@ public interface SqlDialect {
 
     void validateProperty(Object key, Object value);
 
-    @SuppressWarnings("SameReturnValue")
     default boolean needsSemicolon() {
         return true;
     }
@@ -61,13 +62,10 @@ public interface SqlDialect {
 
     String getColumnEscapeKey();
 
-    default String getPrimaryKeyType() {
-        return "BIGINT NOT NULL PRIMARY KEY";
-    }
+    String getPrimaryKeyType();
 
     String getAutoIncrementPrimaryKeyConstruct();
 
-    @SuppressWarnings("SameReturnValue")
     default String getAutoIncrement() {
         throw new RuntimeException("Not yet implemented.");
     }
@@ -98,7 +96,6 @@ public interface SqlDialect {
         return true;
     }
 
-    @SuppressWarnings("SameReturnValue")
     default boolean supportsByteArrayValues() {
         return true;
     }
@@ -304,7 +301,6 @@ public interface SqlDialect {
 
     String getArrayDriverType(PropertyType booleanArray);
 
-    @SuppressWarnings("SameReturnValue")
     default String createTableStatement() {
         return "CREATE TABLE ";
     }
@@ -511,7 +507,7 @@ public interface SqlDialect {
         return false;
     }
 
-    default <X> X getGis(SqlgGraph sqlgGraph) {
+    default <T> T getGis(SqlgGraph sqlgGraph) {
         throw SqlgExceptions.gisNotSupportedException();
     }
 
@@ -788,11 +784,12 @@ public interface SqlDialect {
      *
      * @param sqlgGraph            The graph.
      * @param leafElementsToDelete The leaf elements of the query. eg. g.V().out().out() The last vertices returned by the gremlin query.
-     * @param edgeToDelete
+     * @param edgesToDelete
      * @param distinctQueryStack   The query's SchemaTableTree stack as constructed by parsing.
      * @return
      */
-    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgeToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    @SuppressWarnings("Duplicates")
+    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
@@ -875,14 +872,14 @@ public interface SqlDialect {
         sb.append(")");
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), null));
 
-        if (edgeToDelete != null && queryTraversesEdge) {
+        if (queryTraversesEdge) {
             sb = new StringBuilder();
             sb.append("DELETE FROM ");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
             sb.append("\nWHERE \"ID\" IN (\n\t");
-            sb.append(edgeToDelete);
+            sb.append(edgesToDelete);
             sb.append(")");
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
@@ -1115,7 +1112,6 @@ public interface SqlDialect {
      *
      * @return the default fetch size, maybe null if we want to use the default from the driver
      */
-    @SuppressWarnings("SameReturnValue")
     default Integer getDefaultFetchSize() {
         return null;
     }

@@ -783,7 +783,9 @@ public class TestBatchStreamVertex extends BaseTest {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(11, vertices.size());
         List<ZonedDateTime> zonedDateTimes1 = new ArrayList<>();
-        zonedDateTimes1.addAll(Arrays.asList(zonedDateTimes));
+        for (ZonedDateTime zonedDateTime : zonedDateTimes) {
+            zonedDateTimes1.add(zonedDateTime);
+        }
         Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(0).<ZonedDateTime[]>value("names"));
         Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(1).<ZonedDateTime[]>value("names"));
         Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(2).<ZonedDateTime[]>value("names"));
@@ -818,7 +820,9 @@ public class TestBatchStreamVertex extends BaseTest {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(11, vertices.size());
         List<Duration> durations1 = new ArrayList<>();
-        durations1.addAll(Arrays.asList(durations));
+        for (Duration duration: durations) {
+            durations1.add(duration);
+        }
         Assert.assertArrayEquals(durations1.toArray(), vertices.get(0).<Duration[]>value("names"));
         Assert.assertArrayEquals(durations1.toArray(), vertices.get(1).<Duration[]>value("names"));
         Assert.assertArrayEquals(durations1.toArray(), vertices.get(2).<Duration[]>value("names"));
@@ -853,7 +857,9 @@ public class TestBatchStreamVertex extends BaseTest {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(11, vertices.size());
         List<Period> periods1 = new ArrayList<>();
-        periods1.addAll(Arrays.asList(periods));
+        for (Period period: periods) {
+            periods1.add(period);
+        }
         Assert.assertArrayEquals(periods1.toArray(), vertices.get(0).<Duration[]>value("names"));
         Assert.assertArrayEquals(periods1.toArray(), vertices.get(1).<Duration[]>value("names"));
         Assert.assertArrayEquals(periods1.toArray(), vertices.get(2).<Duration[]>value("names"));

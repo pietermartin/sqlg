@@ -71,7 +71,7 @@ public class TestRollback extends BaseTest {
         try {
             this.sqlgGraph.tx().rollback();
             fail("An exception should be thrown when read/write behavior is manual and no transaction is opened");
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
         }
     }
 

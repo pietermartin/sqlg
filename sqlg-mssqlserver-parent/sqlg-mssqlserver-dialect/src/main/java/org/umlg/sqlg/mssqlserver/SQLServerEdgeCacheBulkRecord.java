@@ -99,12 +99,16 @@ class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord implemen
         if (this.inVertexLabel.hasIDPrimaryKey()) {
             values.add(((RecordId) this.currentRow.getMiddle().id()).sequenceId());
         } else {
-            values.addAll(((RecordId) this.currentRow.getMiddle().id()).getIdentifiers());
+            for (Object identifier : ((RecordId) this.currentRow.getMiddle().id()).getIdentifiers()) {
+                values.add(identifier);
+            }
         }
         if (this.outVertexLabel.hasIDPrimaryKey()) {
             values.add(((RecordId) this.currentRow.getLeft().id()).sequenceId());
         } else {
-            values.addAll(((RecordId) this.currentRow.getLeft().id()).getIdentifiers());
+            for (Object identifier : ((RecordId) this.currentRow.getLeft().id()).getIdentifiers()) {
+                values.add(identifier);
+            }
         }
         return values.toArray();
     }

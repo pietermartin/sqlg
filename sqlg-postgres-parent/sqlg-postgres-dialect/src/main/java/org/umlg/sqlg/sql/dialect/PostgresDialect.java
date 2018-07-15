@@ -120,6 +120,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
+    public String getPrimaryKeyType() {
+        return "BIGINT NOT NULL PRIMARY KEY";
+    }
+
+    @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
         return "BIGSERIAL PRIMARY KEY";
     }
@@ -135,6 +140,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
         switch (propertyType) {
@@ -183,15 +189,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName) {
-        StringBuilder sb = new StringBuilder("SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace");
-        sb.append(" WHERE  c.relname = '");
-        sb.append(indexName);
-        sb.append("' AND n.nspname = '");
-        sb.append(schemaTable.getSchema());
-        sb.append("'");
-        return sb.toString();
+        return "SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace" + " WHERE  c.relname = '" +
+                indexName +
+                "' AND n.nspname = '" +
+                schemaTable.getSchema() +
+                "'";
     }
 
     /**
@@ -204,6 +209,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      *                    2) The out labels
      *                    3) The properties as a map of key values
      */
+    @SuppressWarnings("Duplicates")
     @Override
     public void flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         Connection con = sqlgGraph.tx().getConnection();
@@ -273,6 +279,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void flushEdgeGlobalUniqueIndexes(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         for (MetaEdge metaEdge : edgeCache.keySet()) {
@@ -318,6 +325,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void flushVertexGlobalUniqueIndexes(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         for (SchemaTable schemaTable : vertexCache.keySet()) {
@@ -361,6 +369,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         Connection con = sqlgGraph.tx().getConnection();
@@ -375,7 +384,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
-
+                
                 Iterator<Long> it = null;
                 if (edgeLabel.hasIDPrimaryKey()) {
                     List<Long> ids = new LinkedList<>();
@@ -403,9 +412,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
                 sql.append(" (");
 
-                Collection<Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> tripless = triples.getRight().values();
-                if (!tripless.isEmpty()) {
-                    Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple = tripless.iterator().next();
+                //noinspection LoopStatementThatDoesntLoop
+                for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
                     int count = 1;
 
                     if (outVertexLabel.hasIDPrimaryKey()) {
@@ -552,7 +560,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(")\nFROM (\nVALUES\n\t");
                     count = 1;
                     boolean foundSomething = false;
-                    for (SqlgElement sqlgElement : vertexPropertyCache.getRight().keySet()) {
+                    for (X sqlgElement : vertexPropertyCache.getRight().keySet()) {
                         Map<String, Object> properties = vertexPropertyCache.getRight().get(sqlgElement);
                         if (!foundSomething && properties.containsKey(propertyColumn.getName())) {
                             foundSomething = true;
@@ -606,6 +614,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     }
 
+    @SuppressWarnings("Duplicates")
     private void appendSqlValue(StringBuilder sql, Object value, PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
@@ -1147,6 +1156,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     private void sqlCastArray(StringBuilder sql, PropertyType propertyType) {
         switch (propertyType) {
             case boolean_ARRAY:
@@ -1823,7 +1833,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return BATCH_NULL;
     }
 
-
     private InputStream mapVertexToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
         //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
@@ -1907,9 +1916,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      * or line feed character, then the whole value is prefixed and suffixed by the QUOTE character,
      * and any occurrence within the value of a QUOTE character or the ESCAPE character is preceded
      * by the escape character."
-     *
-     * @param s
-     * @return
      */
     private String escapeSpecialCharacters(String s) {
         StringBuilder sb = new StringBuilder();
@@ -2023,10 +2029,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     /**
      * This is only used for upgrading from pre sqlg_schema sqlg to a sqlg_schema
-     *
-     * @param sqlType
-     * @param typeName
-     * @return
      */
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
@@ -2074,6 +2076,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
@@ -2334,16 +2337,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return true;
     }
 
+    @SuppressWarnings("Duplicates")
     private Set<String> getForeignKeyConstraintNames(SqlgGraph sqlgGraph, String foreignKeySchema, String foreignKeyTable) {
         Set<String> result = new HashSet<>();
         Connection conn = sqlgGraph.tx().getConnection();
         DatabaseMetaData metadata;
         try {
             metadata = conn.getMetaData();
-            String childCatalog = null;
-            String childSchemaPattern = foreignKeySchema;
-            String childTableNamePattern = foreignKeyTable;
-            ResultSet resultSet = metadata.getImportedKeys(childCatalog, childSchemaPattern, childTableNamePattern);
+            ResultSet resultSet = metadata.getImportedKeys(null, foreignKeySchema, foreignKeyTable);
             while (resultSet.next()) {
                 result.add(resultSet.getString("FK_NAME"));
             }
@@ -2676,9 +2677,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             edgePropertyMap.keySet().forEach(k -> sql.append(',').append(this.maybeWrapInQoutes(k)));
             sql.append(") \n");
             sql.append("select _out.\"ID\" as \"");
-            sql.append(out.getSchema() + "." + out.getTable() + Topology.OUT_VERTEX_COLUMN_END);
+            sql.append(out.getSchema()).append(".").append(out.getTable()).append(Topology.OUT_VERTEX_COLUMN_END);
             sql.append("\", _in.\"ID\" as \"");
-            sql.append(in.getSchema() + "." + in.getTable() + Topology.IN_VERTEX_COLUMN_END);
+            sql.append(in.getSchema()).append(".").append(in.getTable()).append(Topology.IN_VERTEX_COLUMN_END);
             sql.append("\"");
             edgePropertyMap.forEach((k, v) -> {
                 sql.append(',');
@@ -2691,11 +2692,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(VERTEX_PREFIX + in.getTable()));
             sql.append(" _in join ");
-            sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getRight()) + " join ");
+            sql.append(this.maybeWrapInQoutes(tmpTableIdentified)).append(" ab on ab.in = _in.").append(this.maybeWrapInQoutes(idFields.getRight())).append(" join ");
             sql.append(this.maybeWrapInQoutes(out.getSchema()));
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(VERTEX_PREFIX + out.getTable()));
-            sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getLeft()));
+            sql.append(" _out on ab.out = _out.").append(this.maybeWrapInQoutes(idFields.getLeft()));
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
@@ -2708,6 +2709,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "prefix must be " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
@@ -2731,6 +2733,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, String sequence, int batchSize) {
         StringBuilder sql = new StringBuilder();
@@ -2752,13 +2755,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "prefix must be " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         long result;
         Connection conn = sqlgGraph.tx().getConnection();
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT NEXTVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        sql.append("SELECT NEXTVAL('\"").append(schemaTable.getSchema()).append("\".\"").append(prefix).append(schemaTable.getTable()).append("_ID_seq\"');");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -2773,13 +2777,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return result;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "prefix must be " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         long result;
         Connection conn = sqlgGraph.tx().getConnection();
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        sql.append("SELECT CURRVAL('\"").append(schemaTable.getSchema()).append("\".\"").append(prefix).append(schemaTable.getTable()).append("_ID_seq\"');");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -2794,6 +2799,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return result;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
         Preconditions.checkArgument(prefix.equals(VERTEX_PREFIX) || prefix.equals(EDGE_PREFIX), "prefix must be " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
@@ -2829,11 +2835,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return true;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <X> X getGis(SqlgGraph sqlgGraph) {
         Gis gis = Gis.GIS;
         gis.setSqlgGraph(sqlgGraph);
+        //noinspection unchecked
         return (X) gis;
     }
 
@@ -2844,7 +2850,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public List<String> columnsToIgnore() {
-        return Arrays.asList(COPY_DUMMY);
+        return Collections.singletonList(COPY_DUMMY);
     }
 
     @Override
@@ -3167,6 +3173,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         );
     }
 
+    @SuppressWarnings("Duplicates")
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
             switch (propertyType) {
@@ -3526,7 +3533,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      * @param lt the current time
      * @return the time in "winter time" if there is DST in effect today
      */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "Duplicates"})
     private static Time shiftDST(LocalTime lt) {
         Time t = Time.valueOf(lt);
         int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
@@ -3601,7 +3608,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     if (lastIndexName == null) {
                         lastIndexName = indexName;
                         lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
-                        lastKey = key;
                     } else if (!lastIndexName.equals(indexName)) {
                         if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
                             if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
@@ -3884,8 +3890,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return PARAMETER_LIMIT;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgeToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
@@ -3969,10 +3976,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sb.append(maybeWrapInQoutes("alias1"));
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
-        if (edgeToDelete != null && queryTraversesEdge) {
+        if (queryTraversesEdge) {
             sb = new StringBuilder();
             sb.append("WITH todelete AS (");
-            sb.append(edgeToDelete);
+            sb.append(edgesToDelete);
             sb.append("\n)\nDELETE FROM ");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
@@ -3990,6 +3997,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return sqls;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String drop(VertexLabel vertexLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
@@ -4047,6 +4055,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return sql.toString();
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String drop(EdgeLabel edgeLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
@@ -4104,6 +4113,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return sql.toString();
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();

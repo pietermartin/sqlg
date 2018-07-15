@@ -142,7 +142,8 @@ public class VertexLabel extends AbstractLabel {
     }
 
     public Map<String, EdgeLabel> getInEdgeLabels() {
-        Map<String, EdgeLabel> result = new HashMap<>(this.inEdgeLabels);
+        Map<String, EdgeLabel> result = new HashMap<>();
+        result.putAll(this.inEdgeLabels);
         if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedInEdgeLabels);
             for (String e : this.uncommittedRemovedInEdgeLabels.keySet()) {
@@ -153,7 +154,8 @@ public class VertexLabel extends AbstractLabel {
     }
 
     public Map<String, EdgeLabel> getOutEdgeLabels() {
-        Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeLabels);
+        Map<String, EdgeLabel> result = new HashMap<>();
+        result.putAll(this.outEdgeLabels);
         if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
             for (String e : this.uncommittedRemovedOutEdgeLabels.keySet()) {
@@ -222,7 +224,8 @@ public class VertexLabel extends AbstractLabel {
      */
     Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
         if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
-            Map<String, EdgeLabel> result = new HashMap<>(this.uncommittedOutEdgeLabels);
+            Map<String, EdgeLabel> result = new HashMap<>();
+            result.putAll(this.uncommittedOutEdgeLabels);
             for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
                 Map<String, PropertyColumn> propertyMap = outEdgeLabel.getUncommittedPropertyTypeMap();
                 if (!propertyMap.isEmpty() || !outEdgeLabel.getUncommittedRemovedProperties().isEmpty()) {
@@ -399,6 +402,7 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
+//    @Override
     public void ensurePropertiesExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {

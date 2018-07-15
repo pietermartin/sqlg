@@ -21,6 +21,7 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import javax.annotation.Nullable;
 import javax.xml.bind.DatatypeConverter;
 import java.lang.reflect.Array;
 import java.sql.*;
@@ -36,7 +37,7 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class MSSqlServerDialect extends BaseSqlDialect {
 
-    public MSSqlServerDialect() {
+    MSSqlServerDialect() {
         super();
     }
 
@@ -185,6 +186,11 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
+    public String getPrimaryKeyType() {
+        return "BIGINT NOT NULL PRIMARY KEY";
+    }
+
+    @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
         return "BIGINT IDENTITY NOT NULL PRIMARY KEY";
     }
@@ -314,6 +320,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return "ARRAY";
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void putJsonObject(ObjectNode obj, String columnName, int sqlType, Object o) {
         switch (sqlType) {
@@ -366,6 +373,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void putJsonMetaObject(ObjectMapper mapper, ArrayNode metaNodeArray, String columnName, int sqlType,
                                   Object o) {
@@ -417,15 +425,13 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName) {
-        StringBuilder sb = new StringBuilder("SELECT * FROM sys.indexes i JOIN sys.tables t ON i.object_id = t.object_id JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = '");
-        sb.append(schemaTable.getSchema());
-        sb.append("' AND t.name = '");
-        sb.append(prefix);
-        sb.append(schemaTable.getTable());
-        sb.append("' AND i.name = '");
-        sb.append(indexName);
-        sb.append("'");
-        return sb.toString();
+        return "SELECT * FROM sys.indexes i JOIN sys.tables t ON i.object_id = t.object_id JOIN sys.schemas s ON t.schema_id = s.schema_id WHERE s.name = '" + schemaTable.getSchema() +
+                "' AND t.name = '" +
+                prefix +
+                schemaTable.getTable() +
+                "' AND i.name = '" +
+                indexName +
+                "'";
     }
 
     @Override
@@ -735,7 +741,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 return SqlgUtil.copyObjectArrayOfTimestampToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
             case LOCALDATE_ARRAY:
                 Object[] dates = (Object[]) array.getArray();
-                if (dates != null && dates.length > 0 && dates[0] instanceof Timestamp) {
+                if (dates.length > 0 && dates[0] instanceof Timestamp) {
                     return SqlgUtil.copyObjectArrayOfTimestampToLocalDate(dates, new LocalDate[dates.length]);
                 } else {
                     return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
@@ -761,9 +767,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public String getRangeClause(Range<Long> r) {
-        StringBuilder sql = new StringBuilder();
-        sql.append("OFFSET ").append(r.getMinimum()).append(" ROWS FETCH NEXT ").append(r.getMaximum() - r.getMinimum()).append(" ROWS ONLY");
-        return sql.toString();
+        return "OFFSET " + r.getMinimum() + " ROWS FETCH NEXT " + (r.getMaximum() - r.getMinimum()) + " ROWS ONLY";
     }
 
     @Override
@@ -900,6 +904,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return true;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         Connection connection = sqlgGraph.tx().getConnection();
@@ -923,6 +928,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
                 try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
                     SQLServerBulkCopyOptions options = new SQLServerBulkCopyOptions();
+                    //locking the table guarantee that the sequences will be in order.
                     options.setTableLock(true);
                     bulkCopy.setBulkCopyOptions(options);
                     if (schemaTable.isTemporary()) {
@@ -940,8 +946,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     int numberInserted = vertices.getRight().size();
                     if (!schemaTable.isTemporary() && numberInserted > 0) {
                         long endHigh;
-                        //TODO this is not guaranteed to be correct.
-                        //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
                         try (PreparedStatement preparedStatement = connection.prepareStatement(
                                 "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
                                         VERTEX_PREFIX + schemaTable.getTable() + "')")) {
@@ -975,6 +979,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         Connection connection = sqlgGraph.tx().getConnection();
@@ -986,6 +991,10 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 try {
                     SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
                     try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
+                        SQLServerBulkCopyOptions options = new SQLServerBulkCopyOptions();
+                        //locking the table guarantee that the sequences will be in order.
+                        options.setTableLock(true);
+                        bulkCopy.setBulkCopyOptions(options);
                         bulkCopy.setDestinationTableName(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()) + "." +
                                 sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + schemaTable.getTable())
                         );
@@ -996,8 +1005,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                         int numberInserted = triples.getRight().size();
                         if (!schemaTable.isTemporary() && numberInserted > 0) {
                             long endHigh;
-                            //TODO this is not guaranteed to be correct.
-                            //If multiple threads are bulk writing to the same label then the indexes might no be in sequence.
                             try (PreparedStatement preparedStatement = connection.prepareStatement(
                                     "SELECT IDENT_CURRENT('" + schemaTable.getSchema() + "." +
                                             EDGE_PREFIX + schemaTable.getTable() + "')")) {
@@ -1165,8 +1172,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return "ALTER TABLE " + tableName + " CHECK CONSTRAINT ALL";
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgeToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable  String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
@@ -1199,7 +1207,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             StringBuilder sb;
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getOutEdgeLabels().entrySet()) {
                 EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("DELETE FROM ");
@@ -1216,7 +1224,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             }
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
                 EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("DELETE FROM ");
@@ -1249,14 +1257,14 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         sb.append(")");
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
-        if (edgeToDelete != null && queryTraversesEdge) {
+        if (queryTraversesEdge) {
             sb = new StringBuilder();
             sb.append("DELETE FROM ");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
             sb.append("\nWHERE \"ID\" IN (\n\t");
-            sb.append(edgeToDelete);
+            sb.append(edgesToDelete);
             sb.append(")");
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
@@ -1268,6 +1276,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return sqls;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();
@@ -1356,31 +1365,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 }
             }
         }
-
-
-//        sql.append("DELETE a FROM\n\t");
-//        sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
-//        sql.append(".");
-//        sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
-//        if (mutatingCallbacks) {
-//            sql.append("\nOUTPUT DELETED.");
-//            sql.append(maybeWrapInQoutes("ID"));
-//        }
-//        sql.append(" WHERE ");
-//        sql.append(maybeWrapInQoutes(
-//                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
-//                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
-//        sql.append(" IN (\n");
-//        int count = 1;
-//        if (true)
-//            throw new RuntimeException("handle ID");
-//        for (Long id : ids) {
-//            sql.append(Long.toString(id));
-//            if (count++ < ids.size()) {
-//                sql.append(",");
-//            }
-//        }
-//        sql.append(")");
         return sql.toString();
     }
 
@@ -1477,6 +1461,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String drop(VertexLabel vertexLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
@@ -1559,6 +1544,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         return sql.toString();
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public String drop(EdgeLabel edgeLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();

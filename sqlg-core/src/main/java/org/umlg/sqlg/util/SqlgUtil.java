@@ -870,7 +870,7 @@ public class SqlgUtil {
             if (value[i] == null) {
                 throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
-            Array.set(target, i, value[i]);
+            Array.set(target, i, value[i].byteValue());
         }
         return target;
     }

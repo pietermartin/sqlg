@@ -42,16 +42,16 @@ public class SchemaTableTree {
     private static final String WITHIN = "within";
     private static final String WITHOUT = "without";
     //stepDepth indicates the depth of the replaced steps. i.e. v1.out().out().out() existVertexLabel stepDepth 0,1,2,3
-    private final int stepDepth;
-    private final SchemaTable schemaTable;
+    private int stepDepth;
+    private SchemaTable schemaTable;
     private SchemaTableTree parent;
     //The root node does not have a direction. For the other nodes it indicates the direction from its parent to it.
     private Direction direction;
     private STEP_TYPE stepType;
-    private final List<SchemaTableTree> children = new ArrayList<>();
-    private final SqlgGraph sqlgGraph;
+    private List<SchemaTableTree> children = new ArrayList<>();
+    private SqlgGraph sqlgGraph;
     //leafNodes is only set on the root node;
-    private final List<SchemaTableTree> leafNodes = new ArrayList<>();
+    private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers;
     private List<AndOrHasContainer> andOrHasContainers;
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
@@ -78,15 +78,15 @@ public class SchemaTableTree {
     private int tmpTableAliasCounter = 1;
 
     //This represents all tables filtered by TopologyStrategy
-    private final Map<String, Map<String, PropertyType>> filteredAllTables;
+    private Map<String, Map<String, PropertyType>> filteredAllTables;
 
-    private final int replacedStepDepth;
+    private int replacedStepDepth;
 
     //Cached for query load performance
     private Map<String, Pair<String, PropertyType>> columnNamePropertyName;
     private String idProperty;
     private String labeledAliasId;
-    private final boolean hasIDPrimaryKey;
+    private boolean hasIDPrimaryKey;
     private ListOrderedSet<String> identifiers;
     private String distributionColumn;
 
@@ -105,7 +105,7 @@ public class SchemaTableTree {
     //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
     private List<Pair<RecordId.ID, Long>> parentIdsAndIndexes;
 
-    private final List<ColumnList> columnListStack = new ArrayList<>();
+    private List<ColumnList> columnListStack = new ArrayList<>();
 
     private Set<String> restrictedProperties = null;
 
@@ -407,15 +407,15 @@ public class SchemaTableTree {
             String leafNodeToDelete = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null, true);
             resetColumnAliasMaps();
 
-            String edgesToDelete = null;
+            Optional<String> edgesToDelete = Optional.empty();
             if (distinctQueryStack.size() > 1 && distinctQueryStack.getLast().getSchemaTable().isVertexTable()) {
                 Set<SchemaTableTree> leftJoin = new HashSet<>();
                 leftJoin.add(distinctQueryStack.getLast());
                 LinkedList<SchemaTableTree> edgeSchemaTableTrees = new LinkedList<>(distinctQueryStack);
                 edgeSchemaTableTrees.removeLast();
-                edgesToDelete = constructSinglePathSql(this.sqlgGraph, false, edgeSchemaTableTrees, null, null, leftJoin, true);
+                edgesToDelete = Optional.of(constructSinglePathSql(this.sqlgGraph, false, edgeSchemaTableTrees, null, null, leftJoin, true));
             }
-            return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete, distinctQueryStack);
+            return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete.isPresent() ? edgesToDelete.get() : null, distinctQueryStack);
         }
 
     }
@@ -511,7 +511,8 @@ public class SchemaTableTree {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //left joins but not the leave nodes as they are already present in the main sql result set.
         if (current.isOptionalLeftJoin() && (current.getStepDepth() < current.getReplacedStepDepth())) {
-            Set<SchemaTableTree> leftyChildren = new HashSet<>(current.children);
+            Set<SchemaTableTree> leftyChildren = new HashSet<>();
+            leftyChildren.addAll(current.children);
             Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> p = Pair.of(stack, leftyChildren);
             result.add(p);
         }
@@ -1373,7 +1374,7 @@ public class SchemaTableTree {
                 SelectOneStep<?,?> selectOneStep = (SelectOneStep<?,?>) comparator.getValue0().getSteps().get(0);
                 Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                 Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
-                Traversal.Admin<?, ?> t = selectOneStep.getLocalChildren().get(0);
+                Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>) selectOneStep.getLocalChildren().get(0);
                 Preconditions.checkState(
                         t instanceof ElementValueTraversal ||
                                 t instanceof TokenTraversal,
@@ -1381,7 +1382,7 @@ public class SchemaTableTree {
 
                 //need to find the schemaTable that the select is for.
                 //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
-                String select = selectOneStep.getScopeKeys().iterator().next();
+                String select = (String) selectOneStep.getScopeKeys().iterator().next();
                 SchemaTableTree selectSchemaTableTree = findSelectSchemaTable(select);
                 Preconditions.checkState(selectSchemaTableTree != null, "SchemaTableTree not found for " + select);
 
@@ -2418,7 +2419,7 @@ public class SchemaTableTree {
         return this.sqlgComparatorHolder;
     }
 
-    private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
+    public List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
         return this.dbComparators;
     }
 
@@ -2649,14 +2650,17 @@ public class SchemaTableTree {
 	 * @param property the property name
 	 * @return true if the property should be part of the select clause, false otherwise
 	 */
-    private boolean shouldSelectProperty(String property){
+	public boolean shouldSelectProperty(String property){
 		// no restriction
 		if (restrictedProperties==null){
 			return true;
 		}
 		// explicit restriction
-        return restrictedProperties.contains(property);
-    }
+		if (restrictedProperties.contains(property)){
+			return true;
+		}
+		return false;
+	}
 
 	/**
 	 * calculate property restrictions from explicit restrictions and required properties

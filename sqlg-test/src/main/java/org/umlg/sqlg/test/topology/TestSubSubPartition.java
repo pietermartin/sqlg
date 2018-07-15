@@ -488,7 +488,7 @@ public class TestSubSubPartition extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
-        try (SqlgGraph ignored = SqlgGraph.open(configuration)) {
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
         }
     }
 }

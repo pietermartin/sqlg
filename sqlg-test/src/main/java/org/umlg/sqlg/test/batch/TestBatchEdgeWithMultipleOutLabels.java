@@ -12,6 +12,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/08/09
@@ -109,7 +110,7 @@ public class TestBatchEdgeWithMultipleOutLabels extends BaseTest {
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Patient").count().next().intValue());
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("HumanNameDt").count().next().intValue());
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Patient").out("name").count().next().intValue());
-        sqlgGraph.traversal().V().hasLabel("Patient").out("name").forEachRemaining(v -> assertEquals("HumanNameDt", v.label()));
+        sqlgGraph.traversal().V().hasLabel("Patient").out("name").forEachRemaining(v -> assertTrue(v.label().equals("HumanNameDt")));
 
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Condition").count().next().intValue());
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConceptDt").count().next().intValue());
@@ -117,16 +118,16 @@ public class TestBatchEdgeWithMultipleOutLabels extends BaseTest {
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Condition").out("code").count().next().intValue());
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConceptDt").out("coding").count().next().intValue());
 
-        sqlgGraph.traversal().V().hasLabel("Condition").out("code").forEachRemaining(v -> assertEquals("CodeableConceptDt", v.label()));
-        sqlgGraph.traversal().V().hasLabel("Condition").out("coding").forEachRemaining(v -> assertEquals("CodingDt", v.label()));
-        sqlgGraph.traversal().V().hasLabel("Condition").out("patient").forEachRemaining(v -> assertEquals("Patient", v.label()));
+        sqlgGraph.traversal().V().hasLabel("Condition").out("code").forEachRemaining(v -> assertTrue(v.label().equals("CodeableConceptDt")));
+        sqlgGraph.traversal().V().hasLabel("Condition").out("coding").forEachRemaining(v -> assertTrue(v.label().equals("CodingDt")));
+        sqlgGraph.traversal().V().hasLabel("Condition").out("patient").forEachRemaining(v -> assertTrue(v.label().equals("Patient")));
 
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConcept").count().next().intValue());
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Condition").out("category").count().next().intValue());
-        sqlgGraph.traversal().V().hasLabel("Condition").out("category").forEachRemaining(v -> assertEquals("CodeableConcept", v.label()));
+        sqlgGraph.traversal().V().hasLabel("Condition").out("category").forEachRemaining(v -> assertTrue(v.label().equals("CodeableConcept")));
 
         assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConcept").out("coding").count().next().intValue());
-        sqlgGraph.traversal().V().hasLabel("CodeableConcept").out("coding").forEachRemaining(v -> assertEquals("CodingDt", v.label()));
+        sqlgGraph.traversal().V().hasLabel("CodeableConcept").out("coding").forEachRemaining(v -> assertTrue(v.label().equals("CodingDt")));
     }
 
 
