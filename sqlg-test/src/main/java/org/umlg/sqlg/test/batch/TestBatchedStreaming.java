@@ -35,6 +35,31 @@ public class TestBatchedStreaming extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
     }
 
+//    @Test
+//    public void testStreamBatchModeDifferentProperties() {
+//        this.sqlgGraph.tx().streamingBatchModeOn();
+//        this.sqlgGraph.streamVertex(T.label, "A", "t", "a_t", "tt", "a_tt");
+//        this.sqlgGraph.streamVertex(T.label, "A");
+//        this.sqlgGraph.streamVertex(T.label, "A", "t", "b_t");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", "a_t").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", "b_t").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+//    }
+//
+//    @Test
+//    public void testBatchStreamingModeMultiColumnProperties() {
+//        this.sqlgGraph.tx().streamingBatchModeOn();
+//        ZonedDateTime now = ZonedDateTime.now();
+//        this.sqlgGraph.streamVertex(T.label, "A", "t", now);
+//        this.sqlgGraph.streamVertex(T.label, "A");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+//    }
+
     @Test
     public void testNullProperties() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();

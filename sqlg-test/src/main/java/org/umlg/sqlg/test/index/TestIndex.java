@@ -152,8 +152,8 @@ public class TestIndex extends BaseTest {
             put("name3", PropertyType.STRING);
         }});
         PropertyColumn name1 = vertexLabel.getProperty("name1").orElseThrow(IllegalStateException::new);
-        PropertyColumn name2 = vertexLabel.getProperty("name1").orElseThrow(IllegalStateException::new);
-        PropertyColumn name3 = vertexLabel.getProperty("name1").orElseThrow(IllegalStateException::new);
+        PropertyColumn name2 = vertexLabel.getProperty("name2").orElseThrow(IllegalStateException::new);
+        PropertyColumn name3 = vertexLabel.getProperty("name3").orElseThrow(IllegalStateException::new);
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Arrays.asList(name1, name2, name3));
 
         this.sqlgGraph.tx().commit();

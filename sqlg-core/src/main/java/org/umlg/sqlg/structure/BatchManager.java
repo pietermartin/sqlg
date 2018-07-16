@@ -4,6 +4,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
 import java.io.Writer;
@@ -92,7 +93,7 @@ public class BatchManager {
             writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
             this.streamingVertexOutputStreamCache.put(schemaTable, writer);
         }
-        this.sqlDialect.writeStreamingVertex(writer, keyValueMap);
+        this.sqlDialect.writeTemporaryStreamingVertex(writer, keyValueMap);
 
     }
 
@@ -132,7 +133,12 @@ public class BatchManager {
                 writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
                 this.streamingVertexOutputStreamCache.put(schemaTable, writer);
             }
-            this.sqlDialect.writeStreamingVertex(writer, keyValueMap);
+            VertexLabel vertexLabel = null;
+            if (!schemaTable.isTemporary()) {
+                vertexLabel = sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(
+                        () -> new IllegalStateException(String.format("VertexLabel %s not found.", schemaTable.toString())));
+            }
+            this.sqlDialect.writeStreamingVertex(writer, keyValueMap, vertexLabel);
             if (this.isInStreamingModeWithLock()) {
                 this.batchCount++;
             }
@@ -145,6 +151,7 @@ public class BatchManager {
         SchemaTable inSchemaTable = SchemaTable.of(inVertex.getSchema(), inVertex.getTable());
         VertexLabel outVertexLabel = sqlgGraph.getTopology().getVertexLabel(outVertexLabelSchemaTable.getSchema(), outVertexLabelSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", outVertexLabelSchemaTable.getSchema(), outVertexLabelSchemaTable.getTable())));
         VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
+        EdgeLabel edgeLabel = sqlgGraph.getTopology().getEdgeLabel(outSchemaTable.getSchema(), sqlgEdge.getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel not found for %s.%s", outSchemaTable.getSchema(), sqlgEdge.getTable())));
         MetaEdge metaEdge = MetaEdge.from(outSchemaTable, outVertex, inVertex);
         if (!streaming) {
             Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = this.edgeCache.get(metaEdge);
@@ -180,7 +187,16 @@ public class BatchManager {
                 writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
                 this.streamingEdgeOutputStreamCache.put(outSchemaTable, writer);
             }
-            this.sqlDialect.writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outVertex, inVertex, keyValueMap);
+            this.sqlDialect.writeStreamingEdge(
+                    writer,
+                    sqlgEdge,
+                    outVertexLabel,
+                    inVertexLabel,
+                    outVertex,
+                    inVertex,
+                    keyValueMap,
+                    edgeLabel);
+
             if (this.isInStreamingModeWithLock()) {
                 this.batchCount++;
             }

@@ -40,12 +40,34 @@ public class TestBatch extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
+
+    @Test
+    public void testBatchNormalModeEdgeMultiColumnProperties() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        ZonedDateTime now = ZonedDateTime.now();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "t", now);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        a1.addEdge("ab", a2, "t", now);
+        a1.addEdge("ab", a2 );
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("ab").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("ab").has("t", now).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("ab").hasNot("t").count().next(), 0);
+    }
+
     @Test
     public void testBatchNormalModeMultiColumnProperties() {
         this.sqlgGraph.tx().normalBatchModeOn();
-        this.sqlgGraph.addVertex(T.label, "A", "t", ZonedDateTime.now());
+        ZonedDateTime now = ZonedDateTime.now();
+        this.sqlgGraph.addVertex(T.label, "A", "t", now);
         this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
     }
 
     @Test

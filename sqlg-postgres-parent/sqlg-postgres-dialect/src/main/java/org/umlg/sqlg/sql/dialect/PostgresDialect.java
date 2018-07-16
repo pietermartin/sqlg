@@ -263,7 +263,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     for (String key : vertices.getLeft()) {
                         values.put(key, keyValueMap.get(key));
                     }
-                    writeStreamingVertex(writer, values);
+                    if (schemaTable.isTemporary()) {
+                        writeTemporaryStreamingVertex(writer, values);
+                    } else {
+                        writeStreamingVertex(writer, values, vertexLabel);
+                    }
                     numberInserted++;
                     if (vertexLabel != null && !vertexLabel.hasIDPrimaryKey()) {
                         ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
@@ -292,6 +296,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             for (Map.Entry<String, PropertyColumn> propertyColumnEntry : propertyColumnMap.entrySet()) {
                 PropertyColumn propertyColumn = propertyColumnEntry.getValue();
                 for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                    VertexLabel vertexLabel = sqlgGraph.getTopology().getVertexLabel(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, globalUniqueIndex.getName()).orElseThrow(IllegalStateException::new);
                     String sql = constructCompleteCopyCommandSqlVertex(
                             sqlgGraph,
                             Schema.GLOBAL_UNIQUE_INDEX_SCHEMA,
@@ -309,12 +314,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, value);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgEdge.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
-                                writeStreamingVertex(writer, globalUniqueIndexValues);
+                                writeStreamingVertex(writer, globalUniqueIndexValues, vertexLabel);
                             } else {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, null);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgEdge.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
-                                writeStreamingVertex(writer, globalUniqueIndexValues);
+                                writeStreamingVertex(writer, globalUniqueIndexValues, vertexLabel);
                             }
                         }
                     } catch (IOException e) {
@@ -336,6 +341,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 PropertyColumn propertyColumn = propertyColumnEntry.getValue();
                 for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
 
+                    VertexLabel vertexLabel = sqlgGraph.getTopology().getVertexLabel(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, globalUniqueIndex.getName()).orElseThrow(IllegalStateException::new);
                     String sql = constructCompleteCopyCommandSqlVertex(
                             sqlgGraph,
                             Schema.GLOBAL_UNIQUE_INDEX_SCHEMA,
@@ -353,12 +359,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, value);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgVertex.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
-                                writeStreamingVertex(writer, globalUniqueIndexValues);
+                                writeStreamingVertex(writer, globalUniqueIndexValues, vertexLabel);
                             } else {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, null);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgVertex.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
-                                writeStreamingVertex(writer, globalUniqueIndexValues);
+                                writeStreamingVertex(writer, globalUniqueIndexValues, vertexLabel);
                             }
                         }
                     } catch (IOException e) {
@@ -384,7 +390,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
-                
+
                 Iterator<Long> it = null;
                 if (edgeLabel.hasIDPrimaryKey()) {
                     List<Long> ids = new LinkedList<>();
@@ -480,7 +486,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         for (String key : triples.getLeft()) {
                             values.put(key, outInVertexKeyValueMap.getRight().get(key));
                         }
-                        writeStreamingEdge(writer, sqlgEdge, outVertexLabel, inVertexLabel, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
+                        writeStreamingEdge(
+                                writer,
+                                sqlgEdge,
+                                outVertexLabel,
+                                inVertexLabel,
+                                outInVertexKeyValueMap.getLeft(),
+                                outInVertexKeyValueMap.getMiddle(),
+                                values,
+                                edgeLabel);
+
                         numberInserted++;
                         if (!edgeLabel.hasIDPrimaryKey()) {
                             ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
@@ -1524,7 +1539,36 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap) {
+    public void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, VertexLabel vertexLabel) {
+        try {
+            int countKeys = 1;
+            if (keyValueMap.isEmpty()) {
+                writer.write(Integer.toString(1));
+            } else {
+                for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
+                    if (countKeys > 1 && countKeys <= keyValueMap.size()) {
+                        writer.write(COPY_COMMAND_DELIMITER);
+                    }
+                    countKeys++;
+                    String key = entry.getKey();
+                    Object value = entry.getValue();
+                    PropertyType propertyType;
+                    if (key == Topology.ID) {
+                        propertyType = PropertyType.LONG;
+                    } else {
+                        propertyType = vertexLabel.getProperties().get(key).getPropertyType();
+                    }
+                    valueToStreamBytes(writer, propertyType, value);
+                }
+            }
+            writer.write("\n");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void writeTemporaryStreamingVertex(Writer writer, Map<String, Object> keyValueMap) {
         try {
             int countKeys = 1;
             if (keyValueMap.isEmpty()) {
@@ -1552,7 +1596,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public void writeStreamingEdge(
+            Writer writer,
+            SqlgEdge sqlgEdge,
+            VertexLabel outVertexLabel,
+            VertexLabel inVertexLabel,
+            SqlgVertex outVertex,
+            SqlgVertex inVertex,
+            Map<String, Object> keyValueMap,
+            EdgeLabel edgeLabel) {
+
         try {
             String encoding = "UTF-8";
             if (outVertexLabel.hasIDPrimaryKey()) {
@@ -1585,12 +1638,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
                 writer.write(COPY_COMMAND_DELIMITER);
+                String key = entry.getKey();
                 Object value = entry.getValue();
                 PropertyType propertyType;
-                if (value == null) {
-                    propertyType = PropertyType.STRING;
+                if (key == Topology.ID) {
+                    propertyType = PropertyType.LONG;
                 } else {
-                    propertyType = PropertyType.from(value);
+                    propertyType = edgeLabel.getProperties().get(key).getPropertyType();
                 }
                 if (JSON_ARRAY == propertyType) {
                     throw SqlgExceptions.invalidPropertyType(propertyType);
@@ -1614,152 +1668,166 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     private String valueToStringForBulkLoad(PropertyType propertyType, Object value) {
         String result;
-        if (value == null) {
-            result = getBatchNull();
-        } else {
-            switch (propertyType) {
-                case ZONEDDATETIME:
+        switch (propertyType) {
+            case ZONEDDATETIME:
+                if (value == null) {
+                    result = getBatchNull() + COPY_COMMAND_DELIMITER + getBatchNull();
+                } else {
                     ZonedDateTime zonedDateTime = (ZonedDateTime) value;
                     LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
                     TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
                     result = localDateTime.toString() + COPY_COMMAND_DELIMITER + timeZone.getID();
-                    break;
-                case PERIOD:
+                }
+                break;
+            case PERIOD:
+                if (value == null) {
+                    result = getBatchNull() + COPY_COMMAND_DELIMITER + getBatchNull() + COPY_COMMAND_DELIMITER + getBatchNull();
+                } else {
                     Period period = (Period) value;
                     result = period.getYears() + COPY_COMMAND_DELIMITER + period.getMonths() + COPY_COMMAND_DELIMITER + period.getDays();
-                    break;
-                case DURATION:
+                }
+                break;
+            case DURATION:
+                if (value == null) {
+                    result = getBatchNull() + COPY_COMMAND_DELIMITER + getBatchNull();
+                } else {
                     Duration duration = (Duration) value;
                     result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
-                    break;
-                case LOCALTIME:
+                }
+                break;
+            case LOCALTIME:
+                if (value == null) {
+                    result = getBatchNull();
+                } else {
                     LocalTime lt = (LocalTime) value;
                     result = shiftDST(lt).toString();
-                    break;
-                case ZONEDDATETIME_ARRAY:
-                    ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("{");
-                    int length = java.lang.reflect.Array.getLength(value);
-                    for (int i = 0; i < length; i++) {
-                        zonedDateTime = zonedDateTimes[i];
-                        localDateTime = zonedDateTime.toLocalDateTime();
-                        result = localDateTime.toString();
-                        sb.append(result);
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
+                }
+                break;
+            case ZONEDDATETIME_ARRAY:
+                ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
+                StringBuilder sb = new StringBuilder();
+                sb.append("{");
+                int length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    ZonedDateTime zonedDateTime = zonedDateTimes[i];
+                    LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                    result = localDateTime.toString();
+                    sb.append(result);
+                    if (i < length - 1) {
+                        sb.append(",");
                     }
-                    sb.append("}");
-                    sb.append(COPY_COMMAND_DELIMITER);
-                    sb.append("{");
-                    for (int i = 0; i < length; i++) {
-                        zonedDateTime = zonedDateTimes[i];
-                        timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
-                        result = timeZone.getID();
-                        sb.append(result);
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
+                }
+                sb.append("}");
+                sb.append(COPY_COMMAND_DELIMITER);
+                sb.append("{");
+                for (int i = 0; i < length; i++) {
+                    ZonedDateTime zonedDateTime = zonedDateTimes[i];
+                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
+                    result = timeZone.getID();
+                    sb.append(result);
+                    if (i < length - 1) {
+                        sb.append(",");
                     }
-                    sb.append("}");
-                    return sb.toString();
-                case DURATION_ARRAY:
-                    Duration[] durations = (Duration[]) value;
+                }
+                sb.append("}");
+                return sb.toString();
+            case DURATION_ARRAY:
+                Duration[] durations = (Duration[]) value;
+                sb = new StringBuilder();
+                sb.append("{");
+                length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    Duration duration = durations[i];
+                    sb.append(duration.getSeconds());
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}");
+                sb.append(COPY_COMMAND_DELIMITER);
+                sb.append("{");
+                for (int i = 0; i < length; i++) {
+                    Duration duration = durations[i];
+                    sb.append(duration.getNano());
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}");
+                return sb.toString();
+            case PERIOD_ARRAY:
+                Period[] periods = (Period[]) value;
+                sb = new StringBuilder();
+                sb.append("{");
+                length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    Period period = periods[i];
+                    sb.append(period.getYears());
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}");
+                sb.append(COPY_COMMAND_DELIMITER);
+                sb.append("{");
+                for (int i = 0; i < length; i++) {
+                    Period period = periods[i];
+                    sb.append(period.getMonths());
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}");
+                sb.append(COPY_COMMAND_DELIMITER);
+                sb.append("{");
+                for (int i = 0; i < length; i++) {
+                    Period period = periods[i];
+                    sb.append(period.getDays());
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}");
+                return sb.toString();
+            case LOCALTIME_ARRAY:
+                LocalTime[] localTimes = (LocalTime[]) value;
+                sb = new StringBuilder();
+                sb.append("{");
+                length = java.lang.reflect.Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    LocalTime localTime = localTimes[i];
+                    result = shiftDST(localTime).toString();
+                    sb.append(result);
+                    if (i < length - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("}");
+                return sb.toString();
+            case JSON_ARRAY:
+                throw SqlgExceptions.invalidPropertyType(propertyType);
+            case BYTE_ARRAY:
+                return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
+            case byte_ARRAY:
+                return PGbytea.toPGString((byte[]) value);
+            default:
+                if (value == null) {
+                    return getBatchNull();
+                } else if (value.getClass().isArray()) {
                     sb = new StringBuilder();
                     sb.append("{");
                     length = java.lang.reflect.Array.getLength(value);
                     for (int i = 0; i < length; i++) {
-                        duration = durations[i];
-                        sb.append(duration.getSeconds());
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
-                    }
-                    sb.append("}");
-                    sb.append(COPY_COMMAND_DELIMITER);
-                    sb.append("{");
-                    for (int i = 0; i < length; i++) {
-                        duration = durations[i];
-                        sb.append(duration.getNano());
+                        String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                        sb.append(escapeSpecialCharacters(valueOfArray));
                         if (i < length - 1) {
                             sb.append(",");
                         }
                     }
                     sb.append("}");
                     return sb.toString();
-                case PERIOD_ARRAY:
-                    Period[] periods = (Period[]) value;
-                    sb = new StringBuilder();
-                    sb.append("{");
-                    length = java.lang.reflect.Array.getLength(value);
-                    for (int i = 0; i < length; i++) {
-                        period = periods[i];
-                        sb.append(period.getYears());
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
-                    }
-                    sb.append("}");
-                    sb.append(COPY_COMMAND_DELIMITER);
-                    sb.append("{");
-                    for (int i = 0; i < length; i++) {
-                        period = periods[i];
-                        sb.append(period.getMonths());
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
-                    }
-                    sb.append("}");
-                    sb.append(COPY_COMMAND_DELIMITER);
-                    sb.append("{");
-                    for (int i = 0; i < length; i++) {
-                        period = periods[i];
-                        sb.append(period.getDays());
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
-                    }
-                    sb.append("}");
-                    return sb.toString();
-                case LOCALTIME_ARRAY:
-                    LocalTime[] localTimes = (LocalTime[]) value;
-                    sb = new StringBuilder();
-                    sb.append("{");
-                    length = java.lang.reflect.Array.getLength(value);
-                    for (int i = 0; i < length; i++) {
-                        LocalTime localTime = localTimes[i];
-                        result = shiftDST(localTime).toString();
-                        sb.append(result);
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
-                    }
-                    sb.append("}");
-                    return sb.toString();
-                case JSON_ARRAY:
-                    throw SqlgExceptions.invalidPropertyType(propertyType);
-                case BYTE_ARRAY:
-                    return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
-                case byte_ARRAY:
-                    return PGbytea.toPGString((byte[]) value);
-                default:
-                    if (value.getClass().isArray()) {
-                        sb = new StringBuilder();
-                        sb.append("{");
-                        length = java.lang.reflect.Array.getLength(value);
-                        for (int i = 0; i < length; i++) {
-                            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
-                            sb.append(escapeSpecialCharacters(valueOfArray));
-                            if (i < length - 1) {
-                                sb.append(",");
-                            }
-                        }
-                        sb.append("}");
-                        return sb.toString();
-                    }
-                    result = escapeSpecialCharacters(value.toString());
-            }
+                }
+                result = escapeSpecialCharacters(value.toString());
         }
         return result;
     }
@@ -1795,7 +1863,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                                 Map<String, Object> tmpMap = new HashMap<>();
                                 tmpMap.put("recordId", sqlgVertex.id().toString());
                                 tmpMap.put("property", propertyColumn.getName());
-                                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, tmpMap);
+                                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeTemporaryStreamingVertex(writer, tmpMap);
                             }
                             try {
                                 writer.close();
