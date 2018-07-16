@@ -79,7 +79,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
         this.sqlgGraph.tx().commit();
-        Thread.sleep(2000);
+        Thread.sleep(1000);
 
         personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Person");
         Assert.assertTrue(personVertexLabel.isPresent());
@@ -103,6 +103,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         Assert.assertEquals("name", personVertexLabel.get().getIdentifiers().get(0));
         Assert.assertEquals("surname", personVertexLabel.get().getIdentifiers().get(1));
 
+        Thread.sleep(1000);
         dropSqlgSchema(sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -192,6 +193,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         Assert.assertEquals("uid1", livesAt.get().getIdentifiers().get(0));
         Assert.assertEquals("uid2", livesAt.get().getIdentifiers().get(1));
 
+        Thread.sleep(1000);
+
         dropSqlgSchema(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -265,6 +268,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         this.sqlgGraph = SqlgGraph.open(configuration);
         livesAt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "livesAt");
         Assert.assertTrue(livesAt.isPresent());
+
+        Thread.sleep(1000);
 
         dropSqlgSchema(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
