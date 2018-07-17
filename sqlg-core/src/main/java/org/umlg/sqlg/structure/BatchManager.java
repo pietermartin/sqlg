@@ -188,21 +188,27 @@ public class BatchManager {
     }
 
     public void flush() {
-        this.isBusyFlushing = true;
-        this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
-        this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
-        this.sqlDialect.flushVertexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
-        this.sqlDialect.flushEdgePropertyCache(this.sqlgGraph, this.edgePropertyCache);
-        this.sqlDialect.flushRemovedEdges(this.sqlgGraph, this.removeEdgeCache);
-        this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
-        this.close();
-        this.isBusyFlushing = false;
-        this.sqlDialect.flushVertexGlobalUniqueIndexes(this.sqlgGraph, this.vertexCache);
-        this.sqlDialect.flushEdgeGlobalUniqueIndexes(this.sqlgGraph, this.edgeCache);
-        this.sqlDialect.flushVertexGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
-        this.sqlDialect.flushEdgeGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.edgePropertyCache);
-        this.sqlDialect.flushRemovedGlobalUniqueIndexVertices(this.sqlgGraph, this.removeVertexCache);
-        this.clear();
+    	try {
+    		try {
+    			this.isBusyFlushing = true;
+    			this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
+    			this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
+    			this.sqlDialect.flushVertexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
+    			this.sqlDialect.flushEdgePropertyCache(this.sqlgGraph, this.edgePropertyCache);
+    			this.sqlDialect.flushRemovedEdges(this.sqlgGraph, this.removeEdgeCache);
+    			this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
+    		} finally {
+    			this.close();
+    			this.isBusyFlushing = false;
+    		}
+    		this.sqlDialect.flushVertexGlobalUniqueIndexes(this.sqlgGraph, this.vertexCache);
+    		this.sqlDialect.flushEdgeGlobalUniqueIndexes(this.sqlgGraph, this.edgeCache);
+    		this.sqlDialect.flushVertexGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
+    		this.sqlDialect.flushEdgeGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.edgePropertyCache);
+    		this.sqlDialect.flushRemovedGlobalUniqueIndexVertices(this.sqlgGraph, this.removeVertexCache);
+    	} finally {
+    		this.clear();
+    	}
     }
 
     public void close() {
