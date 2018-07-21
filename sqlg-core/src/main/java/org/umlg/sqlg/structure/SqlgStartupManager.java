@@ -179,7 +179,7 @@ class SqlgStartupManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String[] types = new String[]{"TABLE"};
             //load the vertices
-            try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, Topology.VERTEX_PREFIX +  Topology.GRAPH, types)) {
+            try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, Topology.VERTEX_PREFIX + Topology.GRAPH, types)) {
                 if (!vertexRs.next()) {
                     try (Statement statement = conn.createStatement()) {
                         String sql = this.sqlDialect.sqlgCreateTopologyGraph();
@@ -616,27 +616,26 @@ class SqlgStartupManager {
      * @return the build version, or null if unknown
      */
     String getBuildVersion() {
-    	if (buildVersion==null){
-	        Properties prop = new Properties();
-	        try {
-	        	// try system
-	        	URL u=ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
-	        	if(u==null){
-	        		// try own class loader
-	        		u=getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
-	        	}
-	        	if (u!=null){
-	        		try (InputStream is=u.openStream()){
-	        			prop.load(is);
-	        		}
-	        		buildVersion=prop.getProperty(APPLICATION_VERSION);
-
-	        	}
-	        } catch (IOException e) {
-	            throw new RuntimeException(e);
-	        }
-    	}
-       return buildVersion;
+        if (this.buildVersion == null) {
+            Properties prop = new Properties();
+            try {
+                // try system
+                URL u = ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
+                if (u == null) {
+                    // try own class loader
+                    u = getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
+                }
+                if (u != null) {
+                    try (InputStream is = u.openStream()) {
+                        prop.load(is);
+                    }
+                    this.buildVersion = prop.getProperty(APPLICATION_VERSION);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return this.buildVersion;
     }
 
     private boolean hasIDPrimaryKey(List<String> primaryKeys) {

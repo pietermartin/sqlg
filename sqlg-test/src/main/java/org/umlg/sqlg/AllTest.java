@@ -48,6 +48,7 @@ import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.properties.TestPropertyValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
+import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
@@ -254,7 +255,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSharding.class,
         TestShardingGremlin.class,
         TestRecordId.class,
-        TestPropertyValues.class
+        TestPropertyValues.class,
+        TestReadOnlyRole.class
 
 })
 public class AllTest {

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -198,8 +197,7 @@ public class SqlgGraph implements Graph {
     private SqlDialect sqlDialect;
     private String jdbcUrl;
     private final ObjectMapper mapper = new ObjectMapper();
-    //    private boolean implementForeignKeys;
-    private Configuration configuration = new BaseConfiguration();
+    private Configuration configuration;;
     private final ISqlGFeatures features = new SqlGFeatures();
 
     /**
@@ -302,6 +300,8 @@ public class SqlgGraph implements Graph {
             try (Connection conn = this.getConnection()) {
                 //This is used by Hsqldb to set the transaction semantics. MVCC and cache
                 this.sqlDialect.prepareDB(conn);
+            } catch (Exception e) {
+                //swallow
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -580,7 +580,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty(JDBC_URL) + ")";
+        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty(JDBC_URL) + ")" + " (user = " + configuration.getString("jdbc.username") + ")";
     }
 
     public ISqlGFeatures features() {

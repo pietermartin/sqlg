@@ -64,9 +64,11 @@ public class TopologyManager {
             Preconditions.checkState(graphVertices.size() == 1, "BUG: There can only ever be one graph vertex, found %s", graphVertices.size());
             Vertex graph = graphVertices.get(0);
             String oldVersion = graph.value(SQLG_SCHEMA_GRAPH_VERSION);
-            graph.property(SQLG_SCHEMA_GRAPH_VERSION, version);
-            graph.property(SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion());
-            graph.property(UPDATED_ON, LocalDateTime.now());
+            if (!oldVersion.equals(version)) {
+                graph.property(SQLG_SCHEMA_GRAPH_VERSION, version);
+                graph.property(SQLG_SCHEMA_GRAPH_DB_VERSION, metadata.getDatabaseProductVersion());
+                graph.property(UPDATED_ON, LocalDateTime.now());
+            }
             return oldVersion;
         } catch (Exception e) {
             throw new RuntimeException(e);

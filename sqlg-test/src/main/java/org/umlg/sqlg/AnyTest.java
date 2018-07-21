@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestAddVertexViaMap;
+import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.TestAddVertexViaMap;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAddVertexViaMap.class,
+        TestReadOnlyRole.class,
 })
 public class AnyTest {
 }

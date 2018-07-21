@@ -100,6 +100,7 @@ public abstract class BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
+        grantReadOnlyUserPrivileges();
         assertNotNull(this.sqlgGraph);
         assertNotNull(this.sqlgGraph.getBuildVersion());
         this.gt = this.sqlgGraph.traversal();
@@ -110,6 +111,21 @@ public abstract class BaseTest {
         }
         stopWatch.stop();
         logger.info("Startup time for test = " + stopWatch.toString());
+    }
+
+    private void grantReadOnlyUserPrivileges() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("GRANT USAGE ON SCHEMA public TO \"sqlgReadOnly\"");
+            statement.execute("GRANT USAGE ON SCHEMA sqlg_schema TO \"sqlgReadOnly\"");
+            statement.execute("GRANT USAGE ON SCHEMA gui_schema TO \"sqlgReadOnly\"");
+            statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"sqlgReadOnly\"");
+            statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA sqlg_schema TO \"sqlgReadOnly\"");
+            statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA gui_schema TO \"sqlgReadOnly\"");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        this.sqlgGraph.tx().commit();
     }
 
     @After
@@ -206,45 +222,28 @@ public abstract class BaseTest {
     }
 
     protected void assertDb(String table, int numberOfRows) {
-        Connection conn = null;
-        Statement stmt = null;
-        try {
-            conn = this.sqlgGraph.getConnection();
-            stmt = conn.createStatement();
-            StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-            sql.append(".");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
-            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
+        try (Connection conn = this.sqlgGraph.getConnection()) {
+            try (Statement stmt = conn.createStatement()) {
+                StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
+                sql.append(".");
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
+                try (ResultSet rs = stmt.executeQuery(sql.toString())) {
+                    int countRows = 0;
+                    while (rs.next()) {
+                        countRows++;
+                    }
+                    assertEquals(numberOfRows, countRows);
+                }
             }
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            ResultSet rs = stmt.executeQuery(sql.toString());
-            int countRows = 0;
-            while (rs.next()) {
-                countRows++;
-            }
-            assertEquals(numberOfRows, countRows);
-            rs.close();
-            stmt.close();
-            conn.close();
         } catch (Exception e) {
             fail(e.getMessage());
-        } finally {
-            //noinspection EmptyCatchBlock
-            try {
-                if (stmt != null)
-                    stmt.close();
-            } catch (SQLException se2) {
-            }
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (SQLException se) {
-                fail(se.getMessage());
-            }
         }
 
     }
