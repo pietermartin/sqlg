@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
 
 import static org.apache.tinkerpop.gremlin.structure.T.label;
+import static org.umlg.sqlg.structure.PropertyType.*;
 import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
 import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
@@ -337,39 +338,42 @@ public class SqlgUtil {
                 preparedStatement.setNull(parameterStartIndex++, sqlType);
             }
         } else {
-            switch (pair.left) {
-                case BOOLEAN:
+            switch (pair.left.ordinal()) {
+                case BOOLEAN_ORDINAL:
                     preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
                     break;
-                case BYTE:
+                case BYTE_ORDINAL:
                     preparedStatement.setByte(parameterStartIndex++, (Byte) pair.right);
                     break;
-                case SHORT:
+                case SHORT_ORDINAL:
                     preparedStatement.setShort(parameterStartIndex++, (Short) pair.right);
                     break;
-                case INTEGER:
+                case INTEGER_ORDINAL:
                     preparedStatement.setInt(parameterStartIndex++, (Integer) pair.right);
                     break;
-                case LONG:
+                case LONG_ORDINAL:
                     preparedStatement.setLong(parameterStartIndex++, (Long) pair.right);
                     break;
-                case FLOAT:
+                case FLOAT_ORDINAL:
                     preparedStatement.setFloat(parameterStartIndex++, (Float) pair.right);
                     break;
-                case DOUBLE:
+                case DOUBLE_ORDINAL:
                     preparedStatement.setDouble(parameterStartIndex++, (Double) pair.right);
                     break;
-                case STRING:
+                case STRING_ORDINAL:
                     preparedStatement.setString(parameterStartIndex++, (String) pair.right);
                     break;
-                case LOCALDATE:
+                case VARCHAR_ORDINAL:
+                    preparedStatement.setString(parameterStartIndex++, (String) pair.right);
+                    break;
+                case LOCALDATE_ORDINAL:
                     preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDate) pair.right).atStartOfDay()));
                     break;
-                case LOCALDATETIME:
+                case LOCALDATETIME_ORDINAL:
                     Timestamp timestamp = Timestamp.valueOf(((LocalDateTime) pair.right));
                     preparedStatement.setTimestamp(parameterStartIndex++, timestamp);
                     break;
-                case ZONEDDATETIME:
+                case ZONEDDATETIME_ORDINAL:
                     if (sqlgGraph.getSqlDialect().needsTimeZone()) {
                         //This is for postgresql that adjust the timestamp to the server's timezone
                         ZonedDateTime zonedDateTime = (ZonedDateTime) pair.right;
@@ -389,116 +393,116 @@ public class SqlgUtil {
                         preparedStatement.setString(parameterStartIndex++, tz.getID());
                     }
                     break;
-                case LOCALTIME:
+                case LOCALTIME_ORDINAL:
                     //loses nano seconds
                     preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
                     break;
-                case PERIOD:
+                case PERIOD_ORDINAL:
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getMonths());
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getDays());
                     break;
-                case DURATION:
+                case DURATION_ORDINAL:
                     preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());
                     preparedStatement.setInt(parameterStartIndex++, ((Duration) pair.right).getNano());
                     break;
-                case JSON:
+                case JSON_ORDINAL:
                     sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
                     parameterStartIndex++;
                     break;
-                case POINT:
+                case POINT_ORDINAL:
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case LINESTRING:
+                case LINESTRING_ORDINAL:
                     sqlgGraph.getSqlDialect().setLineString(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case POLYGON:
+                case POLYGON_ORDINAL:
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case GEOGRAPHY_POINT:
+                case GEOGRAPHY_POINT_ORDINAL:
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case GEOGRAPHY_POLYGON:
+                case GEOGRAPHY_POLYGON_ORDINAL:
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case BOOLEAN_ARRAY:
+                case BOOLEAN_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case boolean_ARRAY:
+                case boolean_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.boolean_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case BYTE_ARRAY:
+                case BYTE_ARRAY_ORDINAL:
                     byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) pair.getRight());
                     preparedStatement.setBytes(parameterStartIndex++, byteArray);
                     break;
-                case byte_ARRAY:
+                case byte_ARRAY_ORDINAL:
                     preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
                     break;
-                case SHORT_ARRAY:
+                case SHORT_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.SHORT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case short_ARRAY:
+                case short_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.short_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case INTEGER_ARRAY:
+                case INTEGER_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.INTEGER_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case int_ARRAY:
+                case int_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LONG_ARRAY:
+                case LONG_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LONG_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case long_ARRAY:
+                case long_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case FLOAT_ARRAY:
+                case FLOAT_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.FLOAT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case float_ARRAY:
+                case float_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.float_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case DOUBLE_ARRAY:
+                case DOUBLE_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.DOUBLE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case double_ARRAY:
+                case double_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.double_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case STRING_ARRAY:
+                case STRING_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LOCALDATETIME_ARRAY:
+                case LOCALDATETIME_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LOCALDATE_ARRAY:
+                case LOCALDATE_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LOCALTIME_ARRAY:
+                case LOCALTIME_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALTIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case ZONEDDATETIME_ARRAY:
+                case ZONEDDATETIME_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     if (mod) {
                         sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, Arrays.stream((ZonedDateTime[]) pair.right).map(z -> z.getZone().getId()).toArray()));
                     }
                     break;
-                case DURATION_ARRAY:
+                case DURATION_ARRAY_ORDINAL:
                     Duration[] durations = (Duration[]) pair.getRight();
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(durations).map(Duration::getSeconds).toArray()));
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(durations).map(Duration::getNano).toArray()));
                     break;
-                case PERIOD_ARRAY:
+                case PERIOD_ARRAY_ORDINAL:
                     Period[] periods = (Period[]) pair.getRight();
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getYears).toArray()));
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getMonths).toArray()));
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getDays).toArray()));
                     break;
-                case JSON_ARRAY:
+                case JSON_ARRAY_ORDINAL:
                     JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
                     break;
@@ -734,25 +738,25 @@ public class SqlgUtil {
         int arrlength = Array.getLength(val);
         Object[] outputArray = new Object[arrlength];
         for (int i = 0; i < arrlength; ++i) {
-            switch (propertyType) {
-                case LOCALDATETIME_ARRAY:
+            switch (propertyType.ordinal()) {
+                case LOCALDATETIME_ARRAY_ORDINAL:
                     outputArray[i] = Timestamp.valueOf((LocalDateTime) Array.get(val, i));
                     break;
-                case LOCALDATE_ARRAY:
+                case LOCALDATE_ARRAY_ORDINAL:
                     outputArray[i] = Timestamp.valueOf(((LocalDate) Array.get(val, i)).atStartOfDay());
                     break;
-                case LOCALTIME_ARRAY:
+                case LOCALTIME_ARRAY_ORDINAL:
                     outputArray[i] = Time.valueOf(((LocalTime) Array.get(val, i)));
                     break;
-                case ZONEDDATETIME_ARRAY:
+                case ZONEDDATETIME_ARRAY_ORDINAL:
                     ZonedDateTime zonedDateTime = (ZonedDateTime) Array.get(val, i);
                     outputArray[i] = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
                     break;
-                case BYTE_ARRAY:
+                case BYTE_ARRAY_ORDINAL:
                     Byte aByte = (Byte) Array.get(val, i);
                     outputArray[i] = aByte;
                     break;
-                case JSON_ARRAY:
+                case JSON_ARRAY_ORDINAL:
                     JsonNode jsonNode = (JsonNode) Array.get(val, i);
                     outputArray[i] = jsonNode.toString();
                     break;
@@ -854,6 +858,46 @@ public class SqlgUtil {
         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
         Connection conn = sqlgGraph.tx().getConnection();
         dropDb(sqlDialect, conn);
+        dropSqlgReadOnlyUser(sqlDialect, conn);
+    }
+
+    private static void dropSqlgReadOnlyUser(SqlDialect sqlDialect, Connection conn) {
+        if (sqlDialect.isHsqldb()) {
+            try (Statement statement = conn.createStatement()) {
+                ResultSet rs = statement.executeQuery("SELECT * FROM INFORMATION_SCHEMA.SYSTEM_USERS where USER_NAME = 'sqlgReadOnly'");
+                if (rs.next()) {
+                    try (Statement s = conn.createStatement()) {
+                        s.execute("DROP USER \"sqlgReadOnly\"" );
+                        s.execute("DROP ROLE READ_ONLY");
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (sqlDialect.isPostgresql()) {
+            try (Statement statement = conn.createStatement()) {
+                ResultSet rs = statement.executeQuery("1 FROM pg_roles WHERE rolname='sqlgReadOnly'");
+                if (rs.next()) {
+                    try (Statement s = conn.createStatement()) {
+                        s.execute("REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("DROP ROLE \"sqlgReadOnly\"");
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (sqlDialect.isMariaDb() || sqlDialect.isMysql()) {
+            try (Statement s = conn.createStatement()) {
+                s.execute("DROP USER IF EXISTS 'sqlgReadOnly'@'localhost'");
+                s.executeQuery("FLUSH PRIVILEGES");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public static Byte[] convertPrimitiveByteArrayToByteArray(byte[] value) {
@@ -1109,8 +1153,8 @@ public class SqlgUtil {
         try {
             for (ColumnList.Column column : columns) {
                 PropertyType propertyType = column.getPropertyType();
-                switch (propertyType) {
-                    case STRING:
+                switch (propertyType.ordinal()) {
+                    case STRING_ORDINAL:
                         String s = resultSet.getString(column.getColumnIndex());
                         result.add(s);
                         break;
@@ -1125,8 +1169,8 @@ public class SqlgUtil {
     }
 
     public static Object stringValueToType(PropertyType propertyType, String value) {
-        switch (propertyType) {
-            case STRING:
+        switch (propertyType.ordinal()) {
+            case STRING_ORDINAL:
                 return value;
             default:
                 throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));

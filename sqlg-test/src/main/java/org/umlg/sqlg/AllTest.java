@@ -256,7 +256,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestShardingGremlin.class,
         TestRecordId.class,
         TestPropertyValues.class,
-        TestReadOnlyRole.class
+        TestReadOnlyRole.class,
+        TestVarChar.class
 
 })
 public class AllTest {

@@ -22,6 +22,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.PropertyType.*;
+
 public interface SqlDialect {
 
 
@@ -241,7 +243,7 @@ public interface SqlDialect {
             metaNodeArray.add(metaNode);
             switch (sqlType) {
                 case Types.BIT:
-                    metaNode.put("type", PropertyType.BOOLEAN.name());
+                    metaNode.put("type", BOOLEAN.name());
                     break;
                 case Types.SMALLINT:
                     metaNode.put("type", PropertyType.SHORT.name());
@@ -496,6 +498,10 @@ public interface SqlDialect {
     }
 
     default boolean isMariaDb() {
+        return false;
+    }
+
+    default boolean isMysql() {
         return false;
     }
 
@@ -1131,102 +1137,106 @@ public interface SqlDialect {
 
     //TODO this is very lazy do properly
     default String toRDBSStringLiteral(PropertyType propertyType, Object value) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 Boolean b = (Boolean) value;
                 return b.toString();
-            case BYTE:
+            case BYTE_ORDINAL:
                 Byte byteValue = (Byte) value;
                 return byteValue.toString();
-            case SHORT:
+            case SHORT_ORDINAL:
                 Short shortValue = (Short) value;
                 return shortValue.toString();
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 Integer intValue = (Integer) value;
                 return intValue.toString();
-            case LONG:
+            case LONG_ORDINAL:
                 Long longValue = (Long) value;
                 return longValue.toString();
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 Float floatValue = (Float) value;
                 return floatValue.toString();
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 Double doubleValue = (Double) value;
                 return doubleValue.toString();
-            case STRING:
+            case STRING_ORDINAL:
                 return "'" + value.toString() + "'";
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 LocalDate localDateValue = (LocalDate) value;
                 return "'" + localDateValue.toString() + "'";
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 LocalDateTime localDateTimeValue = (LocalDateTime) value;
                 return "'" + localDateTimeValue.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 LocalTime localTimeValue = (LocalTime) value;
                 return "'" + localTimeValue.toString() + "'";
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 break;
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 break;
-            case DURATION:
+            case DURATION_ORDINAL:
                 break;
-            case JSON:
+            case JSON_ORDINAL:
                 break;
-            case POINT:
+            case POINT_ORDINAL:
                 break;
-            case LINESTRING:
+            case LINESTRING_ORDINAL:
                 break;
-            case POLYGON:
+            case POLYGON_ORDINAL:
                 break;
-            case GEOGRAPHY_POINT:
+            case GEOGRAPHY_POINT_ORDINAL:
                 break;
-            case GEOGRAPHY_POLYGON:
+            case GEOGRAPHY_POLYGON_ORDINAL:
                 break;
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 break;
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 break;
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 break;
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 break;
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 break;
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 break;
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 break;
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 break;
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 break;
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 break;
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 break;
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 break;
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 break;
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 break;
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 break;
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 break;
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 break;
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 break;
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 break;
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 break;
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 break;
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 break;
         }
         return "'" + value.toString() + "'";
+    }
+
+    default void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
+        throw new RuntimeException("Not yet implemented!");
     }
 }

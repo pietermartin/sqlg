@@ -114,17 +114,7 @@ public abstract class BaseTest {
     }
 
     private void grantReadOnlyUserPrivileges() {
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement statement = conn.createStatement()) {
-            statement.execute("GRANT USAGE ON SCHEMA public TO \"sqlgReadOnly\"");
-            statement.execute("GRANT USAGE ON SCHEMA sqlg_schema TO \"sqlgReadOnly\"");
-            statement.execute("GRANT USAGE ON SCHEMA gui_schema TO \"sqlgReadOnly\"");
-            statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"sqlgReadOnly\"");
-            statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA sqlg_schema TO \"sqlgReadOnly\"");
-            statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA gui_schema TO \"sqlgReadOnly\"");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        this.sqlgGraph.getSqlDialect().grantReadOnlyUserPrivilegesToSqlgSchemas(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
     }
 
@@ -152,6 +142,18 @@ public abstract class BaseTest {
 
     protected static boolean isMsSqlServer() {
         return configuration.getString("jdbc.url").contains("sqlserver");
+    }
+
+    protected static boolean isHsqldb() {
+        return configuration.getString("jdbc.url").contains("hsqldb");
+    }
+
+    protected static boolean isMariaDb() {
+        return configuration.getString("jdbc.url").contains("mariadb");
+    }
+
+    protected static boolean isMysql() {
+        return configuration.getString("jdbc.url").contains("mysql");
     }
 
     /**

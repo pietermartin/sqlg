@@ -111,10 +111,22 @@ public class TestReadOnlyRole extends BaseTest {
                         VertexLabel vertexLabel = (VertexLabel) topologyInf;
                         Connection conn = sqlgGraph.tx().getConnection();
                         try (Statement statement = conn.createStatement()) {
-                            String sql = "GRANT SELECT ON " +
-                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName()) + "." +
-                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()) + " TO \"sqlgReadOnly\"";
-                            statement.execute(sql);
+                            String sql = "";
+                            if (isPostgres()) {
+                                 sql = "GRANT SELECT ON " +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName()) + "." +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()) + " TO \"sqlgReadOnly\"";
+                                statement.execute(sql);
+                            } else if (isHsqldb()) {
+                                sql = "GRANT SELECT ON TABLE " +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName()) + "." +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()) + " TO READ_ONLY";
+                                statement.execute(sql);
+                            } else if (isMariaDb() || isMysql()) {
+                                //nothing to do. MariaDb user is created with select all rights
+                            } else {
+                                Assert.fail("Not handled");
+                            }
                         } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }
@@ -122,10 +134,22 @@ public class TestReadOnlyRole extends BaseTest {
                         EdgeLabel edgeLabel = (EdgeLabel) topologyInf;
                         Connection conn = sqlgGraph.tx().getConnection();
                         try (Statement statement = conn.createStatement()) {
-                            String sql = "GRANT SELECT ON " +
-                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." +
-                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()) + " TO \"sqlgReadOnly\"";
-                            statement.execute(sql);
+                            String sql = "";
+                            if (isPostgres()) {
+                                sql = "GRANT SELECT ON " +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()) + " TO \"sqlgReadOnly\"";
+                                statement.execute(sql);
+                            } else if (isHsqldb()) {
+                                sql = "GRANT SELECT ON TABLE " +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()) + " TO READ_ONLY";
+                                statement.execute(sql);
+                            } else if (isMariaDb() || isMysql()) {
+                                //nothing to do. MariaDb user is created with select all rights
+                            } else {
+                                Assert.fail("Not handled");
+                            }
                         } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }
@@ -133,8 +157,10 @@ public class TestReadOnlyRole extends BaseTest {
                         Schema schema = (Schema) topologyInf;
                         Connection conn = sqlgGraph.tx().getConnection();
                         try (Statement statement = conn.createStatement()) {
-                            String sql = "GRANT USAGE ON SCHEMA  " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema.getName()) + " TO \"sqlgReadOnly\"";
-                            statement.execute(sql);
+                            if (isPostgres()) {
+                                String sql = "GRANT USAGE ON SCHEMA  " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema.getName()) + " TO \"sqlgReadOnly\"";
+                                statement.execute(sql);
+                            }
                         } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }

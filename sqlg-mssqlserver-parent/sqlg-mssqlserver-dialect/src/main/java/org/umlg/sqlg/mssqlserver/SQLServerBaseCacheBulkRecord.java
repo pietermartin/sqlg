@@ -17,6 +17,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.PropertyType.*;
+
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/08/09
@@ -62,8 +64,8 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
             } else {
                 propertyType = this.properties.get(column);
             }
-            switch (propertyType) {
-                case BOOLEAN:
+            switch (propertyType.ordinal()) {
+                case BOOLEAN_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -75,14 +77,14 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             propertyType
                     ));
                     break;
-                case BYTE:
-                case SHORT:
-                case INTEGER:
-                case LONG:
-                case FLOAT:
-                case DOUBLE:
-                case JSON:
-                case STRING:
+                case BYTE_ORDINAL:
+                case SHORT_ORDINAL:
+                case INTEGER_ORDINAL:
+                case LONG_ORDINAL:
+                case FLOAT_ORDINAL:
+                case DOUBLE_ORDINAL:
+                case JSON_ORDINAL:
+                case STRING_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -94,7 +96,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             propertyType
                     ));
                     break;
-                case LOCALDATE:
+                case LOCALDATE_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -105,7 +107,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             propertyType
                     ));
                     break;
-                case LOCALDATETIME:
+                case LOCALDATETIME_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -116,7 +118,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             propertyType
                     ));
                     break;
-                case LOCALTIME:
+                case LOCALTIME_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -127,7 +129,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             propertyType
                     ));
                     break;
-                case ZONEDDATETIME:
+                case ZONEDDATETIME_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -147,7 +149,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             PropertyType.STRING
                     ));
                     break;
-                case PERIOD:
+                case PERIOD_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -176,7 +178,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             PropertyType.INTEGER
                     ));
                     break;
-                case DURATION:
+                case DURATION_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -196,7 +198,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             PropertyType.INTEGER
                     ));
                     break;
-                case byte_ARRAY:
+                case byte_ARRAY_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -208,7 +210,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                             propertyType
                     ));
                     break;
-                case BYTE_ARRAY:
+                case BYTE_ARRAY_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -268,50 +270,50 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                 propertyType = this.properties.get(column);
             }
             Object value = getValue(column);
-            switch (propertyType) {
-                case BOOLEAN:
+            switch (propertyType.ordinal()) {
+                case BOOLEAN_ORDINAL:
                     values.add(value);
                     break;
-                case BYTE:
-                case SHORT:
-                case INTEGER:
-                case LONG:
-                case FLOAT:
-                case DOUBLE:
-                case JSON:
-                case STRING:
+                case BYTE_ORDINAL:
+                case SHORT_ORDINAL:
+                case INTEGER_ORDINAL:
+                case LONG_ORDINAL:
+                case FLOAT_ORDINAL:
+                case DOUBLE_ORDINAL:
+                case JSON_ORDINAL:
+                case STRING_ORDINAL:
                     values.add(value);
                     break;
-                case LOCALDATE:
+                case LOCALDATE_ORDINAL:
                     values.add(value.toString());
                     break;
-                case LOCALDATETIME:
+                case LOCALDATETIME_ORDINAL:
                     Timestamp timestamp = Timestamp.valueOf((LocalDateTime) value);
                     values.add(timestamp.toString());
                     break;
-                case LOCALTIME:
+                case LOCALTIME_ORDINAL:
                     values.add(value.toString());
                     break;
-                case ZONEDDATETIME:
+                case ZONEDDATETIME_ORDINAL:
                     values.add(((ZonedDateTime) value).toLocalDateTime());
                     TimeZone tz = TimeZone.getTimeZone(((ZonedDateTime) value).getZone());
                     values.add(tz.getID());
                     break;
-                case PERIOD:
+                case PERIOD_ORDINAL:
                     Period period = (Period) value;
                     values.add(period.getYears());
                     values.add(period.getMonths());
                     values.add(period.getDays());
                     break;
-                case DURATION:
+                case DURATION_ORDINAL:
                     Duration duration = (Duration) value;
                     values.add(duration.getSeconds());
                     values.add(duration.getNano());
                     break;
-                case byte_ARRAY:
+                case byte_ARRAY_ORDINAL:
                     values.add(value);
                     break;
-                case BYTE_ARRAY:
+                case BYTE_ARRAY_ORDINAL:
                     byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) value);
                     values.add(byteArray);
                     break;

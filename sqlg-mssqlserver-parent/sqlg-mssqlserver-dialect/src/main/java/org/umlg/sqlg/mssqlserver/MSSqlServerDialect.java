@@ -28,6 +28,7 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.PropertyType.*;
 import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
 import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
@@ -197,48 +198,48 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new String[]{"BIT"};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new String[]{"TINYINT"};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new String[]{"VARBINARY(max)"};
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new String[]{"VARBINARY(max)"};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new String[]{"DOUBLE PRECISION"};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new String[]{"BIGINT", "INT"};
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 return new String[]{"REAL"};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new String[]{"INT"};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new String[]{"DATE"};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new String[]{"DATETIME2(3)"};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new String[]{"TIME"};
-            case LONG:
+            case LONG_ORDINAL:
                 return new String[]{"BIGINT"};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new String[]{"INT", "INT", "INT"};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new String[]{"SMALLINT"};
-            case STRING:
+            case STRING_ORDINAL:
                 return new String[]{"VARCHAR(2000)"};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new String[]{"DATETIME2(3)", "VARCHAR(255)"};
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return new String[]{"ARRAY"};
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 return new String[]{"ARRAY", "ARRAY"};
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 return new String[]{"ARRAY", "ARRAY", "ARRAY"};
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new String[]{"ARRAY", "ARRAY"};
-            case JSON:
+            case JSON_ORDINAL:
                 return new String[]{"VARCHAR(max)"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -247,63 +248,63 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new int[]{Types.BIT};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new int[]{Types.TINYINT};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new int[]{Types.SMALLINT};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new int[]{Types.INTEGER};
-            case LONG:
+            case LONG_ORDINAL:
                 return new int[]{Types.BIGINT};
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 return new int[]{Types.REAL};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new int[]{Types.DOUBLE};
-            case STRING:
+            case STRING_ORDINAL:
                 return new int[]{Types.LONGVARCHAR};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new int[]{Types.DATE};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new int[]{Types.TIME};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new int[]{Types.BIGINT, Types.INTEGER};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case JSON:
+            case JSON_ORDINAL:
                 return new int[]{Types.VARCHAR};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new int[]{Types.VARBINARY};
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new int[]{Types.VARBINARY};
-            case BOOLEAN_ARRAY:
-            case boolean_ARRAY:
-            case DOUBLE_ARRAY:
-            case double_ARRAY:
-            case FLOAT_ARRAY:
-            case float_ARRAY:
-            case int_ARRAY:
-            case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY:
-            case LOCALDATETIME_ARRAY:
-            case LOCALTIME_ARRAY:
-            case LONG_ARRAY:
-            case long_ARRAY:
-            case SHORT_ARRAY:
-            case short_ARRAY:
-            case STRING_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
+            case boolean_ARRAY_ORDINAL:
+            case DOUBLE_ARRAY_ORDINAL:
+            case double_ARRAY_ORDINAL:
+            case FLOAT_ARRAY_ORDINAL:
+            case float_ARRAY_ORDINAL:
+            case int_ARRAY_ORDINAL:
+            case INTEGER_ARRAY_ORDINAL:
+            case LOCALDATE_ARRAY_ORDINAL:
+            case LOCALDATETIME_ARRAY_ORDINAL:
+            case LOCALTIME_ARRAY_ORDINAL:
+            case LONG_ARRAY_ORDINAL:
+            case long_ARRAY_ORDINAL:
+            case SHORT_ARRAY_ORDINAL:
+            case short_ARRAY_ORDINAL:
+            case STRING_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY};
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY};
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -336,29 +337,29 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
                         for (int i = 0; i < len; ++i) {
                             Object v = Array.get(a, i);
-                            switch (pt) {
-                                case BOOLEAN:
+                            switch (pt.ordinal()) {
+                                case BOOLEAN_ORDINAL:
                                     arrayNode.add((Boolean) v);
                                     break;
-                                case BYTE:
+                                case BYTE_ORDINAL:
                                     arrayNode.add((Byte) v);
                                     break;
-                                case DOUBLE:
+                                case DOUBLE_ORDINAL:
                                     arrayNode.add((Double) v);
                                     break;
-                                case FLOAT:
+                                case FLOAT_ORDINAL:
                                     arrayNode.add((Float) v);
                                     break;
-                                case INTEGER:
+                                case INTEGER_ORDINAL:
                                     arrayNode.add((Integer) v);
                                     break;
-                                case LONG:
+                                case LONG_ORDINAL:
                                     arrayNode.add((Long) v);
                                     break;
-                                case SHORT:
+                                case SHORT_ORDINAL:
                                     arrayNode.add((Short) v);
                                     break;
-                                case STRING:
+                                case STRING_ORDINAL:
                                     arrayNode.add((String) v);
                                     break;
                             }
@@ -388,26 +389,26 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     Object a = sqlA.getArray();
                     if (Array.getLength(a) > 0) {
                         PropertyType pt = PropertyType.from(Array.get(a, 0));
-                        switch (pt) {
-                            case BOOLEAN:
+                        switch (pt.ordinal()) {
+                            case BOOLEAN_ORDINAL:
                                 metaNode.put("type", PropertyType.boolean_ARRAY.name());
                                 break;
-                            case SHORT:
+                            case SHORT_ORDINAL:
                                 metaNode.put("type", PropertyType.short_ARRAY.name());
                                 break;
-                            case INTEGER:
+                            case INTEGER_ORDINAL:
                                 metaNode.put("type", PropertyType.int_ARRAY.name());
                                 break;
-                            case LONG:
+                            case LONG_ORDINAL:
                                 metaNode.put("type", PropertyType.long_ARRAY.name());
                                 break;
-                            case FLOAT:
+                            case FLOAT_ORDINAL:
                                 metaNode.put("type", PropertyType.float_ARRAY.name());
                                 break;
-                            case DOUBLE:
+                            case DOUBLE_ORDINAL:
                                 metaNode.put("type", PropertyType.double_ARRAY.name());
                                 break;
-                            case STRING:
+                            case STRING_ORDINAL:
                                 metaNode.put("type", PropertyType.STRING_ARRAY.name());
                                 break;
                             default:
@@ -709,44 +710,44 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
-        switch (propertyType) {
-            case BOOLEAN_ARRAY:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanArray((Object[]) array.getArray());
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[]) array.getArray());
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerArray((Object[]) array.getArray());
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongArray((Object[]) array.getArray());
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoubleArray((Object[]) array.getArray());
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatArray((Object[]) array.getArray());
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 Object[] timestamps = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimestampToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 Object[] dates = (Object[]) array.getArray();
                 if (dates.length > 0 && dates[0] instanceof Timestamp) {
                     return SqlgUtil.copyObjectArrayOfTimestampToLocalDate(dates, new LocalDate[dates.length]);
                 } else {
                     return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
                 }
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 Object[] times = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
             default:
@@ -782,32 +783,32 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return true;
-            case BYTE:
+            case BYTE_ORDINAL:
                 return true;
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return true;
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return true;
-            case SHORT:
+            case SHORT_ORDINAL:
                 return true;
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return true;
-            case LONG:
+            case LONG_ORDINAL:
                 return true;
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return true;
-            case STRING:
+            case STRING_ORDINAL:
                 return true;
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return true;
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return true;
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return true;
-            case JSON:
+            case JSON_ORDINAL:
                 return true;
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -1120,42 +1121,42 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public String valueToValuesString(PropertyType propertyType, Object value) {
         Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
-        switch (propertyType) {
-            case STRING:
+        switch (propertyType.ordinal()) {
+            case STRING_ORDINAL:
                 return "'" + escapeQuotes(value) + "'";
-            case BYTE:
+            case BYTE_ORDINAL:
                 return value.toString();
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 //Mssql likes to have 0x prefix for binary literal
                 //not compiling with java 10
                 return "0x" + DatatypeConverter.printHexBinary((byte[]) value);
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 //Mssql likes to have 0x prefix for binary literal
                 byte[] bytes = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value);
                 //not compiling with java 10
                 return "0x" + DatatypeConverter.printHexBinary(bytes);
-            case BOOLEAN:
+            case BOOLEAN_ORDINAL:
                 Boolean b = (Boolean) value;
                 if (b) {
                     return Integer.valueOf(1).toString();
                 } else {
                     return Integer.valueOf(0).toString();
                 }
-            case SHORT:
+            case SHORT_ORDINAL:
                 return value.toString();
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return value.toString();
-            case LONG:
+            case LONG_ORDINAL:
                 return value.toString();
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return value.toString();
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return "'" + value.toString() + "'";
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return "'" + Timestamp.valueOf((LocalDateTime) value).toString() + "'";
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return "'" + Time.valueOf((LocalTime) value).toString() + "'";
-            case JSON:
+            case JSON_ORDINAL:
                 return "'" + value.toString() + "'";
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);

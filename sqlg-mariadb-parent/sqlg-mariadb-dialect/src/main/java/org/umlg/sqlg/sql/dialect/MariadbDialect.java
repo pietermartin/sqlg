@@ -3,13 +3,18 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgExceptions;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.time.*;
 import java.util.*;
+
+import static org.umlg.sqlg.structure.PropertyType.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -368,49 +373,51 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new String[]{"BOOLEAN"};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new String[]{"TINYINT"};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new String[]{"SMALLINT"};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new String[]{"INTEGER"};
-            case LONG:
+            case LONG_ORDINAL:
                 return new String[]{"BIGINT"};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new String[]{"DOUBLE"};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new String[]{"DATE"};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 //3 microseconds maps nicely to java's LocalDateTIme
                 return new String[]{"DATETIME(3)"};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new String[]{"DATETIME(3)", "TINYTEXT"};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new String[]{"TIME"};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new String[]{"BIGINT", "INTEGER"};
-            case STRING:
+            case STRING_ORDINAL:
                 return new String[]{"LONGTEXT"};
-            case JSON:
+            case VARCHAR_ORDINAL:
+                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case JSON_ORDINAL:
                 return new String[]{"LONGTEXT"};
-            case POINT:
+            case POINT_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case POLYGON:
+            case POLYGON_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case GEOGRAPHY_POINT:
+            case GEOGRAPHY_POINT_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case GEOGRAPHY_POLYGON:
+            case GEOGRAPHY_POLYGON_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new String[]{"BLOB"};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new String[]{"BLOB"};
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
@@ -419,38 +426,38 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new int[]{Types.BOOLEAN};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new int[]{Types.TINYINT};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new int[]{Types.SMALLINT};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new int[]{Types.INTEGER};
-            case LONG:
+            case LONG_ORDINAL:
                 return new int[]{Types.BIGINT};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new int[]{Types.DOUBLE};
-            case STRING:
+            case STRING_ORDINAL:
                 return new int[]{Types.CLOB};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new int[]{Types.DATE};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new int[]{Types.TIME};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new int[]{Types.BIGINT, Types.INTEGER};
-            case JSON:
+            case JSON_ORDINAL:
                 return new int[]{Types.OTHER};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -531,34 +538,34 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
-        switch (propertyType) {
-            case boolean_ARRAY:
+        switch (propertyType.ordinal()) {
+            case boolean_ARRAY_ORDINAL:
                 return "BOOLEAN";
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 return "BOOLEAN";
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return "SMALLINT";
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return "SMALLINT";
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return "INTEGER";
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return "INTEGER";
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return "BIGINT";
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return "BIGINT";
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return "DOUBLE";
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return "DOUBLE";
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return "VARCHAR";
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 return "TIMESTAMP";
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 return "DATE";
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 return "TIME";
             default:
                 throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
@@ -833,25 +840,25 @@ public class MariadbDialect extends BaseSqlDialect {
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
-            switch (propertyType) {
-                case LOCALTIME_ARRAY:
-                case STRING_ARRAY:
-                case long_ARRAY:
-                case LONG_ARRAY:
-                case int_ARRAY:
-                case INTEGER_ARRAY:
-                case short_ARRAY:
-                case SHORT_ARRAY:
-                case float_ARRAY:
-                case FLOAT_ARRAY:
-                case double_ARRAY:
-                case DOUBLE_ARRAY:
-                case boolean_ARRAY:
-                case BOOLEAN_ARRAY:
-                case LOCALDATETIME_ARRAY:
-                case LOCALDATE_ARRAY:
-                case ZONEDDATETIME_ARRAY:
-                case JSON_ARRAY:
+            switch (propertyType.ordinal()) {
+                case LOCALTIME_ARRAY_ORDINAL:
+                case STRING_ARRAY_ORDINAL:
+                case long_ARRAY_ORDINAL:
+                case LONG_ARRAY_ORDINAL:
+                case int_ARRAY_ORDINAL:
+                case INTEGER_ARRAY_ORDINAL:
+                case short_ARRAY_ORDINAL:
+                case SHORT_ARRAY_ORDINAL:
+                case float_ARRAY_ORDINAL:
+                case FLOAT_ARRAY_ORDINAL:
+                case double_ARRAY_ORDINAL:
+                case DOUBLE_ARRAY_ORDINAL:
+                case boolean_ARRAY_ORDINAL:
+                case BOOLEAN_ARRAY_ORDINAL:
+                case LOCALDATETIME_ARRAY_ORDINAL:
+                case LOCALDATE_ARRAY_ORDINAL:
+                case ZONEDDATETIME_ARRAY_ORDINAL:
+                case JSON_ARRAY_ORDINAL:
                     return conn.createArrayOf(getArrayDriverType(propertyType), data);
                 default:
                     throw new IllegalStateException("Unhandled array type " + propertyType.name());
@@ -863,40 +870,40 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
-        switch (propertyType) {
-            case BOOLEAN_ARRAY:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanArray((Object[]) array.getArray());
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerArray((Object[]) array.getArray());
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongArray((Object[]) array.getArray());
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoubleArray((Object[]) array.getArray());
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatArray((Object[]) array.getArray());
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 Object[] timestamps = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimestampToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 Object[] dates = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 Object[] times = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
             default:
@@ -1116,5 +1123,17 @@ public class MariadbDialect extends BaseSqlDialect {
     @Override
     public String getSkipClause(long skip) {
         return " LIMIT " + skip + ", 1000000";
+    }
+
+    @Override
+    public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE USER 'sqlgReadOnly'@'localhost' IDENTIFIED BY 'sqlgReadOnly'");
+            statement.execute("GRANT SELECT ON *.* TO 'sqlgReadOnly'@'localhost' IDENTIFIED BY 'sqlgReadOnly'");
+            statement.executeQuery("FLUSH PRIVILEGES");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

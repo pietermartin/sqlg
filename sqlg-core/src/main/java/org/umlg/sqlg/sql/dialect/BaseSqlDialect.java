@@ -17,6 +17,7 @@ import java.security.SecureRandom;
 import java.sql.*;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.PropertyType.JSON_ORDINAL;
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
@@ -1173,8 +1174,8 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        switch (propertyType) {
-            case JSON:
+        switch (propertyType.ordinal()) {
+            case JSON_ORDINAL:
                 ObjectMapper objectMapper = new ObjectMapper();
                 try {
                     JsonNode jsonNode = objectMapper.readTree(o.toString());
