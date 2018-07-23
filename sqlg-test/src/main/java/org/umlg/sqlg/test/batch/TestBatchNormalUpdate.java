@@ -259,6 +259,7 @@ public class TestBatchNormalUpdate extends BaseTest {
 
     @Test
     public void testUpdateArraysNoFloats() throws InterruptedException {
+        Assume.assumeFalse(isMysql() && isMariaDb());
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "names", new String[]{"A", "B"},

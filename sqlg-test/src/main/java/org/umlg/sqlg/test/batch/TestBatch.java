@@ -607,8 +607,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -617,8 +617,8 @@ public class TestBatch extends BaseTest {
                 "Friend",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                     put("weight", PropertyType.INTEGER);
                 }}
         );
@@ -626,8 +626,8 @@ public class TestBatch extends BaseTest {
                 "Colleague",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                     put("toRemove", PropertyType.STRING);
                 }}
         );
@@ -681,8 +681,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "ROOT",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("dummy", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -691,8 +691,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "God",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("dummy", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -701,8 +701,8 @@ public class TestBatch extends BaseTest {
                 "rootGod",
                 godVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1099,8 +1099,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
@@ -1122,8 +1122,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
@@ -1131,8 +1131,8 @@ public class TestBatch extends BaseTest {
                 "test",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1183,8 +1183,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
@@ -1192,8 +1192,8 @@ public class TestBatch extends BaseTest {
                 "test",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1270,8 +1270,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
@@ -1279,8 +1279,8 @@ public class TestBatch extends BaseTest {
                 "test",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1593,8 +1593,8 @@ public class TestBatch extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("dummy", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -1603,8 +1603,8 @@ public class TestBatch extends BaseTest {
                 "test",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );

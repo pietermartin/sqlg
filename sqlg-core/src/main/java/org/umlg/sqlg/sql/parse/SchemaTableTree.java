@@ -1018,11 +1018,8 @@ public class SchemaTableTree {
                 random.nextBytes(bytes);
                 String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
                 sqlgGraph.tx().normalBatchModeOn();
-                //TODO
-                if (true)
-                    throw new RuntimeException("handle ID");
                 for (Pair<RecordId.ID, Long> parentIdsAndIndex : this.parentIdsAndIndexes) {
-                    sqlgGraph.addTemporaryVertex(T.label, tmpTableIdentified, "tmpId", parentIdsAndIndex.getLeft(), "index", parentIdsAndIndex.getRight());
+                    sqlgGraph.addTemporaryVertex(T.label, tmpTableIdentified, "tmpId", parentIdsAndIndex.getLeft().getSequenceId(), "index", parentIdsAndIndex.getRight());
                 }
                 sqlgGraph.tx().flush();
 

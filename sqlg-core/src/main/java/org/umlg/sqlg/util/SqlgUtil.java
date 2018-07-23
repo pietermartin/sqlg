@@ -878,7 +878,7 @@ public class SqlgUtil {
             }
         } else if (sqlDialect.isPostgresql()) {
             try (Statement statement = conn.createStatement()) {
-                ResultSet rs = statement.executeQuery("1 FROM pg_roles WHERE rolname='sqlgReadOnly'");
+                ResultSet rs = statement.executeQuery("SELECT 1 FROM pg_roles WHERE rolname='sqlgReadOnly'");
                 if (rs.next()) {
                     try (Statement s = conn.createStatement()) {
                         s.execute("REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"sqlgReadOnly\"");
@@ -1163,6 +1163,10 @@ public class SqlgUtil {
                 switch (propertyType.ordinal()) {
                     case STRING_ORDINAL:
                         String s = resultSet.getString(column.getColumnIndex());
+                        result.add(s);
+                        break;
+                    case VARCHAR_ORDINAL:
+                        s = resultSet.getString(column.getColumnIndex());
                         result.add(s);
                         break;
                     default:

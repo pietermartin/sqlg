@@ -95,8 +95,8 @@ public class TestIoEdge extends BaseTest {
                 ensureVertexLabelExist(
                         "person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
@@ -104,8 +104,8 @@ public class TestIoEdge extends BaseTest {
                 "friend",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                     put("weight", PropertyType.DOUBLE);
                     put("acl", PropertyType.STRING);
                 }},

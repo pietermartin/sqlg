@@ -27,16 +27,16 @@ public class TestSimpleJoinGremlin extends BaseTest {
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
                 new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.STRING);
-                    put("surname", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
+                    put("surname", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
         VertexLabel address = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Address",
                 new HashMap<String, PropertyType>(){{
-                    put("street", PropertyType.STRING);
-                    put("suburb", PropertyType.STRING);
+                    put("street", PropertyType.varChar(100));
+                    put("suburb", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("street", "suburb"))
         );
@@ -103,8 +103,8 @@ public class TestSimpleJoinGremlin extends BaseTest {
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
                 new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.STRING);
-                    put("surname", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
+                    put("surname", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
@@ -141,16 +141,16 @@ public class TestSimpleJoinGremlin extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
+                    put("name2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "name2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
                 new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
+                    put("name2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "name2"))
         );

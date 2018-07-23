@@ -9,6 +9,7 @@ import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -39,9 +40,9 @@ public class TestRecordId extends BaseTest {
                 .ensureVertexLabelExist(
                         "A",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
                         }},
-                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1")));
+                        ListOrderedSet.listOrderedSet(Collections.singletonList("uid1")));
         String uid1 = UUID.randomUUID().toString();
         this.sqlgGraph.addVertex(T.label, "A", "uid1", uid1);
         this.sqlgGraph.tx().commit();
@@ -61,8 +62,8 @@ public class TestRecordId extends BaseTest {
                 .ensureVertexLabelExist(
                         "A",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2")));
         String uid1 = UUID.randomUUID().toString();
@@ -86,9 +87,9 @@ public class TestRecordId extends BaseTest {
                 .ensureVertexLabelExist(
                         "A",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
-                            put("uid3", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                            put("uid3", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2", "uid3")));
         String uid1 = UUID.randomUUID().toString();

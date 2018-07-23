@@ -10,6 +10,7 @@ import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -37,9 +38,9 @@ public class TestDeletedVertex extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("name", PropertyType.STRING);
+                            put("name", PropertyType.varChar(100));
                         }},
-                        ListOrderedSet.listOrderedSet(Arrays.asList("name"))
+                        ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
                 );
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "pieter");
@@ -57,8 +58,8 @@ public class TestDeletedVertex extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("name", PropertyType.STRING);
-                            put("uid", PropertyType.STRING);
+                            put("name", PropertyType.varChar(100));
+                            put("uid", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("name", "uid"))
                 );
@@ -90,8 +91,8 @@ public class TestDeletedVertex extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -100,8 +101,8 @@ public class TestDeletedVertex extends BaseTest {
                 .ensureVertexLabelExist(
                         "Dog",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -110,9 +111,9 @@ public class TestDeletedVertex extends BaseTest {
                 "friend",
                 dogVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("uid"))
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
 
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "marko");
@@ -139,8 +140,8 @@ public class TestDeletedVertex extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -149,8 +150,8 @@ public class TestDeletedVertex extends BaseTest {
                 .ensureVertexLabelExist(
                         "Dog",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -159,9 +160,9 @@ public class TestDeletedVertex extends BaseTest {
                 "friend",
                 dogVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("uid"))
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
 
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "marko");

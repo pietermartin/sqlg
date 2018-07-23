@@ -261,6 +261,8 @@ public class H2Dialect extends BaseSqlDialect {
                 return new String[]{"SMALLINT"};
             case STRING_ORDINAL:
                 return new String[]{"VARCHAR"};
+            case VARCHAR_ORDINAL:
+                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
             case ZONEDDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP", "VARCHAR"};
             case BOOLEAN_ARRAY_ORDINAL:
@@ -1009,6 +1011,46 @@ public class H2Dialect extends BaseSqlDialect {
     public String addDbVersionToGraph(DatabaseMetaData metadata) {
         try {
             return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" VARCHAR DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE USER \"sqlgReadOnly\" PASSWORD 'sqlgReadOnly'");
+            statement.execute("CREATE ROLE \"READ_ONLY\"");
+            statement.execute("GRANT READ_ONLY TO \"sqlgReadOnly\"");
+            statement.execute("GRANT SELECT ON SCHEMA \"sqlg_schema\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_graph\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_schema\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_vertex\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_edge\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_partition\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_property\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_index\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_globalUniqueIndex\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_schema_vertex\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_in_edges\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_out_edges\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_vertex_property\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_edge_property\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_vertex_identifier\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_edge_identifier\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_vertex_partition\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_edge_partition\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_partition_partition\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_vertex_distribution\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_vertex_colocate\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_edge_distribution\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_edge_colocate\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_vertex_index\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_edge_index\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_index_property\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"E_globalUniqueIndex_property\" TO READ_ONLY");
+//            statement.execute("GRANT SELECT ON TABLE \"sqlg_schema\".\"V_log\" TO READ_ONLY");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

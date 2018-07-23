@@ -134,8 +134,8 @@ public class TestIo extends BaseTest {
                 .ensureVertexLabelExist(
                         "person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
@@ -144,8 +144,8 @@ public class TestIo extends BaseTest {
                 "friends",
                 personVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.STRING);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
                     put("weight", PropertyType.DOUBLE);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))

@@ -148,6 +148,10 @@ public abstract class BaseTest {
         return configuration.getString("jdbc.url").contains("hsqldb");
     }
 
+    protected static boolean isH2() {
+        return configuration.getString("jdbc.url").contains("h2");
+    }
+
     protected static boolean isMariaDb() {
         return configuration.getString("jdbc.url").contains("mariadb");
     }

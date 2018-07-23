@@ -7,6 +7,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyChangeAction;
@@ -28,6 +30,13 @@ import java.util.List;
  * Date: 2018/07/21
  */
 public class TestReadOnlyRole extends BaseTest {
+
+    @Before
+    public void before() throws Exception {
+        //H2 is locking on opening readOnly connection.
+        Assume.assumeFalse(isH2());
+        super.before();
+    }
 
     @Test
     public void testReadOnlyRoleOnPublicTable() throws ConfigurationException {
@@ -129,6 +138,11 @@ public class TestReadOnlyRole extends BaseTest {
                                         vertexLabel.getSchema().getName() + "." +
                                         Topology.VERTEX_PREFIX + vertexLabel.getName() + " TO sqlgReadOnly;";
                                 statement.execute(sql);
+                            } else if (isH2()) {
+                                sql = "GRANT SELECT ON " +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName()) + "." +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()) + " TO READ_ONLY";
+                                statement.execute(sql);
                             } else {
                                 Assert.fail("Not handled");
                             }
@@ -156,6 +170,11 @@ public class TestReadOnlyRole extends BaseTest {
                                 sql = "GRANT SELECT ON OBJECT::" +
                                         edgeLabel.getSchema().getName() + "." +
                                         Topology.EDGE_PREFIX + edgeLabel.getName() + " TO sqlgReadOnly;";
+                                statement.execute(sql);
+                            } else if (isH2()) {
+                                sql = "GRANT SELECT ON " +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." +
+                                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()) + " TO READ_ONLY";
                                 statement.execute(sql);
                             } else {
                                 Assert.fail("Not handled");

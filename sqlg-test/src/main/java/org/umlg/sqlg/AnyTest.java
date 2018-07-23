@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestVarChar;
+import org.umlg.sqlg.test.batch.TestBatch;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,7 @@ import org.umlg.sqlg.test.TestVarChar;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestReadOnlyRole.class
-        TestVarChar.class,
-//        TestNewVertex.class
+        TestBatch.class
 })
 public class AnyTest {
 }

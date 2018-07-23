@@ -24,8 +24,8 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
-                    put("surname", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
+                    put("surname", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
@@ -69,7 +69,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "A",
                 new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
@@ -77,7 +77,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "B",
                 new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
@@ -85,7 +85,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
@@ -113,7 +113,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "A",
                 new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
@@ -121,7 +121,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "B",
                 new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
@@ -129,7 +129,7 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))

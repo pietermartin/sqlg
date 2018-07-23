@@ -46,7 +46,7 @@ public class TestLoadElementProperties extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid", PropertyType.STRING);
+                            put("uid", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid"))

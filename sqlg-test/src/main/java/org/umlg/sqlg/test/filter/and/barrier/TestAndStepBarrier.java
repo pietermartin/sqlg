@@ -198,14 +198,14 @@ public class TestAndStepBarrier extends BaseTest {
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist(
                 "A",
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist(
                 "B",
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
@@ -213,7 +213,7 @@ public class TestAndStepBarrier extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
@@ -221,7 +221,7 @@ public class TestAndStepBarrier extends BaseTest {
                 "abb",
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
@@ -229,7 +229,7 @@ public class TestAndStepBarrier extends BaseTest {
                 "abbb",
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));

@@ -18,31 +18,31 @@ import java.util.*;
  */
 public class TestAddVertexViaMap extends BaseTest {
 
-//    @Test
-//    public void testMap() {
-//        Map<String, Object> map = new HashMap<>();
-//        map.put("name1", "p1");
-//        map.put("name2", "p2");
-//        map.put("name3", "p3");
-//        Vertex v1 = this.sqlgGraph.addVertex("Person", map);
-//        this.sqlgGraph.tx().commit();
-//        Vertex v2 = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").next();
-//        Assert.assertEquals(v1, v2);
-//        Assert.assertEquals("p1", v2.property("name1").value());
-//        Assert.assertEquals("p2", v2.property("name2").value());
-//        Assert.assertEquals("p3", v2.property("name3").value());
-//
-//
-//        Map<String, Object> edgeMap = new HashMap<>();
-//        edgeMap.put("name1", "p1");
-//        edgeMap.put("name2", "p2");
-//        edgeMap.put("name3", "p3");
-//        Edge e1 = ((SqlgVertex) v1).addEdgeWithMap("e1", v2, edgeMap);
-//        this.sqlgGraph.tx().commit();
-//        Assert.assertEquals("p1", e1.property("name1").value());
-//        Assert.assertEquals("p2", e1.property("name2").value());
-//        Assert.assertEquals("p3", e1.property("name3").value());
-//    }
+    @Test
+    public void testMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name1", "p1");
+        map.put("name2", "p2");
+        map.put("name3", "p3");
+        Vertex v1 = this.sqlgGraph.addVertex("Person", map);
+        this.sqlgGraph.tx().commit();
+        Vertex v2 = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").next();
+        Assert.assertEquals(v1, v2);
+        Assert.assertEquals("p1", v2.property("name1").value());
+        Assert.assertEquals("p2", v2.property("name2").value());
+        Assert.assertEquals("p3", v2.property("name3").value());
+
+
+        Map<String, Object> edgeMap = new HashMap<>();
+        edgeMap.put("name1", "p1");
+        edgeMap.put("name2", "p2");
+        edgeMap.put("name3", "p3");
+        Edge e1 = ((SqlgVertex) v1).addEdgeWithMap("e1", v2, edgeMap);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("p1", e1.property("name1").value());
+        Assert.assertEquals("p2", e1.property("name2").value());
+        Assert.assertEquals("p3", e1.property("name3").value());
+    }
 
     @Test
     public void testMapUserSuppliedPK() {
@@ -50,7 +50,7 @@ public class TestAddVertexViaMap extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid", PropertyType.STRING);
+                            put("uid", PropertyType.varChar(100));
                             put("name1", PropertyType.STRING);
                             put("name2", PropertyType.STRING);
                             put("name3", PropertyType.STRING);
@@ -75,7 +75,7 @@ public class TestAddVertexViaMap extends BaseTest {
                 "e1",
                 vertexLabel,
                 new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
                     put("name1", PropertyType.STRING);
                     put("name2", PropertyType.STRING);
                     put("name3", PropertyType.STRING);

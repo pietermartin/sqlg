@@ -105,8 +105,8 @@ public class TestVertexCache extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.STRING);
-                            put("uid2", PropertyType.STRING);
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
