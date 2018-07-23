@@ -199,14 +199,14 @@ public class TestAndStepBarrier extends BaseTest {
                 "A",
                 new HashMap<String, PropertyType>() {{
                     put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                    put("country", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist(
                 "B",
                 new HashMap<String, PropertyType>() {{
                     put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                    put("country", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         aVertexLabel.ensureEdgeLabelExist(
@@ -214,7 +214,7 @@ public class TestAndStepBarrier extends BaseTest {
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
                     put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                    put("country", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         aVertexLabel.ensureEdgeLabelExist(
@@ -222,7 +222,7 @@ public class TestAndStepBarrier extends BaseTest {
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
                     put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                    put("country", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         aVertexLabel.ensureEdgeLabelExist(
@@ -230,7 +230,7 @@ public class TestAndStepBarrier extends BaseTest {
                 bVertexLabel,
                 new HashMap<String, PropertyType>() {{
                     put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                    put("country", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         this.sqlgGraph.tx().commit();

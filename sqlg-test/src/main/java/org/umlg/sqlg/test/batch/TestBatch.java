@@ -14,6 +14,8 @@ import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.time.Duration;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -39,7 +41,6 @@ public class TestBatch extends BaseTest {
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
-
 
     @Test
     public void testBatchNormalModeEdgeMultiColumnProperties() {
@@ -68,6 +69,22 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "d", Duration.ofHours(1));
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("d", Duration.ofHours(1)).count().next(), 0);
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("d").count().next(), 0);
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "p", Period.of(1,1,1));
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(6, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("p", Period.of(1,1,1)).count().next(), 0);
+        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("p").count().next(), 0);
     }
 
     @Test

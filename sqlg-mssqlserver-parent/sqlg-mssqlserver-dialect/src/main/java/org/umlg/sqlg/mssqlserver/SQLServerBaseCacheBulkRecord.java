@@ -3,10 +3,10 @@ package org.umlg.sqlg.mssqlserver;
 import com.microsoft.sqlserver.jdbc.ISQLServerBulkRecord;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.Timestamp;
@@ -85,6 +85,18 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                 case DOUBLE_ORDINAL:
                 case JSON_ORDINAL:
                 case STRING_ORDINAL:
+                    //Add the column mappings, skipping the first identity column.
+                    bulkCopy.addColumnMapping(i, column);
+                    this.columnMetadata.put(i++, new ColumnMetadata(
+                            column,
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            0,
+                            0,
+                            null,
+                            propertyType
+                    ));
+                    break;
+                case VARCHAR_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -272,7 +284,11 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
             Object value = getValue(column);
             switch (propertyType.ordinal()) {
                 case BOOLEAN_ORDINAL:
-                    values.add(value);
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 case BYTE_ORDINAL:
                 case SHORT_ORDINAL:
@@ -282,40 +298,87 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                 case DOUBLE_ORDINAL:
                 case JSON_ORDINAL:
                 case STRING_ORDINAL:
-                    values.add(value);
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
+                    break;
+                case VARCHAR_ORDINAL:
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 case LOCALDATE_ORDINAL:
-                    values.add(value.toString());
+                    if (value != null) {
+                        values.add(value.toString());
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 case LOCALDATETIME_ORDINAL:
-                    Timestamp timestamp = Timestamp.valueOf((LocalDateTime) value);
-                    values.add(timestamp.toString());
+                    if (value != null) {
+                        Timestamp timestamp = Timestamp.valueOf((LocalDateTime) value);
+                        values.add(timestamp.toString());
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 case LOCALTIME_ORDINAL:
-                    values.add(value.toString());
+                    if (value != null) {
+                        values.add(value.toString());
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 case ZONEDDATETIME_ORDINAL:
-                    values.add(((ZonedDateTime) value).toLocalDateTime());
-                    TimeZone tz = TimeZone.getTimeZone(((ZonedDateTime) value).getZone());
-                    values.add(tz.getID());
+                    if (value != null) {
+                        values.add(((ZonedDateTime) value).toLocalDateTime());
+                        TimeZone tz = TimeZone.getTimeZone(((ZonedDateTime) value).getZone());
+                        values.add(tz.getID());
+                    } else {
+                        values.add(null);
+                        values.add(null);
+                    }
                     break;
                 case PERIOD_ORDINAL:
-                    Period period = (Period) value;
-                    values.add(period.getYears());
-                    values.add(period.getMonths());
-                    values.add(period.getDays());
+                    if (value != null) {
+                        Period period = (Period) value;
+                        values.add(period.getYears());
+                        values.add(period.getMonths());
+                        values.add(period.getDays());
+                    } else {
+                        values.add(null);
+                        values.add(null);
+                        values.add(null);
+                    }
                     break;
                 case DURATION_ORDINAL:
-                    Duration duration = (Duration) value;
-                    values.add(duration.getSeconds());
-                    values.add(duration.getNano());
+                    if (value != null) {
+                        Duration duration = (Duration) value;
+                        values.add(duration.getSeconds());
+                        values.add(duration.getNano());
+                    } else {
+                        values.add(null);
+                        values.add(null);
+                    }
                     break;
                 case byte_ARRAY_ORDINAL:
-                    values.add(value);
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 case BYTE_ARRAY_ORDINAL:
-                    byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) value);
-                    values.add(byteArray);
+                    if (value != null) {
+                        byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) value);
+                        values.add(byteArray);
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 default:
                     throw SqlgExceptions.invalidPropertyType(propertyType);

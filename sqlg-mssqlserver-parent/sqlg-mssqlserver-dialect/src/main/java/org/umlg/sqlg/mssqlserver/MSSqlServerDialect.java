@@ -267,6 +267,8 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 return new int[]{Types.DOUBLE};
             case STRING_ORDINAL:
                 return new int[]{Types.LONGVARCHAR};
+            case VARCHAR_ORDINAL:
+                return new int[]{Types.VARCHAR};
             case LOCALDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP};
             case LOCALDATE_ORDINAL:

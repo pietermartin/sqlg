@@ -465,7 +465,15 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType sqlTypeToPropertyType(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String table,
+            String column,
+            int sqlType,
+            String typeName,
+            ListIterator<Triple<String, Integer, String>> metaDataIter) {
+        
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -480,6 +488,10 @@ public class MariadbDialect extends BaseSqlDialect {
             case Types.DOUBLE:
                 return PropertyType.DOUBLE;
             case Types.LONGVARCHAR:
+                return PropertyType.STRING;
+            case Types.VARCHAR:
+                //This is not exactly correct. Need to extract the column length and create PropertyType.varchar(x)
+                //However Sqlg does not depend on the varchar(x) except during table creation so STRING will do.
                 return PropertyType.STRING;
             case Types.TIMESTAMP:
                 return PropertyType.LOCALDATETIME;

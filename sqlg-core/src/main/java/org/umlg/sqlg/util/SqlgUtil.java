@@ -899,8 +899,12 @@ public class SqlgUtil {
             }
         } else if (sqlDialect.isMssqlServer()) {
             try (Statement s = conn.createStatement()) {
-                s.execute("DROP USER sqlgReadOnly");
-                s.execute("DROP LOGIN sqlgReadOnly");
+                try (ResultSet rs = s.executeQuery("SELECT * FROM master.sys.sql_logins where name = 'sqlgReadOnly';")) {
+                    if (rs.next()) {
+                        s.execute("DROP USER sqlgReadOnly");
+                        s.execute("DROP LOGIN sqlgReadOnly");
+                    }
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -1182,6 +1186,8 @@ public class SqlgUtil {
     public static Object stringValueToType(PropertyType propertyType, String value) {
         switch (propertyType.ordinal()) {
             case STRING_ORDINAL:
+                return value;
+            case VARCHAR_ORDINAL:
                 return value;
             default:
                 throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
