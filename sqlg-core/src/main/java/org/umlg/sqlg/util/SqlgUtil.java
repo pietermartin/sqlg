@@ -897,6 +897,13 @@ public class SqlgUtil {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
+        } else if (sqlDialect.isMssqlServer()) {
+            try (Statement s = conn.createStatement()) {
+                s.execute("DROP USER sqlgReadOnly");
+                s.execute("DROP LOGIN sqlgReadOnly");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

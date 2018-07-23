@@ -12,6 +12,7 @@ import org.umlg.sqlg.test.TestVarChar;
 @Suite.SuiteClasses({
 //        TestReadOnlyRole.class
         TestVarChar.class,
+//        TestNewVertex.class
 })
 public class AnyTest {
 }

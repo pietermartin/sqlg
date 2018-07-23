@@ -229,6 +229,8 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 return new String[]{"SMALLINT"};
             case STRING_ORDINAL:
                 return new String[]{"VARCHAR(2000)"};
+            case VARCHAR_ORDINAL:
+                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
             case ZONEDDATETIME_ORDINAL:
                 return new String[]{"DATETIME2(3)", "VARCHAR(255)"};
             case STRING_ARRAY_ORDINAL:
@@ -1626,5 +1628,18 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             }
         }
         return sql.toString();
+    }
+
+    @Override
+    public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE LOGIN sqlgReadOnly WITH PASSWORD = 'P@ssw0rd1'");
+            statement.execute("CREATE USER sqlgReadOnly FOR LOGIN sqlgReadOnly");
+            statement.execute("GRANT SELECT ON SCHEMA :: graph TO sqlgReadOnly");
+            statement.execute("GRANT SELECT ON SCHEMA :: sqlg_schema TO sqlgReadOnly");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

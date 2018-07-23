@@ -124,6 +124,11 @@ public class TestReadOnlyRole extends BaseTest {
                                 statement.execute(sql);
                             } else if (isMariaDb() || isMysql()) {
                                 //nothing to do. MariaDb user is created with select all rights
+                            } else if (isMsSqlServer()) {
+                                sql = "GRANT SELECT ON OBJECT:: " +
+                                        vertexLabel.getSchema().getName() + "." +
+                                        Topology.VERTEX_PREFIX + vertexLabel.getName() + " TO sqlgReadOnly;";
+                                statement.execute(sql);
                             } else {
                                 Assert.fail("Not handled");
                             }
@@ -147,6 +152,11 @@ public class TestReadOnlyRole extends BaseTest {
                                 statement.execute(sql);
                             } else if (isMariaDb() || isMysql()) {
                                 //nothing to do. MariaDb user is created with select all rights
+                            } else if (isMsSqlServer()) {
+                                sql = "GRANT SELECT ON OBJECT::" +
+                                        edgeLabel.getSchema().getName() + "." +
+                                        Topology.EDGE_PREFIX + edgeLabel.getName() + " TO sqlgReadOnly;";
+                                statement.execute(sql);
                             } else {
                                 Assert.fail("Not handled");
                             }
@@ -159,6 +169,9 @@ public class TestReadOnlyRole extends BaseTest {
                         try (Statement statement = conn.createStatement()) {
                             if (isPostgres()) {
                                 String sql = "GRANT USAGE ON SCHEMA  " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema.getName()) + " TO \"sqlgReadOnly\"";
+                                statement.execute(sql);
+                            } else if (isMsSqlServer()) {
+                                String sql = "GRANT SELECT ON SCHEMA :: " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema.getName()) + " TO sqlgReadOnly";
                                 statement.execute(sql);
                             }
                         } catch (SQLException e) {
