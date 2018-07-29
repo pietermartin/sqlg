@@ -29,6 +29,7 @@ import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.sql.Date;
@@ -2655,8 +2656,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         try {
             pgConnection = conn.unwrap(PGConnection.class);
             OutputStream out = new PGCopyOutputStream(pgConnection, sql);
-            return new OutputStreamWriter(out, "UTF-8");
-        } catch (SQLException | UnsupportedEncodingException e) {
+            return new OutputStreamWriter(out, StandardCharsets.UTF_8);
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }

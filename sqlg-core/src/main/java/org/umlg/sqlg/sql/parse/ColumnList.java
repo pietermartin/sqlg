@@ -381,7 +381,8 @@ public class ColumnList {
             return foreignSchemaTable;
         }
 
-        public boolean isForeignKeyProperty() {
+        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+        boolean isForeignKeyProperty() {
             return foreignKeyProperty != null;
         }
 

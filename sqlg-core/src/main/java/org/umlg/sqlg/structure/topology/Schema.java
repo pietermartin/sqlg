@@ -116,8 +116,7 @@ public class Schema implements TopologyInf {
      * @return The Schema that has already been created by another graph.
      */
     static Schema instantiateSchema(Topology topology, String schemaName) {
-        Schema schema = new Schema(topology, schemaName);
-        return schema;
+        return new Schema(topology, schemaName);
     }
 
     private Schema(Topology topology, String name) {

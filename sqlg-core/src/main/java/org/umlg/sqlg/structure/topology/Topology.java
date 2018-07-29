@@ -1493,8 +1493,7 @@ public class Topology {
         Optional<Schema> schemaOptional = getSchema(schemaName);
         if (schemaOptional.isPresent()) {
             Schema schema = schemaOptional.get();
-            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(edgeLabelName);
-            return edgeLabelOptional;
+            return schema.getEdgeLabel(edgeLabelName);
         } else {
             return Optional.empty();
         }

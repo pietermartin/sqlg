@@ -12,7 +12,6 @@ import java.sql.SQLException;
 public class GeographyPolygon extends Polygon {
 
     public GeographyPolygon(Polygon polygon) {
-        Polygon polygon1 = polygon;
         this.srid = polygon.srid;
         this.haveMeasure = polygon.haveMeasure;
         this.dimension = polygon.dimension;

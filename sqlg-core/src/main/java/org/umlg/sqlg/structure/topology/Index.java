@@ -219,8 +219,7 @@ public class Index implements TopologyInf {
             //noinspection OptionalGetWithoutIsPresent
             properties.add(propertyColumnOptional.get());
         }
-        Index index = new Index(name, indexType, abstractLabel, properties);
-        return index;
+        return new Index(name, indexType, abstractLabel, properties);
     }
 
     static Index createIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String indexName, IndexType indexType, List<PropertyColumn> properties) {

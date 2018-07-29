@@ -98,11 +98,10 @@ public class PropertyColumn implements TopologyInf {
     }
 
     static PropertyColumn fromNotifyJson(AbstractLabel abstractLabel, JsonNode jsonNode) {
-        PropertyColumn property = new PropertyColumn(
+        return new PropertyColumn(
                 abstractLabel,
                 jsonNode.get("name").asText(),
                 PropertyType.valueOf(jsonNode.get("propertyType").asText()));
-        return property;
     }
 
     @Override

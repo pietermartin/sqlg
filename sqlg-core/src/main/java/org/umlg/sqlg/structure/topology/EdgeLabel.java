@@ -583,6 +583,7 @@ public class EdgeLabel extends AbstractLabel {
         return toJson().toString();
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean foreignKeysContains(Direction direction, VertexLabel vertexLabel) {
         switch (direction) {
             case OUT:

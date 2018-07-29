@@ -197,7 +197,7 @@ public class SqlgGraph implements Graph {
     private SqlDialect sqlDialect;
     private String jdbcUrl;
     private final ObjectMapper mapper = new ObjectMapper();
-    private Configuration configuration;;
+    private Configuration configuration;
     private final ISqlGFeatures features = new SqlGFeatures();
 
     /**

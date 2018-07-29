@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.postgresql.util.PGbytea;
@@ -1194,9 +1194,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
         try {
             metadata = conn.getMetaData();
             String childCatalog = null;
-            String childSchemaPattern = foreignKeySchema;
-            String childTableNamePattern = foreignKeyTable;
-            ResultSet resultSet = metadata.getImportedKeys(childCatalog, childSchemaPattern, childTableNamePattern);
+            ResultSet resultSet = metadata.getImportedKeys(childCatalog, foreignKeySchema, foreignKeyTable);
             while (resultSet.next()) {
                 result.add(resultSet.getString("FK_NAME"));
             }

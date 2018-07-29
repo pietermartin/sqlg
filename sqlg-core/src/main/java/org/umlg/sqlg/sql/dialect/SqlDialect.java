@@ -27,7 +27,7 @@ import static org.umlg.sqlg.structure.PropertyType.*;
 public interface SqlDialect {
 
 
-    static final String INDEX_POSTFIX = "_sqlgIdx";
+    String INDEX_POSTFIX = "_sqlgIdx";
 
     default boolean supportsDistribution() {
         return false;
@@ -689,6 +689,7 @@ public interface SqlDialect {
         return null;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isSystemIndex(String indexName);
 
     /**

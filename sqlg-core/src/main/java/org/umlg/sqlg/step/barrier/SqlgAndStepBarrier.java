@@ -102,8 +102,7 @@ public class SqlgAndStepBarrier<S> extends SqlgConnectiveStep<S> {
             this.resultIterator = this.results.iterator();
         }
         if (this.resultIterator.hasNext()) {
-            Traverser.Admin<S> traverser = this.resultIterator.next();
-            return traverser;
+            return this.resultIterator.next();
         } else {
             //The standard TraversalFilterStep.filter calls TraversalUtil.test which normally resets the traversal for every incoming start.
             reset();

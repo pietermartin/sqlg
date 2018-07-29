@@ -103,7 +103,7 @@ public class PropertyType {
     public static final int VARCHAR_ORDINAL = 42;
 
     public static PropertyType varChar(int length) {
-        return new PropertyType("VARCHAR", VARCHAR_ORDINAL, String.class.getName(), new String[]{}, length);
+        return new PropertyType(String.class.getName(), new String[]{}, length);
     }
 
     private String name;
@@ -118,8 +118,8 @@ public class PropertyType {
     private static final Map<String, PropertyType> JAVA_CLASS_NAME_TO_ENUM = new HashMap<>();
     private static final Map<String, PropertyType> NAME_TO_ENUM = new HashMap<>();
 
-    private PropertyType(String name, int ordinal, String javaClassName, String[] postFixes, int length) {
-        this(name, ordinal, javaClassName, postFixes);
+    private PropertyType(String javaClassName, String[] postFixes, int length) {
+        this("VARCHAR", PropertyType.VARCHAR_ORDINAL, javaClassName, postFixes);
         this.length = length;
     }
 

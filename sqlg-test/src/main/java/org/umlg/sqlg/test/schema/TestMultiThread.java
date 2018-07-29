@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.junit.Assert.fail;

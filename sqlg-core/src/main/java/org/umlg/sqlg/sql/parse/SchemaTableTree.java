@@ -42,16 +42,16 @@ public class SchemaTableTree {
     private static final String WITHIN = "within";
     private static final String WITHOUT = "without";
     //stepDepth indicates the depth of the replaced steps. i.e. v1.out().out().out() existVertexLabel stepDepth 0,1,2,3
-    private int stepDepth;
-    private SchemaTable schemaTable;
+    private final int stepDepth;
+    private final SchemaTable schemaTable;
     private SchemaTableTree parent;
     //The root node does not have a direction. For the other nodes it indicates the direction from its parent to it.
     private Direction direction;
     private STEP_TYPE stepType;
-    private List<SchemaTableTree> children = new ArrayList<>();
-    private SqlgGraph sqlgGraph;
+    private final List<SchemaTableTree> children = new ArrayList<>();
+    private final SqlgGraph sqlgGraph;
     //leafNodes is only set on the root node;
-    private List<SchemaTableTree> leafNodes = new ArrayList<>();
+    private final List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers;
     private List<AndOrHasContainer> andOrHasContainers;
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
@@ -78,15 +78,15 @@ public class SchemaTableTree {
     private int tmpTableAliasCounter = 1;
 
     //This represents all tables filtered by TopologyStrategy
-    private Map<String, Map<String, PropertyType>> filteredAllTables;
+    private final Map<String, Map<String, PropertyType>> filteredAllTables;
 
-    private int replacedStepDepth;
+    private final int replacedStepDepth;
 
     //Cached for query load performance
     private Map<String, Pair<String, PropertyType>> columnNamePropertyName;
     private String idProperty;
     private String labeledAliasId;
-    private boolean hasIDPrimaryKey;
+    private final boolean hasIDPrimaryKey;
     private ListOrderedSet<String> identifiers;
     private String distributionColumn;
 
@@ -105,7 +105,7 @@ public class SchemaTableTree {
     //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
     private List<Pair<RecordId.ID, Long>> parentIdsAndIndexes;
 
-    private List<ColumnList> columnListStack = new ArrayList<>();
+    private final List<ColumnList> columnListStack = new ArrayList<>();
 
     private Set<String> restrictedProperties = null;
 
@@ -415,7 +415,7 @@ public class SchemaTableTree {
                 edgeSchemaTableTrees.removeLast();
                 edgesToDelete = Optional.of(constructSinglePathSql(this.sqlgGraph, false, edgeSchemaTableTrees, null, null, leftJoin, true));
             }
-            return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete.isPresent() ? edgesToDelete.get() : null, distinctQueryStack);
+            return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete.orElse(null), distinctQueryStack);
         }
 
     }

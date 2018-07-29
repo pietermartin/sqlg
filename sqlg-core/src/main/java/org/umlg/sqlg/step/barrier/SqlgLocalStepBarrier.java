@@ -57,8 +57,7 @@ public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
             this.resultIterator = this.results.iterator();
         }
         if (this.resultIterator.hasNext()) {
-            Traverser.Admin<E> traverser = this.resultIterator.next();
-            return traverser;
+            return this.resultIterator.next();
         } else {
             throw FastNoSuchElementException.instance();
         }

@@ -1029,12 +1029,10 @@ public abstract class BaseStrategy {
         }
 
         Traversal.Admin<?, ?> trueTraversal;
-        Traversal.Admin<?, ?> a = globalChildOne;
-        Traversal.Admin<?, ?> b = globalChildTwo;
-        if (a.getSteps().stream().anyMatch(s -> s instanceof IdentityStep<?>)) {
-            trueTraversal = b;
+        if (globalChildOne.getSteps().stream().anyMatch(s -> s instanceof IdentityStep<?>)) {
+            trueTraversal = globalChildTwo;
         } else {
-            trueTraversal = a;
+            trueTraversal = globalChildOne;
         }
         @SuppressWarnings("unchecked")
         List<Step<?, ?>> trueTraversalSteps = new ArrayList(trueTraversal.getSteps());

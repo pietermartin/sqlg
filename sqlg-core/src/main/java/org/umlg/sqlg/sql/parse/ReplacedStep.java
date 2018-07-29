@@ -660,6 +660,7 @@ public class ReplacedStep<S, E> {
         return drop;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isJoinToLeftJoin() {
         return joinToLeftJoin;
     }
