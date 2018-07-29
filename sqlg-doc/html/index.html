@@ -1,0 +1,2768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.7.1">
+<meta name="description" content="Sqlg's documentation">
+<meta name="keywords" content="Sqlg, TinkerPop, Gremlin, Graph, Database">
+<meta name="author" content="Pieter Martin">
+<title>Sqlg Documentation</title>
+<link rel="stylesheet" href="./../html/asciidoctor-default.css">
+</head>
+<body class="book toc2 toc-left">
+<div id="header">
+<h1>Sqlg Documentation</h1>
+<div class="details">
+<span id="author" class="author">Pieter Martin</span><br>
+<span id="revnumber">version 2.0.0,</span>
+<span id="revdate">August 2018</span>
+<br><span id="revremark"></span>
+</div>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">1. Introduction</a></li>
+<li><a href="#_license">2. License</a></li>
+<li><a href="#_tinkerpop_supported_features">3. TinkerPop supported features</a></li>
+<li><a href="#_limitations">4. Limitations</a></li>
+<li><a href="#_getting_started">5. Getting Started</a>
+<ul class="sectlevel2">
+<li><a href="#_maven_coordinates">5.1. Maven coordinates</a></li>
+<li><a href="#_start">5.2. Start</a></li>
+<li><a href="#_gremlin_console">5.3. Gremlin Console</a></li>
+</ul>
+</li>
+<li><a href="#_data_types">6. Data types</a></li>
+<li><a href="#_architecture">7. Architecture</a>
+<ul class="sectlevel2">
+<li><a href="#_vertex_tables">7.1. Vertex tables</a></li>
+<li><a href="#_edge_tables">7.2. Edge tables</a></li>
+<li><a href="#_tinkerpop_modern">7.3. TinkerPop-modern</a></li>
+<li><a href="#_namespacing_and_schemas">7.4. Namespacing and Schemas</a>
+<ul class="sectlevel3">
+<li><a href="#_edge_label">7.4.1. Edge label</a></li>
+</ul>
+</li>
+<li><a href="#_topology">7.5. Topology</a>
+<ul class="sectlevel3">
+<li><a href="#_topology_eager_creation">7.5.1. Topology eager creation</a></li>
+</ul>
+</li>
+<li><a href="#_validation">7.6. Validation</a></li>
+</ul>
+</li>
+<li><a href="#_indexes">8. Indexes</a>
+<ul class="sectlevel2">
+<li><a href="#_basic_indexing">8.1. Basic indexing</a>
+<ul class="sectlevel3">
+<li><a href="#_composite_indexes">8.1.1. Composite indexes</a></li>
+</ul>
+</li>
+<li><a href="#_full_text_indexing">8.2. Full-text indexing</a></li>
+<li><a href="#_global_unique_indexing">8.3. Global unique indexing</a></li>
+</ul>
+</li>
+<li><a href="#_multiple_jvms">9. Multiple JVMs</a></li>
+<li><a href="#_gremlin">10. Gremlin</a>
+<ul class="sectlevel2">
+<li><a href="#_optimization">10.1. Optimization</a></li>
+<li><a href="#_predicates">10.2. Predicates</a>
+<ul class="sectlevel3">
+<li><a href="#_compare_predicate">10.2.1. Compare predicate</a></li>
+<li><a href="#_contains_predicate">10.2.2. Contains predicate</a></li>
+<li><a href="#_text_predicate">10.2.3. Text predicate</a></li>
+<li><a href="#_datetime_queries">10.2.4. DateTime queries</a></li>
+</ul>
+</li>
+<li><a href="#_order">10.3. Order</a></li>
+<li><a href="#_repeatstep">10.4. RepeatStep</a></li>
+<li><a href="#_optionalstep">10.5. OptionalStep</a></li>
+<li><a href="#_range">10.6. Range</a></li>
+<li><a href="#_limit">10.7. Limit</a></li>
+</ul>
+</li>
+<li><a href="#_batch_mode">11. Batch Mode</a>
+<ul class="sectlevel2">
+<li><a href="#_normal_batch_mode">11.1. Normal batch mode</a></li>
+<li><a href="#_streaming_batch_mode">11.2. Streaming batch mode</a></li>
+<li><a href="#_bulk_edge_creation">11.3. Bulk edge creation</a></li>
+<li><a href="#_streaming_with_lock_batch_mode">11.4. Streaming with lock batch mode</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://github.com/pietermartin/sqlg"><strong>Sqlg</strong></a> <span class="image"><img src="./img/github/SVG/mark-github.svg" alt="mark github"></span> is a implementation of <a href="http://tinkerpop.apache.org/">Apache TinkerPop</a> on a
+<a href="http://en.wikipedia.org/wiki/Relational_database_management_system">RDBMS</a>.
+Currently <a href="http://www.postgresql.org/">Postgresql</a>, <a href="http://hsqldb.org/">HSQLDB</a>, <a href="http://h2database.com">H2</a>,
+<a href="https://mariadb.org/">MariaDB</a>, <a href="https://www.mysql.com/">MySQL</a> and
+<a href="https://www.microsoft.com/en-us/sql-server/sql-server-2017">MSSqlServer</a> are supported.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg has a google group <a href="https://groups.google.com/forum/?hl=en#!forum/sqlg">forum</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introduction">1. Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sqlg primary challenge is to reduce latency by combining TinkerPop
+<a href="http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps">steps</a> into as few as possible database calls.
+The fine grained nature of graph traversals makes this crucial else the remote call latency has a severe performance
+impact.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg supports various bulk modes to reduce latency when modifying the graph.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_license">2. License</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><span class="image"><img src="./img/github/SVG/law.svg" alt="MIT"></span> <a href="https://github.com/pietermartin/sqlg/blob/master/LICENSE">MIT</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tinkerpop_supported_features">3. TinkerPop supported features</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sqlg version 2.0.0 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.3.3</a>.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code> and <code>ProcessStandardSuite</code> test suites.</p>
+</div>
+<div class="ulist">
+<div class="title">Graph Features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>Computer</p>
+</li>
+<li>
+<p>ThreadedTransactions</p>
+</li>
+<li>
+<p>Variables</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Vertex Features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>MultiProperties</p>
+</li>
+<li>
+<p>MetaProperties</p>
+</li>
+<li>
+<p>UserSuppliedIds</p>
+</li>
+<li>
+<p>NumericIds</p>
+</li>
+<li>
+<p>StringIds</p>
+</li>
+<li>
+<p>UuidIds</p>
+</li>
+<li>
+<p>CustomIds</p>
+</li>
+<li>
+<p>AnyIds</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Edge Features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>UserSuppliedIds</p>
+</li>
+<li>
+<p>NumericIds</p>
+</li>
+<li>
+<p>StringIds</p>
+</li>
+<li>
+<p>UuidIds</p>
+</li>
+<li>
+<p>CustomIds</p>
+</li>
+<li>
+<p>AnyIds</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Vertex property features <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>AddProperty</p>
+</li>
+<li>
+<p>RemoveProperty</p>
+</li>
+<li>
+<p>UserSuppliedIds</p>
+</li>
+<li>
+<p>NumericIds</p>
+</li>
+<li>
+<p>StringIds</p>
+</li>
+<li>
+<p>UuidIds</p>
+</li>
+<li>
+<p>CustomIds</p>
+</li>
+<li>
+<p>AnyIds</p>
+</li>
+<li>
+<p>MapValues</p>
+</li>
+<li>
+<p>MixedListValues</p>
+</li>
+<li>
+<p>SerializableValues</p>
+</li>
+<li>
+<p>UniformListValues</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Edge property feature <strong>not</strong> implemented.</div>
+<ul>
+<li>
+<p>MapValues</p>
+</li>
+<li>
+<p>MixedListValues</p>
+</li>
+<li>
+<p>SerializableValues</p>
+</li>
+<li>
+<p>UniformListValues</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is explained below.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_limitations">4. Limitations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Postgresql schema, table and column names can not be more than 63 characters long.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_getting_started">5. Getting Started</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_maven_coordinates">5.1. Maven coordinates</h3>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-postgres&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-hsqldb&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">H2</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-h2&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MariaDB</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-mariadb&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MySQL</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-mysql&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MSSqlServer</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-mssqlserver&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will include <code>gremlin-groovy</code>. If you have no need for that then use the following coordinates.</p>
+</div>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-postgres-dialect&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-hsqldb-dialect&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">H2</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-h2-dialect&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MariaDB</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-mariadb-dialect&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MySQL</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-mysql-dialect&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MSSqlServer</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-mssqlserver-dialect&lt;/artifactId&gt;
+    &lt;version&gt;2.0.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_start">5.2. Start</h3>
+<div class="paragraph">
+<p><code>SqlgGraph</code> is a singleton that can be shared among multiple threads. You instantiate <code>SqlgGraph</code> using the standard
+TinkerPop static constructors.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Graph g = SqlgGraph.open(final Configuration configuration)</code></p>
+</li>
+<li>
+<p><code>Graph g = SqlgGraph.open(final String pathToSqlgProperties)</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The configuration object requires the following properties.</p>
+</div>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>jdbc.url=jdbc:postgresql://localhost:5432/yourdb
+jdbc.username=postgres
+jdbc.password=******</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>jdbc.url=jdbc:hsqldb:file:/tmp/yourdb
+jdbc.username=SA
+jdbc.password=</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">H2</div>
+<div class="content">
+<pre>jdbc.url=jdbc:h2:file:target/tmp/yourdb
+jdbc.username=SA
+jdbc.password=</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MariaDB</div>
+<div class="content">
+<pre>jdbc.url=jdbc:mariadb://localhost:3306/?useSSL=false
+jdbc.username=mariadb
+jdbc.password=mariadb</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MySQL</div>
+<div class="content">
+<pre>jdbc.url=jdbc:mysql://localhost:3306/?useSSL=false
+jdbc.username=mysql
+jdbc.password=mysql</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">MSSqlServer</div>
+<div class="content">
+<pre>jdbc.url=jdbc:sqlserver://localhost:1433;databaseName=yourdb;
+jdbc.username=SA
+jdbc.password=*****</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the case of Postgresql and MSSqlServer the database must already exist.</p>
+</div>
+<div class="paragraph">
+<p>Once you have access to the graph you can use it as per normal.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void useAsPerNormal() {
+    Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex address = this.sqlgGraph.addVertex(T.label, "Address", "street", "13th");
+    person.addEdge("livesAt", address, "since", LocalDate.of(2010, 1, 21));
+    this.sqlgGraph.tx().commit(); <b class="conum">(1)</b>
+    List&lt;Vertex&gt; addresses = this.sqlgGraph.traversal().V().hasLabel("Person").out("livesAt").toList();
+    assertEquals(1, addresses.size());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>It is very important to always commit or rollback the transaction.
+If you do not connections to the database will remain open and eventually the connection pool with run out of connections.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_gremlin_console">5.3. Gremlin Console</h3>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>[pieter@pieter-laptop bin]$ ./gremlin.sh
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin&gt; :install org.umlg sqlg-postgres 2.0.0.
+==&gt;Loaded: [org.umlg, sqlg-postgres, 2.0.0]
+gremlin&gt; :plugin list
+==&gt;tinkerpop.server[active]
+==&gt;tinkerpop.gephi
+==&gt;tinkerpop.utilities[active]
+==&gt;tinkerpop.sugar
+==&gt;tinkerpop.credentials
+==&gt;tinkerpop.tinkergraph[active]
+==&gt;sqlg.postgres
+gremlin&gt; :plugin use sqlg.postgres
+==&gt;sqlg.postgres activated
+gremlin&gt; graph = SqlgGraph.open('pathTo/sqlg.properties')
+==&gt;sqlggraph[SqlGraph]
+gremlin&gt; g = graph.traversal()
+==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb), standard]
+gremlin&gt; graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+==&gt;null
+gremlin&gt; g.V().count()
+==&gt;808
+gremlin&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">HSQLDB</div>
+<div class="content">
+<pre>[pieter@pieter-laptop bin]$ ./gremlin.sh</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin&gt; :install org.umlg sqlg-hsqldb 2.0.0.
+==&gt;Loaded: [org.umlg, sqlg-hsqldb, 2.0.0]
+gremlin&gt; :plugin list
+==&gt;tinkerpop.server[active]
+==&gt;tinkerpop.gephi
+==&gt;tinkerpop.utilities[active]
+==&gt;tinkerpop.sugar
+==&gt;tinkerpop.credentials
+==&gt;tinkerpop.tinkergraph[active]
+==&gt;sqlg.hsqldb
+gremlin&gt; :plugin use sqlg.hsqldb
+==&gt;sqlg.hsqldb activated
+gremlin&gt; graph = SqlgGraph.open('pathTo/sqlg.properties')
+==&gt;sqlggraph[SqlGraph]
+gremlin&gt; g = graph.traversal()
+==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:hsqldb:file:src/test/db/sqlgraphdb), standard]
+gremlin&gt; graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+==&gt;null
+gremlin&gt; g.V().count()
+==&gt;808
+gremlin&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>[NOTE]
+If it is the first time to install sqlg, then you need to restart the gremlin console.
+If not the class-loaders are confused and can not load Sqlg's sqlg.plugin</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_data_types">6. Data types</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Table Data types</caption>
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.6666%;">
+<col style="width: 16.667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Java</th>
+<th class="tableblock halign-left valign-top">Postgresql</th>
+<th class="tableblock halign-left valign-top">HSQLDB</th>
+<th class="tableblock halign-left valign-top">H2</th>
+<th class="tableblock halign-left valign-top">MariaDB</th>
+<th class="tableblock halign-left valign-top">MSSqlServer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Byte</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Short</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Integer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Long</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Float</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REAL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REAL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REAL</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Double</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE PRECISION</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE PRECISION</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGTEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(2000)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String (fixed length)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Boolean[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Byte[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BYTEA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARBINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BINARY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BLOB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARBINARY(max)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Short[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Integer[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Long[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Float[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REAL[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Double[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE PRECISION[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEXT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME(3)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME2(3)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE, TEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE, LONGVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP, VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME(3), TINYTEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME2(3), VARCHAR(255)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Period</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, INTEGER, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, INTEGER, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INT, INT, INT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, INTEGER, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INT, INT, INT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Duration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INTEGER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INT</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDate[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DATE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE[], TEXT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Period[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER[], INTEGER[], INTEGER[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Duration[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT[], INTEGER[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">com.fasterxml.jackson.databind.JsonNode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSONB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LONGTEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(max)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">com.fasterxml.jackson.databind.JsonNode[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSONB[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.Point</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geometry(POINT)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.umlg.sqlg.gis.GeographyPoint</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geography(POINT, 4326)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.LineString</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geometry(LINESTRING)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.Polygon</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geometry(POLYGON)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">org.umlg.sqlg.gis.GeographyPolygon</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">geography(POLYGON, 4326)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<code>java.time.LocalTime</code> drops the nano second precision.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_architecture">7. Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>TinkerPop&#8217;s property graph semantics specifies that every vertex and edge has a single label. Modelling this in a RDBMS
+is trivial. TinkerPop has no notion of cardinality nor of order. Every relationship between vertex labels is modelled as
+<code>many to many</code> relationship with no specified order.</p>
+</div>
+<div class="paragraph">
+<p>This realizes itself as a classic <code>many to many</code> relationship in a RDBMS database.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>VertexLabel &lt;---- EdgeLabel ----&gt; VertexLabel</pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_vertex_tables">7.1. Vertex tables</h3>
+<div class="paragraph">
+<p>Every unique vertex label maps to a table. Vertex tables are prefixed with a <code>V_</code>. i.e. <code>V_Person</code>. The vertex table
+stores the vertex&#8217;s properties.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_edge_tables">7.2. Edge tables</h3>
+<div class="paragraph">
+<p>Every unique edge label maps to a table. Edge tables are prefixed with a <code>E_</code>. i.e. <code>E_friend</code>. The edge table stores
+each edge&#8217;s adjacent vertex ids and the edge properties. The column corresponding to each adjacent vertex id (<code>IN</code> and <code>OUT</code>)
+has a foreign key to the adjacent vertex&#8217;s table. The foreign key is optional, instead just an index on the adjacent vertex id
+can be used.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+    <code>sqlg.properties</code> <code>implement.foreign.keys = false</code><br>
+    Edge foreign keys have a significant impact on performance.<br>
+    Edge foreign keys are enabled by default.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>From a rdbms' perspective each edge table is the classic <code>many to many</code> join table between vertices.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tinkerpop_modern">7.3. TinkerPop-modern</h3>
+<div class="paragraph">
+<p>Taken from <a href="http://tinkerpop.apache.org/docs/current/reference/#intro">TinkerPop</a></p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="./img/sqlg/tinkerpop-modern-graph.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">ER Diagram</div>
+<p><span class="image"><img src="./img/sqlg/tinkerpop-modern-er.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">V_person</div>
+<p><span class="image"><img src="./img/sqlg/V_person.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">V_software</div>
+<p><span class="image"><img src="./img/sqlg/V_software.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">E_knows</div>
+<p><span class="image"><img src="./img/sqlg/E_knows.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">E_created</div>
+<p><span class="image"><img src="./img/sqlg/E_created.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_namespacing_and_schemas">7.4. Namespacing and Schemas</h3>
+<div class="paragraph">
+<p>Many RDBMS databases have the notion of a <code>schema</code> as a namespace for tables. Sqlg supports schemas
+for vertex labels. Distinct schemas for edge tables are unnecessary as edge tables are created in the schema of the adjacent <code>out</code> vertex.
+By default schemas for vertex tables go into the underlying databases' default schema. For Postgresql, hsqldb and H2 this
+is the <code>public</code> schema.</p>
+</div>
+<div class="paragraph">
+<p>To specify the schema for a label Sqlg uses the dot <code>.</code> notation.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testElementsInSchema() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Manager", "name", "john"); <b class="conum">(1)</b>
+    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.House", "name", "palace1"); <b class="conum">(2)</b>
+    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.Car", "model", "corrola"); <b class="conum">(3)</b>
+    palace1.addEdge("managedBy", john);
+    corrola.addEdge("owner", john);
+    this.sqlgGraph.tx().commit();
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Manager").count().next().intValue()); <b class="conum">(4)</b>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("House").count().next().intValue()); <b class="conum">(5)</b>
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("continent.House").count().next().intValue()); <b class="conum">(6)</b>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("fleet.Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("managedBy").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("owner").count().next().intValue());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>'Manager' will be in the default 'public' schema.</p>
+</li>
+<li>
+<p>'House' will be in the 'continent' schema.</p>
+</li>
+<li>
+<p>'Car' will be in the 'fleet' schema.</p>
+</li>
+<li>
+<p>Vertices in the public schema do not need to be qualified with the schema.</p>
+</li>
+<li>
+<p>Vertices not in the public schema must be qualified with its schema. In this case 'House' will not be found.</p>
+</li>
+<li>
+<p>As 'House' is qualified with the 'continent' schema it will be found.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Table <code>V_manager</code> is in the <code>public</code> (default) schema.<br>
+Table <code>V_house</code> is in the <code>continent</code> schema.<br>
+Table <code>V_car</code> is in the <code>fleet</code> schema.<br>
+Table <code>E_managedBy</code> is in the <code>continent</code> schema as its <code>out</code> vertex <code>palace1</code> is in the <code>continent</code> schema.<br>
+Table <code>E_owner</code> is in the <code>fleet</code> schema as its <code>out</code> vertex is in the `fleet`schema.</p>
+</div>
+<div class="paragraph">
+<div class="title">postgresql schemas</div>
+<p><span class="image"><img src="./img/sqlg/schemas.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="./img/sqlg/continent.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="./img/sqlg/fleet.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="./img/sqlg/public.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="sect3">
+<h4 id="_edge_label">7.4.1. Edge label</h4>
+<div class="paragraph">
+<p>An edge label can have many different out vertex labels.
+This means that its possible for a single edge label to be stored in multiple schemas and tables.
+One for each distinct out vertex label. Gremlin queries will work as per normal.
+However it is possible to target the edges per out vertex schema directly.</p>
+</div>
+<div class="listingblock">
+<div class="title">eg.</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testEdgeAcrossSchema() {
+    Vertex a = this.sqlgGraph.addVertex(T.label, "A.A");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "B.B");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "C.C");
+    a.addEdge("specialEdge", b);
+    b.addEdge("specialEdge", c);
+    this.sqlgGraph.tx().commit();
+    assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("specialEdge").count().next().intValue()); <b class="conum">(1)</b>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.specialEdge").count().next().intValue()); <b class="conum">(2)</b>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("B.specialEdge").count().next().intValue()); <b class="conum">(3)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Query 'specialEdge'</p>
+</li>
+<li>
+<p>Query 'specialEdge' with, out vertex labels in the 'A' schema.</p>
+</li>
+<li>
+<p>Query 'specialEdge' with, out vertex labels in the 'B' schema.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_topology">7.5. Topology</h3>
+<div class="paragraph">
+<p>Sqlg stores the graph&#8217;s topology information in the graph itself as a graph.
+The topology is stored in the <code>sqlg_schema</code> schema.</p>
+</div>
+<div class="paragraph">
+<div class="title">UML diagram of Sqlg&#8217;s topology.</div>
+<p><span class="image"><img src="./img/uml/topology%20Class%20Diagram.png" alt="image of Sqlg&#8217;s topology"></span></p>
+</div>
+<div class="paragraph">
+<p>TinkerPop has no notion of schema or topology. However any TinkerPop graph has an implicit schema.
+Sqlg manages the schema as a first class construct.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg follows the normal TinkerPop semantics in that the schema does not need to be defined upfront.
+Every graph modification first checks to see if the element&#8217;s schema (label,name) exists.
+If not, it will create the element&#8217;s schema. For <code>Postgresql</code> this works well as it supports transactional schema creation/modification.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+Hsqldb, H2 and MariaDb do not support transactional schema creation/modification. They will both silently commit the
+transaction and continue. This breaks the user&#8217;s transaction boundaries. For Hsqldb, H2 and MariaDb it is recommended to
+create the schema upfront.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>It is possible to query and traverse the topology as a normal TinkerPop graph.
+To query the topology the <code>TopologyStrategy</code> is used. To facilitate ease of use, <code>SqlgGraph.topology()</code> method is added to enable the strategy.
+Being able to query the topology is helpful to understand a graph&#8217;s structure.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showTopologyTraversals() {
+    Io.Builder&lt;GraphSONIo&gt; builder = GraphSONIo.build(GraphSONVersion.V3_0); <b class="conum">(1)</b>
+    final GraphReader reader = sqlgGraph.io(builder).reader().create();
+    try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern-v3d0.json")) {
+        reader.readGraph(stream, sqlgGraph);
+    } catch (IOException e) {
+        Assert.fail(e.getMessage());
+    }
+    System.out.println("//All vertex labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) <b class="conum">(2)</b>
+            .forEachRemaining(
+                    v -&gt; System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME))
+            );
+
+    System.out.println("//All edge labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) <b class="conum">(3)</b>
+            .forEachRemaining(
+                    v -&gt; System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME))
+            );
+
+    System.out.println("//'person' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "person") <b class="conum">(4)</b>
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE) <b class="conum">(5)</b>
+            .forEachRemaining(
+                    v -&gt; {
+                        System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'software' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "software")
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -&gt; {
+                        System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'created' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) <b class="conum">(6)</b>
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) <b class="conum">(7)</b>
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "created") <b class="conum">(8)</b>
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE) <b class="conum">(9)</b>
+            .forEachRemaining(
+                    v -&gt; {
+                        System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'knows' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "knows")
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -&gt; {
+                        System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Use TinkerPop&#8217;s i.o. infrastructure to load the modern graph.</p>
+</li>
+<li>
+<p>Find all VertexLabels, they are in <code>sqlg_schema.vertex</code></p>
+</li>
+<li>
+<p>Traverse out on the <code>out_edges</code> edge to find all the edges. 'WARNING' this may produce duplicates as a single edge label
+may have many different distinct out vertex labels.</p>
+</li>
+<li>
+<p>Find the <code>person</code> vertex.</p>
+</li>
+<li>
+<p>Traverse out on the <code>vertex_property</code> edge to find the 'person' vertex labels properties.</p>
+</li>
+<li>
+<p>Find all vertex labels. i.e. vertices in <code>sqlg_schema.vertex</code></p>
+</li>
+<li>
+<p>Traverse the <code>out_edges</code> edge.</p>
+</li>
+<li>
+<p>Filter the out edges for only the 'created' edges.</p>
+</li>
+<li>
+<p>Traverse the <code>edge_properties</code> edge to find the 'created' edge&#8217;s properties.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>//All vertex labels
+person
+software
+//All edge labels
+knows
+created
+//'person' properties
+name : STRING
+age : INTEGER
+//'software' properties
+name : STRING
+lang : STRING
+//'created' properties
+weight : DOUBLE
+//'knows' properties
+weight : DOUBLE</pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_topology_eager_creation">7.5.1. Topology eager creation</h4>
+<div class="paragraph">
+<p>It is often useful to create the topology upfront. The topology creation api is accessed via the <code>Topology</code> object.
+It is a singleton. <code>Topology topology = sqlgGraph.getTopology();</code>
+To create new topology objects use the <code>ensureXXX</code> methods. They will return the a topology object representing the specific
+topology element. i.e. <code>Schema</code>, <code>VertexLabel</code>, <code>EdgeLabel</code>, <code>PropertyColumn</code>, <code>Index</code> or <code>GlobalUniqueIndex</code></p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The <code>ensureXXX</code> methods will create the topology object if it does not exists.
+If it does exist it will simply return the relevant topology object.
+On any topology object one can call <code>isCommitted</code> or <code>isUncommitted</code> to check the state of the object.
+<code>committed</code> indicates that it already exists. <code>uncommitted</code> indicates that it has been created in the current active transaction.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">eg</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void createModernTopology() {
+    Topology topology = this.sqlgGraph.getTopology(); <b class="conum">(1)</b>
+    VertexLabel personVertexLabel = topology.ensureVertexLabelExist("public", "person", new HashMap&lt;String, PropertyType&gt;() {{
+        put("name", PropertyType.STRING);
+        put("age", PropertyType.INTEGER);
+    }}); <b class="conum">(2)</b>
+    VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist("public", "software", new HashMap&lt;String, PropertyType&gt;() {{
+        put("name", PropertyType.STRING);
+        put("lang", PropertyType.STRING);
+    }});
+    EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist("created", softwareVertexLabel, new HashMap&lt;String, PropertyType&gt;() {{
+        put("weight", PropertyType.DOUBLE);
+    }}); <b class="conum">(3)</b>
+    EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap&lt;String, PropertyType&gt;() {{
+        put("weight", PropertyType.DOUBLE);
+    }});
+    this.sqlgGraph.tx().commit(); <b class="conum">(4)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get the <code>Topology</code> object.</p>
+</li>
+<li>
+<p>Create the 'person' VertexLabel. The <code>HashMap&lt;String, PropertyType&gt;</code> defines the 'person''s properties.</p>
+</li>
+<li>
+<p>Create the 'created' EdgeLabel. The format is outVertexLabel.ensureEdgeLabelExist(name, inVertexLabel, properties)</p>
+</li>
+<li>
+<p>Be sure to commit the transaction. Postgresql and MSSqlServer supports transactional schema creation. Hsqldb,H2 and MariaDB do not.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void generalTopologyCreationWithSchema() {
+    Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("Humans"); <b class="conum">(1)</b>
+    VertexLabel personVertexLabel = schema.ensureVertexLabelExist("Person", new HashMap&lt;String, PropertyType&gt;() {{
+        put("name", PropertyType.STRING);
+        put("date", PropertyType.LOCALDATE);
+    }}); <b class="conum">(2)</b>
+    this.sqlgGraph.tx().commit();
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create the 'Humans' schema</p>
+</li>
+<li>
+<p>Create the 'Person' VertexLabel via the Schema object.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Sqlg keeps an in-memory cache of the graphs entire topology. It is possible query this cache directly.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void queryCache() {
+    loadModern();
+    Optional&lt;Schema&gt; publicSchema = this.sqlgGraph.getTopology().getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()); <b class="conum">(1)</b>
+    assertTrue(publicSchema.isPresent());
+    Schema publicSchemaViaShortCut = this.sqlgGraph.getTopology().getPublicSchema(); <b class="conum">(2)</b>
+    Optional&lt;VertexLabel&gt; personVertexLabel = publicSchema.get().getVertexLabel("person"); <b class="conum">(3)</b>
+    assertTrue(personVertexLabel.isPresent());
+    Optional&lt;EdgeLabel&gt; createEdgeLabel = personVertexLabel.get().getOutEdgeLabel("created"); <b class="conum">(4)</b>
+    assertTrue(createEdgeLabel.isPresent());
+    Optional&lt;EdgeLabel&gt; knowsEdgeLabel = personVertexLabel.get().getOutEdgeLabel("knows"); <b class="conum">(5)</b>
+    assertTrue(knowsEdgeLabel.isPresent());
+
+    Optional&lt;PropertyColumn&gt; namePropertyColumn = personVertexLabel.get().getProperty("name"); <b class="conum">(6)</b>
+    assertTrue(namePropertyColumn.isPresent());
+    assertEquals(PropertyType.STRING, namePropertyColumn.get().getPropertyType()); <b class="conum">(7)</b>
+    Optional&lt;PropertyColumn&gt; agePropertyColumn = personVertexLabel.get().getProperty("age");
+    assertTrue(agePropertyColumn.isPresent());
+    assertEquals(PropertyType.INTEGER, agePropertyColumn.get().getPropertyType());
+    Optional&lt;PropertyColumn&gt; weightPropertyColumn = createEdgeLabel.get().getProperty("weight");
+    assertTrue(weightPropertyColumn.isPresent());
+    assertEquals(PropertyType.DOUBLE, weightPropertyColumn.get().getPropertyType());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get the 'public' schema object.</p>
+</li>
+<li>
+<p>Because the 'public' schema will always exist there is a shortcut method to get it.</p>
+</li>
+<li>
+<p>Use the 'Schema' object the get the 'person' VertexLabel</p>
+</li>
+<li>
+<p>Use the 'person' VertexLabel to get its 'created' out edge.</p>
+</li>
+<li>
+<p>Use the 'person' VertexLabel to get its 'knows' out edge.</p>
+</li>
+<li>
+<p>Use the 'person' VertexLabel to get its 'name' property. Properties are represented by the <code>PropertyColumn</code> class.</p>
+</li>
+<li>
+<p>On the <code>PropertyColumn</code> object one can get the <code>PropertyType</code>. PropertyType is an enum representing all data types supported by Sqlg.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_validation">7.6. Validation</h3>
+<div class="paragraph">
+<p>Sqlg has basic support to validate its topology.</p>
+</div>
+<div class="paragraph">
+<p>If a user manipulates the schema outside of Sqlg then Sqlg&#8217;s topology will be out of sync with the database.</p>
+</div>
+<div class="paragraph">
+<p>To validate the topology <code>sql.properties</code> must have <code>validate.topology = true</code>. The validation code only runs when the graph is started.
+It will not prevent the graph from starting up but will log a warning.
+The validation errors can be accesses via <code>sqlgGraph.getTopology().getValidationErrors()</code></p>
+</div>
+<div class="listingblock">
+<div class="title">eg</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testVertexLabelDoesNotExist() throws Exception {
+    this.sqlgGraph.addVertex(T.label, "A.A");
+    this.sqlgGraph.tx().commit();
+    Connection conn = this.sqlgGraph.tx().getConnection();
+    try (Statement statement = conn.createStatement()) {
+        statement.execute("DROP TABLE " + "\"A\".\"V_A\" CASCADE ");
+        this.sqlgGraph.tx().commit();
+    } catch (SQLException e) {
+        fail(e.getMessage());
+    }
+    this.sqlgGraph.close();
+    try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre class="nowrap">WARN  2017-01-22 18:23:40,185 [main] org.umlg.sqlg.structure.SqlgStartupManager: A does not exist</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_indexes">8. Indexes</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_basic_indexing">8.1. Basic indexing</h3>
+<div class="paragraph">
+<p>Sqlg supports adding a unique or non-unique index to any property or properties.</p>
+</div>
+<div class="paragraph">
+<p>To add an index one has to use Sqlg&#8217;s topology interface.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testIndex() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap&lt;String, PropertyType&gt;() {{
+        put("name", PropertyType.STRING);
+    }}); <b class="conum">(1)</b>
+    Optional&lt;PropertyColumn&gt; namePropertyOptional = personVertexLabel.getProperty("name");
+    assertTrue(namePropertyOptional.isPresent());
+    Index index = personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get())); $ <b class="conum">(2)</b>
+    this.sqlgGraph.tx().commit(); <b class="conum">(3)</b>
+
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    List&lt;Vertex&gt; johns = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("name", "John")
+            .toList(); <b class="conum">(4)</b>
+
+    /* This will execute the following sql.
+    SELECT
+        "public"."V_Person"."ID" AS "alias1",
+        "public"."V_Person"."name" AS "alias2"
+    FROM
+        "public"."V_Person"
+    WHERE
+        ( "public"."V_Person"."name" = ?)
+    */ <b class="conum">(5)</b>
+
+    assertEquals(1, johns.size());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create the 'Person' VertexLabel.</p>
+</li>
+<li>
+<p>On the 'Person' VertexLabel create a non unique index on the 'name' property.</p>
+</li>
+<li>
+<p>Index creation is transactional on Postgresql.</p>
+</li>
+<li>
+<p>The given gremlin query will use the index.</p>
+</li>
+<li>
+<p>The underlying RDBMS will use the index for the executed sql.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">postgresql V_Person sql definition</div>
+<p><span class="image"><img src="./img/sqlg/V_Person_name_index.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="sect3">
+<h4 id="_composite_indexes">8.1.1. Composite indexes</h4>
+<div class="paragraph">
+<p>It is possible to create composite indexes.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testCompositeIndex() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap&lt;String, PropertyType&gt;() {{
+        put("firstName", PropertyType.STRING);
+        put("lastName", PropertyType.STRING);
+    }}); <b class="conum">(1)</b>
+    personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList&lt;&gt;(personVertexLabel.getProperties().values())); <b class="conum">(2)</b>
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person", "firstName", "John", "lastName", "Smith");
+    List&lt;Vertex&gt; johnSmiths = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("firstName", "John")
+            .has("lastName", "Smith")
+            .toList();
+    assertEquals(1, johnSmiths.size());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create the 'Person' VertexLabel with 2 properties, 'firstName' and 'lastName'.</p>
+</li>
+<li>
+<p>Create a composite index on 'firstName' and 'lastName'</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">postgresql V_Person composite index sql definition</div>
+<p><span class="image"><img src="./img/sqlg/postgresql_composite_index.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+<div class="paragraph">
+<p>Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
+<code>HasStep</code> targeting a property with an index on it will translate to a sql <code>where</code> clause on that property and
+the underlying RDBMS will utilize the index.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The index does not need to be created upfront. It can be added any time.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_full_text_indexing">8.2. Full-text indexing</h3>
+<div class="paragraph">
+<p>On postgresql full text indexing is supported.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testFullTextIndex() {
+    Vertex v0 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "a fat cat sat on a mat and ate a fat rat");
+    Vertex v1 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "fatal error");
+    Vertex v2 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
+
+    VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
+    vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").get())); <b class="conum">(1)</b>
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; vts = this.sqlgGraph.traversal()
+            .V().hasLabel("Sentence")
+            .has("name", FullText.fullTextMatch("english", "fat &amp; rat")) <b class="conum">(2)</b>
+            .toList();
+    Assert.assertEquals(1, vts.size());
+    Assert.assertTrue(vts.contains(v0));
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create a full-text gin index.</p>
+</li>
+<li>
+<p>Query the full-text index using Sqlg&#8217;s custom FullText predicate.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_global_unique_indexing">8.3. Global unique indexing</h3>
+<div class="paragraph">
+<p>Global unique indexing is a way of specifying that multiple properties across different labels are unique.
+For every <code>GlobalUniqueIndex</code> Sqlg maintains a separate table with a unique index defined on it.
+Every property that partakes in the GlobalUniqueIndex will have its value duplicated in this table.
+These tables are kept in the <code>gui_schema</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testPersonAndDogDoNotHaveTheSameName() {
+    Map&lt;String, PropertyType&gt; properties = new HashMap&lt;String, PropertyType&gt;() {{
+        put("name", PropertyType.STRING);
+    }}; <b class="conum">(1)</b>
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties); <b class="conum">(2)</b>
+    VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Dog", properties); <b class="conum">(3)</b>
+    PropertyColumn personName = personVertexLabel.getProperty("name").get(); <b class="conum">(4)</b>
+    PropertyColumn dogName = dogVertexLabel.getProperty("name").get(); <b class="conum">(5)</b>
+    this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet&lt;PropertyColumn&gt;() {{
+        add(personName);
+        add(dogName);
+    }}); <b class="conum">(6)</b>
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "Tyson"); <b class="conum">(7)</b>
+    try {
+        //This will fail
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "Tyson"); <b class="conum">(8)</b>
+        fail("Duplicate key violation suppose to prevent this from executing");
+    } catch (RuntimeException e) {
+        //swallow
+        this.sqlgGraph.tx().rollback();
+    }
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>A map of the properties to add.</p>
+</li>
+<li>
+<p>Create the 'Person' VertexLabel with its properties.</p>
+</li>
+<li>
+<p>Create the 'Dog' VertexLabel with its properties.</p>
+</li>
+<li>
+<p>Get the <code>PropertyColumn</code> for the 'name' property of 'Person'.</p>
+</li>
+<li>
+<p>Get the <code>PropertyColumn</code> for the 'name' property of 'Dog'.</p>
+</li>
+<li>
+<p>Create the <code>GlobalUniqueIndex</code> on the 'name' property of 'Person' and 'Dog'. This will ensure that 'Person&#8217;s and 'Dog&#8217;s do not have the same name.</p>
+</li>
+<li>
+<p>Add a 'Person' with the name "Tyson".</p>
+</li>
+<li>
+<p>Try to add a 'Dog' with the name "Tyson". This will fail as the `GlobalUniqueIndex' will prevent 'Person&#8217;s and 'Dog&#8217;s from having the same name.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>GlobalUniqueIndexes do not support composite indexes.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_multiple_jvms">9. Multiple JVMs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It is possible to run many Sqlg instances pointing to the same underlying database. These instances can be in the same jvm
+but is primarily intended for separate jvm(s) pointing to the same underlying database.</p>
+</div>
+<div class="paragraph">
+<p>To make multiple graphs point to the same underlying database it is important to add in the <code>distributed</code> property to <code>sqlg.properties</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title">sqlg.properties</div>
+<div class="content">
+<pre>distributed = true</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Multiple JVMs is only supported for Postgresql.
+Hsqldb and H2 are primarily intended to run embedded so multiple JVMs do not make sense for them.
+Multiple JVM support has not been implemented for MariaDB and MSSqlServer.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Postgresql&#8217;s <a href="https://www.postgresql.org/docs/current/static/sql-notify.html"><strong>notify</strong></a> mechanism is used to distribute the cached schema
+across multiple JVMs.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg uses Postgresql&#8217;s <a href="https://www.postgresql.org/docs/current/static/explicit-locking.html">explicit locking</a> to create a global
+lock to prevent schema creation commands from dead locking the database.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gremlin">10. Gremlin</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sqlg has full support for gremlin.
+However gremlin&#8217;s fine grained 'graphy' nature results in very high latency. To overcome the high latency Sqlg optimizes
+gremlin by reducing the number of calls to the RDBMS.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg optimizes gremlin by analyzing the steps and where possible combining them into a single SqlgGraphStepCompiled or SqlgVertexStepCompiled.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+This is an ongoing task as gremlin is a large language.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Turn sql logging on by setting <code>log4j.logger.org.umlg.sqlg=debug</code>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_optimization">10.1. Optimization</h3>
+<div class="paragraph">
+<p>Consecutive GraphStep, VertexStep, EdgeVertexStep, EdgeOtherVertexStep, HasStep, RepeatStep, OrderGlobalStep,
+RangeGlobalStep, ChooseStep, OptionalStep, SelectStep, SelectOneStep and DropStep are currently combined.
+The combined step will then in turn generate the sql statements to retrieve the data.
+It attempts to retrieve the data in as few distinct sql statements as possible.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showHighLatency() {
+    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
+    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
+    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
+    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
+    easternUnion.addEdge("organization_division", legal);
+    easternUnion.addEdge("organization_division", dispatch);
+    legal.addEdge("division_office", newYork);
+    dispatch.addEdge("division_office", singapore);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("Organization")
+            .out()
+            .out();
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List&lt;Vertex&gt; offices = traversal.toList();
+    assertEquals(2, offices.size());
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">Before optimization:
+[GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
+
+After optimization:
+[SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Without optimization the query <code>this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()</code> will result
+in a number of database hits. First to get the organizations, then for each organization the divisions and then for each division the offices.
+For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is significant.</p>
+</div>
+<div class="paragraph">
+<p>In the above example the <code>GraphStep</code>, <code>HasStep</code> and 2 <code>VertexStep</code> are all combined into one <code>SqlgGraphStepCompiled</code> step.</p>
+</div>
+<div class="paragraph">
+<p>The before optimization output shows the steps that would have executed with if no optimization is performed.
+As the query only contains sequential optimizable steps they are all combined into one step.</p>
+</div>
+<div class="paragraph">
+<p>The above example will retrieve the data in one sql query.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Office"."ID" AS "alias1",
+	"public"."V_Office"."name" AS "alias2"
+FROM
+	"public"."V_Organization" INNER JOIN
+	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
+	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
+	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
+	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_predicates">10.2. Predicates</h3>
+<div class="paragraph">
+<p>TinkerPop&#8217;s <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> and
+<a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a> predicates are optimized
+to execute on the database.</p>
+</div>
+<div class="sect3">
+<h4 id="_compare_predicate">10.2.1. Compare predicate</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showComparePredicate() {
+    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
+    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
+    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
+    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
+    easternUnion.addEdge("organization_division", legal);
+    easternUnion.addEdge("organization_division", dispatch);
+    legal.addEdge("division_office", newYork);
+    dispatch.addEdge("division_office", singapore);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("Organization")
+            .out()
+            .out()
+            .has("name", P.eq("Singapore")); <b class="conum">(1)</b>
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List&lt;Vertex&gt; offices = traversal.toList();
+    assertEquals(1, offices.size());
+    assertEquals(singapore, offices.get(0));
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>The <code>P</code> predicate will resolve on the database as a <code>sql</code> <code>where</code> clause.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Office"."ID" AS "alias1",
+	"public"."V_Office"."name" AS "alias2"
+FROM
+	"public"."V_Organization" INNER JOIN
+	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
+	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
+	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
+	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+WHERE
+	( "public"."V_Office"."name" = ?)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The same pattern is used for all the
+<a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> predicates.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_contains_predicate">10.2.2. Contains predicate</h4>
+<div class="paragraph">
+<p>Sqlg&#8217;s implementation of <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a>
+is slightly more complex.</p>
+</div>
+<div class="paragraph">
+<p>For Postgresql, MSSqlServer and HSQLDB a join onto a <code>values expression</code> is used.</p>
+</div>
+<div class="paragraph">
+<p>For H2 and MariaDB a regular <code>in</code> clause is used.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showContainsPredicate() {
+    List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;(10000);
+    for (int i = 0; i &lt; 10000; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
+        numbers.add(i);
+    }
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("number", P.within(numbers))
+            .toList();
+
+    assertEquals(10000, persons.size());
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."number" AS "alias2"
+FROM
+	"public"."V_Person" INNER JOIN
+	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This pattern makes <code>P.within</code> and <code>p.without</code> very fast even with millions of values being passed into the query.
+Benchmarking shows that doing a join on a temporary table is always faster than using the <code>in</code> clause.
+For the case of there being only one value Sqlg will use an <code>equals</code> instead of a temporary table or an <code>in</code> statement.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_text_predicate">10.2.3. Text predicate</h4>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Sqlg assumes a case-sensitive collation.
+MSSqlServer does not default to a case-sensitive collation.
+Create the database with <code>CREATE DATABASE sqlgraphdb COLLATE sql_latin1_general_cp1_cs_as</code>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Sqlg includes its own Text predicate for full text queries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Text.contains (case sensitive string contains)</p>
+</li>
+<li>
+<p>Text.ncontains (case sensitive string does not contain)</p>
+</li>
+<li>
+<p>Text.containsCIS (case insensitive string contains)</p>
+</li>
+<li>
+<p>Text.ncontainsCIS (case insensitive string does not contain)</p>
+</li>
+<li>
+<p>Text.startsWith (case sensitive string starts with)</p>
+</li>
+<li>
+<p>Text.nstartsWith (case sensitive string does not start with)</p>
+</li>
+<li>
+<p>Text.endsWith (case sensitive string ends with)</p>
+</li>
+<li>
+<p>Text.nendsWith (case sensitive string does not end with)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showTextPredicate() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John XXX Doe");
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter YYY Snow");
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("name", Text.contains("XXX")).toList();
+
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."name" like ?)</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_datetime_queries">10.2.4. DateTime queries</h4>
+<div class="paragraph">
+<p>LocalDateTime, LocalDate and LocalTime queries are supported.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showSearchOnLocalDateTime() {
+    LocalDateTime born1 = LocalDateTime.of(1990, 1, 1, 1, 1, 1);
+    LocalDateTime born2 = LocalDateTime.of(1990, 1, 1, 1, 1, 2);
+    LocalDateTime born3 = LocalDateTime.of(1990, 1, 1, 1, 1, 3);
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "born", born1);
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter", "born", born2);
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul", "born", born3);
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.eq(born1))
+            .toList();
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+
+    persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.between(LocalDateTime.of(1990, 1, 1, 1, 1, 1), LocalDateTime.of(1990, 1, 1, 1, 1, 3)))
+            .toList();
+    //P.between is inclusive to exclusive
+    assertEquals(2, persons.size());
+    assertTrue(persons.contains(john));
+    assertTrue(persons.contains(peter));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."born" AS "alias2",
+	"public"."V_Person"."name" AS "alias3"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."born" &gt;= ?) AND ( "public"."V_Person"."born" &lt; ?)</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_order">10.3. Order</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
+If not then order the ordering occurs in java via the OrderGlobalStep as per normal.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testOrderBy() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "a");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "b");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; result = this.sqlgGraph.traversal().V().hasLabel("A")
+            .order().by("name", Order.incr).by("surname", Order.decr)
+            .toList();
+
+    assertEquals(6, result.size());
+    assertEquals(a3, result.get(0));
+    assertEquals(a2, result.get(1));
+    assertEquals(a1, result.get(2));
+    assertEquals(b3, result.get(3));
+    assertEquals(b2, result.get(4));
+    assertEquals(b1, result.get(5));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."surname" AS "alias2",
+	"public"."V_A"."name" AS "alias3"
+FROM
+	"public"."V_A"
+ORDER BY
+	 "alias3" ASC,
+	 "alias2" DESC</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_repeatstep">10.4. RepeatStep</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the <code>RepeatStep</code> so long as the <code>until</code> modulator is <strong>not</strong> present.
+<code>RepeatStep</code> can be optimized with the modulator <code>emit</code> and <code>times</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showRepeat() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
+    Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
+    john.addEdge("lives", usa);
+    peterski.addEdge("lives", russia);
+    usa.addEdge("capital", washington);
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .emit().times(2).repeat(__.out("lives", "capital"))
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>[John, USA, Washington]
+[John]
+[Peterski]
+[Paul]
+[John, USA]
+[Peterski, Russia]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6",
+	"public"."E_lives"."ID" AS "alias7"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" <b class="conum">(1)</b>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."E_lives"."ID" AS "alias5"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" <b class="conum">(2)</b>
+
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person" <b class="conum">(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get the 'Cities' to emit.</p>
+</li>
+<li>
+<p>Get the 'Countries' to emit.</p>
+</li>
+<li>
+<p>Get the 'Persons' to emit.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_optionalstep">10.5. OptionalStep</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the OptionalStep.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testOptionalNested() {
+    Vertex google = this.sqlgGraph.addVertex(T.label, "Company", "name", "Google");
+    Vertex apple = this.sqlgGraph.addVertex(T.label, "Company", "name", "Apple");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex england = this.sqlgGraph.addVertex(T.label, "Country", "name", "England");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "City", "name", "New York");
+    google.addEdge("activeIn", usa);
+    google.addEdge("activeIn", england);
+    usa.addEdge("capital", newYork);
+    this.sqlgGraph.tx().commit();
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal()
+            .V()
+            .hasLabel("Company")
+            .optional(
+                    out().optional(
+                            out()
+                    )
+            )
+            .path()
+            .toList();
+    paths.forEach(p -&gt; System.out.println(p.toString()));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>[v[public.Company:::1], v[public.Country:::1], v[public.City:::1]]
+[v[public.Company:::2]]
+[v[public.Company:::1], v[public.Country:::2]]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" <b class="conum">(1)</b>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" LEFT JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O"
+WHERE
+	("public"."E_capital"."public.Country__O" IS NULL) <b class="conum">(2)</b>
+
+SELECT
+	"public"."V_Company"."ID" AS "alias1",
+	"public"."V_Company"."name" AS "alias2"
+FROM
+	"public"."V_Company" LEFT JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O"
+WHERE
+	("public"."E_activeIn"."public.Company__O" IS NULL) <b class="conum">(3)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get the 'Cities'</p>
+</li>
+<li>
+<p>Get the 'Countries' that do not have 'Cities'</p>
+</li>
+<li>
+<p>Get the 'Companies' that do not have 'Countries'</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_range">10.6. Range</h3>
+<div class="paragraph">
+<p>Sqlg optimizes the <code>RangeGlobalStep</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testRangeOnVertexLabels() {
+    for (int i = 0; i &lt; 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List&lt;String&gt; names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .range(1, 4)
+            .&lt;String&gt;values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person1", names.get(0));
+    assertEquals("person10", names.get(1));
+    assertEquals("person11", names.get(2));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 1</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_limit">10.7. Limit</h3>
+<div class="paragraph">
+<p>Sqlg optimizes <code>.limit(x)</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testLimitOnVertexLabels() {
+    for (int i = 0; i &lt; 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List&lt;String&gt; names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .limit(3)
+            .&lt;String&gt;values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person0", names.get(0));
+    assertEquals("person1", names.get(1));
+    assertEquals("person10", names.get(2));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 0</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_batch_mode">11. Batch Mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sqlg supports 3 distinct batch modes. Normal, streaming and streaming with lock. Batch modes are only implemented on Postgresql.
+Batch mode is activated on the transaction object itself. After every <code>commit</code> the batchMode needs to be reactivated.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg introduces an extra method on the transaction, <code>flush()</code>.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>In normal batch mode <code>flush()</code> will send all the data to Postgresql, assign id(s) and clear the cache.</p>
+</li>
+<li>
+<p>In streaming mode <code>flush()</code> will close the OutputStream that the data has been written to.</p>
+</li>
+<li>
+<p>In streaming mode with lock <code>flush()</code> will close the OutputStream that the data has been written to and assign id(s).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The Postgresql 'https://www.postgresql.org/docs/current/static/sql-copy.html[copy]' command is used to bulk insert data.</p>
+</div>
+<div class="sect2">
+<h3 id="_normal_batch_mode">11.1. Normal batch mode</h3>
+<div class="paragraph">
+<p>In normal batch mode the standard TinkerPop modification api can be used. Normal batch mode caches all modifications in memory
+and on <code>commit()</code> or <code>flush()</code> sends the modifications to the server.</p>
+</div>
+<div class="paragraph">
+<p>Because all modifications are held in memory it is important to call <code>commit()</code> or <code>flush()</code> to prevent an <code>OutOfMemoryError</code>.</p>
+</div>
+<div class="paragraph">
+<p>In batch mode vertices and edges returned from <code>Graph.addVertex</code> and <code>vertex.addEdge</code> respectively do <strong>not</strong> yet have their id(s) assigned to them.
+This is because the new vertices and edges are cached in memory and are only sent to Postgresql on <code>commit()</code> or <code>flush()</code>.
+After <code>commit()</code> or <code>flush()</code> the new vertices and edges have their id(s) assigned.</p>
+</div>
+<div class="paragraph">
+<p>The transaction must be manually placed in normal batch mode. i.e. <code>SqlgGraph.tx().normalBatchModeOn()</code> must occur before any batch processing.
+After every <code>commit()</code> the transaction reverts to a regular transaction and must be placed in normal batch mode again
+for batch processing to continue.</p>
+</div>
+<div class="paragraph">
+<p>Vertices and edges can be created and updated and removed as per normal making normal batch mode easy to use.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Sqlg does not query the cache. If a gremlin query is executed while in batch mode the batch is first flushed.
+Take care not to query the graph while in batch mode as flushing often will defeat the purpose of batching in the first place.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">custom api</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">sqlgGraph.tx().normalBatchModeOn();
+sqlgGraph.tx().flush();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create 10 000 000 Persons each with a car. 20 000 000 vertices and 10 000 000 edges in total.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showNormalBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    this.sqlgGraph.tx().normalBatchModeOn();
+    for (int i = 1; i &lt;= 10_000_000; i++) {
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
+        Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
+        person.addEdge("drives", car);
+        if (i % 100_000 == 0) { <b class="conum">(1)</b>
+            this.sqlgGraph.tx().flush(); <b class="conum">(1)</b>
+        }
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>To preserve memory <code>commit</code> or <code>flush</code> every so often.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">output without edge foreign keys</div>
+<div class="content">
+<pre>Time taken: 0:05:48.889</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output with edge foreign keys</div>
+<div class="content">
+<pre>Time taken: 0:02:33.313</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="./img/sqlg/normalBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_streaming_batch_mode">11.2. Streaming batch mode</h3>
+<div class="paragraph">
+<p>Streaming batch writes any new vertex or edge immediately to Postgresql via its <code>stdin</code> api. I.e. the data is written
+directly to a Postgresql jdbc driver OutputStream.</p>
+</div>
+<div class="paragraph">
+<p>Streaming batch mode does <strong>not</strong> use the <code>Graph.addVertex</code> method. Instead <code>SqlgGraph.streamVertex</code> is defined.</p>
+</div>
+<div class="paragraph">
+<p>The transaction must be placed in streaming batch mode manually before any streaming batch modification can happen. <code>SqlgGraph.tx().streamingBatchModeOn()</code>
+After every <code>commit()</code> the transaction reverts to normal mode and must be placed into streaming batch mode again
+for streaming batch mode to continue.</p>
+</div>
+<div class="paragraph">
+<p>The benefit of streaming mode is that the memory consumption is very low as nothing is cached. It is also somewhat faster than
+the normal batch mode (+/- 25% faster).</p>
+</div>
+<div class="paragraph">
+<p>However the caveat is that, per transaction/thread only one label/table can be written between consecutive calls to <code>SqlgTransaction.flush()</code>.
+Further it is not possible to assign an id to the vertex or element. As such the <code>SqlgGraph.streamVertex</code> method returns void.</p>
+</div>
+<div class="listingblock">
+<div class="title">custom api</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">sqlgGraph.tx().streamingBatchModeOn();</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create 10 000 000 Persons and 10 000 000 cars.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showStreamingBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    //enable streaming mode
+    this.sqlgGraph.tx().streamingBatchModeOn();
+    for (int i = 1; i &lt;= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+    }
+    this.sqlgGraph.tx().flush(); <b class="conum">(1)</b>
+    for (int i = 1; i &lt;= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>flushing is needed before starting streaming Car. Only only one label/table can stream at a time.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>Time taken: 0:00:42.014</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="./img/sqlg/streamingBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_bulk_edge_creation">11.3. Bulk edge creation</h3>
+<div class="paragraph">
+<p>To create an edge via the normal api a handle to the <code>Vertex</code> is needed.
+This is not always the case. In particula if the <code>SqlgGraph.streamVertex</code> api is used no handle to the <code>Vertex</code> is returned.</p>
+</div>
+<div class="paragraph">
+<p>For this scenario there is a bulk edge creation method.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">public &lt;L, R&gt; void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair&lt;String, String&gt; idFields, Collection&lt;Pair&lt;L, R&gt;&gt; uids) {</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>outLabel</code> and <code>inLabel</code> specifies the out and in vertex labels that the edges will be between.</p>
+</li>
+<li>
+<p><code>edgeLabel</code> is the label of the edges to be created.</p>
+</li>
+<li>
+<p><code>idFields</code> specifies the fields that uniquely identify the out and in vertex.</p>
+</li>
+<li>
+<p><code>uids</code> are the actual unique identifies for each out/in vertex pairing.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Sqlg will then first copy the <code>uids</code> into a temporary table. Then it joins the temporary table on the out and in vertex tables
+to retrieve the in and out ids.
+These ids are then inserted into the edge table.
+All this happens on Postgresql, having minimal processing and memory impact on the java process.</p>
+</div>
+<div class="paragraph">
+<p>The unique identifiers still have to be kept in memory, but its is not necessary to have the actual out and in vertices in memory.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The unique identifiers do not need to be the vertices&#8217;s id. It can be any property as long as it is unique.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i &lt;= 10; i++) {
+        List&lt;Pair&lt;String, String&gt;&gt; identifiers = new ArrayList&lt;&gt;();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + count, "personUid", String.valueOf(count));
+        }
+        this.sqlgGraph.tx().flush();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + count, "carUid", String.valueOf(count));
+            identifiers.add(Pair.of(String.valueOf(count), String.valueOf(count++)));
+        }
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.bulkAddEdges("Person", "Car", "drives", Pair.of("personUid", "carUid"), identifiers);
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println("Time taken: " + stopWatch.toString());
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output (with edge foreign keys)</div>
+<div class="content">
+<pre>Time taken: 0:10:03.397</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output (without edge foreign keys)</div>
+<div class="content">
+<pre>Time taken: 0:03:45.951</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="./img/sqlg/bulkAddEdgesMemory.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_streaming_with_lock_batch_mode">11.4. Streaming with lock batch mode</h3>
+<div class="paragraph">
+<p>Streaming with lock batch mode is similar to streaming batch mode. The difference being that the label/table being written to is
+locked. Locking the table ensures that no concurrent changes will occur on the table. This allows Sqlg to query the id sequence and
+assigned ids to the elements.</p>
+</div>
+<div class="paragraph">
+<p>This means that the normal <code>Vertex vertex = graph.addVertex(&#8230;&#8203;)</code> method can be used. This is useful if a pointer to the new vertices are needed.</p>
+</div>
+<div class="paragraph">
+<p>The transaction must be placed into streaming with lock batch mode manually before any streaming with lock batch modification can happen.
+<code>SqlgGraph.tx().streamingWithLockBatchModeOn()</code> After every <code>commit()</code> the transaction reverts to normal mode and must
+be placed into streaming batch mode again for streaming batch mode to continue.</p>
+</div>
+<div class="listingblock">
+<div class="title">custom api</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">sqlgGraph.tx().streamingWithLockBatchModeOn();</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showStreamingWithLockBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i &lt;= 10; i++) {
+        List&lt;Vertex&gt; persons = new ArrayList&lt;&gt;();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + count);
+            persons.add(person);
+        }
+        this.sqlgGraph.tx().flush();
+        List&lt;Vertex&gt; cars = new ArrayList&lt;&gt;();
+        for (int j = 1; j &lt;= 1_000_000; j++) {
+            Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + count++);
+            cars.add(car);
+        }
+        this.sqlgGraph.tx().flush();
+        Iterator&lt;Vertex&gt; carIter = cars.iterator();
+        for (Vertex person : persons) {
+            person.addEdge("drives", carIter.next());
+        }
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output without edge foreign keys</div>
+<div class="content">
+<pre>Time taken: 0:02:42.363</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">memory</div>
+<p><span class="image"><img src="./img/sqlg/streamingBatchModeWithLockMemory.png" alt="image of tinkerpop-classic"></span></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version 2.0.0<br>
+Last updated 2018-07-29 21:25:36 SAST
+</div>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlighting()</script>
+</body>
+</html>

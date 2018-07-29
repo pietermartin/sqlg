@@ -110,7 +110,7 @@ There will be 2 entries in 'EdgeLabel'</body>
           <packagedElement xmi:type="uml:Class" xmi:id="_E_xl0LPwEeazjo2NLx3SIA" name="Index">
             <ownedAttribute xmi:id="_ZwmJYrPwEeazjo2NLx3SIA" name="indexType" type="_74kW8JMEEeaXH6RvC9nWPA" association="_ZwliULPwEeazjo2NLx3SIA"/>
           </packagedElement>
-          <packagedElement xmi:type="uml:Association" xmi:id="_ZwliULPwEeazjo2NLx3SIA" memberEnd="_ZwmJYrPwEeazjo2NLx3SIA _ZwmJY7PwEeazjo2NLx3SIA">
+          <packagedElement xmi:type="uml:Association" xmi:id="_ZwliULPwEeazjo2NLx3SIA" name="index_indexType" memberEnd="_ZwmJYrPwEeazjo2NLx3SIA _ZwmJY7PwEeazjo2NLx3SIA">
             <eAnnotations xmi:id="_ZwmJYLPwEeazjo2NLx3SIA" source="org.eclipse.papyrus">
               <details xmi:id="_ZwmJYbPwEeazjo2NLx3SIA" key="nature" value="UML_Nature"/>
             </eAnnotations>
@@ -189,7 +189,7 @@ There will be 2 entries in 'EdgeLabel'</body>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_ALGXsTpVEeicg_qbQ1IMvQ" value="1"/>
             </ownedAttribute>
           </packagedElement>
-          <packagedElement xmi:type="uml:Association" xmi:id="_ioi3kDo6Eeicg_qbQ1IMvQ" name="A_abstractLabel_property" memberEnd="_ioi3kTo6Eeicg_qbQ1IMvQ _iojeoTo6Eeicg_qbQ1IMvQ" navigableOwnedEnd="_iojeoTo6Eeicg_qbQ1IMvQ">
+          <packagedElement xmi:type="uml:Association" xmi:id="_ioi3kDo6Eeicg_qbQ1IMvQ" name="abstractLabel_property" memberEnd="_ioi3kTo6Eeicg_qbQ1IMvQ _iojeoTo6Eeicg_qbQ1IMvQ" navigableOwnedEnd="_iojeoTo6Eeicg_qbQ1IMvQ">
             <ownedEnd xmi:id="_ioi3kTo6Eeicg_qbQ1IMvQ" name="abstractLabel" type="_eHjYoDo6Eeicg_qbQ1IMvQ" association="_ioi3kDo6Eeicg_qbQ1IMvQ">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_ioi3kjo6Eeicg_qbQ1IMvQ" value="1"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_iojeoDo6Eeicg_qbQ1IMvQ" value="1"/>
@@ -199,7 +199,7 @@ There will be 2 entries in 'EdgeLabel'</body>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_iojeozo6Eeicg_qbQ1IMvQ" value="*"/>
             </ownedEnd>
           </packagedElement>
-          <packagedElement xmi:type="uml:Association" xmi:id="_OEB1MDo7Eeicg_qbQ1IMvQ" memberEnd="_OECcQDo7Eeicg_qbQ1IMvQ _OECcQzo7Eeicg_qbQ1IMvQ" navigableOwnedEnd="_OECcQzo7Eeicg_qbQ1IMvQ _OECcQDo7Eeicg_qbQ1IMvQ">
+          <packagedElement xmi:type="uml:Association" xmi:id="_OEB1MDo7Eeicg_qbQ1IMvQ" name="abstractLabel_index" memberEnd="_OECcQDo7Eeicg_qbQ1IMvQ _OECcQzo7Eeicg_qbQ1IMvQ" navigableOwnedEnd="_OECcQzo7Eeicg_qbQ1IMvQ _OECcQDo7Eeicg_qbQ1IMvQ">
             <ownedEnd xmi:id="_OECcQDo7Eeicg_qbQ1IMvQ" name="abstractLabel" type="_eHjYoDo6Eeicg_qbQ1IMvQ" association="_OEB1MDo7Eeicg_qbQ1IMvQ">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_OECcQTo7Eeicg_qbQ1IMvQ" value="1"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_OECcQjo7Eeicg_qbQ1IMvQ" value="1"/>
@@ -259,7 +259,7 @@ There will be 2 entries in 'EdgeLabel'</body>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_VQxoZDo-Eeicg_qbQ1IMvQ" value="*"/>
             </ownedEnd>
           </packagedElement>
-          <packagedElement xmi:type="uml:Association" xmi:id="_k2uXoDpAEeicg_qbQ1IMvQ" memberEnd="_k2uXoTpAEeicg_qbQ1IMvQ _k2uXpDpAEeicg_qbQ1IMvQ" navigableOwnedEnd="_k2uXoTpAEeicg_qbQ1IMvQ _k2uXpDpAEeicg_qbQ1IMvQ">
+          <packagedElement xmi:type="uml:Association" xmi:id="_k2uXoDpAEeicg_qbQ1IMvQ" name="abstractLabel_identifier" memberEnd="_k2uXoTpAEeicg_qbQ1IMvQ _k2uXpDpAEeicg_qbQ1IMvQ" navigableOwnedEnd="_k2uXoTpAEeicg_qbQ1IMvQ _k2uXpDpAEeicg_qbQ1IMvQ">
             <ownedEnd xmi:id="_k2uXoTpAEeicg_qbQ1IMvQ" name="abstractLabel" type="_eHjYoDo6Eeicg_qbQ1IMvQ" association="_k2uXoDpAEeicg_qbQ1IMvQ">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_k2uXojpAEeicg_qbQ1IMvQ" value="1"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_k2uXozpAEeicg_qbQ1IMvQ" value="1"/>

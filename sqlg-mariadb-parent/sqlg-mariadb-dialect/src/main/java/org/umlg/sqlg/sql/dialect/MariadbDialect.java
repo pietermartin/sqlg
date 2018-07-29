@@ -296,21 +296,6 @@ public class MariadbDialect extends BaseSqlDialect {
         if (value instanceof char[]) {
             return;
         }
-        if (value instanceof short[]) {
-            return;
-        }
-        if (value instanceof int[]) {
-            return;
-        }
-        if (value instanceof long[]) {
-            return;
-        }
-        if (value instanceof double[]) {
-            return;
-        }
-        if (value instanceof String[]) {
-            return;
-        }
         if (value instanceof Character[]) {
             return;
         }
@@ -318,39 +303,6 @@ public class MariadbDialect extends BaseSqlDialect {
             return;
         }
         if (value instanceof Byte[]) {
-            return;
-        }
-        if (value instanceof Short[]) {
-            return;
-        }
-        if (value instanceof Integer[]) {
-            return;
-        }
-        if (value instanceof Long[]) {
-            return;
-        }
-        if (value instanceof Double[]) {
-            return;
-        }
-        if (value instanceof LocalDateTime[]) {
-            return;
-        }
-        if (value instanceof LocalDate[]) {
-            return;
-        }
-        if (value instanceof LocalTime[]) {
-            return;
-        }
-        if (value instanceof ZonedDateTime[]) {
-            return;
-        }
-        if (value instanceof Duration[]) {
-            return;
-        }
-        if (value instanceof Period[]) {
-            return;
-        }
-        if (value instanceof JsonNode[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);

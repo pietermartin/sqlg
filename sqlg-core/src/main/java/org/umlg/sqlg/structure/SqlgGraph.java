@@ -271,9 +271,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgGraph(final Configuration configuration, SqlgDataSourceFactory dataSourceFactory) {
-//        this.implementForeignKeys = configuration.getBoolean("implement.foreign.keys", true);
         this.configuration = configuration;
-
         try {
             this.jdbcUrl = this.configuration.getString(JDBC_URL);
 

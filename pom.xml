@@ -199,6 +199,7 @@
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>
         <module>sqlg-benchmark-h2</module>
+        <module>sqlg-doc</module>
     </modules>
     <dependencyManagement>
         <dependencies>

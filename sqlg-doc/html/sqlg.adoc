@@ -1,0 +1,1955 @@
+= Sqlg Documentation
+Pieter Martin
+Version 2.0.0, August 2018:
+:sectnums:
+:toc: left
+:toclevels: 4
+//:toc-title:
+:experimental:
+:description: Sqlg's documentation
+:keywords: Sqlg, TinkerPop, Gremlin, Graph, Database
+:imagesdir: ./img
+
+https://github.com/pietermartin/sqlg[*Sqlg*] image:github/SVG/mark-github.svg[] is a implementation of http://tinkerpop.apache.org/[Apache TinkerPop] on a
+http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS].
+Currently http://www.postgresql.org/[Postgresql], http://hsqldb.org/[HSQLDB], http://h2database.com[H2],
+https://mariadb.org/[MariaDB], https://www.mysql.com/[MySQL] and
+https://www.microsoft.com/en-us/sql-server/sql-server-2017[MSSqlServer] are supported.
+
+Sqlg has a google group https://groups.google.com/forum/?hl=en#!forum/sqlg[forum]
+
+== Introduction
+
+Sqlg primary challenge is to reduce latency by combining TinkerPop
+http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps[steps] into as few as possible database calls.
+The fine grained nature of graph traversals makes this crucial else the remote call latency has a severe performance
+impact.
+
+Sqlg supports various bulk modes to reduce latency when modifying the graph.
+
+[NOTE]
+Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
+
+== License
+
+image:github/SVG/law.svg[MIT] https://github.com/pietermartin/sqlg/blob/master/LICENSE[MIT]
+
+== TinkerPop supported features
+
+Sqlg version 2.0.0 runs on https://tinkerpop.apache.org[TinkerPop 3.3.3].
+
+Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test suites.
+
+.Graph Features *not* implemented.
+
+- Computer
+- ThreadedTransactions
+- Variables
+
+.Vertex Features *not* implemented.
+
+- MultiProperties
+- MetaProperties
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
+
+.Edge Features **not** implemented.
+
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
+
+.Vertex property features *not* implemented.
+
+- AddProperty
+- RemoveProperty
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
+- MapValues
+- MixedListValues
+- SerializableValues
+- UniformListValues
+
+.Edge property feature *not* implemented.
+
+- MapValues
+- MixedListValues
+- SerializableValues
+- UniformListValues
+
+[NOTE]
+Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is explained below.
+
+== Limitations
+
+Postgresql schema, table and column names can not be more than 63 characters long.
+
+== Getting Started
+
+=== Maven coordinates
+
+.Postgresql
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-postgres</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.HSQLDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-hsqldb</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.H2
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-h2</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.MariaDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mariadb</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.MySQL
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mysql</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.MSSqlServer
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mssqlserver</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+This will include `gremlin-groovy`. If you have no need for that then use the following coordinates.
+
+.Postgresql
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-postgres-dialect</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.HSQLDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-hsqldb-dialect</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.H2
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-h2-dialect</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.MariaDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mariadb-dialect</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.MySQL
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mysql-dialect</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+.MSSqlServer
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mssqlserver-dialect</artifactId>
+     <version>2.0.0</version>
+ </dependency>
+
+=== Start
+
+`SqlgGraph` is a singleton that can be shared among multiple threads. You instantiate `SqlgGraph` using the standard
+TinkerPop static constructors.
+
+* `Graph g = SqlgGraph.open(final Configuration configuration)`
+* `Graph g = SqlgGraph.open(final String pathToSqlgProperties)`
+
+The configuration object requires the following properties.
+
+.Postgresql
+ jdbc.url=jdbc:postgresql://localhost:5432/yourdb
+ jdbc.username=postgres
+ jdbc.password=******
+
+.HSQLDB
+ jdbc.url=jdbc:hsqldb:file:/tmp/yourdb
+ jdbc.username=SA
+ jdbc.password=
+
+.H2
+ jdbc.url=jdbc:h2:file:target/tmp/yourdb
+ jdbc.username=SA
+ jdbc.password=
+
+.MariaDB
+ jdbc.url=jdbc:mariadb://localhost:3306/?useSSL=false
+ jdbc.username=mariadb
+ jdbc.password=mariadb
+
+.MySQL
+ jdbc.url=jdbc:mysql://localhost:3306/?useSSL=false
+ jdbc.username=mysql
+ jdbc.password=mysql
+
+.MSSqlServer
+ jdbc.url=jdbc:sqlserver://localhost:1433;databaseName=yourdb;
+ jdbc.username=SA
+ jdbc.password=*****
+
+In the case of Postgresql and MSSqlServer the database must already exist.
+
+Once you have access to the graph you can use it as per normal.
+[source,java,options="nowrap"]
+----
+@Test
+public void useAsPerNormal() {
+    Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex address = this.sqlgGraph.addVertex(T.label, "Address", "street", "13th");
+    person.addEdge("livesAt", address, "since", LocalDate.of(2010, 1, 21));
+    this.sqlgGraph.tx().commit(); # <1>
+    List<Vertex> addresses = this.sqlgGraph.traversal().V().hasLabel("Person").out("livesAt").toList();
+    assertEquals(1, addresses.size());
+}
+----
+<1> It is very important to always commit or rollback the transaction.
+If you do not connections to the database will remain open and eventually the connection pool with run out of connections.
+
+=== Gremlin Console
+
+.Postgresql
+ [pieter@pieter-laptop bin]$ ./gremlin.sh
+          \,,,/
+          (o o)
+ -----oOOo-(3)-oOOo-----
+ plugin activated: tinkerpop.server
+ plugin activated: tinkerpop.utilities
+ plugin activated: tinkerpop.tinkergraph
+ gremlin> :install org.umlg sqlg-postgres 2.0.0.
+ ==>Loaded: [org.umlg, sqlg-postgres, 2.0.0]
+ gremlin> :plugin list
+ ==>tinkerpop.server[active]
+ ==>tinkerpop.gephi
+ ==>tinkerpop.utilities[active]
+ ==>tinkerpop.sugar
+ ==>tinkerpop.credentials
+ ==>tinkerpop.tinkergraph[active]
+ ==>sqlg.postgres
+ gremlin> :plugin use sqlg.postgres
+ ==>sqlg.postgres activated
+ gremlin> graph = SqlgGraph.open('pathTo/sqlg.properties')
+ ==>sqlggraph[SqlGraph]
+ gremlin> g = graph.traversal()
+ ==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb), standard]
+ gremlin> graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+ ==>null
+ gremlin> g.V().count()
+ ==>808
+ gremlin>
+
+.HSQLDB
+ [pieter@pieter-laptop bin]$ ./gremlin.sh
+
+          \,,,/
+          (o o)
+ -----oOOo-(3)-oOOo-----
+ plugin activated: tinkerpop.server
+ plugin activated: tinkerpop.utilities
+ plugin activated: tinkerpop.tinkergraph
+ gremlin> :install org.umlg sqlg-hsqldb 2.0.0.
+ ==>Loaded: [org.umlg, sqlg-hsqldb, 2.0.0]
+ gremlin> :plugin list
+ ==>tinkerpop.server[active]
+ ==>tinkerpop.gephi
+ ==>tinkerpop.utilities[active]
+ ==>tinkerpop.sugar
+ ==>tinkerpop.credentials
+ ==>tinkerpop.tinkergraph[active]
+ ==>sqlg.hsqldb
+ gremlin> :plugin use sqlg.hsqldb
+ ==>sqlg.hsqldb activated
+ gremlin> graph = SqlgGraph.open('pathTo/sqlg.properties')
+ ==>sqlggraph[SqlGraph]
+ gremlin> g = graph.traversal()
+ ==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:hsqldb:file:src/test/db/sqlgraphdb), standard]
+ gremlin> graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+ ==>null
+ gremlin> g.V().count()
+ ==>808
+ gremlin>
+
+ [NOTE]
+ If it is the first time to install sqlg, then you need to restart the gremlin console.
+ If not the class-loaders are confused and can not load Sqlg's sqlg.plugin
+
+== Data types
+
+.Table Data types
+|===
+|Java |Postgresql |HSQLDB |H2 |MariaDB | MSSqlServer
+
+|Boolean
+|BOOLEAN
+|BOOLEAN
+|BOOLEAN
+|BOOLEAN
+|BIT
+
+|Byte
+|*Not supported*
+|TINYINT
+|TINYINT
+|TINYINT
+|TINYINT
+
+|Short
+|SMALLINT
+|SMALLINT
+|SMALLINT
+|SMALLINT
+|SMALLINT
+
+|Integer
+|INTEGER
+|INTEGER
+|INT
+|INTEGER
+|INT
+
+|Long
+|BIGINT
+|BIGINT
+|BIGINT
+|BIGINT
+|BIGINT
+
+|Float
+|REAL
+|*Not supported*
+|REAL
+|*Not supported*
+|REAL
+
+|Double
+|DOUBLE PRECISION
+|DOUBLE
+|DOUBLE
+|DOUBLE
+|DOUBLE PRECISION
+
+|String
+|TEXT
+|LONGVARCHAR
+|VARCHAR
+|LONGTEXT
+|VARCHAR(2000)
+
+|String (fixed length)
+|VARCHAR(x)
+|VARCHAR(x)
+|VARCHAR(x)
+|VARCHAR(x)
+|VARCHAR(x)
+
+|Boolean[]
+|BOOLEAN[]
+|BOOLEAN ARRAY DEFAULT ARRAY[]
+|ARRAY
+|BOOLEAN ARRAY DEFAULT ARRAY[]
+|*Not supported*
+
+|Byte[]
+|BYTEA
+|LONGVARBINARY
+|BINARY
+|BLOB
+|VARBINARY(max)
+
+|Short[]
+|SMALLINT[]
+|SMALLINT ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|Integer[]
+|INTEGER[]
+|INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|Long[]
+|BIGINT[]
+|BIGINT ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|Float[]
+|REAL[]
+|*Not supported*
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|Double[]
+|DOUBLE PRECISION[]
+|DOUBLE ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|String[]
+|TEXT[]
+|LONGVARCHAR ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|java.time.LocalDateTime
+|TIMESTAMP WITH TIME ZONE
+|TIMESTAMP WITH TIME ZONE
+|TIMESTAMP
+|DATETIME(3)
+|DATETIME2(3)
+
+|java.time.LocalDate
+|DATE
+|DATE
+|DATE
+|DATE
+|DATE
+
+|java.time.LocalTime
+|TIME WITH TIME ZONE
+|TIME WITH TIME ZONE
+|TIME
+|TIME
+|TIME
+
+|java.time.ZonedDateTime
+|TIMESTAMP WITH TIME ZONE, TEXT
+|TIMESTAMP WITH TIME ZONE, LONGVARCHAR
+|TIMESTAMP, VARCHAR
+|DATETIME(3), TINYTEXT
+|DATETIME2(3), VARCHAR(255)
+
+|java.time.Period
+|INTEGER, INTEGER, INTEGER
+|INTEGER, INTEGER, INTEGER
+|INT, INT, INT
+|INTEGER, INTEGER, INTEGER
+|INT, INT, INT
+
+|java.time.Duration
+|BIGINT, INTEGER
+|BIGINT, INTEGER
+|BIGINT, INT
+|BIGINT, INTEGER
+|BIGINT, INT
+
+|java.time.LocalDateTime[]
+|TIMESTAMP WITH TIME ZONE[]
+|TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|java.time.LocalDate[]
+|DATE[]
+|DATE ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|java.time.LocalTime[]
+|TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]
+|TIME WITH TIME ZONE[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|java.time.ZonedDateTime[]
+|TIMESTAMP WITH TIME ZONE[], TEXT[]
+|TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|java.time.Period[]
+|INTEGER[], INTEGER[], INTEGER[]
+|INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|java.time.Duration[]
+|BIGINT[], INTEGER[]
+|BIGINT ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|com.fasterxml.jackson.databind.JsonNode
+|JSONB
+|LONGVARCHAR
+|VARCHAR
+|LONGTEXT
+|VARCHAR(max)
+
+|com.fasterxml.jackson.databind.JsonNode[]
+|JSONB[]
+|ARRAY
+|ARRAY
+|*Not supported*
+|*Not supported*
+
+|org.postgis.Point
+|geometry(POINT)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.umlg.sqlg.gis.GeographyPoint
+|geography(POINT, 4326)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.postgis.LineString
+|geometry(LINESTRING)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.postgis.Polygon
+|geometry(POLYGON)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.umlg.sqlg.gis.GeographyPolygon
+|geography(POLYGON, 4326)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+|*Not supported*
+|===
+
+[NOTE]
+`java.time.LocalTime` drops the nano second precision.
+
+== Architecture
+
+TinkerPop's property graph semantics specifies that every vertex and edge has a single label. Modelling this in a RDBMS
+is trivial. TinkerPop has no notion of cardinality nor of order. Every relationship between vertex labels is modelled as
+`many to many` relationship with no specified order.
+
+This realizes itself as a classic `many to many` relationship in a RDBMS database.
+
+----
+VertexLabel <---- EdgeLabel ----> VertexLabel
+----
+
+=== Vertex tables
+Every unique vertex label maps to a table. Vertex tables are prefixed with a `V_`. i.e. `V_Person`. The vertex table
+stores the vertex's properties.
+
+=== Edge tables
+Every unique edge label maps to a table. Edge tables are prefixed with a `E_`. i.e. `E_friend`. The edge table stores
+each edge's adjacent vertex ids and the edge properties. The column corresponding to each adjacent vertex id (`IN` and `OUT`)
+has a foreign key to the adjacent vertex's table. The foreign key is optional, instead just an index on the adjacent vertex id
+can be used.
+
+[NOTE]
+    `sqlg.properties` `implement.foreign.keys = false` +
+    Edge foreign keys have a significant impact on performance. +
+    Edge foreign keys are enabled by default.
+
+From a rdbms' perspective each edge table is the classic `many to many` join table between vertices.
+
+=== TinkerPop-modern
+
+Taken from http://tinkerpop.apache.org/docs/current/reference/#intro[TinkerPop]
+
+image:sqlg/tinkerpop-modern-graph.png[image of tinkerpop-classic]
+
+.ER Diagram
+image:sqlg/tinkerpop-modern-er.png[image of tinkerpop-classic]
+
+.V_person
+image:sqlg/V_person.png[image of tinkerpop-classic]
+
+.V_software
+image:sqlg/V_software.png[image of tinkerpop-classic]
+
+.E_knows
+image:sqlg/E_knows.png[image of tinkerpop-classic]
+
+.E_created
+image:sqlg/E_created.png[image of tinkerpop-classic]
+
+=== Namespacing and Schemas
+
+Many RDBMS databases have the notion of a `schema` as a namespace for tables. Sqlg supports schemas
+for vertex labels. Distinct schemas for edge tables are unnecessary as edge tables are created in the schema of the adjacent `out` vertex.
+By default schemas for vertex tables go into the underlying databases' default schema. For Postgresql, hsqldb and H2 this
+is the `public` schema.
+
+To specify the schema for a label Sqlg uses the dot `.` notation.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testElementsInSchema() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Manager", "name", "john"); # <1>
+    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.House", "name", "palace1"); # <2>
+    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.Car", "model", "corrola"); # <3>
+    palace1.addEdge("managedBy", john);
+    corrola.addEdge("owner", john);
+    this.sqlgGraph.tx().commit();
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Manager").count().next().intValue()); # <4>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("House").count().next().intValue()); # <5>
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("continent.House").count().next().intValue()); <6>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("fleet.Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("managedBy").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("owner").count().next().intValue());
+}
+----
+<1> 'Manager' will be in the default 'public' schema.
+<2> 'House' will be in the 'continent' schema.
+<3> 'Car' will be in the 'fleet' schema.
+<4> Vertices in the public schema do not need to be qualified with the schema.
+<5> Vertices not in the public schema must be qualified with its schema. In this case 'House' will not be found.
+<6> As 'House' is qualified with the 'continent' schema it will be found.
+
+Table `V_manager` is in the `public` (default) schema. +
+Table `V_house` is in the `continent` schema. +
+Table `V_car` is in the `fleet` schema. +
+Table `E_managedBy` is in the `continent` schema as its `out` vertex `palace1` is in the `continent` schema. +
+Table `E_owner` is in the `fleet` schema as its `out` vertex is in the `fleet`schema.
+
+.postgresql schemas
+image:sqlg/schemas.png[image of tinkerpop-classic]
+image:sqlg/continent.png[image of tinkerpop-classic]
+image:sqlg/fleet.png[image of tinkerpop-classic]
+image:sqlg/public.png[image of tinkerpop-classic]
+
+==== Edge label
+
+An edge label can have many different out vertex labels.
+This means that its possible for a single edge label to be stored in multiple schemas and tables.
+One for each distinct out vertex label. Gremlin queries will work as per normal.
+However it is possible to target the edges per out vertex schema directly.
+
+.eg.
+[source,java,options="nowrap"]
+----
+@Test
+public void testEdgeAcrossSchema() {
+    Vertex a = this.sqlgGraph.addVertex(T.label, "A.A");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "B.B");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "C.C");
+    a.addEdge("specialEdge", b);
+    b.addEdge("specialEdge", c);
+    this.sqlgGraph.tx().commit();
+    assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("specialEdge").count().next().intValue()); # <1>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.specialEdge").count().next().intValue()); # <2>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("B.specialEdge").count().next().intValue()); # <3>
+}
+----
+<1> Query 'specialEdge'
+<2> Query 'specialEdge' with, out vertex labels in the 'A' schema.
+<3> Query 'specialEdge' with, out vertex labels in the 'B' schema.
+
+=== Topology
+
+Sqlg stores the graph's topology information in the graph itself as a graph.
+The topology is stored in the `sqlg_schema` schema.
+
+.UML diagram of Sqlg's topology.
+image:uml/topology Class Diagram.png[image of Sqlg's topology]
+
+TinkerPop has no notion of schema or topology. However any TinkerPop graph has an implicit schema.
+Sqlg manages the schema as a first class construct.
+
+Sqlg follows the normal TinkerPop semantics in that the schema does not need to be defined upfront.
+Every graph modification first checks to see if the element's schema (label,name) exists.
+If not, it will create the element's schema. For `Postgresql` this works well as it supports transactional schema creation/modification.
+
+[WARNING]
+Hsqldb, H2 and MariaDb do not support transactional schema creation/modification. They will both silently commit the
+transaction and continue. This breaks the user's transaction boundaries. For Hsqldb, H2 and MariaDb it is recommended to
+create the schema upfront.
+
+It is possible to query and traverse the topology as a normal TinkerPop graph.
+To query the topology the `TopologyStrategy` is used. To facilitate ease of use, `SqlgGraph.topology()` method is added to enable the strategy.
+Being able to query the topology is helpful to understand a graph's structure.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showTopologyTraversals() {
+    Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0); <1>
+    final GraphReader reader = sqlgGraph.io(builder).reader().create();
+    try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern-v3d0.json")) {
+        reader.readGraph(stream, sqlgGraph);
+    } catch (IOException e) {
+        Assert.fail(e.getMessage());
+    }
+    System.out.println("//All vertex labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <2>
+            .forEachRemaining(
+                    v -> System.out.println(v.<String>value(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME))
+            );
+
+    System.out.println("//All edge labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) # <3>
+            .forEachRemaining(
+                    v -> System.out.println(v.<String>value(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME))
+            );
+
+    System.out.println("//'person' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "person") # <4>
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE) # <5>
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'software' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "software")
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'created' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <6>
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) # <7>
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "created") # <8>
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE) # <9>
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'knows' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "knows")
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+}
+----
+<1> Use TinkerPop's i.o. infrastructure to load the modern graph.
+<2> Find all VertexLabels, they are in `sqlg_schema.vertex`
+<3> Traverse out on the `out_edges` edge to find all the edges. 'WARNING' this may produce duplicates as a single edge label
+may have many different distinct out vertex labels.
+<4> Find the `person` vertex.
+<5> Traverse out on the `vertex_property` edge to find the 'person' vertex labels properties.
+<6> Find all vertex labels. i.e. vertices in `sqlg_schema.vertex`
+<7> Traverse the `out_edges` edge.
+<8> Filter the out edges for only the 'created' edges.
+<9> Traverse the `edge_properties` edge to find the 'created' edge's properties.
+
+
+.output
+----
+//All vertex labels
+person
+software
+//All edge labels
+knows
+created
+//'person' properties
+name : STRING
+age : INTEGER
+//'software' properties
+name : STRING
+lang : STRING
+//'created' properties
+weight : DOUBLE
+//'knows' properties
+weight : DOUBLE
+----
+
+
+==== Topology eager creation
+
+It is often useful to create the topology upfront. The topology creation api is accessed via the `Topology` object.
+It is a singleton. `Topology topology = sqlgGraph.getTopology();`
+To create new topology objects use the `ensureXXX` methods. They will return the a topology object representing the specific
+topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index` or `GlobalUniqueIndex`
+
+[NOTE]
+The `ensureXXX` methods will create the topology object if it does not exists.
+If it does exist it will simply return the relevant topology object.
+On any topology object one can call `isCommitted` or `isUncommitted` to check the state of the object.
+`committed` indicates that it already exists. `uncommitted` indicates that it has been created in the current active transaction.
+
+.eg
+[source,java,options="nowrap"]
+----
+@Test
+public void createModernTopology() {
+    Topology topology = this.sqlgGraph.getTopology(); # <1>
+    VertexLabel personVertexLabel = topology.ensureVertexLabelExist("public", "person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("age", PropertyType.INTEGER);
+    }}); # <2>
+    VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist("public", "software", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("lang", PropertyType.STRING);
+    }});
+    EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist("created", softwareVertexLabel, new HashMap<String, PropertyType>() {{
+        put("weight", PropertyType.DOUBLE);
+    }}); # <3>
+    EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap<String, PropertyType>() {{
+        put("weight", PropertyType.DOUBLE);
+    }});
+    this.sqlgGraph.tx().commit(); # <4>
+}
+----
+<1> Get the `Topology` object.
+<2> Create the 'person' VertexLabel. The `HashMap<String, PropertyType>` defines the 'person''s properties.
+<3> Create the 'created' EdgeLabel. The format is outVertexLabel.ensureEdgeLabelExist(name, inVertexLabel, properties)
+<4> Be sure to commit the transaction. Postgresql and MSSqlServer supports transactional schema creation. Hsqldb,H2 and MariaDB do not.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void generalTopologyCreationWithSchema() {
+    Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("Humans"); # <1>
+    VertexLabel personVertexLabel = schema.ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("date", PropertyType.LOCALDATE);
+    }}); # <2>
+    this.sqlgGraph.tx().commit();
+}
+----
+<1> Create the 'Humans' schema
+<2> Create the 'Person' VertexLabel via the Schema object.
+
+Sqlg keeps an in-memory cache of the graphs entire topology. It is possible query this cache directly.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void queryCache() {
+    loadModern();
+    Optional<Schema> publicSchema = this.sqlgGraph.getTopology().getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()); # <1>
+    assertTrue(publicSchema.isPresent());
+    Schema publicSchemaViaShortCut = this.sqlgGraph.getTopology().getPublicSchema(); # <2>
+    Optional<VertexLabel> personVertexLabel = publicSchema.get().getVertexLabel("person"); # <3>
+    assertTrue(personVertexLabel.isPresent());
+    Optional<EdgeLabel> createEdgeLabel = personVertexLabel.get().getOutEdgeLabel("created"); # <4>
+    assertTrue(createEdgeLabel.isPresent());
+    Optional<EdgeLabel> knowsEdgeLabel = personVertexLabel.get().getOutEdgeLabel("knows"); # <5>
+    assertTrue(knowsEdgeLabel.isPresent());
+
+    Optional<PropertyColumn> namePropertyColumn = personVertexLabel.get().getProperty("name"); # <6>
+    assertTrue(namePropertyColumn.isPresent());
+    assertEquals(PropertyType.STRING, namePropertyColumn.get().getPropertyType()); # <7>
+    Optional<PropertyColumn> agePropertyColumn = personVertexLabel.get().getProperty("age");
+    assertTrue(agePropertyColumn.isPresent());
+    assertEquals(PropertyType.INTEGER, agePropertyColumn.get().getPropertyType());
+    Optional<PropertyColumn> weightPropertyColumn = createEdgeLabel.get().getProperty("weight");
+    assertTrue(weightPropertyColumn.isPresent());
+    assertEquals(PropertyType.DOUBLE, weightPropertyColumn.get().getPropertyType());
+}
+----
+<1> Get the 'public' schema object.
+<2> Because the 'public' schema will always exist there is a shortcut method to get it.
+<3> Use the 'Schema' object the get the 'person' VertexLabel
+<4> Use the 'person' VertexLabel to get its 'created' out edge.
+<5> Use the 'person' VertexLabel to get its 'knows' out edge.
+<6> Use the 'person' VertexLabel to get its 'name' property. Properties are represented by the `PropertyColumn` class.
+<7> On the `PropertyColumn` object one can get the `PropertyType`. PropertyType is an enum representing all data types supported by Sqlg.
+
+=== Validation
+
+Sqlg has basic support to validate its topology.
+
+If a user manipulates the schema outside of Sqlg then Sqlg's topology will be out of sync with the database.
+
+To validate the topology `sql.properties` must have `validate.topology = true`. The validation code only runs when the graph is started.
+It will not prevent the graph from starting up but will log a warning.
+The validation errors can be accesses via `sqlgGraph.getTopology().getValidationErrors()`
+
+.eg
+[source,java,options="nowrap"]
+----
+@Test
+public void testVertexLabelDoesNotExist() throws Exception {
+    this.sqlgGraph.addVertex(T.label, "A.A");
+    this.sqlgGraph.tx().commit();
+    Connection conn = this.sqlgGraph.tx().getConnection();
+    try (Statement statement = conn.createStatement()) {
+        statement.execute("DROP TABLE " + "\"A\".\"V_A\" CASCADE ");
+        this.sqlgGraph.tx().commit();
+    } catch (SQLException e) {
+        fail(e.getMessage());
+    }
+    this.sqlgGraph.close();
+    try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+    }
+}
+----
+
+.output
+[options="nowrap"]
+----
+WARN  2017-01-22 18:23:40,185 [main] org.umlg.sqlg.structure.SqlgStartupManager: A does not exist
+----
+
+== Indexes
+
+=== Basic indexing
+
+Sqlg supports adding a unique or non-unique index to any property or properties.
+
+To add an index one has to use Sqlg's topology interface.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testIndex() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+    }}); # <1>
+    Optional<PropertyColumn> namePropertyOptional = personVertexLabel.getProperty("name");
+    assertTrue(namePropertyOptional.isPresent());
+    Index index = personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get())); $ <2>
+    this.sqlgGraph.tx().commit(); # <3>
+
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    List<Vertex> johns = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("name", "John")
+            .toList(); # <4>
+
+    /* This will execute the following sql.
+    SELECT
+        "public"."V_Person"."ID" AS "alias1",
+        "public"."V_Person"."name" AS "alias2"
+    FROM
+        "public"."V_Person"
+    WHERE
+        ( "public"."V_Person"."name" = ?)
+    */ # <5>
+
+    assertEquals(1, johns.size());
+}
+----
+<1> Create the 'Person' VertexLabel.
+<2> On the 'Person' VertexLabel create a non unique index on the 'name' property.
+<3> Index creation is transactional on Postgresql.
+<4> The given gremlin query will use the index.
+<5> The underlying RDBMS will use the index for the executed sql.
+
+.postgresql V_Person sql definition
+image:sqlg/V_Person_name_index.png[image of tinkerpop-classic]
+
+==== Composite indexes
+
+It is possible to create composite indexes.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testCompositeIndex() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        put("firstName", PropertyType.STRING);
+        put("lastName", PropertyType.STRING);
+    }}); # <1>
+    personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList<>(personVertexLabel.getProperties().values())); # <2>
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person", "firstName", "John", "lastName", "Smith");
+    List<Vertex> johnSmiths = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("firstName", "John")
+            .has("lastName", "Smith")
+            .toList();
+    assertEquals(1, johnSmiths.size());
+}
+----
+<1> Create the 'Person' VertexLabel with 2 properties, 'firstName' and 'lastName'.
+<2> Create a composite index on 'firstName' and 'lastName'
+
+.postgresql V_Person composite index sql definition
+image:sqlg/postgresql_composite_index.png[image of tinkerpop-classic]
+
+Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
+`HasStep` targeting a property with an index on it will translate to a sql `where` clause on that property and
+the underlying RDBMS will utilize the index.
+
+[NOTE]
+The index does not need to be created upfront. It can be added any time.
+
+=== Full-text indexing
+
+On postgresql full text indexing is supported.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testFullTextIndex() {
+    Vertex v0 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "a fat cat sat on a mat and ate a fat rat");
+    Vertex v1 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "fatal error");
+    Vertex v2 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
+
+    VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
+    vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").get())); <1>
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> vts = this.sqlgGraph.traversal()
+            .V().hasLabel("Sentence")
+            .has("name", FullText.fullTextMatch("english", "fat & rat")) <2>
+            .toList();
+    Assert.assertEquals(1, vts.size());
+    Assert.assertTrue(vts.contains(v0));
+}
+----
+<1> Create a full-text gin index.
+<2> Query the full-text index using Sqlg's custom FullText predicate.
+
+=== Global unique indexing
+
+Global unique indexing is a way of specifying that multiple properties across different labels are unique.
+For every `GlobalUniqueIndex` Sqlg maintains a separate table with a unique index defined on it.
+Every property that partakes in the GlobalUniqueIndex will have its value duplicated in this table.
+These tables are kept in the `gui_schema`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testPersonAndDogDoNotHaveTheSameName() {
+    Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+    }}; # <1>
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties); # <2>
+    VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Dog", properties); # <3>
+    PropertyColumn personName = personVertexLabel.getProperty("name").get(); # <4>
+    PropertyColumn dogName = dogVertexLabel.getProperty("name").get(); # <5>
+    this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
+        add(personName);
+        add(dogName);
+    }}); # <6>
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "Tyson"); # <7>
+    try {
+        //This will fail
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "Tyson"); # <8>
+        fail("Duplicate key violation suppose to prevent this from executing");
+    } catch (RuntimeException e) {
+        //swallow
+        this.sqlgGraph.tx().rollback();
+    }
+}
+----
+<1> A map of the properties to add.
+<2> Create the 'Person' VertexLabel with its properties.
+<3> Create the 'Dog' VertexLabel with its properties.
+<4> Get the `PropertyColumn` for the 'name' property of 'Person'.
+<5> Get the `PropertyColumn` for the 'name' property of 'Dog'.
+<6> Create the `GlobalUniqueIndex` on the 'name' property of 'Person' and 'Dog'. This will ensure that 'Person's and 'Dog's do not have the same name.
+<7> Add a 'Person' with the name "Tyson".
+<8> Try to add a 'Dog' with the name "Tyson". This will fail as the `GlobalUniqueIndex' will prevent 'Person's and 'Dog's from having the same name.
+
+
+GlobalUniqueIndexes do not support composite indexes.
+
+== Multiple JVMs
+
+It is possible to run many Sqlg instances pointing to the same underlying database. These instances can be in the same jvm
+but is primarily intended for separate jvm(s) pointing to the same underlying database.
+
+To make multiple graphs point to the same underlying database it is important to add in the `distributed` property to `sqlg.properties`.
+
+.sqlg.properties
+----
+distributed = true
+----
+
+[NOTE]
+Multiple JVMs is only supported for Postgresql.
+Hsqldb and H2 are primarily intended to run embedded so multiple JVMs do not make sense for them.
+Multiple JVM support has not been implemented for MariaDB and MSSqlServer.
+
+Postgresql's https://www.postgresql.org/docs/current/static/sql-notify.html[*notify*] mechanism is used to distribute the cached schema
+across multiple JVMs.
+
+Sqlg uses Postgresql's https://www.postgresql.org/docs/current/static/explicit-locking.html[explicit locking] to create a global
+lock to prevent schema creation commands from dead locking the database.
+
+== Gremlin
+
+Sqlg has full support for gremlin.
+However gremlin's fine grained 'graphy' nature results in very high latency. To overcome the high latency Sqlg optimizes
+gremlin by reducing the number of calls to the RDBMS.
+
+Sqlg optimizes gremlin by analyzing the steps and where possible combining them into a single SqlgGraphStepCompiled or SqlgVertexStepCompiled.
+
+[NOTE]
+This is an ongoing task as gremlin is a large language.
+
+[NOTE]
+Turn sql logging on by setting `log4j.logger.org.umlg.sqlg=debug`
+
+=== Optimization
+
+Consecutive GraphStep, VertexStep, EdgeVertexStep, EdgeOtherVertexStep, HasStep, RepeatStep, OrderGlobalStep,
+RangeGlobalStep, ChooseStep, OptionalStep and DropStep are currently combined.
+The combined step will then in turn generate the sql statements to retrieve the data.
+It attempts to retrieve the data in as few distinct sql statements as possible.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showHighLatency() {
+    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
+    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
+    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
+    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
+    easternUnion.addEdge("organization_division", legal);
+    easternUnion.addEdge("organization_division", dispatch);
+    legal.addEdge("division_office", newYork);
+    dispatch.addEdge("division_office", singapore);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("Organization")
+            .out()
+            .out();
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> offices = traversal.toList();
+    assertEquals(2, offices.size());
+}
+----
+
+[options="nowrap"]
+----
+Before optimization:
+[GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
+
+After optimization:
+[SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]
+----
+
+Without optimization the query `this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()` will result
+in a number of database hits. First to get the organizations, then for each organization the divisions and then for each division the offices.
+For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is significant.
+
+In the above example the `GraphStep`, `HasStep` and 2 `VertexStep` are all combined into one `SqlgGraphStepCompiled` step.
+
+The before optimization output shows the steps that would have executed with if no optimization is performed.
+As the query only contains sequential optimizable steps they are all combined into one step.
+
+The above example will retrieve the data in one sql query.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Office"."ID" AS "alias1",
+	"public"."V_Office"."name" AS "alias2"
+FROM
+	"public"."V_Organization" INNER JOIN
+	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
+	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
+	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
+	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+----
+
+=== Predicates
+
+TinkerPop's http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] and
+http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains] predicates are optimized
+to execute on the database.
+
+==== Compare predicate
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showComparePredicate() {
+    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
+    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
+    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
+    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
+    easternUnion.addEdge("organization_division", legal);
+    easternUnion.addEdge("organization_division", dispatch);
+    legal.addEdge("division_office", newYork);
+    dispatch.addEdge("division_office", singapore);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("Organization")
+            .out()
+            .out()
+            .has("name", P.eq("Singapore")); # <1>
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> offices = traversal.toList();
+    assertEquals(1, offices.size());
+    assertEquals(singapore, offices.get(0));
+}
+----
+<1> The `P` predicate will resolve on the database as a `sql` `where` clause.
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Office"."ID" AS "alias1",
+	"public"."V_Office"."name" AS "alias2"
+FROM
+	"public"."V_Organization" INNER JOIN
+	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
+	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
+	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
+	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+WHERE
+	( "public"."V_Office"."name" = ?)
+----
+
+The same pattern is used for all the
+http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] predicates.
+
+==== Contains predicate
+
+Sqlg's implementation of http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains]
+is slightly more complex.
+
+For Postgresql, MSSqlServer and HSQLDB a join onto a `values expression` is used.
+
+For H2 and MariaDB a regular `in` clause is used.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showContainsPredicate() {
+    List<Integer> numbers = new ArrayList<>(10000);
+    for (int i = 0; i < 10000; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
+        numbers.add(i);
+    }
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("number", P.within(numbers))
+            .toList();
+
+    assertEquals(10000, persons.size());
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."number" AS "alias2"
+FROM
+	"public"."V_Person" INNER JOIN
+	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within
+----
+
+This pattern makes `P.within` and `p.without` very fast even with millions of values being passed into the query.
+Benchmarking shows that doing a join on a temporary table is always faster than using the `in` clause.
+For the case of there being only one value Sqlg will use an `equals` instead of a temporary table or an `in` statement.
+
+==== Text predicate
+
+[NOTE]
+Sqlg assumes a case-sensitive collation.
+MSSqlServer does not default to a case-sensitive collation.
+Create the database with `CREATE DATABASE sqlgraphdb COLLATE sql_latin1_general_cp1_cs_as`
+
+Sqlg includes its own Text predicate for full text queries.
+
+* Text.contains (case sensitive string contains)
+* Text.ncontains (case sensitive string does not contain)
+* Text.containsCIS (case insensitive string contains)
+* Text.ncontainsCIS (case insensitive string does not contain)
+* Text.startsWith (case sensitive string starts with)
+* Text.nstartsWith (case sensitive string does not start with)
+* Text.endsWith (case sensitive string ends with)
+* Text.nendsWith (case sensitive string does not end with)
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showTextPredicate() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John XXX Doe");
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter YYY Snow");
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("name", Text.contains("XXX")).toList();
+
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."name" like ?)
+----
+
+==== DateTime queries
+
+LocalDateTime, LocalDate and LocalTime queries are supported.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showSearchOnLocalDateTime() {
+    LocalDateTime born1 = LocalDateTime.of(1990, 1, 1, 1, 1, 1);
+    LocalDateTime born2 = LocalDateTime.of(1990, 1, 1, 1, 1, 2);
+    LocalDateTime born3 = LocalDateTime.of(1990, 1, 1, 1, 1, 3);
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "born", born1);
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter", "born", born2);
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul", "born", born3);
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.eq(born1))
+            .toList();
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+
+    persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.between(LocalDateTime.of(1990, 1, 1, 1, 1, 1), LocalDateTime.of(1990, 1, 1, 1, 1, 3)))
+            .toList();
+    //P.between is inclusive to exclusive
+    assertEquals(2, persons.size());
+    assertTrue(persons.contains(john));
+    assertTrue(persons.contains(peter));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."born" AS "alias2",
+	"public"."V_Person"."name" AS "alias3"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."born" >= ?) AND ( "public"."V_Person"."born" < ?)
+----
+
+=== Order
+
+Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
+If not then order the ordering occurs in java via the OrderGlobalStep as per normal.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testOrderBy() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "a");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "b");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> result = this.sqlgGraph.traversal().V().hasLabel("A")
+            .order().by("name", Order.incr).by("surname", Order.decr)
+            .toList();
+
+    assertEquals(6, result.size());
+    assertEquals(a3, result.get(0));
+    assertEquals(a2, result.get(1));
+    assertEquals(a1, result.get(2));
+    assertEquals(b3, result.get(3));
+    assertEquals(b2, result.get(4));
+    assertEquals(b1, result.get(5));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."surname" AS "alias2",
+	"public"."V_A"."name" AS "alias3"
+FROM
+	"public"."V_A"
+ORDER BY
+	 "alias3" ASC,
+	 "alias2" DESC
+----
+
+=== RepeatStep
+
+Sqlg optimizes the `RepeatStep` so long as the `until` modulator is *not* present.
+`RepeatStep` can be optimized with the modulator `emit` and `times`.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showRepeat() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
+    Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
+    john.addEdge("lives", usa);
+    peterski.addEdge("lives", russia);
+    usa.addEdge("capital", washington);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .emit().times(2).repeat(__.out("lives", "capital"))
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[John, USA, Washington]
+[John]
+[Peterski]
+[Paul]
+[John, USA]
+[Peterski, Russia]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6",
+	"public"."E_lives"."ID" AS "alias7"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" # <1>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Person"."ID" AS "alias3",
+	"public"."V_Person"."name" AS "alias4",
+	"public"."E_lives"."ID" AS "alias5"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" # <2>
+
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person" # <3>
+----
+<1> Get the 'Cities' to emit.
+<2> Get the 'Countries' to emit.
+<3> Get the 'Persons' to emit.
+
+=== OptionalStep
+
+Sqlg optimizes the OptionalStep.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testOptionalNested() {
+    Vertex google = this.sqlgGraph.addVertex(T.label, "Company", "name", "Google");
+    Vertex apple = this.sqlgGraph.addVertex(T.label, "Company", "name", "Apple");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex england = this.sqlgGraph.addVertex(T.label, "Country", "name", "England");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "City", "name", "New York");
+    google.addEdge("activeIn", usa);
+    google.addEdge("activeIn", england);
+    usa.addEdge("capital", newYork);
+    this.sqlgGraph.tx().commit();
+    List<Path> paths = this.sqlgGraph.traversal()
+            .V()
+            .hasLabel("Company")
+            .optional(
+                    out().optional(
+                            out()
+                    )
+            )
+            .path()
+            .toList();
+    paths.forEach(p -> System.out.println(p.toString()));
+}
+----
+
+.output
+----
+[v[public.Company:::1], v[public.Country:::1], v[public.City:::1]]
+[v[public.Company:::2]]
+[v[public.Company:::1], v[public.Country:::2]]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_City"."ID" AS "alias1",
+	"public"."V_City"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4",
+	"public"."V_Country"."ID" AS "alias5",
+	"public"."V_Country"."name" AS "alias6"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
+	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" # <1>
+
+SELECT
+	"public"."V_Country"."ID" AS "alias1",
+	"public"."V_Country"."name" AS "alias2",
+	"public"."V_Company"."ID" AS "alias3",
+	"public"."V_Company"."name" AS "alias4"
+FROM
+	"public"."V_Company" INNER JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
+	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" LEFT JOIN
+	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O"
+WHERE
+	("public"."E_capital"."public.Country__O" IS NULL) # <2>
+
+SELECT
+	"public"."V_Company"."ID" AS "alias1",
+	"public"."V_Company"."name" AS "alias2"
+FROM
+	"public"."V_Company" LEFT JOIN
+	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O"
+WHERE
+	("public"."E_activeIn"."public.Company__O" IS NULL) # <3>
+----
+<1> Get the 'Cities'
+<2> Get the 'Countries' that do not have 'Cities'
+<3> Get the 'Companies' that do not have 'Countries'
+
+
+=== Range
+
+Sqlg optimizes the `RangeGlobalStep`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testRangeOnVertexLabels() {
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List<String> names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .range(1, 4)
+            .<String>values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person1", names.get(0));
+    assertEquals("person10", names.get(1));
+    assertEquals("person11", names.get(2));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 1
+----
+
+=== Limit
+
+Sqlg optimizes `.limit(x)`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testLimitOnVertexLabels() {
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    List<String> names = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .limit(3)
+            .<String>values("name")
+            .toList();
+    assertEquals(3, names.size());
+    assertEquals("person0", names.get(0));
+    assertEquals("person1", names.get(1));
+    assertEquals("person10", names.get(2));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC LIMIT 3 OFFSET 0
+----
+
+== Batch Mode
+
+Sqlg supports 3 distinct batch modes. Normal, streaming and streaming with lock. Batch modes are only implemented on Postgresql.
+Batch mode is activated on the transaction object itself. After every `commit` the batchMode needs to be reactivated.
+
+Sqlg introduces an extra method on the transaction, `flush()`.
+
+* In normal batch mode `flush()` will send all the data to Postgresql, assign id(s) and clear the cache.
+* In streaming mode `flush()` will close the OutputStream that the data has been written to.
+* In streaming mode with lock `flush()` will close the OutputStream that the data has been written to and assign id(s).
+
+The Postgresql 'https://www.postgresql.org/docs/current/static/sql-copy.html[copy]' command is used to bulk insert data.
+
+=== Normal batch mode
+
+In normal batch mode the standard TinkerPop modification api can be used. Normal batch mode caches all modifications in memory
+and on `commit()` or `flush()` sends the modifications to the server.
+
+Because all modifications are held in memory it is important to call `commit()` or `flush()` to prevent an `OutOfMemoryError`.
+
+In batch mode vertices and edges returned from `Graph.addVertex` and `vertex.addEdge` respectively do *not* yet have their id(s) assigned to them.
+This is because the new vertices and edges are cached in memory and are only sent to Postgresql on `commit()` or `flush()`.
+After `commit()` or `flush()` the new vertices and edges have their id(s) assigned.
+
+The transaction must be manually placed in normal batch mode. i.e. `SqlgGraph.tx().normalBatchModeOn()` must occur before any batch processing.
+After every `commit()` the transaction reverts to a regular transaction and must be placed in normal batch mode again
+for batch processing to continue.
+
+Vertices and edges can be created and updated and removed as per normal making normal batch mode easy to use.
+
+[NOTE]
+Sqlg does not query the cache. If a gremlin query is executed while in batch mode the batch is first flushed.
+Take care not to query the graph while in batch mode as flushing often will defeat the purpose of batching in the first place.
+
+[source,java,options="nowrap"]
+.custom api
+----
+sqlgGraph.tx().normalBatchModeOn();
+sqlgGraph.tx().flush();
+----
+
+Create 10 000 000 Persons each with a car. 20 000 000 vertices and 10 000 000 edges in total.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showNormalBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    this.sqlgGraph.tx().normalBatchModeOn();
+    for (int i = 1; i <= 10_000_000; i++) {
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
+        Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
+        person.addEdge("drives", car);
+        if (i % 100_000 == 0) { # <1>
+            this.sqlgGraph.tx().flush(); # <1>
+        }
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+<1> To preserve memory `commit` or `flush` every so often.
+
+.output without edge foreign keys
+----
+Time taken: 0:05:48.889
+----
+
+.output with edge foreign keys
+----
+Time taken: 0:02:33.313
+----
+
+.memory
+image:sqlg/normalBatchModeMemory.png[image of tinkerpop-classic]
+
+=== Streaming batch mode
+
+Streaming batch writes any new vertex or edge immediately to Postgresql via its `stdin` api. I.e. the data is written
+directly to a Postgresql jdbc driver OutputStream.
+
+Streaming batch mode does *not* use the `Graph.addVertex` method. Instead `SqlgGraph.streamVertex` is defined.
+
+The transaction must be placed in streaming batch mode manually before any streaming batch modification can happen. `SqlgGraph.tx().streamingBatchModeOn()`
+After every `commit()` the transaction reverts to normal mode and must be placed into streaming batch mode again
+for streaming batch mode to continue.
+
+The benefit of streaming mode is that the memory consumption is very low as nothing is cached. It is also somewhat faster than
+the normal batch mode (+/- 25% faster).
+
+However the caveat is that, per transaction/thread only one label/table can be written between consecutive calls to `SqlgTransaction.flush()`.
+Further it is not possible to assign an id to the vertex or element. As such the `SqlgGraph.streamVertex` method returns void.
+
+[source,java,options="nowrap"]
+.custom api
+----
+sqlgGraph.tx().streamingBatchModeOn();
+----
+
+Create 10 000 000 Persons and 10 000 000 cars.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showStreamingBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    //enable streaming mode
+    this.sqlgGraph.tx().streamingBatchModeOn();
+    for (int i = 1; i <= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+    }
+    this.sqlgGraph.tx().flush(); # <1>
+    for (int i = 1; i <= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+<1> flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
+
+.output
+----
+Time taken: 0:00:42.014
+----
+
+.memory
+image:sqlg/streamingBatchModeMemory.png[image of tinkerpop-classic]
+
+=== Bulk edge creation
+
+To create an edge via the normal api a handle to the `Vertex` is needed.
+This is not always the case. In particula if the `SqlgGraph.streamVertex` api is used no handle to the `Vertex` is returned.
+
+For this scenario there is a bulk edge creation method.
+
+[source,java,options="nowrap"]
+----
+public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+----
+
+ * `outLabel` and `inLabel` specifies the out and in vertex labels that the edges will be between.
+ * `edgeLabel` is the label of the edges to be created.
+ * `idFields` specifies the fields that uniquely identify the out and in vertex.
+ * `uids` are the actual unique identifies for each out/in vertex pairing.
+
+Sqlg will then first copy the `uids` into a temporary table. Then it joins the temporary table on the out and in vertex tables
+to retrieve the in and out ids.
+These ids are then inserted into the edge table.
+All this happens on Postgresql, having minimal processing and memory impact on the java process.
+
+The unique identifiers still have to be kept in memory, but its is not necessary to have the actual out and in vertices in memory.
+
+[NOTE]
+The unique identifiers do not need to be the vertices's id. It can be any property as long as it is unique.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i <= 10; i++) {
+        List<Pair<String, String>> identifiers = new ArrayList<>();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int j = 1; j <= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + count, "personUid", String.valueOf(count));
+        }
+        this.sqlgGraph.tx().flush();
+        for (int j = 1; j <= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + count, "carUid", String.valueOf(count));
+            identifiers.add(Pair.of(String.valueOf(count), String.valueOf(count++)));
+        }
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.bulkAddEdges("Person", "Car", "drives", Pair.of("personUid", "carUid"), identifiers);
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println("Time taken: " + stopWatch.toString());
+}
+----
+
+.output (with edge foreign keys)
+----
+Time taken: 0:10:03.397
+----
+
+.output (without edge foreign keys)
+----
+Time taken: 0:03:45.951
+----
+
+.memory
+image:sqlg/bulkAddEdgesMemory.png[image of tinkerpop-classic]
+
+=== Streaming with lock batch mode
+
+Streaming with lock batch mode is similar to streaming batch mode. The difference being that the label/table being written to is
+locked. Locking the table ensures that no concurrent changes will occur on the table. This allows Sqlg to query the id sequence and
+assigned ids to the elements.
+
+This means that the normal `Vertex vertex = graph.addVertex(...)` method can be used. This is useful if a pointer to the new vertices are needed.
+
+The transaction must be placed into streaming with lock batch mode manually before any streaming with lock batch modification can happen.
+`SqlgGraph.tx().streamingWithLockBatchModeOn()` After every `commit()` the transaction reverts to normal mode and must
+be placed into streaming batch mode again for streaming batch mode to continue.
+
+[source,java,options="nowrap"]
+.custom api
+----
+sqlgGraph.tx().streamingWithLockBatchModeOn();
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showStreamingWithLockBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i <= 10; i++) {
+        List<Vertex> persons = new ArrayList<>();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
+        for (int j = 1; j <= 1_000_000; j++) {
+            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + count);
+            persons.add(person);
+        }
+        this.sqlgGraph.tx().flush();
+        List<Vertex> cars = new ArrayList<>();
+        for (int j = 1; j <= 1_000_000; j++) {
+            Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + count++);
+            cars.add(car);
+        }
+        this.sqlgGraph.tx().flush();
+        Iterator<Vertex> carIter = cars.iterator();
+        for (Vertex person : persons) {
+            person.addEdge("drives", carIter.next());
+        }
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+
+.output without edge foreign keys
+----
+Time taken: 0:02:42.363
+----
+
+.memory
+image:sqlg/streamingBatchModeWithLockMemory.png[image of tinkerpop-classic]

@@ -239,12 +239,10 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 return new String[]{"ARRAY", "ARRAY"};
             case PERIOD_ARRAY_ORDINAL:
                 return new String[]{"ARRAY", "ARRAY", "ARRAY"};
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new String[]{"ARRAY", "ARRAY"};
             case JSON_ORDINAL:
                 return new String[]{"VARCHAR(max)"};
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw SqlgExceptions.invalidPropertyType(propertyType);
         }
     }
 
