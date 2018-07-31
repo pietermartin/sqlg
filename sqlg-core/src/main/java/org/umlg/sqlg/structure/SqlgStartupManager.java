@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -185,6 +186,7 @@ class SqlgStartupManager {
                         String sql = this.sqlDialect.sqlgCreateTopologyGraph();
                         statement.execute(sql);
                         TopologyManager.addGraph(this.sqlgGraph, version);
+                        oldVersion = version;
                     }
                 } else {
                     //Need to check if dbVersion has been added
@@ -195,7 +197,14 @@ class SqlgStartupManager {
                             }
                         }
                     }
-                    oldVersion = TopologyManager.updateGraph(this.sqlgGraph, version);
+                    GraphTraversalSource traversalSource = sqlgGraph.topology();
+                    List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
+                    if (graphVertices.isEmpty()) {
+                        TopologyManager.addGraph(this.sqlgGraph, version);
+                        oldVersion = version;
+                    } else {
+                        oldVersion = TopologyManager.updateGraph(this.sqlgGraph, version);
+                    }
                 }
                 return oldVersion;
             }
