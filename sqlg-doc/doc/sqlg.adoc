@@ -28,7 +28,7 @@ impact.
 Sqlg supports various bulk modes to reduce latency when modifying the graph.
 
 [NOTE]
-Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
+Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and MariaDB as it runs embedded in the jvm.
 
 == License
 
@@ -1157,15 +1157,34 @@ Turn sql logging on by setting `log4j.logger.org.umlg.sqlg=debug`
 
 === Optimization
 
-Consecutive GraphStep, VertexStep, EdgeVertexStep, EdgeOtherVertexStep, HasStep, RepeatStep, OrderGlobalStep,
-RangeGlobalStep, ChooseStep, OptionalStep and DropStep are currently combined.
+The following consecutive are currently combined.
+
+* <<Graph Step>>
+* <<Vertex Steps>>
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step[Has Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#repeat-step[Repeat Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#order-step[Order Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#range-step[Range Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#choose-step[Choose Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#optional-step[Optional Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#drop-step[Drop Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#or-step[Or Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#and-step[And Step]
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#not-step[Not Step]
+
 The combined step will then in turn generate the sql statements to retrieve the data.
 It attempts to retrieve the data in as few distinct sql statements as possible.
+
+=== Graph Step
+
+The http://tinkerpop.apache.org/docs/3.3.3/reference/#graph-step[Graph Step] is the start of any traversal.
+Sqlg optimizes the graph step by analysing subsequent steps and if possible folding them into a few steps as possible.
+Often into only one step, `SqlgGraphStepCompiled`.
 
 [source,java,options="nowrap"]
 ----
 @Test
-public void showHighLatency() {
+public void showGraphStep() {
     Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
     Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
     Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
@@ -1190,24 +1209,28 @@ public void showHighLatency() {
 ----
 
 [options="nowrap"]
+.Before optimization
 ----
-Before optimization:
 [GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
+----
 
-After optimization:
+.After optimization
+----
 [SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]
 ----
 
 Without optimization the query `this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()` will result
-in a number of database hits. First to get the organizations, then for each organization the divisions and then for each division the offices.
+in a number of database hits. First to get the organizations, then for each organization the divisions and then for each
+division the offices.
 For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is significant.
 
-In the above example the `GraphStep`, `HasStep` and 2 `VertexStep` are all combined into one `SqlgGraphStepCompiled` step.
+In the above example the `GraphStep`, `HasStep` and 2 `VertexStep`s are
+combined into one `SqlgGraphStepCompiled` step.
 
-The before optimization output shows the steps that would have executed with if no optimization is performed.
+The output shows the steps that would have executed with if no optimization is performed.
 As the query only contains sequential optimizable steps they are all combined into one step.
 
-The above example will retrieve the data in one sql query.
+The `SqlgGraphStepCompiled` will generate the following `sql` to retrieve the data.
 
 [source,sql,options="nowrap"]
 ----
@@ -1222,200 +1245,15 @@ FROM
 	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
 ----
 
-=== Predicates
+=== Vertex Steps
 
-TinkerPop's http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] and
-http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains] predicates are optimized
-to execute on the database.
+Consecutive http://tinkerpop.apache.org/docs/3.3.3/reference/#vertex-steps[Vertex Steps] are folded into the <<Graph Step>>.
 
-==== Compare predicate
+=== Has Step
 
-[source,java,options="nowrap"]
-----
-@Test
-public void showComparePredicate() {
-    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
-    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
-    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
-    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
-    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
-    easternUnion.addEdge("organization_division", legal);
-    easternUnion.addEdge("organization_division", dispatch);
-    legal.addEdge("division_office", newYork);
-    dispatch.addEdge("division_office", singapore);
-    this.sqlgGraph.tx().commit();
+* http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step[Has Step]
 
-    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
-            .hasLabel("Organization")
-            .out()
-            .out()
-            .has("name", P.eq("Singapore")); # <1>
-    System.out.println(traversal);
-    traversal.hasNext();
-    System.out.println(traversal);
-    List<Vertex> offices = traversal.toList();
-    assertEquals(1, offices.size());
-    assertEquals(singapore, offices.get(0));
-}
-----
-<1> The `P` predicate will resolve on the database as a `sql` `where` clause.
-
-.sql
-[source,sql,options="nowrap"]
-----
-SELECT
-	"public"."V_Office"."ID" AS "alias1",
-	"public"."V_Office"."name" AS "alias2"
-FROM
-	"public"."V_Organization" INNER JOIN
-	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
-	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
-	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
-	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
-WHERE
-	( "public"."V_Office"."name" = ?)
-----
-
-The same pattern is used for all the
-http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] predicates.
-
-==== Contains predicate
-
-Sqlg's implementation of http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains]
-is slightly more complex.
-
-For Postgresql, MSSqlServer and HSQLDB a join onto a `values expression` is used.
-
-For H2 and MariaDB a regular `in` clause is used.
-
-[source,java,options="nowrap"]
-----
-@Test
-public void showContainsPredicate() {
-    List<Integer> numbers = new ArrayList<>(10000);
-    for (int i = 0; i < 10000; i++) {
-        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
-        numbers.add(i);
-    }
-    this.sqlgGraph.tx().commit();
-
-    List<Vertex> persons = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
-            .has("number", P.within(numbers))
-            .toList();
-
-    assertEquals(10000, persons.size());
-}
-----
-
-.sql
-[source,sql,options="nowrap"]
-----
-SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."number" AS "alias2"
-FROM
-	"public"."V_Person" INNER JOIN
-	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within
-----
-
-This pattern makes `P.within` and `p.without` very fast even with millions of values being passed into the query.
-Benchmarking shows that doing a join on a temporary table is always faster than using the `in` clause.
-For the case of there being only one value Sqlg will use an `equals` instead of a temporary table or an `in` statement.
-
-==== Text predicate
-
-[NOTE]
-Sqlg assumes a case-sensitive collation.
-MSSqlServer does not default to a case-sensitive collation.
-Create the database with `CREATE DATABASE sqlgraphdb COLLATE sql_latin1_general_cp1_cs_as`
-
-Sqlg includes its own Text predicate for full text queries.
-
-* Text.contains (case sensitive string contains)
-* Text.ncontains (case sensitive string does not contain)
-* Text.containsCIS (case insensitive string contains)
-* Text.ncontainsCIS (case insensitive string does not contain)
-* Text.startsWith (case sensitive string starts with)
-* Text.nstartsWith (case sensitive string does not start with)
-* Text.endsWith (case sensitive string ends with)
-* Text.nendsWith (case sensitive string does not end with)
-
-[source,java,options="nowrap"]
-----
-@Test
-public void showTextPredicate() {
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John XXX Doe");
-    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter YYY Snow");
-    this.sqlgGraph.tx().commit();
-
-    List<Vertex> persons = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
-            .has("name", Text.contains("XXX")).toList();
-
-    assertEquals(1, persons.size());
-    assertEquals(john, persons.get(0));
-}
-----
-
-.sql
-[source,sql,options="nowrap"]
-----
-SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."name" AS "alias2"
-FROM
-	"public"."V_Person"
-WHERE
-	( "public"."V_Person"."name" like ?)
-----
-
-==== DateTime queries
-
-LocalDateTime, LocalDate and LocalTime queries are supported.
-
-[source,java,options="nowrap"]
-----
-@Test
-public void showSearchOnLocalDateTime() {
-    LocalDateTime born1 = LocalDateTime.of(1990, 1, 1, 1, 1, 1);
-    LocalDateTime born2 = LocalDateTime.of(1990, 1, 1, 1, 1, 2);
-    LocalDateTime born3 = LocalDateTime.of(1990, 1, 1, 1, 1, 3);
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "born", born1);
-    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter", "born", born2);
-    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul", "born", born3);
-    this.sqlgGraph.tx().commit();
-
-    List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("Person")
-            .has("born", P.eq(born1))
-            .toList();
-    assertEquals(1, persons.size());
-    assertEquals(john, persons.get(0));
-
-    persons = this.sqlgGraph.traversal().V().hasLabel("Person")
-            .has("born", P.between(LocalDateTime.of(1990, 1, 1, 1, 1, 1), LocalDateTime.of(1990, 1, 1, 1, 1, 3)))
-            .toList();
-    //P.between is inclusive to exclusive
-    assertEquals(2, persons.size());
-    assertTrue(persons.contains(john));
-    assertTrue(persons.contains(peter));
-}
-----
-
-.sql
-[source,sql,options="nowrap"]
-----
-SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."born" AS "alias2",
-	"public"."V_Person"."name" AS "alias3"
-FROM
-	"public"."V_Person"
-WHERE
-	( "public"."V_Person"."born" >= ?) AND ( "public"."V_Person"."born" < ?)
-----
-
-=== Order
+=== Order Step
 
 Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
 If not then order the ordering occurs in java via the OrderGlobalStep as per normal.
@@ -1695,6 +1533,200 @@ FROM
 ORDER BY
 	 "alias2" ASC LIMIT 3 OFFSET 0
 ----
+
+=== Predicates
+
+TinkerPop's http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] and
+http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains] predicates are optimized
+to execute on the database.
+
+==== Compare predicate
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showComparePredicate() {
+    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
+    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
+    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
+    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
+    easternUnion.addEdge("organization_division", legal);
+    easternUnion.addEdge("organization_division", dispatch);
+    legal.addEdge("division_office", newYork);
+    dispatch.addEdge("division_office", singapore);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("Organization")
+            .out()
+            .out()
+            .has("name", P.eq("Singapore")); <1>
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> offices = traversal.toList();
+    assertEquals(1, offices.size());
+    assertEquals(singapore, offices.get(0));
+}
+----
+<1> The `P` predicate will resolve on the database as a `sql` `where` clause.
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Office"."ID" AS "alias1",
+	"public"."V_Office"."name" AS "alias2"
+FROM
+	"public"."V_Organization" INNER JOIN
+	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
+	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
+	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
+	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+WHERE
+	( "public"."V_Office"."name" = ?)
+----
+
+The same pattern is used for all the
+http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] predicates.
+
+==== Contains predicate
+
+Sqlg's implementation of http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains]
+is slightly more complex.
+
+For Postgresql, MSSqlServer and HSQLDB a join onto a `values expression` is used.
+
+For H2 and MariaDB a regular `in` clause is used.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showContainsPredicate() {
+    List<Integer> numbers = new ArrayList<>(10000);
+    for (int i = 0; i < 10000; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
+        numbers.add(i);
+    }
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("number", P.within(numbers))
+            .toList();
+
+    assertEquals(10000, persons.size());
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."number" AS "alias2"
+FROM
+	"public"."V_Person" INNER JOIN
+	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within
+----
+
+This pattern makes `P.within` and `p.without` very fast even with millions of values being passed into the query.
+Benchmarking shows that doing a join on a temporary table is always faster than using the `in` clause.
+For the case of there being only one value Sqlg will use an `equals` instead of a temporary table or an `in` statement.
+
+==== Text predicate
+
+[NOTE]
+Sqlg assumes a case-sensitive collation.
+MSSqlServer does not default to a case-sensitive collation.
+Create the database with `CREATE DATABASE sqlgraphdb COLLATE sql_latin1_general_cp1_cs_as`
+
+Sqlg includes its own Text predicate for full text queries.
+
+* Text.contains (case sensitive string contains)
+* Text.ncontains (case sensitive string does not contain)
+* Text.containsCIS (case insensitive string contains)
+* Text.ncontainsCIS (case insensitive string does not contain)
+* Text.startsWith (case sensitive string starts with)
+* Text.nstartsWith (case sensitive string does not start with)
+* Text.endsWith (case sensitive string ends with)
+* Text.nendsWith (case sensitive string does not end with)
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showTextPredicate() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John XXX Doe");
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter YYY Snow");
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("name", Text.contains("XXX")).toList();
+
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."name" like ?)
+----
+
+==== DateTime queries
+
+LocalDateTime, LocalDate and LocalTime queries are supported.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showSearchOnLocalDateTime() {
+    LocalDateTime born1 = LocalDateTime.of(1990, 1, 1, 1, 1, 1);
+    LocalDateTime born2 = LocalDateTime.of(1990, 1, 1, 1, 1, 2);
+    LocalDateTime born3 = LocalDateTime.of(1990, 1, 1, 1, 1, 3);
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "born", born1);
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter", "born", born2);
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul", "born", born3);
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.eq(born1))
+            .toList();
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+
+    persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.between(LocalDateTime.of(1990, 1, 1, 1, 1, 1), LocalDateTime.of(1990, 1, 1, 1, 1, 3)))
+            .toList();
+    //P.between is inclusive to exclusive
+    assertEquals(2, persons.size());
+    assertTrue(persons.contains(john));
+    assertTrue(persons.contains(peter));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."born" AS "alias2",
+	"public"."V_Person"."name" AS "alias3"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."born" >= ?) AND ( "public"."V_Person"."born" < ?)
+----
+
 
 == Batch Mode
 

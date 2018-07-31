@@ -21,11 +21,11 @@ public class AsciiDoctor {
     private void createDocs() {
         Asciidoctor asciidoctor = create();
         try {
-            File file = new File("sqlg-doc/html/sqlg.adoc");
-            File html = new File("sqlg-doc/html/index.html");
+            File file = new File("sqlg-doc/doc/sqlg.adoc");
+            File html = new File("sqlg-doc/doc/index.html");
             Attributes attributes = new Attributes();
             attributes.setBackend("html5");
-            attributes.setStyleSheetName("../html/asciidoctor-default.css");
+            attributes.setStyleSheetName("../doc/asciidoctor-default.css");
             attributes.setDocType("book");
             //the left toc don't work with these css
 //            attributes.setStyleSheetName("../css/volnitsky.css");

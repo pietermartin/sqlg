@@ -9,7 +9,7 @@
 <meta name="keywords" content="Sqlg, TinkerPop, Gremlin, Graph, Database">
 <meta name="author" content="Pieter Martin">
 <title>Sqlg Documentation</title>
-<link rel="stylesheet" href="./../html/asciidoctor-default.css">
+<link rel="stylesheet" href="./../doc/asciidoctor-default.css">
 </head>
 <body class="book toc2 toc-left">
 <div id="header">
@@ -68,19 +68,20 @@
 <li><a href="#_gremlin">10. Gremlin</a>
 <ul class="sectlevel2">
 <li><a href="#_optimization">10.1. Optimization</a></li>
-<li><a href="#_predicates">10.2. Predicates</a>
-<ul class="sectlevel3">
-<li><a href="#_compare_predicate">10.2.1. Compare predicate</a></li>
-<li><a href="#_contains_predicate">10.2.2. Contains predicate</a></li>
-<li><a href="#_text_predicate">10.2.3. Text predicate</a></li>
-<li><a href="#_datetime_queries">10.2.4. DateTime queries</a></li>
-</ul>
-</li>
-<li><a href="#_order">10.3. Order</a></li>
+<li><a href="#_graph_step">10.2. Graph Step</a></li>
+<li><a href="#_order_step">10.3. Order Step</a></li>
 <li><a href="#_repeatstep">10.4. RepeatStep</a></li>
 <li><a href="#_optionalstep">10.5. OptionalStep</a></li>
 <li><a href="#_range">10.6. Range</a></li>
 <li><a href="#_limit">10.7. Limit</a></li>
+<li><a href="#_predicates">10.8. Predicates</a>
+<ul class="sectlevel3">
+<li><a href="#_compare_predicate">10.8.1. Compare predicate</a></li>
+<li><a href="#_contains_predicate">10.8.2. Contains predicate</a></li>
+<li><a href="#_text_predicate">10.8.3. Text predicate</a></li>
+<li><a href="#_datetime_queries">10.8.4. DateTime queries</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#_batch_mode">11. Batch Mode</a>
@@ -128,7 +129,7 @@ impact.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-Hsqldb and H2 do not suffer the same latency as Postgresql as it runs embedded in the jvm.
+Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and MariaDB as it runs embedded in the jvm.
 </td>
 </tr>
 </table>
@@ -1783,15 +1784,64 @@ Turn sql logging on by setting <code>log4j.logger.org.umlg.sqlg=debug</code>
 <div class="sect2">
 <h3 id="_optimization">10.1. Optimization</h3>
 <div class="paragraph">
-<p>Consecutive GraphStep, VertexStep, EdgeVertexStep, EdgeOtherVertexStep, HasStep, RepeatStep, OrderGlobalStep,
-RangeGlobalStep, ChooseStep, OptionalStep, SelectStep, SelectOneStep and DropStep are currently combined.
-The combined step will then in turn generate the sql statements to retrieve the data.
+<p>The following consecutive are currently combined.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#_graph_step">Graph Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#vertex-steps">Vertex Steps</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step">Has Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#repeat-step">Repeat Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#order-step">Order Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#range-step">Range Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#choose-step">Choose Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#optional-step">Optional Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#drop-step">Drop Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#or-step">Or Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#and-step">And Step</a></p>
+</li>
+<li>
+<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#not-step">Not Step</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The combined step will then in turn generate the sql statements to retrieve the data.
 It attempts to retrieve the data in as few distinct sql statements as possible.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_graph_step">10.2. Graph Step</h3>
+<div class="paragraph">
+<p>The <a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#graph-step">Graph Step</a> is the start of any traversal.
+Sqlg optimizes the graph step by analysing subsequent steps and if possible folding them into a few steps as possible.
+Often into only one step, <code>SqlgGraphStepCompiled</code>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void showHighLatency() {
+public void showGraphStep() {
     Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
     Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
     Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
@@ -1815,29 +1865,33 @@ public void showHighLatency() {
 }</code></pre>
 </div>
 </div>
-<div class="listingblock">
+<div id="before-optimization" class="listingblock">
+<div class="title">Before optimization</div>
 <div class="content">
-<pre class="nowrap">Before optimization:
-[GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
-
-After optimization:
-[SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]</pre>
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre>[SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]</pre>
 </div>
 </div>
 <div class="paragraph">
 <p>Without optimization the query <code>this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()</code> will result
-in a number of database hits. First to get the organizations, then for each organization the divisions and then for each division the offices.
+in a number of database hits. First to get the organizations, then for each organization the divisions and then for each
+division the offices.
 For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is significant.</p>
 </div>
 <div class="paragraph">
-<p>In the above example the <code>GraphStep</code>, <code>HasStep</code> and 2 <code>VertexStep</code> are all combined into one <code>SqlgGraphStepCompiled</code> step.</p>
+<p>In the above example the <code>GraphStep</code>, <code>HasStep</code> and 2 <code>VertexStep`s are combined into one `SqlgGraphStepCompiled</code> step.</p>
 </div>
 <div class="paragraph">
-<p>The before optimization output shows the steps that would have executed with if no optimization is performed.
+<p>The output shows the steps that would have executed with if no optimization is performed.
 As the query only contains sequential optimizable steps they are all combined into one step.</p>
 </div>
 <div class="paragraph">
-<p>The above example will retrieve the data in one sql query.</p>
+<p>The above <a href="#before-optimization">Before optimization</a> example will retrieve the data in one sql query.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1854,247 +1908,7 @@ FROM
 </div>
 </div>
 <div class="sect2">
-<h3 id="_predicates">10.2. Predicates</h3>
-<div class="paragraph">
-<p>TinkerPop&#8217;s <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> and
-<a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a> predicates are optimized
-to execute on the database.</p>
-</div>
-<div class="sect3">
-<h4 id="_compare_predicate">10.2.1. Compare predicate</h4>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void showComparePredicate() {
-    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
-    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
-    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
-    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
-    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
-    easternUnion.addEdge("organization_division", legal);
-    easternUnion.addEdge("organization_division", dispatch);
-    legal.addEdge("division_office", newYork);
-    dispatch.addEdge("division_office", singapore);
-    this.sqlgGraph.tx().commit();
-
-    GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()
-            .hasLabel("Organization")
-            .out()
-            .out()
-            .has("name", P.eq("Singapore")); <b class="conum">(1)</b>
-    System.out.println(traversal);
-    traversal.hasNext();
-    System.out.println(traversal);
-    List&lt;Vertex&gt; offices = traversal.toList();
-    assertEquals(1, offices.size());
-    assertEquals(singapore, offices.get(0));
-}</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<ol>
-<li>
-<p>The <code>P</code> predicate will resolve on the database as a <code>sql</code> <code>where</code> clause.</p>
-</li>
-</ol>
-</div>
-<div class="listingblock">
-<div class="title">sql</div>
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_Office"."ID" AS "alias1",
-	"public"."V_Office"."name" AS "alias2"
-FROM
-	"public"."V_Organization" INNER JOIN
-	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
-	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
-	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
-	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
-WHERE
-	( "public"."V_Office"."name" = ?)</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The same pattern is used for all the
-<a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> predicates.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_contains_predicate">10.2.2. Contains predicate</h4>
-<div class="paragraph">
-<p>Sqlg&#8217;s implementation of <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a>
-is slightly more complex.</p>
-</div>
-<div class="paragraph">
-<p>For Postgresql, MSSqlServer and HSQLDB a join onto a <code>values expression</code> is used.</p>
-</div>
-<div class="paragraph">
-<p>For H2 and MariaDB a regular <code>in</code> clause is used.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void showContainsPredicate() {
-    List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;(10000);
-    for (int i = 0; i &lt; 10000; i++) {
-        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
-        numbers.add(i);
-    }
-    this.sqlgGraph.tx().commit();
-
-    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
-            .has("number", P.within(numbers))
-            .toList();
-
-    assertEquals(10000, persons.size());
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">sql</div>
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."number" AS "alias2"
-FROM
-	"public"."V_Person" INNER JOIN
-	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This pattern makes <code>P.within</code> and <code>p.without</code> very fast even with millions of values being passed into the query.
-Benchmarking shows that doing a join on a temporary table is always faster than using the <code>in</code> clause.
-For the case of there being only one value Sqlg will use an <code>equals</code> instead of a temporary table or an <code>in</code> statement.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_text_predicate">10.2.3. Text predicate</h4>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Sqlg assumes a case-sensitive collation.
-MSSqlServer does not default to a case-sensitive collation.
-Create the database with <code>CREATE DATABASE sqlgraphdb COLLATE sql_latin1_general_cp1_cs_as</code>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Sqlg includes its own Text predicate for full text queries.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Text.contains (case sensitive string contains)</p>
-</li>
-<li>
-<p>Text.ncontains (case sensitive string does not contain)</p>
-</li>
-<li>
-<p>Text.containsCIS (case insensitive string contains)</p>
-</li>
-<li>
-<p>Text.ncontainsCIS (case insensitive string does not contain)</p>
-</li>
-<li>
-<p>Text.startsWith (case sensitive string starts with)</p>
-</li>
-<li>
-<p>Text.nstartsWith (case sensitive string does not start with)</p>
-</li>
-<li>
-<p>Text.endsWith (case sensitive string ends with)</p>
-</li>
-<li>
-<p>Text.nendsWith (case sensitive string does not end with)</p>
-</li>
-</ul>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void showTextPredicate() {
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John XXX Doe");
-    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter YYY Snow");
-    this.sqlgGraph.tx().commit();
-
-    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
-            .has("name", Text.contains("XXX")).toList();
-
-    assertEquals(1, persons.size());
-    assertEquals(john, persons.get(0));
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">sql</div>
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."name" AS "alias2"
-FROM
-	"public"."V_Person"
-WHERE
-	( "public"."V_Person"."name" like ?)</code></pre>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_datetime_queries">10.2.4. DateTime queries</h4>
-<div class="paragraph">
-<p>LocalDateTime, LocalDate and LocalTime queries are supported.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void showSearchOnLocalDateTime() {
-    LocalDateTime born1 = LocalDateTime.of(1990, 1, 1, 1, 1, 1);
-    LocalDateTime born2 = LocalDateTime.of(1990, 1, 1, 1, 1, 2);
-    LocalDateTime born3 = LocalDateTime.of(1990, 1, 1, 1, 1, 3);
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "born", born1);
-    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter", "born", born2);
-    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul", "born", born3);
-    this.sqlgGraph.tx().commit();
-
-    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V().hasLabel("Person")
-            .has("born", P.eq(born1))
-            .toList();
-    assertEquals(1, persons.size());
-    assertEquals(john, persons.get(0));
-
-    persons = this.sqlgGraph.traversal().V().hasLabel("Person")
-            .has("born", P.between(LocalDateTime.of(1990, 1, 1, 1, 1, 1), LocalDateTime.of(1990, 1, 1, 1, 1, 3)))
-            .toList();
-    //P.between is inclusive to exclusive
-    assertEquals(2, persons.size());
-    assertTrue(persons.contains(john));
-    assertTrue(persons.contains(peter));
-}</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">sql</div>
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."born" AS "alias2",
-	"public"."V_Person"."name" AS "alias3"
-FROM
-	"public"."V_Person"
-WHERE
-	( "public"."V_Person"."born" &gt;= ?) AND ( "public"."V_Person"."born" &lt; ?)</code></pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_order">10.3. Order</h3>
+<h3 id="_order_step">10.3. Order Step</h3>
 <div class="paragraph">
 <p>Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
 If not then order the ordering occurs in java via the OrderGlobalStep as per normal.</p>
@@ -2402,6 +2216,246 @@ FROM
 	"public"."V_Person"
 ORDER BY
 	 "alias2" ASC LIMIT 3 OFFSET 0</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_predicates">10.8. Predicates</h3>
+<div class="paragraph">
+<p>TinkerPop&#8217;s <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> and
+<a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a> predicates are optimized
+to execute on the database.</p>
+</div>
+<div class="sect3">
+<h4 id="_compare_predicate">10.8.1. Compare predicate</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showComparePredicate() {
+    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
+    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
+    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
+    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
+    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
+    easternUnion.addEdge("organization_division", legal);
+    easternUnion.addEdge("organization_division", dispatch);
+    legal.addEdge("division_office", newYork);
+    dispatch.addEdge("division_office", singapore);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("Organization")
+            .out()
+            .out()
+            .has("name", P.eq("Singapore")); <b class="conum">(1)</b>
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List&lt;Vertex&gt; offices = traversal.toList();
+    assertEquals(1, offices.size());
+    assertEquals(singapore, offices.get(0));
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>The <code>P</code> predicate will resolve on the database as a <code>sql</code> <code>where</code> clause.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Office"."ID" AS "alias1",
+	"public"."V_Office"."name" AS "alias2"
+FROM
+	"public"."V_Organization" INNER JOIN
+	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
+	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
+	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
+	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+WHERE
+	( "public"."V_Office"."name" = ?)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The same pattern is used for all the
+<a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> predicates.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_contains_predicate">10.8.2. Contains predicate</h4>
+<div class="paragraph">
+<p>Sqlg&#8217;s implementation of <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a>
+is slightly more complex.</p>
+</div>
+<div class="paragraph">
+<p>For Postgresql, MSSqlServer and HSQLDB a join onto a <code>values expression</code> is used.</p>
+</div>
+<div class="paragraph">
+<p>For H2 and MariaDB a regular <code>in</code> clause is used.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showContainsPredicate() {
+    List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;(10000);
+    for (int i = 0; i &lt; 10000; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
+        numbers.add(i);
+    }
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("number", P.within(numbers))
+            .toList();
+
+    assertEquals(10000, persons.size());
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."number" AS "alias2"
+FROM
+	"public"."V_Person" INNER JOIN
+	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This pattern makes <code>P.within</code> and <code>p.without</code> very fast even with millions of values being passed into the query.
+Benchmarking shows that doing a join on a temporary table is always faster than using the <code>in</code> clause.
+For the case of there being only one value Sqlg will use an <code>equals</code> instead of a temporary table or an <code>in</code> statement.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_text_predicate">10.8.3. Text predicate</h4>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Sqlg assumes a case-sensitive collation.
+MSSqlServer does not default to a case-sensitive collation.
+Create the database with <code>CREATE DATABASE sqlgraphdb COLLATE sql_latin1_general_cp1_cs_as</code>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Sqlg includes its own Text predicate for full text queries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Text.contains (case sensitive string contains)</p>
+</li>
+<li>
+<p>Text.ncontains (case sensitive string does not contain)</p>
+</li>
+<li>
+<p>Text.containsCIS (case insensitive string contains)</p>
+</li>
+<li>
+<p>Text.ncontainsCIS (case insensitive string does not contain)</p>
+</li>
+<li>
+<p>Text.startsWith (case sensitive string starts with)</p>
+</li>
+<li>
+<p>Text.nstartsWith (case sensitive string does not start with)</p>
+</li>
+<li>
+<p>Text.endsWith (case sensitive string ends with)</p>
+</li>
+<li>
+<p>Text.nendsWith (case sensitive string does not end with)</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showTextPredicate() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John XXX Doe");
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter YYY Snow");
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
+            .hasLabel("Person")
+            .has("name", Text.contains("XXX")).toList();
+
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."name" like ?)</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_datetime_queries">10.8.4. DateTime queries</h4>
+<div class="paragraph">
+<p>LocalDateTime, LocalDate and LocalTime queries are supported.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showSearchOnLocalDateTime() {
+    LocalDateTime born1 = LocalDateTime.of(1990, 1, 1, 1, 1, 1);
+    LocalDateTime born2 = LocalDateTime.of(1990, 1, 1, 1, 1, 2);
+    LocalDateTime born3 = LocalDateTime.of(1990, 1, 1, 1, 1, 3);
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "born", born1);
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter", "born", born2);
+    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul", "born", born3);
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.eq(born1))
+            .toList();
+    assertEquals(1, persons.size());
+    assertEquals(john, persons.get(0));
+
+    persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("born", P.between(LocalDateTime.of(1990, 1, 1, 1, 1, 1), LocalDateTime.of(1990, 1, 1, 1, 1, 3)))
+            .toList();
+    //P.between is inclusive to exclusive
+    assertEquals(2, persons.size());
+    assertTrue(persons.contains(john));
+    assertTrue(persons.contains(peter));
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."born" AS "alias2",
+	"public"."V_Person"."name" AS "alias3"
+FROM
+	"public"."V_Person"
+WHERE
+	( "public"."V_Person"."born" &gt;= ?) AND ( "public"."V_Person"."born" &lt; ?)</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -2758,7 +2812,7 @@ public void showStreamingWithLockBulkEdgeCreation() {
 <div id="footer">
 <div id="footer-text">
 Version 2.0.0<br>
-Last updated 2018-07-29 21:25:36 SAST
+Last updated 2018-07-30 21:29:25 SAST
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
