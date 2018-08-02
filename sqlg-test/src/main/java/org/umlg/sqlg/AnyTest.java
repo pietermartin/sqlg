@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchNormalUpdate;
+import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.batch.TestBatchNormalUpdate;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchNormalUpdate.class
+        TestReadOnlyRole.class
 })
 public class AnyTest {
 }
