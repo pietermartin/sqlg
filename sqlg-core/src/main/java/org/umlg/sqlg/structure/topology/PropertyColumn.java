@@ -98,10 +98,20 @@ public class PropertyColumn implements TopologyInf {
     }
 
     static PropertyColumn fromNotifyJson(AbstractLabel abstractLabel, JsonNode jsonNode) {
-        return new PropertyColumn(
-                abstractLabel,
-                jsonNode.get("name").asText(),
-                PropertyType.valueOf(jsonNode.get("propertyType").asText()));
+       String pt = jsonNode.get("propertyType").asText();
+       if (pt.equals("VARCHAR")) {
+           //This is not ideal, however Sqlg only uses VARCHAR when creating the column.
+           //For the rest is is considered the same as STRING
+           return new PropertyColumn(
+                   abstractLabel,
+                   jsonNode.get("name").asText(),
+                   PropertyType.STRING);
+       } else {
+           return new PropertyColumn(
+                   abstractLabel,
+                   jsonNode.get("name").asText(),
+                   PropertyType.valueOf(pt));
+       }
     }
 
     @Override
