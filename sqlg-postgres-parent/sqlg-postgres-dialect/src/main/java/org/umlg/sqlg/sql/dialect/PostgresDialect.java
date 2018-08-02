@@ -4442,7 +4442,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
         Connection conn = sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE ROLE \"sqlgReadOnly\" WITH LOGIN");
+            statement.execute("CREATE ROLE \"sqlgReadOnly\" WITH LOGIN PASSWORD 'sqlgReadOnly'");
             statement.execute("GRANT USAGE ON SCHEMA public TO \"sqlgReadOnly\"");
             statement.execute("GRANT USAGE ON SCHEMA sqlg_schema TO \"sqlgReadOnly\"");
             statement.execute("GRANT USAGE ON SCHEMA gui_schema TO \"sqlgReadOnly\"");
