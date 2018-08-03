@@ -211,6 +211,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 //Remove the dbComparators
                 for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
                     rootSchemaTableTree.removeDbComparators();
+                    rootSchemaTableTree.loadEager();
                 }
             } else {
                 //This is only needed for test assertions at the moment.

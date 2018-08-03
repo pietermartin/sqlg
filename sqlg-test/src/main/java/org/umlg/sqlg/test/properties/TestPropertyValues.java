@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.properties;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
@@ -20,6 +21,28 @@ import static org.junit.Assert.*;
  *
  */
 public class TestPropertyValues extends BaseTest {
+
+	/**
+	 * If the order() does not happen on the database, i.e. in java code then the property also needs to be present.
+	 */
+	@Test
+	public void testInMemoryOrderByValues(){
+		loadModern();
+		final Traversal<Vertex, String> traversal =  this.sqlgGraph.traversal().V().both().hasLabel("person").order().by("age", Order.decr).limit(5).values("name");
+		printTraversalForm(traversal);
+		checkOrderedResults(Arrays.asList("peter", "josh", "josh", "josh", "marko"), traversal);
+	}
+
+	public static <T> void checkOrderedResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
+		final List<T> results = traversal.toList();
+		assertFalse(traversal.hasNext());
+		if (expectedResults.size() != results.size()) {
+			assertEquals("Checking result size", expectedResults.size(), results.size());
+		}
+		for (int i = 0; i < expectedResults.size(); i++) {
+			assertEquals(expectedResults.get(i), results.get(i));
+		}
+	}
 
 	@Test
 	public void testValueMapOneObject(){
@@ -44,7 +67,7 @@ public class TestPropertyValues extends BaseTest {
     	}
     	assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names);
 	}
-	
+
 	@Test
 	public void testValueMapAllObject(){
 		loadModern();
@@ -79,7 +102,7 @@ public class TestPropertyValues extends BaseTest {
     	assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names);
     	assertEquals(new HashSet<>(Arrays.asList(29,27,32,35)),ages);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testValueMapAliasVertex(){
@@ -101,7 +124,7 @@ public class TestPropertyValues extends BaseTest {
     		assertTrue(v.property("age").isPresent());
     		names1.add((String)v.property("name").value());
     		ages.add((Integer)v.property("age").value());
-    		
+
     		Map<String,Object> m2=(Map<String,Object>)m.get("b");
     		Object o=m2.get("name");
     		// "It is important to note that the map of a vertex maintains a list of values for each key."
@@ -139,7 +162,7 @@ public class TestPropertyValues extends BaseTest {
 		}
 		assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names);
 	}
-	
+
 	@Test
 	public void testValuesOne(){
 		loadModern();
@@ -152,7 +175,7 @@ public class TestPropertyValues extends BaseTest {
     	}
     	assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter")),names);
 	}
-	
+
 	@Test
 	public void testValuesAll(){
 		loadModern();
@@ -165,8 +188,8 @@ public class TestPropertyValues extends BaseTest {
     	}
     	assertEquals(new HashSet<>(Arrays.asList("marko","vadas","josh","peter",29,27,32,35)),values);
 	}
-	
-	
+
+
 	@Test
 	public void testValuesOneWhere(){
 		loadModern();
@@ -193,7 +216,7 @@ public class TestPropertyValues extends BaseTest {
         assertTrue(traversal.hasNext());
         assertEquals(Arrays.asList("marko", "josh", "peter"), traversal.toList());
     }
-	
+
 	@Test
 	public void testOut(){
 		loadModern();

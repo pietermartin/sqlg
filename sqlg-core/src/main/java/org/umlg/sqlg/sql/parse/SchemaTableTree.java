@@ -108,6 +108,11 @@ public class SchemaTableTree {
     private final List<ColumnList> columnListStack = new ArrayList<>();
 
     private Set<String> restrictedProperties = null;
+    private boolean eagerLoad = false;
+
+    public void loadEager() {
+        this.eagerLoad = true;
+    }
 
     public enum STEP_TYPE {
         GRAPH_STEP,
@@ -2649,11 +2654,11 @@ public class SchemaTableTree {
 	 */
 	public boolean shouldSelectProperty(String property){
 		// no restriction
-		if (restrictedProperties==null){
+		if (getRoot().eagerLoad || restrictedProperties==null){
 			return true;
 		}
 		// explicit restriction
-		if (restrictedProperties.contains(property)){
+		if (getRoot().eagerLoad || restrictedProperties.contains(property)){
 			return true;
 		}
 		return false;
