@@ -23,6 +23,7 @@ public class SqlgH2ProcessStandardTest {
     @BeforeClass
     public static void setUp() {
         try {
+            new File("./src/test/db/").mkdirs();
             FileUtils.cleanDirectory(new File("./src/test/db/"));
         } catch (IOException e) {
             Assert.fail("Failed to delete H2's db dir at ./src/test/db");
