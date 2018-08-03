@@ -883,6 +883,7 @@ public class SqlgUtil {
                 if (rs.next()) {
                     try (Statement s = conn.createStatement()) {
                         s.execute("REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON SCHEMA \"sqlg_schema\" FROM \"sqlgReadOnly\"");
                         s.execute("DROP ROLE \"sqlgReadOnly\"");
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
