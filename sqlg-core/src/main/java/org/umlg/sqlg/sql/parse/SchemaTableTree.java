@@ -208,7 +208,7 @@ public class SchemaTableTree {
             SchemaTable schemaTable,
             Direction direction,
             Class<? extends Element> elementClass,
-            ReplacedStep<?,?> replacedStep,
+            ReplacedStep<?, ?> replacedStep,
             boolean isEdgeVertexStep,
             Set<String> labels) {
         return addChild(
@@ -234,7 +234,7 @@ public class SchemaTableTree {
             SchemaTable schemaTable,
             Direction direction,
             Class<? extends Element> elementClass,
-            ReplacedStep<?,?> replacedStep,
+            ReplacedStep<?, ?> replacedStep,
             Set<String> labels) {
 
         Preconditions.checkState(replacedStep.getStep() instanceof VertexStep, "addChild can only be called for a VertexStep, found %s", replacedStep.getStep().getClass().getSimpleName());
@@ -836,10 +836,10 @@ public class SchemaTableTree {
 
         // calculate restrictions on properties once and for all
         calculatePropertyRestrictions();
-        for (SchemaTableTree stt:distinctQueryStack){
-        	if (stt!=this){
-        		stt.calculatePropertyRestrictions();
-        	}
+        for (SchemaTableTree stt : distinctQueryStack) {
+            if (stt != this) {
+                stt.calculatePropertyRestrictions();
+            }
         }
         /*
          *columnList holds the columns per sub query.
@@ -1016,7 +1016,8 @@ public class SchemaTableTree {
                     }
                 }
             } else if (this.parentIdsAndIndexes.size() != 1 && !sqlgGraph.getSqlDialect().supportsValuesExpression()) {
-                //Mariadb lo and behold does not support VALUES
+                //Mariadb supports VALUES expression but not in a useful manner.
+                //https://jira.mariadb.org/browse/MDEV-16771
                 //Need to use a randomized name here else the temp table gets reused within the same transaction.
                 SecureRandom random = new SecureRandom();
                 byte bytes[] = new byte[6];
@@ -1024,7 +1025,24 @@ public class SchemaTableTree {
                 String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
                 sqlgGraph.tx().normalBatchModeOn();
                 for (Pair<RecordId.ID, Long> parentIdsAndIndex : this.parentIdsAndIndexes) {
-                    sqlgGraph.addTemporaryVertex(T.label, tmpTableIdentified, "tmpId", parentIdsAndIndex.getLeft().getSequenceId(), "index", parentIdsAndIndex.getRight());
+                    if (firstSchemaTableTree.hasIDPrimaryKey) {
+                        sqlgGraph.addTemporaryVertex(
+                                T.label, tmpTableIdentified,
+                                "tmpId", parentIdsAndIndex.getLeft().getSequenceId(),
+                                "index", parentIdsAndIndex.getRight());
+                    } else {
+                        List<Object> keyValues = new ArrayList<>();
+                        keyValues.add(T.label);
+                        keyValues.add(tmpTableIdentified);
+                        int count = 0;
+                        for (String identifier : firstSchemaTableTree.getIdentifiers()) {
+                            keyValues.add(identifier);
+                            keyValues.add(parentIdsAndIndex.getLeft().getIdentifiers().get(count++));
+                        }
+                        keyValues.add("index");
+                        keyValues.add(parentIdsAndIndex.getRight());
+                        sqlgGraph.addTemporaryVertex(keyValues.toArray());
+                    }
                 }
                 sqlgGraph.tx().flush();
 
@@ -1035,13 +1053,29 @@ public class SchemaTableTree {
                 singlePathSql.append(" as tmp");
                 singlePathSql.append(" ON ");
 
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-                singlePathSql.append(".");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-                singlePathSql.append(".");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
-                singlePathSql.append(" = tmp.");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                if (firstSchemaTableTree.hasIDPrimaryKey) {
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                    singlePathSql.append(" = tmp.");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                } else {
+                    int cnt = 1;
+                    for (String identifier : firstSchemaTableTree.getIdentifiers()) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        singlePathSql.append(" = tmp.");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        if (cnt++ < firstSchemaTableTree.getIdentifiers().size()) {
+                            singlePathSql.append(" AND ");
+                        }
+                    }
+                }
             } else {
                 singlePathSql.append("\nWHERE\n\t");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
@@ -1090,7 +1124,7 @@ public class SchemaTableTree {
     }
 
     @SuppressWarnings("unchecked")
-	private String bulkWithJoin(SqlgGraph sqlgGraph) {
+    private String bulkWithJoin(SqlgGraph sqlgGraph) {
         StringBuilder sb = new StringBuilder();
         List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).collect(Collectors.toList());
         for (HasContainer hasContainer : bulkHasContainers) {
@@ -1373,7 +1407,7 @@ public class SchemaTableTree {
             } else {
                 Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
-                SelectOneStep<?,?> selectOneStep = (SelectOneStep<?,?>) comparator.getValue0().getSteps().get(0);
+                SelectOneStep<?, ?> selectOneStep = (SelectOneStep<?, ?>) comparator.getValue0().getSteps().get(0);
                 Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                 Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                 Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>) selectOneStep.getLocalChildren().get(0);
@@ -1766,14 +1800,14 @@ public class SchemaTableTree {
         }
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
             if (!identifiers.contains(propertyTypeMapEntry.getKey())) {
-            	if (lastSchemaTableTree.shouldSelectProperty(propertyTypeMapEntry.getKey())){
-	                String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
-	                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
-	                for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-	                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
-	                }
-            	}
+                if (lastSchemaTableTree.shouldSelectProperty(propertyTypeMapEntry.getKey())) {
+                    String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
+                    cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
+                    for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+                        alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+                        cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
+                    }
+                }
             }
         }
     }
@@ -1793,23 +1827,23 @@ public class SchemaTableTree {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
             String col = propertyTypeMapEntry.getKey();
-            if (lastSchemaTableTree.shouldSelectProperty(col)){
-	            String alias = cols.getAlias(lastSchemaTableTree, col);
-	            if (alias == null) {
-	                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
-	                cols.add(lastSchemaTableTree, col, alias);
-	            } else {
-	                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
-	            }
-	            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-	                col = propertyTypeMapEntry.getKey() + postFix;
-	                alias = cols.getAlias(lastSchemaTableTree, col);
-	                // postfix do not use labeled methods
-	                if (alias == null) {
-	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-	                    cols.add(lastSchemaTableTree, col, alias);
-	                }
-	            }
+            if (lastSchemaTableTree.shouldSelectProperty(col)) {
+                String alias = cols.getAlias(lastSchemaTableTree, col);
+                if (alias == null) {
+                    alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
+                    cols.add(lastSchemaTableTree, col, alias);
+                } else {
+                    lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
+                }
+                for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+                    col = propertyTypeMapEntry.getKey() + postFix;
+                    alias = cols.getAlias(lastSchemaTableTree, col);
+                    // postfix do not use labeled methods
+                    if (alias == null) {
+                        alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+                        cols.add(lastSchemaTableTree, col, alias);
+                    }
+                }
             }
         }
     }
@@ -2308,7 +2342,7 @@ public class SchemaTableTree {
      * @return true if any has container does NOT match, false if everything is fine
      */
     @SuppressWarnings("unchecked")
-	private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
+    private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)) {
                 if (hasContainer.getKey().equals(label.getAccessor())) {
@@ -2639,43 +2673,44 @@ public class SchemaTableTree {
         return this.distributionColumn != null;
     }
 
-	public Set<String> getRestrictedProperties() {
-		return restrictedProperties;
-	}
+    public Set<String> getRestrictedProperties() {
+        return restrictedProperties;
+    }
 
-	public void setRestrictedProperties(Set<String> restrictedColumns) {
-		this.restrictedProperties = restrictedColumns;
-	}
+    public void setRestrictedProperties(Set<String> restrictedColumns) {
+        this.restrictedProperties = restrictedColumns;
+    }
 
-	/**
-	 * should we select the given property?
-	 * @param property the property name
-	 * @return true if the property should be part of the select clause, false otherwise
-	 */
-	public boolean shouldSelectProperty(String property){
-		// no restriction
-		if (getRoot().eagerLoad || restrictedProperties==null){
-			return true;
-		}
-		// explicit restriction
-		if (getRoot().eagerLoad || restrictedProperties.contains(property)){
-			return true;
-		}
-		return false;
-	}
+    /**
+     * should we select the given property?
+     *
+     * @param property the property name
+     * @return true if the property should be part of the select clause, false otherwise
+     */
+    public boolean shouldSelectProperty(String property) {
+        // no restriction
+        if (getRoot().eagerLoad || restrictedProperties == null) {
+            return true;
+        }
+        // explicit restriction
+        if (getRoot().eagerLoad || restrictedProperties.contains(property)) {
+            return true;
+        }
+        return false;
+    }
 
-	/**
-	 * calculate property restrictions from explicit restrictions and required properties
-	 */
-	private void calculatePropertyRestrictions(){
-		if (restrictedProperties==null){
-			return;
-		}
-		// we use aliases for ordering, so we need the property in the select clause
+    /**
+     * calculate property restrictions from explicit restrictions and required properties
+     */
+    private void calculatePropertyRestrictions() {
+        if (restrictedProperties == null) {
+            return;
+        }
+        // we use aliases for ordering, so we need the property in the select clause
         for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.getDbComparators()) {
 
             if (comparator.getValue1() instanceof ElementValueComparator) {
-            	restrictedProperties.add(((ElementValueComparator<?>)comparator.getValue1()).getPropertyKey());
+                restrictedProperties.add(((ElementValueComparator<?>) comparator.getValue1()).getPropertyKey());
 
             } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
                     && comparator.getValue1() instanceof Order) {
@@ -2693,10 +2728,10 @@ public class SchemaTableTree {
                         key = tokenTraversal.getToken().getAccessor();
                     }
                 }
-                if (key!=null){
-                	restrictedProperties.add(key);
+                if (key != null) {
+                    restrictedProperties.add(key);
                 }
             }
         }
-	}
+    }
 }
