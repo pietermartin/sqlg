@@ -1,0 +1,2 @@
+CREATE DATABASE sqlgraphdb;
+CREATE USER 'mariadb'@'%' IDENTIFIED BY 'mariadb';
