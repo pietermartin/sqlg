@@ -21,7 +21,7 @@ public class SqlgMSSqlServerProvider extends SqlgAbstractGraphProvider {
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:sqlserver://localhost:1433;databaseName=" + graphName);
             put("jdbc.username", "SA");
-            put("jdbc.password", "S0utp@nsb3rg");
+            put("jdbc.password", "P@ssw0rd1");
             put("maxPoolSize", 10);
         }};
         return m;
