@@ -1,2 +1,6 @@
+```
 CREATE DATABASE sqlgraphdb;
 CREATE USER 'mariadb'@'%' IDENTIFIED BY 'mariadb';
+GRANT ALL PRIVILEGES ON *.* TO 'mariadb'@'%' IDENTIFIED BY 'mariadb';
+FLUSH PRIVILEGES;
+```
