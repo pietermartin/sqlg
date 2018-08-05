@@ -143,10 +143,12 @@
                     <execution>
                         <id>attach-javadocs</id>
                         <goals>
-                            <goal>jar</goal>
+                            <goal>aggregate</goal>
                         </goals>
                         <configuration>
                             <failOnError>false</failOnError>
+                            <excludePackageNames>*.test.*</excludePackageNames>
+                            <destDir>userdefined</destDir>
                         </configuration>
                     </execution>
                 </executions>
