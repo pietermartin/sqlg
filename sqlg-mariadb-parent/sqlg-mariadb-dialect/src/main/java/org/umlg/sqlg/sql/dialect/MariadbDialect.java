@@ -1093,8 +1093,8 @@ public class MariadbDialect extends BaseSqlDialect {
     public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
         Connection conn = sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE USER 'sqlgReadOnly'@'localhost' IDENTIFIED BY 'sqlgReadOnly'");
-            statement.execute("GRANT SELECT ON *.* TO 'sqlgReadOnly'@'localhost' IDENTIFIED BY 'sqlgReadOnly'");
+            statement.execute("CREATE USER 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
+            statement.execute("GRANT SELECT ON *.* TO 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
             statement.executeQuery("FLUSH PRIVILEGES");
         } catch (SQLException e) {
             throw new RuntimeException(e);
