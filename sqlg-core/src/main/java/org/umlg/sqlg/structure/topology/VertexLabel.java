@@ -639,16 +639,18 @@ public class VertexLabel extends AbstractLabel {
                     Preconditions.checkState(schemaOptional.isPresent(), "Schema %s must be present", schemaName);
                     @SuppressWarnings("OptionalGetWithoutIsPresent")
                     Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(edgeLabelName);
-                    Preconditions.checkState(edgeLabelOptional.isPresent(), "edge label must be present as the in can not be there without the out. EdgeLabel: %s", edgeLabelName);
-                    @SuppressWarnings("OptionalGetWithoutIsPresent")
-                    EdgeLabel edgeLabel = edgeLabelOptional.get();
-                    edgeLabel.addToInVertexLabel(this);
-                    this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
-                    edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel,false);
-                    this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
-                    this.getSchema().getTopology().addToEdgeForeignKeyCache(
-                            edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
-                            this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
+                    //The edgeLabel could have been deleted.
+                    if (edgeLabelOptional.isPresent()) {
+                        @SuppressWarnings("OptionalGetWithoutIsPresent")
+                        EdgeLabel edgeLabel = edgeLabelOptional.get();
+                        edgeLabel.addToInVertexLabel(this);
+                        this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
+                        edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel,false);
+                        this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
+                        this.getSchema().getTopology().addToEdgeForeignKeyCache(
+                                edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
+                                this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
+                    }
                 }
             }
         }
