@@ -25,11 +25,11 @@ public class AsciiDoctor {
             File html = new File("sqlg-doc/doc/index.html");
             Attributes attributes = new Attributes();
             attributes.setBackend("html5");
-            attributes.setStyleSheetName("../doc/asciidoctor-default.css");
+            attributes.setStyleSheetName("asciidoctor-default.css");
             attributes.setDocType("book");
             //the left toc don't work with these css
-//            attributes.setStyleSheetName("../css/volnitsky.css");
-//            attributes.setStyleSheetName("../css/flask.css");
+//            attributes.setStyleSheetName("volnitsky.css");
+//            attributes.setStyleSheetName("flask.css");
 //            attributes.setTableOfContents2(Placement.LEFT);
             attributes.setSourceHighlighter("highlightjs");
 

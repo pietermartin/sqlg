@@ -9,7 +9,7 @@
 <meta name="keywords" content="Sqlg, TinkerPop, Gremlin, Graph, Database">
 <meta name="author" content="Pieter Martin">
 <title>Sqlg Documentation</title>
-<link rel="stylesheet" href="./../doc/asciidoctor-default.css">
+<link rel="stylesheet" href="asciidoctor-default.css">
 </head>
 <body class="book toc2 toc-left">
 <div id="header">
@@ -69,17 +69,19 @@
 <ul class="sectlevel2">
 <li><a href="#_optimization">10.1. Optimization</a></li>
 <li><a href="#_graph_step">10.2. Graph Step</a></li>
-<li><a href="#_order_step">10.3. Order Step</a></li>
-<li><a href="#_repeatstep">10.4. RepeatStep</a></li>
-<li><a href="#_optionalstep">10.5. OptionalStep</a></li>
-<li><a href="#_range">10.6. Range</a></li>
-<li><a href="#_limit">10.7. Limit</a></li>
-<li><a href="#_predicates">10.8. Predicates</a>
+<li><a href="#_vertex_steps">10.3. Vertex Steps</a></li>
+<li><a href="#_has_step">10.4. Has Step</a></li>
+<li><a href="#_order_step">10.5. Order Step</a></li>
+<li><a href="#_repeatstep">10.6. RepeatStep</a></li>
+<li><a href="#_optionalstep">10.7. OptionalStep</a></li>
+<li><a href="#_range">10.8. Range</a></li>
+<li><a href="#_limit">10.9. Limit</a></li>
+<li><a href="#_predicates">10.10. Predicates</a>
 <ul class="sectlevel3">
-<li><a href="#_compare_predicate">10.8.1. Compare predicate</a></li>
-<li><a href="#_contains_predicate">10.8.2. Contains predicate</a></li>
-<li><a href="#_text_predicate">10.8.3. Text predicate</a></li>
-<li><a href="#_datetime_queries">10.8.4. DateTime queries</a></li>
+<li><a href="#_compare_predicate">10.10.1. Compare predicate</a></li>
+<li><a href="#_contains_predicate">10.10.2. Contains predicate</a></li>
+<li><a href="#_text_predicate">10.10.3. Text predicate</a></li>
+<li><a href="#_datetime_queries">10.10.4. DateTime queries</a></li>
 </ul>
 </li>
 </ul>
@@ -99,7 +101,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p><a href="https://github.com/pietermartin/sqlg"><strong>Sqlg</strong></a> <span class="image"><img src="./img/github/SVG/mark-github.svg" alt="mark github"></span> is a implementation of <a href="http://tinkerpop.apache.org/">Apache TinkerPop</a> on a
+<p><a href="https://github.com/pietermartin/sqlg"><strong>Sqlg</strong></a> <span class="image"><img src="img/github/SVG/mark-github.svg" alt="mark github"></span> is a implementation of <a href="http://tinkerpop.apache.org/">Apache TinkerPop</a> on a
 <a href="http://en.wikipedia.org/wiki/Relational_database_management_system">RDBMS</a>.
 Currently <a href="http://www.postgresql.org/">Postgresql</a>, <a href="http://hsqldb.org/">HSQLDB</a>, <a href="http://h2database.com">H2</a>,
 <a href="https://mariadb.org/">MariaDB</a>, <a href="https://www.mysql.com/">MySQL</a> and
@@ -140,7 +142,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and Mari
 <h2 id="_license">2. License</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><span class="image"><img src="./img/github/SVG/law.svg" alt="MIT"></span> <a href="https://github.com/pietermartin/sqlg/blob/master/LICENSE">MIT</a></p>
+<p><span class="image"><img src="img/github/SVG/law.svg" alt="MIT"></span> <a href="https://github.com/pietermartin/sqlg/blob/master/LICENSE">MIT</a></p>
 </div>
 </div>
 </div>
@@ -988,27 +990,27 @@ can be used.</p>
 <p>Taken from <a href="http://tinkerpop.apache.org/docs/current/reference/#intro">TinkerPop</a></p>
 </div>
 <div class="paragraph">
-<p><span class="image"><img src="./img/sqlg/tinkerpop-modern-graph.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/tinkerpop-modern-graph.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="paragraph">
 <div class="title">ER Diagram</div>
-<p><span class="image"><img src="./img/sqlg/tinkerpop-modern-er.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/tinkerpop-modern-er.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="paragraph">
 <div class="title">V_person</div>
-<p><span class="image"><img src="./img/sqlg/V_person.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/V_person.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="paragraph">
 <div class="title">V_software</div>
-<p><span class="image"><img src="./img/sqlg/V_software.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/V_software.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="paragraph">
 <div class="title">E_knows</div>
-<p><span class="image"><img src="./img/sqlg/E_knows.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/E_knows.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="paragraph">
 <div class="title">E_created</div>
-<p><span class="image"><img src="./img/sqlg/E_created.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/E_created.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 </div>
 <div class="sect2">
@@ -1073,10 +1075,10 @@ Table <code>E_owner</code> is in the <code>fleet</code> schema as its <code>out<
 </div>
 <div class="paragraph">
 <div class="title">postgresql schemas</div>
-<p><span class="image"><img src="./img/sqlg/schemas.png" alt="image of tinkerpop-classic"></span>
-<span class="image"><img src="./img/sqlg/continent.png" alt="image of tinkerpop-classic"></span>
-<span class="image"><img src="./img/sqlg/fleet.png" alt="image of tinkerpop-classic"></span>
-<span class="image"><img src="./img/sqlg/public.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/schemas.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="img/sqlg/continent.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="img/sqlg/fleet.png" alt="image of tinkerpop-classic"></span>
+<span class="image"><img src="img/sqlg/public.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="sect3">
 <h4 id="_edge_label">7.4.1. Edge label</h4>
@@ -1126,7 +1128,7 @@ The topology is stored in the <code>sqlg_schema</code> schema.</p>
 </div>
 <div class="paragraph">
 <div class="title">UML diagram of Sqlg&#8217;s topology.</div>
-<p><span class="image"><img src="./img/uml/topology%20Class%20Diagram.png" alt="image of Sqlg&#8217;s topology"></span></p>
+<p><span class="image"><img src="img/uml/topology%20Class%20Diagram.png" alt="image of Sqlg&#8217;s topology"></span></p>
 </div>
 <div class="paragraph">
 <p>TinkerPop has no notion of schema or topology. However any TinkerPop graph has an implicit schema.
@@ -1538,7 +1540,7 @@ public void testIndex() {
 </div>
 <div class="paragraph">
 <div class="title">postgresql V_Person sql definition</div>
-<p><span class="image"><img src="./img/sqlg/V_Person_name_index.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/V_Person_name_index.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="sect3">
 <h4 id="_composite_indexes">8.1.1. Composite indexes</h4>
@@ -1577,7 +1579,7 @@ public void testCompositeIndex() {
 </div>
 <div class="paragraph">
 <div class="title">postgresql V_Person composite index sql definition</div>
-<p><span class="image"><img src="./img/sqlg/postgresql_composite_index.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/postgresql_composite_index.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="paragraph">
 <p>Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
@@ -1755,7 +1757,7 @@ However gremlin&#8217;s fine grained 'graphy' nature results in very high latenc
 gremlin by reducing the number of calls to the RDBMS.</p>
 </div>
 <div class="paragraph">
-<p>Sqlg optimizes gremlin by analyzing the steps and where possible combining them into a single SqlgGraphStepCompiled or SqlgVertexStepCompiled.</p>
+<p>Sqlg optimizes gremlin by analyzing the steps and where possible combining them into a single SqlgGraphStep or SqlgVertexStep.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1792,10 +1794,10 @@ Turn sql logging on by setting <code>log4j.logger.org.umlg.sqlg=debug</code>
 <p><a href="#_graph_step">Graph Step</a></p>
 </li>
 <li>
-<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#vertex-steps">Vertex Steps</a></p>
+<p><a href="#_vertex_steps">Vertex Steps</a></p>
 </li>
 <li>
-<p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step">Has Step</a></p>
+<p><a href="#Has Steps">[Has Steps]</a></p>
 </li>
 <li>
 <p><a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#repeat-step">Repeat Step</a></p>
@@ -1865,33 +1867,30 @@ public void showGraphStep() {
 }</code></pre>
 </div>
 </div>
-<div id="before-optimization" class="listingblock">
+<div id="anchor-before-optimization" class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
 <pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]</pre>
 </div>
 </div>
-<div class="listingblock">
+<div id="anchor-after-optimization" class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre>[SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Without optimization the query <code>this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()</code> will result
-in a number of database hits. First to get the organizations, then for each organization the divisions and then for each
-division the offices.
-For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is significant.</p>
+<p>The <a href="#anchor-before-optimization">Before optimization</a> output shows the steps that will execute if no optimization is performed.
+Without optimization the query <code>this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()</code> will
+first get the organizations, then for each organization the divisions and then for each division the offices.
+For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is
+significant.</p>
 </div>
 <div class="paragraph">
-<p>In the above example the <code>GraphStep</code>, <code>HasStep</code> and 2 <code>VertexStep`s are combined into one `SqlgGraphStepCompiled</code> step.</p>
+<p><a href="#anchor-after-optimization">After optimization</a> there is only one <a href="apidocs/index.html/org/umlg/sqlg/step/SqlgGraphStep.html"><code>SqlgGraphStep</code></a> step. All the steps have been folded into one step.</p>
 </div>
 <div class="paragraph">
-<p>The output shows the steps that would have executed with if no optimization is performed.
-As the query only contains sequential optimizable steps they are all combined into one step.</p>
-</div>
-<div class="paragraph">
-<p>The above <a href="#before-optimization">Before optimization</a> example will retrieve the data in one sql query.</p>
+<p>The <a href="apidocs/index.html/org/umlg/sqlg/step/SqlgGraphStep.html"><code>SqlgGraphStep</code></a> will generate the following <code>sql</code> to retrieve the data.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1908,7 +1907,19 @@ FROM
 </div>
 </div>
 <div class="sect2">
-<h3 id="_order_step">10.3. Order Step</h3>
+<h3 id="_vertex_steps">10.3. Vertex Steps</h3>
+<div class="paragraph">
+<p>Consecutive <a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#vertex-steps">Vertex Steps</a> are folded into the <a href="#_graph_step">Graph Step</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_has_step">10.4. Has Step</h3>
+<div class="paragraph">
+<p>Consecutive <a href="http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step">Has Step</a> are folded into the <a href="#_graph_step">Graph Step</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_order_step">10.5. Order Step</h3>
 <div class="paragraph">
 <p>Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
 If not then order the ordering occurs in java via the OrderGlobalStep as per normal.</p>
@@ -1955,7 +1966,7 @@ ORDER BY
 </div>
 </div>
 <div class="sect2">
-<h3 id="_repeatstep">10.4. RepeatStep</h3>
+<h3 id="_repeatstep">10.6. RepeatStep</h3>
 <div class="paragraph">
 <p>Sqlg optimizes the <code>RepeatStep</code> so long as the <code>until</code> modulator is <strong>not</strong> present.
 <code>RepeatStep</code> can be optimized with the modulator <code>emit</code> and <code>times</code>.</p>
@@ -2048,7 +2059,7 @@ FROM
 </div>
 </div>
 <div class="sect2">
-<h3 id="_optionalstep">10.5. OptionalStep</h3>
+<h3 id="_optionalstep">10.7. OptionalStep</h3>
 <div class="paragraph">
 <p>Sqlg optimizes the OptionalStep.</p>
 </div>
@@ -2142,7 +2153,7 @@ WHERE
 </div>
 </div>
 <div class="sect2">
-<h3 id="_range">10.6. Range</h3>
+<h3 id="_range">10.8. Range</h3>
 <div class="paragraph">
 <p>Sqlg optimizes the <code>RangeGlobalStep</code></p>
 </div>
@@ -2181,7 +2192,7 @@ ORDER BY
 </div>
 </div>
 <div class="sect2">
-<h3 id="_limit">10.7. Limit</h3>
+<h3 id="_limit">10.9. Limit</h3>
 <div class="paragraph">
 <p>Sqlg optimizes <code>.limit(x)</code></p>
 </div>
@@ -2220,14 +2231,14 @@ ORDER BY
 </div>
 </div>
 <div class="sect2">
-<h3 id="_predicates">10.8. Predicates</h3>
+<h3 id="_predicates">10.10. Predicates</h3>
 <div class="paragraph">
 <p>TinkerPop&#8217;s <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> and
 <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a> predicates are optimized
 to execute on the database.</p>
 </div>
 <div class="sect3">
-<h4 id="_compare_predicate">10.8.1. Compare predicate</h4>
+<h4 id="_compare_predicate">10.10.1. Compare predicate</h4>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
@@ -2286,7 +2297,7 @@ WHERE
 </div>
 </div>
 <div class="sect3">
-<h4 id="_contains_predicate">10.8.2. Contains predicate</h4>
+<h4 id="_contains_predicate">10.10.2. Contains predicate</h4>
 <div class="paragraph">
 <p>Sqlg&#8217;s implementation of <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a>
 is slightly more complex.</p>
@@ -2335,7 +2346,7 @@ For the case of there being only one value Sqlg will use an <code>equals</code> 
 </div>
 </div>
 <div class="sect3">
-<h4 id="_text_predicate">10.8.3. Text predicate</h4>
+<h4 id="_text_predicate">10.10.3. Text predicate</h4>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -2412,7 +2423,7 @@ WHERE
 </div>
 </div>
 <div class="sect3">
-<h4 id="_datetime_queries">10.8.4. DateTime queries</h4>
+<h4 id="_datetime_queries">10.10.4. DateTime queries</h4>
 <div class="paragraph">
 <p>LocalDateTime, LocalDate and LocalTime queries are supported.</p>
 </div>
@@ -2574,7 +2585,7 @@ public void showNormalBatchMode() {
 </div>
 <div class="paragraph">
 <div class="title">memory</div>
-<p><span class="image"><img src="./img/sqlg/normalBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/normalBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 </div>
 <div class="sect2">
@@ -2644,7 +2655,7 @@ public void showStreamingBatchMode() {
 </div>
 <div class="paragraph">
 <div class="title">memory</div>
-<p><span class="image"><img src="./img/sqlg/streamingBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/streamingBatchModeMemory.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 </div>
 <div class="sect2">
@@ -2739,7 +2750,7 @@ public void showBulkEdgeCreation() {
 </div>
 <div class="paragraph">
 <div class="title">memory</div>
-<p><span class="image"><img src="./img/sqlg/bulkAddEdgesMemory.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/bulkAddEdgesMemory.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 </div>
 <div class="sect2">
@@ -2803,7 +2814,7 @@ public void showStreamingWithLockBulkEdgeCreation() {
 </div>
 <div class="paragraph">
 <div class="title">memory</div>
-<p><span class="image"><img src="./img/sqlg/streamingBatchModeWithLockMemory.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="img/sqlg/streamingBatchModeWithLockMemory.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 </div>
 </div>
@@ -2812,7 +2823,7 @@ public void showStreamingWithLockBulkEdgeCreation() {
 <div id="footer">
 <div id="footer-text">
 Version 2.0.0<br>
-Last updated 2018-07-30 21:29:25 SAST
+Last updated 2018-08-06 07:55:34 SAST
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">

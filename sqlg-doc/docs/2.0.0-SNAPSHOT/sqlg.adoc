@@ -4,11 +4,12 @@ Version 2.0.0, August 2018:
 :sectnums:
 :toc: left
 :toclevels: 4
-//:toc-title:
 :experimental:
 :description: Sqlg's documentation
 :keywords: Sqlg, TinkerPop, Gremlin, Graph, Database
 :imagesdir: ./img
+:apidocs: apidocs/index.html
+:tinkerpop-docs: http://tinkerpop.apache.org/docs/current/reference/
 
 https://github.com/pietermartin/sqlg[*Sqlg*] image:github/SVG/mark-github.svg[] is a implementation of http://tinkerpop.apache.org/[Apache TinkerPop] on a
 http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS].
@@ -21,7 +22,7 @@ Sqlg has a google group https://groups.google.com/forum/?hl=en#!forum/sqlg[forum
 == Introduction
 
 Sqlg primary challenge is to reduce latency by combining TinkerPop
-http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps[steps] into as few as possible database calls.
+{tinkerpop-docs}#graph-traversal-steps[steps] into as few as possible database calls.
 The fine grained nature of graph traversals makes this crucial else the remote call latency has a severe performance
 impact.
 
@@ -1147,7 +1148,7 @@ Sqlg has full support for gremlin.
 However gremlin's fine grained 'graphy' nature results in very high latency. To overcome the high latency Sqlg optimizes
 gremlin by reducing the number of calls to the RDBMS.
 
-Sqlg optimizes gremlin by analyzing the steps and where possible combining them into a single SqlgGraphStepCompiled or SqlgVertexStepCompiled.
+Sqlg optimizes gremlin by analyzing the steps and where possible combining them into a single SqlgGraphStep or SqlgVertexStep.
 
 [NOTE]
 This is an ongoing task as gremlin is a large language.
@@ -1161,7 +1162,7 @@ The following consecutive are currently combined.
 
 * <<Graph Step>>
 * <<Vertex Steps>>
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step[Has Step]
+* <<Has Steps>>
 * http://tinkerpop.apache.org/docs/3.3.3/reference/#repeat-step[Repeat Step]
 * http://tinkerpop.apache.org/docs/3.3.3/reference/#order-step[Order Step]
 * http://tinkerpop.apache.org/docs/3.3.3/reference/#range-step[Range Step]
@@ -1209,28 +1210,27 @@ public void showGraphStep() {
 ----
 
 [options="nowrap"]
+[[anchor-before-optimization]]
 .Before optimization
 ----
 [GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
 ----
 
+[[anchor-after-optimization]]
 .After optimization
 ----
 [SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]
 ----
 
-Without optimization the query `this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()` will result
-in a number of database hits. First to get the organizations, then for each organization the divisions and then for each
-division the offices.
-For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is significant.
+The <<anchor-before-optimization>> output shows the steps that will execute if no optimization is performed.
+Without optimization the query `this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()` will
+first get the organizations, then for each organization the divisions and then for each division the offices.
+For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is
+significant.
 
-In the above example the `GraphStep`, `HasStep` and 2 `VertexStep`s are
-combined into one `SqlgGraphStepCompiled` step.
+<<anchor-after-optimization>> there is only one link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] step. All the steps have been folded into one step.
 
-The output shows the steps that would have executed with if no optimization is performed.
-As the query only contains sequential optimizable steps they are all combined into one step.
-
-The `SqlgGraphStepCompiled` will generate the following `sql` to retrieve the data.
+The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
 
 [source,sql,options="nowrap"]
 ----
@@ -1251,7 +1251,7 @@ Consecutive http://tinkerpop.apache.org/docs/3.3.3/reference/#vertex-steps[Verte
 
 === Has Step
 
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step[Has Step]
+Consecutive http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step[Has Step] are folded into the <<Graph Step>>.
 
 === Order Step
 
