@@ -17,6 +17,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Xmx8192m -XX:+UseCompressedOops</argLine>
+                    <argLine>-Dbuild.dir=${project.build.directory}</argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>
