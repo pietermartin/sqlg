@@ -32,7 +32,7 @@ public class TestTopologyDeleteSpecific extends BaseTest {
     @Test
     public void testDeleteSchemaWithEdgeRoleAcrossMultipleSchemas() {
         //Schema deletion does not work on all databases.
-        Assume.assumeFalse(isPostgres());
+        Assume.assumeTrue(isPostgres());
         SqlgGraph g = this.sqlgGraph;
         Vertex a1 = g.addVertex(T.label, "A.A");
         Vertex b1 = g.addVertex(T.label, "B.B");
