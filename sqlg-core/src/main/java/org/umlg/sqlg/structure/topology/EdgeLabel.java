@@ -370,14 +370,14 @@ public class EdgeLabel extends AbstractLabel {
     public Set<EdgeRole> getOutEdgeRoles() {
         Set<EdgeRole> result = new HashSet<>();
         for (VertexLabel lbl : this.outVertexLabels) {
-            if (!this.uncommittedOutVertexLabels.contains(lbl)) {
+            if (!this.uncommittedRemovedOutVertexLabels.contains(lbl)) {
                 result.add(new EdgeRole(lbl, this, Direction.OUT, true));
             }
         }
 
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl : this.uncommittedOutVertexLabels) {
-                if (!this.uncommittedOutVertexLabels.contains(lbl)) {
+                if (!this.uncommittedRemovedOutVertexLabels.contains(lbl)) {
                     result.add(new EdgeRole(lbl, this, Direction.OUT, false));
                 }
             }
@@ -388,14 +388,14 @@ public class EdgeLabel extends AbstractLabel {
     public Set<EdgeRole> getInEdgeRoles() {
         Set<EdgeRole> result = new HashSet<>();
         for (VertexLabel lbl : this.inVertexLabels) {
-            if (!this.uncommittedInVertexLabels.contains(lbl)) {
+            if (!this.uncommittedRemovedInVertexLabels.contains(lbl)) {
                 result.add(new EdgeRole(lbl, this, Direction.IN, true));
             }
         }
 
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl : this.uncommittedInVertexLabels) {
-                if (!this.uncommittedInVertexLabels.contains(lbl)) {
+                if (!this.uncommittedRemovedInVertexLabels.contains(lbl)) {
                     result.add(new EdgeRole(lbl, this, Direction.IN, false));
                 }
             }
