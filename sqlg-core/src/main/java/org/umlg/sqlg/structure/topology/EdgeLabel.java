@@ -184,7 +184,7 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-//    @Override
+    //    @Override
     public void ensurePropertiesExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
@@ -718,16 +718,16 @@ public class EdgeLabel extends AbstractLabel {
     public Set<EdgeRole> getOutEdgeRoles() {
         Set<EdgeRole> result = new HashSet<>();
         for (VertexLabel lbl : this.outVertexLabels) {
-//            if (!this.uncommittedOutVertexLabels.contains(lbl)) {
-            result.add(new EdgeRole(lbl, this, Direction.OUT, true));
-//            }
+            if (!this.uncommittedRemovedOutVertexLabels.contains(lbl)) {
+                result.add(new EdgeRole(lbl, this, Direction.OUT, true));
+            }
         }
 
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl : this.uncommittedOutVertexLabels) {
-//                if (!this.uncommittedOutVertexLabels.contains(lbl)) {
-                result.add(new EdgeRole(lbl, this, Direction.OUT, false));
-//                }
+                if (!this.uncommittedRemovedOutVertexLabels.contains(lbl)) {
+                    result.add(new EdgeRole(lbl, this, Direction.OUT, false));
+                }
             }
         }
         return Collections.unmodifiableSet(result);
@@ -736,16 +736,16 @@ public class EdgeLabel extends AbstractLabel {
     public Set<EdgeRole> getInEdgeRoles() {
         Set<EdgeRole> result = new HashSet<>();
         for (VertexLabel lbl : this.inVertexLabels) {
-//            if (!this.uncommittedInVertexLabels.contains(lbl)) {
-            result.add(new EdgeRole(lbl, this, Direction.IN, true));
-//            }
+            if (!this.uncommittedRemovedInVertexLabels.contains(lbl)) {
+                result.add(new EdgeRole(lbl, this, Direction.IN, true));
+            }
         }
 
         if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl : this.uncommittedInVertexLabels) {
-//                if (!this.uncommittedInVertexLabels.contains(lbl)) {
-                result.add(new EdgeRole(lbl, this, Direction.IN, false));
-//                }
+                if (!this.uncommittedRemovedInVertexLabels.contains(lbl)) {
+                    result.add(new EdgeRole(lbl, this, Direction.IN, false));
+                }
             }
         }
         return Collections.unmodifiableSet(result);

@@ -24,6 +24,31 @@ import static org.junit.Assert.*;
 public class TestTopologyDeleteSpecific extends BaseTest {
 
     /**
+     * @see <a href="https://github.com/pietermartin/sqlg/issues/306">https://github.com/pietermartin/sqlg/issues/306</a>
+     */
+    @Test
+    public void testDeleteSchemaWithEdgeRoleAcrossMultipleSchemas() {
+        //Schema deletion does not work on all databases.
+        Assume.assumeFalse(isPostgres());
+        SqlgGraph g = this.sqlgGraph;
+        Vertex a1 = g.addVertex(T.label, "A.A");
+        Vertex b1 = g.addVertex(T.label, "B.B");
+        a1.addEdge("ab", b1);
+        g.tx().commit();
+
+        Vertex c1 = g.addVertex(T.label, "A.C");
+        c1.addEdge("ab", a1);
+        g.tx().commit();
+
+        g.getTopology().getSchema("A").ifPresent((Schema s) -> s.remove(false));
+        g.tx().commit();
+
+        assertFalse(g.getTopology().getSchema("A").isPresent());
+        assertEquals(1, g.traversal().V().count().next().intValue());
+        assertEquals(0, g.traversal().E().count().next().intValue());
+    }
+
+    /**
      * this failed with a NPE because we lost the table definition we're working on
      */
     @Test
