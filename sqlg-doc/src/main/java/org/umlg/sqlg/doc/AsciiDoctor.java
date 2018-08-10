@@ -19,10 +19,11 @@ public class AsciiDoctor {
     }
 
     private void createDocs() {
+        String version = "2.0.0-SNAPSHOT";
         Asciidoctor asciidoctor = create();
         try {
-            File file = new File("sqlg-doc/doc/sqlg.adoc");
-            File html = new File("sqlg-doc/doc/index.html");
+            File file = new File("sqlg-doc/docs/" + version + "/sqlg.adoc");
+            File html = new File("sqlg-doc/docs/" + version + "/index.html");
             Attributes attributes = new Attributes();
             attributes.setBackend("html5");
             attributes.setStyleSheetName("asciidoctor-default.css");

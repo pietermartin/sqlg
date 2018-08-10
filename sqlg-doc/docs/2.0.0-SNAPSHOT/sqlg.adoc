@@ -8,7 +8,7 @@ Version 2.0.0, August 2018:
 :description: Sqlg's documentation
 :keywords: Sqlg, TinkerPop, Gremlin, Graph, Database
 :imagesdir: ./img
-:apidocs: apidocs/index.html
+:apidocs: apidocs/
 :tinkerpop-docs: http://tinkerpop.apache.org/docs/current/reference/
 
 https://github.com/pietermartin/sqlg[*Sqlg*] image:github/SVG/mark-github.svg[] is a implementation of http://tinkerpop.apache.org/[Apache TinkerPop] on a
@@ -1144,41 +1144,50 @@ lock to prevent schema creation commands from dead locking the database.
 
 == Gremlin
 
-Sqlg has full support for gremlin.
-However gremlin's fine grained 'graphy' nature results in very high latency. To overcome the high latency Sqlg optimizes
-gremlin by reducing the number of calls to the RDBMS.
+Sqlg optimizes a gremlin link:{tinkerpop-docs}#traversal[`traversal`]  by analyzing the
+link:{tinkerpop-docs}#graph-traversal-steps[`steps`] and where possible combining them into custom Sqlg steps. This can
+significantly reduce the number of database calls.
 
-Sqlg optimizes gremlin by analyzing the steps and where possible combining them into a single SqlgGraphStep or SqlgVertexStep.
+Sqlg has two strategies for optimizing TinkerPop steps.
+
+First, starting with the link:{tinkerpop-docs}#graph-step[`GraphStep`]
+consecutive optimizable steps are folded into link:{apidocs}org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`]. This
+stops at the first unoptimizable step after which the second strategy is used.
+
+The second strategy is to `barrier` the incoming elements to the unoptimizable step. This means to exhaust the traversal/iterator
+up to the step and cache all the incoming elements for this step. From here the step is executed for all the incoming
+elements at once.
 
 [NOTE]
-This is an ongoing task as gremlin is a large language.
+Optimizing gremlin is an ongoing task as gremlin is a large language.
 
 [NOTE]
 Turn sql logging on by setting `log4j.logger.org.umlg.sqlg=debug`
 
 === Optimization
 
-The following consecutive are currently combined.
+The following steps are optimized. Steps are
 
 * <<Graph Step>>
-* <<Vertex Steps>>
-* <<Has Steps>>
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#repeat-step[Repeat Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#order-step[Order Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#range-step[Range Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#choose-step[Choose Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#optional-step[Optional Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#drop-step[Drop Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#or-step[Or Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#and-step[And Step]
-* http://tinkerpop.apache.org/docs/3.3.3/reference/#not-step[Not Step]
+* <<Vertex Step>>
+* <<Has Step>>
+* <<Or Step>>
+* <<And Step>>
+* <<Not Step>>
+* <<Repeat Step>>
+* <<Optional Step>>
+* <<Choose Step>>
+* <<Order Step>>
+* <<Range Step>>
+* <<Limit Step>>
+* <<Drop Step>>
 
 The combined step will then in turn generate the sql statements to retrieve the data.
 It attempts to retrieve the data in as few distinct sql statements as possible.
 
 === Graph Step
 
-The http://tinkerpop.apache.org/docs/3.3.3/reference/#graph-step[Graph Step] is the start of any traversal.
+The link{tinkerpop-docs}#graph-step[Graph Step] is the start of any traversal.
 Sqlg optimizes the graph step by analysing subsequent steps and if possible folding them into a few steps as possible.
 Often into only one step, `SqlgGraphStepCompiled`.
 
@@ -1186,26 +1195,26 @@ Often into only one step, `SqlgGraphStepCompiled`.
 ----
 @Test
 public void showGraphStep() {
-    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
-    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
-    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
-    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
-    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
-    easternUnion.addEdge("organization_division", legal);
-    easternUnion.addEdge("organization_division", dispatch);
-    legal.addEdge("division_office", newYork);
-    dispatch.addEdge("division_office", singapore);
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b2.addEdge("bc", c2);
     this.sqlgGraph.tx().commit();
 
     GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
-            .hasLabel("Organization")
+            .hasLabel("A")
             .out()
             .out();
     System.out.println(traversal);
     traversal.hasNext();
     System.out.println(traversal);
-    List<Vertex> offices = traversal.toList();
-    assertEquals(2, offices.size());
+    List<Vertex> c = traversal.toList();
+    assertEquals(2, c.size());
 }
 ----
 
@@ -1213,92 +1222,339 @@ public void showGraphStep() {
 [[anchor-before-optimization]]
 .Before optimization
 ----
-[GraphStep(vertex,[]), HasStep([~label.eq(Organization)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
 ----
 
 [[anchor-after-optimization]]
 .After optimization
 ----
-[SqlgGraphStepCompiled(vertex,[])@[sqlgPathFakeLabel]]
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
 ----
 
 The <<anchor-before-optimization>> output shows the steps that will execute if no optimization is performed.
-Without optimization the query `this.sqlgGraph.traversal().V().hasLabel("Organization").out().out()` will
-first get the organizations, then for each organization the divisions and then for each division the offices.
+Without optimization the query `this.sqlgGraph.traversal().V().hasLabel("A").out().out()` will
+first get the `A` s, then for each `A` the `B` s and then for each `B` the `C` s. In the above example unoptimized it
+would be at least five round trips to the db. Optimized it is only one trip to the db.
+
 For an embedded db like HSQLDB this is still ok but for a database server like postgresql the performance impact is
 significant.
 
-<<anchor-after-optimization>> there is only one link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] step. All the steps have been folded into one step.
+<<anchor-after-optimization>> there is only one link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] step.
+All the steps have been folded into one step.
 
 The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
 
 [source,sql,options="nowrap"]
 ----
 SELECT
-	"public"."V_Office"."ID" AS "alias1",
-	"public"."V_Office"."name" AS "alias2"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
 FROM
-	"public"."V_Organization" INNER JOIN
-	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
-	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
-	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
-	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
 ----
 
-=== Vertex Steps
+=== Vertex Step
 
-Consecutive http://tinkerpop.apache.org/docs/3.3.3/reference/#vertex-steps[Vertex Steps] are folded into the <<Graph Step>>.
-
-=== Has Step
-
-Consecutive http://tinkerpop.apache.org/docs/3.3.3/reference/#has-step[Has Step] are folded into the <<Graph Step>>.
-
-=== Order Step
-
-Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
-If not then order the ordering occurs in java via the OrderGlobalStep as per normal.
+Consecutive link:{tinkerpop-docs}#vertex-steps[`Vertex Step`] are folded into the <<Graph Step>>.
 
 [source,java,options="nowrap"]
 ----
 @Test
-public void testOrderBy() {
-    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
-    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
-    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
-    Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "a");
-    Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "b");
-    Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
+public void showVertexStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b2.addEdge("bc", c2);
     this.sqlgGraph.tx().commit();
 
-    List<Vertex> result = this.sqlgGraph.traversal().V().hasLabel("A")
-            .order().by("name", Order.incr).by("surname", Order.decr)
-            .toList();
-
-    assertEquals(6, result.size());
-    assertEquals(a3, result.get(0));
-    assertEquals(a2, result.get(1));
-    assertEquals(a1, result.get(2));
-    assertEquals(b3, result.get(3));
-    assertEquals(b2, result.get(4));
-    assertEquals(b1, result.get(5));
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("A")
+            .out()
+            .out();
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> c = traversal.toList();
+    assertEquals(2, c.size());
 }
 ----
 
-.sql
+[options="nowrap"]
+[[anchor-before-optimization-vertex-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
+----
+
+[[anchor-after-optimization-vertex-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
+----
+
+This example is the same as the <<Graph Step>>. It shows the two `Vertex Steps` being folded into the `SqlgGraphStep`.
+
+The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
+
 [source,sql,options="nowrap"]
 ----
 SELECT
-	"public"."V_A"."ID" AS "alias1",
-	"public"."V_A"."surname" AS "alias2",
-	"public"."V_A"."name" AS "alias3"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
 FROM
-	"public"."V_A"
-ORDER BY
-	 "alias3" ASC,
-	 "alias2" DESC
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
 ----
 
-=== RepeatStep
+=== Has Step
+
+link:{tinkerpop-docs}#has-step[`Has Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showHasStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b2.addEdge("bc", c2);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("A")
+            .out().has("name", "b1")
+            .out();
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> c = traversal.toList();
+    assertEquals(1, c.size());
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-has-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), HasStep([name.eq(b1)]), VertexStep(OUT,vertex)]
+----
+
+[[anchor-after-optimization-has-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
+----
+
+This example is similar to the <<Graph Step>> example except for an additional `HasStep`.
+It shows the two `Vertex Step` s and the `Has Step` being folded into the `SqlgGraphStep`.
+
+The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
+WHERE
+	( "public"."V_B"."name" = ?) <1>
+----
+
+<1> The `Has Step` realizes itself as a sql `where` clause.
+
+=== Or Step
+
+link:{tinkerpop-docs}#or-step[`Or Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showOrStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4");
+    Vertex c5 = this.sqlgGraph.addVertex(T.label, "C", "name", "c5");
+    Vertex c6 = this.sqlgGraph.addVertex(T.label, "C", "name", "c6");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b2.addEdge("bc", c2);
+    b2.addEdge("bc", c3);
+    b2.addEdge("bc", c4);
+    b2.addEdge("bc", c5);
+    b2.addEdge("bc", c6);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("A")
+            .out()
+            .out()
+            .or(
+                    __.has("name", "c1"),
+                    __.has("name", "c3"),
+                    __.has("name", "c6")
+            );
+
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> c = traversal.toList();
+    assertEquals(3, c.size());
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-or-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex), OrStep([[HasStep([name.eq(c1)])], [HasStep([name.eq(c3)])], [HasStep([name.eq(c6)])]])]
+----
+
+[[anchor-after-optimization-or-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
+----
+
+This example is similar to the <<Graph Step>> example except for an additional `Or Step` which in turn contains three `Has Step` s.
+It shows the two `Vertex Step` s the `Or Step` and the `Has Step` s being folded into the `SqlgGraphStep`.
+
+The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
+WHERE
+(("public"."V_C"."name" = ?) OR ("public"."V_C"."name" = ?) OR ("public"."V_C"."name" = ?)
+) <1>
+----
+
+<1> The `Or Step` realizes itself as a sql `where` clause.
+
+=== And Step
+
+link:{tinkerpop-docs}#and-step[`And Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showAndStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1", "surname", "x", "address", "y");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2", "surname", "x", "address", "y");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3", "surname", "x", "address", "y");
+    Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4", "surname", "x", "address", "y");
+    Vertex c5 = this.sqlgGraph.addVertex(T.label, "C", "name", "c5", "surname", "x", "address", "y");
+    Vertex c6 = this.sqlgGraph.addVertex(T.label, "C", "name", "c6", "surname", "x", "address", "y");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b2.addEdge("bc", c2);
+    b2.addEdge("bc", c3);
+    b2.addEdge("bc", c4);
+    b2.addEdge("bc", c5);
+    b2.addEdge("bc", c6);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("A")
+            .out()
+            .out()
+            .and(
+                    __.has("name", "c1"),
+                    __.has("surname", "x"),
+                    __.has("address", "y")
+            );
+
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> c = traversal.toList();
+    assertEquals(1, c.size());
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-and-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex), AndStep([[HasStep([name.eq(c1)])], [HasStep([surname.eq(x)])], [HasStep([address.eq(y)])]])]
+----
+
+[[anchor-after-optimization-and-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
+----
+
+This example is similar to the <<Graph Step>> example except for an additional `And Step` which in turn contains three `Has Step` s.
+It shows the two `Vertex Step` s the `And Step` and the `Has Step` s being folded into the `SqlgGraphStep`.
+
+The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."address" AS "alias2",
+	"public"."V_C"."surname" AS "alias3",
+	"public"."V_C"."name" AS "alias4"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
+WHERE
+(("public"."V_C"."name" = ?) AND ("public"."V_C"."surname" = ?) AND ("public"."V_C"."address" = ?)
+) <1>
+----
+
+<1> The `And Step` realizes itself as a sql `where` clause.
+
+=== Not Step
+
+link:{tinkerpop-docs}#not-step[`Not Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
+
+=== Repeat Step
+
+link:{tinkerpop-docs}#repeat-step[`Repeat Step`]
 
 Sqlg optimizes the `RepeatStep` so long as the `until` modulator is *not* present.
 `RepeatStep` can be optimized with the modulator `emit` and `times`.
@@ -1378,7 +1634,9 @@ FROM
 <2> Get the 'Countries' to emit.
 <3> Get the 'Persons' to emit.
 
-=== OptionalStep
+=== Optional Step
+
+link:{tinkerpop-docs}#optional-step[`Optional Step`]
 
 Sqlg optimizes the OptionalStep.
 
@@ -1459,8 +1717,60 @@ WHERE
 <2> Get the 'Countries' that do not have 'Cities'
 <3> Get the 'Companies' that do not have 'Countries'
 
+=== Choose Step
 
-=== Range
+link:{tinkerpop-docs}#choose-step[`Choose Step`]
+
+=== Order Step
+
+link:{tinkerpop-docs}#order-step[`Order Step`]
+
+Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
+If not then order the ordering occurs in java via the OrderGlobalStep as per normal.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testOrderBy() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "a");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "b");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> result = this.sqlgGraph.traversal().V().hasLabel("A")
+            .order().by("name", Order.incr).by("surname", Order.decr)
+            .toList();
+
+    assertEquals(6, result.size());
+    assertEquals(a3, result.get(0));
+    assertEquals(a2, result.get(1));
+    assertEquals(a1, result.get(2));
+    assertEquals(b3, result.get(3));
+    assertEquals(b2, result.get(4));
+    assertEquals(b1, result.get(5));
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."surname" AS "alias2",
+	"public"."V_A"."name" AS "alias3"
+FROM
+	"public"."V_A"
+ORDER BY
+	 "alias3" ASC,
+	 "alias2" DESC
+----
+
+=== Range Step
+
+link:{tinkerpop-docs}#range-step[`Range Step`]
 
 Sqlg optimizes the `RangeGlobalStep`
 
@@ -1497,7 +1807,9 @@ ORDER BY
 	 "alias2" ASC LIMIT 3 OFFSET 1
 ----
 
-=== Limit
+=== Limit Step
+
+link:{tinkerpop-docs}#limit-step[`Limit Step`]
 
 Sqlg optimizes `.limit(x)`
 
@@ -1533,6 +1845,10 @@ FROM
 ORDER BY
 	 "alias2" ASC LIMIT 3 OFFSET 0
 ----
+
+=== Drop Step
+
+link:{tinkerpop-docs}#drop-step[`Drop Step`]
 
 === Predicates
 
