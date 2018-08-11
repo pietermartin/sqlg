@@ -605,6 +605,9 @@ public class VertexLabel extends AbstractLabel {
             edgeLabel.afterRollbackInEdges(this);
             it.remove();
         }
+        for (EdgeLabel edgeLabel : this.inEdgeLabels.values()) {
+            edgeLabel.afterRollbackInEdges(this);
+        }
     }
 
     void afterRollbackForOutEdges() {
@@ -617,7 +620,6 @@ public class VertexLabel extends AbstractLabel {
             // present and its needed for the hashCode method which is invoked during the it.remove()
             edgeLabel.afterRollbackOutEdges(this);
         }
-        //Only need to go though the outEdgeLabels. All edgeLabels will be touched
         for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
             edgeLabel.afterRollbackOutEdges(this);
         }
@@ -1059,7 +1061,7 @@ public class VertexLabel extends AbstractLabel {
         if (er.getVertexLabel() != this) {
             throw new IllegalStateException("Trying to remove a EdgeRole from a non owner VertexLabel");
         }
-        Collection<VertexLabel> ers = null;
+        Collection<VertexLabel> ers;
         switch (er.getDirection()) {
             // we don't support both
             case BOTH:

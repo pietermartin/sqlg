@@ -570,12 +570,14 @@ public class EdgeLabel extends AbstractLabel {
         Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
         super.afterRollback();
         this.uncommittedInVertexLabels.remove(vertexLabel);
+        this.uncommittedRemovedInVertexLabels.remove(vertexLabel);
     }
 
     void afterRollbackOutEdges(VertexLabel vertexLabel) {
         Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
         super.afterRollback();
         this.uncommittedOutVertexLabels.remove(vertexLabel);
+        this.uncommittedRemovedOutVertexLabels.remove(vertexLabel);
     }
 
     @Override
