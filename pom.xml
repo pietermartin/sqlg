@@ -105,9 +105,9 @@
                         <!--<include>**/SqlgH2ProcessStandardTest.java</include>-->
                         <!--<include>**/H2AllTest.java</include>-->
 
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgGraphPostgresProcessStandardTest.java</include>
-                        <include>**/PostgresAllTest.java</include>
+                        <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
+                        <!--<include>**/SqlgGraphPostgresProcessStandardTest.java</include>-->
+                        <!--<include>**/PostgresAllTest.java</include>-->
 
                         <!--<include>**/SqlgHsqldbStructureStandardTest.java</include>-->
                         <!--<include>**/SqlgHsqldbProcessStandardTest.java</include>-->
@@ -117,7 +117,7 @@
                         <!--<include>**/SqlgGraphMSSqlServerProcessStandardTest.java</include>-->
                         <!--<include>**/MSSqlServerAllTest.java</include>-->
 
-                        <!--<include>**/MariadbAllTest.java</include>-->
+                        <include>**/MariadbAllTest.java</include>
                         <!--<include>**/MysqlAllTest.java</include>-->
                     </includes>
                 </configuration>
