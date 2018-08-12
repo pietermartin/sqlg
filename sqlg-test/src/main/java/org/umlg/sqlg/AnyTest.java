@@ -11,6 +11,7 @@ import org.umlg.sqlg.test.doctests.TestForDocs;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestForDocs.class
+//        TestGremlinCompileChoose.class
 })
 public class AnyTest {
 }

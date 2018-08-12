@@ -60,33 +60,48 @@
 <li><a href="#_composite_indexes">8.1.1. Composite indexes</a></li>
 </ul>
 </li>
-<li><a href="#_full_text_indexing">8.2. Full-text indexing</a></li>
+<li><a href="#anchor-full-text-indexing">8.2. Full-text indexing</a></li>
 <li><a href="#_global_unique_indexing">8.3. Global unique indexing</a></li>
 </ul>
 </li>
 <li><a href="#_multiple_jvms">9. Multiple JVMs</a></li>
 <li><a href="#_gremlin">10. Gremlin</a>
 <ul class="sectlevel2">
-<li><a href="#_optimization">10.1. Optimization</a></li>
-<li><a href="#_graph_step">10.2. Graph Step</a></li>
-<li><a href="#_vertex_step">10.3. Vertex Step</a></li>
-<li><a href="#_has_step">10.4. Has Step</a></li>
-<li><a href="#_or_step">10.5. Or Step</a></li>
-<li><a href="#_and_step">10.6. And Step</a></li>
-<li><a href="#_not_step">10.7. Not Step</a></li>
-<li><a href="#_repeat_step">10.8. Repeat Step</a></li>
-<li><a href="#_optional_step">10.9. Optional Step</a></li>
-<li><a href="#_choose_step">10.10. Choose Step</a></li>
-<li><a href="#_order_step">10.11. Order Step</a></li>
-<li><a href="#_range_step">10.12. Range Step</a></li>
-<li><a href="#_limit_step">10.13. Limit Step</a></li>
-<li><a href="#_drop_step">10.14. Drop Step</a></li>
-<li><a href="#_predicates">10.15. Predicates</a>
+<li><a href="#_optimization_strategy_1">10.1. Optimization (strategy 1)</a>
 <ul class="sectlevel3">
-<li><a href="#_compare_predicate">10.15.1. Compare predicate</a></li>
-<li><a href="#_contains_predicate">10.15.2. Contains predicate</a></li>
-<li><a href="#_text_predicate">10.15.3. Text predicate</a></li>
-<li><a href="#_datetime_queries">10.15.4. DateTime queries</a></li>
+<li><a href="#_graph_step">10.1.1. Graph Step</a></li>
+<li><a href="#_vertex_step">10.1.2. Vertex Step</a></li>
+<li><a href="#_has_step">10.1.3. Has Step</a></li>
+<li><a href="#_or_step">10.1.4. Or Step</a></li>
+<li><a href="#_and_step">10.1.5. And Step</a></li>
+<li><a href="#_not_step">10.1.6. Not Step</a></li>
+<li><a href="#_repeat_step">10.1.7. Repeat Step</a>
+<ul class="sectlevel4">
+<li><a href="#_repeat_step_with_emit_first">Repeat Step with emit first</a></li>
+<li><a href="#_repeat_step_with_emit_last">Repeat Step with emit last</a></li>
+</ul>
+</li>
+<li><a href="#_optional_step">10.1.8. Optional Step</a></li>
+<li><a href="#_choose_step">10.1.9. Choose Step</a></li>
+<li><a href="#_order_step">10.1.10. Order Step</a></li>
+<li><a href="#_range_step">10.1.11. Range Step</a></li>
+<li><a href="#_limit_step">10.1.12. Limit Step</a></li>
+<li><a href="#_drop_step">10.1.13. Drop Step</a></li>
+<li><a href="#_predicates">10.1.14. Predicates</a>
+<ul class="sectlevel4">
+<li><a href="#_compare_predicate">Compare predicate</a></li>
+<li><a href="#_contains_predicate">Contains predicate</a></li>
+<li><a href="#_text_predicate">Text predicate</a></li>
+<li><a href="#_full_text_search">Full text search</a></li>
+<li><a href="#_datetime_queries">DateTime queries</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#_optimization_strategy_2">10.2. Optimization (strategy 2)</a>
+<ul class="sectlevel3">
+<li><a href="#_vertex_step_2">10.2.1. Vertex Step</a></li>
+<li><a href="#_repeat_step_2">10.2.2. Repeat Step</a></li>
 </ul>
 </li>
 </ul>
@@ -1606,7 +1621,7 @@ The index does not need to be created upfront. It can be added any time.
 </div>
 </div>
 <div class="sect2">
-<h3 id="_full_text_indexing">8.2. Full-text indexing</h3>
+<h3 id="anchor-full-text-indexing">8.2. Full-text indexing</h3>
 <div class="paragraph">
 <p>On postgresql full text indexing is supported.</p>
 </div>
@@ -1764,15 +1779,19 @@ significantly reduce the number of database calls.</p>
 <div class="paragraph">
 <p>Sqlg has two strategies for optimizing TinkerPop steps.</p>
 </div>
-<div class="paragraph">
+<div class="ulist">
+<ul>
+<li>
 <p>First, starting with the <a href="http://tinkerpop.apache.org/docs/current/reference/#graph-step"><code>GraphStep</code></a>
 consecutive optimizable steps are folded into <a href="apidocs/org/umlg/sqlg/step/SqlgGraphStep.html"><code>SqlgGraphStep</code></a>. This
 stops at the first unoptimizable step after which the second strategy is used.</p>
-</div>
-<div class="paragraph">
-<p>The second strategy is to <code>barrier</code> the incoming elements to the unoptimizable step. This means to exhaust the traversal/iterator
+</li>
+<li>
+<p>Second, strategy is to <code>barrier</code> the incoming elements to the unoptimizable step. This means to exhaust the traversal/iterator
 up to the step and cache all the incoming elements for this step. From here the step is executed for all the incoming
-elements at once.</p>
+elements at once. This strategy effectively changes the semantics to a breath first retrieval.</p>
+</li>
+</ul>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1799,7 +1818,7 @@ Turn sql logging on by setting <code>log4j.logger.org.umlg.sqlg=debug</code>
 </table>
 </div>
 <div class="sect2">
-<h3 id="_optimization">10.1. Optimization</h3>
+<h3 id="_optimization_strategy_1">10.1. Optimization (strategy 1)</h3>
 <div class="paragraph">
 <p>The following steps are optimized. Steps are</p>
 </div>
@@ -1850,11 +1869,10 @@ Turn sql logging on by setting <code>log4j.logger.org.umlg.sqlg=debug</code>
 <p>The combined step will then in turn generate the sql statements to retrieve the data.
 It attempts to retrieve the data in as few distinct sql statements as possible.</p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_graph_step">10.2. Graph Step</h3>
+<div class="sect3">
+<h4 id="_graph_step">10.1.1. Graph Step</h4>
 <div class="paragraph">
-<p>The linkhttp://tinkerpop.apache.org/docs/current/reference/#graph-step[Graph Step] is the start of any traversal.
+<p>The <a href="http://tinkerpop.apache.org/docs/current/reference/#graph-step">Graph Step</a> is the start of any traversal.
 Sqlg optimizes the graph step by analysing subsequent steps and if possible folding them into a few steps as possible.
 Often into only one step, <code>SqlgGraphStepCompiled</code>.</p>
 </div>
@@ -1928,8 +1946,8 @@ FROM
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_vertex_step">10.3. Vertex Step</h3>
+<div class="sect3">
+<h4 id="_vertex_step">10.1.2. Vertex Step</h4>
 <div class="paragraph">
 <p>Consecutive <a href="http://tinkerpop.apache.org/docs/current/reference/#vertex-steps"><code>Vertex Step</code></a> are folded into the <a href="#_graph_step">Graph Step</a>.</p>
 </div>
@@ -1960,13 +1978,13 @@ public void showVertexStep() {
 }</code></pre>
 </div>
 </div>
-<div id="anchor-before-optimization-vertex-step" class="listingblock">
+<div class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
 <pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]</pre>
 </div>
 </div>
-<div id="anchor-after-optimization-vertex-step" class="listingblock">
+<div class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre>[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]</pre>
@@ -1992,8 +2010,8 @@ FROM
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_has_step">10.4. Has Step</h3>
+<div class="sect3">
+<h4 id="_has_step">10.1.3. Has Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#has-step"><code>Has Step</code></a>s are folded into the <a href="#_graph_step">Graph Step</a> or <a href="#_vertex_step">Vertex Step</a>.</p>
 </div>
@@ -2066,8 +2084,8 @@ WHERE
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_or_step">10.5. Or Step</h3>
+<div class="sect3">
+<h4 id="_or_step">10.1.4. Or Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#or-step"><code>Or Step</code></a>s are folded into the <a href="#_graph_step">Graph Step</a> or <a href="#_vertex_step">Vertex Step</a>.</p>
 </div>
@@ -2155,8 +2173,8 @@ WHERE
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_and_step">10.6. And Step</h3>
+<div class="sect3">
+<h4 id="_and_step">10.1.5. And Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#and-step"><code>And Step</code></a>s are folded into the <a href="#_graph_step">Graph Step</a> or <a href="#_vertex_step">Vertex Step</a>.</p>
 </div>
@@ -2246,14 +2264,14 @@ WHERE
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_not_step">10.7. Not Step</h3>
+<div class="sect3">
+<h4 id="_not_step">10.1.6. Not Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#not-step"><code>Not Step</code></a>s are folded into the <a href="#_graph_step">Graph Step</a> or <a href="#_vertex_step">Vertex Step</a>.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_repeat_step">10.8. Repeat Step</h3>
+<div class="sect3">
+<h4 id="_repeat_step">10.1.7. Repeat Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#repeat-step"><code>Repeat Step</code></a></p>
 </div>
@@ -2261,24 +2279,32 @@ WHERE
 <p>Sqlg optimizes the <code>RepeatStep</code> so long as the <code>until</code> modulator is <strong>not</strong> present.
 <code>RepeatStep</code> can be optimized with the modulator <code>emit</code> and <code>times</code>.</p>
 </div>
+<div class="sect4">
+<h5 id="_repeat_step_with_emit_first">Repeat Step with emit first</h5>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void showRepeat() {
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
-    Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
-    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
-    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
-    Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
-    Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
-    john.addEdge("lives", usa);
-    peterski.addEdge("lives", russia);
-    usa.addEdge("capital", washington);
+public void showRepeatStepEmitFirst() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
     this.sqlgGraph.tx().commit();
 
-    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
-            .emit().times(2).repeat(__.out("lives", "capital"))
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .emit()
+            .times(2)
+            .repeat(
+                    __.out()
+            )
             .path().by("name")
             .toList();
     for (Path path : paths) {
@@ -2290,66 +2316,154 @@ public void showRepeat() {
 <div class="listingblock">
 <div class="title">output</div>
 <div class="content">
-<pre>[John, USA, Washington]
-[John]
-[Peterski]
-[Paul]
-[John, USA]
-[Peterski, Russia]</pre>
+<pre>[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1]
+[a2]
+[a1, b1]
+[a1, b2]</pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">sql</div>
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_City"."ID" AS "alias1",
-	"public"."V_City"."name" AS "alias2",
-	"public"."V_Person"."ID" AS "alias3",
-	"public"."V_Person"."name" AS "alias4",
-	"public"."V_Country"."ID" AS "alias5",
-	"public"."V_Country"."name" AS "alias6",
-	"public"."E_lives"."ID" AS "alias7"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7"
 FROM
-	"public"."V_Person" INNER JOIN
-	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
-	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
-	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" <b class="conum">(1)</b>
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <b class="conum">(1)</b>
 
 SELECT
-	"public"."V_Country"."ID" AS "alias1",
-	"public"."V_Country"."name" AS "alias2",
-	"public"."V_Person"."ID" AS "alias3",
-	"public"."V_Person"."name" AS "alias4",
-	"public"."E_lives"."ID" AS "alias5"
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
 FROM
-	"public"."V_Person" INNER JOIN
-	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" <b class="conum">(2)</b>
+	"public"."V_A" <b class="conum">(2)</b>
 
 SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."name" AS "alias2"
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
 FROM
-	"public"."V_Person" <b class="conum">(3)</b></code></pre>
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <b class="conum">(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <ol>
 <li>
-<p>Get the 'Cities' to emit.</p>
+<p>Get the 'A&#8217;s to emit.</p>
 </li>
 <li>
-<p>Get the 'Countries' to emit.</p>
+<p>Get the 'B&#8217;s to emit.</p>
 </li>
 <li>
-<p>Get the 'Persons' to emit.</p>
+<p>Get the 'C&#8217;s to emit.</p>
 </li>
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_optional_step">10.9. Optional Step</h3>
+<div class="sect4">
+<h5 id="_repeat_step_with_emit_last">Repeat Step with emit last</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showRepeatStepEmitLast() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .repeat(
+                    __.out()
+            )
+            .emit()
+            .times(2)
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1, b1]
+[a1, b2]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7",
+	"public"."E_bc"."ID" AS "alias8"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <b class="conum">(1)</b>
+
+SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <b class="conum">(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get the 'C&#8217;s to emit.</p>
+</li>
+<li>
+<p>Get the 'B&#8217;s to emit.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_optional_step">10.1.8. Optional Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#optional-step"><code>Optional Step</code></a></p>
 </div>
@@ -2359,100 +2473,162 @@ FROM
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void testOptionalNested() {
-    Vertex google = this.sqlgGraph.addVertex(T.label, "Company", "name", "Google");
-    Vertex apple = this.sqlgGraph.addVertex(T.label, "Company", "name", "Apple");
-    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
-    Vertex england = this.sqlgGraph.addVertex(T.label, "Country", "name", "England");
-    Vertex newYork = this.sqlgGraph.addVertex(T.label, "City", "name", "New York");
-    google.addEdge("activeIn", usa);
-    google.addEdge("activeIn", england);
-    usa.addEdge("capital", newYork);
+public void showOptionalStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
     this.sqlgGraph.tx().commit();
+
     List&lt;Path&gt; paths = this.sqlgGraph.traversal()
-            .V()
-            .hasLabel("Company")
+            .V().hasLabel("A")
             .optional(
-                    out().optional(
-                            out()
+                    __.out().optional(
+                            __.out()
                     )
             )
-            .path()
+            .path().by("name")
             .toList();
-    paths.forEach(p -&gt; System.out.println(p.toString()));
+    for (Path path : paths) {
+        System.out.println(path);
+    }
 }</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">output</div>
 <div class="content">
-<pre>[v[public.Company:::1], v[public.Country:::1], v[public.City:::1]]
-[v[public.Company:::2]]
-[v[public.Company:::1], v[public.Country:::2]]</pre>
+<pre>[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a2]
+[a1, b2]</pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">sql</div>
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_City"."ID" AS "alias1",
-	"public"."V_City"."name" AS "alias2",
-	"public"."V_Company"."ID" AS "alias3",
-	"public"."V_Company"."name" AS "alias4",
-	"public"."V_Country"."ID" AS "alias5",
-	"public"."V_Country"."name" AS "alias6"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6"
 FROM
-	"public"."V_Company" INNER JOIN
-	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
-	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
-	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" <b class="conum">(1)</b>
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <b class="conum">(1)</b>
 
 SELECT
-	"public"."V_Country"."ID" AS "alias1",
-	"public"."V_Country"."name" AS "alias2",
-	"public"."V_Company"."ID" AS "alias3",
-	"public"."V_Company"."name" AS "alias4"
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
 FROM
-	"public"."V_Company" INNER JOIN
-	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" LEFT JOIN
-	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O"
+	"public"."V_A" LEFT JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O"
 WHERE
-	("public"."E_capital"."public.Country__O" IS NULL) <b class="conum">(2)</b>
+	("public"."E_ab"."public.A__O" IS NULL) <b class="conum">(2)</b>
 
 SELECT
-	"public"."V_Company"."ID" AS "alias1",
-	"public"."V_Company"."name" AS "alias2"
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4"
 FROM
-	"public"."V_Company" LEFT JOIN
-	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O"
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" LEFT JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O"
 WHERE
-	("public"."E_activeIn"."public.Company__O" IS NULL) <b class="conum">(3)</b></code></pre>
+	("public"."E_bc"."public.B__O" IS NULL) <b class="conum">(3)</b></code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <ol>
 <li>
-<p>Get the 'Cities'</p>
+<p>Get the 'C&#8217;s</p>
 </li>
 <li>
-<p>Get the 'Countries' that do not have 'Cities'</p>
+<p>Get the 'A&#8217;s that do not have 'B&#8217;s</p>
 </li>
 <li>
-<p>Get the 'Companies' that do not have 'Countries'</p>
+<p>Get the 'B&#8217;s that do not have 'C&#8217;s</p>
 </li>
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_choose_step">10.10. Choose Step</h3>
+<div class="sect3">
+<h4 id="_choose_step">10.1.9. Choose Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#choose-step"><code>Choose Step</code></a></p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void showChooseStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Path&gt; paths = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .choose(__.out(), __.out())
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}</code></pre>
 </div>
-<div class="sect2">
-<h3 id="_order_step">10.11. Order Step</h3>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>[a1, b1]
+[a1, b2]
+[a2]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+DEBUG 2018-08-12 19:31:50,944 [main] org.umlg.sqlg.strategy.SqlgSqlExecutor:
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A" LEFT JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O"
+WHERE
+	("public"."E_ab"."public.A__O" IS NULL)</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_order_step">10.1.10. Order Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#order-step"><code>Order Step</code></a></p>
 </div>
@@ -2475,15 +2651,21 @@ public void testOrderBy() {
     List&lt;Vertex&gt; result = this.sqlgGraph.traversal().V().hasLabel("A")
             .order().by("name", Order.incr).by("surname", Order.decr)
             .toList();
-
-    assertEquals(6, result.size());
-    assertEquals(a3, result.get(0));
-    assertEquals(a2, result.get(1));
-    assertEquals(a1, result.get(2));
-    assertEquals(b3, result.get(3));
-    assertEquals(b2, result.get(4));
-    assertEquals(b1, result.get(5));
+    for (Vertex v: result) {
+        System.out.println(v.value("name") + " " + v.value("surname"));
+    }
 }</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>a c
+a b
+a a
+b c
+b b
+b a</pre>
 </div>
 </div>
 <div class="listingblock">
@@ -2501,8 +2683,8 @@ ORDER BY
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_range_step">10.12. Range Step</h3>
+<div class="sect3">
+<h4 id="_range_step">10.1.11. Range Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#range-step"><code>Range Step</code></a></p>
 </div>
@@ -2523,11 +2705,18 @@ public void testRangeOnVertexLabels() {
             .range(1, 4)
             .&lt;String&gt;values("name")
             .toList();
-    assertEquals(3, names.size());
-    assertEquals("person1", names.get(0));
-    assertEquals("person10", names.get(1));
-    assertEquals("person11", names.get(2));
+    for (String name : names) {
+        System.out.println(name);
+    }
 }</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>person1
+person10
+person11</pre>
 </div>
 </div>
 <div class="listingblock">
@@ -2539,12 +2728,13 @@ public void testRangeOnVertexLabels() {
 FROM
 	"public"."V_Person"
 ORDER BY
-	 "alias2" ASC LIMIT 3 OFFSET 1</code></pre>
+	 "alias2" ASC
+LIMIT 3 OFFSET 1</code></pre>
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_limit_step">10.13. Limit Step</h3>
+<div class="sect3">
+<h4 id="_limit_step">10.1.12. Limit Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#limit-step"><code>Limit Step</code></a></p>
 </div>
@@ -2565,11 +2755,18 @@ public void testLimitOnVertexLabels() {
             .limit(3)
             .&lt;String&gt;values("name")
             .toList();
-    assertEquals(3, names.size());
-    assertEquals("person0", names.get(0));
-    assertEquals("person1", names.get(1));
-    assertEquals("person10", names.get(2));
+    for (String name : names) {
+        System.out.println(name);
+    }
 }</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>person0
+person1
+person10</pre>
 </div>
 </div>
 <div class="listingblock">
@@ -2581,58 +2778,194 @@ public void testLimitOnVertexLabels() {
 FROM
 	"public"."V_Person"
 ORDER BY
-	 "alias2" ASC LIMIT 3 OFFSET 0</code></pre>
+	 "alias2" ASC
+LIMIT 3 OFFSET 0</code></pre>
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_drop_step">10.14. Drop Step</h3>
+<div class="sect3">
+<h4 id="_drop_step">10.1.13. Drop Step</h4>
 <div class="paragraph">
 <p><a href="http://tinkerpop.apache.org/docs/current/reference/#drop-step"><code>Drop Step</code></a></p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testsDropStepTrivial() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.traversal().V().hasLabel("A").drop().iterate();
+    this.sqlgGraph.tx().commit();
+
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+}</code></pre>
 </div>
-<div class="sect2">
-<h3 id="_predicates">10.15. Predicates</h3>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">TRUNCATE ONLY "public"."V_A" <b class="conum">(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>As vertex label 'A' has no in or out edges nor are there any predicates the <code>TRUNCATE</code> command is used.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testsDropStepWithHas() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.traversal().V().hasLabel("A").has("name", P.within("a1", "a2")).drop().iterate();
+    this.sqlgGraph.tx().commit();
+
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">WITH todelete AS (
+SELECT
+	"public"."V_A"."ID" AS "alias1"
+FROM
+	"public"."V_A"
+WHERE
+	( "public"."V_A"."name" in (?, ?))
+)
+DELETE FROM "public"."V_A" a USING todelete
+WHERE a."ID" = todelete."alias1" <b class="conum">(1)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p><code>DELETE</code> with a where clause.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testDropStepWithEdges() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    a1.addEdge("ab", b3);
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.traversal().V().hasLabel("A").out().drop().iterate();
+
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SET CONSTRAINTS ALL DEFERRED <b class="conum">(1)</b>
+
+WITH todelete AS (
+SELECT
+	"public"."V_B"."ID" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+)
+DELETE FROM "public"."V_B" a USING todelete
+WHERE a."ID" = todelete."alias1" <b class="conum">(2)</b>
+
+WITH todelete AS (
+SELECT
+	"public"."E_ab"."ID" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" LEFT JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+WHERE
+	("public"."V_B"."ID" IS NULL) AND
+	("public"."E_ab"."public.B__I" IS NOT NULL)
+)
+DELETE FROM "public"."E_ab" a USING todelete
+WHERE a."ID" = todelete."alias1" <b class="conum">(3)</b>
+
+SET CONSTRAINTS ALL IMMEDIATE <b class="conum">(4)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>On postgresql we defer (disable) the foreign key constraints.</p>
+</li>
+<li>
+<p>Delete the 'B' vertices first. As the edge constraints are disabled this is possible.</p>
+</li>
+<li>
+<p>Delete the edges.
+&lt;4. Enable the foreign key constraints.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_predicates">10.1.14. Predicates</h4>
 <div class="paragraph">
 <p>TinkerPop&#8217;s <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> and
 <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a> predicates are optimized
 to execute on the database.</p>
 </div>
-<div class="sect3">
-<h4 id="_compare_predicate">10.15.1. Compare predicate</h4>
+<div class="sect4">
+<h5 id="_compare_predicate">Compare predicate</h5>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void showComparePredicate() {
-    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
-    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
-    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
-    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
-    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
-    easternUnion.addEdge("organization_division", legal);
-    easternUnion.addEdge("organization_division", dispatch);
-    legal.addEdge("division_office", newYork);
-    dispatch.addEdge("division_office", singapore);
+public void showComparePredicates() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b2.addEdge("bc", c3);
+    b2.addEdge("bc", c4);
     this.sqlgGraph.tx().commit();
 
-    GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()
-            .hasLabel("Organization")
-            .out()
-            .out()
-            .has("name", P.eq("Singapore")); <b class="conum">(1)</b>
-    System.out.println(traversal);
-    traversal.hasNext();
-    System.out.println(traversal);
-    List&lt;Vertex&gt; offices = traversal.toList();
-    assertEquals(1, offices.size());
-    assertEquals(singapore, offices.get(0));
+    List&lt;String&gt; result = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .out().has("name", P.eq("b1"))
+            .out().has("name", P.eq("c2")) <b class="conum">(1)</b>
+            .&lt;String&gt;values("name")
+            .toList();
+    for (String name : result) {
+        System.out.println(name);
+    }
 }</code></pre>
 </div>
 </div>
 <div class="colist arabic">
 <ol>
 <li>
-<p>The <code>P</code> predicate will resolve on the database as a <code>sql</code> <code>where</code> clause.</p>
+<p>The <code>P</code> predicates will resolve on the database as a <code>sql</code> <code>where</code> clause.</p>
 </li>
 </ol>
 </div>
@@ -2640,16 +2973,16 @@ public void showComparePredicate() {
 <div class="title">sql</div>
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_Office"."ID" AS "alias1",
-	"public"."V_Office"."name" AS "alias2"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
 FROM
-	"public"."V_Organization" INNER JOIN
-	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
-	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
-	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
-	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
 WHERE
-	( "public"."V_Office"."name" = ?)</code></pre>
+	( "public"."V_B"."name" = ?) AND ( "public"."V_C"."name" = ?)</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -2657,8 +2990,8 @@ WHERE
 <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html">Compare</a> predicates.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_contains_predicate">10.15.2. Contains predicate</h4>
+<div class="sect4">
+<h5 id="_contains_predicate">Contains predicate</h5>
 <div class="paragraph">
 <p>Sqlg&#8217;s implementation of <a href="http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html">Contains</a>
 is slightly more complex.</p>
@@ -2675,13 +3008,13 @@ is slightly more complex.</p>
 public void showContainsPredicate() {
     List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;(10000);
     for (int i = 0; i &lt; 10000; i++) {
-        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
+        this.sqlgGraph.addVertex(T.label, "A", "number", i);
         numbers.add(i);
     }
     this.sqlgGraph.tx().commit();
 
     List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
+            .hasLabel("A")
             .has("number", P.within(numbers))
             .toList();
 
@@ -2693,21 +3026,20 @@ public void showContainsPredicate() {
 <div class="title">sql</div>
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."number" AS "alias2"
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."number" AS "alias2"
 FROM
-	"public"."V_Person" INNER JOIN
-	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within</code></pre>
+	"public"."V_A" INNER JOIN
+	(VALUES (0::INTEGER), (1::INTEGER), ... (9998::INTEGER), (9999::INTEGER)) as tmp1(within) on "public"."V_A"."number" = tmp1.within</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>This pattern makes <code>P.within</code> and <code>p.without</code> very fast even with millions of values being passed into the query.
-Benchmarking shows that doing a join on a temporary table is always faster than using the <code>in</code> clause.
-For the case of there being only one value Sqlg will use an <code>equals</code> instead of a temporary table or an <code>in</code> statement.</p>
+For the case of there being only one value Sqlg will use an <code>equals</code> instead of a values statement or an <code>in</code> statement.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_text_predicate">10.15.3. Text predicate</h4>
+<div class="sect4">
+<h5 id="_text_predicate">Text predicate</h5>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -2783,8 +3115,17 @@ WHERE
 </div>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_datetime_queries">10.15.4. DateTime queries</h4>
+<div class="sect4">
+<h5 id="_full_text_search">Full text search</h5>
+<div class="paragraph">
+<p>Full text search is supported on postgresql.</p>
+</div>
+<div class="paragraph">
+<p>This is shown under <a href="#anchor-full-text-indexing">full text indexing</a></p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_datetime_queries">DateTime queries</h5>
 <div class="paragraph">
 <p>LocalDateTime, LocalDate and LocalTime queries are supported.</p>
 </div>
@@ -2827,6 +3168,115 @@ FROM
 	"public"."V_Person"
 WHERE
 	( "public"."V_Person"."born" &gt;= ?) AND ( "public"."V_Person"."born" &lt; ?)</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_optimization_strategy_2">10.2. Optimization (strategy 2)</h3>
+<div class="sect3">
+<h4 id="_vertex_step_2">10.2.1. Vertex Step</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testStrategy2VertexStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    a1.addEdge("ab", b1);
+    a2.addEdge("ab", b2);
+    a3.addEdge("ab", b3);
+    this.sqlgGraph.tx().commit();
+
+    Traversal&lt;Vertex, String&gt; t = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .limit(2)
+            .out()
+            .values("name");
+    printTraversalForm(t);
+    List&lt;String&gt; result = t.toList();
+    for (String name : result) {
+        System.out.println(name);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(A)]), RangeGlobalStep(0,2), VertexStep(OUT,vertex), PropertiesStep([name],value)]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-vertex-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre>[SqlgGraphStep(vertex,[])@[sqlgPathOrderRangeLabel], SqlgVertexStep@[sqlgPathFakeLabel], PropertiesStep([name],value)]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><a href="#anchor-after-optimization-vertex-step">after optimization</a> shows that there is a <a href="apidocs//org/umlg/sqlg/step/SqlgVertexStep.html"><code>SqlgVertexStep</code></a>
+after the <code>SqlgGraphStep</code>. The <code>SqlgVertexStep</code> will barrier the incoming 'A&#8217;s and execute the next traversal for all
+the incoming elements in one <code>sql</code> statement.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A"
+LIMIT 2 OFFSET 0 <b class="conum">(1)</b>
+
+SELECT
+	"index" as "index",
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	(VALUES(1, 1),(2, 2)) AS tmp ("tmpId", "index") ON "public"."V_A"."ID" = tmp."tmpId"
+ORDER BY
+	"index" <b class="conum">(2)</b></code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Get all the 'A&#8217;s.</p>
+</li>
+<li>
+<p>For all the previously fetched 'A&#8217;s get the 'B&#8217;s.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_repeat_step_2">10.2.2. Repeat Step</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java"></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap"></pre>
+</div>
+</div>
+<div id="anchor-after-optimization-repeat-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql"></code></pre>
 </div>
 </div>
 </div>
@@ -3184,7 +3634,7 @@ public void showStreamingWithLockBulkEdgeCreation() {
 <div id="footer">
 <div id="footer-text">
 Version 2.0.0<br>
-Last updated 2018-08-09 11:03:07 SAST
+Last updated 2018-08-12 21:49:32 SAST
 </div>
 </div>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">

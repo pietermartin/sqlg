@@ -1045,6 +1045,8 @@ the underlying RDBMS will utilize the index.
 [NOTE]
 The index does not need to be created upfront. It can be added any time.
 
+
+[[anchor-full-text-indexing, full text indexing]]
 === Full-text indexing
 
 On postgresql full text indexing is supported.
@@ -1150,13 +1152,12 @@ significantly reduce the number of database calls.
 
 Sqlg has two strategies for optimizing TinkerPop steps.
 
-First, starting with the link:{tinkerpop-docs}#graph-step[`GraphStep`]
+ * First, starting with the link:{tinkerpop-docs}#graph-step[`GraphStep`]
 consecutive optimizable steps are folded into link:{apidocs}org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`]. This
 stops at the first unoptimizable step after which the second strategy is used.
-
-The second strategy is to `barrier` the incoming elements to the unoptimizable step. This means to exhaust the traversal/iterator
+* Second, strategy is to `barrier` the incoming elements to the unoptimizable step. This means to exhaust the traversal/iterator
 up to the step and cache all the incoming elements for this step. From here the step is executed for all the incoming
-elements at once.
+elements at once. This strategy effectively changes the semantics to a breath first retrieval.
 
 [NOTE]
 Optimizing gremlin is an ongoing task as gremlin is a large language.
@@ -1164,7 +1165,7 @@ Optimizing gremlin is an ongoing task as gremlin is a large language.
 [NOTE]
 Turn sql logging on by setting `log4j.logger.org.umlg.sqlg=debug`
 
-=== Optimization
+=== Optimization (strategy 1)
 
 The following steps are optimized. Steps are
 
@@ -1185,9 +1186,9 @@ The following steps are optimized. Steps are
 The combined step will then in turn generate the sql statements to retrieve the data.
 It attempts to retrieve the data in as few distinct sql statements as possible.
 
-=== Graph Step
+==== Graph Step
 
-The link{tinkerpop-docs}#graph-step[Graph Step] is the start of any traversal.
+The link:{tinkerpop-docs}#graph-step[Graph Step] is the start of any traversal.
 Sqlg optimizes the graph step by analysing subsequent steps and if possible folding them into a few steps as possible.
 Often into only one step, `SqlgGraphStepCompiled`.
 
@@ -1257,7 +1258,7 @@ FROM
 	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
 ----
 
-=== Vertex Step
+==== Vertex Step
 
 Consecutive link:{tinkerpop-docs}#vertex-steps[`Vertex Step`] are folded into the <<Graph Step>>.
 
@@ -1289,13 +1290,11 @@ public void showVertexStep() {
 ----
 
 [options="nowrap"]
-[[anchor-before-optimization-vertex-step]]
 .Before optimization
 ----
 [GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
 ----
 
-[[anchor-after-optimization-vertex-step]]
 .After optimization
 ----
 [SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
@@ -1318,7 +1317,7 @@ FROM
 	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
 ----
 
-=== Has Step
+==== Has Step
 
 link:{tinkerpop-docs}#has-step[`Has Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
 
@@ -1384,7 +1383,7 @@ WHERE
 
 <1> The `Has Step` realizes itself as a sql `where` clause.
 
-=== Or Step
+==== Or Step
 
 link:{tinkerpop-docs}#or-step[`Or Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
 
@@ -1465,7 +1464,7 @@ WHERE
 
 <1> The `Or Step` realizes itself as a sql `where` clause.
 
-=== And Step
+==== And Step
 
 link:{tinkerpop-docs}#and-step[`And Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
 
@@ -1548,35 +1547,43 @@ WHERE
 
 <1> The `And Step` realizes itself as a sql `where` clause.
 
-=== Not Step
+==== Not Step
 
 link:{tinkerpop-docs}#not-step[`Not Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
 
-=== Repeat Step
+==== Repeat Step
 
 link:{tinkerpop-docs}#repeat-step[`Repeat Step`]
 
 Sqlg optimizes the `RepeatStep` so long as the `until` modulator is *not* present.
 `RepeatStep` can be optimized with the modulator `emit` and `times`.
 
+===== Repeat Step with emit first
+
 [source,java,options="nowrap"]
 ----
 @Test
-public void showRepeat() {
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
-    Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
-    Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
-    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
-    Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
-    Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
-    john.addEdge("lives", usa);
-    peterski.addEdge("lives", russia);
-    usa.addEdge("capital", washington);
+public void showRepeatStepEmitFirst() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
     this.sqlgGraph.tx().commit();
 
-    List<Path> paths = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
-            .emit().times(2).repeat(__.out("lives", "capital"))
+    List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .emit()
+            .times(2)
+            .repeat(
+                    __.out()
+            )
             .path().by("name")
             .toList();
     for (Path path : paths) {
@@ -1587,54 +1594,131 @@ public void showRepeat() {
 
 .output
 ----
-[John, USA, Washington]
-[John]
-[Peterski]
-[Paul]
-[John, USA]
-[Peterski, Russia]
+[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1]
+[a2]
+[a1, b1]
+[a1, b2]
 ----
 
 .sql
 [source,sql,options="nowrap"]
 ----
 SELECT
-	"public"."V_City"."ID" AS "alias1",
-	"public"."V_City"."name" AS "alias2",
-	"public"."V_Person"."ID" AS "alias3",
-	"public"."V_Person"."name" AS "alias4",
-	"public"."V_Country"."ID" AS "alias5",
-	"public"."V_Country"."name" AS "alias6",
-	"public"."E_lives"."ID" AS "alias7"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7"
 FROM
-	"public"."V_Person" INNER JOIN
-	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
-	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
-	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" # <1>
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <1>
 
 SELECT
-	"public"."V_Country"."ID" AS "alias1",
-	"public"."V_Country"."name" AS "alias2",
-	"public"."V_Person"."ID" AS "alias3",
-	"public"."V_Person"."name" AS "alias4",
-	"public"."E_lives"."ID" AS "alias5"
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
 FROM
-	"public"."V_Person" INNER JOIN
-	"public"."E_lives" ON "public"."V_Person"."ID" = "public"."E_lives"."public.Person__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_lives"."public.Country__I" = "public"."V_Country"."ID" # <2>
+	"public"."V_A" <2>
 
 SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."name" AS "alias2"
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
 FROM
-	"public"."V_Person" # <3>
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <3>
 ----
-<1> Get the 'Cities' to emit.
-<2> Get the 'Countries' to emit.
-<3> Get the 'Persons' to emit.
+<1> Get the 'A's to emit.
+<2> Get the 'B's to emit.
+<3> Get the 'C's to emit.
 
-=== Optional Step
+===== Repeat Step with emit last
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showRepeatStepEmitLast() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .repeat(
+                    __.out()
+            )
+            .emit()
+            .times(2)
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1, b1]
+[a1, b2]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7",
+	"public"."E_bc"."ID" AS "alias8"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <1>
+
+SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <2>
+----
+<1> Get the 'C's to emit.
+<2> Get the 'B's to emit.
+
+==== Optional Step
 
 link:{tinkerpop-docs}#optional-step[`Optional Step`]
 
@@ -1643,85 +1727,146 @@ Sqlg optimizes the OptionalStep.
 [source,java,options="nowrap"]
 ----
 @Test
-public void testOptionalNested() {
-    Vertex google = this.sqlgGraph.addVertex(T.label, "Company", "name", "Google");
-    Vertex apple = this.sqlgGraph.addVertex(T.label, "Company", "name", "Apple");
-    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
-    Vertex england = this.sqlgGraph.addVertex(T.label, "Country", "name", "England");
-    Vertex newYork = this.sqlgGraph.addVertex(T.label, "City", "name", "New York");
-    google.addEdge("activeIn", usa);
-    google.addEdge("activeIn", england);
-    usa.addEdge("capital", newYork);
+public void showOptionalStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
     this.sqlgGraph.tx().commit();
+
     List<Path> paths = this.sqlgGraph.traversal()
-            .V()
-            .hasLabel("Company")
+            .V().hasLabel("A")
             .optional(
-                    out().optional(
-                            out()
+                    __.out().optional(
+                            __.out()
                     )
             )
-            .path()
+            .path().by("name")
             .toList();
-    paths.forEach(p -> System.out.println(p.toString()));
+    for (Path path : paths) {
+        System.out.println(path);
+    }
 }
 ----
 
 .output
 ----
-[v[public.Company:::1], v[public.Country:::1], v[public.City:::1]]
-[v[public.Company:::2]]
-[v[public.Company:::1], v[public.Country:::2]]
+[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a2]
+[a1, b2]
 ----
 
 .sql
 [source,sql,options="nowrap"]
 ----
 SELECT
-	"public"."V_City"."ID" AS "alias1",
-	"public"."V_City"."name" AS "alias2",
-	"public"."V_Company"."ID" AS "alias3",
-	"public"."V_Company"."name" AS "alias4",
-	"public"."V_Country"."ID" AS "alias5",
-	"public"."V_Country"."name" AS "alias6"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6"
 FROM
-	"public"."V_Company" INNER JOIN
-	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" INNER JOIN
-	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O" INNER JOIN
-	"public"."V_City" ON "public"."E_capital"."public.City__I" = "public"."V_City"."ID" # <1>
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <1>
 
 SELECT
-	"public"."V_Country"."ID" AS "alias1",
-	"public"."V_Country"."name" AS "alias2",
-	"public"."V_Company"."ID" AS "alias3",
-	"public"."V_Company"."name" AS "alias4"
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
 FROM
-	"public"."V_Company" INNER JOIN
-	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O" INNER JOIN
-	"public"."V_Country" ON "public"."E_activeIn"."public.Country__I" = "public"."V_Country"."ID" LEFT JOIN
-	"public"."E_capital" ON "public"."V_Country"."ID" = "public"."E_capital"."public.Country__O"
+	"public"."V_A" LEFT JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O"
 WHERE
-	("public"."E_capital"."public.Country__O" IS NULL) # <2>
+	("public"."E_ab"."public.A__O" IS NULL) <2>
 
 SELECT
-	"public"."V_Company"."ID" AS "alias1",
-	"public"."V_Company"."name" AS "alias2"
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4"
 FROM
-	"public"."V_Company" LEFT JOIN
-	"public"."E_activeIn" ON "public"."V_Company"."ID" = "public"."E_activeIn"."public.Company__O"
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" LEFT JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O"
 WHERE
-	("public"."E_activeIn"."public.Company__O" IS NULL) # <3>
+	("public"."E_bc"."public.B__O" IS NULL) <3>
 ----
-<1> Get the 'Cities'
-<2> Get the 'Countries' that do not have 'Cities'
-<3> Get the 'Companies' that do not have 'Countries'
+<1> Get the 'C's
+<2> Get the 'A's that do not have 'B's
+<3> Get the 'B's that do not have 'C's
 
-=== Choose Step
+==== Choose Step
 
 link:{tinkerpop-docs}#choose-step[`Choose Step`]
 
-=== Order Step
+[source,java,options="nowrap"]
+----
+@Test
+public void showChooseStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .choose(__.out(), __.out())
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[a1, b1]
+[a1, b2]
+[a2]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+DEBUG 2018-08-12 19:31:50,944 [main] org.umlg.sqlg.strategy.SqlgSqlExecutor:
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A" LEFT JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O"
+WHERE
+	("public"."E_ab"."public.A__O" IS NULL)
+----
+
+==== Order Step
 
 link:{tinkerpop-docs}#order-step[`Order Step`]
 
@@ -1743,15 +1888,20 @@ public void testOrderBy() {
     List<Vertex> result = this.sqlgGraph.traversal().V().hasLabel("A")
             .order().by("name", Order.incr).by("surname", Order.decr)
             .toList();
-
-    assertEquals(6, result.size());
-    assertEquals(a3, result.get(0));
-    assertEquals(a2, result.get(1));
-    assertEquals(a1, result.get(2));
-    assertEquals(b3, result.get(3));
-    assertEquals(b2, result.get(4));
-    assertEquals(b1, result.get(5));
+    for (Vertex v: result) {
+        System.out.println(v.value("name") + " " + v.value("surname"));
+    }
 }
+----
+
+.output
+----
+a c
+a b
+a a
+b c
+b b
+b a
 ----
 
 .sql
@@ -1768,7 +1918,7 @@ ORDER BY
 	 "alias2" DESC
 ----
 
-=== Range Step
+==== Range Step
 
 link:{tinkerpop-docs}#range-step[`Range Step`]
 
@@ -1788,11 +1938,17 @@ public void testRangeOnVertexLabels() {
             .range(1, 4)
             .<String>values("name")
             .toList();
-    assertEquals(3, names.size());
-    assertEquals("person1", names.get(0));
-    assertEquals("person10", names.get(1));
-    assertEquals("person11", names.get(2));
+    for (String name : names) {
+        System.out.println(name);
+    }
 }
+----
+
+.output
+----
+person1
+person10
+person11
 ----
 
 .sql
@@ -1804,10 +1960,11 @@ SELECT
 FROM
 	"public"."V_Person"
 ORDER BY
-	 "alias2" ASC LIMIT 3 OFFSET 1
+	 "alias2" ASC
+LIMIT 3 OFFSET 1
 ----
 
-=== Limit Step
+==== Limit Step
 
 link:{tinkerpop-docs}#limit-step[`Limit Step`]
 
@@ -1827,11 +1984,17 @@ public void testLimitOnVertexLabels() {
             .limit(3)
             .<String>values("name")
             .toList();
-    assertEquals(3, names.size());
-    assertEquals("person0", names.get(0));
-    assertEquals("person1", names.get(1));
-    assertEquals("person10", names.get(2));
+    for (String name : names) {
+        System.out.println(name);
+    }
 }
+----
+
+.output
+----
+person0
+person1
+person10
 ----
 
 .sql
@@ -1843,71 +2006,188 @@ SELECT
 FROM
 	"public"."V_Person"
 ORDER BY
-	 "alias2" ASC LIMIT 3 OFFSET 0
+	 "alias2" ASC
+LIMIT 3 OFFSET 0
 ----
 
-=== Drop Step
+==== Drop Step
 
 link:{tinkerpop-docs}#drop-step[`Drop Step`]
 
-=== Predicates
+[source,java,options="nowrap"]
+----
+@Test
+public void testsDropStepTrivial() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.traversal().V().hasLabel("A").drop().iterate();
+    this.sqlgGraph.tx().commit();
+
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+TRUNCATE ONLY "public"."V_A" <1>
+----
+
+<1> As vertex label 'A' has no in or out edges nor are there any predicates the `TRUNCATE` command is used.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testsDropStepWithHas() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.traversal().V().hasLabel("A").has("name", P.within("a1", "a2")).drop().iterate();
+    this.sqlgGraph.tx().commit();
+
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+WITH todelete AS (
+SELECT
+	"public"."V_A"."ID" AS "alias1"
+FROM
+	"public"."V_A"
+WHERE
+	( "public"."V_A"."name" in (?, ?))
+)
+DELETE FROM "public"."V_A" a USING todelete
+WHERE a."ID" = todelete."alias1" <1>
+----
+
+<1> `DELETE` with a where clause.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testDropStepWithEdges() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    a1.addEdge("ab", b3);
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.traversal().V().hasLabel("A").out().drop().iterate();
+
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+}
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SET CONSTRAINTS ALL DEFERRED <1>
+
+WITH todelete AS (
+SELECT
+	"public"."V_B"."ID" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+)
+DELETE FROM "public"."V_B" a USING todelete
+WHERE a."ID" = todelete."alias1" <2>
+
+WITH todelete AS (
+SELECT
+	"public"."E_ab"."ID" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" LEFT JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+WHERE
+	("public"."V_B"."ID" IS NULL) AND
+	("public"."E_ab"."public.B__I" IS NOT NULL)
+)
+DELETE FROM "public"."E_ab" a USING todelete
+WHERE a."ID" = todelete."alias1" <3>
+
+SET CONSTRAINTS ALL IMMEDIATE <4>
+----
+
+<1> On postgresql we defer (disable) the foreign key constraints.
+<2> Delete the 'B' vertices first. As the edge constraints are disabled this is possible.
+<3> Delete the edges.
+<4. Enable the foreign key constraints.
+
+==== Predicates
 
 TinkerPop's http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] and
 http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains] predicates are optimized
 to execute on the database.
 
-==== Compare predicate
+===== Compare predicate
 
 [source,java,options="nowrap"]
 ----
 @Test
-public void showComparePredicate() {
-    Vertex easternUnion = this.sqlgGraph.addVertex(T.label, "Organization", "name", "EasternUnion");
-    Vertex legal = this.sqlgGraph.addVertex(T.label, "Division", "name", "Legal");
-    Vertex dispatch = this.sqlgGraph.addVertex(T.label, "Division", "name", "Dispatch");
-    Vertex newYork = this.sqlgGraph.addVertex(T.label, "Office", "name", "NewYork");
-    Vertex singapore = this.sqlgGraph.addVertex(T.label, "Office", "name", "Singapore");
-    easternUnion.addEdge("organization_division", legal);
-    easternUnion.addEdge("organization_division", dispatch);
-    legal.addEdge("division_office", newYork);
-    dispatch.addEdge("division_office", singapore);
+public void showComparePredicates() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b2.addEdge("bc", c3);
+    b2.addEdge("bc", c4);
     this.sqlgGraph.tx().commit();
 
-    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
-            .hasLabel("Organization")
-            .out()
-            .out()
-            .has("name", P.eq("Singapore")); <1>
-    System.out.println(traversal);
-    traversal.hasNext();
-    System.out.println(traversal);
-    List<Vertex> offices = traversal.toList();
-    assertEquals(1, offices.size());
-    assertEquals(singapore, offices.get(0));
+    List<String> result = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .out().has("name", P.eq("b1"))
+            .out().has("name", P.eq("c2")) <1>
+            .<String>values("name")
+            .toList();
+    for (String name : result) {
+        System.out.println(name);
+    }
 }
 ----
-<1> The `P` predicate will resolve on the database as a `sql` `where` clause.
+<1> The `P` predicates will resolve on the database as a `sql` `where` clause.
 
 .sql
 [source,sql,options="nowrap"]
 ----
 SELECT
-	"public"."V_Office"."ID" AS "alias1",
-	"public"."V_Office"."name" AS "alias2"
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
 FROM
-	"public"."V_Organization" INNER JOIN
-	"public"."E_organization_division" ON "public"."V_Organization"."ID" = "public"."E_organization_division"."public.Organization__O" INNER JOIN
-	"public"."V_Division" ON "public"."E_organization_division"."public.Division__I" = "public"."V_Division"."ID" INNER JOIN
-	"public"."E_division_office" ON "public"."V_Division"."ID" = "public"."E_division_office"."public.Division__O" INNER JOIN
-	"public"."V_Office" ON "public"."E_division_office"."public.Office__I" = "public"."V_Office"."ID"
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
 WHERE
-	( "public"."V_Office"."name" = ?)
+	( "public"."V_B"."name" = ?) AND ( "public"."V_C"."name" = ?)
 ----
 
 The same pattern is used for all the
 http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Compare.html[Compare] predicates.
 
-==== Contains predicate
+===== Contains predicate
 
 Sqlg's implementation of http://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/process/traversal/Contains.html[Contains]
 is slightly more complex.
@@ -1922,13 +2202,13 @@ For H2 and MariaDB a regular `in` clause is used.
 public void showContainsPredicate() {
     List<Integer> numbers = new ArrayList<>(10000);
     for (int i = 0; i < 10000; i++) {
-        this.sqlgGraph.addVertex(T.label, "Person", "number", i);
+        this.sqlgGraph.addVertex(T.label, "A", "number", i);
         numbers.add(i);
     }
     this.sqlgGraph.tx().commit();
 
     List<Vertex> persons = this.sqlgGraph.traversal().V()
-            .hasLabel("Person")
+            .hasLabel("A")
             .has("number", P.within(numbers))
             .toList();
 
@@ -1940,18 +2220,17 @@ public void showContainsPredicate() {
 [source,sql,options="nowrap"]
 ----
 SELECT
-	"public"."V_Person"."ID" AS "alias1",
-	"public"."V_Person"."number" AS "alias2"
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."number" AS "alias2"
 FROM
-	"public"."V_Person" INNER JOIN
-	(VALUES (0::INTEGER), (1::INTEGER), (2::INTEGER), ... , (9999::INTEGER)) as tmp1(within)  on "public"."V_Person"."number" = tmp1.within
+	"public"."V_A" INNER JOIN
+	(VALUES (0::INTEGER), (1::INTEGER), ... (9998::INTEGER), (9999::INTEGER)) as tmp1(within) on "public"."V_A"."number" = tmp1.within
 ----
 
 This pattern makes `P.within` and `p.without` very fast even with millions of values being passed into the query.
-Benchmarking shows that doing a join on a temporary table is always faster than using the `in` clause.
-For the case of there being only one value Sqlg will use an `equals` instead of a temporary table or an `in` statement.
+For the case of there being only one value Sqlg will use an `equals` instead of a values statement or an `in` statement.
 
-==== Text predicate
+===== Text predicate
 
 [NOTE]
 Sqlg assumes a case-sensitive collation.
@@ -1998,7 +2277,13 @@ WHERE
 	( "public"."V_Person"."name" like ?)
 ----
 
-==== DateTime queries
+===== Full text search
+
+Full text search is supported on postgresql.
+
+This is shown under <<anchor-full-text-indexing>>
+
+===== DateTime queries
 
 LocalDateTime, LocalDate and LocalTime queries are supported.
 
@@ -2043,6 +2328,99 @@ WHERE
 	( "public"."V_Person"."born" >= ?) AND ( "public"."V_Person"."born" < ?)
 ----
 
+=== Optimization (strategy 2)
+
+==== Vertex Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testStrategy2VertexStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    a1.addEdge("ab", b1);
+    a2.addEdge("ab", b2);
+    a3.addEdge("ab", b3);
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, String> t = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .limit(2)
+            .out()
+            .values("name");
+    printTraversalForm(t);
+    List<String> result = t.toList();
+    for (String name : result) {
+        System.out.println(name);
+    }
+}
+----
+
+[options="nowrap"]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), RangeGlobalStep(0,2), VertexStep(OUT,vertex), PropertiesStep([name],value)]
+----
+
+[[anchor-after-optimization-vertex-step,after optimization]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathOrderRangeLabel], SqlgVertexStep@[sqlgPathFakeLabel], PropertiesStep([name],value)]
+----
+
+<<anchor-after-optimization-vertex-step>> shows that there is a link:{apidocs}/org/umlg/sqlg/step/SqlgVertexStep.html[`SqlgVertexStep`]
+after the `SqlgGraphStep`. The `SqlgVertexStep` will barrier the incoming 'A's and execute the next traversal for all
+the incoming elements in one `sql` statement.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A"
+LIMIT 2 OFFSET 0 <1>
+
+SELECT
+	"index" as "index",
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	(VALUES(1, 1),(2, 2)) AS tmp ("tmpId", "index") ON "public"."V_A"."ID" = tmp."tmpId"
+ORDER BY
+	"index" <2>
+----
+
+<1> Get all the 'A's.
+<2> For all the previously fetched 'A's get the 'B's.
+
+==== Repeat Step
+
+[source,java,options="nowrap"]
+----
+----
+
+[options="nowrap"]
+.Before optimization
+----
+----
+
+[[anchor-after-optimization-repeat-step,after optimization]]
+.After optimization
+----
+----
+
+
+[source,sql,options="nowrap"]
+----
+----
 
 == Batch Mode
 
