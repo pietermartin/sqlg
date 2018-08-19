@@ -40,9 +40,9 @@ public class AsciiDoctor {
                     .headerFooter(true)
                     .safe(SafeMode.SERVER)
                     .asMap();
-//            options.put("location", ":footer");
+            options.put("location", ":footer");
             Docinfo docinfo = new Docinfo(options);
-//            asciidoctor.javaExtensionRegistry().docinfoProcessor(docinfo);
+            asciidoctor.javaExtensionRegistry().docinfoProcessor(docinfo);
             asciidoctor.convertFile(
                     file,
                     options
@@ -61,16 +61,37 @@ public class AsciiDoctor {
 
         @Override
         public String process(Document document) {
-            return "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.1.1/tocbot.min.js\"></script>\n" +
-                    "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.1.1/tocbot.css\">" +
-                    "<script>tocbot.init({\n" +
-                    "  // Where to render the table of contents.\n" +
-                    "  tocSelector: '.js-toc',\n" +
-                    "  // Where to grab the headings to build the table of contents.\n" +
-                    "  contentSelector: '.js-toc-content',\n" +
-                    "  // Which headings to grab inside of the contentSelector element.\n" +
-                    "  headingSelector: 'h1, h2, h3',\n" +
-                    "});</script>";
+            return "<script src=\"tocbot.js\"></script>\n" +
+                    "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.1.1/tocbot.css\">\n" +
+                    "<script>\n" +
+                    "    var oldtoc = document.getElementById('toctitle').nextElementSibling;\n" +
+                    "    var newtoc = document.createElement('div');\n" +
+                    "    newtoc.setAttribute('id', 'tocbot');\n" +
+                    "    newtoc.setAttribute('class', 'js-toc');\n" +
+                    "    oldtoc.parentNode.replaceChild(newtoc, oldtoc);\n" +
+                    "    tocbot.init({contentSelector: '#content', headingSelector: 'h1, h2, h3, h4, h5', smoothScroll: true});\n" +
+                    "    var handleTocOnResize = function () {\n" +
+                    "        var width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;\n" +
+                    "        if (width < 768) {\n" +
+                    "            tocbot.refresh({\n" +
+                    "                contentSelector: '#content',\n" +
+                    "                headingSelector: 'h1, h2, h3, h4, h5',\n" +
+                    "                collapseDepth: 6,\n" +
+                    "                activeLinkClass: 'ignoreactive',\n" +
+                    "                throttleTimeout: 1000,\n" +
+                    "                smoothScroll: false\n" +
+                    "            });\n" +
+                    "        } else {\n" +
+                    "            tocbot.refresh({\n" +
+                    "                contentSelector: '#content',\n" +
+                    "                headingSelector: 'h1, h2, h3, h4, h5',\n" +
+                    "                smoothScroll: false\n" +
+                    "            });\n" +
+                    "        }\n" +
+                    "    };\n" +
+                    "    window.addEventListener('resize', handleTocOnResize);\n" +
+                    "    handleTocOnResize();\n" +
+                    "</script>\n";
         }
     }
 }
