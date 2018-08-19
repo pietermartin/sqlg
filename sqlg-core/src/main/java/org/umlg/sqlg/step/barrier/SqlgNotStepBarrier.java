@@ -7,10 +7,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgFilterStep;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -100,5 +102,15 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
         this.results = new ArrayList<>();
         this.resultIterator = null;
         this.notTraversal.reset();
+    }
+
+    @Override
+    public List<Traversal.Admin<S, ?>> getLocalChildren() {
+        return Collections.singletonList(this.notTraversal);
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, getLocalChildren());
     }
 }
