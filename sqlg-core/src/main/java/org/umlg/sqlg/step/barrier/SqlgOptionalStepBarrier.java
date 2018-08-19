@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgTraverser;
@@ -107,4 +108,8 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
         return this.getSelfAndChildRequirements();
     }
 
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, this.optionalTraversal);
+    }
 }
