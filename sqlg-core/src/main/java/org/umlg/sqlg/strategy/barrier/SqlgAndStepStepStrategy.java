@@ -62,7 +62,6 @@ public class SqlgAndStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
     @Override
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(
-                //Inline must happen first as it sometimes removes the need for a TraversalFilterStep
                 SqlgWhereTraversalStepStrategy.class
         ).collect(Collectors.toSet());
     }

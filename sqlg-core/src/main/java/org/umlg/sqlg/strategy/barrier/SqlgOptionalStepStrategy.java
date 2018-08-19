@@ -72,7 +72,6 @@ public class SqlgOptionalStepStrategy<S> extends AbstractTraversalStrategy<Trave
                 MatchPredicateStrategy.class,
                 RepeatUnrollStrategy.class,
                 PathRetractionStrategy.class,
-//                InlineFilterStrategy.class,
                 MessagePassingReductionStrategy.class,
                 IncidentToAdjacentStrategy.class
         ).collect(Collectors.toSet());
