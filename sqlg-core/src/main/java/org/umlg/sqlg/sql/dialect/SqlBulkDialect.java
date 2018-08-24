@@ -3,8 +3,10 @@ package org.umlg.sqlg.sql.dialect;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 
-import java.io.IOException;
+import javax.annotation.Nullable;
 import java.io.Writer;
 import java.util.*;
 
@@ -70,15 +72,27 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    default String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap) {
+    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, @Nullable VertexLabel vertexLabel) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
+    default void writeTemporaryStreamingVertex(Writer writer, Map<String, Object> keyValueMap) {
+        throw SqlgExceptions.batchModeNotSupported(dialectName());
+    }
+
+    default void writeStreamingEdge(
+            Writer writer,
+            SqlgEdge sqlgEdge,
+            VertexLabel outVertexLabel,
+            VertexLabel inVertexLabel,
+            SqlgVertex outVertex,
+            SqlgVertex inVertex,
+            Map<String, Object> keyValueMap,
+            EdgeLabel edgeLabel) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 

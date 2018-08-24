@@ -17,12 +17,12 @@ import java.util.Set;
  */
 public class PropertyColumn implements TopologyInf {
 
-    private AbstractLabel abstractLabel;
-    private String name;
+    private final AbstractLabel abstractLabel;
+    private final String name;
     private boolean committed = true;
-    private PropertyType propertyType;
-    private Set<GlobalUniqueIndex> globalUniqueIndices = new HashSet<>();
-    private Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new HashSet<>();
+    private final PropertyType propertyType;
+    private final Set<GlobalUniqueIndex> globalUniqueIndices = new HashSet<>();
+    private final Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new HashSet<>();
 
     PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
         this.abstractLabel = abstractLabel;
@@ -98,11 +98,20 @@ public class PropertyColumn implements TopologyInf {
     }
 
     static PropertyColumn fromNotifyJson(AbstractLabel abstractLabel, JsonNode jsonNode) {
-        PropertyColumn property = new PropertyColumn(
-                abstractLabel,
-                jsonNode.get("name").asText(),
-                PropertyType.valueOf(jsonNode.get("propertyType").asText()));
-        return property;
+       String pt = jsonNode.get("propertyType").asText();
+       if (pt.equals("VARCHAR")) {
+           //This is not ideal, however Sqlg only uses VARCHAR when creating the column.
+           //For the rest is is considered the same as STRING
+           return new PropertyColumn(
+                   abstractLabel,
+                   jsonNode.get("name").asText(),
+                   PropertyType.STRING);
+       } else {
+           return new PropertyColumn(
+                   abstractLabel,
+                   jsonNode.get("name").asText(),
+                   PropertyType.valueOf(pt));
+       }
     }
 
     @Override

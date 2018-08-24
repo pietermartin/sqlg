@@ -12,7 +12,7 @@ public class PropertyReference  {
 	/**
 	 * the column name
 	 */
-	private String columnName;
+	private final String columnName;
 	
 	private static class RefP extends P<Object> {
 		/**

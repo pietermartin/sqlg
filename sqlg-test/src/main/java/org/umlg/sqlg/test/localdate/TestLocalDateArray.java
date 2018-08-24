@@ -20,7 +20,7 @@ import java.util.List;
 public class TestLocalDateArray extends BaseTest {
 
     @Test
-    public void testLocalDateTimeArray() throws Exception {
+    public void testLocalDateTimeArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now()};
         this.sqlgGraph.addVertex(T.label, "A", "localDateTimes", localDateTimes);
@@ -37,7 +37,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testLocalDateTimeArrayOnEdge() throws Exception {
+    public void testLocalDateTimeArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimes", localDateTimes);
@@ -56,7 +56,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testLocalDateArray() throws Exception {
+    public void testLocalDateArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateArrayValues());
         LocalDate[] localDates = new LocalDate[]{LocalDate.now(), LocalDate.now().minusDays(1)};
         this.sqlgGraph.addVertex(T.label, "A", "localDates", localDates);
@@ -72,7 +72,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testLocalDateArrayOnEdge() throws Exception {
+    public void testLocalDateArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateArrayValues());
         LocalDate[] localDates = new LocalDate[]{LocalDate.now(), LocalDate.now().minusDays(1)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDates", localDates);
@@ -90,7 +90,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testLocalTimeArray() throws Exception {
+    public void testLocalTimeArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());
         LocalTime[] localTimes = new LocalTime[]{LocalTime.now(), LocalTime.now().minusHours(1)};
         this.sqlgGraph.addVertex(T.label, "A", "localTimes", localTimes);
@@ -111,7 +111,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testLocalTimeArrayOnEdge() throws Exception {
+    public void testLocalTimeArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalTimeArrayValues());
         LocalTime[] localTimes = new LocalTime[]{LocalTime.now(), LocalTime.now().minusHours(1)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localTimes", localTimes);
@@ -133,7 +133,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testZonedDateTimeArray() throws Exception {
+    public void testZonedDateTimeArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);
@@ -155,7 +155,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testZonedDateTimeArrayOnEdge() throws Exception {
+    public void testZonedDateTimeArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);
@@ -179,7 +179,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testDurationArray() throws Exception {
+    public void testDurationArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         Duration[] durations = new Duration[]{Duration.ofHours(1), Duration.ofHours(5)};
         this.sqlgGraph.addVertex(T.label, "A", "durations", durations);
@@ -196,7 +196,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testDurationArrayOnEdge() throws Exception {
+    public void testDurationArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         Duration[] durations = new Duration[]{Duration.ofHours(1), Duration.ofHours(5)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "duration", durations);
@@ -215,7 +215,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testPeriodArray() throws Exception {
+    public void testPeriodArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         Period[] periods = new Period[]{Period.of(2016, 5, 5), Period.of(2015, 4, 4)};
         this.sqlgGraph.addVertex(T.label, "A", "periods", periods);
@@ -232,7 +232,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testPeriodArrayOnEdge() throws Exception {
+    public void testPeriodArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         Period[] periods = new Period[]{Period.of(2016, 5, 5), Period.of(2015, 4, 4)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "periods", periods);
@@ -251,7 +251,7 @@ public class TestLocalDateArray extends BaseTest {
     }
 
     @Test
-    public void testZonedDateTimeArray2() throws Exception {
+    public void testZonedDateTimeArray2() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);

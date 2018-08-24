@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.io.TestIoAgain;
+import org.umlg.sqlg.test.doctests.TestForDocs;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,7 @@ import org.umlg.sqlg.test.io.TestIoAgain;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestIo.class,
-        TestIoAgain.class
-//        TestIoEdge.class
+        TestForDocs.class
 })
 public class AnyTest {
 }

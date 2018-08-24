@@ -24,8 +24,8 @@ import java.util.*;
  */
 public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep implements SqlgStep {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class);
-    private SqlgGraph sqlgGraph;
+    private static final Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class);
+    private final SqlgGraph sqlgGraph;
 
     //This holds the head/start traversers per SchemaTable.
     //A query is executed per SchemaTable
@@ -44,9 +44,9 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
 
     //This holds, for each SchemaTable, a list of RecordId's ids and the start elements' index.
     //It is used to generate the select statements, 'VALUES' and ORDER BY 'index' sql
-    private Map<SchemaTable, List<Pair<Long, Long>>> schemaTableParentIds = new LinkedHashMap<>();
+    private Map<SchemaTable, List<Pair<RecordId.ID, Long>>> schemaTableParentIds = new LinkedHashMap<>();
 
-    private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
+    private final List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
 
     private Emit<E> toEmit = null;
@@ -124,23 +124,23 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         this.heads.clear();
         this.schemaTableParentIds.clear();
         while (this.starts.hasNext()) {
-            Traverser.Admin<E> h = this.starts.next();
+            @SuppressWarnings("unchecked") Traverser.Admin<E> h = this.starts.next();
             E value = h.get();
             SchemaTable schemaTable = value.getSchemaTablePrefixed();
-//            List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
             List<Traverser.Admin<E>> traverserList = this.heads.get(schemaTable);
+            //noinspection Java8MapApi
             if (traverserList == null) {
                 traverserList = new ArrayList<>();
                 this.heads.put(schemaTable, traverserList);
             }
             traverserList.add(h);
-//            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
-            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.get(schemaTable);
+            List<Pair<RecordId.ID, Long>> parentIdList = this.schemaTableParentIds.get(schemaTable);
+            //noinspection Java8MapApi
             if (parentIdList == null) {
                 parentIdList = new ArrayList<>();
                 this.schemaTableParentIds.put(schemaTable, parentIdList);
             }
-            parentIdList.add(Pair.of(((RecordId) value.id()).getId(), this.startIndex));
+            parentIdList.add(Pair.of(((RecordId) value.id()).getID(), this.startIndex));
             this.startIndexTraverserAdminMap.put(this.startIndex++, h);
         }
     }
@@ -176,6 +176,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 this.toEmit = emit;
                 E e = emit.getElement();
                 this.labels = emit.getLabels();
+                //noinspection unchecked
                 traverser = traverser.split(e, this);
                 if (traverser instanceof SqlgTraverser) {
                     ((SqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
@@ -200,6 +201,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     private void constructQueryPerSchemaTable() {
         for (SchemaTable schemaTable : this.heads.keySet()) {
             SchemaTableTree rootSchemaTableTree = parseForStrategy(schemaTable);
+
             //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
             if (this.replacedStepTree.hasOrderBy()) {
                 if (isForMultipleQueries() || !replacedStepTree.orderByIsOrder() || this.replacedStepTree.orderByHasSelectOneStepAndForLabelNotInTree()) {
@@ -265,7 +267,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
 
     @Override
     public SqlgVertexStep<E> clone() {
-        final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
+        @SuppressWarnings("unchecked") final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
         clone.heads = new LinkedHashMap<>();
         this.schemaTableElements = LinkedListMultimap.create();
         clone.schemaTableParentIds = new LinkedHashMap<>();
@@ -309,7 +311,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 , "The first step must a VertexStep, EdgeVertexStep, EdgeOtherVertexStep or GraphStep, found " + this.replacedSteps.get(1).getStep().getClass().toString());
         SchemaTableTree rootSchemaTableTree = null;
         try {
-            rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
+            rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedStepTree);
             //Regular
             List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
             //Optional

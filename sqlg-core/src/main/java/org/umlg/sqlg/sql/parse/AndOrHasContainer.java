@@ -1,9 +1,7 @@
 package org.umlg.sqlg.sql.parse;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.AndStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.ConnectiveStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
@@ -14,8 +12,9 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -43,11 +42,11 @@ public class AndOrHasContainer {
         }
     }
 
-    private TYPE type;
+    private final TYPE type;
     //This represents the type's traversals.
     //i.e. g.V().or(__.traversal1, __.traversal2)
-    private List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
-    private List<HasContainer> hasContainers = new ArrayList<>();
+    private final List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
+    private final List<HasContainer> hasContainers = new ArrayList<>();
 
     public AndOrHasContainer(TYPE type) {
         this.type = type;
@@ -103,7 +102,7 @@ public class AndOrHasContainer {
                         if (pts!=null && !pts.containsKey(k)){
                         	// verify if we have a value
                         	Multimap<String, Object> keyValueMap=LinkedListMultimap.create();
-                        	whereClause.putKeyValueMap(h, keyValueMap);
+                        	whereClause.putKeyValueMap(h, keyValueMap, schemaTableTree);
                         	// we do
                         	if (keyValueMap.size()>0){
                         		bool="? is null";
@@ -160,13 +159,13 @@ public class AndOrHasContainer {
         }
     }
 
-    public void setParameterOnStatement(Multimap<String, Object> keyValueMap) {
+    public void setParameterOnStatement(Multimap<String, Object> keyValueMap, SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : this.hasContainers) {
             WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-            whereClause.putKeyValueMap(hasContainer, keyValueMap);
+            whereClause.putKeyValueMap(hasContainer, keyValueMap, schemaTableTree);
         }
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
-            andOrHasContainer.setParameterOnStatement(keyValueMap);
+            andOrHasContainer.setParameterOnStatement(keyValueMap, schemaTableTree);
         }
     }
 }

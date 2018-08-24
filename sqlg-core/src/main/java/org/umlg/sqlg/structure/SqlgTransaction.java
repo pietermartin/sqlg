@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -25,11 +26,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     @SuppressWarnings("WeakerAccess")
     public static final String QUERY_LAZY = "query.lazy";
     
-    private SqlgGraph sqlgGraph;
+    private final SqlgGraph sqlgGraph;
     private BeforeCommit beforeCommitFunction;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
-    private static Logger logger = LoggerFactory.getLogger(SqlgTransaction.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgTransaction.class);
     private boolean cacheVertices = false;
 
     private final ThreadLocal<TransactionCache> threadLocalTx = ThreadLocal.withInitial(() -> null);
@@ -242,7 +243,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!this.isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode to flush");
         }
-        this.logger.debug("flushing transaction!!!");
+        logger.debug("flushing transaction!!!");
         if (!this.getBatchManager().isBusyFlushing()) {
             this.getBatchManager().flush();
         }
@@ -274,6 +275,10 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, Long id) {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, id);
+    }
+
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Comparable> identifiers) {
+        return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
     }
 
     //Called for vertices that exist but are not yet in the transaction cache
@@ -317,7 +322,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
      * get default fetch size
      * @return
      */
-    public Integer getDefaultFetchSize() {
+    private Integer getDefaultFetchSize() {
 		return defaultFetchSize;
 	}
 

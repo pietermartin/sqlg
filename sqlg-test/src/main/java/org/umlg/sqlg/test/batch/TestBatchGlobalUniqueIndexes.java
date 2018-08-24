@@ -7,15 +7,14 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -25,7 +24,7 @@ import java.util.*;
 public class TestBatchGlobalUniqueIndexes extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);

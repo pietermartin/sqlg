@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -21,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,7 +34,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class Topology {
 
     public static final String GRAPH = "graph";
-    public static final String COLUMN_TYPE_PREFIX = "sqlg.type.";
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
     public static final String VERTICES = "VERTICES";
@@ -48,44 +49,46 @@ public class Topology {
     public static final String DURATION_NANOS = "~~~NANOS";
     public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
 
-    private SqlgGraph sqlgGraph;
-    private boolean distributed;
+    private final SqlgGraph sqlgGraph;
+    private final boolean distributed;
 
     //Used to ensure that only one thread can modify the topology.
-    private ReentrantLock topologySqlWriteLock;
+    private final ReentrantLock topologySqlWriteLock;
     //Used to protect the topology maps.
     //The maps are only updated during afterCommit.
     //afterCommit locks access to the map
     //allTableCache, schemaTableForeignKeyCache, edgeForeignKeyCache, metaSchemas and schemas are protected by the topologyMapLock.
-    private ReentrantReadWriteLock topologyMapLock;
+    private final ReentrantReadWriteLock topologyMapLock;
 
-    private Map<String, Map<String, PropertyType>> allTableCache = new HashMap<>();
+    private final Map<String, Map<String, PropertyType>> allTableCache = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, PropertyType>> sqlgSchemaTableCache = new HashMap<>();
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
-    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
-    private Map<String, Set<String>> edgeForeignKeyCache = new HashMap<>();
+    private final Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
+    private final Map<String, Set<ForeignKey>> edgeForeignKeyCache;
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
-    private Map<String, Schema> schemas = new HashMap<>();
+    private final Map<String, Schema> schemas = new HashMap<>();
+    private final Map<String, Schema> globalUniqueIndexSchema = new HashMap<>();
 
-    private Map<String, Schema> uncommittedSchemas = new HashMap<>();
-    private Set<String> uncommittedRemovedSchemas = new HashSet<>();
-    private Map<String, Schema> metaSchemas = new HashMap<>();
+    private final Map<String, Schema> uncommittedSchemas = new HashMap<>();
+    private final Set<String> uncommittedRemovedSchemas = new HashSet<>();
+    private final Map<String, Schema> metaSchemas = new HashMap<>();
     //A cache of just the sqlg_schema's AbstractLabels
-    private Set<TopologyInf> sqlgSchemaAbstractLabels = new HashSet<>();
+    private final Set<TopologyInf> sqlgSchemaAbstractLabels = new HashSet<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public static final String SQLG_NOTIFICATION_CHANNEL = "SQLG_NOTIFY";
 
     //ownPids are the pids to ignore as it is what the graph sent a notification for.
-    private Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
+    private final Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
 
     //every notification will have a unique timestamp.
     //This is so because modification happen one at a time via the lock.
-    private SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
+    private final SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
 
-    private List<TopologyValidationError> validationErrors = new ArrayList<>();
-    private List<TopologyListener> topologyListeners = new ArrayList<>();
+    private final List<TopologyValidationError> validationErrors = new ArrayList<>();
+    private final List<TopologyListener> topologyListeners = new ArrayList<>();
 
     private static final int LOCK_TIMEOUT = 2;
 
@@ -94,12 +97,6 @@ public class Topology {
 
     @SuppressWarnings("WeakerAccess")
     public static final String UPDATED_ON = "updatedOn";
-
-    @SuppressWarnings("WeakerAccess")
-    /**
-     * Holds the current Sqlg pom version.
-     */
-    public static final String VERSION = "version";
 
     @SuppressWarnings("WeakerAccess")
     public static final String SCHEMA_VERTEX_DISPLAY = "schemaVertex";
@@ -112,6 +109,14 @@ public class Topology {
      * Table storing the graph's graph meta data.
      */
     public static final String SQLG_SCHEMA_GRAPH = "graph";
+    /**
+     * graph's sqlg version.
+     */
+    public static final String SQLG_SCHEMA_GRAPH_VERSION = "version";
+    /**
+     * graph's database version. This is sourced from {@link DatabaseMetaData#getDatabaseProductVersion()}
+     */
+    public static final String SQLG_SCHEMA_GRAPH_DB_VERSION = "dbVersion";
     /**
      * Table storing the graph's schemas.
      */
@@ -131,6 +136,14 @@ public class Topology {
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_VERTEX_LABEL_NAME = "name";
     /**
+     * VertexLabel's partition type. {@link PartitionType}
+     */
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE = "partitionType";
+    /**
+     * VertexLabel's partition expression.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION = "partitionExpression";
+    /**
      * Table storing the graphs edge labels.
      */
     public static final String SQLG_SCHEMA_EDGE_LABEL = "edge";
@@ -139,6 +152,84 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_EDGE_LABEL_NAME = "name";
+    /**
+     * EdgeLabel's partition type. {@link PartitionType}
+     */
+    public static final String SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE = "partitionType";
+    /**
+     * EdgeLabel's partition expression.
+     */
+    public static final String SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION = "partitionExpression";
+
+    /**
+     * Table storing the partition.
+     */
+    public static final String SQLG_SCHEMA_PARTITION = "partition";
+    /**
+     * The Partition's name.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_NAME = "name";
+    /**
+     * The Partition's from spec.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_FROM = "from";
+    /**
+     * The Partition's to spec.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_TO = "to";
+    /**
+     * The Partition's in spec.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_IN = "in";
+    /**
+     * The Partition's sub-partition's PartitionType.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_PARTITION_TYPE = "partitionType";
+    /**
+     * The Partition's sub-partition's partitionExpression.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION = "partitionExpression";
+    /**
+     * Edge table for the vertex's partitions.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_PARTITION_EDGE = "vertex_partition";
+    /**
+     * Edge table for the edge's partitions.
+     */
+    public static final String SQLG_SCHEMA_EDGE_PARTITION_EDGE = "edge_partition";
+    /**
+     * Partition table for the partition's partitions.
+     */
+    public static final String SQLG_SCHEMA_PARTITION_PARTITION_EDGE = "partition_partition";
+
+    /**
+     * Edge table for the vertex's distribution column.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE = "vertex_distribution";
+    /**
+     * Edge table for the vertex's colocate label.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE = "vertex_colocate";
+    /**
+     * vertex's shard_count property.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT= "shardCount";
+
+
+    /**
+     * Edge table for the edge's distribution column.
+     */
+    public static final String SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE = "edge_distribution";
+    /**
+     * Edge table for the edge's colocate label. The edge's co-locate will always be to its incoming vertex label.
+     */
+    public static final String SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE = "edge_colocate";
+    /**
+     * Edge's shard_count property.
+     */
+    public static final String SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT= "shardCount";
+
+
     /**
      * Table storing the graphs element properties.
      */
@@ -167,6 +258,22 @@ public class Topology {
      * Edge table for the edge's properties.
      */
     public static final String SQLG_SCHEMA_EDGE_PROPERTIES_EDGE = "edge_property";
+    /**
+     * Edge table for the vertex's identifier properties. i.e. user defined primary key columns
+     */
+    public static final String SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE = "vertex_identifier";
+    /**
+     * Indicates the primary key order.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE = "identifier_index";
+    /**
+     * Edge table for the edge's identifier properties. i.e. user defined primary key columns
+     */
+    public static final String SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE = "edge_identifier";
+    /**
+     * Indicates the primary key order.
+     */
+    public static final String SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE = "identifier_index";
     /**
      * Property table's name property
      */
@@ -238,11 +345,12 @@ public class Topology {
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_PROPERTY_TYPE = "type";
 
-    public static final List<String> SQLG_SCHEMA_SCHEMA_TABLES = Arrays.asList(
+    private static final List<String> SQLG_SCHEMA_SCHEMA_TABLES = Arrays.asList(
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_GRAPH,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PARTITION,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_INDEX,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
@@ -252,6 +360,15 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PARTITION_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PARTITION_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_PARTITION_PARTITION_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_INDEX_PROPERTY_EDGE,
@@ -275,26 +392,53 @@ public class Topology {
         this.metaSchemas.put(SQLG_SCHEMA, sqlgSchema);
 
         Map<String, PropertyType> columns = new HashMap<>();
-        columns.put(VERSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_GRAPH_VERSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_GRAPH_DB_VERSION, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(UPDATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel graphVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_GRAPH, columns);
         this.sqlgSchemaAbstractLabels.add(graphVertexLabel);
-        columns.remove(VERSION);
-        columns.remove(UPDATED_ON);
 
         columns = new HashMap<>();
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);
         this.sqlgSchemaAbstractLabels.add(schemaVertexLabel);
+
+        columns = new HashMap<>();
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT, PropertyType.INTEGER);
         VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(vertexVertexLabel);
-        columns.remove(SCHEMA_VERTEX_DISPLAY);
+
+        columns.clear();
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT, PropertyType.INTEGER);
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
         this.sqlgSchemaAbstractLabels.add(edgeVertexLabel);
 
+        VertexLabel partitionVertexLabel;
+        columns.clear();
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_IN, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, PropertyType.STRING);
+        partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
+        this.sqlgSchemaAbstractLabels.add(partitionVertexLabel);
+
+        columns.clear();
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put(SQLG_SCHEMA_PROPERTY_TYPE, PropertyType.STRING);
         VertexLabel propertyVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PROPERTY, columns);
         this.sqlgSchemaAbstractLabels.add(propertyVertexLabel);
@@ -319,10 +463,38 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(vertexInEdgeLabel);
         EdgeLabel vertexOutEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexOutEdgeLabel);
+
+        EdgeLabel vertexPartitionEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, partitionVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexPartitionEdgeLabel);
+        EdgeLabel edgePartitionEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PARTITION_EDGE, partitionVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgePartitionEdgeLabel);
+        EdgeLabel partitionPartitionEdgeLabel = partitionVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_PARTITION_PARTITION_EDGE, partitionVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(partitionPartitionEdgeLabel);
+        EdgeLabel vertexDistributionPropertyColumnEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLUMN_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexDistributionPropertyColumnEdgeLabel);
+        EdgeLabel vertexColocatePropertyColumnEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_DISTRIBUTION_COLOCATE_EDGE, vertexVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexColocatePropertyColumnEdgeLabel);
+
+        EdgeLabel edgeDistributionPropertyColumnEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgeDistributionPropertyColumnEdgeLabel);
+        EdgeLabel edgeColocatePropertyColumnEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE, vertexVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgeColocatePropertyColumnEdgeLabel);
+
         EdgeLabel vertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexPropertyEdgeLabel);
         EdgeLabel edgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(edgePropertyEdgeLabel);
+
+        columns.put(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE, PropertyType.INTEGER);
+        EdgeLabel vertexIdentifierEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(vertexIdentifierEdgeLabel);
+        columns.clear();
+
+        columns.put(SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, PropertyType.INTEGER);
+        EdgeLabel edgeIdentifierEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE, propertyVertexLabel, columns);
+        this.sqlgSchemaAbstractLabels.add(edgeIdentifierEdgeLabel);
+        columns.clear();
+
         EdgeLabel vertexIndexEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertexLabel, columns);
         this.sqlgSchemaAbstractLabels.add(vertexIndexEdgeLabel);
         EdgeLabel edgeIndexEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertexLabel, columns);
@@ -345,13 +517,13 @@ public class Topology {
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(sqlgGraph, this, sqlgGraph.getSqlDialect().getPublicSchema()));
 
         //add the global unique index schema
-        this.schemas.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));
+        this.globalUniqueIndexSchema.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));
 
         //populate the schema's allEdgesCache
         sqlgSchema.cacheEdgeLabels();
         //populate the allTablesCache
-        sqlgSchema.getVertexLabels().values().forEach((v) -> this.allTableCache.put(v.getSchema().getName() + "." + VERTEX_PREFIX + v.getLabel(), v.getPropertyTypeMap()));
-        sqlgSchema.getEdgeLabels().values().forEach((e) -> this.allTableCache.put(e.getSchema().getName() + "." + EDGE_PREFIX + e.getLabel(), e.getPropertyTypeMap()));
+        sqlgSchema.getVertexLabels().values().forEach((v) -> this.sqlgSchemaTableCache.put(v.getSchema().getName() + "." + VERTEX_PREFIX + v.getLabel(), v.getPropertyTypeMap()));
+        sqlgSchema.getEdgeLabels().values().forEach((e) -> this.sqlgSchemaTableCache.put(e.getSchema().getName() + "." + EDGE_PREFIX + e.getLabel(), e.getPropertyTypeMap()));
 
         sqlgSchema.getVertexLabels().values().forEach((v) -> {
             SchemaTable vertexLabelSchemaTable = SchemaTable.of(v.getSchema().getName(), VERTEX_PREFIX + v.getLabel());
@@ -394,12 +566,13 @@ public class Topology {
     }
 
     public List<TopologyValidationError> getValidationErrors() {
-        return validationErrors;
+        return this.validationErrors;
     }
 
     public boolean isImplementingForeignKeys() {
         return this.sqlgGraph.configuration().getBoolean("implement.foreign.keys", true);
     }
+
     /**
      * Global lock on the topology.
      * For distributed graph (multiple jvm) this happens on the db via a lock sql statement.
@@ -426,6 +599,7 @@ public class Topology {
                             ObjectNode log = logVertex.value("log");
                             fromNotifyJson(timestamp, log);
                         }
+                        this.notificationTimestamps.add(timestamp2);
                     }
                 }
             }
@@ -497,7 +671,7 @@ public class Topology {
         return this.topologySqlWriteLock.isHeldByCurrentThread();
     }
 
-    boolean isTopologyMapWriteLockHeldByCurrentThread() {
+    private boolean isTopologyMapWriteLockHeldByCurrentThread() {
         return this.topologyMapLock.writeLock().isHeldByCurrentThread();
     }
 
@@ -549,12 +723,12 @@ public class Topology {
      * @param columns The properties with their types.
      * @see PropertyType
      */
-    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns, Properties additional) {
-        return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns, additional);
+    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
+        return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
     }
 
-    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
-        return ensureVertexLabelExist(label, columns, new Properties());
+    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+        return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns, identifiers);
     }
 
     /**
@@ -579,18 +753,35 @@ public class Topology {
      * @param properties The properties with their types.
      * @see PropertyType
      */
-    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties, Properties additional) {
+    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties) {
         Objects.requireNonNull(schemaName, "Given tables must not be null");
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
 
         Schema schema = this.ensureSchemaExist(schemaName);
         Preconditions.checkState(schema != null, "Schema must be present after calling ensureSchemaExist");
-        return schema.ensureVertexLabelExist(label, properties, additional);
+        return schema.ensureVertexLabelExist(label, properties);
     }
 
-    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties) {
-        return ensureVertexLabelExist(schemaName, label, properties, new Properties());
+    /**
+     * Ensures that the schema, vertex table and property columns exist in the db.
+     * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
+     * see if the element has not been added in the mean time.
+     *
+     * @param schemaName  The schema the vertex is in.
+     * @param label       The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
+     * @param properties  The properties with their types.
+     * @param identifiers The Vertex's identifiers. i.e. it will be the primary key.
+     * @see PropertyType
+     */
+    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+        Objects.requireNonNull(schemaName, "Given tables must not be null");
+        Objects.requireNonNull(label, "Given table must not be null");
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
+
+        Schema schema = this.ensureSchemaExist(schemaName);
+        Preconditions.checkState(schema != null, "Schema must be present after calling ensureSchemaExist");
+        return schema.ensureVertexLabelExist(label, properties, identifiers);
     }
 
     public void ensureTemporaryVertexTableExist(final String schema, final String label, final Map<String, PropertyType> properties) {
@@ -614,16 +805,35 @@ public class Topology {
      * @param properties     The edge's properties with their type.
      * @return The {@link EdgeLabel}
      */
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> properties, Properties additional) {
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, new ListOrderedSet<>());
+    }
+
+    /**
+     * Ensures that the edge table with out and in {@link VertexLabel}s and property columns exists.
+     * The edge table will reside in the out vertex's schema.
+     * If a table, a foreign key or a column needs to be created a lock is first obtained.
+     *
+     * @param edgeLabelName  The label of the edge for which a table will be created.
+     * @param outVertexLabel The edge's out {@link VertexLabel}
+     * @param inVertexLabel  The edge's in {@link VertexLabel}
+     * @param properties     The edge's properties with their type.
+     * @param identifiers    The edge's user supplied identifiers. They will make up the edge's primary key.
+     * @return The {@link EdgeLabel}
+     */
+    public EdgeLabel ensureEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties,
+            ListOrderedSet<String> identifiers) {
+
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel must not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel must not be null");
+        Objects.requireNonNull(identifiers, "Given identifiers must not be null");
         Schema outVertexSchema = outVertexLabel.getSchema();
-        return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, additional);
-    }
-
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
-        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, new Properties());
+        return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties, identifiers);
     }
 
     /**
@@ -637,7 +847,7 @@ public class Topology {
      * @param properties    The edge's properties with their type.
      * @return The {@link SchemaTable} that represents the edge.
      */
-    public SchemaTable ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties, Properties additional) {
+    public void ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(foreignKeyOut, "Given outTable must not be null");
         Objects.requireNonNull(foreignKeyIn, "Given inTable must not be null");
@@ -655,12 +865,8 @@ public class Topology {
         Preconditions.checkState(inVertexLabel.isPresent(), "in VertexLabel must be present");
 
         @SuppressWarnings("OptionalGetWithoutIsPresent")
-        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties, additional);
-        return SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
-    }
-
-    public SchemaTable ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties) {
-        return ensureEdgeLabelExist(edgeLabelName, foreignKeyOut, foreignKeyIn, properties, new Properties());
+        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties);
+        SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
     }
 
     /**
@@ -735,7 +941,7 @@ public class Topology {
 
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
-        Schema globalUniqueIndexSchema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA).orElseThrow(() -> new IllegalStateException("BUG: Global unique index schema " + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + " must exist"));
+        Schema globalUniqueIndexSchema = getGlobalUniqueIndexSchema();
         return globalUniqueIndexSchema.ensureGlobalUniqueIndexExist(properties);
     }
 
@@ -795,9 +1001,9 @@ public class Topology {
                     }
                 }
 
-                Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
-                for (Map.Entry<String, Set<String>> entry : uncommittedEdgeForeignKeys.entrySet()) {
-                    Set<String> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
+                Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+                for (Map.Entry<String, Set<ForeignKey>> entry : uncommittedEdgeForeignKeys.entrySet()) {
+                    Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
                     if (foreignKeys == null) {
                         this.edgeForeignKeyCache.put(entry.getKey(), entry.getValue());
                     } else {
@@ -805,6 +1011,9 @@ public class Topology {
                     }
                 }
                 for (Schema schema : this.schemas.values()) {
+                    schema.afterCommit();
+                }
+                for (Schema schema : this.globalUniqueIndexSchema.values()) {
                     schema.afterCommit();
                 }
             } finally {
@@ -872,13 +1081,15 @@ public class Topology {
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
             Optional<Schema> schemaOptional = getSchema(schemaName);
-            if (schemaName.equals(SQLG_SCHEMA)) {
-                Preconditions.checkState(schemaOptional.isPresent(), "\"public\" schema must always be present.");
+            if (schemaName.equals(SQLG_SCHEMA) || schemaName.equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                Preconditions.checkState(schemaOptional.isPresent(), "\"%s\" schema must always be present.", schemaName);
             }
             Schema schema;
             if (!schemaOptional.isPresent()) {
                 schema = Schema.loadUserSchema(this, schemaName);
-                this.schemas.put(schemaName, schema);
+                if (!schema.getName().equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                    this.schemas.put(schemaName, schema);
+                }
             } else {
                 schema = schemaOptional.get();
 
@@ -892,11 +1103,13 @@ public class Topology {
         schemaVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
-            Optional<Schema> schemaOptional = getSchema(schemaName);
-            Preconditions.checkState(schemaOptional.isPresent(), "schema %s must be present when loading in edges.", schemaName);
-            @SuppressWarnings("OptionalGetWithoutIsPresent")
-            Schema schema = schemaOptional.get();
-            schema.loadInEdgeLabels(traversalSource, schemaVertex);
+            if (!schemaName.equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                Optional<Schema> schemaOptional = getSchema(schemaName);
+                Preconditions.checkState(schemaOptional.isPresent(), "schema \"%s\" must be present when loading in edges.", schemaName);
+                @SuppressWarnings("OptionalGetWithoutIsPresent")
+                Schema schema = schemaOptional.get();
+                schema.loadInEdgeLabels(traversalSource, schemaVertex);
+            }
         }
 
         //Load the globalUniqueIndexes.
@@ -1051,6 +1264,23 @@ public class Topology {
                 }
                 topologyNode.set("uncommittedSchemas", unCommittedSchemaArrayNode);
             }
+            ArrayNode globalUniqueIndexCommittedSchemaArrayNode = null;
+            for (Schema schema : this.globalUniqueIndexSchema.values()) {
+                Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+                if (jsonNodeOptional.isPresent() && globalUniqueIndexCommittedSchemaArrayNode == null) {
+                    globalUniqueIndexCommittedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                if (jsonNodeOptional.isPresent()) {
+                    //noinspection ConstantConditions
+                    globalUniqueIndexCommittedSchemaArrayNode.add(jsonNodeOptional.get());
+                }
+            }
+            if (globalUniqueIndexCommittedSchemaArrayNode != null) {
+                if (topologyNode == null) {
+                    topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                topologyNode.set("globalUniqueIndexSchema", globalUniqueIndexCommittedSchemaArrayNode);
+            }
             if (topologyNode != null) {
                 return Optional.of(topologyNode);
             } else {
@@ -1090,7 +1320,7 @@ public class Topology {
         z_internalTopologyMapWriteLock();
         try {
             //First do all the out edges. The in edge logic assumes the out edges are present.
-            for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
+            for (String s : Arrays.asList("uncommittedSchemas", "schemas", "globalUniqueIndexSchema")) {
                 ArrayNode schemas = (ArrayNode) log.get(s);
                 if (schemas != null) {
                     //first load all the schema as they might be required later
@@ -1220,30 +1450,31 @@ public class Topology {
     }
 
     public Schema getGlobalUniqueIndexSchema() {
-        Optional<Schema> schema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
-        Preconditions.checkState(schema.isPresent(), "BUG: The global unique index schema %s must always be present", Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
-        //noinspection OptionalGetWithoutIsPresent
-        return schema.get();
+        return this.globalUniqueIndexSchema.get(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
     }
 
     public Optional<Schema> getSchema(String schema) {
         if (isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedSchemas.contains(schema)) {
             return Optional.empty();
         }
-        z_internalTopologyMapReadLock();
-        try {
-            Schema result = this.schemas.get(schema);
-            if (result == null) {
-                if (isSqlWriteLockHeldByCurrentThread()) {
-                    result = this.uncommittedSchemas.get(schema);
-                }
+        if (schema.equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+            return Optional.of(getGlobalUniqueIndexSchema());
+        } else {
+            z_internalTopologyMapReadLock();
+            try {
+                Schema result = this.schemas.get(schema);
                 if (result == null) {
-                    result = this.metaSchemas.get(schema);
+                    if (isSqlWriteLockHeldByCurrentThread()) {
+                        result = this.uncommittedSchemas.get(schema);
+                    }
+                    if (result == null) {
+                        result = this.metaSchemas.get(schema);
+                    }
                 }
+                return Optional.ofNullable(result);
+            } finally {
+                z_internalTopologyMapReadUnLock();
             }
-            return Optional.ofNullable(result);
-        } finally {
-            z_internalTopologyMapReadUnLock();
         }
     }
 
@@ -1262,12 +1493,7 @@ public class Topology {
         Optional<Schema> schemaOptional = getSchema(schemaName);
         if (schemaOptional.isPresent()) {
             Schema schema = schemaOptional.get();
-            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(edgeLabelName);
-            if (edgeLabelOptional.isPresent()) {
-                return edgeLabelOptional;
-            } else {
-                return Optional.empty();
-            }
+            return schema.getEdgeLabel(edgeLabelName);
         } else {
             return Optional.empty();
         }
@@ -1311,11 +1537,11 @@ public class Topology {
         }
     }
 
-    private Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
+    private Map<String, Set<ForeignKey>> getUncommittedEdgeForeignKeys() {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread(), "getUncommittedEdgeForeignKeys must be called with the lock held");
         z_internalTopologyMapReadLock();
         try {
-            Map<String, Set<String>> result = new HashMap<>();
+            Map<String, Set<ForeignKey>> result = new HashMap<>();
             for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
                 Schema schema = stringSchemaEntry.getValue();
                 result.putAll(schema.getUncommittedEdgeForeignKeys());
@@ -1340,128 +1566,84 @@ public class Topology {
         return getAllTables(false);
     }
 
+    private Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema) {
+        return getAllTables(sqlgSchema, false);
+    }
+
     /**
      * get all tables by schema, with their properties
      *
-     * @param withSqlgSchema do we want the sqlg_schema tables?
-     * @return
+     * @param sqlgSchema do we want the sqlg_schema tables?
+     * @return a map of all tables and their properties.
      */
-    public Map<String, Map<String, PropertyType>> getAllTables(boolean withSqlgSchema) {
-        z_internalTopologyMapReadLock();
-        try {
-            //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
-            Map<String, Map<String, PropertyType>> result;
-            if (this.isSqlWriteLockHeldByCurrentThread()) {
-                result = new HashMap<>();
-                for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
-                    result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
-                }
-                Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
-                for (String table : uncommittedLabels.keySet()) {
-                    if (result.containsKey(table)) {
-                        result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
-                    } else {
-                        result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
-                    }
-                }
-                for (Schema s : this.schemas.values()) {
-                    for (String removed : s.uncommittedRemovedVertexLabels) {
-                        result.remove(removed);
-                    }
-                    for (String removed : s.uncommittedRemovedEdgeLabels) {
-                        result.remove(removed);
-                    }
-
-                }
-            } else {
-                if (!withSqlgSchema) {
-                    result = new HashMap<>(this.allTableCache);
-                } else {
-                    result = this.allTableCache;
-                }
-            }
-            if (!withSqlgSchema) {
-                for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
-                    result.remove(sqlgSchemaSchemaTable);
-                }
+    public Map<String, Map<String, PropertyType>> getAllTables(boolean sqlgSchema, boolean guiSchema) {
+        Preconditions.checkState(!(sqlgSchema && guiSchema), "Both sqlgSchema and guiSchema can not be true. Only one or none.");
+        if (sqlgSchema) {
+            return Collections.unmodifiableMap(this.sqlgSchemaTableCache);
+        } else if (guiSchema) {
+            Map<String, Map<String, PropertyType>> result = new HashMap<>();
+            for (GlobalUniqueIndex globalUniqueIndex : this.getGlobalUniqueIndexes()) {
+                Map<String, PropertyType> properties = new LinkedHashMap<String, PropertyType>() {{
+                    put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, globalUniqueIndex.getProperties().stream().findAny().orElseThrow(IllegalStateException::new).getPropertyType());
+                    put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, PropertyType.STRING);
+                    put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, PropertyType.STRING);
+                }};
+                result.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + Topology.VERTEX_PREFIX + globalUniqueIndex.getName(), properties);
             }
             return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalTopologyMapReadUnLock();
-        }
-    }
-
-    /**
-     * Returns the topology schema elements with the filter schema elements removed.
-     *
-     * @param filter The objects not to include in the result.
-     * @return A map without the filter elements present.
-     */
-    public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
-        Map<String, Map<String, PropertyType>> result = new HashMap<>(getAllTables());
-        for (TopologyInf f : filter) {
-            if (f instanceof AbstractLabel) {
-                AbstractLabel abstractLabel = (AbstractLabel) f;
-                Schema schema = abstractLabel.getSchema();
-                result.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel());
-            }
-        }
-        return Collections.unmodifiableMap(result);
-    }
-
-    public Map<String, Map<String, PropertyType>> getAllTablesFrom(Set<TopologyInf> selectFrom) {
-        Map<String, Map<String, PropertyType>> tbls = getAllTables(true);
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
-        for (TopologyInf f : selectFrom) {
-            if (f instanceof AbstractLabel) {
-                AbstractLabel abstractLabel = (AbstractLabel) f;
-                if (abstractLabel.isValid()) {
-                    Schema schema = abstractLabel.getSchema();
-                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
-                    Map<String, PropertyType> tmp = tbls.get(key);
-                    if (tmp != null) {
-                        result.put(key, tmp);
+        } else {
+            z_internalTopologyMapReadLock();
+            try {
+                //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
+                Map<String, Map<String, PropertyType>> result;
+                if (this.isSqlWriteLockHeldByCurrentThread()) {
+                    result = new HashMap<>();
+                    for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
+                        result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
                     }
+                    Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
+                    for (String table : uncommittedLabels.keySet()) {
+                        if (result.containsKey(table)) {
+                            result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
+                        } else {
+                            result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
+                        }
+                    }
+                    for (Schema s : this.schemas.values()) {
+                        for (String removed : s.uncommittedRemovedVertexLabels) {
+                            result.remove(removed);
+                        }
+                        for (String removed : s.uncommittedRemovedEdgeLabels) {
+                            result.remove(removed);
+                        }
+
+                    }
+                    return Collections.unmodifiableMap(result);
+                } else {
+                    return Collections.unmodifiableMap(this.allTableCache);
                 }
-            } else if (f instanceof GlobalUniqueIndex) {
-                GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
-                String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + VERTEX_PREFIX + globalUniqueIndex.getName();
-                Map<String, PropertyType> tmp = tbls.get(key);
-                if (tmp != null) {
-                    result.put(key, tmp);
-                }
+            } finally {
+                z_internalTopologyMapReadUnLock();
             }
+
         }
-        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
         Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-        if (schemaOptional.isPresent()) {
-            return Collections.unmodifiableMap(schemaOptional.get().getPropertiesFor(schemaTable));
-        }
-        return Collections.emptyMap();
+        return schemaOptional.map(schema -> Collections.unmodifiableMap(schema.getPropertiesFor(schemaTable))).orElse(Collections.emptyMap());
     }
 
     public Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
         Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-        if (schemaOptional.isPresent()) {
-            return Collections.unmodifiableMap(schemaOptional.get().getPropertiesWithGlobalUniqueIndexFor(schemaTable));
-        }
-        return Collections.emptyMap();
+        return schemaOptional.map(schema -> Collections.unmodifiableMap(schema.getPropertiesWithGlobalUniqueIndexFor(schemaTable))).orElse(Collections.emptyMap());
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        Map<String, PropertyType> result = getAllTables(true).get(schemaTable.toString());
+        Map<String, PropertyType> result = getAllTables(schemaTable.getSchema().equals(Topology.SQLG_SCHEMA), schemaTable.getSchema().equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)).get(schemaTable.toString());
         if (result != null) {
             return Collections.unmodifiableMap(result);
         }
-//        if (isSqlWriteLockHeldByCurrentThread()) {
-//            Map<String, PropertyType> temporaryPropertyMap = this.threadLocalTemporaryTables.get().get(schemaTable.getTable());
-//            if (temporaryPropertyMap != null) {
-//                return Collections.unmodifiableMap(temporaryPropertyMap);
-//            }
-//        }
         return Collections.emptyMap();
     }
 
@@ -1508,20 +1690,33 @@ public class Topology {
         return getTableLabels().get(schemaTable);
     }
 
-    public Set<String> getEdgeForeignKeys(String schemaTable) {
-        return getAllEdgeForeignKeys().get(schemaTable);
+    //This is for backward compatibility.
+    public Map<String, Set<String>> getAllEdgeForeignKeys() {
+        Map<String, Set<String>> result = new HashMap<>();
+        Map<String, Set<ForeignKey>> allEdgeForiegnKeys = getEdgeForeignKeys();
+        for (Map.Entry<String, Set<ForeignKey>> stringSetEntry : allEdgeForiegnKeys.entrySet()) {
+
+            String key = stringSetEntry.getKey();
+            Set<ForeignKey> foreignKeys = stringSetEntry.getValue();
+            Set<String> foreignKeySet = new HashSet<>();
+            result.put(key, foreignKeySet);
+            for (ForeignKey foreignKey : foreignKeys) {
+                foreignKeySet.add(foreignKey.getCompositeKeys().get(0));
+            }
+        }
+        return result;
     }
 
-    public Map<String, Set<String>> getAllEdgeForeignKeys() {
+    public Map<String, Set<ForeignKey>> getEdgeForeignKeys() {
         z_internalTopologyMapReadLock();
         try {
             if (this.isSqlWriteLockHeldByCurrentThread()) {
-                Map<String, Set<String>> committed = new HashMap<>(this.edgeForeignKeyCache);
-                Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
-                for (Map.Entry<String, Set<String>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
-                    Set<String> committedForeignKeys = committed.get(uncommittedEntry.getKey());
+                Map<String, Set<ForeignKey>> committed = new HashMap<>(this.edgeForeignKeyCache);
+                Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+                for (Map.Entry<String, Set<ForeignKey>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
+                    Set<ForeignKey> committedForeignKeys = committed.get(uncommittedEntry.getKey());
                     if (committedForeignKeys != null) {
-                        Set<String> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
+                        Set<ForeignKey> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
                         originalPlusUncommittedForeignKeys.addAll(uncommittedEntry.getValue());
                         committed.put(uncommittedEntry.getKey(), originalPlusUncommittedForeignKeys);
                     } else {
@@ -1537,36 +1732,37 @@ public class Topology {
         }
     }
 
-    private Map<String, Set<String>> loadAllEdgeForeignKeys() {
+    private Map<String, Set<ForeignKey>> loadAllEdgeForeignKeys() {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread());
-        Map<String, Set<String>> result = new HashMap<>();
+        Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Schema schema : this.schemas.values()) {
             result.putAll(schema.getAllEdgeForeignKeys());
         }
         return result;
     }
 
-    void addToEdgeForeignKeyCache(String name, String foreignKey) {
+    void addToEdgeForeignKeyCache(String name, ForeignKey foreignKey) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
-        Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
+        Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(name);
+        //noinspection Java8MapApi
         if (foreignKeys == null) {
             foreignKeys = new HashSet<>();
             this.edgeForeignKeyCache.put(name, foreignKeys);
-        }   
+        }
         foreignKeys.add(foreignKey);
-        
+
     }
 
-    void removeFromEdgeForeignKeyCache(String name, String foreignKey) {
+    void removeFromEdgeForeignKeyCache(String name, ForeignKey foreignKey) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
-        Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
+        Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(name);
         if (foreignKeys != null) {
             foreignKeys.remove(foreignKey);
-            if(foreignKeys.isEmpty()) {
+            if (foreignKeys.isEmpty()) {
                 this.edgeForeignKeyCache.remove(name);
             }
         }
-        
+
     }
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
@@ -1589,12 +1785,9 @@ public class Topology {
     void addOutForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
-        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
-        if (foreignKeys == null) {
-            foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
-            this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
-
-        }
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.computeIfAbsent(
+                schemaTable, k -> Pair.of(new HashSet<>(), new HashSet<>())
+        );
         foreignKeys.getRight().add(SchemaTable.of(vertexLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
@@ -1607,11 +1800,9 @@ public class Topology {
     void addInForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread() || isTopologyMapWriteLockHeldByCurrentThread());
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
-        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
-        if (foreignKeys == null) {
-            foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
-            this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
-        }
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.computeIfAbsent(
+                schemaTable, k -> Pair.of(new HashSet<>(), new HashSet<>())
+        );
         foreignKeys.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
@@ -1655,23 +1846,40 @@ public class Topology {
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         this.schemaTableForeignKeyCache.remove(schemaTable);
         this.allTableCache.remove(schemaTable.toString());
+        //out
+        ForeignKey foreignKey;
+        if (vertexLabel.hasIDPrimaryKey()) {
+            foreignKey = ForeignKey.of(vertexLabel.getFullName() + OUT_VERTEX_COLUMN_END);
+        } else {
+            foreignKey = new ForeignKey();
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                foreignKey.add(vertexLabel.getFullName() + "." + identifier + OUT_VERTEX_COLUMN_END);
+            }
+        }
         for (EdgeLabel lbl : vertexLabel.getOutEdgeLabels().values()) {
             removeFromEdgeForeignKeyCache(
                     lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                    vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + OUT_VERTEX_COLUMN_END);
+                    foreignKey
+            );
+        }
+        //in
+        if (vertexLabel.hasIDPrimaryKey()) {
+            foreignKey = ForeignKey.of(vertexLabel.getFullName() + IN_VERTEX_COLUMN_END);
+        } else {
+            foreignKey = new ForeignKey();
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                foreignKey.add(vertexLabel.getFullName() + "." + identifier + IN_VERTEX_COLUMN_END);
+            }
         }
         for (EdgeLabel lbl : vertexLabel.getInEdgeLabels().values()) {
             if (lbl.isValid()) {
                 removeFromEdgeForeignKeyCache(
                         lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                        vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + IN_VERTEX_COLUMN_END);
+                        foreignKey
+                );
             }
         }
     }
-    
-    /*void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
-        this.uncommittedGlobalUniqueIndexes.add(globalUniqueIndex);
-    }*/
 
     public void registerListener(TopologyListener topologyListener) {
         this.topologyListeners.add(topologyListener);
@@ -1693,22 +1901,22 @@ public class Topology {
         lock();
         if (!this.uncommittedRemovedSchemas.contains(schema.getName())) {
             // remove edge roles in other schemas pointing to vertex labels in removed schema
-        	// TODO undo this in case of rollback?
+            // TODO undo this in case of rollback?
             for (VertexLabel vlbl : schema.getVertexLabels().values()) {
                 for (EdgeRole er : vlbl.getInEdgeRoles().values()) {
                     if (er.getEdgeLabel().getSchema() != schema) {
                         er.remove(preserveData);
                     }
                 }
-             // remove out edge roles in other schemas edges
+                // remove out edge roles in other schemas edges
                 for (EdgeRole er : vlbl.getOutEdgeRoles().values()) {
                     if (er.getEdgeLabel().getSchema() == schema) {
-                        for(EdgeRole erIn : er.getEdgeLabel().getInEdgeRoles()){
-                        	if (erIn.getVertexLabel().getSchema() != schema) {
-                        		erIn.remove(preserveData);
+                        for (EdgeRole erIn : er.getEdgeLabel().getInEdgeRoles()) {
+                            if (erIn.getVertexLabel().getSchema() != schema) {
+                                erIn.remove(preserveData);
                             }
                         }
-                        
+
                     }
                 }
             }
@@ -1723,7 +1931,7 @@ public class Topology {
     }
 
     public static class TopologyValidationError {
-        private TopologyInf error;
+        private final TopologyInf error;
 
         TopologyValidationError(TopologyInf error) {
             this.error = error;

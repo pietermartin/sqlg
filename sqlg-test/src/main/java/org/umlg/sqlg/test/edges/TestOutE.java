@@ -56,7 +56,7 @@ public class TestOutE extends BaseTest {
 	}
 	
 	@Test
-	public void testOutEOrder()throws Exception {
+	public void testOutEOrder() {
 	    Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "p1");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "p2");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "p3");

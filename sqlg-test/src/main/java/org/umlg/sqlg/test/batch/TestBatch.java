@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.batch;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -7,12 +8,15 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
+import java.time.Duration;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,7 +30,7 @@ import java.util.stream.Collectors;
 public class TestBatch extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -36,6 +40,51 @@ public class TestBatch extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+    }
+
+    @Test
+    public void testBatchNormalModeEdgeMultiColumnProperties() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        ZonedDateTime now = ZonedDateTime.now();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "t", now);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        a1.addEdge("ab", a2, "t", now);
+        a1.addEdge("ab", a2 );
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("ab").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("ab").has("t", now).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("ab").hasNot("t").count().next(), 0);
+    }
+
+    @Test
+    public void testBatchNormalModeMultiColumnProperties() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        ZonedDateTime now = ZonedDateTime.now();
+        this.sqlgGraph.addVertex(T.label, "A", "t", now);
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "d", Duration.ofHours(1));
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("d", Duration.ofHours(1)).count().next(), 0);
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("d").count().next(), 0);
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "p", Period.of(1,1,1));
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(6, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("p", Period.of(1,1,1)).count().next(), 0);
+        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("p").count().next(), 0);
     }
 
     @Test
@@ -330,7 +379,7 @@ public class TestBatch extends BaseTest {
 
     //this test a 'contains' bug in the update of labels batch logic
     @Test
-    public void testBatchUpdateOfLabels() throws Exception {
+    public void testBatchUpdateOfLabels() {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "mike");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
@@ -568,6 +617,53 @@ public class TestBatch extends BaseTest {
         }
     }
 
+    @Test
+    //TODO need to deal with missing properties, set them to null
+    public void testRemovePropertyUserSuppliedPK() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                            put("name", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "Friend",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("weight", PropertyType.INTEGER);
+                }}
+        );
+        personVertexLabel.ensureEdgeLabelExist(
+                "Colleague",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("toRemove", PropertyType.STRING);
+                }}
+        );
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        marko.addEdge("Friend", john, "weight", 1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge colleague = marko.addEdge("Colleague", john, "toRemove", "a", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        marko.property("name").remove();
+        colleague.property("toRemove").remove();
+        this.sqlgGraph.tx().commit();
+
+        testRemoveProperty_assert(this.sqlgGraph, marko);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testRemoveProperty_assert(this.sqlgGraph1, marko);
+        }
+    }
+
     private void testRemoveProperty_assert(SqlgGraph sqlgGraph, Vertex marko) {
         marko = sqlgGraph.traversal().V(marko.id()).next();
         Assert.assertFalse(marko.property("name").isPresent());
@@ -589,6 +685,50 @@ public class TestBatch extends BaseTest {
         Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a");
         Edge sqlgEdge = root.addEdge("rootGod", god);
         Assert.assertNull(sqlgEdge.id());
+        Edge rootGodEdge = vertexTraversal(this.sqlgGraph, root).outE("rootGod").next();
+        //Querying triggers the cache to be flushed, so the result will have an id
+        Assert.assertNotNull(rootGodEdge);
+        Assert.assertNotNull(rootGodEdge.id());
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
+    public void testGetEdgesUserSuppliedPK() {
+        VertexLabel rootVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "ROOT",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                            put("dummy", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        VertexLabel godVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "God",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                            put("dummy", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        rootVertexLabel.ensureEdgeLabelExist(
+                "rootGod",
+                godVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a", "uid1", "root111", "uid2", "root222");
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a", "uid1", "god111", "uid2", "god222");
+        Edge sqlgEdge = root.addEdge("rootGod", god, "uid1", "edge111", "uid2", "edge222");
+        Assert.assertNull(sqlgEdge.id());
+        this.sqlgGraph.tx().commit();
         Edge rootGodEdge = vertexTraversal(this.sqlgGraph, root).outE("rootGod").next();
         //Querying triggers the cache to be flushed, so the result will have an id
         Assert.assertNotNull(rootGodEdge);
@@ -971,6 +1111,71 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
+    public void testBatchRemoveVertexUsersSuppliedPK() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveVertex_assert();
+    }
+
+    @Test
+    public void testBatchRemoveEdges_UserSuppliedPK() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge1 = v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge2 = v1.addEdge("test", v3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        edge1.remove();
+        edge2.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveEdges_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveEdges_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testBatchRemoveEdges_assert(SqlgGraph sqlgGraph) {
+        Assert.assertEquals(3, sqlgGraph.traversal().V().count().next().intValue());
+        Assert.assertEquals(0, sqlgGraph.traversal().E().count().next().intValue());
+    }
+
+    @Test
     public void testBatchRemoveEdges() throws InterruptedException {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
@@ -989,9 +1194,44 @@ public class TestBatch extends BaseTest {
         }
     }
 
-    private void testBatchRemoveEdges_assert(SqlgGraph sqlgGraph) {
-        Assert.assertEquals(3, sqlgGraph.traversal().V().count().next().intValue());
-        Assert.assertEquals(0, sqlgGraph.traversal().E().count().next().intValue());
+    @Test
+    public void testBatchRemoveVerticesAndEdgesUserSuppliedPK() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge1 = v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge edge2 = v1.addEdge("test", v3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        edge1.remove();
+        edge2.remove();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveVerticesAndEdges_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveVerticesAndEdges_assert(this.sqlgGraph1);
+        }
     }
 
     @Test
@@ -1028,6 +1268,44 @@ public class TestBatch extends BaseTest {
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
         v1.addEdge("test", v2);
         v1.addEdge("test", v3);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveVerticesEdgesMustBeGone_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveVerticesEdgesMustBeGone_assert(this.sqlgGraph1);
+        }
+    }
+
+    @Test
+    public void testBatchRemoveVerticesEdgesMustBeGoneUserSuppliedPK() throws InterruptedException {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        v1.addEdge("test", v3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
         v1.remove();
@@ -1310,6 +1588,48 @@ public class TestBatch extends BaseTest {
         for (int i = 0; i < 100000; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
             v1.addEdge("test", v2);
+        }
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
+        Assert.assertEquals(100000, this.sqlgGraph.traversal().E().count().next().intValue());
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        vertexTraversal(this.sqlgGraph, v1).outE("test").forEachRemaining(Edge::remove);
+        this.sqlgGraph.tx().commit();
+        testBatchRemoveManyEdgesTestPostgresLimit_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchRemoveManyEdgesTestPostgresLimit_assert(this.sqlgGraph1);
+        }
+    }
+
+    @Test
+    public void testBatchRemoveManyEdgesTestPostgresLimitUserSuppliedPK() throws InterruptedException {
+        Assume.assumeTrue(!isMsSqlServer());
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                            put("dummy", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        personVertexLabel.ensureEdgeLabelExist(
+                "test",
+                personVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        for (int i = 0; i < 100000; i++) {
+            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+            v1.addEdge("test", v2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         }
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());

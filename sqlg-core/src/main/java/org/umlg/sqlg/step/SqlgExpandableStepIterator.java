@@ -16,7 +16,7 @@ import java.util.Queue;
 public class SqlgExpandableStepIterator<S> implements Iterator<Traverser.Admin<S>>, Serializable {
 
     private final Step<S, ?> hostStep;
-    private Queue<Traverser.Admin<S>> traversers = new LinkedList<>();
+    private final Queue<Traverser.Admin<S>> traversers = new LinkedList<>();
 
     public SqlgExpandableStepIterator(Step<S, ?> hostStep) {
         this.hostStep = hostStep;

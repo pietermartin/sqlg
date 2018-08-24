@@ -20,7 +20,9 @@ public class SqlgExceptions {
     }
 
     static InvalidIdException invalidId(String invalidId) {
-        return new InvalidIdException("Sqlg ids must be a String with the format 'label:::id' The id must be a long. The given id " + invalidId + " is invalid.");
+        return new InvalidIdException("Sqlg ids must be a String.\nFor sequence ids the format is 'label:::id' The id must be a long.\n" +
+                "For user supplied identifiers the identifiers must be in array format. i.e. [x,y,z].\n" +
+                "The given id " + invalidId + " is invalid.");
     }
 
     public static InvalidSchemaException invalidSchemaName(String message) {
@@ -49,6 +51,18 @@ public class SqlgExceptions {
 
     public static GisNotSupportedException gisNotSupportedException() {
         return new GisNotSupportedException("Gis is not supported");
+    }
+
+    public static InvalidFromRecordIdException invalidFromRecordId(String elementId) {
+        throw new InvalidFromRecordIdException(String.format("To convert a String representation of an id for an user supplied identifier element use RecordId.from(SqlgGraph, Object). Given id is %s", elementId));
+    }
+
+    public static class InvalidFromRecordIdException extends RuntimeException {
+
+        InvalidFromRecordIdException(String message) {
+            super(message);
+        }
+
     }
 
     public static class InvalidIdException extends RuntimeException {

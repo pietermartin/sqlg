@@ -33,7 +33,7 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
             return;
         }
         List<OrStep> orSteps = TraversalHelper.getStepsOfAssignableClass(OrStep.class, traversal);
-        for (OrStep<S> orStep : orSteps) {
+        for (@SuppressWarnings("unchecked") OrStep<S> orStep : orSteps) {
 
             Collection<Traversal.Admin<S, ?>> orTraversals = orStep.getLocalChildren();
 
@@ -43,7 +43,7 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
                 return;
             }
 
-            SqlgOrStepBarrier<S> sqlgOrStepBarrier = new SqlgOrStepBarrier(
+            @SuppressWarnings("unchecked") SqlgOrStepBarrier<S> sqlgOrStepBarrier = new SqlgOrStepBarrier(
                     traversal,
                     orTraversals
             );
@@ -61,7 +61,6 @@ public class SqlgOrStepStepStrategy<S> extends AbstractTraversalStrategy<Travers
     @Override
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(
-                //Inline must happen first as it sometimes removes the need for a TraversalFilterStep
                 SqlgWhereTraversalStepStrategy.class
         ).collect(Collectors.toSet());
     }

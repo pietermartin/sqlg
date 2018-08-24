@@ -21,7 +21,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
 public class TestSqlgSchema extends BaseTest {
 
     @Test
-    public void testSqlgSchemaExist() throws Exception {
+    public void testSqlgSchemaExist() {
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
         Vertex dog = this.sqlgGraph.addVertex(T.label, "Dog", "name", "Snowy");
         person.addEdge("pet", dog, "createdOn", LocalDateTime.now());
@@ -33,9 +33,7 @@ public class TestSqlgSchema extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
 
             GraphTraversalSource traversalSource = sqlgGraph1.traversal().withStrategies(
-                    TopologyStrategy.build().selectFrom(
-                            sqlgGraph1.getTopology().getSqlgSchemaAbstractLabels()
-                    ).create()
+                    TopologyStrategy.build().sqlgSchema().create()
             );
             //Assert the schema
             List<Vertex> schemas = traversalSource.V()

@@ -82,11 +82,11 @@ public abstract class BaseStrategy {
             Compare.eq, Compare.neq, Contains.within, Contains.without
     );
 
-    protected Traversal.Admin<?, ?> traversal;
-    protected SqlgGraph sqlgGraph;
+    final Traversal.Admin<?, ?> traversal;
+    final SqlgGraph sqlgGraph;
     SqlgStep sqlgStep = null;
-    private Stack<ReplacedStepTree.TreeNode> optionalStepStack = new Stack<>();
-    private Stack<ReplacedStepTree.TreeNode> chooseStepStack = new Stack<>();
+    private final Stack<ReplacedStepTree.TreeNode> optionalStepStack = new Stack<>();
+    private final Stack<ReplacedStepTree.TreeNode> chooseStepStack = new Stack<>();
     ReplacedStepTree.TreeNode currentTreeNodeNode;
     ReplacedStep<?, ?> currentReplacedStep;
     /**
@@ -109,16 +109,14 @@ public abstract class BaseStrategy {
      *
      * @return false if optimization must be terminated.
      */
-    protected boolean handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
+    boolean handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
         Step<?, ?> step = stepIterator.next();
         if (step instanceof GraphStep) {
             doFirst(stepIterator, step, pathCount);
         } else if (this.sqlgStep == null) {
             boolean keepGoing = doFirst(stepIterator, step, pathCount);
             stepIterator.previous();
-            if (!keepGoing) {
-                return false;
-            }
+            return keepGoing;
         } else {
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount);
@@ -158,9 +156,7 @@ public abstract class BaseStrategy {
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
                 handleOrderGlobalSteps(stepIterator, pathCount);
                 handleRangeGlobalSteps(stepIterator, pathCount);
-                if (stepIterator.hasNext() && stepIterator.next() instanceof SelectOneStep) {
-                    return false;
-                }
+                return !stepIterator.hasNext() || !(stepIterator.next() instanceof SelectOneStep);
             } else if (step instanceof DropStep && (!this.sqlgGraph.getSqlDialect().isMariaDb())) {
 
                 Traversal.Admin<?, ?> root = TraversalHelper.getRootTraversal(this.traversal);
@@ -171,7 +167,7 @@ public abstract class BaseStrategy {
                     //MariaDB does not support target and source together.
                     //Table 'E_ab' is specified twice, both as a target for 'DELETE' and as a separate source for data
                     //This has been fixed in 10.3.1, waiting for it to land in the repo.
-                    handleDropStep((DropStep) step);
+                    handleDropStep();
                 }
                 return false;
             } else if (step instanceof DropStep && this.sqlgGraph.getSqlDialect().isMariaDb()) {
@@ -183,8 +179,8 @@ public abstract class BaseStrategy {
         return true;
     }
 
-    private void handleDropStep(DropStep dropStep) {
-        this.currentReplacedStep.markAsDrop(dropStep.getMutatingCallbackRegistry().getCallbacks());
+    private void handleDropStep() {
+        this.currentReplacedStep.markAsDrop();
     }
 
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
@@ -225,6 +221,7 @@ public abstract class BaseStrategy {
         loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
         numberOfLoops = loopTraversal.getMaxLoops();
         for (int i = 0; i < numberOfLoops; i++) {
+            @SuppressWarnings("unchecked")
             ListIterator<Step<?, ?>> repeatStepIterator = admin.getSteps().listIterator();
             while (repeatStepIterator.hasNext()) {
                 Step internalRepeatStep = repeatStepIterator.next();
@@ -285,6 +282,7 @@ public abstract class BaseStrategy {
         ReplacedStep<?, ?> previousReplacedStep = this.sqlgStep.getReplacedSteps().get(this.sqlgStep.getReplacedSteps().size() - 1);
         previousReplacedStep.setLeftJoin(true);
 
+        @SuppressWarnings("unchecked")
         List<Step<?, ?>> optionalTraversalSteps = new ArrayList(optionalTraversal.getSteps());
         ListIterator<Step<?, ?>> optionalStepsIterator = optionalTraversalSteps.listIterator();
         while (optionalStepsIterator.hasNext()) {
@@ -334,6 +332,7 @@ public abstract class BaseStrategy {
         } else {
             trueTraversal = a;
         }
+        @SuppressWarnings("unchecked")
         List<Step<?, ?>> trueTraversalSteps = new ArrayList(trueTraversal.getSteps());
         ListIterator<Step<?, ?>> trueTraversalStepsIterator = trueTraversalSteps.listIterator();
         while (trueTraversalStepsIterator.hasNext()) {
@@ -370,7 +369,7 @@ public abstract class BaseStrategy {
 
     protected abstract void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep);
 
-    protected void handleHasSteps(ListIterator<Step<?, ?>> iterator, int pathCount) {
+    void handleHasSteps(ListIterator<Step<?, ?>> iterator, int pathCount) {
         //Collect the hasSteps
         int countToGoPrevious = 0;
         while (iterator.hasNext()) {
@@ -383,6 +382,8 @@ public abstract class BaseStrategy {
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
                 if (isNotWithMultipleColumnValue(hasContainerHolder)) {
+                    toRemoveHasContainers.addAll(isForSqlgSchema(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(isForGuiSchema(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
                     //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                     //i.e. for neq and without 'or' logic
@@ -397,6 +398,7 @@ public abstract class BaseStrategy {
                         if (!currentStep.getLabels().isEmpty()) {
                             final IdentityStep identityStep = new IdentityStep<>(this.traversal);
                             currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
+                            //noinspection unchecked
                             TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
                         }
                         if (this.traversal.getSteps().contains(currentStep)) {
@@ -411,6 +413,7 @@ public abstract class BaseStrategy {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(this.traversal);
                     currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
+                    //noinspection unchecked
                     TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
                 }
                 if (this.traversal.getSteps().contains(currentStep)) {
@@ -423,6 +426,7 @@ public abstract class BaseStrategy {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(this.traversal);
                     currentStep.getLabels().forEach(label -> this.currentReplacedStep.addLabel(pathCount + BaseStrategy.PATH_LABEL_SUFFIX + label));
+                    //noinspection unchecked
                     TraversalHelper.insertAfterStep(identityStep, currentStep, this.traversal);
                 }
                 if (this.traversal.getSteps().contains(currentStep)) {
@@ -441,13 +445,33 @@ public abstract class BaseStrategy {
         }
     }
 
+    private List<HasContainer> isForSqlgSchema(ReplacedStep<?, ?> currentReplacedStep, List<HasContainer> hasContainers) {
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)) {
+                currentReplacedStep.markForSqlgSchema();
+                return Collections.singletonList(hasContainer);
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private List<HasContainer> isForGuiSchema(ReplacedStep<?, ?> currentReplacedStep, List<HasContainer> hasContainers) {
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)) {
+                currentReplacedStep.markForGuiSchema();
+                return Collections.singletonList(hasContainer);
+            }
+        }
+        return Collections.emptyList();
+    }
+
     /**
      * if this is a has(property) step, returns the property key, otherwise returns null
      *
      * @param currentStep the step
      * @return the property which should be not null
      */
-    protected String isNotNullStep(Step<?, ?> currentStep) {
+    private String isNotNullStep(Step<?, ?> currentStep) {
         if (currentStep instanceof TraversalFilterStep<?>) {
             TraversalFilterStep<?> tfs = (TraversalFilterStep<?>) currentStep;
             List<?> c = tfs.getLocalChildren();
@@ -472,7 +496,7 @@ public abstract class BaseStrategy {
      * @param currentStep the step
      * @return the property which should be not null
      */
-    protected String isNullStep(Step<?, ?> currentStep) {
+    private String isNullStep(Step<?, ?> currentStep) {
         if (currentStep instanceof NotStep<?>) {
             NotStep<?> tfs = (NotStep<?>) currentStep;
             List<?> c = tfs.getLocalChildren();
@@ -491,7 +515,7 @@ public abstract class BaseStrategy {
         return null;
     }
 
-    protected void handleOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
+    void handleOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
@@ -511,20 +535,19 @@ public abstract class BaseStrategy {
                         SelectOneStep selectOneStep = (SelectOneStep) previousStep;
                         String key = (String) selectOneStep.getScopeKeys().iterator().next();
                         this.currentReplacedStep.getSqlgComparatorHolder().setPrecedingSelectOneLabel(key);
+                        @SuppressWarnings("unchecked")
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
                         //get the step for the label
                         Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
                                 r -> {
-                                    Set<String> labels = r.getLabels();
-                                    for (String label : labels) {
+                                    //Take the first
+                                    if (!r.getLabels().isEmpty()) {
+                                        String label = r.getLabels().iterator().next();
                                         String stepLabel = SqlgUtil.originalLabel(label);
-                                        if (stepLabel.equals(key)) {
-                                            return true;
-                                        } else {
-                                            return false;
-                                        }
+                                        return stepLabel.equals(key);
+                                    } else {
+                                        return false;
                                     }
-                                    return false;
                                 }
                         ).findAny();
                         Preconditions.checkState(labeledReplacedStep.isPresent());
@@ -538,6 +561,7 @@ public abstract class BaseStrategy {
                         throw new RuntimeException("not yet implemented");
                     } else if (previousStep instanceof ChooseStep) {
                         //The order applies to the current replaced step and the previous ChooseStep
+                        @SuppressWarnings("unchecked")
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
                         this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
@@ -545,6 +569,7 @@ public abstract class BaseStrategy {
                             this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     } else {
+                        @SuppressWarnings("unchecked")
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
                         this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
@@ -565,7 +590,7 @@ public abstract class BaseStrategy {
         }
     }
 
-    protected void handleConnectiveSteps(ListIterator<Step<?, ?>> iterator) {
+    void handleConnectiveSteps(ListIterator<Step<?, ?>> iterator) {
         //Collect the hasSteps
         int countToGoPrevious = 0;
         while (iterator.hasNext()) {
@@ -593,6 +618,7 @@ public abstract class BaseStrategy {
     private Optional<AndOrHasContainer> handleConnectiveStepInternal(ConnectiveStep connectiveStep) {
         AndOrHasContainer.TYPE type = AndOrHasContainer.TYPE.from(connectiveStep);
         AndOrHasContainer outerAndOrHasContainer = new AndOrHasContainer(type);
+        @SuppressWarnings("unchecked")
         List<Traversal.Admin<?, ?>> localTraversals = connectiveStep.getLocalChildren();
         for (Traversal.Admin<?, ?> localTraversal : localTraversals) {
             if (!TraversalHelper.hasAllStepsOfClass(localTraversal, HasStep.class, ConnectiveStep.class, TraversalFilterStep.class, NotStep.class)) {
@@ -604,9 +630,10 @@ public abstract class BaseStrategy {
                 if (step instanceof HasStep) {
                     HasStep<?> hasStep = (HasStep) step;
                     for (HasContainer hasContainer : hasStep.getHasContainers()) {
-                        if (hasContainerKeyNotIdOrLabel(hasContainer) && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+                        boolean hasContainerKeyNotIdOrLabel = hasContainerKeyNotIdOrLabel(hasContainer);
+                        if (hasContainerKeyNotIdOrLabel && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
                             andOrHasContainer.addHasContainer(hasContainer);
-                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof AndP) {
+                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getPredicate() instanceof AndP) {
                             AndP<?> andP = (AndP) hasContainer.getPredicate();
                             List<? extends P<?>> predicates = andP.getPredicates();
                             if (predicates.size() == 2) {
@@ -616,7 +643,7 @@ public abstract class BaseStrategy {
                                     andOrHasContainer.addHasContainer(hasContainer);
                                 }
                             }
-                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof OrP) {
+                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getPredicate() instanceof OrP) {
                             OrP<?> orP = (OrP) hasContainer.getPredicate();
                             List<? extends P<?>> predicates = orP.getPredicates();
                             if (predicates.size() == 2) {
@@ -624,7 +651,7 @@ public abstract class BaseStrategy {
                                     andOrHasContainer.addHasContainer(hasContainer);
                                 }
                             }
-                        } else if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
+                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getBiPredicate() instanceof Text ||
                                 hasContainer.getBiPredicate() instanceof FullText) {
                             andOrHasContainer.addHasContainer(hasContainer);
                         } else {
@@ -638,7 +665,7 @@ public abstract class BaseStrategy {
                     } else {
                         return Optional.empty();
                     }
-                }  else if (step instanceof NotStep) {
+                } else if (step instanceof NotStep) {
                     String nullKey = isNullStep(step);
                     if (nullKey != null) {
                         andOrHasContainer.addHasContainer(new HasContainer(nullKey, new P<>(Existence.NULL, null)));
@@ -660,6 +687,7 @@ public abstract class BaseStrategy {
     }
 
     private boolean optimizable(OrderGlobalStep step) {
+        @SuppressWarnings("unchecked")
         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = step.getComparators();
         for (Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : comparators) {
             Traversal.Admin<?, ?> defaultGraphTraversal = comparator.getValue0();
@@ -677,6 +705,7 @@ public abstract class BaseStrategy {
 
     void handleRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
+        //noinspection LoopStatementThatDoesntLoop
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
             if (step instanceof RangeGlobalStep) {
@@ -717,7 +746,7 @@ public abstract class BaseStrategy {
                 return true;
             }
         }
-        Predicate p = s -> s.getClass().equals(PathStep.class) ||
+        Predicate<Step> p = s -> s.getClass().equals(PathStep.class) ||
                 s.getClass().equals(TreeStep.class) ||
                 s.getClass().equals(TreeSideEffectStep.class) ||
                 s.getClass().equals(PathFilterStep.class) ||
@@ -734,6 +763,7 @@ public abstract class BaseStrategy {
     private boolean isNotWithMultipleColumnValue(HasContainerHolder currentStep) {
         for (HasContainer h : currentStep.getHasContainers()) {
             P<?> predicate = h.getPredicate();
+            //noinspection unchecked
             if (predicate.getValue() instanceof ZonedDateTime ||
                     predicate.getValue() instanceof Period ||
                     predicate.getValue() instanceof Duration ||
@@ -749,7 +779,8 @@ public abstract class BaseStrategy {
     }
 
     private boolean hasContainerKeyNotIdOrLabel(HasContainer hasContainer) {
-        return !(hasContainer.getKey().equals(T.id.getAccessor()) || (hasContainer.getKey().equals(T.label.getAccessor())));
+        return !(hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) || hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX) ||
+                hasContainer.getKey().equals(T.id.getAccessor()) || (hasContainer.getKey().equals(T.label.getAccessor())));
     }
 
     private List<HasContainer> optimizeIdHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
@@ -873,6 +904,7 @@ public abstract class BaseStrategy {
     }
 
     private boolean isConnectivePWithMultipleColumnValue(ConnectiveP connectiveP) {
+        @SuppressWarnings("unchecked")
         List<P<?>> ps = connectiveP.getPredicates();
         for (P<?> predicate : ps) {
             if (predicate.getValue() instanceof ZonedDateTime ||
@@ -885,6 +917,7 @@ public abstract class BaseStrategy {
     }
 
     boolean canNotBeOptimized() {
+        @SuppressWarnings("unchecked")
         final List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
         final ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         List<Step<?, ?>> toCome = steps.subList(stepIterator.nextIndex(), steps.size());
@@ -996,17 +1029,14 @@ public abstract class BaseStrategy {
         }
 
         Traversal.Admin<?, ?> trueTraversal;
-        Traversal.Admin<?, ?> a = globalChildOne;
-        Traversal.Admin<?, ?> b = globalChildTwo;
-        if (a.getSteps().stream().anyMatch(s -> s instanceof IdentityStep<?>)) {
-            trueTraversal = b;
+        if (globalChildOne.getSteps().stream().anyMatch(s -> s instanceof IdentityStep<?>)) {
+            trueTraversal = globalChildTwo;
         } else {
-            trueTraversal = a;
+            trueTraversal = globalChildOne;
         }
+        @SuppressWarnings("unchecked")
         List<Step<?, ?>> trueTraversalSteps = new ArrayList(trueTraversal.getSteps());
-        ListIterator<Step<?, ?>> trueTraversalStepsIterator = trueTraversalSteps.listIterator();
-        while (trueTraversalStepsIterator.hasNext()) {
-            Step internalChooseStep = trueTraversalStepsIterator.next();
+        for (Step<?, ?> internalChooseStep : trueTraversalSteps) {
             if (!(internalChooseStep instanceof VertexStep || internalChooseStep instanceof EdgeVertexStep ||
                     internalChooseStep instanceof EdgeOtherVertexStep || internalChooseStep instanceof ComputerAwareStep.EndStep ||
                     internalChooseStep instanceof ChooseStep || internalChooseStep instanceof HasStep ||
@@ -1029,7 +1059,7 @@ public abstract class BaseStrategy {
         boolean hasUntil = repeatSteps.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(repeatStep -> repeatStep.getUntilTraversal() != null);
         boolean hasUnoptimizableUntil = false;
         if (hasUntil) {
-            hasUnoptimizableUntil = repeatSteps.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(repeatStep -> !(repeatStep.getUntilTraversal() instanceof LoopTraversal));
+            hasUnoptimizableUntil = repeatSteps.stream().filter(s -> s.getClass().equals(RepeatStep.class)).noneMatch(repeatStep -> repeatStep.getUntilTraversal() instanceof LoopTraversal);
         }
         boolean badRepeat = !hasUntil || hasUnoptimizableUntil;
         //Check if the repeat step only contains optimizable steps
@@ -1037,8 +1067,10 @@ public abstract class BaseStrategy {
             List<Step> collectedRepeatInternalSteps = new ArrayList<>();
             for (Step step : repeatSteps) {
                 RepeatStep repeatStep = (RepeatStep) step;
+                @SuppressWarnings("unchecked")
                 List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
                 Traversal.Admin admin = repeatTraversals.get(0);
+                @SuppressWarnings("unchecked")
                 List<Step> repeatInternalSteps = admin.getSteps();
                 collectedRepeatInternalSteps.addAll(repeatInternalSteps);
             }

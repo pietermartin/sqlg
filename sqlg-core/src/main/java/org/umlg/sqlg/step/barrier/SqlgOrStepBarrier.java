@@ -24,11 +24,12 @@ public class SqlgOrStepBarrier<S> extends SqlgConnectiveStep<S> {
     private boolean first = true;
     private List<Traverser.Admin<S>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<S>> resultIterator;
-    private List<Traversal.Admin<S, ?>> orTraversals = new ArrayList<>();
+    private final List<Traversal.Admin<S, ?>> orTraversals = new ArrayList<>();
 
     public SqlgOrStepBarrier(final Traversal.Admin traversal, final Collection<Traversal<S, ?>> traversals) {
         super(traversal, traversals);
         for (Traversal<S, ?> sTraversal : traversals) {
+            //noinspection unchecked
             this.orTraversals.add((Traversal.Admin<S, ?>) sTraversal);
         }
     }
@@ -89,8 +90,7 @@ public class SqlgOrStepBarrier<S> extends SqlgConnectiveStep<S> {
             this.resultIterator = this.results.iterator();
         }
         if (this.resultIterator.hasNext()) {
-            Traverser.Admin<S> traverser = this.resultIterator.next();
-            return traverser;
+            return this.resultIterator.next();
         } else {
             //The standard TraversalFilterStep.filter calls TraversalUtil.test which normally resets the traversal for every incoming start.
             reset();

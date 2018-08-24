@@ -13,7 +13,7 @@ import java.util.HashSet;
 public class SqlgTraverser<T> extends B_LP_O_P_S_SE_SL_Traverser<T> {
 
     private long startElementIndex;
-    private boolean requiresSack;
+    private final boolean requiresSack;
     private boolean requiresOneBulk;
 
     SqlgTraverser(T t, Step<T, ?> step, long initialBulk, boolean requiresSack, boolean requiresOneBulk) {

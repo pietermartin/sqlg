@@ -20,18 +20,20 @@ public abstract class SqlgConnectiveStep<S> extends SqlgFilterStep<S> implements
 
     protected List<Traversal.Admin<S, ?>> traversals;
 
-    public SqlgConnectiveStep(final Traversal.Admin traversal, final Collection<Traversal<S, ?>> traversals) {
+    protected SqlgConnectiveStep(final Traversal.Admin traversal, final Collection<Traversal<S, ?>> traversals) {
         super(traversal);
         this.traversals = traversals.stream().map(Traversal::asAdmin).collect(Collectors.toList());
         this.traversals.forEach(this::integrateChild);
     }
 
+    @SuppressWarnings("unchecked")
     public SqlgConnectiveStep(final Traversal.Admin traversal, final Traversal<S, ?>... traversals) {
         super(traversal);
         this.traversals = Stream.of(traversals).map(Traversal::asAdmin).collect(Collectors.toList());
         this.traversals.forEach(this::integrateChild);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, ?>> getLocalChildren() {
         return this.traversals;
@@ -43,7 +45,7 @@ public abstract class SqlgConnectiveStep<S> extends SqlgFilterStep<S> implements
     }
 
     public void addLocalChild(final Traversal.Admin<?, ?> localChildTraversal) {
-        this.traversals.add(this.integrateChild((Traversal.Admin) localChildTraversal));
+        this.traversals.add(this.integrateChild(localChildTraversal));
     }
 
     @Override

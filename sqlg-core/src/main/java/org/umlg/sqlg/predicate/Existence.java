@@ -27,5 +27,5 @@ public enum Existence implements BiPredicate<String, String> {
 		public String toString() {
 			return "IS NOT NULL";
 		}
-	};
+	}
 }

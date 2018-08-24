@@ -36,9 +36,8 @@ public class TestDropStep extends BaseTest {
     public Boolean fkOn;
     @Parameterized.Parameter(1)
     public Boolean mutatingCallback;
-    private List<Vertex> removedVertices = new ArrayList<>();
-    private List<Edge> removedEdges = new ArrayList<>();
-    private EventStrategy eventStrategy = null;
+    private final List<Vertex> removedVertices = new ArrayList<>();
+    private final List<Edge> removedEdges = new ArrayList<>();
     private GraphTraversalSource dropTraversal;
 
     @Parameterized.Parameters(name = "foreign key implement foreign keys: {0}, callback {1}")
@@ -68,10 +67,10 @@ public class TestDropStep extends BaseTest {
                 }
             };
             final EventStrategy.Builder builder = EventStrategy.build().addListener(listener);
-            eventStrategy = builder.create();
+            EventStrategy eventStrategy = builder.create();
             this.dropTraversal = this.sqlgGraph.traversal();
             if (this.mutatingCallback) {
-                this.dropTraversal = this.dropTraversal.withStrategies(this.eventStrategy);
+                this.dropTraversal = this.dropTraversal.withStrategies(eventStrategy);
             }
         } else {
             this.dropTraversal = this.sqlgGraph.traversal();

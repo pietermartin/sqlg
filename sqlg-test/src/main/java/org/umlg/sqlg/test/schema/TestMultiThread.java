@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.junit.Assert.fail;
@@ -32,11 +31,10 @@ import static org.junit.Assert.fail;
  */
 public class TestMultiThread extends BaseTest {
 
-    private Logger logger = LoggerFactory.getLogger(TestMultiThread.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(TestMultiThread.class.getName());
 
     /**
      * This test is a duplicate of TransactionTest.shouldSupportTransactionIsolationCommitCheck but with the schema created upfront else it deadlocks.
-     * @throws Exception
      */
     @Test
     public void shouldSupportTransactionIsolationCommitCheck() throws Exception {
@@ -161,15 +159,11 @@ public class TestMultiThread extends BaseTest {
         assertVertexEdgeCounts(vertices.get(), edges.get());
     }
 
-    private static Consumer<Graph> assertVertexEdgeCounts(final int expectedVertexCount, final int expectedEdgeCount) {
-        return (g) -> {
-            Assert.assertEquals(new Long(expectedVertexCount), g.traversal().V().count().next());
-            Assert.assertEquals(new Long(expectedEdgeCount), g.traversal().E().count().next());
-        };
+    private static void assertVertexEdgeCounts(final int expectedVertexCount, final int expectedEdgeCount) {
     }
 
     @Test
-    public void testMultiThreadVertices() throws InterruptedException, ExecutionException {
+    public void testMultiThreadVertices() throws InterruptedException {
         Set<Integer> tables = new ConcurrentSkipListSet<>();
         ExecutorService executorService = newFixedThreadPool(10);
         for (int j = 0; j < 100; j++) {
@@ -192,7 +186,7 @@ public class TestMultiThread extends BaseTest {
     }
 
     @Test
-    public void testMultiThreadEdges() throws InterruptedException, ExecutionException {
+    public void testMultiThreadEdges() throws InterruptedException {
         Vertex v1 = sqlgGraph.addVertex(T.label, "Person", "name", "0");
         sqlgGraph.tx().commit();
         Set<Integer> tables = new ConcurrentSkipListSet<>();
@@ -233,14 +227,12 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         executorService.awaitTermination(5, TimeUnit.SECONDS);
-        //+ 1 for the public schema and gui_schema i.e. globalUniqueIndex
-        Assert.assertEquals(schemas.size() + 2, this.sqlgGraph.getTopology().getSchemas().size());
+        //+ 1 for the public schema
+        Assert.assertEquals(schemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());
     }
 
     /**
      * test when each graph is created in its own thread, in distributed mode
-     *
-     * @throws Exception
      */
     @Test
     public void testMultipleGraphs() throws Exception {
@@ -283,9 +275,9 @@ public class TestMultiThread extends BaseTest {
         executorService.shutdown();
         executorService.awaitTermination(100, TimeUnit.SECONDS);
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            Assert.assertEquals(400, sqlgGraph1.traversal().V().hasLabel("Person_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Person").count().next().longValue());
-            Assert.assertEquals(400, sqlgGraph1.traversal().V().hasLabel("Address_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Address").count().next().longValue());
-            Assert.assertEquals(400, sqlgGraph1.traversal().E().hasLabel("address_True").count().next().longValue() + sqlgGraph1.traversal().E().hasLabel("address").count().next().longValue());
+            Assert.assertEquals(400, sqlgGraph1.traversal().V().hasLabel("Person_True").count().next() + sqlgGraph1.traversal().V().hasLabel("Person").count().next());
+            Assert.assertEquals(400, sqlgGraph1.traversal().V().hasLabel("Address_True").count().next() + sqlgGraph1.traversal().V().hasLabel("Address").count().next());
+            Assert.assertEquals(400, sqlgGraph1.traversal().E().hasLabel("address_True").count().next() + sqlgGraph1.traversal().E().hasLabel("address").count().next());
         }
     }
 

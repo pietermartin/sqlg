@@ -8,8 +8,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -26,7 +24,7 @@ public class TestBatchNormalPrimitiveArrays extends BaseTest {
     public Object value;
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);

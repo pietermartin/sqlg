@@ -12,7 +12,7 @@ import org.umlg.sqlg.test.BaseTest;
 public class TestEdgeCreation extends BaseTest {
 
     @Test
-    public void testCreateEdge() throws Exception {
+    public void testCreateEdge() {
         Vertex v1 = sqlgGraph.addVertex();
         Vertex v2 = sqlgGraph.addVertex();
         v1.addEdge("label1", v2, "name", "marko");

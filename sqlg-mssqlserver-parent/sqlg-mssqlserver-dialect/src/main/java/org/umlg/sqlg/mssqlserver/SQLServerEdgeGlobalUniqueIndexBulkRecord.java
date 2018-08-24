@@ -14,12 +14,12 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/08/06
  */
-public class SQLServerEdgeGlobalUniqueIndexBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
+class SQLServerEdgeGlobalUniqueIndexBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
 
-    private Iterator<Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> rowIter;
+    private final Iterator<Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> rowIter;
     private Triple<SqlgVertex, SqlgVertex, Map<String, Object>> currentRow;
     private SqlgEdge currentEdge;
-    private PropertyColumn propertyColumn;
+    private final PropertyColumn propertyColumn;
 
     SQLServerEdgeGlobalUniqueIndexBulkRecord(SQLServerBulkCopy bulkCopy,
                                              SqlgGraph sqlgGraph,
@@ -60,7 +60,7 @@ public class SQLServerEdgeGlobalUniqueIndexBulkRecord extends SQLServerBaseCache
     }
 
     @Override
-    public Object[] getRowData() throws SQLServerException {
+    public Object[] getRowData() {
         List<Object> values = new ArrayList<>();
         Object value = this.currentRow.getRight().get(this.propertyColumn.getName());
         if (value == null) {
@@ -77,7 +77,7 @@ public class SQLServerEdgeGlobalUniqueIndexBulkRecord extends SQLServerBaseCache
     }
 
     @Override
-    public boolean next() throws SQLServerException {
+    public boolean next() {
         if (this.rowIter.hasNext()) {
             Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> entry = this.rowIter.next();
             this.currentRow = entry.getValue();

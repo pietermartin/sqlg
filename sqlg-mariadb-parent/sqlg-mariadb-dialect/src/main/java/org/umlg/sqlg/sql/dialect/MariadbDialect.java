@@ -3,7 +3,10 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgExceptions;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -11,13 +14,15 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.PropertyType.*;
+
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/07/07
  */
 @SuppressWarnings("unused")
 public class MariadbDialect extends BaseSqlDialect {
-    
+
     @Override
     public int getMaximumSchemaNameLength() {
         return 63;
@@ -291,21 +296,6 @@ public class MariadbDialect extends BaseSqlDialect {
         if (value instanceof char[]) {
             return;
         }
-        if (value instanceof short[]) {
-            return;
-        }
-        if (value instanceof int[]) {
-            return;
-        }
-        if (value instanceof long[]) {
-            return;
-        }
-        if (value instanceof double[]) {
-            return;
-        }
-        if (value instanceof String[]) {
-            return;
-        }
         if (value instanceof Character[]) {
             return;
         }
@@ -313,39 +303,6 @@ public class MariadbDialect extends BaseSqlDialect {
             return;
         }
         if (value instanceof Byte[]) {
-            return;
-        }
-        if (value instanceof Short[]) {
-            return;
-        }
-        if (value instanceof Integer[]) {
-            return;
-        }
-        if (value instanceof Long[]) {
-            return;
-        }
-        if (value instanceof Double[]) {
-            return;
-        }
-        if (value instanceof LocalDateTime[]) {
-            return;
-        }
-        if (value instanceof LocalDate[]) {
-            return;
-        }
-        if (value instanceof LocalTime[]) {
-            return;
-        }
-        if (value instanceof ZonedDateTime[]) {
-            return;
-        }
-        if (value instanceof Duration[]) {
-            return;
-        }
-        if (value instanceof Period[]) {
-            return;
-        }
-        if (value instanceof JsonNode[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -368,49 +325,51 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new String[]{"BOOLEAN"};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new String[]{"TINYINT"};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new String[]{"SMALLINT"};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new String[]{"INTEGER"};
-            case LONG:
+            case LONG_ORDINAL:
                 return new String[]{"BIGINT"};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new String[]{"DOUBLE"};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new String[]{"DATE"};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 //3 microseconds maps nicely to java's LocalDateTIme
                 return new String[]{"DATETIME(3)"};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new String[]{"DATETIME(3)", "TINYTEXT"};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new String[]{"TIME"};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new String[]{"BIGINT", "INTEGER"};
-            case STRING:
+            case STRING_ORDINAL:
                 return new String[]{"LONGTEXT"};
-            case JSON:
+            case VARCHAR_ORDINAL:
+                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case JSON_ORDINAL:
                 return new String[]{"LONGTEXT"};
-            case POINT:
+            case POINT_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case POLYGON:
+            case POLYGON_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case GEOGRAPHY_POINT:
+            case GEOGRAPHY_POINT_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case GEOGRAPHY_POLYGON:
+            case GEOGRAPHY_POLYGON_ORDINAL:
                 throw new IllegalStateException("MariaDb does not support gis types!");
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new String[]{"BLOB"};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new String[]{"BLOB"};
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
@@ -419,38 +378,38 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new int[]{Types.BOOLEAN};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new int[]{Types.TINYINT};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new int[]{Types.SMALLINT};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new int[]{Types.INTEGER};
-            case LONG:
+            case LONG_ORDINAL:
                 return new int[]{Types.BIGINT};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new int[]{Types.DOUBLE};
-            case STRING:
+            case STRING_ORDINAL:
                 return new int[]{Types.CLOB};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new int[]{Types.DATE};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new int[]{Types.TIME};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new int[]{Types.BIGINT, Types.INTEGER};
-            case JSON:
+            case JSON_ORDINAL:
                 return new int[]{Types.OTHER};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -458,7 +417,15 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+    public PropertyType sqlTypeToPropertyType(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String table,
+            String column,
+            int sqlType,
+            String typeName,
+            ListIterator<Triple<String, Integer, String>> metaDataIter) {
+        
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -473,6 +440,10 @@ public class MariadbDialect extends BaseSqlDialect {
             case Types.DOUBLE:
                 return PropertyType.DOUBLE;
             case Types.LONGVARCHAR:
+                return PropertyType.STRING;
+            case Types.VARCHAR:
+                //This is not exactly correct. Need to extract the column length and create PropertyType.varchar(x)
+                //However Sqlg does not depend on the varchar(x) except during table creation so STRING will do.
                 return PropertyType.STRING;
             case Types.TIMESTAMP:
                 return PropertyType.LOCALDATETIME;
@@ -531,34 +502,34 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
-        switch (propertyType) {
-            case boolean_ARRAY:
+        switch (propertyType.ordinal()) {
+            case boolean_ARRAY_ORDINAL:
                 return "BOOLEAN";
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 return "BOOLEAN";
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return "SMALLINT";
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return "SMALLINT";
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return "INTEGER";
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return "INTEGER";
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return "BIGINT";
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return "BIGINT";
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return "DOUBLE";
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return "DOUBLE";
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return "VARCHAR";
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 return "TIMESTAMP";
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 return "DATE";
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 return "TIME";
             default:
                 throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
@@ -630,12 +601,50 @@ public class MariadbDialect extends BaseSqlDialect {
         List<String> result = new ArrayList<>();
 
         //SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_schema` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_vertex` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `schemaVertex` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_edge` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_property` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `type` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_index` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `index_type` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`updatedOn` DATETIME, " +
+                "`version` TEXT, " +
+                "`dbVersion` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_schema` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_vertex` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT, " +
+                "`schemaVertex` TEXT, " +
+                "`partitionType` TEXT, " +
+                "`partitionExpression` TEXT, " +
+                "`shardCount` INTEGER);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_edge` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT, " +
+                "`partitionType` TEXT, " +
+                "`partitionExpression` TEXT, " +
+                "`shardCount` INTEGER);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT," +
+                "`from` TEXT, " +
+                "`to` TEXT, " +
+                "`in` TEXT, " +
+                "`partitionType` TEXT, " +
+                "`partitionExpression` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_property` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT, " +
+                "`type` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_index` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT, " +
+                "`index_type` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_globalUniqueIndex` (" +
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`createdOn` DATETIME, " +
@@ -681,6 +690,71 @@ public class MariadbDialect extends BaseSqlDialect {
                 "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`)" +
                 ");");
 
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_identifier`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "`identifier_index` INTEGER, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_identifier`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                "`identifier_index` INTEGER, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_partition`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_partition`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_partition_partition`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.partition__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.partition__O`) REFERENCES `sqlg_schema`.`V_partition` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_distribution`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_colocate`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_distribution`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_colocate`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));");
+
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_index`(" +
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`sqlg_schema.index__I` BIGINT UNSIGNED, " +
@@ -715,13 +789,12 @@ public class MariadbDialect extends BaseSqlDialect {
                 ");");
 
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_log`(`ID` SERIAL PRIMARY KEY, `timestamp` DATETIME, `pid` INTEGER, `log` TEXT);");
-
         return result;
     }
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT);";
+        return "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_graph` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `updatedOn` DATETIME, `version` TEXT, `dbVersion` TEXT);";
     }
 
     @Override
@@ -731,25 +804,25 @@ public class MariadbDialect extends BaseSqlDialect {
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
-            switch (propertyType) {
-                case LOCALTIME_ARRAY:
-                case STRING_ARRAY:
-                case long_ARRAY:
-                case LONG_ARRAY:
-                case int_ARRAY:
-                case INTEGER_ARRAY:
-                case short_ARRAY:
-                case SHORT_ARRAY:
-                case float_ARRAY:
-                case FLOAT_ARRAY:
-                case double_ARRAY:
-                case DOUBLE_ARRAY:
-                case boolean_ARRAY:
-                case BOOLEAN_ARRAY:
-                case LOCALDATETIME_ARRAY:
-                case LOCALDATE_ARRAY:
-                case ZONEDDATETIME_ARRAY:
-                case JSON_ARRAY:
+            switch (propertyType.ordinal()) {
+                case LOCALTIME_ARRAY_ORDINAL:
+                case STRING_ARRAY_ORDINAL:
+                case long_ARRAY_ORDINAL:
+                case LONG_ARRAY_ORDINAL:
+                case int_ARRAY_ORDINAL:
+                case INTEGER_ARRAY_ORDINAL:
+                case short_ARRAY_ORDINAL:
+                case SHORT_ARRAY_ORDINAL:
+                case float_ARRAY_ORDINAL:
+                case FLOAT_ARRAY_ORDINAL:
+                case double_ARRAY_ORDINAL:
+                case DOUBLE_ARRAY_ORDINAL:
+                case boolean_ARRAY_ORDINAL:
+                case BOOLEAN_ARRAY_ORDINAL:
+                case LOCALDATETIME_ARRAY_ORDINAL:
+                case LOCALDATE_ARRAY_ORDINAL:
+                case ZONEDDATETIME_ARRAY_ORDINAL:
+                case JSON_ARRAY_ORDINAL:
                     return conn.createArrayOf(getArrayDriverType(propertyType), data);
                 default:
                     throw new IllegalStateException("Unhandled array type " + propertyType.name());
@@ -761,40 +834,40 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
-        switch (propertyType) {
-            case BOOLEAN_ARRAY:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanArray((Object[]) array.getArray());
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerArray((Object[]) array.getArray());
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongArray((Object[]) array.getArray());
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoubleArray((Object[]) array.getArray());
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatArray((Object[]) array.getArray());
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 Object[] timestamps = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimestampToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 Object[] dates = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 Object[] times = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
             default:
@@ -914,13 +987,117 @@ public class MariadbDialect extends BaseSqlDialect {
         return "SET FOREIGN_KEY_CHECKS=1";
     }
 
+    @Override
+    public String addDbVersionToGraph(DatabaseMetaData metadata) {
+        return "ALTER TABLE `sqlg_schema`.`V_graph` ADD COLUMN `dbVersion` TEXT;";
+    }
+
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_vertex` SET `partitionType` = 'NONE';",
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionExpression` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `shardCount` INTEGER;",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_edge` SET `partitionType` = 'NONE';",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionExpression` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `shardCount` INTEGER;",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`createdOn` DATETIME, " +
+                        "`name` TEXT, " +
+                        "`from` TEXT, " +
+                        "`to` TEXT, " +
+                        "`in` TEXT, " +
+                        "`partitionType` TEXT, " +
+                        "`partitionExpression` TEXT);",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`));",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_partition_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.partition__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.partition__O`) REFERENCES `sqlg_schema`.`V_partition` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_identifier`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "`identifier_index` INTEGER, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_identifier`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "`identifier_index` INTEGER, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_distribution`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_colocate`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_distribution`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_colocate`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));"
+        );
+    }
+
     /**
      * Hardcoded the rows to return. MariaDB does nto support just an offset.
+     *
      * @param skip The number of rows to skip. i.e. OFFSET
      * @return The sql fragment.
      */
     @Override
     public String getSkipClause(long skip) {
         return " LIMIT " + skip + ", 1000000";
+    }
+
+    @Override
+    public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE USER IF NOT EXISTS 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
+            statement.execute("GRANT SELECT ON *.* TO 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
+            statement.executeQuery("FLUSH PRIVILEGES");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

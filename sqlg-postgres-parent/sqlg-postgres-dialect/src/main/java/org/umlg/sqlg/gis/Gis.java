@@ -53,8 +53,7 @@ public class Gis {
         }
     }
 
-    public Gis setSqlgGraph(SqlgGraph sqlgGraph) {
+    public void setSqlgGraph(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
-        return this;
     }
 }

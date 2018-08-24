@@ -21,8 +21,8 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
 
     private Traversal.Admin<S, M> branchTraversal;
     Map<M, List<Traversal.Admin<S, E>>> traversalOptions = new HashMap<>();
-    protected boolean first = true;
-    protected List<Traverser.Admin<E>> results = new ArrayList<>();
+    private boolean first = true;
+    private final List<Traverser.Admin<E>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<E>> resultIterator;
 
     SqlgBranchStepBarrier(final Traversal.Admin traversal) {
@@ -232,6 +232,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
         return this.getSelfAndChildRequirements();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, E>> getGlobalChildren() {
         return Collections.unmodifiableList(this.traversalOptions.values().stream()
@@ -239,6 +240,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
                 .collect(Collectors.toList()));
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, M>> getLocalChildren() {
         return Collections.singletonList(this.branchTraversal);

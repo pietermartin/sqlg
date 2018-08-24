@@ -3,17 +3,16 @@ package org.umlg.sqlg.structure;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.util.VersionUtil;
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.topology.IndexType;
-import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.TopologyManager;
+import org.umlg.sqlg.structure.topology.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,13 +33,13 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
 class SqlgStartupManager {
 
     private static final String APPLICATION_VERSION = "application.version";
-	private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
-	private static Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
-    private SqlgGraph sqlgGraph;
-    private SqlDialect sqlDialect;
+    private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
+    private static final Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
+    private final SqlgGraph sqlgGraph;
+    private final SqlDialect sqlDialect;
 
     private String buildVersion;
-    
+
     SqlgStartupManager(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlgGraph.getSqlDialect();
@@ -95,10 +94,9 @@ class SqlgStartupManager {
                 //make sure the sqlg_schema.graph exists.
                 String version = getBuildVersion();
                 String oldVersion = createOrUpdateGraph(version);
-                if (oldVersion==null || !oldVersion.equals(version)) {
+                if (oldVersion == null || !oldVersion.equals(version)) {
                     updateTopology(oldVersion);
                 }
-                this.sqlgGraph.tx().commit();
             }
             cacheTopology();
             if (this.sqlgGraph.configuration().getBoolean("validate.topology", false)) {
@@ -112,14 +110,29 @@ class SqlgStartupManager {
     }
 
     private void updateTopology(String oldVersion) {
-       Version v = Version.unknownVersion();
-        if (oldVersion!=null){
-	    	v=VersionUtil.parseVersion(oldVersion, null,null);
-	    }
-        if (v.isUnknownVersion() || v.compareTo(new Version(1,5,0,null,null,null))<0){
-        	 if (this.sqlDialect.supportsDeferrableForeignKey()) {
-                 upgradeForeignKeysToDeferrable();
-             }
+        Version v = Version.unknownVersion();
+        if (oldVersion != null) {
+            v = VersionUtil.parseVersion(oldVersion, null, null);
+        }
+        if (v.isUnknownVersion() || v.compareTo(new Version(1, 5, 0, null, null, null)) < 0) {
+            if (this.sqlDialect.supportsDeferrableForeignKey()) {
+                upgradeForeignKeysToDeferrable();
+            }
+        }
+        if (v.isUnknownVersion() || v.compareTo(new Version(2, 0, 0, null, null, null)) < 0) {
+            addPartitionSupportToSqlgSchema();
+        }
+    }
+
+    private void addPartitionSupportToSqlgSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        List<String> addPartitionTables = this.sqlDialect.addPartitionTables();
+        for (String addPartitionTable : addPartitionTables) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(addPartitionTable);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -139,7 +152,6 @@ class SqlgStartupManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private void cacheTopology() {
@@ -157,6 +169,7 @@ class SqlgStartupManager {
 
     /**
      * create or update the graph metadata
+     *
      * @param version the new version of the graph
      * @return the old version of the graph, or null if there was no graph
      */
@@ -167,15 +180,31 @@ class SqlgStartupManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String[] types = new String[]{"TABLE"};
             //load the vertices
-            try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, "V_" + Topology.GRAPH, types)) {
+            try (ResultSet vertexRs = metadata.getTables(null, Schema.SQLG_SCHEMA, Topology.VERTEX_PREFIX + Topology.GRAPH, types)) {
                 if (!vertexRs.next()) {
                     try (Statement statement = conn.createStatement()) {
                         String sql = this.sqlDialect.sqlgCreateTopologyGraph();
                         statement.execute(sql);
                         TopologyManager.addGraph(this.sqlgGraph, version);
+                        oldVersion = version;
                     }
                 } else {
-                    oldVersion = TopologyManager.updateGraph(this.sqlgGraph, version);
+                    //Need to check if dbVersion has been added
+                    try (ResultSet columnRs = metadata.getColumns(null, Schema.SQLG_SCHEMA, Topology.VERTEX_PREFIX + Topology.GRAPH, Topology.SQLG_SCHEMA_GRAPH_DB_VERSION)) {
+                        if (!columnRs.next()) {
+                            try (Statement statement = conn.createStatement()) {
+                                statement.execute(sqlDialect.addDbVersionToGraph(metadata));
+                            }
+                        }
+                    }
+                    GraphTraversalSource traversalSource = sqlgGraph.topology();
+                    List<Vertex> graphVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GRAPH).toList();
+                    if (graphVertices.isEmpty()) {
+                        TopologyManager.addGraph(this.sqlgGraph, version);
+                        oldVersion = version;
+                    } else {
+                        oldVersion = TopologyManager.updateGraph(this.sqlgGraph, version);
+                    }
                 }
                 return oldVersion;
             }
@@ -189,9 +218,8 @@ class SqlgStartupManager {
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
-            String schemaPattern = "sqlg_schema";
             @SuppressWarnings("ConstantConditions")
-            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, schemaPattern, "E_index_property", SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
+            List<Triple<String, Integer, String>> columns = this.sqlDialect.getTableColumns(metadata, catalog, Topology.SQLG_SCHEMA, Topology.EDGE_PREFIX + "index_property", SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE);
             if (columns.isEmpty()) {
                 try (Statement statement = conn.createStatement()) {
                     String sql = this.sqlDialect.sqlgAddIndexEdgeSequenceColumn();
@@ -207,7 +235,6 @@ class SqlgStartupManager {
     private void loadSqlgSchemaFromInformationSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
-
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
@@ -253,7 +280,25 @@ class SqlgStartupManager {
                     }
                 }
                 String label = table.substring(Topology.VERTEX_PREFIX.length());
-                TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
+                List<String> primaryKeys = this.sqlDialect.getPrimaryKeys(metadata, tblCat, schema, table);
+                if (primaryKeys.size() == 1 && primaryKeys.get(0).equals(Topology.ID)) {
+                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns, new ListOrderedSet<>());
+                } else {
+                    //partitioned tables have no pk and must have identifiers.
+                    //however we can not tell which columns are the identifiers so ahem???
+                    //we do a little hardcoding. ID,uid and uuid are determined to be identifiers.
+                    if (primaryKeys.isEmpty()) {
+                        ListOrderedSet<String> identifiers = new ListOrderedSet<>();
+                        for (String s : columns.keySet()) {
+                            if (s.equalsIgnoreCase("ID") || s.equalsIgnoreCase("uid") || s.equalsIgnoreCase("uuid")) {
+                                identifiers.add(s);
+                            }
+                        }
+                        TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns, identifiers);
+                    } else {
+                        TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns, ListOrderedSet.listOrderedSet(primaryKeys));
+                    }
+                }
                 if (indices != null) {
                     String key = tblCat + "." + schema + "." + table;
                     Set<IndexRef> idxs = indices.get(key);
@@ -266,7 +311,6 @@ class SqlgStartupManager {
                     extractIndices(metadata, tblCat, schema, table, label, true);
                 }
             }
-
             //load the edges without their properties
             List<Triple<String, String, String>> edgeTables = this.sqlDialect.getEdgeTables(metadata);
             for (Triple<String, String, String> edgeTable : edgeTables) {
@@ -284,61 +328,57 @@ class SqlgStartupManager {
                 if (this.sqlDialect.getSpacialRefTable().contains(table)) {
                     continue;
                 }
-
-                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTableMap = new HashMap<>();
-                Map<String, PropertyType> columns = Collections.emptyMap();
-                //get the columns
-                List<Triple<String, Integer, String>> tableColumns = this.sqlDialect.getTableColumns(metadata, edgCat, schema, table, null);
-                SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
-                boolean edgeAdded = false;
-                for (Triple<String, Integer, String> tableColumn : tableColumns) {
-                    String column = tableColumn.getLeft();
-                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END))) {
-                        String[] split = column.split("\\.");
-                        SchemaTable foreignKey = SchemaTable.of(split[0], split[1]);
-                        if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                            SchemaTable schemaTable = SchemaTable.of(
-                                    split[0],
-                                    split[1].substring(0, split[1].length() - Topology.IN_VERTEX_COLUMN_END.length())
-                            );
-                            if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
-                                MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
-                                if (inSchemaTable.getLeft() == null) {
-                                    inSchemaTable.setLeft(schemaTable);
-                                } else {
-                                    if (inSchemaTable.getRight() == null) {
-                                        TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, foreignKey, inSchemaTable.getLeft(), columns);
-                                        edgeAdded = true;
-                                    }
-                                    TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, true, foreignKey);
-                                }
-                            } else {
-                                inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
-                            }
-                        } else if (column.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                            SchemaTable schemaTable = SchemaTable.of(
-                                    split[0],
-                                    split[1].substring(0, split[1].length() - Topology.OUT_VERTEX_COLUMN_END.length())
-                            );
-                            if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
-                                MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
-                                if (outSchemaTable.getRight() == null) {
-                                    outSchemaTable.setRight(schemaTable);
-                                } else {
-                                    if (outSchemaTable.getLeft() == null) {
-                                        TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, outSchemaTable.getRight(), outSchemaTable.getLeft(), columns);
-                                        edgeAdded = true;
-                                    }
-                                    TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, false, foreignKey);
-                                }
-                            } else {
-                                inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
+                List<Triple<String, Integer, String>> edgeColumns = this.sqlDialect.getTableColumns(metadata, edgCat, schema, table, null);
+                List<String> primaryKeys = this.sqlDialect.getPrimaryKeys(metadata, edgCat, schema, table);
+                Vertex edgeVertex;
+                if (hasIDPrimaryKey(primaryKeys)) {
+                    edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), new ListOrderedSet<>(), PartitionType.NONE, null);
+                } else {
+                    //partitioned tables have no pk and must have identifiers.
+                    //however we can not tell which columns are the identifiers so ahem???
+                    //we do a little hardcoding. ID,uid and uuid are determined to be identifiers.
+                    if (primaryKeys.isEmpty()) {
+                        ListOrderedSet<String> identifiers = new ListOrderedSet<>();
+                        for (Triple<String, Integer, String> s : edgeColumns) {
+                            if (s.getLeft().equalsIgnoreCase("ID") || s.getLeft().equalsIgnoreCase("uid") || s.getLeft().equalsIgnoreCase("uuid")) {
+                                identifiers.add(s.getLeft());
                             }
                         }
-                        MutablePair<SchemaTable, SchemaTable> inOutLabels = inOutSchemaTableMap.get(edgeSchemaTable);
-                        if (!edgeAdded && inOutLabels.getLeft() != null && inOutLabels.getRight() != null) {
-                            TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, inOutLabels.getRight(), inOutLabels.getLeft(), columns);
-                            edgeAdded = true;
+                        edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), identifiers, PartitionType.NONE, null);
+                    } else {
+                        edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), ListOrderedSet.listOrderedSet(primaryKeys), PartitionType.NONE, null);
+                    }
+                }
+                for (Triple<String, Integer, String> edgeColumn : edgeColumns) {
+                    String column = edgeColumn.getLeft();
+                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END))) {
+                        String[] split = column.split("\\.");
+                        SchemaTable foreignKey;
+                        if (hasIDPrimaryKey(primaryKeys)) {
+                            foreignKey = SchemaTable.of(split[0], split[1]);
+                        } else {
+                            //There could be no ID pk because of user defined pk or because partioned tables have no pk.
+                            //This logic is because in TopologyManager.addLabelToEdge the '__I' or '__O' is assumed to be present and gets trimmed.
+                            if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+                                if (split.length == 3) {
+                                    //user defined pk
+                                    foreignKey = SchemaTable.of(split[0], split[1] + Topology.IN_VERTEX_COLUMN_END);
+                                } else {
+                                    foreignKey = SchemaTable.of(split[0], split[1]);
+                                }
+                            } else {
+                                if (split.length == 3) {
+                                    //user defined pk
+                                    foreignKey = SchemaTable.of(split[0], split[1] + Topology.OUT_VERTEX_COLUMN_END);
+                                } else {
+                                    foreignKey = SchemaTable.of(split[0], split[1]);
+                                }
+                            }
+                        }
+                        if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+                            TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, true, foreignKey);
+                        } else if (column.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+                            TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, false, foreignKey);
                         }
                     }
                 }
@@ -350,6 +390,7 @@ class SqlgStartupManager {
                 String edgCat = edgeTable.getLeft();
                 String schema = edgeTable.getMiddle();
                 String table = edgeTable.getRight();
+                List<String> primaryKeys = this.sqlDialect.getPrimaryKeys(metadata, edgCat, schema, table);
 
                 //check if is internal, if so ignore.
                 Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
@@ -376,7 +417,7 @@ class SqlgStartupManager {
                         extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                     }
                 }
-                TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
+                TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns, ListOrderedSet.listOrderedSet(primaryKeys));
                 String label = table.substring(Topology.EDGE_PREFIX.length());
                 if (indices != null) {
                     String key = edgCat + "." + schema + "." + table;
@@ -392,18 +433,27 @@ class SqlgStartupManager {
 
             }
 
+            if (this.sqlDialect.supportsPartitioning()) {
+                //load the partitions
+                conn = this.sqlgGraph.tx().getConnection();
+                List<Map<String, String>> partitions = this.sqlDialect.getPartitions(conn);
+                List<PartitionTree> roots = PartitionTree.build(partitions);
+                for (PartitionTree root : roots) {
+                    root.createPartitions(this.sqlgGraph);
+                }
+            }
+            this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
-
 
     private void extractIndices(DatabaseMetaData metadata,
                                 String catalog,
                                 String schema,
                                 String table,
                                 String label,
-                                boolean isVertex) throws SQLException {
+                                boolean isVertex) {
 
         String lastIndexName = null;
         IndexType lastIndexType = null;
@@ -437,7 +487,7 @@ class SqlgStartupManager {
         }
     }
 
-    private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) throws SQLException {
+    private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         //check for ZONEDDATETIME, PERIOD, DURATION as they use more than one field to represent the type
         PropertyType propertyType = null;
         if (metaDataIter.hasNext()) {
@@ -570,29 +620,33 @@ class SqlgStartupManager {
 
     /**
      * get the build version
+     *
      * @return the build version, or null if unknown
      */
     String getBuildVersion() {
-    	if (buildVersion==null){
-	        Properties prop = new Properties();
-	        try {
-	        	// try system
-	        	URL u=ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
-	        	if(u==null){
-	        		// try own class loader
-	        		u=getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
-	        	}
-	        	if (u!=null){
-	        		try (InputStream is=u.openStream()){
-	        			prop.load(is);
-	        		}
-	        		buildVersion=prop.getProperty(APPLICATION_VERSION);
-	        		
-	        	}
-	        } catch (IOException e) {
-	            throw new RuntimeException(e);
-	        }
-    	}
-       return buildVersion;
+        if (this.buildVersion == null) {
+            Properties prop = new Properties();
+            try {
+                // try system
+                URL u = ClassLoader.getSystemResource(SQLG_APPLICATION_PROPERTIES);
+                if (u == null) {
+                    // try own class loader
+                    u = getClass().getClassLoader().getResource(SQLG_APPLICATION_PROPERTIES);
+                }
+                if (u != null) {
+                    try (InputStream is = u.openStream()) {
+                        prop.load(is);
+                    }
+                    this.buildVersion = prop.getProperty(APPLICATION_VERSION);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return this.buildVersion;
+    }
+
+    private boolean hasIDPrimaryKey(List<String> primaryKeys) {
+        return primaryKeys.size() == 1 && primaryKeys.get(0).equals(Topology.ID);
     }
 }

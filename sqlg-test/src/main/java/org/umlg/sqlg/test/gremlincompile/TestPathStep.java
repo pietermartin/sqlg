@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,7 @@ import java.util.Set;
 public class TestPathStep extends BaseTest {
 
     @Test
-    public void g_V_hasXlabel_personX_asXaX_localXoutXcreatedX_asXbXX_selectXa_bX_byXnameX_by() throws IOException {
+    public void g_V_hasXlabel_personX_asXaX_localXoutXcreatedX_asXbXX_selectXa_bX_byXnameX_by() {
         Graph graph = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
@@ -57,7 +56,7 @@ public class TestPathStep extends BaseTest {
     }
 
     @Test
-    public void testGraphPathWithBy() throws IOException {
+    public void testGraphPathWithBy() {
         Graph graph = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
@@ -84,7 +83,7 @@ public class TestPathStep extends BaseTest {
     }
 
     @Test
-    public void testVertexPathWithBy() throws IOException {
+    public void testVertexPathWithBy() {
         Graph graph = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
@@ -121,8 +120,8 @@ public class TestPathStep extends BaseTest {
         final List<Edge> v1Edges = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(2, v1Edges.size());
-        Assert.assertTrue(v1Edges.get(0) instanceof Edge);
-        Assert.assertTrue(v1Edges.get(1) instanceof Edge);
+        Assert.assertNotNull(v1Edges.get(0));
+        Assert.assertNotNull(v1Edges.get(1));
     }
 
     @Test
@@ -143,7 +142,7 @@ public class TestPathStep extends BaseTest {
 
     @Test
     public void testSimplePath() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().as("a").has("name", "a1").as("b").has("age", 1).as("c").path();
@@ -156,7 +155,7 @@ public class TestPathStep extends BaseTest {
     }
 
     @Test
-    public void g_V_asXaX_hasXname_markoX_asXbX_hasXage_29X_asXcX_path() throws IOException {
+    public void g_V_asXaX_hasXname_markoX_asXbX_hasXage_29X_asXcX_path() {
         Graph graph = this.sqlgGraph;
         loadModern(this.sqlgGraph);
         assertModernGraph(graph, true, false);
@@ -190,7 +189,7 @@ public class TestPathStep extends BaseTest {
         a3.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal)this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>)this.sqlgGraph.traversal()
                 .V().as("a")
                 .out().as("a")
                 .in().as("a")
@@ -201,7 +200,7 @@ public class TestPathStep extends BaseTest {
         Assert.assertEquals(3, result.size());
         Object o1 = result.get(0).get("a");
         Assert.assertTrue(o1 instanceof List);
-        List<Vertex> ass = (List) o1;
+        @SuppressWarnings("unchecked") List<Vertex> ass = (List<Vertex>) o1;
         Assert.assertEquals(a1, ass.get(0));
         Assert.assertEquals("a1", ass.get(0).value("name"));
         Assert.assertEquals(b1, ass.get(1));
@@ -211,6 +210,7 @@ public class TestPathStep extends BaseTest {
 
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Test
     public void testPathStep() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

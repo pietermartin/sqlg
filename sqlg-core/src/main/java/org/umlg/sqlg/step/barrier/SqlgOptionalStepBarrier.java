@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgTraverser;
@@ -21,7 +22,7 @@ import java.util.*;
 public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implements TraversalParent {
 
     private final Traversal.Admin<S, S> optionalTraversal;
-    protected List<Traverser.Admin<S>> results = new ArrayList<>();
+    private final List<Traverser.Admin<S>> results = new ArrayList<>();
     private boolean first = true;
     private Iterator<Traverser.Admin<S>> resultIterator;
 
@@ -80,17 +81,19 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
             });
             this.resultIterator = this.results.iterator();
         }
-        while (this.resultIterator.hasNext()) {
+        if (this.resultIterator.hasNext()) {
             return this.resultIterator.next();
         }
         throw FastNoSuchElementException.instance();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, S>> getLocalChildren() {
         return Collections.singletonList(this.optionalTraversal);
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void reset() {
         super.reset();
@@ -105,4 +108,8 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
         return this.getSelfAndChildRequirements();
     }
 
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, this.optionalTraversal);
+    }
 }

@@ -12,8 +12,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -25,7 +23,7 @@ import static org.junit.Assert.*;
 public class TestBatchedStreaming extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -36,6 +34,31 @@ public class TestBatchedStreaming extends BaseTest {
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
     }
+
+//    @Test
+//    public void testStreamBatchModeDifferentProperties() {
+//        this.sqlgGraph.tx().streamingBatchModeOn();
+//        this.sqlgGraph.streamVertex(T.label, "A", "t", "a_t", "tt", "a_tt");
+//        this.sqlgGraph.streamVertex(T.label, "A");
+//        this.sqlgGraph.streamVertex(T.label, "A", "t", "b_t");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", "a_t").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", "b_t").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+//    }
+//
+//    @Test
+//    public void testBatchStreamingModeMultiColumnProperties() {
+//        this.sqlgGraph.tx().streamingBatchModeOn();
+//        ZonedDateTime now = ZonedDateTime.now();
+//        this.sqlgGraph.streamVertex(T.label, "A", "t", now);
+//        this.sqlgGraph.streamVertex(T.label, "A");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("t").count().next(), 0);
+//    }
 
     @Test
     public void testNullProperties() throws InterruptedException {
@@ -69,7 +92,7 @@ public class TestBatchedStreaming extends BaseTest {
         int BATCH_SIZE = 100;
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        LinkedHashMap properties = new LinkedHashMap();
+        LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         List<Pair<Vertex, Vertex>> uids = new ArrayList<>();
         String uuidCache1 = null;
@@ -131,7 +154,7 @@ public class TestBatchedStreaming extends BaseTest {
         final int BATCH_SIZE = 1000;
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        LinkedHashMap properties = new LinkedHashMap();
+        LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         List<Pair<Vertex, Vertex>> uids = new ArrayList<>();
         String uuidCache1 = null;
@@ -187,7 +210,7 @@ public class TestBatchedStreaming extends BaseTest {
 
     @Test
     public void testStreamingWithBatchSizeWithCallBack() throws InterruptedException {
-        LinkedHashMap properties = new LinkedHashMap();
+        LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
         List<Vertex> persons = new ArrayList<>();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         for (int i = 1; i <= 10; i++) {
@@ -221,7 +244,7 @@ public class TestBatchedStreaming extends BaseTest {
     public void streamJava8StyleWithSchema() throws InterruptedException {
         List<String> uids = Arrays.asList("1", "2", "3", "4", "5");
         this.sqlgGraph.tx().streamingBatchModeOn();
-        uids.stream().forEach(u -> this.sqlgGraph.streamVertex(T.label, "R_HG.Person", "name", u));
+        uids.forEach(u -> this.sqlgGraph.streamVertex(T.label, "R_HG.Person", "name", u));
         this.sqlgGraph.tx().commit();
         streamJava8StyleWithSchema_assert(this.sqlgGraph);
         if (this.sqlgGraph1 != null) {
@@ -243,7 +266,7 @@ public class TestBatchedStreaming extends BaseTest {
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         for (int i = 1; i <= 100; i++) {
-            Vertex v = this.sqlgGraph.addVertex("Person", new LinkedHashMap<>());
+            this.sqlgGraph.addVertex("Person", new LinkedHashMap<>());
         }
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingBatchModeOn();

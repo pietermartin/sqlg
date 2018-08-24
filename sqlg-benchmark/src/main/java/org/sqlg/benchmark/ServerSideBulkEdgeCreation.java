@@ -26,8 +26,8 @@ import static org.junit.Assert.assertEquals;
 @Measurement(iterations = 3, time = 5)
 public class ServerSideBulkEdgeCreation extends BaseBenchmark {
 
-    protected SqlgGraph sqlgGraph;
-    protected GraphTraversalSource gt;
+    private SqlgGraph sqlgGraph;
+    private GraphTraversalSource gt;
 
     @Benchmark
     public long bulkAddEdges() {
@@ -68,7 +68,7 @@ public class ServerSideBulkEdgeCreation extends BaseBenchmark {
     }
 
     @Setup(Level.Iteration)
-    public void setup() throws Exception {
+    public void setup() {
         this.sqlgGraph = getSqlgGraph();
         SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();

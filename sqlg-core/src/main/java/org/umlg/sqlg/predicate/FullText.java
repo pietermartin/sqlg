@@ -20,18 +20,18 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class FullText implements BiPredicate<String, String> {
-	private static Logger logger = LoggerFactory.getLogger(FullText.class);
+	private static final Logger logger = LoggerFactory.getLogger(FullText.class);
 	/**
 	 * full text configuration to use
 	 */
-	private String configuration;
+	private final String configuration;
 	
 	/**
 	 * plain mode (no operators in query)
 	 */
 	private boolean plain = false;
 	
-	private String query;
+	private final String query;
 	
 	/**
 	 * Build full text matching predicate (use in has(column,...))

@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.topology.AbstractLabel;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -23,11 +24,11 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 public class SqlgProperty<V> implements Property<V>, Serializable {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgProperty.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgProperty.class);
     private final String key;
-    private V value;
-    private SqlgElement element;
-    protected SqlgGraph sqlgGraph;
+    private final V value;
+    private final SqlgElement element;
+    private final SqlgGraph sqlgGraph;
 
     SqlgProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
         this.sqlgGraph = sqlgGraph;
@@ -65,6 +66,16 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
         }
 
         if (!elementInInsertedCache) {
+
+            AbstractLabel abstractLabel;
+            if (this.element instanceof Vertex) {
+                abstractLabel = this.sqlgGraph.getTopology().getSchema(this.element.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", this.element.schema)))
+                        .getVertexLabel(this.element.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found.", this.element.table)));
+            } else {
+                abstractLabel = this.sqlgGraph.getTopology().getSchema(this.element.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", this.element.schema)))
+                        .getEdgeLabel(this.element.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found.", this.element.table)));
+            }
+
             PropertyType propertyType = PropertyType.from(value);
             String[] postfixes = propertyType.getPostFixes();
 
@@ -81,8 +92,21 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
                 sql.append(" = ?");
             }
             sql.append(" WHERE ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(" = ?");
+            RecordId recordId = this.element.recordId;
+            if (recordId.hasSequenceId()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                sql.append(" = ?");
+            } else {
+                int count = 1;
+                for (String identifier : abstractLabel.getIdentifiers()) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    sql.append(" = ?");
+                    if (count++ < abstractLabel.getIdentifiers().size()) {
+                        sql.append(" AND ");
+                    }
+
+                }
+            }
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
@@ -96,7 +120,13 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
                 for (int sqlType : sqlTypes) {
                     preparedStatement.setNull(parameterIndex++, sqlType);
                 }
-                preparedStatement.setLong(parameterIndex, ((RecordId) this.element.id()).getId());
+                if (recordId.hasSequenceId()) {
+                    preparedStatement.setLong(parameterIndex, recordId.sequenceId());
+                } else {
+                    for (Comparable identifierValue : recordId.getIdentifiers()) {
+                        preparedStatement.setObject(parameterIndex, identifierValue);
+                    }
+                }
                 int numberOfRowsUpdated = preparedStatement.executeUpdate();
                 if (numberOfRowsUpdated != 1) {
                     throw new IllegalStateException("Remove property failed!");

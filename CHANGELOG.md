@@ -1,3 +1,11 @@
+##2.0.0
+* Add user supplied primary key support.
+* Add partitioning support on Postgresql 10.
+* Add sharding support on Postgresql 10 using the [Citus](https://www.citusdata.com/) extension.
+* Optimize the `PropertiesStep` and `PropertyMapStep` to only query the database for the 
+requested properties and not for all properties as is the default.
+* Remove auto sorting of columns on table creation. It should be done at the application level.
+
 ##1.5.2
 * Upgrade to TinkerPop 3.3.3
 * Add docker image for Postgresql

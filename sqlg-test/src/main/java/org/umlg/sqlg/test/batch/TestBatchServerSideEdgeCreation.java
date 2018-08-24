@@ -15,17 +15,16 @@ import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("Duplicates")
 public class TestBatchServerSideEdgeCreation extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -103,7 +102,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         stopWatch.start();
         this.sqlgGraph.tx().streamingBatchModeOn();
         List<Pair<String, String>> uids = new ArrayList<>();
-        LinkedHashMap properties = new LinkedHashMap();
+        LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
         String uuid1Cache = null;
         String uuid2Cache = null;
         for (int i = 0; i < 1000; i++) {
@@ -127,7 +126,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         stopWatch.start();
 
         this.sqlgGraph.tx().streamingBatchModeOn();
-        SchemaTable person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
+        SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
@@ -157,7 +156,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
     public void testBulkEdgesTempTableUnique() {
         this.sqlgGraph.tx().streamingBatchModeOn();
         List<Pair<String, String>> uids = new ArrayList<>();
-        LinkedHashMap properties = new LinkedHashMap();
+        LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
         for (int i = 0; i < 1000; i++) {
             String uuid1 = UUID.randomUUID().toString();
             String uuid2 = UUID.randomUUID().toString();
@@ -169,7 +168,6 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        SchemaTable person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
 
@@ -236,7 +234,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         for (int i = 0; i < 1_000; i++) {
             Vertex v = sqlgGraph.addVertex("RealWorkspaceElement", properties);
             RecordId recordId = (RecordId) v.id();
-            Pair<Long, Long> idPair = Pair.of(recordId.getId(), ((RecordId) virtualGroup.id()).getId());
+            Pair<Long, Long> idPair = Pair.of(recordId.sequenceId(), ((RecordId) virtualGroup.id()).sequenceId());
             ids.add(idPair);
         }
         sqlgGraph.tx().commit();
@@ -262,7 +260,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "B", "cmuid", "a2");
         this.sqlgGraph.tx().commit();
         List<Pair<Long, String>> ids = new ArrayList<>();
-        Pair<Long, String> idCmUidPair = Pair.of(((RecordId)v1.id()).getId(), "a2");
+        Pair<Long, String> idCmUidPair = Pair.of(((RecordId)v1.id()).sequenceId(), "a2");
         ids.add(idCmUidPair);
 
         this.sqlgGraph.tx().streamingBatchModeOn();

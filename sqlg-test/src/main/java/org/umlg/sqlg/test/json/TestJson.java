@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 public class TestJson extends BaseTest {
 
     @Test
-    public void testJson() throws IOException {
+    public void testJson() {
         ObjectMapper objectMapper =  new ObjectMapper();
         ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
         json.put("username", "john");
@@ -46,7 +46,7 @@ public class TestJson extends BaseTest {
     }
 
     @Test
-    public void testJsonArray() throws IOException {
+    public void testJsonArray() {
         ObjectMapper objectMapper =  new ObjectMapper();
         ArrayNode jsonArray = new ArrayNode(objectMapper.getNodeFactory());
         ObjectNode john = new ObjectNode(objectMapper.getNodeFactory());

@@ -72,7 +72,7 @@ public class TestLoadEdge extends BaseTest {
         Assert.assertEquals(0.5d, detachedEdge.properties("weight").next().value());
     }
 
-    public Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
+    private Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
         return this.sqlgGraph.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).<Edge>select("e").next().id();
     }
 }

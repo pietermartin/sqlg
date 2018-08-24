@@ -12,17 +12,22 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
-import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 
+import javax.annotation.Nullable;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static org.umlg.sqlg.structure.PropertyType.*;
 
 public interface SqlDialect {
 
-    static final String INDEX_POSTFIX = "_sqlgIdx";
+
+    String INDEX_POSTFIX = "_sqlgIdx";
 
     default boolean supportsDistribution() {
         return false;
@@ -62,6 +67,10 @@ public interface SqlDialect {
     String getPrimaryKeyType();
 
     String getAutoIncrementPrimaryKeyConstruct();
+
+    default String getAutoIncrement() {
+        throw new RuntimeException("Not yet implemented.");
+    }
 
     String[] propertyTypeToSqlDefinition(PropertyType propertyType);
 
@@ -234,7 +243,7 @@ public interface SqlDialect {
             metaNodeArray.add(metaNode);
             switch (sqlType) {
                 case Types.BIT:
-                    metaNode.put("type", PropertyType.BOOLEAN.name());
+                    metaNode.put("type", BOOLEAN.name());
                     break;
                 case Types.SMALLINT:
                     metaNode.put("type", PropertyType.SHORT.name());
@@ -492,6 +501,10 @@ public interface SqlDialect {
         return false;
     }
 
+    default boolean isMysql() {
+        return false;
+    }
+
     default boolean isMssqlServer() {
         return false;
     }
@@ -649,6 +662,17 @@ public interface SqlDialect {
     List<Triple<String, Integer, String>> getTableColumns(DatabaseMetaData metaData, String catalog, String schemaPattern,
                                                           String tableNamePattern, String columnNamePattern);
 
+    /**
+     * Return the table's primary keys.
+     *
+     * @param metaData         JDBC meta data.
+     * @param catalog          The db catalog.
+     * @param schemaPattern    The schema name.
+     * @param tableNamePattern The table name.
+     * @return A list of primary key column names.
+     */
+    List<String> getPrimaryKeys(DatabaseMetaData metaData, String catalog, String schemaPattern, String tableNamePattern);
+
     List<Triple<String, Boolean, String>> getIndexInfo(DatabaseMetaData metaData, String catalog,
                                                        String schema, String table, boolean unique, boolean approximate);
 
@@ -665,6 +689,7 @@ public interface SqlDialect {
         return null;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isSystemIndex(String indexName);
 
     /**
@@ -770,7 +795,8 @@ public interface SqlDialect {
      * @param distinctQueryStack   The query's SchemaTableTree stack as constructed by parsing.
      * @return
      */
-    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, Optional<String> edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    @SuppressWarnings("Duplicates")
+    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
@@ -803,7 +829,7 @@ public interface SqlDialect {
             StringBuilder sb;
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getOutEdgeLabels().entrySet()) {
                 EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("DELETE FROM ");
@@ -820,7 +846,7 @@ public interface SqlDialect {
             }
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
                 EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                if (lastEdgeLabel == null || !edgeLabel.equals(lastEdgeLabel)) {
+                if (!edgeLabel.equals(lastEdgeLabel)) {
                     //Delete
                     sb = new StringBuilder();
                     sb.append("DELETE FROM ");
@@ -860,7 +886,7 @@ public interface SqlDialect {
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
             sb.append("\nWHERE \"ID\" IN (\n\t");
-            sb.append(edgesToDelete.get());
+            sb.append(edgesToDelete);
             sb.append(")");
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
@@ -873,60 +899,142 @@ public interface SqlDialect {
     }
 
 
-    default String drop(VertexLabel vertexLabel, Collection<Long> ids) {
+    default String drop(VertexLabel vertexLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(vertexLabel.getSchema().getName()));
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()));
         sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes("ID"));
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int cnt = 1;
+            sql.append("(");
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")");
+        }
         sql.append(" IN (\n");
         int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
-            if (count++ < ids.size()) {
-                sql.append(",");
+        for (RecordId.ID id : ids) {
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId());
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            } else {
+                int cnt = 1;
+                sql.append("(");
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
             }
         }
         sql.append(")");
+
         return sql.toString();
     }
 
-    default String drop(EdgeLabel edgeLabel, Collection<Long> ids) {
+    default String drop(EdgeLabel edgeLabel, Collection<RecordId.ID> ids) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
         sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes("ID"));
+        if (edgeLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes("ID"));
+        } else {
+            int cnt = 1;
+            sql.append("(");
+            for (String identifier : edgeLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(identifier));
+                if (cnt++ < edgeLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")");
+        }
         sql.append(" IN (\n");
         int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
-            if (count++ < ids.size()) {
-                sql.append(",");
+        for (RecordId.ID id : ids) {
+            if (edgeLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId());
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
+            } else {
+                int cnt = 1;
+                sql.append("(");
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (count++ < ids.size()) {
+                    sql.append(",");
+                }
             }
         }
         sql.append(")");
         return sql.toString();
     }
 
-    default String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<Long> ids, boolean mutatingCallbacks) {
+    default String dropWithForeignKey(boolean out, EdgeLabel edgeLabel, VertexLabel vertexLabel, Collection<RecordId.ID> ids, boolean mutatingCallbacks) {
         StringBuilder sql = new StringBuilder();
         sql.append("DELETE FROM\n\t");
         sql.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
         sql.append(".");
         sql.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
         sql.append(" WHERE ");
-        sql.append(maybeWrapInQoutes(
-                vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
-                        + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        if (vertexLabel.hasIDPrimaryKey()) {
+            sql.append(maybeWrapInQoutes(
+                    vertexLabel.getSchema().getName() + "." + vertexLabel.getName()
+                            + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+        } else {
+            sql.append("(");
+            int count = 1;
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                sql.append(maybeWrapInQoutes(
+                        vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + "." + identifier
+                                + (out ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                if (count++ < vertexLabel.getIdentifiers().size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")");
+
+        }
         sql.append(" IN (\n");
         int count = 1;
-        for (Long id : ids) {
-            sql.append(Long.toString(id));
+        for (RecordId.ID id : ids) {
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(id.getSequenceId());
+            } else {
+                int cnt = 1;
+                sql.append("(");
+                for (Comparable identifierValue : id.getIdentifiers()) {
+                    sql.append(toRDBSStringLiteral(identifierValue));
+                    if (cnt++ < id.getIdentifiers().size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+            }
             if (count++ < ids.size()) {
                 sql.append(",");
             }
@@ -985,12 +1093,151 @@ public interface SqlDialect {
     default boolean supportsTruncateMultipleTablesTogether() {
         return false;
     }
-    
+
+    default boolean supportsPartitioning() {
+        return false;
+    }
+
+    default List<Map<String, String>> getPartitions(Connection connection) {
+        throw new IllegalStateException("Partitioning is not supported.");
+    }
+
+    default List<String> addPartitionTables() {
+        throw new IllegalStateException("Partitioning is not supported.");
+    }
+
+    default String addDbVersionToGraph(DatabaseMetaData metadata) {
+        try {
+            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * get the default fetch size
+     *
      * @return the default fetch size, maybe null if we want to use the default from the driver
      */
-    default Integer getDefaultFetchSize(){
-    	return null;
+    default Integer getDefaultFetchSize() {
+        return null;
+    }
+
+    default int getShardCount(SqlgGraph sqlgGraph, AbstractLabel label) {
+        throw new IllegalStateException("Sharding is not supported.");
+    }
+
+    default boolean supportsSharding() {
+        return false;
+    }
+
+    default String toRDBSStringLiteral(Object value) {
+        PropertyType propertyType = PropertyType.from(value);
+        return toRDBSStringLiteral(propertyType, value);
+    }
+
+    //TODO this is very lazy do properly
+    default String toRDBSStringLiteral(PropertyType propertyType, Object value) {
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
+                Boolean b = (Boolean) value;
+                return b.toString();
+            case BYTE_ORDINAL:
+                Byte byteValue = (Byte) value;
+                return byteValue.toString();
+            case SHORT_ORDINAL:
+                Short shortValue = (Short) value;
+                return shortValue.toString();
+            case INTEGER_ORDINAL:
+                Integer intValue = (Integer) value;
+                return intValue.toString();
+            case LONG_ORDINAL:
+                Long longValue = (Long) value;
+                return longValue.toString();
+            case FLOAT_ORDINAL:
+                Float floatValue = (Float) value;
+                return floatValue.toString();
+            case DOUBLE_ORDINAL:
+                Double doubleValue = (Double) value;
+                return doubleValue.toString();
+            case STRING_ORDINAL:
+                return "'" + value.toString() + "'";
+            case LOCALDATE_ORDINAL:
+                LocalDate localDateValue = (LocalDate) value;
+                return "'" + localDateValue.toString() + "'";
+            case LOCALDATETIME_ORDINAL:
+                LocalDateTime localDateTimeValue = (LocalDateTime) value;
+                return "'" + localDateTimeValue.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'";
+            case LOCALTIME_ORDINAL:
+                LocalTime localTimeValue = (LocalTime) value;
+                return "'" + localTimeValue.toString() + "'";
+            case ZONEDDATETIME_ORDINAL:
+                break;
+            case PERIOD_ORDINAL:
+                break;
+            case DURATION_ORDINAL:
+                break;
+            case JSON_ORDINAL:
+                break;
+            case POINT_ORDINAL:
+                break;
+            case LINESTRING_ORDINAL:
+                break;
+            case POLYGON_ORDINAL:
+                break;
+            case GEOGRAPHY_POINT_ORDINAL:
+                break;
+            case GEOGRAPHY_POLYGON_ORDINAL:
+                break;
+            case boolean_ARRAY_ORDINAL:
+                break;
+            case BOOLEAN_ARRAY_ORDINAL:
+                break;
+            case byte_ARRAY_ORDINAL:
+                break;
+            case BYTE_ARRAY_ORDINAL:
+                break;
+            case short_ARRAY_ORDINAL:
+                break;
+            case SHORT_ARRAY_ORDINAL:
+                break;
+            case int_ARRAY_ORDINAL:
+                break;
+            case INTEGER_ARRAY_ORDINAL:
+                break;
+            case long_ARRAY_ORDINAL:
+                break;
+            case LONG_ARRAY_ORDINAL:
+                break;
+            case float_ARRAY_ORDINAL:
+                break;
+            case FLOAT_ARRAY_ORDINAL:
+                break;
+            case double_ARRAY_ORDINAL:
+                break;
+            case DOUBLE_ARRAY_ORDINAL:
+                break;
+            case STRING_ARRAY_ORDINAL:
+                break;
+            case LOCALDATETIME_ARRAY_ORDINAL:
+                break;
+            case LOCALDATE_ARRAY_ORDINAL:
+                break;
+            case LOCALTIME_ARRAY_ORDINAL:
+                break;
+            case ZONEDDATETIME_ARRAY_ORDINAL:
+                break;
+            case DURATION_ARRAY_ORDINAL:
+                break;
+            case PERIOD_ARRAY_ORDINAL:
+                break;
+            case JSON_ARRAY_ORDINAL:
+                break;
+        }
+        return "'" + value.toString() + "'";
+    }
+
+    default void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
+        throw new RuntimeException("Not yet implemented!");
     }
 }

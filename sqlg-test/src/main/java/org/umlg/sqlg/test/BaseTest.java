@@ -4,6 +4,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.log4j.Level;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -23,14 +24,15 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.TestAppender;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -42,9 +44,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/07/12
@@ -52,7 +52,7 @@ import static org.junit.Assert.fail;
  */
 public abstract class BaseTest {
 
-    private static Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
     protected SqlgGraph sqlgGraph;
     protected SqlgGraph sqlgGraph1;
     protected GraphTraversalSource gt;
@@ -79,7 +79,7 @@ public abstract class BaseTest {
     };
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
@@ -100,6 +100,7 @@ public abstract class BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
+        grantReadOnlyUserPrivileges();
         assertNotNull(this.sqlgGraph);
         assertNotNull(this.sqlgGraph.getBuildVersion());
         this.gt = this.sqlgGraph.traversal();
@@ -112,8 +113,13 @@ public abstract class BaseTest {
         logger.info("Startup time for test = " + stopWatch.toString());
     }
 
+    private void grantReadOnlyUserPrivileges() {
+        this.sqlgGraph.getSqlDialect().grantReadOnlyUserPrivilegesToSqlgSchemas(this.sqlgGraph);
+        this.sqlgGraph.tx().commit();
+    }
+
     @After
-    public void after() throws Exception {
+    public void after() {
         try {
             this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
             this.sqlgGraph.close();
@@ -130,8 +136,28 @@ public abstract class BaseTest {
         }
     }
 
-    public static boolean isPostgres() {
+    protected static boolean isPostgres() {
         return configuration.getString("jdbc.url").contains("postgresql");
+    }
+
+    protected static boolean isMsSqlServer() {
+        return configuration.getString("jdbc.url").contains("sqlserver");
+    }
+
+    protected static boolean isHsqldb() {
+        return configuration.getString("jdbc.url").contains("hsqldb");
+    }
+
+    protected static boolean isH2() {
+        return configuration.getString("jdbc.url").contains("h2");
+    }
+
+    protected static boolean isMariaDb() {
+        return configuration.getString("jdbc.url").contains("mariadb");
+    }
+
+    protected static boolean isMysql() {
+        return configuration.getString("jdbc.url").contains("mysql");
     }
 
     /**
@@ -149,13 +175,22 @@ public abstract class BaseTest {
         return conf;
     }
 
-    public void dropSqlgSchema(SqlgGraph sqlgGraph) {
+    protected void dropSqlgSchema(SqlgGraph sqlgGraph) {
         List<String> result = new ArrayList<>();
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_schema_vertex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_in_edges") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_out_edges") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_partition") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_partition") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_partition_partition") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_identifier") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_identifier") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_distribution") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_distribution") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_colocate") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_colocate") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_index_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
@@ -166,6 +201,7 @@ public abstract class BaseTest {
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_schema") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_vertex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_edge") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
+        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_partition") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_globalUniqueIndex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
@@ -192,55 +228,64 @@ public abstract class BaseTest {
     }
 
     protected void assertDb(String table, int numberOfRows) {
-        Connection conn = null;
-        Statement stmt = null;
-        try {
-            conn = this.sqlgGraph.getConnection();
-            stmt = conn.createStatement();
-            StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-            sql.append(".");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
-            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
+        try (Connection conn = this.sqlgGraph.getConnection()) {
+            try (Statement stmt = conn.createStatement()) {
+                StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
+                sql.append(".");
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
+                try (ResultSet rs = stmt.executeQuery(sql.toString())) {
+                    int countRows = 0;
+                    while (rs.next()) {
+                        countRows++;
+                    }
+                    assertEquals(numberOfRows, countRows);
+                }
             }
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            ResultSet rs = stmt.executeQuery(sql.toString());
-            int countRows = 0;
-            while (rs.next()) {
-                countRows++;
-            }
-            assertEquals(numberOfRows, countRows);
-            rs.close();
-            stmt.close();
-            conn.close();
         } catch (Exception e) {
             fail(e.getMessage());
-        } finally {
-            //noinspection EmptyCatchBlock
-            try {
-                if (stmt != null)
-                    stmt.close();
-            } catch (SQLException se2) {
-            }
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (SQLException se) {
-                fail(se.getMessage());
-            }
         }
 
     }
 
+    /**
+     * print the traversal before and after execution
+     * @param traversal
+     */
     protected void printTraversalForm(final Traversal<?, ?> traversal) {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 
         if (!muted) System.out.println("   pre-strategy:" + traversal);
         traversal.hasNext();
         if (!muted) System.out.println("  post-strategy:" + traversal);
+    }
+
+    /**
+     * print the traversal before and after execution, and return the last SQL generated
+     * @param traversal
+     * @return the SQL or null
+     */
+    protected String getSQL(final Traversal<?, ?> traversal){
+    	org.apache.log4j.Logger l=org.apache.log4j.Logger.getLogger(SqlgSqlExecutor.class);
+    	Level old=l.getLevel();
+    	try {
+    		l.setLevel(Level.DEBUG);
+	    	printTraversalForm(traversal);
+	    	org.apache.log4j.spi.LoggingEvent evt=TestAppender.getLast(SqlgSqlExecutor.class.getName());
+	    	if (evt!=null){
+	    		return String.valueOf(evt.getMessage());
+	    	}
+    	return null;
+    	} finally {
+    		l.setLevel(old);
+    	}
+
     }
 
     protected void loadModern(SqlgGraph sqlgGraph) {
@@ -277,7 +322,7 @@ public abstract class BaseTest {
      * @param vertexName a unique string that will identify a graph element within a graph
      * @return the id as generated by the graph
      */
-    public Object convertToVertexId(final String vertexName) {
+    protected Object convertToVertexId(final String vertexName) {
         return convertToVertexId(this.sqlgGraph, vertexName);
     }
 
@@ -288,7 +333,7 @@ public abstract class BaseTest {
      * @param vertexName a unique string that will identify a graph element within a graph
      * @return the id as generated by the graph
      */
-    public Object convertToVertexId(final Graph g, final String vertexName) {
+    protected Object convertToVertexId(final Graph g, final String vertexName) {
         return convertToVertex(g, vertexName).id();
     }
 
@@ -297,11 +342,11 @@ public abstract class BaseTest {
         return graph.traversal().V().has("name", vertexName).next();
     }
 
-    public Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
+    protected Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
         return graph.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).<Edge>select("e").next().id();
     }
 
-    public static void assertModernGraph(final Graph g1, final boolean assertDouble, final boolean lossyForId) {
+    protected static void assertModernGraph(final Graph g1, final boolean assertDouble, final boolean lossyForId) {
         assertToyGraph(g1, assertDouble, lossyForId, true);
     }
 
@@ -511,7 +556,8 @@ public abstract class BaseTest {
 
         for (T t : results) {
             if (t instanceof Map) {
-                Assert.assertThat("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).filter(e -> internalCheckMap((Map) e, (Map) t)).findAny().isPresent(), CoreMatchers.is(true));
+                //noinspection unchecked
+                Assert.assertThat("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).anyMatch(e -> internalCheckMap((Map) e, (Map) t)), CoreMatchers.is(true));
             } else {
                 Assert.assertThat("Checking result existence: " + t, expectedResults.contains(t), CoreMatchers.is(true));
             }
@@ -588,11 +634,12 @@ public abstract class BaseTest {
         Assert.assertEquals("comparatorsNotOnDb should be " + comparatorsNotOnDb, comparatorsNotOnDb, sqlgStep.getReplacedSteps().stream().allMatch(r -> r.getDbComparators().isEmpty()));
     }
 
-    public <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
+    protected <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
         final List<Map<A, B>> mapList = new ArrayList<>();
         for (int i = 0; i < keyValues.length; i = i + (2 * size)) {
             final Map<A, B> map = new HashMap<>();
             for (int j = 0; j < (2 * size); j = j + 2) {
+                //noinspection unchecked
                 map.put((A) keyValues[i + j], (B) keyValues[i + j + 1]);
             }
             mapList.add(map);

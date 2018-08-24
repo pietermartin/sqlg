@@ -8,9 +8,6 @@ import org.junit.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
-
 import static java.lang.Thread.sleep;
 
 /**
@@ -20,7 +17,7 @@ import static java.lang.Thread.sleep;
 public class TestBatchNormalUpdate extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);

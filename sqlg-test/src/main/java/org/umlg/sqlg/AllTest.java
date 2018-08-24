@@ -25,6 +25,7 @@ import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.index.TestIndexOnPartition;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
 import org.umlg.sqlg.test.io.TestIo;
 import org.umlg.sqlg.test.io.TestIoEdge;
@@ -44,15 +45,23 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStep;
 import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
 import org.umlg.sqlg.test.process.dropstep.TestDropStepTruncate;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
+import org.umlg.sqlg.test.properties.TestPropertyValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
+import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
+import org.umlg.sqlg.test.sharding.TestSharding;
+import org.umlg.sqlg.test.sharding.TestShardingGremlin;
 import org.umlg.sqlg.test.topology.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestMultipleIDQuery;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexEdgeGremlin;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKTopology;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
@@ -218,7 +227,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestDeadLock.class,
         TestLabelLength.class,
         TestAddTemporaryVertex.class,
-        TestBatchTemporaryVertex.class,
         TestIoEdge.class,
         TestBatchTemporaryVertex.class,
         TestUnoptimizedRepeatStep.class,
@@ -236,6 +244,20 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTopologyGraph.class,
         TestUnoptimizedRepeatStep.class,
         TestPropertyReference.class,
+        TestPartitioning.class,
+        TestPartitionMultipleGraphs.class,
+        TestSubSubPartition.class,
+        TestIndexOnPartition.class,
+        TestUserSuppliedPKTopology.class,
+        TestSimpleJoinGremlin.class,
+        TestSimpleVertexEdgeGremlin.class,
+        TestMultipleIDQuery.class,
+        TestSharding.class,
+        TestShardingGremlin.class,
+        TestRecordId.class,
+        TestPropertyValues.class,
+        TestReadOnlyRole.class,
+        TestVarChar.class,
         TestTopologySchemaDeleteMultipleGraphs.class
 })
 public class AllTest {

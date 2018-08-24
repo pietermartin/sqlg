@@ -29,7 +29,7 @@ import java.util.*;
 public class TestTopologyUpgrade extends BaseTest {
 
     @Test
-    public void testTopologyUpgradeForeignKey() throws Exception {
+    public void testTopologyUpgradeForeignKey() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
@@ -72,7 +72,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeEdgeWithMultipleInOutLabelsAndAIndex() throws Exception {
+    public void testUpgradeEdgeWithMultipleInOutLabelsAndAIndex() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B");
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
@@ -104,7 +104,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgrade() throws Exception {
+    public void testUpgrade() {
         //with topology
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "john");
         Object idA1 = a1.id();
@@ -168,7 +168,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeMultipleInOutEdges() throws Exception {
+    public void testUpgradeMultipleInOutEdges() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
@@ -192,7 +192,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeMultipleInOutEdges2() throws Exception {
+    public void testUpgradeMultipleInOutEdges2() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "R_EG.B", "name", "b1");
         Vertex c1 = this.sqlgGraph.addVertex(T.label, "P_EG.C", "name", "c1");
@@ -216,7 +216,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void multipleSchemas() throws Exception {
+    public void multipleSchemas() {
 
         Vertex aPublic = this.sqlgGraph.addVertex(T.label, "APUBLIC", "name", "aPublic");
         Vertex aReal = this.sqlgGraph.addVertex(T.label, "REAL.AREAL", "name", "aReal");
@@ -241,7 +241,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testGratefulDeadDBUpgrade() throws Exception {
+    public void testGratefulDeadDBUpgrade() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         loadGratefulDead(this.sqlgGraph);
         Traversal<Vertex, Long> traversal = get_g_V_both_both_count(this.sqlgGraph.traversal());
@@ -262,7 +262,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testModernGraph() throws Exception {
+    public void testModernGraph() {
         loadModern();
         Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().both().both().count();
         Assert.assertEquals(new Long(30), traversal.next());
@@ -288,9 +288,7 @@ public class TestTopologyUpgrade extends BaseTest {
         god.addEdge("universe", universe);
         this.sqlgGraph.tx().commit();
         GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
-                TopologyStrategy.build().selectFrom(
-                        this.sqlgGraph.getTopology().getSqlgSchemaAbstractLabels()
-                ).create()
+                TopologyStrategy.build().sqlgSchema().create()
         );
         List<Vertex> schemas = traversalSource.V()
                 .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
@@ -302,7 +300,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradePropertiesAcrossSchema() throws Exception {
+    public void testUpgradePropertiesAcrossSchema() {
         this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "name1", "a11");
         this.sqlgGraph.addVertex(T.label, "B.A", "name", "b1", "name2", "b22");
         this.sqlgGraph.tx().commit();
@@ -326,7 +324,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeTypesWithMoreThanOneColumn() throws Exception {
+    public void testUpgradeTypesWithMoreThanOneColumn() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
         Duration duration = Duration.ofDays(1);
         Period period = Period.of(1, 1, 1);
@@ -380,7 +378,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeTypesWithMoreThanOneColumnOnEdge() throws Exception {
+    public void testUpgradeTypesWithMoreThanOneColumnOnEdge() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
         Duration duration = Duration.ofDays(1);
         Period period = Period.of(1, 1, 1);
@@ -414,7 +412,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeArrayTypesWithMoreThanOneColumn() throws Exception {
+    public void testUpgradeArrayTypesWithMoreThanOneColumn() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
@@ -471,7 +469,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeTypesWithMoreThanOneColumnOnEdgeArrays() throws Exception {
+    public void testUpgradeTypesWithMoreThanOneColumnOnEdgeArrays() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
@@ -508,7 +506,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeJson() throws Exception {
+    public void testUpgradeJson() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonType());
         ObjectNode json = new ObjectMapper().createObjectNode();
         json.put("halo", "asdasd");
@@ -536,7 +534,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeJsonArrays() throws Exception {
+    public void testUpgradeJsonArrays() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().isPostgresql());
         //HSQLDB can not upgrade JSON ARRAY as its indistinguishable from STRING ARRAY.
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
@@ -569,7 +567,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpdateLocalDateTimeAndZonedDateTime() throws Exception {
+    public void testUpdateLocalDateTimeAndZonedDateTime() {
         LocalDateTime localDateTime = LocalDateTime.now();
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
         this.sqlgGraph.addVertex(T.label, "A", "localDateTime", localDateTime, "zonedDateTime", zonedDateTime);
@@ -586,7 +584,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeArrays() throws Exception {
+    public void testUpgradeArrays() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
@@ -653,7 +651,7 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void testUpgradeFloatArrays() throws Exception {
+    public void testUpgradeFloatArrays() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         Float[] floats = new Float[]{1F, 2F, 3F};
         float[] floats2 = new float[]{1F, 2F, 3F};
@@ -678,12 +676,15 @@ public class TestTopologyUpgrade extends BaseTest {
 
     @SuppressWarnings("serial")
     @Test
-    public void testUpgradeIndex() throws Exception {
+    public void testUpgradeIndex() {
         //with topology
-        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
-            put("firstName", PropertyType.STRING);
-            put("lastName", PropertyType.STRING);
-        }});
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                "Person",
+                new HashMap<String, PropertyType>() {{
+                    put("firstName", PropertyType.STRING);
+                    put("lastName", PropertyType.STRING);
+                }}
+        );
         personVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(personVertexLabel.getProperties().values()));
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
@@ -742,7 +743,7 @@ public class TestTopologyUpgrade extends BaseTest {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
             statement.execute("DROP TABLE IF EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
-            this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("EVENT"));
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("EVENT"));
         }
         try (Statement statement = conn.createStatement()) {
             statement.execute("DROP TABLE IF EXISTS " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +

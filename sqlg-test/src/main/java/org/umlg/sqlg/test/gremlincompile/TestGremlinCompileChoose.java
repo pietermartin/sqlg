@@ -27,6 +27,7 @@ import java.util.Map;
 public class TestGremlinCompileChoose extends BaseTest {
 
 //    @Test
+    @SuppressWarnings("unused")
     public void testChoosePerformance() {
         this.sqlgGraph.tx().normalBatchModeOn();
         int count1 = 10_000;
@@ -94,10 +95,10 @@ public class TestGremlinCompileChoose extends BaseTest {
     @Test
     public void g_V_chooseXlabelX_optionXblah__outXknowsXX_optionXbleep__outXcreatedXX_optionXnone__identityX_name() {
         loadModern();
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal)this.sqlgGraph.traversal().V().choose(__.label())
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal().V().choose(__.label())
                 .option("blah", __.out("knows"))
                 .option("bleep", __.out("created"))
-                .option(TraversalOptionParent.Pick.none, __.identity()).values("name");
+                .option(TraversalOptionParent.Pick.none, __.identity()).<String>values("name");
 
         Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
@@ -117,7 +118,7 @@ public class TestGremlinCompileChoose extends BaseTest {
         final Map<String, Long> counts = new HashMap<>();
         int counter = 0;
         while (traversal.hasNext()) {
-            MapHelper.incr(counts, traversal.next().toString(), 1l);
+            MapHelper.incr(counts, traversal.next().toString(), 1L);
             counter++;
         }
         Assert.assertFalse(traversal.hasNext());
@@ -130,7 +131,7 @@ public class TestGremlinCompileChoose extends BaseTest {
     @Test
     public void testUnoptimizableChooseStep() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
@@ -156,7 +157,7 @@ public class TestGremlinCompileChoose extends BaseTest {
     @Test
     public void g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX_groupCount() {
         loadModern();
-        final Traversal<Vertex, Map<String, Long>> traversal = this.sqlgGraph.traversal()
+        @SuppressWarnings("unchecked") final Traversal<Vertex, Map<String, Long>> traversal = this.sqlgGraph.traversal()
                 .V()
                 .choose(
                         __.label().is("person"),
@@ -166,12 +167,12 @@ public class TestGremlinCompileChoose extends BaseTest {
         printTraversalForm(traversal);
         final Map<String, Long> groupCount = traversal.next();
         Assert.assertFalse(traversal.hasNext());
-        Assert.assertEquals(3l, groupCount.get("lop").longValue());
-        Assert.assertEquals(1l, groupCount.get("ripple").longValue());
-        Assert.assertEquals(4l, groupCount.get("java").longValue());
-        Assert.assertEquals(1l, groupCount.get("josh").longValue());
-        Assert.assertEquals(1l, groupCount.get("vadas").longValue());
-        Assert.assertEquals(4l, groupCount.get("person").longValue());
+        Assert.assertEquals(3L, groupCount.get("lop").longValue());
+        Assert.assertEquals(1L, groupCount.get("ripple").longValue());
+        Assert.assertEquals(4L, groupCount.get("java").longValue());
+        Assert.assertEquals(1L, groupCount.get("josh").longValue());
+        Assert.assertEquals(1L, groupCount.get("vadas").longValue());
+        Assert.assertEquals(4L, groupCount.get("person").longValue());
         Assert.assertEquals(6, groupCount.size());
     }
 

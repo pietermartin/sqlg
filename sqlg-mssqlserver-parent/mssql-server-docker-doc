@@ -1,0 +1,6 @@
+sudo docker ps -a
+sudo docker rm b49fb0a4687
+sudo docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=P@ssw0rd1' -p 1433:1433 --name sql1 -d microsoft/mssql-server-linux:2017-latest
+sudo docker exec -it sql1 "bash"
+/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P 'P@ssw0rd1'
+CREATE DATABASE sqlgraphdb COLLATE sql_latin1_general_cp1_cs_as

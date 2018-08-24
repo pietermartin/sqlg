@@ -26,17 +26,18 @@ import java.util.*;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
+@SuppressWarnings("unchecked")
 public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
-    private SqlgGraph sqlgGraph;
+    private final SqlgGraph sqlgGraph;
 
-    private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
+    private final List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
 
     private Emit<E> toEmit = null;
     private Iterator<List<Emit<E>>> elementIter;
 
-    private List<Emit<E>> traversers = new ArrayList<>();
+    private final List<Emit<E>> traversers = new ArrayList<>();
     private ListIterator<Emit<E>> traversersLstIter;
 
     private Traverser.Admin<S> previousHead;
@@ -52,9 +53,10 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
      * This means the path is included in hashCode and equals which buggers up ...sack() gremlins.
      * So for traversals with a sack this indicates to ignore the path in the hasCode and equals.
      */
-    private boolean requiresSack;
-    private boolean requiresOneBulk;
+    private final boolean requiresSack;
+    private final boolean requiresOneBulk;
 
+    @SuppressWarnings("unchecked")
     public SqlgGraphStep(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
@@ -62,6 +64,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         this.requiresOneBulk = SqlgTraversalUtil.hasOneBulkRequirement(traversal);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
@@ -208,6 +211,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 //Remove the dbComparators
                 for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
                     rootSchemaTableTree.removeDbComparators();
+                    rootSchemaTableTree.loadEager();
                 }
             } else {
                 //This is only needed for test assertions at the moment.
@@ -257,7 +261,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         return this.replacedStepTree.getCurrentTreeNodeNode();
     }
 
-    public Set<SchemaTableTree> parseForStrategy() {
+    private Set<SchemaTableTree> parseForStrategy() {
         this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");

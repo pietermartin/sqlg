@@ -76,7 +76,7 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
     }
 
     @Test
-    public void testLoadTableLabels() throws Exception {
+    public void testLoadTableLabels() {
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "pieter");
         Vertex car1 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
         person1.addEdge("drives", car1);

@@ -21,8 +21,8 @@ import java.util.*;
 public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> implements TraversalParent {
 
     private boolean first = true;
-    private Traversal.Admin<S, ?> filterTraversal;
-    private List<Traverser.Admin<S>> results = new ArrayList<>();
+    private final Traversal.Admin<S, ?> filterTraversal;
+    private final List<Traverser.Admin<S>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<S>> resultIterator;
 
     public SqlgTraversalFilterStepBarrier(Traversal.Admin traversal, Traversal.Admin<S, ?> filterTraversal) {
@@ -90,8 +90,7 @@ public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> im
             this.resultIterator = this.results.iterator();
         }
         if (this.resultIterator.hasNext()) {
-            Traverser.Admin<S> traverser = this.resultIterator.next();
-            return traverser;
+            return this.resultIterator.next();
         } else {
             //The standard TraversalFilterStep.filter calls TraversalUtil.test which normally resets the traversal for every incoming start.
             reset();
@@ -110,6 +109,7 @@ public class SqlgTraversalFilterStepBarrier<S> extends SqlgAbstractStep<S, S> im
         this.getGlobalChildren().forEach(Traversal.Admin::reset);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, ?>> getLocalChildren() {
         return Collections.singletonList(this.filterTraversal);

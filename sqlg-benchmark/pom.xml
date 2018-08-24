@@ -5,15 +5,14 @@
     <parent>
         <groupId>org.umlg</groupId>
         <artifactId>sqlg</artifactId>
-        <version>1.5.3-SNAPSHOT</version>
+        <version>2.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>sqlg-benchmark</artifactId>
     <name>sqlg :: benchmark</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jmh.version>1.10.5</jmh.version>
-        <javac.target>1.8</javac.target>
+        <jmh.version>1.20</jmh.version>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 

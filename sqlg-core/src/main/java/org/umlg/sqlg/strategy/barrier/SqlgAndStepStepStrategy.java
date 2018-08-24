@@ -25,11 +25,12 @@ public class SqlgAndStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
         super();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
         //noinspection OptionalGetWithoutIsPresent
-        if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         List<AndStep> andSteps = TraversalHelper.getStepsOfAssignableClass(AndStep.class, traversal);
@@ -61,7 +62,6 @@ public class SqlgAndStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
     @Override
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(
-                //Inline must happen first as it sometimes removes the need for a TraversalFilterStep
                 SqlgWhereTraversalStepStrategy.class
         ).collect(Collectors.toSet());
     }

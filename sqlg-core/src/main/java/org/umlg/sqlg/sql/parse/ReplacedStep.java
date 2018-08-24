@@ -14,8 +14,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallback;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
@@ -23,6 +21,7 @@ import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.ForeignKey;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -43,12 +42,12 @@ public class ReplacedStep<S, E> {
     private Topology topology;
     private AbstractStep<S, E> step;
     private Set<String> labels;
-    private List<HasContainer> hasContainers = new ArrayList<>();
-    private List<HasContainer> idHasContainers = new ArrayList<>();
-    private List<HasContainer> labelHasContainers = new ArrayList<>();
-    private List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
-    private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
-    private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
+    private final List<HasContainer> hasContainers = new ArrayList<>();
+    private final List<HasContainer> idHasContainers = new ArrayList<>();
+    private final List<HasContainer> labelHasContainers = new ArrayList<>();
+    private final List<AndOrHasContainer> andOrHasContainers = new ArrayList<>();
+    private final SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
+    private final List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
     /**
      * range limitation if any
      */
@@ -62,6 +61,20 @@ public class ReplacedStep<S, E> {
     private boolean fake;
     private boolean joinToLeftJoin;
     private boolean drop;
+
+    /**
+     * restrict properties to only a subset if not null
+     */
+    private Set<String> restrictedProperties = null;
+
+    /**
+     * If the query is a for sqlg_schema only. i.e. sqlgGraph.topology().V()....
+     */
+    private boolean isForSqlgSchema;
+    /**
+     * If the query is a for gui_schema only. i.e. sqlgGraph.globalUniqueIndexes().V()....
+     */
+    private boolean isForGuiSchema;
 
     private ReplacedStep() {
     }
@@ -99,7 +112,7 @@ public class ReplacedStep<S, E> {
     }
 
     public List<AndOrHasContainer> getAndOrHasContainers() {
-        return andOrHasContainers;
+        return this.andOrHasContainers;
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
@@ -147,7 +160,7 @@ public class ReplacedStep<S, E> {
         Set<SchemaTableTree> result = new HashSet<>();
         Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.topology.getTableLabels(schemaTableTree.getSchemaTable());
 
-        VertexStep vertexStep = (VertexStep) this.step;
+        VertexStep<? extends Element> vertexStep = (VertexStep<? extends Element>) this.step;
         String[] edgeLabels = vertexStep.getEdgeLabels();
         Direction direction = vertexStep.getDirection();
         Class<? extends Element> elementClass = vertexStep.getReturnClass();
@@ -193,17 +206,21 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             } else {
-                Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
-                Set<String> foreignKeys = edgeForeignKeys.get(inEdgeLabelToTravers.toString());
+                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getEdgeForeignKeys();
+                Set<ForeignKey> foreignKeys = edgeForeignKeys.get(inEdgeLabelToTravers.toString());
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
-                for (String foreignKey : foreignKeys) {
-                    if (foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                        String[] split = foreignKey.split("\\.");
-                        String foreignKeySchema = split[0];
-                        String foreignKeyTable = split[1];
+                //Use this set to filter the foreignKeys.
+                //For user defined ids many columns can be used as the primary keys.
+                //i.e. many __I columns.
+                //We are only interested here in the distinct SchemaTables.
+                Set<SchemaTable> schemaTables = new HashSet<>();
+                for (ForeignKey foreignKey : foreignKeys) {
+                    if (foreignKey.isOut()) {
+                        String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
+                        String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
-                        if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
+                        if (schemaTables.add(schemaTableTo) && passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
                             if (first) {
                                 first = false;
                                 schemaTableTreeChild = schemaTableTree.addChild(
@@ -239,18 +256,20 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             } else {
-                Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
-                Set<String> foreignKeys = edgeForeignKeys.get(outEdgeLabelToTravers.toString());
+                Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getEdgeForeignKeys();
+                Set<ForeignKey> foreignKeys = edgeForeignKeys.get(outEdgeLabelToTravers.toString());
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
-                for (String foreignKey : foreignKeys) {
-                    if (foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                        String[] split = foreignKey.split("\\.");
-                        String foreignKeySchema = split[0];
-                        String foreignKeyTable = split[1];
+                //Use this set to filter the foreignKeys.
+                //For user defined ids many columns can be used as the primary keys.
+                //i.e. many __I columns.
+                //We are only interested here in the distinct SchemaTables.
+                for (ForeignKey foreignKey : foreignKeys) {
+                    if (foreignKey.isIn()) {
+                        String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
+                        String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
                         if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
-
                             if (first) {
                                 first = false;
                                 schemaTableTreeChild = schemaTableTree.addChild(
@@ -275,15 +294,21 @@ public class ReplacedStep<S, E> {
         Map<SchemaTable, List<Multimap<BiPredicate, RecordId>>> groupedIds = groupIdsBySchemaTable();
 
         Set<SchemaTableTree> result = new HashSet<>();
-        Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
+        Map<String, Set<ForeignKey>> edgeForeignKeys = this.topology.getEdgeForeignKeys();
         //join from the edge table to the incoming vertex table
-        Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
+        Set<ForeignKey> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
         //Every foreignKey for the given direction must be joined on
-        for (String foreignKey : foreignKeys) {
-            String[] split = foreignKey.split("\\.");
-            String foreignKeySchema = split[0];
-            String foreignKeyTable = split[1];
-            if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+
+        //Use this set to filter the foreignKeys.
+        //For user defined ids many columns can be used as the primary keys.
+        //i.e. many __I columns.
+        //We are only interested here in the distinct SchemaTables.
+        for (ForeignKey foreignKey : foreignKeys) {
+
+            String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
+            String foreignKeyTable = foreignKey.getSchemaTable().getTable();
+
+            if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.isOut()) {
                 SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
                 if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
@@ -299,7 +324,7 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             }
-            if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+            if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.isIn()) {
                 SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
                 if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
@@ -427,6 +452,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         Set<SchemaTableTree> result = new HashSet<>();
         final GraphStep graphStep = (GraphStep) this.step;
+        @SuppressWarnings("unchecked")
         final boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
         final boolean isEdge = !isVertex;
 
@@ -437,13 +463,13 @@ public class ReplacedStep<S, E> {
         }
 
         //All tables depending on the strategy, topology tables only or the rest.
-        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterSqlgSchemaHasContainers(this.topology, this.hasContainers, false);
+        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema, this.isForGuiSchema);
 
         //Optimization for the simple case of only one label specified.
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
             HasContainer labelHasContainer = this.labelHasContainers.get(0);
             String table = (String) labelHasContainer.getValue();
-            SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(isVertex ? VERTEX_PREFIX : EDGE_PREFIX);
+            SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(VERTEX_PREFIX);
             if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
                 collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
             }
@@ -505,17 +531,18 @@ public class ReplacedStep<S, E> {
                 this.sqlgComparatorHolder.getComparators(),
                 this.sqlgRangeHolder,
                 SchemaTableTree.STEP_TYPE.GRAPH_STEP,
-                ReplacedStep.this.emit,
-                ReplacedStep.this.untilFirst,
-                ReplacedStep.this.leftJoin,
-                ReplacedStep.this.drop,
+                this.emit,
+                this.untilFirst,
+                this.leftJoin,
+                this.drop,
                 replacedStepDepth,
-                ReplacedStep.this.labels
+                this.labels
         );
-
+        schemaTableTree.setRestrictedProperties(getRestrictedProperties());
         result.add(schemaTableTree);
     }
 
+    @SuppressWarnings("unchecked")
     private boolean passesLabelHasContainers(SqlgGraph sqlgGraph, boolean isVertex, String table) {
         return this.labelHasContainers.stream().allMatch(h -> {
             BiPredicate biPredicate = h.getBiPredicate();
@@ -523,6 +550,7 @@ public class ReplacedStep<S, E> {
             if (predicateValue instanceof Collection) {
                 Collection<String> tableWithPrefixes = new ArrayList<>();
                 Collection<String> edgeTableWithoutSchemaAndPrefixes = new ArrayList<>();
+                @SuppressWarnings("unchecked")
                 Collection<String> predicateValues = (Collection<String>) predicateValue;
                 SchemaTable schemaTableWithOutPrefix = SchemaTable.from(sqlgGraph, table).withOutPrefix();
                 for (String value : predicateValues) {
@@ -566,6 +594,7 @@ public class ReplacedStep<S, E> {
         for (HasContainer idHasContainer : this.idHasContainers) {
 
             Map<SchemaTable, Boolean> newHasContainerMap = new HashMap<>();
+            @SuppressWarnings("unchecked")
             P<Object> idPredicate = (P<Object>) idHasContainer.getPredicate();
             BiPredicate biPredicate = idHasContainer.getBiPredicate();
             //This is statement is for g.V().hasId(Collection) where the logic is actually P.within not P.eq
@@ -575,6 +604,7 @@ public class ReplacedStep<S, E> {
             Multimap<BiPredicate, RecordId> biPredicateRecordIdMultimap;
             if (idPredicate.getValue() instanceof Collection) {
 
+                @SuppressWarnings("unchecked")
                 Collection<Object> ids = (Collection<Object>) idPredicate.getValue();
                 for (Object id : ids) {
                     RecordId recordId = RecordId.from(id);
@@ -630,6 +660,7 @@ public class ReplacedStep<S, E> {
         return drop;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isJoinToLeftJoin() {
         return joinToLeftJoin;
     }
@@ -655,6 +686,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(BaseStrategy.SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate()), "Only " + BaseStrategy.SUPPORTED_ID_BI_PREDICATE.toString() + " is supported, found " + hasContainer.getBiPredicate().getClass().toString());
         Object rawId = hasContainer.getValue();
         if (rawId instanceof Collection) {
+            @SuppressWarnings("unchecked")
             Collection<Object> ids = (Collection<Object>) rawId;
             Set<String> idLabels = new HashSet<>();
             for (Object id : ids) {
@@ -679,7 +711,7 @@ public class ReplacedStep<S, E> {
                     Object previousHasContainerLabels = this.labelHasContainers.get(this.labelHasContainers.size() - 1).getValue();
                     List<String> mergedLabels;
                     if (previousHasContainerLabels instanceof Collection) {
-                        Collection<String> labels = (Collection<String>) previousHasContainerLabels;
+                        @SuppressWarnings("unchecked") Collection<String> labels = (Collection<String>) previousHasContainerLabels;
                         mergedLabels = new ArrayList<>(labels);
                     } else {
                         String label = (String) previousHasContainerLabels;
@@ -709,7 +741,7 @@ public class ReplacedStep<S, E> {
                     Object previousHasContainerLabels = this.labelHasContainers.get(this.labelHasContainers.size() - 1).getValue();
                     List<String> mergedLabels;
                     if (previousHasContainerLabels instanceof Collection) {
-                        Collection<String> labels = (Collection<String>) previousHasContainerLabels;
+                        @SuppressWarnings("unchecked") Collection<String> labels = (Collection<String>) previousHasContainerLabels;
                         mergedLabels = new ArrayList<>(labels);
                     } else {
                         String label = (String) previousHasContainerLabels;
@@ -770,7 +802,23 @@ public class ReplacedStep<S, E> {
         this.joinToLeftJoin = true;
     }
 
-    public void markAsDrop(List<EventCallback<Event>> mutatingCallbacks) {
+    public void markAsDrop() {
         this.drop = true;
+    }
+
+	public Set<String> getRestrictedProperties() {
+		return restrictedProperties;
+	}
+
+	public void setRestrictedProperties(Set<String> restrictedColumns) {
+		this.restrictedProperties = restrictedColumns;
+	}
+
+    public void markForSqlgSchema() {
+        this.isForSqlgSchema = true;
+    }
+
+    public void markForGuiSchema() {
+        this.isForGuiSchema = true;
     }
 }

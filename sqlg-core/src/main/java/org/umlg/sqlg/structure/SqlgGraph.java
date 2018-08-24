@@ -1,9 +1,9 @@
 package org.umlg.sqlg.structure;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -41,8 +41,6 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 import static org.apache.tinkerpop.gremlin.structure.Graph.OptIn;
 import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 
@@ -53,17 +51,17 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
-@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
         method = "shouldGenerateCorrectTraversers",
         reason = "Tests assumes traversers.")
-@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IncidentToAdjacentStrategyProcessTest",
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IncidentToAdjacentStrategyProcessTest",
         method = "shouldGenerateCorrectTraversers",
         reason = "Tests assumes traversers.")
 //Start remove these for 3.2.6
-@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
         method = "shouldDetachVertexPropertyWhenRemoved",
         reason = "Tests assumes elements are auto synchronized.")
-@OptOut( test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
         method = "shouldDetachVertexPropertyWhenRemoved",
         reason = "Tests assumes elements are auto synchronized.")
 @OptOut(
@@ -189,46 +187,48 @@ public class SqlgGraph implements Graph {
 
     public static final String JDBC_URL = "jdbc.url";
     public static final String DISTRIBUTED = "distributed";
-    public static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
-    public static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
+    private static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
+    private static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
     private final SqlgDataSource sqlgDataSource;
-    private static Logger logger = LoggerFactory.getLogger(SqlgGraph.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgGraph.class);
     private final SqlgTransaction sqlgTransaction;
     private Topology topology;
     private GremlinParser gremlinParser;
     private SqlDialect sqlDialect;
     private String jdbcUrl;
-    private ObjectMapper mapper = new ObjectMapper();
-//    private boolean implementForeignKeys;
-    private Configuration configuration = new BaseConfiguration();
+    private final ObjectMapper mapper = new ObjectMapper();
+    private Configuration configuration;
     private final ISqlGFeatures features = new SqlGFeatures();
 
     /**
      * the build version of sqlg
      */
     private String buildVersion;
-    
+
     //This has some static suckness
     static {
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
-                .addStrategies(
-                        new SqlgGraphStepStrategy(),
-                        new SqlgVertexStepStrategy(),
-                        new SqlgLocalStepStrategy(),
-                        new SqlgWhereStrategy(),
-                        new SqlgRepeatStepStrategy(),
-                        new SqlgOptionalStepStrategy(),
-                        new SqlgChooseStepStrategy(),
-                        new SqlgTraversalFilterStepStrategy<>(),
-                        new SqlgWhereTraversalStepStrategy(),
-                        new SqlgOrStepStepStrategy(),
-                        new SqlgAndStepStepStrategy(),
-                        new SqlgNotStepStepStrategy(),
-                        new SqlgHasStepStrategy(),
-                        new SqlgDropStepStrategy(),
-                        TopologyStrategy.build().create())
-                .removeStrategies(
-                        PathRetractionStrategy.class)
+        //noinspection unchecked
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class,
+                TraversalStrategies.GlobalCache.getStrategies(Graph.class)
+                        .addStrategies(
+                                new SqlgGraphStepStrategy(),
+                                new SqlgVertexStepStrategy(),
+                                new SqlgLocalStepStrategy(),
+                                new SqlgWhereStrategy(),
+                                new SqlgRepeatStepStrategy(),
+                                new SqlgOptionalStepStrategy(),
+                                new SqlgChooseStepStrategy(),
+                                new SqlgTraversalFilterStepStrategy<>(),
+                                new SqlgWhereTraversalStepStrategy(),
+                                new SqlgOrStepStepStrategy(),
+                                new SqlgAndStepStepStrategy(),
+                                new SqlgNotStepStepStrategy(),
+                                new SqlgHasStepStrategy(),
+                                new SqlgDropStepStrategy(),
+                                new SqlgRestrictPropertiesStrategy(),
+                                TopologyStrategy.build().create())
+                        .removeStrategies(
+                                PathRetractionStrategy.class)
         );
     }
 
@@ -236,7 +236,8 @@ public class SqlgGraph implements Graph {
         return open(configuration, createDataSourceFactory(configuration));
     }
 
-    public static <G extends Graph> G open(final Configuration configuration, SqlgDataSourceFactory dataSourceFactory) {
+    @SuppressWarnings("unchecked")
+    private static <G extends Graph> G open(final Configuration configuration, SqlgDataSourceFactory dataSourceFactory) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
         if (!configuration.containsKey(JDBC_URL))
@@ -245,7 +246,7 @@ public class SqlgGraph implements Graph {
         SqlgGraph sqlgGraph = new SqlgGraph(configuration, dataSourceFactory);
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
-        sqlgGraph.buildVersion=sqlgStartupManager.getBuildVersion();
+        sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
         return (G) sqlgGraph;
     }
 
@@ -270,9 +271,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgGraph(final Configuration configuration, SqlgDataSourceFactory dataSourceFactory) {
-//        this.implementForeignKeys = configuration.getBoolean("implement.foreign.keys", true);
         this.configuration = configuration;
-
         try {
             this.jdbcUrl = this.configuration.getString(JDBC_URL);
 
@@ -299,18 +298,20 @@ public class SqlgGraph implements Graph {
             try (Connection conn = this.getConnection()) {
                 //This is used by Hsqldb to set the transaction semantics. MVCC and cache
                 this.sqlDialect.prepareDB(conn);
+            } catch (Exception e) {
+                //swallow
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
-        
+
         // read fetch size from configuration, use default as specified in the dialect
         // this can be very useful for Postgres since according to < https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor>
         // Postgres JDBC will load the whole result in memory
         // so if there are massive queries, setting the fetch size will avoid out of memory errors
         this.sqlgTransaction.setDefaultFetchSize(this.configuration.getInteger("fetch.size", this.sqlDialect.getDefaultFetchSize()));
-        
+
         this.tx().readWrite();
         //Instantiating Topology will create the 'public' schema if it does not exist.
         this.topology = new Topology(this);
@@ -349,11 +350,11 @@ public class SqlgGraph implements Graph {
     }
 
     public GraphTraversalSource topology() {
-        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(this.getTopology().getSqlgSchemaAbstractLabels()).create());
+        return this.traversal().withStrategies(TopologyStrategy.build().sqlgSchema().create());
     }
 
     public GraphTraversalSource globalUniqueIndexes() {
-        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(this.getTopology().getGlobalUniqueIndexes()).create());
+        return this.traversal().withStrategies(TopologyStrategy.build().globallyUniqueIndexes().create());
     }
 
     @Override
@@ -381,12 +382,15 @@ public class SqlgGraph implements Graph {
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
             SchemaTable schemaTablePair = SchemaTable.from(this, label);
             this.tx().readWrite();
-            this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
+            VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
+            if (!vertexLabel.hasIDPrimaryKey()) {
+                Preconditions.checkArgument(columns.keySet().containsAll(vertexLabel.getIdentifiers()), "identifiers must be present %s", vertexLabel.getIdentifiers());
+            }
             return new SqlgVertex(this, false, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
         }
     }
 
-    public Vertex addTemporaryVertex(Object... keyValues) {
+    public void addTemporaryVertex(Object... keyValues) {
         if (this.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode(String.format("Transaction is in %s, use streamVertex(Object ... keyValues)", this.tx().getBatchModeType().toString()));
         }
@@ -396,7 +400,7 @@ public class SqlgGraph implements Graph {
         final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
         this.getTopology().ensureTemporaryVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
-        return new SqlgVertex(this, true, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
+        new SqlgVertex(this, true, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
     }
 
     public void streamVertex(String label) {
@@ -430,14 +434,14 @@ public class SqlgGraph implements Graph {
         streamTemporaryVertex(keyValues1);
     }
 
-    public void streamTemporaryVertex(Object... keyValues) {
+    private void streamTemporaryVertex(Object... keyValues) {
         if (!this.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + this.tx().getBatchModeType().toString() + MODE_FOR_STREAM_VERTEX);
         }
         internalStreamTemporaryVertex(keyValues);
     }
 
-    private SqlgVertex internalStreamTemporaryVertex(Object... keyValues) {
+    private void internalStreamTemporaryVertex(Object... keyValues) {
         Preconditions.checkState(this.sqlDialect.supportsBatchMode());
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);
@@ -452,11 +456,11 @@ public class SqlgGraph implements Graph {
         final Map<String, PropertyType> columns = keyValuesTriple.getLeft();
         this.tx().readWrite();
         this.getTopology().ensureTemporaryVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-        return new SqlgVertex(this, schemaTablePair.getTable(), allKeyValueMap);
+        new SqlgVertex(this, schemaTablePair.getTable(), allKeyValueMap);
     }
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
-        Preconditions.checkState(this.sqlDialect.supportsStreamingBatchMode());
+        Preconditions.checkState(this.sqlDialect.supportsStreamingBatchMode(), "Streaming batch mode is not supported.");
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);
 
@@ -519,6 +523,7 @@ public class SqlgGraph implements Graph {
         return createElementIterator(Edge.class, edgeIds);
     }
 
+    @SuppressWarnings("unchecked")
     private <T extends Element> Iterator<T> createElementIterator(final Class<T> clazz, final Object... ids) {
         if (0 == ids.length) {
             return (Iterator<T>) elements(Vertex.class.isAssignableFrom(clazz), Collections.EMPTY_LIST).iterator();
@@ -534,7 +539,7 @@ public class SqlgGraph implements Graph {
                 if (!Stream.of(ids).map(Object::getClass).allMatch(firstClass::equals))
                     throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
 
-                List<RecordId> recordIds = RecordId.from(ids);
+                List<RecordId> recordIds = RecordId.from(this, ids);
                 Iterable<T> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);
                 return elementIterable.iterator();
             }
@@ -552,7 +557,7 @@ public class SqlgGraph implements Graph {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         logger.debug(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
         if (this.tx().isOpen())
             this.tx().close();
@@ -560,6 +565,7 @@ public class SqlgGraph implements Graph {
         this.sqlgDataSource.close();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
         if (builder.requiresVersion(GryoVersion.V1_0) || builder.requiresVersion(GraphSONVersion.V1_0))
@@ -572,14 +578,14 @@ public class SqlgGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty(JDBC_URL) + ")";
+        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty(JDBC_URL) + ")" + " (user = " + configuration.getString("jdbc.username") + ")";
     }
 
     public ISqlGFeatures features() {
         return this.features;
     }
 
-    public <T> T gis() {
+    public <X> X gis() {
         return this.getSqlDialect().getGis(this);
     }
 
@@ -629,7 +635,7 @@ public class SqlgGraph implements Graph {
             return getSqlDialect().supportsBatchMode();
         }
 
-        public class SqlVertexFeatures implements VertexFeatures {
+        class SqlVertexFeatures implements VertexFeatures {
 
             @Override
             @FeatureDescriptor(name = FEATURE_MULTI_PROPERTIES)
@@ -690,7 +696,7 @@ public class SqlgGraph implements Graph {
             }
         }
 
-        public class SqlEdgeFeatures implements EdgeFeatures {
+        class SqlEdgeFeatures implements EdgeFeatures {
 
             @Override
             @FeatureDescriptor(name = FEATURE_USER_SUPPLIED_IDS)
@@ -735,7 +741,7 @@ public class SqlgGraph implements Graph {
 
         }
 
-        public class SqlGVertexPropertyFeatures implements VertexPropertyFeatures {
+        class SqlGVertexPropertyFeatures implements VertexPropertyFeatures {
 
             @Override
             @FeatureDescriptor(name = FEATURE_REMOVE_PROPERTY)
@@ -860,7 +866,7 @@ public class SqlgGraph implements Graph {
 
         }
 
-        public class SqlEdgePropertyFeatures implements EdgePropertyFeatures {
+        class SqlEdgePropertyFeatures implements EdgePropertyFeatures {
 
             @Override
             @FeatureDescriptor(name = FEATURE_MAP_VALUES)
@@ -941,7 +947,7 @@ public class SqlgGraph implements Graph {
             }
         }
 
-        public class SqlVariableFeatures implements VariableFeatures {
+        class SqlVariableFeatures implements VariableFeatures {
 
             @Override
             @FeatureDescriptor(name = FEATURE_BOOLEAN_VALUES)
@@ -1090,8 +1096,8 @@ public class SqlgGraph implements Graph {
                 first = false;
                 dataNode.add(obj);
             }
-            result.put("data", dataNode);
-            result.put("meta", metaNode);
+            result.set("data", dataNode);
+            result.set("meta", metaNode);
             return result.toString();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -1131,7 +1137,7 @@ public class SqlgGraph implements Graph {
         Set<String> tables = this.getTopology().getAllTables().keySet();
         for (String table : tables) {
             SchemaTable schemaTable = SchemaTable.from(this, table);
-            if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
+            if (returnVertices == schemaTable.isVertexTable()) {
                 StringBuilder sql = new StringBuilder("SELECT COUNT(1) FROM ");
                 sql.append(getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                 sql.append(".");
@@ -1180,105 +1186,17 @@ public class SqlgGraph implements Graph {
         return null;
     }
 
-    private <T extends Element> Iterable<T> elements(boolean returnVertices, final List<RecordId> elementIds) {
-        List<T> sqlgElements = new ArrayList<>();
-        if (elementIds.size() > 0) {
-            Map<SchemaTable, List<Long>> distinctTableIdMap = RecordId.normalizeIds(elementIds);
-            for (Map.Entry<SchemaTable, List<Long>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
-                SchemaTable schemaTable = schemaTableListEntry.getKey();
-                String tableName = (returnVertices ? VERTEX_PREFIX : EDGE_PREFIX) + schemaTable.getTable();
-                if (this.getTopology().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
-                    List<Long> schemaTableIds = schemaTableListEntry.getValue();
-                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    String table = "";
-                    if (returnVertices) {
-                        table += VERTEX_PREFIX;
-                    } else {
-                        table += EDGE_PREFIX;
-                    }
-                    table += schemaTable.getTable();
-                    sql.append(this.sqlDialect.maybeWrapInQoutes(table));
-                    sql.append(" WHERE ");
-                    sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-                    sql.append(" IN (");
-                    int count = 1;
-                    for (Long id : schemaTableIds) {
-                        sql.append(id.toString());
-                        if (count++ < schemaTableIds.size()) {
-                            sql.append(",");
-                        }
-                    }
-                    sql.append(")");
-                    if (this.getSqlDialect().needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    Connection conn = this.tx().getConnection();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    try (Statement statement = conn.createStatement()) {
-                        statement.execute(sql.toString());
-                        ResultSet resultSet = statement.getResultSet();
-                        while (resultSet.next()) {
-                            long id = resultSet.getLong("ID");
-                            SqlgElement sqlgElement;
-                            if (returnVertices) {
-                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable());
-                            } else {
-                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable());
-                            }
-                            sqlgElement.loadResultSet(resultSet);
-                            sqlgElements.add((T) sqlgElement);
-                        }
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
+    @SuppressWarnings("unchecked")
+    private <X extends Element> Iterable<X> elements(boolean returnVertices, final List<RecordId> elementIds) {
+        if (returnVertices) {
+            return (Iterable<X>) this.traversal().V(elementIds).toList();
         } else {
-            //TODO use a union query
-            Set<String> tables = this.getTopology().getAllTables().keySet();
-            for (String table : tables) {
-                SchemaTable schemaTable = SchemaTable.from(this, table);
-                if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
-                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getTable()));
-                    if (this.getSqlDialect().needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    Connection conn = this.tx().getConnection();
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    try (Statement statement = conn.createStatement()) {
-                        statement.execute(sql.toString());
-                        ResultSet resultSet = statement.getResultSet();
-                        while (resultSet.next()) {
-                            long id = resultSet.getLong("ID");
-                            SqlgElement sqlgElement;
-                            if (returnVertices) {
-                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(VERTEX_PREFIX.length()));
-                            } else {
-                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(EDGE_PREFIX.length()));
-                            }
-                            sqlgElement.loadResultSet(resultSet);
-                            sqlgElements.add((T) sqlgElement);
-                        }
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
+            return (Iterable<X>) this.traversal().E(elementIds).toList();
         }
-        return sqlgElements;
     }
 
     public Connection getConnection() throws SQLException {
-    	return this.sqlgDataSource.getDatasource().getConnection();
+        return this.sqlgDataSource.getDatasource().getConnection();
     }
 
     public SqlgDataSource getSqlgDataSource() {
@@ -1287,10 +1205,11 @@ public class SqlgGraph implements Graph {
 
     /**
      * get the sqlg build version
+     *
      * @return the build version
      */
     public String getBuildVersion() {
-		return buildVersion;
-	}
-    
+        return buildVersion;
+    }
+
 }

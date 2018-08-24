@@ -10,8 +10,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +20,7 @@ import java.util.Map;
 public class TestGremlinCompileVertexStep extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -43,7 +41,7 @@ public class TestGremlinCompileVertexStep extends BaseTest {
     }
 
     private void testVertexStep_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1) {
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal)sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>)sqlgGraph.traversal()
                 .V(a1).as("a").local(__.out().as("b")).select("a", "b");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Map<String, Object>> t = traversal.toList();

@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource {
 
-    private static Logger logger = LoggerFactory.getLogger(C3P0DataSource.class);
+    private static final Logger logger = LoggerFactory.getLogger(C3P0DataSource.class);
 
     private final ComboPooledDataSource dss;
     private final String jdbcUrl;

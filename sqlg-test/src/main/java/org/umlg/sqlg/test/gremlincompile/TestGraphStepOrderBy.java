@@ -14,8 +14,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class TestGraphStepOrderBy extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -266,12 +264,12 @@ public class TestGraphStepOrderBy extends BaseTest {
         Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
         Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
         Vertex c3 = this.sqlgGraph.addVertex(T.label, "C");
-        Edge e1 = a1.addEdge("ab", b1, "order", 0);
-        Edge e2 = a1.addEdge("ab", b2, "order", 1);
-        Edge e3 = a1.addEdge("ab", b3, "order", 2);
-        Edge ec1 = a1.addEdge("ac", c1, "order", 3);
-        Edge ec2 = a1.addEdge("ac", c2, "order", 4);
-        Edge ec3 = a1.addEdge("ac", c3, "order", 5);
+        a1.addEdge("ab", b1, "order", 0);
+        a1.addEdge("ab", b2, "order", 1);
+        a1.addEdge("ab", b3, "order", 2);
+        a1.addEdge("ac", c1, "order", 3);
+        a1.addEdge("ac", c2, "order", 4);
+        a1.addEdge("ac", c3, "order", 5);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
@@ -291,6 +289,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(b1, vertices.get(5));
     }
 
+    @SuppressWarnings("Duplicates")
     @Test
     public void testSelectBeforeOrder() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
@@ -319,10 +318,10 @@ public class TestGraphStepOrderBy extends BaseTest {
 
     @Test
     public void testOrderByWithLambdaTraversal() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "age", 1, "name", "name1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "age", 5, "name", "name2");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "age", 10, "name", "name3");
-        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "age", 15, "name", "name4");
+        this.sqlgGraph.addVertex(T.label, "A", "age", 1, "name", "name1");
+        this.sqlgGraph.addVertex(T.label, "A", "age", 5, "name", "name2");
+        this.sqlgGraph.addVertex(T.label, "A", "age", 10, "name", "name3");
+        this.sqlgGraph.addVertex(T.label, "A", "age", 15, "name", "name4");
         this.sqlgGraph.tx().commit();
 
         List<String> names = this.sqlgGraph.traversal()
@@ -338,10 +337,10 @@ public class TestGraphStepOrderBy extends BaseTest {
 
     @Test
     public void testOrderByWithLambdaComparator() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "aabb");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aacc");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbcc");
-        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbdd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "aabb");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "aacc");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "bbcc");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "bbdd");
         this.sqlgGraph.tx().commit();
         List<String> names = this.sqlgGraph.traversal().V().order()
                 .<String>by("name", Comparator.comparing(a -> a.substring(1, 2)))
@@ -427,7 +426,7 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .out("created").as("b")
                 .order().by(Order.shuffle)
                 .select("a", "b");
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> defaultGraphTraversal = (DefaultGraphTraversal) traversal;
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> defaultGraphTraversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) traversal;
         System.out.println(defaultGraphTraversal.getStrategies());
         printTraversalForm(traversal);
         int counter = 0;

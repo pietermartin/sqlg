@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
  */
 public abstract class SqlgFilterStep<S> extends SqlgAbstractStep<S, S> {
 
-    public SqlgFilterStep(final Traversal.Admin traversal) {
+    protected SqlgFilterStep(final Traversal.Admin traversal) {
         super(traversal);
     }
 

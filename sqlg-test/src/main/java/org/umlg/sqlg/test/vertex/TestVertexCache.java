@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.vertex;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -8,12 +9,14 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Date: 2014/10/04
@@ -22,7 +25,7 @@ import java.util.List;
 public class TestVertexCache extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
@@ -85,6 +88,30 @@ public class TestVertexCache extends BaseTest {
     @Test
     public void testMultipleReferencesToSameVertex() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("john", v1.value("name"));
+        //_v1 is in the transaction cache
+        //v1 is not
+        Vertex _v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        Assert.assertEquals("john", _v1.value("name"));
+        v1.property("name", "john1");
+        Assert.assertEquals("john1", v1.value("name"));
+        Assert.assertEquals("john1", _v1.value("name"));
+    }
+
+    @Test
+    public void testMultipleReferencesToSameVertexUserSuppliedPK() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist(
+                        "Person",
+                        new HashMap<String, PropertyType>() {{
+                            put("uid1", PropertyType.varChar(100));
+                            put("uid2", PropertyType.varChar(100));
+                            put("name", PropertyType.STRING);
+                        }},
+                        ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                );
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
         Assert.assertEquals("john", v1.value("name"));
         //_v1 is in the transaction cache

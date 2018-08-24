@@ -16,24 +16,23 @@ import java.util.*;
  */
 public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
 
-    protected Set<String> labels = new LinkedHashSet<>();
-    protected String id = Traverser.Admin.HALT;
-    protected Traversal.Admin traversal;
+    Set<String> labels = new LinkedHashSet<>();
+    private String id = Traverser.Admin.HALT;
+    private Traversal.Admin<?, ?> traversal;
     protected SqlgExpandableStepIterator<S> starts;
-    protected Traverser.Admin<E> nextEnd = null;
-    protected boolean traverserStepIdAndLabelsSetByChild = false;
+    private Traverser.Admin<E> nextEnd = null;
+    boolean traverserStepIdAndLabelsSetByChild = false;
 
-    protected Step<?, S> previousStep = EmptyStep.instance();
-    protected Step<E, ?> nextStep = EmptyStep.instance();
+    private Step<?, S> previousStep = EmptyStep.instance();
+    private Step<E, ?> nextStep = EmptyStep.instance();
 
-    public SqlgAbstractStep(final Traversal.Admin traversal) {
+    protected SqlgAbstractStep(final Traversal.Admin traversal) {
         this.traversal = traversal;
         this.starts = new SqlgExpandableStepIterator<>(this);
     }
 
     @Override
     public void setId(final String id) {
-        Objects.nonNull(id);
         this.id = id;
     }
 
@@ -131,9 +130,10 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <A, B> Traversal.Admin<A, B> getTraversal() {
-        return this.traversal;
+        return (Traversal.Admin<A, B>) this.traversal;
     }
 
     @Override
@@ -149,7 +149,7 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
     }
 
     @Override
-    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "unchecked"})
     public SqlgAbstractStep<S, E> clone() {
         try {
             final SqlgAbstractStep<S, E> clone = (SqlgAbstractStep<S, E>) super.clone();
@@ -180,7 +180,7 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
         return result;
     }
 
-    private final Traverser.Admin<E> prepareTraversalForNextStep(final Traverser.Admin<E> traverser) {
+    private Traverser.Admin<E> prepareTraversalForNextStep(final Traverser.Admin<E> traverser) {
         if (!this.traverserStepIdAndLabelsSetByChild) {
             traverser.setStepId(this.nextStep.getId());
             traverser.addLabels(this.labels);

@@ -5,19 +5,18 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.*;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2016/05/22
@@ -26,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class TestBatchNormalPrimitive extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -99,7 +98,6 @@ public class TestBatchNormalPrimitive extends BaseTest {
         Set<Boolean> vertexNameSet = new HashSet<>();
         for (int i = 0; i < 10; i++) {
             Boolean b = i % 2 == 0;
-            ;
             vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", new Boolean(b)));
             vertexNameSet.add(new Boolean(b));
         }
@@ -180,7 +178,6 @@ public class TestBatchNormalPrimitive extends BaseTest {
         boolean[] edgeNameArray = new boolean[10];
         for (int i = 0; i < 10; i++) {
             boolean b = i % 2 == 0;
-            ;
             Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "A");
             vertex1.addEdge("test", vertex2, "name", b);

@@ -41,7 +41,7 @@ public class TestEdgeCache extends BaseTest {
     }
 
     @Test
-    public void testMultipleEdgesFromSameVertex() throws Exception {
+    public void testMultipleEdgesFromSameVertex() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "mike");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");

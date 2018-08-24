@@ -41,11 +41,11 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
         if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
             sqlgGraph.tx().flush();
         }
-        List<Step<?,?>> steps = new ArrayList(traversal.asAdmin().getSteps());
+        @SuppressWarnings("unchecked") List<Step<?,?>> steps = new ArrayList(traversal.asAdmin().getSteps());
         ListIterator<Step<?,?>> stepIterator = steps.listIterator();
         // get all steps per label
         Map<String, Object> stepsByLabel=new HashMap<>();
-        stepIterator = steps.listIterator();
+//        stepIterator = steps.listIterator();
         Step<?,?> previous=null;
         int idx=0;
         while (stepIterator.hasNext()) {

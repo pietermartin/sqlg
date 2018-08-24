@@ -11,8 +11,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 public class TestColumnNameTranslation extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
@@ -85,7 +83,7 @@ public class TestColumnNameTranslation extends BaseTest {
         assertEquals(3, result.size());
         Object o1 = result.get(0).get("a");
         Assert.assertTrue(o1 instanceof List);
-        List<Vertex> ass = (List) o1;
+        @SuppressWarnings("unchecked") List<Vertex> ass = (List) o1;
         assertEquals(a1, ass.get(0));
         assertEquals("a1", ass.get(0).value("name"));
         assertEquals(b1, ass.get(1));
@@ -101,7 +99,7 @@ public class TestColumnNameTranslation extends BaseTest {
         Vertex b1 = g.addVertex(T.label, "B", "name", "b1");
         Vertex b2 = g.addVertex(T.label, "B", "name", "b2");
         Edge e1 = a1.addEdge("a_b", b1);
-        Edge e2 = a1.addEdge("a_b", b2);
+        a1.addEdge("a_b", b2);
         Vertex c1 = g.addVertex(T.label, "C", "name", "c1");
         Vertex c2 = g.addVertex(T.label, "C", "name", "c2");
         Vertex c3 = g.addVertex(T.label, "C", "name", "c3");
@@ -122,6 +120,7 @@ public class TestColumnNameTranslation extends BaseTest {
         testShortName_assert(g, a1, b1, e1, c1, c2, c3, bc1, bc2, bc3, d1, d2, d3, bd1, bd2, bd3);
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     private void testShortName_assert(Graph g, Vertex a1, Vertex b1, Edge e1, Vertex c1, Vertex c2, Vertex c3, Edge bc1, Edge bc2, Edge bc3, Vertex d1, Vertex d2, Vertex d3, Edge bd1, Edge bd2, Edge bd3) {
         List<Map<String, Object>> result = g.traversal().V(a1)
                 .outE("a_b").as("ab")
@@ -240,7 +239,7 @@ public class TestColumnNameTranslation extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "BBBBBBBBBBBBBBBBBBBBBBBBB");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "BBBBBBBBBBBBBBBBBBBBBBBBB");
         Edge e1 = a1.addEdge("aaaaaaaaaaaaaaaaaaaaaa_bbbbbbbbbbbbbbbbbbbb", b1);
-        Edge e2 = a1.addEdge("aaaaaaaaaaaaaaaaaaaaaa_bbbbbbbbbbbbbbbbbbbb", b2);
+        a1.addEdge("aaaaaaaaaaaaaaaaaaaaaa_bbbbbbbbbbbbbbbbbbbb", b2);
         Vertex c1 = this.sqlgGraph.addVertex(T.label, "CCCCCCCCCCCCCCCCCCCCCCCCC");
         Vertex c2 = this.sqlgGraph.addVertex(T.label, "CCCCCCCCCCCCCCCCCCCCCCCCC");
         Vertex c3 = this.sqlgGraph.addVertex(T.label, "CCCCCCCCCCCCCCCCCCCCCCCCC");

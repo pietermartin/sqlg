@@ -11,10 +11,7 @@ import java.sql.SQLException;
  */
 public class GeographyPolygon extends Polygon {
 
-    private Polygon polygon;
-
     public GeographyPolygon(Polygon polygon) {
-        this.polygon = polygon;
         this.srid = polygon.srid;
         this.haveMeasure = polygon.haveMeasure;
         this.dimension = polygon.dimension;

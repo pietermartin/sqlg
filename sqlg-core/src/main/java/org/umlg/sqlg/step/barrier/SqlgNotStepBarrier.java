@@ -7,10 +7,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgFilterStep;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -23,7 +25,7 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
     private boolean first = true;
     private List<Traverser.Admin<S>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<S>> resultIterator;
-    private Traversal.Admin<S, ?> notTraversal;
+    private final Traversal.Admin<S, ?> notTraversal;
 
     public SqlgNotStepBarrier(final Traversal.Admin traversal, final Traversal<S, ?> notTraversal) {
         super(traversal);
@@ -80,8 +82,7 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
             this.resultIterator = this.results.iterator();
         }
         if (this.resultIterator.hasNext()) {
-            Traverser.Admin<S> traverser = this.resultIterator.next();
-            return traverser;
+            return this.resultIterator.next();
         } else {
             //The standard TraversalFilterStep.filter calls TraversalUtil.test which normally resets the traversal for every incoming start.
             reset();
@@ -101,5 +102,15 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
         this.results = new ArrayList<>();
         this.resultIterator = null;
         this.notTraversal.reset();
+    }
+
+    @Override
+    public List<Traversal.Admin<S, ?>> getLocalChildren() {
+        return Collections.singletonList(this.notTraversal);
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, getLocalChildren());
     }
 }

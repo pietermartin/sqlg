@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.filter.and.barrier;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
@@ -13,10 +14,15 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.barrier.SqlgAndStepBarrier;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -25,7 +31,7 @@ import java.util.List;
 public class TestAndStepBarrier extends BaseTest {
 
     @Test
-    public void shouldFilterEdgeCriterion() throws Exception {
+    public void shouldFilterEdgeCriterion() {
         loadModern();
         final Traversal<Edge, ?> edgeCriterion = __.or(
                 __.has("weight", 1.0d).hasLabel("knows"), // 8
@@ -34,7 +40,7 @@ public class TestAndStepBarrier extends BaseTest {
         );
 
         GraphTraversalSource g = this.sqlgGraph.traversal();
-        final SubgraphStrategy strategy = SubgraphStrategy.build().edgeCriterion(edgeCriterion).create();
+        final SubgraphStrategy strategy = SubgraphStrategy.build().edges(edgeCriterion).create();
         final GraphTraversalSource sg = g.withStrategies(strategy);
 
         // all vertices are here
@@ -172,6 +178,75 @@ public class TestAndStepBarrier extends BaseTest {
         Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
         a3.addEdge("abbb", b3);
 
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
+                __.out("ab"),
+                __.out("abb")
+        );
+        printTraversalForm(traversal);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(a1));
+
+        List<SqlgAndStepBarrier> sqlgAndStepBarriers = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgAndStepBarrier.class, traversal);
+        Assert.assertEquals(1, sqlgAndStepBarriers.size());
+    }
+
+    @Test
+    public void testAndStepBarrierWithUserSuppliedID() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist(
+                "A",
+                new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("country", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
+        VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist(
+                "B",
+                new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("country", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("country", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
+        aVertexLabel.ensureEdgeLabelExist(
+                "abb",
+                bVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("country", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
+        aVertexLabel.ensureEdgeLabelExist(
+                "abbb",
+                bVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("country", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "country", "SA");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "country", "SA");
+        a1.addEdge("ab", b1 , "uid", UUID.randomUUID().toString(), "country", "SA");
+        a1.addEdge("abb", b1, "uid", UUID.randomUUID().toString(), "country", "SA");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "country", "SA");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "country", "SA");
+        a2.addEdge("abb", b2, "uid", UUID.randomUUID().toString(), "country", "SA");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "country", "SA");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "country", "SA");
+        a3.addEdge("abbb", b3, "uid", UUID.randomUUID().toString(), "country", "SA");
+
+        this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").and(
                 __.out("ab"),

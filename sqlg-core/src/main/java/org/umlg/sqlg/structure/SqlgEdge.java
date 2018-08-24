@@ -1,15 +1,18 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.sql.parse.ColumnList;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -23,7 +26,7 @@ import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
  */
 public class SqlgEdge extends SqlgElement implements Edge {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgEdge.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgEdge.class);
     private SqlgVertex inVertex;
     private SqlgVertex outVertex;
 
@@ -38,7 +41,15 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * @param outVertex       The edge's out vertex.
      * @param keyValueMapPair A pair of properties of the edge. Left contains all the properties and right the null valued properties.
      */
-    public SqlgEdge(SqlgGraph sqlgGraph, boolean streaming, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+    public SqlgEdge(
+            SqlgGraph sqlgGraph,
+            boolean streaming,
+            String schema,
+            String table,
+            SqlgVertex inVertex,
+            SqlgVertex outVertex,
+            Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+
         super(sqlgGraph, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
@@ -65,6 +76,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         super(sqlgGraph, id, schema, table);
     }
 
+    public SqlgEdge(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
+        super(sqlgGraph, identifiers, schema, table);
+    }
+
     private Iterator<Vertex> internalGetVertices(Direction direction) {
         final List<Vertex> vertices = new ArrayList<>();
         if (direction.equals(Direction.OUT) || direction.equals(Direction.BOTH))
@@ -78,7 +93,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     public void remove() {
         this.sqlgGraph.tx().readWrite();
         if (this.removed)
-            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+            throw new IllegalStateException(String.format("Edge with id %s was removed.", id().toString()));
 
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeEdge(this.schema, this.table, this);
@@ -136,12 +151,18 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
         Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = null;
-        if (!keyValueMap.isEmpty()) {
-            propertyColumns = this.sqlgGraph.getTopology()
-                    .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                    .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found in schema %s", this.table, this.schema)))
-                    .getProperties();
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology()
+                .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found in schema %s", this.table, this.schema)));
+        VertexLabel inVertexLabel = this.sqlgGraph.getTopology()
+                .getSchema(inVertex.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", inVertex.getSchema())))
+                .getVertexLabel(inVertex.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found in schema %s", inVertex.getTable(), inVertex.getSchema())));
+        VertexLabel outVertexLabel = this.sqlgGraph.getTopology()
+                .getSchema(outVertex.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", outVertex.getSchema())))
+                .getVertexLabel(outVertex.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found in schema %s", outVertex.getTable(), outVertex.getSchema())));
 
+        if (!keyValueMap.isEmpty()) {
+            propertyColumns = edgeLabel.getProperties();
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
                 PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
@@ -153,15 +174,57 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + Topology.IN_VERTEX_COLUMN_END));
+        if (inVertexLabel.getIdentifiers().isEmpty()) {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + Topology.IN_VERTEX_COLUMN_END));
+        } else {
+            int i = 1;
+            for (String identifier : inVertexLabel.getIdentifiers()) {
+                if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                    i++;
+                } else {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                    if (outVertexLabel.isDistributed()) {
+                        if (i++ < inVertexLabel.getIdentifiers().size() - 1) {
+                            sql.append(", ");
+                        }
+                    } else {
+                        if (i++ < inVertexLabel.getIdentifiers().size()) {
+                            sql.append(", ");
+                        }
+                    }
+                }
+            }
+        }
         sql.append(", ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + Topology.OUT_VERTEX_COLUMN_END));
+        if (outVertexLabel.getIdentifiers().isEmpty()) {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + Topology.OUT_VERTEX_COLUMN_END));
+        } else {
+            int i = 1;
+            for (String identifier : outVertexLabel.getIdentifiers()) {
+                if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                    i++;
+                } else {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                    if (outVertexLabel.isDistributed()) {
+                        if (i++ < inVertexLabel.getIdentifiers().size() - 1) {
+                            sql.append(", ");
+                        }
+                    } else {
+                        if (i++ < inVertexLabel.getIdentifiers().size()) {
+                            sql.append(", ");
+                        }
+                    }
+                }
+            }
+        }
         sql.append(") VALUES (");
         writeColumnParameters(propertyTypeValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
-        sql.append("?, ?");
+        buildQuestionMark(sql, inVertexLabel);
+        sql.append(", ");
+        buildQuestionMark(sql, outVertexLabel);
         sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -173,18 +236,68 @@ public class SqlgEdge extends SqlgElement implements Edge {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
-            preparedStatement.setLong(i++, this.inVertex.recordId.getId());
-            preparedStatement.setLong(i, this.outVertex.recordId.getId());
+
+            if (inVertexLabel.getIdentifiers().isEmpty()) {
+                preparedStatement.setLong(i++, this.inVertex.recordId.sequenceId());
+            } else {
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    if (!inVertexLabel.isDistributed() || !inVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                        i = SqlgUtil.setKeyValueAsParameter(
+                                this.sqlgGraph,
+                                false,
+                                i,
+                                preparedStatement,
+                                ImmutablePair.of(inVertexLabel.getProperty(identifier).orElseThrow(() -> new IllegalStateException(String.format("identifier %s not a property.", identifier))).getPropertyType(), inVertex.value(identifier)));
+                    }
+                }
+            }
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                preparedStatement.setLong(i, this.outVertex.recordId.sequenceId());
+            } else {
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    if (!outVertexLabel.isDistributed() || !outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                        i = SqlgUtil.setKeyValueAsParameter(
+                                this.sqlgGraph,
+                                false,
+                                i,
+                                preparedStatement,
+                                ImmutablePair.of(outVertexLabel.getProperty(identifier).orElseThrow(() -> new IllegalStateException(String.format("identifier %s not a property.", identifier))).getPropertyType(), outVertex.value(identifier)));
+                    }
+                }
+            }
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
+            if (edgeLabel.hasIDPrimaryKey()) {
+                if (generatedKeys.next()) {
+                    this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
+                } else {
+                    throw new RuntimeException("Could not retrieve the id after an insert into " + Topology.VERTICES);
+                }
             } else {
-                throw new RuntimeException("Could not retrieve the id after an insert into " + Topology.VERTICES);
+                ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                for (String identifier : edgeLabel.getIdentifiers()) {
+                    //noinspection unchecked
+                    identifiers.add((Comparable<Object>) propertyTypeValueMap.get(identifier).getRight());
+                }
+                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             }
             if (!keyValueMap.isEmpty()) {
                 insertGlobalUniqueIndex(keyValueMap, propertyColumns);
             }
+        }
+    }
+
+    private void buildQuestionMark(StringBuilder sql, VertexLabel vertexLabel) {
+        if (vertexLabel.getIdentifiers().isEmpty()) {
+            sql.append("?");
+        } else {
+            for (String identifier : vertexLabel.getIdentifiers()) {
+                if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                    sql.append("?, ");
+                }
+            }
+            //remove the extra comma
+            sql.delete(sql.length() - 2, sql.length());
         }
     }
 
@@ -201,21 +314,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
             //Generate the columns to prevent 'ERROR: cached plan must not change result type" error'
             //This happens when the schema changes after the statement is prepared.
             @SuppressWarnings("OptionalGetWithoutIsPresent")
-            EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getSchema(this.schema).get().getEdgeLabel(this.table).get();
+            EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getSchema(this.schema).orElseThrow(()-> new IllegalStateException(String.format("Schema %s not found", this.schema))).getEdgeLabel(this.table).orElseThrow(()-> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)));
             StringBuilder sql = new StringBuilder("SELECT\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            for (PropertyColumn propertyColumn : edgeLabel.getProperties().values()) {
-                sql.append(", ");
-                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
-                // additional columns for time zone, etc.
-                String[] ps = propertyColumn.getPropertyType().getPostFixes();
-                if (ps != null) {
-                    for (String p : propertyColumn.getPropertyType().getPostFixes()) {
-                        sql.append(", ");
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName() + p));
-                    }
-                }
-            }
+            appendProperties(edgeLabel, sql);
             for (VertexLabel vertexLabel : edgeLabel.getOutVertexLabels()) {
                 sql.append(", ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
@@ -229,8 +331,21 @@ public class SqlgEdge extends SqlgElement implements Edge {
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + this.table));
             sql.append(" WHERE ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(" = ?");
+            //noinspection Duplicates
+            if (edgeLabel.hasIDPrimaryKey()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                sql.append(" = ?");
+            } else {
+                int count = 1;
+                for (String identifier : edgeLabel.getIdentifiers()) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    sql.append(" = ?");
+                    if (count++ < edgeLabel.getIdentifiers().size()) {
+                        sql.append(" AND ");
+                    }
+
+                }
+            }
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
@@ -239,7 +354,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, this.recordId.getId());
+                if (edgeLabel.hasIDPrimaryKey()) {
+                    preparedStatement.setLong(1, this.recordId.sequenceId());
+                } else {
+                    int count = 1;
+                    for (Comparable identifierValue : this.recordId.getIdentifiers()) {
+                        preparedStatement.setObject(count++, identifierValue);
+                    }
+                }
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
                     loadResultSet(resultSet);
@@ -250,20 +372,41 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    public void loadInVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
-        SchemaTable inVertexColumnName = SchemaTable.from(this.sqlgGraph, label);
+
+    public void loadInVertex(ResultSet resultSet, SchemaTable inVertexSchemaTable, int columnIdx) throws SQLException {
         Long inId = resultSet.getLong(columnIdx);
         if (!resultSet.wasNull()) {
-            this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+            this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexSchemaTable.getSchema(), inVertexSchemaTable.getTable());
         }
     }
 
-    public void loadOutVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
-        SchemaTable outVertexColumnName = SchemaTable.from(this.sqlgGraph, label);
+    public void loadInVertex(ResultSet resultSet, List<ColumnList.Column> inForeignKeyColumns) {
+        List<Comparable> identifiers = SqlgUtil.getValue(resultSet, inForeignKeyColumns);
+        ColumnList.Column column = inForeignKeyColumns.get(0);
+        this.inVertex = SqlgVertex.of(
+                this.sqlgGraph,
+                ListOrderedSet.listOrderedSet(identifiers),
+                column.getForeignSchemaTable().getSchema(),
+                column.getForeignSchemaTable().getTable()
+        );
+    }
+
+    public void loadOutVertex(ResultSet resultSet, SchemaTable outVertexSchemaTable, int columnIdx) throws SQLException {
         Long outId = resultSet.getLong(columnIdx);
         if (!resultSet.wasNull()) {
-            this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+            this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexSchemaTable.getSchema(), outVertexSchemaTable.getTable());
         }
+    }
+
+    public void loadOutVertex(ResultSet resultSet, List<ColumnList.Column> outForeignKeyColumns) {
+        List<Comparable> identifiers = SqlgUtil.getValue(resultSet, outForeignKeyColumns);
+        ColumnList.Column column = outForeignKeyColumns.get(0);
+        this.outVertex = SqlgVertex.of(
+                this.sqlgGraph,
+                ListOrderedSet.listOrderedSet(identifiers),
+                column.getForeignSchemaTable().getSchema(),
+                column.getForeignSchemaTable().getTable()
+        );
     }
 
     @Override
@@ -302,6 +445,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     @Override
     public <V> Iterator<Property<V>> properties(final String... propertyKeys) {
+        //noinspection unchecked
         return (Iterator) super.properties(propertyKeys);
     }
 
@@ -314,5 +458,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
     @Override
     public SchemaTable getSchemaTablePrefixed() {
         return SchemaTable.of(this.getSchema(), EDGE_PREFIX + this.getTable());
+    }
+
+    @Override
+    AbstractLabel getAbstractLabel(Schema schema) {
+        return schema.getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found.", this.table)));
     }
 }

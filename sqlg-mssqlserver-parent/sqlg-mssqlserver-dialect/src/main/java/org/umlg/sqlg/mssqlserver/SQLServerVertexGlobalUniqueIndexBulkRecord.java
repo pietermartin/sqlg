@@ -14,12 +14,12 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/08/06
  */
-public class SQLServerVertexGlobalUniqueIndexBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
+class SQLServerVertexGlobalUniqueIndexBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
 
-    private Iterator<Map.Entry<SqlgVertex, Map<String, Object>>> rowIter;
+    private final Iterator<Map.Entry<SqlgVertex, Map<String, Object>>> rowIter;
     private Map<String, Object> currentRow;
     private SqlgVertex currentVertex;
-    private PropertyColumn propertyColumn;
+    private final PropertyColumn propertyColumn;
 
     SQLServerVertexGlobalUniqueIndexBulkRecord(SQLServerBulkCopy bulkCopy,
                                                SqlgGraph sqlgGraph,
@@ -60,7 +60,7 @@ public class SQLServerVertexGlobalUniqueIndexBulkRecord extends SQLServerBaseCac
     }
 
     @Override
-    public Object[] getRowData() throws SQLServerException {
+    public Object[] getRowData() {
         List<Object> values = new ArrayList<>();
         Object value = this.currentRow.get(this.propertyColumn.getName());
         if (value == null) {
@@ -77,7 +77,7 @@ public class SQLServerVertexGlobalUniqueIndexBulkRecord extends SQLServerBaseCac
     }
 
     @Override
-    public boolean next() throws SQLServerException {
+    public boolean next() {
         if (this.rowIter.hasNext()) {
             Map.Entry<SqlgVertex, Map<String, Object>> entry = this.rowIter.next();
             this.currentRow = entry.getValue();

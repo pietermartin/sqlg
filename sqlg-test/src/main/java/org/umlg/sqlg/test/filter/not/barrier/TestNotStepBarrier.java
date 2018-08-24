@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.filter.not.barrier;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -8,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.step.barrier.SqlgNotStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -52,5 +54,10 @@ public class TestNotStepBarrier extends BaseTest {
         List<Step> steps = traversal.getSteps();
         Assert.assertEquals(2, steps.size());
         Assert.assertTrue(steps.get(1) instanceof SqlgNotStepBarrier);
+        SqlgNotStepBarrier sqlgNotStepBarrier = (SqlgNotStepBarrier) steps.get(1);
+        Assert.assertEquals(1, sqlgNotStepBarrier.getLocalChildren().size());
+        Traversal.Admin t = (Traversal.Admin) sqlgNotStepBarrier.getLocalChildren().get(0);
+        Assert.assertEquals(1, t.getSteps().size());
+        Assert.assertTrue(t.getSteps().get(0) instanceof SqlgVertexStep);
     }
 }

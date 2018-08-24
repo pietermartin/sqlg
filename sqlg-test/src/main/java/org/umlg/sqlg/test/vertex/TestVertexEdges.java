@@ -10,8 +10,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestVertexEdges extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws PropertyVetoException, IOException, ClassNotFoundException {
+    public static void beforeClass() {
         //This test only works on postgres.
         //it makes assumptions about iteration and query excution order.
 //        HSQLDB behaves differently.

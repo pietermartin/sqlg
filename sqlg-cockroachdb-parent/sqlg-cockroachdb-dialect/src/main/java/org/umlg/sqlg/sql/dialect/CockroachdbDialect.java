@@ -1,42 +1,12 @@
 package org.umlg.sqlg.sql.dialect;
 
-import static org.umlg.sqlg.structure.PropertyType.BOOLEAN_ARRAY;
-import static org.umlg.sqlg.structure.PropertyType.BYTE_ARRAY;
-import static org.umlg.sqlg.structure.PropertyType.SHORT_ARRAY;
-import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
-
-import java.io.IOException;
-import java.sql.Array;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Period;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
-
-import org.apache.commons.lang3.StringEscapeUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.postgresql.util.PGbytea;
@@ -44,19 +14,19 @@ import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgExceptions;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import java.io.IOException;
+import java.sql.*;
+import java.sql.Date;
+import java.time.*;
+import java.util.*;
+
+import static org.umlg.sqlg.structure.PropertyType.*;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -155,46 +125,46 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BYTE_ARRAY:
+        switch (propertyType.ordinal()) {
+            case BYTE_ARRAY_ORDINAL:
                 return "bytea";
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return "bytea";
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return "bool";
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 return "bool";
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return "smallint";
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return "smallint";
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return "integer";
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return "integer";
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return "bigint";
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return "bigint";
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 return "float";
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 return "float";
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return "float";
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return "float";
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return "varchar";
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 return "timestamptz";
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 return "date";
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 return "timetz";
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 return "timestamptz";
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 return "jsonb";
             default:
                 throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
@@ -213,57 +183,57 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     private void appendSqlValue(StringBuilder sql, Object value, PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
                     sql.append("null");
                 }
                 break;
-            case BYTE:
+            case BYTE_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
                     sql.append("null");
                 }
                 break;
-            case SHORT:
+            case SHORT_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
                     sql.append("null");
                 }
                 break;
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
                     sql.append("null");
                 }
                 break;
-            case LONG:
+            case LONG_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
                     sql.append("null");
                 }
                 break;
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
                     sql.append("null");
                 }
                 break;
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
                     sql.append("null");
                 }
                 break;
-            case STRING:
+            case STRING_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(value.toString().replace("'", "''"));
@@ -272,7 +242,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(value.toString());
@@ -281,7 +251,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(value.toString());
@@ -290,7 +260,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(shiftDST((LocalTime) value).toString());
@@ -299,7 +269,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 if (value != null) {
                     ZonedDateTime zonedDateTime = (ZonedDateTime) value;
                     LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
@@ -314,7 +284,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null,null");
                 }
                 break;
-            case DURATION:
+            case DURATION_ORDINAL:
                 if (value != null) {
                     Duration duration = (Duration) value;
                     sql.append("'");
@@ -327,7 +297,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null,null");
                 }
                 break;
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 if (value != null) {
                     Period period = (Period) value;
                     sql.append("'");
@@ -343,7 +313,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null,null,null");
                 }
                 break;
-            case JSON:
+            case JSON_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(value.toString().replace("'", "''"));
@@ -352,7 +322,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     boolean[] booleanArray = (boolean[]) value;
@@ -368,7 +338,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     Boolean[] BooleanArray = (Boolean[]) value;
@@ -384,7 +354,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(PGbytea.toPGString((byte[]) value).replace("'", "''"));
@@ -393,7 +363,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)).replace("'", "''"));
@@ -402,7 +372,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     short[] sortArray = (short[]) value;
@@ -418,7 +388,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     Short[] shortObjectArray = (Short[]) value;
@@ -434,7 +404,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     int[] intArray = (int[]) value;
@@ -450,7 +420,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     Integer[] integerArray = (Integer[]) value;
@@ -466,7 +436,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     Long[] longArray = (Long[]) value;
@@ -482,7 +452,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     long[] longPrimitiveArray = (long[]) value;
@@ -498,7 +468,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     Float[] floatArray = (Float[]) value;
@@ -514,7 +484,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     float[] floatPrimitiveArray = (float[]) value;
@@ -530,7 +500,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     Double[] doubleArray = (Double[]) value;
@@ -546,7 +516,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     double[] doublePrimitiveArray = (double[]) value;
@@ -562,7 +532,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("'{");
                     String[] stringArray = (String[]) value;
@@ -580,7 +550,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("ARRAY[");
                     LocalDateTime[] localDateTimeArray = (LocalDateTime[]) value;
@@ -598,7 +568,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("ARRAY[");
                     LocalDate[] localDateArray = (LocalDate[]) value;
@@ -616,7 +586,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("ARRAY[");
                     LocalTime[] localTimeArray = (LocalTime[]) value;
@@ -634,7 +604,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null");
                 }
                 break;
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("ARRAY[");
                     ZonedDateTime[] localZonedDateTimeArray = (ZonedDateTime[]) value;
@@ -667,7 +637,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null,null");
                 }
                 break;
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("ARRAY[");
                     Duration[] durationArray = (Duration[]) value;
@@ -696,7 +666,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null,null");
                 }
                 break;
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 if (value != null) {
                     sql.append("ARRAY[");
                     Period[] periodArray = (Period[]) value;
@@ -736,17 +706,17 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     sql.append("null,null,null");
                 }
                 break;
-            case POINT:
+            case POINT_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
-            case LINESTRING:
+            case LINESTRING_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
-            case POLYGON:
+            case POLYGON_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
-            case GEOGRAPHY_POINT:
+            case GEOGRAPHY_POINT_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
-            case GEOGRAPHY_POLYGON:
+            case GEOGRAPHY_POLYGON_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -754,135 +724,55 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     private void sqlCastArray(StringBuilder sql, PropertyType propertyType) {
-        switch (propertyType) {
-            case boolean_ARRAY:
+        switch (propertyType.ordinal()) {
+            case boolean_ARRAY_ORDINAL:
                 sql.append("::boolean[]");
                 break;
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 sql.append("::bytea");
                 break;
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 sql.append("::smallint[]");
                 break;
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 sql.append("::int[]");
                 break;
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 sql.append("::bigint[]");
                 break;
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 sql.append("::real[]");
                 break;
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 sql.append("::double precision[]");
                 break;
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 sql.append("::text[]");
                 break;
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 sql.append("::boolean[]");
                 break;
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 sql.append("::bytea");
                 break;
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 sql.append("::smallint[]");
                 break;
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 sql.append("::int[]");
                 break;
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 sql.append("::bigint[]");
                 break;
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 sql.append("::real[]");
                 break;
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 sql.append("::double precision[]");
                 break;
             default:
                 // noop
                 break;
-        }
-    }
-
-
-    private void dropForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-
-        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<String> foreignKeys = edgeForeignKey.getValue();
-            String[] schemaTableArray = edgeTable.split("\\.");
-
-            for (String foreignKey : foreignKeys) {
-                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
-
-                    Set<String> foreignKeyNames = getForeignKeyConstraintNames(sqlgGraph, schemaTableArray[0], schemaTableArray[1]);
-                    for (String foreignKeyName : foreignKeyNames) {
-
-                        StringBuilder sql = new StringBuilder();
-                        sql.append("ALTER TABLE ");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                        sql.append(".");
-                        sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                        sql.append(" DROP CONSTRAINT ");
-                        sql.append(maybeWrapInQoutes(foreignKeyName));
-                        if (needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        Connection conn = sqlgGraph.tx().getConnection();
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-
-    private void createForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
-
-        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
-            String edgeTable = edgeForeignKey.getKey();
-            Set<String> foreignKeys = edgeForeignKey.getValue();
-            for (String foreignKey : foreignKeys) {
-                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
-                    String[] schemaTableArray = edgeTable.split("\\.");
-                    StringBuilder sql = new StringBuilder();
-                    sql.append("ALTER TABLE ");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[0]));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(schemaTableArray[1]));
-                    sql.append(" ADD FOREIGN KEY (");
-                    sql.append(maybeWrapInQoutes(foreignKey));
-                    sql.append(") REFERENCES ");
-                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
-                    sql.append(" MATCH SIMPLE");
-                    if (needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    Connection conn = sqlgGraph.tx().getConnection();
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
         }
     }
 
@@ -914,8 +804,10 @@ public class CockroachdbDialect extends BaseSqlDialect {
             Connection conn = sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 count = 1;
+                if (true)
+                    throw new RuntimeException("handle ID");
                 for (Vertex vertexToDelete : subVertices) {
-                    preparedStatement.setLong(count++, ((RecordId) vertexToDelete.id()).getId());
+                    preparedStatement.setLong(count++, ((RecordId) vertexToDelete.id()).sequenceId());
                 }
                 int deleted = preparedStatement.executeUpdate();
                 if (logger.isDebugEnabled()) {
@@ -929,88 +821,88 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new String[]{"BOOLEAN"};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new String[]{"SMALLINT"};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new String[]{"INTEGER"};
-            case LONG:
+            case LONG_ORDINAL:
                 return new String[]{"BIGINT"};
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 return new String[]{"REAL"};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new String[]{"DOUBLE PRECISION"};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new String[]{"DATE"};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE"};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new String[]{"TIME WITH TIME ZONE"};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new String[]{"BIGINT", "INTEGER"};
-            case STRING:
+            case STRING_ORDINAL:
                 return new String[]{"TEXT"};
-            case JSON:
+            case JSON_ORDINAL:
                 return new String[]{"JSONB"};
-            case POINT:
+            case POINT_ORDINAL:
                 return new String[]{"geometry(POINT)"};
-            case LINESTRING:
+            case LINESTRING_ORDINAL:
                 return new String[]{"geometry(LINESTRING)"};
-            case POLYGON:
+            case POLYGON_ORDINAL:
                 return new String[]{"geometry(POLYGON)"};
-            case GEOGRAPHY_POINT:
+            case GEOGRAPHY_POINT_ORDINAL:
                 return new String[]{"geography(POINT, 4326)"};
-            case GEOGRAPHY_POLYGON:
+            case GEOGRAPHY_POLYGON_ORDINAL:
                 return new String[]{"geography(POLYGON, 4326)"};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new String[]{"BYTEA"};
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return new String[]{"BOOLEAN[]"};
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return new String[]{"SMALLINT[]"};
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return new String[]{"INTEGER[]"};
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return new String[]{"BIGINT[]"};
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 return new String[]{"REAL[]"};
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return new String[]{"DOUBLE PRECISION[]"};
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return new String[]{"TEXT[]"};
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE[]"};
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 return new String[]{"DATE[]"};
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 return new String[]{"TIME WITH TIME ZONE[]"};
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE[]", "TEXT[]"};
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 return new String[]{"BIGINT[]", "INTEGER[]"};
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 return new String[]{"INTEGER[]", "INTEGER[]", "INTEGER[]"};
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return new String[]{"INTEGER[]"};
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 return new String[]{"BOOLEAN[]"};
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new String[]{"BYTEA"};
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return new String[]{"SMALLINT[]"};
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return new String[]{"BIGINT[]"};
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 return new String[]{"REAL[]"};
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return new String[]{"DOUBLE PRECISION[]"};
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 return new String[]{"JSONB[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -1105,57 +997,57 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new int[]{Types.BOOLEAN};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new int[]{Types.SMALLINT};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new int[]{Types.INTEGER};
-            case LONG:
+            case LONG_ORDINAL:
                 return new int[]{Types.BIGINT};
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 return new int[]{Types.REAL};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new int[]{Types.DOUBLE};
-            case STRING:
+            case STRING_ORDINAL:
                 return new int[]{Types.CLOB};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new int[]{Types.DATE};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new int[]{Types.TIME};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new int[]{Types.BIGINT, Types.INTEGER};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case JSON:
+            case JSON_ORDINAL:
                 //TODO support other others like Geometry...
                 return new int[]{Types.OTHER};
-            case boolean_ARRAY:
-            case BOOLEAN_ARRAY:
-            case short_ARRAY:
-            case SHORT_ARRAY:
-            case int_ARRAY:
-            case INTEGER_ARRAY:
-            case long_ARRAY:
-            case LONG_ARRAY:
-            case float_ARRAY:
-            case FLOAT_ARRAY:
-            case double_ARRAY:
-            case DOUBLE_ARRAY:
-            case STRING_ARRAY:
+            case boolean_ARRAY_ORDINAL:
+            case BOOLEAN_ARRAY_ORDINAL:
+            case short_ARRAY_ORDINAL:
+            case SHORT_ARRAY_ORDINAL:
+            case int_ARRAY_ORDINAL:
+            case INTEGER_ARRAY_ORDINAL:
+            case long_ARRAY_ORDINAL:
+            case LONG_ARRAY_ORDINAL:
+            case float_ARRAY_ORDINAL:
+            case FLOAT_ARRAY_ORDINAL:
+            case double_ARRAY_ORDINAL:
+            case DOUBLE_ARRAY_ORDINAL:
+            case STRING_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY};
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY};
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -1302,9 +1194,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
         try {
             metadata = conn.getMetaData();
             String childCatalog = null;
-            String childSchemaPattern = foreignKeySchema;
-            String childTableNamePattern = foreignKeyTable;
-            ResultSet resultSet = metadata.getImportedKeys(childCatalog, childSchemaPattern, childTableNamePattern);
+            ResultSet resultSet = metadata.getImportedKeys(childCatalog, foreignKeySchema, foreignKeyTable);
             while (resultSet.next()) {
                 result.add(resultSet.getString("FK_NAME"));
             }
@@ -1375,8 +1265,8 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
-        switch (propertyType) {
-            case JSON:
+        switch (propertyType.ordinal()) {
+            case JSON_ORDINAL:
                 ObjectMapper objectMapper = new ObjectMapper();
                 try {
                     JsonNode jsonNode = objectMapper.readTree(((PGobject) o).getValue());
@@ -1385,7 +1275,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
                     throw new RuntimeException(e);
                 }
                 break;
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 Array array = (Array) o;
                 String arrayAsString = array.toString();
                 //remove the wrapping curly brackets
@@ -1650,8 +1540,8 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
-            switch (propertyType) {
-                case LOCALTIME_ARRAY:
+            switch (propertyType.ordinal()) {
+                case LOCALTIME_ARRAY_ORDINAL:
                     // shit DST for local time
                     if (data != null) {
                         int a = 0;
@@ -1660,23 +1550,23 @@ public class CockroachdbDialect extends BaseSqlDialect {
                         }
                     }
                     // fall through
-                case STRING_ARRAY:
-                case long_ARRAY:
-                case LONG_ARRAY:
-                case int_ARRAY:
-                case INTEGER_ARRAY:
-                case short_ARRAY:
-                case SHORT_ARRAY:
-                case float_ARRAY:
-                case FLOAT_ARRAY:
-                case double_ARRAY:
-                case DOUBLE_ARRAY:
-                case boolean_ARRAY:
-                case BOOLEAN_ARRAY:
-                case LOCALDATETIME_ARRAY:
-                case LOCALDATE_ARRAY:
-                case ZONEDDATETIME_ARRAY:
-                case JSON_ARRAY:
+                case STRING_ARRAY_ORDINAL:
+                case long_ARRAY_ORDINAL:
+                case LONG_ARRAY_ORDINAL:
+                case int_ARRAY_ORDINAL:
+                case INTEGER_ARRAY_ORDINAL:
+                case short_ARRAY_ORDINAL:
+                case SHORT_ARRAY_ORDINAL:
+                case float_ARRAY_ORDINAL:
+                case FLOAT_ARRAY_ORDINAL:
+                case double_ARRAY_ORDINAL:
+                case DOUBLE_ARRAY_ORDINAL:
+                case boolean_ARRAY_ORDINAL:
+                case BOOLEAN_ARRAY_ORDINAL:
+                case LOCALDATETIME_ARRAY_ORDINAL:
+                case LOCALDATE_ARRAY_ORDINAL:
+                case ZONEDDATETIME_ARRAY_ORDINAL:
+                case JSON_ARRAY_ORDINAL:
                     return conn.createArrayOf(getArrayDriverType(propertyType), data);
                 default:
                     throw new IllegalStateException("Unhandled array type " + propertyType.name());
@@ -1688,43 +1578,43 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     @Override
     public Object convertArray(PropertyType propertyType, Array array) throws SQLException {
-        switch (propertyType) {
-            case BOOLEAN_ARRAY:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ARRAY_ORDINAL:
                 return array.getArray();
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return array.getArray();
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return array.getArray();
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return array.getArray();
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 return array.getArray();
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return array.getArray();
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 Timestamp[] timestamps = (Timestamp[]) array.getArray();
                 return SqlgUtil.copyToLocalDateTime(timestamps, new LocalDateTime[timestamps.length]);
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 Date[] dates = (Date[]) array.getArray();
                 return SqlgUtil.copyToLocalDate(dates, new LocalDate[dates.length]);
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 Time[] times = (Time[]) array.getArray();
                 return SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 String arrayAsString = array.toString();
                 //remove the wrapping curly brackets
                 arrayAsString = arrayAsString.substring(1);

@@ -28,6 +28,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/09/28
  */
+@SuppressWarnings("unchecked")
 public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> implements TraversalParent, Scoping, PathProcessor {
 
     private Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
@@ -35,7 +36,7 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
     private Iterator<Traverser.Admin<S>> resultIterator;
     private boolean first = true;
     private Traversal.Admin<?, ?> whereTraversal;
-    private Set<String> scopeKeys = new HashSet<>();
+    private final Set<String> scopeKeys;
     private Set<String> keepLabels;
     private SqlgWhereEndStep sqlgWhereEndStep;
 
@@ -227,7 +228,7 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
 
         private String selectKey;
 
-        public SqlgWhereStartStep(final Traversal.Admin traversal, final String selectKey) {
+        SqlgWhereStartStep(final Traversal.Admin traversal, final String selectKey) {
             super(traversal);
             this.selectKey = selectKey;
         }
@@ -260,24 +261,20 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
             return null == this.selectKey ? Collections.emptySet() : Collections.singleton(this.selectKey);
         }
 
-        @Override
-        public void reset() {
-            super.reset();
-        }
     }
 
     public class SqlgWhereEndStep extends SqlgFilterStep<Object> implements Scoping {
 
         private final String matchKey;
         private Object matchValue = null;
-        private Map<Traverser.Admin<?>, Object> startValueMap = new HashMap<>();
+        private final Map<Traverser.Admin<?>, Object> startValueMap = new HashMap<>();
 
-        public SqlgWhereEndStep(final Traversal.Admin traversal, final String matchKey) {
+        SqlgWhereEndStep(final Traversal.Admin traversal, final String matchKey) {
             super(traversal);
             this.matchKey = matchKey;
         }
 
-        public void processStartTraverser(final Traverser.Admin traverser) {
+        void processStartTraverser(final Traverser.Admin traverser) {
             if (null != this.matchKey) {
                 this.matchValue = this.getScopeValue(Pop.last, this.matchKey, traverser);
                 this.startValueMap.put(traverser, this.matchValue);

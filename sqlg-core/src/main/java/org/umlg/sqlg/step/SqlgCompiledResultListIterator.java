@@ -10,11 +10,11 @@ import java.util.ListIterator;
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/04/27
  */
-public class SqlgCompiledResultListIterator<E> implements ListIterator<E> {
+class SqlgCompiledResultListIterator<E> implements ListIterator<E> {
 
     
-    private List<E> internalList = new ArrayList<>();
-    private ListIterator<E> internalListIterator;
+    private final List<E> internalList = new ArrayList<>();
+    private final ListIterator<E> internalListIterator;
 
     public SqlgCompiledResultListIterator(SqlgCompiledResultIterator<E> sqlgCompiledResultIterator) {
         sqlgCompiledResultIterator.forEachRemaining(e -> this.internalList.add(e));

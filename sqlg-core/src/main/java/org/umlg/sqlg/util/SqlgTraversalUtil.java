@@ -16,7 +16,7 @@ import java.util.function.Predicate;
  */
 public class SqlgTraversalUtil {
 
-    public static final <S, E> boolean test(final Traverser.Admin<S> traverser, final Traversal.Admin<S, E> traversal) {
+    public static <S, E> boolean test(final Traverser.Admin<S> traverser, final Traversal.Admin<S, E> traversal) {
         final Traverser.Admin<S> split = traverser.split();
         split.setSideEffects(traversal.getSideEffects());
         split.setBulk(1l);
@@ -50,7 +50,7 @@ public class SqlgTraversalUtil {
         return false;
     }
 
-    public static boolean anyStepRecursively(final Predicate<Step> predicate, final TraversalParent step) {
+    private static boolean anyStepRecursively(final Predicate<Step> predicate, final TraversalParent step) {
         for (final Traversal.Admin<?, ?> localChild : step.getLocalChildren()) {
             if (anyStepRecursively(predicate, localChild)) return true;
         }

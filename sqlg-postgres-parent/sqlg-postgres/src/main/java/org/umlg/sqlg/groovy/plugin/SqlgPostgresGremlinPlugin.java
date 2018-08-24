@@ -46,7 +46,7 @@ public class SqlgPostgresGremlinPlugin extends AbstractGremlinPlugin {
 
     private static final SqlgPostgresGremlinPlugin instance = new SqlgPostgresGremlinPlugin();
 
-    public SqlgPostgresGremlinPlugin() {
+    private SqlgPostgresGremlinPlugin() {
         super(NAME, imports);
     }
 

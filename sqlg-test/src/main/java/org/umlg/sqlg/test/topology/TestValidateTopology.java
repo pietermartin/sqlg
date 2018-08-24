@@ -6,12 +6,12 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -28,7 +28,7 @@ import static org.junit.Assert.fail;
 public class TestValidateTopology extends BaseTest {
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
@@ -39,7 +39,7 @@ public class TestValidateTopology extends BaseTest {
     }
 
     @Test
-    public void testSchemaDoesNotExist() throws Exception {
+    public void testSchemaDoesNotExist() {
         this.sqlgGraph.addVertex(T.label, "A.A");
         this.sqlgGraph.tx().commit();
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -67,7 +67,7 @@ public class TestValidateTopology extends BaseTest {
     }
 
     @Test
-    public void testVertexLabelDoesNotExist() throws Exception {
+    public void testVertexLabelDoesNotExist() {
         this.sqlgGraph.addVertex(T.label, "A.A");
         this.sqlgGraph.tx().commit();
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -86,7 +86,7 @@ public class TestValidateTopology extends BaseTest {
     }
 
     @Test
-    public void testEdgeLabelDoesNotExist() throws Exception {
+    public void testEdgeLabelDoesNotExist() {
         Vertex a = this.sqlgGraph.addVertex(T.label, "A.A");
         Vertex b = this.sqlgGraph.addVertex(T.label, "B.B");
         a.addEdge("ab", b);
@@ -107,7 +107,7 @@ public class TestValidateTopology extends BaseTest {
     }
 
     @Test
-    public void testVertexLabelPropertyDoesNotExist() throws Exception {
+    public void testVertexLabelPropertyDoesNotExist() {
         this.sqlgGraph.addVertex(T.label, "A.A", "name", "aaa");
         this.sqlgGraph.tx().commit();
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -130,7 +130,7 @@ public class TestValidateTopology extends BaseTest {
     }
 
     @Test
-    public void testEdgeLabelPropertyDoesNotExist() throws Exception {
+    public void testEdgeLabelPropertyDoesNotExist() {
         Vertex a = this.sqlgGraph.addVertex(T.label, "A.A", "name", "aaa");
         Vertex b = this.sqlgGraph.addVertex(T.label, "B.B", "name", "bbb");
         a.addEdge("ab", b, "name", "asdadasdasd");
@@ -155,8 +155,8 @@ public class TestValidateTopology extends BaseTest {
     }
 
     @Test
-    public void testIndexDoesNotExist() throws Exception {
-        Vertex a = this.sqlgGraph.addVertex(T.label, "A.A", "name", "aaa");
+    public void testIndexDoesNotExist() {
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "aaa");
         List<PropertyColumn> properties = new ArrayList<>(this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("A").get().getProperties().values());
         this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("A").get().ensureIndexExists(IndexType.UNIQUE, properties);
         this.sqlgGraph.tx().commit();
@@ -190,7 +190,7 @@ public class TestValidateTopology extends BaseTest {
     }
 
     @Test
-    public void testGlobalUniqueIndexExist() throws Exception {
+    public void testGlobalUniqueIndexExist() {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("name1", PropertyType.STRING);
         properties.put("name2", PropertyType.STRING);
@@ -220,7 +220,7 @@ public class TestValidateTopology extends BaseTest {
         }
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+            assertEquals(0, sqlgGraph1.getTopology().getValidationErrors().size());
         }
     }
 }

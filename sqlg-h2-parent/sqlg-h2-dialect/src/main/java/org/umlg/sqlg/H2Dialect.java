@@ -20,6 +20,8 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.PropertyType.*;
+
 /**
  * @author Lukas Krejci
  * @since 1.3.0
@@ -47,7 +49,7 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public boolean needsSchemaDropCascade() {
-        return false;
+        return true;
     }
 
     @Override
@@ -63,7 +65,7 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column,
-                                              int sqlType, String typeName,  ListIterator<Triple<String, Integer, String>> metaDataIter) {
+                                              int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -98,6 +100,7 @@ public class H2Dialect extends BaseSqlDialect {
      * All this is because H2 does not return the TYPE_NAME for column meta data.
      * The strategy is to actualy query the table get the column's value and interrogate it to get its type.
      * If the column has no data then we are stuffed and an exception is thrown.
+     *
      * @param typeName
      * @param sqlgGraph
      * @param schema
@@ -135,7 +138,7 @@ public class H2Dialect extends BaseSqlDialect {
                         return PropertyType.STRING_ARRAY;
                     } else if (o1 instanceof Timestamp) {
                         //ja well this sucks but I know of no other way to distinguish between LocalDateTime and LocalDate
-                        Timestamp timestamp = (Timestamp)o1;
+                        Timestamp timestamp = (Timestamp) o1;
                         LocalDateTime localDateTime = timestamp.toLocalDateTime();
                         if (localDateTime.getHour() == 0 && localDateTime.getMinute() == 0 && localDateTime.getSecond() == 0 && localDateTime.getNano() == 0) {
                             return PropertyType.LOCALDATE_ARRAY;
@@ -204,7 +207,7 @@ public class H2Dialect extends BaseSqlDialect {
         if (value instanceof Duration || value instanceof Duration[]) {
             return;
         }
-        if (value instanceof JsonNode|| value instanceof JsonNode[]) {
+        if (value instanceof JsonNode || value instanceof JsonNode[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -227,75 +230,77 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new String[]{"BOOLEAN"};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new String[]{"TINYINT"};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new String[]{"BINARY"};
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new String[]{"BINARY"};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new String[]{"DOUBLE"};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new String[]{"BIGINT", "INT"};
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 return new String[]{"REAL"};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new String[]{"INT"};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new String[]{"DATE"};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP"};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new String[]{"TIME"};
-            case LONG:
+            case LONG_ORDINAL:
                 return new String[]{"BIGINT"};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new String[]{"INT", "INT", "INT"};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new String[]{"SMALLINT"};
-            case STRING:
+            case STRING_ORDINAL:
                 return new String[]{"VARCHAR"};
-            case ZONEDDATETIME:
+            case VARCHAR_ORDINAL:
+                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case ZONEDDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP", "VARCHAR"};
-            case BOOLEAN_ARRAY:
-            case boolean_ARRAY:
-            case DOUBLE_ARRAY:
-            case double_ARRAY:
-            case FLOAT_ARRAY:
-            case float_ARRAY:
-            case int_ARRAY:
-            case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY:
-            case LOCALDATETIME_ARRAY:
-            case LOCALTIME_ARRAY:
-            case LONG_ARRAY:
-            case long_ARRAY:
-            case SHORT_ARRAY:
-            case short_ARRAY:
-            case STRING_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
+            case boolean_ARRAY_ORDINAL:
+            case DOUBLE_ARRAY_ORDINAL:
+            case double_ARRAY_ORDINAL:
+            case FLOAT_ARRAY_ORDINAL:
+            case float_ARRAY_ORDINAL:
+            case int_ARRAY_ORDINAL:
+            case INTEGER_ARRAY_ORDINAL:
+            case LOCALDATE_ARRAY_ORDINAL:
+            case LOCALDATETIME_ARRAY_ORDINAL:
+            case LOCALTIME_ARRAY_ORDINAL:
+            case LONG_ARRAY_ORDINAL:
+            case long_ARRAY_ORDINAL:
+            case SHORT_ARRAY_ORDINAL:
+            case short_ARRAY_ORDINAL:
+            case STRING_ARRAY_ORDINAL:
                 return new String[]{"ARRAY"};
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 return new String[]{"ARRAY", "ARRAY"};
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 return new String[]{"ARRAY", "ARRAY", "ARRAY"};
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new String[]{"ARRAY", "ARRAY"};
-            case JSON:
+            case JSON_ORDINAL:
                 return new String[]{"VARCHAR"};
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 return new String[]{"ARRAY"};
-            case POINT:
+            case POINT_ORDINAL:
                 throw new IllegalStateException("H2 does not support gis types!");
-            case POLYGON:
+            case POLYGON_ORDINAL:
                 throw new IllegalStateException("H2 does not support gis types!");
-            case GEOGRAPHY_POINT:
+            case GEOGRAPHY_POINT_ORDINAL:
                 throw new IllegalStateException("H2 does not support gis types!");
-            case GEOGRAPHY_POLYGON:
+            case GEOGRAPHY_POLYGON_ORDINAL:
                 throw new IllegalStateException("H2 does not support gis types!");
-            case LINESTRING:
+            case LINESTRING_ORDINAL:
                 throw new IllegalStateException("H2 does not support gis types!");
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -304,65 +309,65 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return new int[]{Types.BOOLEAN};
-            case BYTE:
+            case BYTE_ORDINAL:
                 return new int[]{Types.TINYINT};
-            case SHORT:
+            case SHORT_ORDINAL:
                 return new int[]{Types.SMALLINT};
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return new int[]{Types.INTEGER};
-            case LONG:
+            case LONG_ORDINAL:
                 return new int[]{Types.BIGINT};
-            case FLOAT:
+            case FLOAT_ORDINAL:
                 return new int[]{Types.REAL};
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return new int[]{Types.DOUBLE};
-            case STRING:
+            case STRING_ORDINAL:
                 return new int[]{Types.CLOB};
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP};
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return new int[]{Types.DATE};
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return new int[]{Types.TIME};
-            case ZONEDDATETIME:
+            case ZONEDDATETIME_ORDINAL:
                 return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case DURATION:
+            case DURATION_ORDINAL:
                 return new int[]{Types.BIGINT, Types.INTEGER};
-            case PERIOD:
+            case PERIOD_ORDINAL:
                 return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case JSON:
+            case JSON_ORDINAL:
                 return new int[]{Types.VARCHAR};
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return new int[]{Types.BINARY};
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return new int[]{Types.BINARY};
-            case BOOLEAN_ARRAY:
-            case boolean_ARRAY:
-            case DOUBLE_ARRAY:
-            case double_ARRAY:
-            case FLOAT_ARRAY:
-            case float_ARRAY:
-            case int_ARRAY:
-            case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY:
-            case LOCALDATETIME_ARRAY:
-            case LOCALTIME_ARRAY:
-            case LONG_ARRAY:
-            case long_ARRAY:
-            case SHORT_ARRAY:
-            case short_ARRAY:
-            case STRING_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
+            case boolean_ARRAY_ORDINAL:
+            case DOUBLE_ARRAY_ORDINAL:
+            case double_ARRAY_ORDINAL:
+            case FLOAT_ARRAY_ORDINAL:
+            case float_ARRAY_ORDINAL:
+            case int_ARRAY_ORDINAL:
+            case INTEGER_ARRAY_ORDINAL:
+            case LOCALDATE_ARRAY_ORDINAL:
+            case LOCALDATETIME_ARRAY_ORDINAL:
+            case LOCALTIME_ARRAY_ORDINAL:
+            case LONG_ARRAY_ORDINAL:
+            case long_ARRAY_ORDINAL:
+            case SHORT_ARRAY_ORDINAL:
+            case short_ARRAY_ORDINAL:
+            case STRING_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
-            case ZONEDDATETIME_ARRAY:
+            case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY};
-            case DURATION_ARRAY:
+            case DURATION_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY};
-            case PERIOD_ARRAY:
+            case PERIOD_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 return new int[]{Types.ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -394,29 +399,29 @@ public class H2Dialect extends BaseSqlDialect {
 
                         for (int i = 0; i < len; ++i) {
                             Object v = Array.get(a, i);
-                            switch (pt) {
-                                case BOOLEAN:
+                            switch (pt.ordinal()) {
+                                case BOOLEAN_ORDINAL:
                                     arrayNode.add((Boolean) v);
                                     break;
-                                case BYTE:
+                                case BYTE_ORDINAL:
                                     arrayNode.add((Byte) v);
                                     break;
-                                case DOUBLE:
+                                case DOUBLE_ORDINAL:
                                     arrayNode.add((Double) v);
                                     break;
-                                case FLOAT:
+                                case FLOAT_ORDINAL:
                                     arrayNode.add((Float) v);
                                     break;
-                                case INTEGER:
+                                case INTEGER_ORDINAL:
                                     arrayNode.add((Integer) v);
                                     break;
-                                case LONG:
+                                case LONG_ORDINAL:
                                     arrayNode.add((Long) v);
                                     break;
-                                case SHORT:
+                                case SHORT_ORDINAL:
                                     arrayNode.add((Short) v);
                                     break;
-                                case STRING:
+                                case STRING_ORDINAL:
                                     arrayNode.add((String) v);
                                     break;
                             }
@@ -445,26 +450,26 @@ public class H2Dialect extends BaseSqlDialect {
                     Object a = sqlA.getArray();
                     if (Array.getLength(a) > 0) {
                         PropertyType pt = PropertyType.from(Array.get(a, 0));
-                        switch (pt) {
-                            case BOOLEAN:
+                        switch (pt.ordinal()) {
+                            case BOOLEAN_ORDINAL:
                                 metaNode.put("type", PropertyType.boolean_ARRAY.name());
                                 break;
-                            case SHORT:
+                            case SHORT_ORDINAL:
                                 metaNode.put("type", PropertyType.short_ARRAY.name());
                                 break;
-                            case INTEGER:
+                            case INTEGER_ORDINAL:
                                 metaNode.put("type", PropertyType.int_ARRAY.name());
                                 break;
-                            case LONG:
+                            case LONG_ORDINAL:
                                 metaNode.put("type", PropertyType.long_ARRAY.name());
                                 break;
-                            case FLOAT:
+                            case FLOAT_ORDINAL:
                                 metaNode.put("type", PropertyType.float_ARRAY.name());
                                 break;
-                            case DOUBLE:
+                            case DOUBLE_ORDINAL:
                                 metaNode.put("type", PropertyType.double_ARRAY.name());
                                 break;
-                            case STRING:
+                            case STRING_ORDINAL:
                                 metaNode.put("type", PropertyType.STRING_ARRAY.name());
                                 break;
                             default:
@@ -572,30 +577,179 @@ public class H2Dialect extends BaseSqlDialect {
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"updatedOn\" TIMESTAMP, \"version\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"schemaVertex\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"type\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"index_type\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"updatedOn\" TIMESTAMP, " +
+                "\"version\" VARCHAR, " +
+                "\"dbVersion\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"schemaVertex\" VARCHAR," +
+                "\"partitionType\" VARCHAR, " +
+                "\"partitionExpression\" VARCHAR, " +
+                "\"shardCount\" INTEGER);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"partitionType\" VARCHAR, " +
+                "\"partitionExpression\" VARCHAR, " +
+                "\"shardCount\" INTEGER);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"from\" VARCHAR, " +
+                "\"to\" VARCHAR, " +
+                "\"in\" VARCHAR, " +
+                "\"partitionType\" VARCHAR, " +
+                "\"partitionExpression\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"type\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"name\" VARCHAR, " +
+                "\"index_type\" VARCHAR);");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"name\" VARCHAR);");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_index\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, \"sequence\" INTEGER, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.schema__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_property\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_property\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_log\" (\"ID\" IDENTITY PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_identifier\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "\"identifier_index\" INTEGER, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_identifier\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "\"identifier_index\" INTEGER, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_globalUniqueIndex_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.globalUniqueIndex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_partition\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_partition\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_partition_partition\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.partition__I\" BIGINT, " +
+                "\"sqlg_schema.partition__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));");
+
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_distribution\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_colocate\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_distribution\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_colocate\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.index__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_index\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.index__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.index__O\" BIGINT, " +
+                "\"sequence\" INTEGER, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_log\" (" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"timestamp\" TIMESTAMP, " +
+                "\"pid\" INTEGER, " +
+                "\"log\" VARCHAR);");
+
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_globalUniqueIndex_property\"(" +
+                "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.globalUniqueIndex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
         return result;
     }
 
@@ -608,50 +762,50 @@ public class H2Dialect extends BaseSqlDialect {
     public String sqlgAddIndexEdgeSequenceColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"E_index_property\" ADD COLUMN \"sequence\" INTEGER DEFAULT 0;";
     }
-    
+
     @Override
     public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
-        switch (propertyType) {
-            case BOOLEAN_ARRAY:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanArray((Object[]) array.getArray());
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[]) array.getArray());
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerArray((Object[]) array.getArray());
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongArray((Object[]) array.getArray());
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoubleArray((Object[]) array.getArray());
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
-            case FLOAT_ARRAY:
+            case FLOAT_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatArray((Object[]) array.getArray());
-            case float_ARRAY:
+            case float_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 Object[] timestamps = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimestampToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 Object[] dates = (Object[]) array.getArray();
                 if (dates != null && dates.length > 0 && dates[0] instanceof Timestamp) {
                     return SqlgUtil.copyObjectArrayOfTimestampToLocalDate(dates, new LocalDate[dates.length]);
                 } else {
                     return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
                 }
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 Object[] times = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
-            case JSON_ARRAY:
+            case JSON_ARRAY_ORDINAL:
                 String[] jsons = SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
                 JsonNode[] jsonNodes = new JsonNode[jsons.length];
                 ObjectMapper objectMapper = new ObjectMapper();
@@ -698,60 +852,60 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsType(PropertyType propertyType) {
-        switch (propertyType) {
-            case BOOLEAN:
+        switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL:
                 return true;
-            case BOOLEAN_ARRAY:
+            case BOOLEAN_ARRAY_ORDINAL:
                 return true;
-            case boolean_ARRAY:
+            case boolean_ARRAY_ORDINAL:
                 return true;
-            case BYTE:
+            case BYTE_ORDINAL:
                 return true;
-            case BYTE_ARRAY:
+            case BYTE_ARRAY_ORDINAL:
                 return true;
-            case byte_ARRAY:
+            case byte_ARRAY_ORDINAL:
                 return true;
-            case SHORT:
+            case SHORT_ORDINAL:
                 return true;
-            case short_ARRAY:
+            case short_ARRAY_ORDINAL:
                 return true;
-            case SHORT_ARRAY:
+            case SHORT_ARRAY_ORDINAL:
                 return true;
-            case INTEGER:
+            case INTEGER_ORDINAL:
                 return true;
-            case int_ARRAY:
+            case int_ARRAY_ORDINAL:
                 return true;
-            case INTEGER_ARRAY:
+            case INTEGER_ARRAY_ORDINAL:
                 return true;
-            case LONG:
+            case LONG_ORDINAL:
                 return true;
-            case long_ARRAY:
+            case long_ARRAY_ORDINAL:
                 return true;
-            case LONG_ARRAY:
+            case LONG_ARRAY_ORDINAL:
                 return true;
-            case DOUBLE:
+            case DOUBLE_ORDINAL:
                 return true;
-            case DOUBLE_ARRAY:
+            case DOUBLE_ARRAY_ORDINAL:
                 return true;
-            case double_ARRAY:
+            case double_ARRAY_ORDINAL:
                 return true;
-            case STRING:
+            case STRING_ORDINAL:
                 return true;
-            case LOCALDATE:
+            case LOCALDATE_ORDINAL:
                 return true;
-            case LOCALDATE_ARRAY:
+            case LOCALDATE_ARRAY_ORDINAL:
                 return true;
-            case LOCALDATETIME:
+            case LOCALDATETIME_ORDINAL:
                 return true;
-            case LOCALDATETIME_ARRAY:
+            case LOCALDATETIME_ARRAY_ORDINAL:
                 return true;
-            case LOCALTIME:
+            case LOCALTIME_ORDINAL:
                 return true;
-            case LOCALTIME_ARRAY:
+            case LOCALTIME_ARRAY_ORDINAL:
                 return true;
-            case JSON:
+            case JSON_ORDINAL:
                 return true;
-            case STRING_ARRAY:
+            case STRING_ARRAY_ORDINAL:
                 return true;
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -772,5 +926,98 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public String sqlToTurnOnReferentialConstraintCheck(String tableName) {
         return "SET REFERENTIAL_INTEGRITY TRUE";
+    }
+
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionType\" VARCHAR DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionExpression\" VARCHAR;",
+                "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"shardCount\" INTEGER;",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionType\" VARCHAR DEFAULT 'NONE';",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"partitionExpression\" VARCHAR;",
+                "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"shardCount\" INTEGER;",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"createdOn\" TIMESTAMP, " +
+                        "\"name\" VARCHAR, " +
+                        "\"from\" VARCHAR, " +
+                        "\"to\" VARCHAR, " +
+                        "\"in\" VARCHAR, " +
+                        "\"partitionType\" VARCHAR, " +
+                        "\"partitionExpression\" VARCHAR);",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_partition\"(" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_partition\"(" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_partition_partition\"(" +
+                        "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.partition__I\" BIGINT, " +
+                        "\"sqlg_schema.partition__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__I\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.partition__O\") REFERENCES \"sqlg_schema\".\"V_partition\" (\"ID\"));",
+
+
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_identifier\"(" +
+                        "\"ID\" IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "\"identifier_index\" INTEGER, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_identifier\"(" +
+                        "\"ID\" IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "\"identifier_index\" INTEGER, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_distribution\"(" +
+                        "\"ID\" IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_colocate\"(" +
+                        "\"ID\" IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.vertex__I\" BIGINT, " +
+                        "\"sqlg_schema.vertex__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_distribution\"(" +
+                        "\"ID\" IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.property__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));",
+                "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_colocate\"(" +
+                        "\"ID\" IDENTITY PRIMARY KEY, " +
+                        "\"sqlg_schema.vertex__I\" BIGINT, " +
+                        "\"sqlg_schema.edge__O\" BIGINT, " +
+                        "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                        "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));"
+        );
+    }
+
+    @Override
+    public String addDbVersionToGraph(DatabaseMetaData metadata) {
+        try {
+            return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" VARCHAR DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
+        //Do nothing, we are not testing readOnly on H2
     }
 }

@@ -76,12 +76,11 @@ public class ReplacedStepTree {
             if (replacedStep.getStep() instanceof GraphStep) {
                 continue;
             }
-            if (!(replacedStep.getStep() instanceof OrderGlobalStep) && !(replacedStep.getStep() instanceof RangeGlobalStep)) {
+            if (!replacedStep.isFake() && !(replacedStep.getStep() instanceof OrderGlobalStep) && !(replacedStep.getStep() instanceof RangeGlobalStep)) {
                 //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
                 schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }
         }
-
     }
 
     private List<ReplacedStep<?, ?>> linearPathToLeafNode() {
@@ -152,6 +151,7 @@ public class ReplacedStepTree {
         return false;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean orderByIsOrder() {
         for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
             for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
@@ -195,9 +195,9 @@ public class ReplacedStepTree {
     }
 
     public class TreeNode {
-        private ReplacedStep replacedStep;
+        private final ReplacedStep replacedStep;
         private TreeNode parent;
-        private List<TreeNode> children = new ArrayList<>();
+        private final List<TreeNode> children = new ArrayList<>();
         private int depth = 0;
 
         TreeNode(ReplacedStep replacedStep) {
@@ -235,9 +235,7 @@ public class ReplacedStepTree {
 
         @Override
         public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append(this.replacedStep.toString());
-            return sb.toString();
+            return this.replacedStep.toString();
         }
 
         void internalLinearPathToLeafNode(List<ReplacedStep<?, ?>> result) {

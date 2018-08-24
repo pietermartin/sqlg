@@ -11,13 +11,9 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.net.URL;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2016/11/08
@@ -27,7 +23,7 @@ public class TestTopologyMultipleGraphs extends BaseTest {
 
     @SuppressWarnings("Duplicates")
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+    public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
@@ -42,7 +38,7 @@ public class TestTopologyMultipleGraphs extends BaseTest {
     }
 
     @Test
-    public void testDeepEqualsPublicSchema() throws InterruptedException {
+    public void testDeepEqualsPublicSchema() {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
             this.sqlgGraph.tx().commit();
@@ -87,7 +83,7 @@ public class TestTopologyMultipleGraphs extends BaseTest {
     }
 
     @Test
-    public void testDeepEqualsAcrossSchema() throws InterruptedException, IOException {
+    public void testDeepEqualsAcrossSchema() {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
             this.sqlgGraph.tx().commit();

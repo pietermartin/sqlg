@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
  * Date: 2016/05/15
  * Time: 3:50 PM
  */
-public class TestFriendsterLike extends BaseTest {
+class TestFriendsterLike extends BaseTest {
 
 //    @Test
     public void testSeparateThread() {

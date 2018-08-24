@@ -3,6 +3,7 @@ package org.umlg.sqlg.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -17,11 +18,11 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.PropertyReference;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
+import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.Emit;
-import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Topology;
 
@@ -32,9 +33,9 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.label;
+import static org.umlg.sqlg.structure.PropertyType.*;
 import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
 import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
@@ -42,9 +43,10 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  * Date: 2014/07/12
  * Time: 3:13 PM
  */
+@SuppressWarnings("Duplicates")
 public class SqlgUtil {
 
-    private static Logger logger = LoggerFactory.getLogger(SqlgUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgUtil.class);
 
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
@@ -74,8 +76,8 @@ public class SqlgUtil {
      * @param rootSchemaTableTree
      * @param subQueryStacks
      * @param first
-     * @param lastElementIdCountMap
-     * @param forParent             Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
+     * @param idColumnCountMap
+     * @param forParent           Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
      * @return A list of @{@link Emit}s that represent a single @{@link org.apache.tinkerpop.gremlin.process.traversal.Path}
      * @throws SQLException
      */
@@ -86,7 +88,7 @@ public class SqlgUtil {
             SchemaTableTree rootSchemaTableTree,
             List<LinkedList<SchemaTableTree>> subQueryStacks,
             boolean first,
-            Map<String, Integer> lastElementIdCountMap,
+            Map<String, Integer> idColumnCountMap,
             boolean forParent
     ) throws SQLException {
 
@@ -98,7 +100,7 @@ public class SqlgUtil {
                         schemaTableTree.clearColumnNamePropertyNameMap();
                     }
                 }
-                populateIdCountMap(resultSetMetaData, rootSchemaTableTree, lastElementIdCountMap);
+                populateIdCountMap(resultSetMetaData, rootSchemaTableTree, idColumnCountMap);
             }
             int subQueryDepth = 1;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
@@ -108,7 +110,7 @@ public class SqlgUtil {
                         resultSet,
                         subQueryStack,
                         subQueryDepth == subQueryStacks.size(),
-                        lastElementIdCountMap,
+                        idColumnCountMap,
                         forParent
                 );
                 result.addAll(labeledElements);
@@ -116,7 +118,7 @@ public class SqlgUtil {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
                     if (labeledElements.isEmpty()) {
                         SqlgElement e = SqlgUtil.loadElement(
-                                sqlgGraph, lastElementIdCountMap, resultSet, lastSchemaTableTree
+                                sqlgGraph, idColumnCountMap, resultSet, lastSchemaTableTree
                         );
                         Emit<SqlgElement> emit;
                         if (!forParent) {
@@ -143,15 +145,21 @@ public class SqlgUtil {
         return result;
     }
 
+    //TODO the identifier logic here is very unoptimal
     private static void populateIdCountMap(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> lastElementIdCountMap) throws SQLException {
         lastElementIdCountMap.clear();
         //First load all labeled entries from the resultSet
         //Translate the columns back from alias to meaningful column headings
+        Set<String> identifiers = new HashSet<>();
+        Set<String> allIdentifiers = rootSchemaTableTree.getAllIdentifiers();
+        for (String allIdentifier : allIdentifiers) {
+            identifiers.add(SchemaTableTree.ALIAS_SEPARATOR + allIdentifier);
+        }
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
             String unAliased = rootSchemaTableTree.getAliasColumnNameMap().get(columnLabel);
             String mapKey = unAliased != null ? unAliased : columnLabel;
-            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID)) {
+            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID) || identifiers.stream().anyMatch(mapKey::endsWith)) {
                 lastElementIdCountMap.put(mapKey, columnCount);
             }
         }
@@ -164,16 +172,17 @@ public class SqlgUtil {
      * @param resultSet
      * @param subQueryStack
      * @param lastQueryStack
-     * @param lastElementIdCountMap
+     * @param idColumnCountMap
      * @return
      * @throws SQLException
      */
+    @SuppressWarnings("unchecked")
     private static <E extends SqlgElement> List<Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph,
             final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
             boolean lastQueryStack,
-            Map<String, Integer> lastElementIdCountMap,
+            Map<String, Integer> idColumnCountMap,
             boolean forParent
     ) throws SQLException {
 
@@ -181,26 +190,49 @@ public class SqlgUtil {
         int count = 1;
         for (SchemaTableTree schemaTableTree : subQueryStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
-                String idProperty = schemaTableTree.labeledAliasId();
-                Integer columnCount = lastElementIdCountMap.get(idProperty);
-                Long id = resultSet.getLong(columnCount);
-                if (!resultSet.wasNull()) {
-                    E sqlgElement;
-                    if (schemaTableTree.getSchemaTable().isVertexTable()) {
-                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
-                        sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                    } else {
-                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
-                        sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                E sqlgElement = null;
+                boolean resultSetWasNull;
+                if (schemaTableTree.isHasIDPrimaryKey()) {
+                    String idProperty = schemaTableTree.labeledAliasId();
+                    Integer columnCount = idColumnCountMap.get(idProperty);
+                    Long id = resultSet.getLong(columnCount);
+                    resultSetWasNull = resultSet.wasNull();
+                    if (!resultSetWasNull) {
+                        if (schemaTableTree.getSchemaTable().isVertexTable()) {
+                            String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
+                            sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                        } else {
+                            String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
+                            sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            schemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
+                        }
                     }
-                    schemaTableTree.loadProperty(resultSet, sqlgElement);
-
+                } else {
+                    ListOrderedSet<Comparable> identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
+                    resultSetWasNull = resultSet.wasNull();
+                    if (!resultSetWasNull) {
+                        if (schemaTableTree.getSchemaTable().isVertexTable()) {
+                            String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
+                            sqlgElement = (E) SqlgVertex.of(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                        } else {
+                            String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
+                            sqlgElement = (E) new SqlgEdge(sqlgGraph, identifierObjects, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            schemaTableTree.loadProperty(resultSet, sqlgElement);
+                            schemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
+                        }
+                    }
+                }
+                if (!resultSetWasNull) {
                     //The following if statement is for for "repeat(traversal()).emit().as('label')"
                     //i.e. for emit queries with labels
                     //Only the last node in the subQueryStacks' subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
                     //Elements that come before the last element in the path must not get the labels.
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
                         if (forParent) {
+                            //1 is the parentIndex. This is the id of the incoming parent.
                             result.add(new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                         } else {
                             result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
@@ -225,6 +257,7 @@ public class SqlgUtil {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     private static <E> E loadElement(
             SqlgGraph sqlgGraph,
             Map<String, Integer> columnMap,
@@ -239,11 +272,13 @@ public class SqlgUtil {
         if (schemaTable.isVertexTable()) {
             String rawLabel = schemaTable.getTable().substring(VERTEX_PREFIX.length());
             sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+            leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
         } else {
             String rawLabel = schemaTable.getTable().substring(EDGE_PREFIX.length());
             sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+            leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
+            leafSchemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
         }
-        leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
         return (E) sqlgElement;
     }
 
@@ -252,6 +287,7 @@ public class SqlgUtil {
         return (p == Contains.within || p == Contains.without) && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isBulkWithin(SqlgGraph sqlgGraph, HasContainer hasContainer) {
         BiPredicate p = hasContainer.getPredicate().getBiPredicate();
         return p == Contains.within && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
@@ -263,11 +299,11 @@ public class SqlgUtil {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
                 if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinAndOut(sqlgGraph, hasContainer)) {
                     WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-                    whereClause.putKeyValueMap(hasContainer, keyValueMap);
+                    whereClause.putKeyValueMap(hasContainer, keyValueMap, schemaTableTree);
                 }
             }
             for (AndOrHasContainer andOrHasContainer : schemaTableTree.getAndOrHasContainers()) {
-                andOrHasContainer.setParameterOnStatement(keyValueMap);
+                andOrHasContainer.setParameterOnStatement(keyValueMap, schemaTableTree);
             }
         }
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValueMap);
@@ -296,46 +332,49 @@ public class SqlgUtil {
         return parameterStartIndex;
     }
 
-    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, ImmutablePair<PropertyType, Object> pair) throws SQLException {
+    public static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, ImmutablePair<PropertyType, Object> pair) throws SQLException {
         if (pair.right == null) {
             int[] sqlTypes = sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(pair.left);
             for (int sqlType : sqlTypes) {
                 preparedStatement.setNull(parameterStartIndex++, sqlType);
             }
         } else {
-            switch (pair.left) {
-                case BOOLEAN:
+            switch (pair.left.ordinal()) {
+                case BOOLEAN_ORDINAL:
                     preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
                     break;
-                case BYTE:
+                case BYTE_ORDINAL:
                     preparedStatement.setByte(parameterStartIndex++, (Byte) pair.right);
                     break;
-                case SHORT:
+                case SHORT_ORDINAL:
                     preparedStatement.setShort(parameterStartIndex++, (Short) pair.right);
                     break;
-                case INTEGER:
+                case INTEGER_ORDINAL:
                     preparedStatement.setInt(parameterStartIndex++, (Integer) pair.right);
                     break;
-                case LONG:
+                case LONG_ORDINAL:
                     preparedStatement.setLong(parameterStartIndex++, (Long) pair.right);
                     break;
-                case FLOAT:
+                case FLOAT_ORDINAL:
                     preparedStatement.setFloat(parameterStartIndex++, (Float) pair.right);
                     break;
-                case DOUBLE:
+                case DOUBLE_ORDINAL:
                     preparedStatement.setDouble(parameterStartIndex++, (Double) pair.right);
                     break;
-                case STRING:
+                case STRING_ORDINAL:
                     preparedStatement.setString(parameterStartIndex++, (String) pair.right);
                     break;
-                case LOCALDATE:
+                case VARCHAR_ORDINAL:
+                    preparedStatement.setString(parameterStartIndex++, (String) pair.right);
+                    break;
+                case LOCALDATE_ORDINAL:
                     preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDate) pair.right).atStartOfDay()));
                     break;
-                case LOCALDATETIME:
+                case LOCALDATETIME_ORDINAL:
                     Timestamp timestamp = Timestamp.valueOf(((LocalDateTime) pair.right));
                     preparedStatement.setTimestamp(parameterStartIndex++, timestamp);
                     break;
-                case ZONEDDATETIME:
+                case ZONEDDATETIME_ORDINAL:
                     if (sqlgGraph.getSqlDialect().needsTimeZone()) {
                         //This is for postgresql that adjust the timestamp to the server's timezone
                         ZonedDateTime zonedDateTime = (ZonedDateTime) pair.right;
@@ -355,122 +394,116 @@ public class SqlgUtil {
                         preparedStatement.setString(parameterStartIndex++, tz.getID());
                     }
                     break;
-                case LOCALTIME:
+                case LOCALTIME_ORDINAL:
                     //loses nano seconds
                     preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
                     break;
-                case PERIOD:
+                case PERIOD_ORDINAL:
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getMonths());
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getDays());
                     break;
-                case DURATION:
+                case DURATION_ORDINAL:
                     preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());
                     preparedStatement.setInt(parameterStartIndex++, ((Duration) pair.right).getNano());
                     break;
-                case JSON:
+                case JSON_ORDINAL:
                     sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
                     parameterStartIndex++;
                     break;
-                case POINT:
+                case POINT_ORDINAL:
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case LINESTRING:
+                case LINESTRING_ORDINAL:
                     sqlgGraph.getSqlDialect().setLineString(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case POLYGON:
+                case POLYGON_ORDINAL:
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case GEOGRAPHY_POINT:
+                case GEOGRAPHY_POINT_ORDINAL:
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case GEOGRAPHY_POLYGON:
+                case GEOGRAPHY_POLYGON_ORDINAL:
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case BOOLEAN_ARRAY:
+                case BOOLEAN_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case boolean_ARRAY:
+                case boolean_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.boolean_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case BYTE_ARRAY:
+                case BYTE_ARRAY_ORDINAL:
                     byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) pair.getRight());
                     preparedStatement.setBytes(parameterStartIndex++, byteArray);
                     break;
-                case byte_ARRAY:
+                case byte_ARRAY_ORDINAL:
                     preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
                     break;
-                case SHORT_ARRAY:
+                case SHORT_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.SHORT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case short_ARRAY:
+                case short_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.short_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case INTEGER_ARRAY:
+                case INTEGER_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.INTEGER_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case int_ARRAY:
+                case int_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LONG_ARRAY:
+                case LONG_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LONG_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case long_ARRAY:
+                case long_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case FLOAT_ARRAY:
+                case FLOAT_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.FLOAT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case float_ARRAY:
+                case float_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.float_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case DOUBLE_ARRAY:
+                case DOUBLE_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.DOUBLE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case double_ARRAY:
+                case double_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.double_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case STRING_ARRAY:
+                case STRING_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LOCALDATETIME_ARRAY:
+                case LOCALDATETIME_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LOCALDATE_ARRAY:
+                case LOCALDATE_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case LOCALTIME_ARRAY:
+                case LOCALTIME_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALTIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
-                case ZONEDDATETIME_ARRAY:
+                case ZONEDDATETIME_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     if (mod) {
-                        List<String> zones = (Arrays.asList((ZonedDateTime[]) pair.right)).stream().map(z -> z.getZone().getId()).collect(Collectors.toList());
-                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, zones.toArray()));
+                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, Arrays.stream((ZonedDateTime[]) pair.right).map(z -> z.getZone().getId()).toArray()));
                     }
                     break;
-                case DURATION_ARRAY:
+                case DURATION_ARRAY_ORDINAL:
                     Duration[] durations = (Duration[]) pair.getRight();
-                    List<Long> seconds = Arrays.stream(durations).map(Duration::getSeconds).collect(Collectors.toList());
-                    List<Integer> nanos = Arrays.stream(durations).map(Duration::getNano).collect(Collectors.toList());
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(durations).map(Duration::getSeconds).toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(durations).map(Duration::getNano).toArray()));
                     break;
-                case PERIOD_ARRAY:
+                case PERIOD_ARRAY_ORDINAL:
                     Period[] periods = (Period[]) pair.getRight();
-                    List<Integer> years = Arrays.stream(periods).map(Period::getYears).collect(Collectors.toList());
-                    List<Integer> months = Arrays.stream(periods).map(Period::getMonths).collect(Collectors.toList());
-                    List<Integer> days = Arrays.stream(periods).map(Period::getDays).collect(Collectors.toList());
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
-                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getYears).toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getMonths).toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, Arrays.stream(periods).map(Period::getDays).toArray()));
                     break;
-                case JSON_ARRAY:
+                case JSON_ARRAY_ORDINAL:
                     JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
                     break;
@@ -485,7 +518,7 @@ public class SqlgUtil {
         Objects.requireNonNull(label, "label may not be null!");
         String[] schemaLabel = label.split("\\.");
         if (schemaLabel.length != 2) {
-            throw new IllegalStateException(String.format("label must be if the format 'schema.table', %s", new Object[]{label}));
+            throw new IllegalStateException(String.format("label must be if the format 'schema.table', %s", label));
         }
         return SchemaTable.of(schemaLabel[0], schemaLabel[1]);
     }
@@ -646,38 +679,7 @@ public class SqlgUtil {
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
     }
 
-    /**
-     * Transforms the key values into 2 maps. One for all values and one for where the values are not null.
-     * The not null values map is needed to set the properties on the {@link SqlgElement}
-     *
-     * @param keyValues The properties as a key value array.
-     * @return A {@link Pair} left is a map of all key values and right is a map where the value of the key is not null.
-     */
-    public static Pair<Map<String, Object>, Map<String, Object>> transformToInsertValues(Object... keyValues) {
-        Map<String, Object> resultAllValues = new LinkedHashMap<>();
-        Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
-        int i = 1;
-        Object key = null;
-        for (Object keyValue : keyValues) {
-            if (i++ % 2 != 0) {
-                //key
-                key = keyValue;
-            } else {
-                //value
-                //skip the label as that is not a property but the table
-                if (key == label || key == T.id) {
-                    continue;
-                }
-                if (keyValue != null) {
-                    resultNotNullValues.put((String) key, keyValue);
-                }
-                resultAllValues.put((String) key, keyValue);
-            }
-        }
-        return Pair.of(resultAllValues, resultNotNullValues);
-    }
-
-    public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
+    private static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
         List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
         for (Map.Entry<String, Object> entry : keyValues.entries()) {
             Object value = entry.getValue();
@@ -691,7 +693,7 @@ public class SqlgUtil {
             // we transform id in ID
             if (key.equals(T.id.getAccessor()) || "ID".equals(key)) {
                 if (value instanceof Long) {
-                    result.add(ImmutablePair.of(PropertyType.LONG, (Long) value));
+                    result.add(ImmutablePair.of(PropertyType.LONG, value));
                 } else {
                     RecordId id;
                     if (!(value instanceof RecordId)) {
@@ -699,7 +701,7 @@ public class SqlgUtil {
                     } else {
                         id = (RecordId) value;
                     }
-                    result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
+                    result.add(ImmutablePair.of(PropertyType.LONG, id.sequenceId()));
                 }
             } else {
                 result.add(ImmutablePair.of(PropertyType.from(value), value));
@@ -729,7 +731,7 @@ public class SqlgUtil {
      * @param value
      * @return
      */
-    public static Object[] transformArrayToInsertValue(PropertyType propertyType, Object value) {
+    private static Object[] transformArrayToInsertValue(PropertyType propertyType, Object value) {
         return getArray(propertyType, value);
     }
 
@@ -737,25 +739,25 @@ public class SqlgUtil {
         int arrlength = Array.getLength(val);
         Object[] outputArray = new Object[arrlength];
         for (int i = 0; i < arrlength; ++i) {
-            switch (propertyType) {
-                case LOCALDATETIME_ARRAY:
+            switch (propertyType.ordinal()) {
+                case LOCALDATETIME_ARRAY_ORDINAL:
                     outputArray[i] = Timestamp.valueOf((LocalDateTime) Array.get(val, i));
                     break;
-                case LOCALDATE_ARRAY:
+                case LOCALDATE_ARRAY_ORDINAL:
                     outputArray[i] = Timestamp.valueOf(((LocalDate) Array.get(val, i)).atStartOfDay());
                     break;
-                case LOCALTIME_ARRAY:
+                case LOCALTIME_ARRAY_ORDINAL:
                     outputArray[i] = Time.valueOf(((LocalTime) Array.get(val, i)));
                     break;
-                case ZONEDDATETIME_ARRAY:
+                case ZONEDDATETIME_ARRAY_ORDINAL:
                     ZonedDateTime zonedDateTime = (ZonedDateTime) Array.get(val, i);
                     outputArray[i] = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
                     break;
-                case BYTE_ARRAY:
+                case BYTE_ARRAY_ORDINAL:
                     Byte aByte = (Byte) Array.get(val, i);
                     outputArray[i] = aByte;
                     break;
-                case JSON_ARRAY:
+                case JSON_ARRAY_ORDINAL:
                     JsonNode jsonNode = (JsonNode) Array.get(val, i);
                     outputArray[i] = jsonNode.toString();
                     break;
@@ -780,48 +782,6 @@ public class SqlgUtil {
         } else {
             return foreignKey;
         }
-    }
-
-    /**
-     * return tables in their schema with their properties, matching the given hasContainers
-     *
-     * @param topology
-     * @param hasContainers
-     * @param withSqlgSchema do we want the sqlg schema tables too?
-     * @return
-     */
-    public static Map<String, Map<String, PropertyType>> filterSqlgSchemaHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
-        HasContainer fromHasContainer = null;
-        HasContainer withoutHasContainer = null;
-
-        for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
-                fromHasContainer = hasContainer;
-                break;
-            } else if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)) {
-                withoutHasContainer = hasContainer;
-                break;
-            }
-        }
-
-        //from and without are mutually exclusive, only one will ever be set.
-        Map<String, Map<String, PropertyType>> filteredAllTables;
-        if (fromHasContainer != null) {
-            filteredAllTables = topology.getAllTablesFrom((Set<TopologyInf>) fromHasContainer.getPredicate().getValue());
-        } else if (withoutHasContainer != null) {
-            filteredAllTables = topology.getAllTablesWithout((Set<TopologyInf>) withoutHasContainer.getPredicate().getValue());
-        } else {
-            filteredAllTables = topology.getAllTables(withSqlgSchema);
-        }
-        return filteredAllTables;
-    }
-
-    public static void removeTopologyStrategyHasContainer(List<HasContainer> hasContainers) {
-        //remove the TopologyStrategy hasContainer
-        Optional<HasContainer> fromHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
-        Optional<HasContainer> withoutHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
-        fromHasContainer.ifPresent(hasContainers::remove);
-        withoutHasContainer.ifPresent(hasContainers::remove);
     }
 
     public static void dropDb(SqlDialect sqlDialect, Connection conn) {
@@ -899,6 +859,57 @@ public class SqlgUtil {
         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
         Connection conn = sqlgGraph.tx().getConnection();
         dropDb(sqlDialect, conn);
+        dropSqlgReadOnlyUser(sqlDialect, conn);
+    }
+
+    private static void dropSqlgReadOnlyUser(SqlDialect sqlDialect, Connection conn) {
+        if (sqlDialect.isHsqldb()) {
+            try (Statement statement = conn.createStatement()) {
+                ResultSet rs = statement.executeQuery("SELECT * FROM INFORMATION_SCHEMA.SYSTEM_USERS where USER_NAME = 'sqlgReadOnly'");
+                if (rs.next()) {
+                    try (Statement s = conn.createStatement()) {
+                        s.execute("DROP USER \"sqlgReadOnly\"" );
+                        s.execute("DROP ROLE READ_ONLY");
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (sqlDialect.isPostgresql()) {
+            try (Statement statement = conn.createStatement()) {
+                ResultSet rs = statement.executeQuery("SELECT 1 FROM pg_roles WHERE rolname='sqlgReadOnly'");
+                if (rs.next()) {
+                    try (Statement s = conn.createStatement()) {
+                        s.execute("REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("DROP ROLE \"sqlgReadOnly\"");
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (sqlDialect.isMariaDb() || sqlDialect.isMysql()) {
+            try (Statement s = conn.createStatement()) {
+                s.execute("DROP USER IF EXISTS 'sqlgReadOnly'@'localhost'");
+                s.executeQuery("FLUSH PRIVILEGES");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (sqlDialect.isMssqlServer()) {
+            try (Statement s = conn.createStatement()) {
+                try (ResultSet rs = s.executeQuery("SELECT * FROM master.sys.sql_logins where name = 'sqlgReadOnly';")) {
+                    if (rs.next()) {
+                        s.execute("DROP USER sqlgReadOnly");
+                        s.execute("DROP LOGIN sqlgReadOnly");
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public static Byte[] convertPrimitiveByteArrayToByteArray(byte[] value) {
@@ -1147,6 +1158,41 @@ public class SqlgUtil {
             return label.substring(indexOfLabel + BaseStrategy.EMIT_LABEL_SUFFIX.length());
         }
         throw new IllegalStateException("originalLabel must only be called on labels with Sqlg's path prepended to it");
+    }
+
+    public static List<Comparable> getValue(ResultSet resultSet, List<ColumnList.Column> columns) {
+        List<Comparable> result = new ArrayList<>();
+        try {
+            for (ColumnList.Column column : columns) {
+                PropertyType propertyType = column.getPropertyType();
+                switch (propertyType.ordinal()) {
+                    case STRING_ORDINAL:
+                        String s = resultSet.getString(column.getColumnIndex());
+                        result.add(s);
+                        break;
+                    case VARCHAR_ORDINAL:
+                        s = resultSet.getString(column.getColumnIndex());
+                        result.add(s);
+                        break;
+                    default:
+                        throw new IllegalStateException(String.format("PropertyType %s is not implemented.", propertyType.name()));
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Object stringValueToType(PropertyType propertyType, String value) {
+        switch (propertyType.ordinal()) {
+            case STRING_ORDINAL:
+                return value;
+            case VARCHAR_ORDINAL:
+                return value;
+            default:
+                throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
+        }
     }
 
 }

@@ -30,12 +30,12 @@ import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
  */
 
 public class SchemaTable implements Serializable, Comparable {
-    private String schema;
-    private String table;
+    private final String schema;
+    private final String table;
     /**
      * Indicates that this represents a temporary table.
      */
-    private boolean temporary;
+    private final boolean temporary;
 
     private SchemaTable(String schema, String table, boolean temporary) {
         this.schema = schema;
@@ -148,7 +148,7 @@ public class SchemaTable implements Serializable, Comparable {
 
         @Override
         public void serialize(final SchemaTable schemaTable, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
-                throws IOException, JsonGenerationException {
+                throws IOException {
             // when types are not embedded, stringify or resort to JSON primitive representations of the
             // type so that non-jvm languages can better interoperate with the TinkerPop stack.
             jsonGenerator.writeString(schemaTable.toString());
@@ -156,7 +156,7 @@ public class SchemaTable implements Serializable, Comparable {
 
         @Override
         public void serializeWithType(final SchemaTable schemaTable, final JsonGenerator jsonGenerator,
-                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException {
             // when the type is included add "class" as a key and then try to utilize as much of the
             // default serialization provided by jackson data-bind as possible.  for example, write
             // the uuid as an object so that when jackson serializes it, it uses the uuid serializer
@@ -176,7 +176,7 @@ public class SchemaTable implements Serializable, Comparable {
         }
 
         @Override
-        public SchemaTable deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+        public SchemaTable deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
             org.apache.tinkerpop.shaded.jackson.core.JsonToken jsonToken = jsonParser.nextToken();
             Preconditions.checkState(org.apache.tinkerpop.shaded.jackson.core.JsonToken.VALUE_STRING == jsonToken);
             String schema = deserializationContext.readValue(jsonParser, String.class);
@@ -206,6 +206,7 @@ public class SchemaTable implements Serializable, Comparable {
             jsonGenerator.writeString(schemaTable.toString());
         }
 
+        @SuppressWarnings("deprecation")
         @Override
         public void serializeWithType(final SchemaTable schemaTable, final JsonGenerator jsonGenerator,
                                       final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
@@ -254,12 +255,14 @@ public class SchemaTable implements Serializable, Comparable {
     }
 
     static class SchemaTableJacksonDeserializerV3d0 extends StdDeserializer<SchemaTable> {
+        @SuppressWarnings("WeakerAccess")
         public SchemaTableJacksonDeserializerV3d0() {
             super(SchemaTable.class);
         }
 
         @Override
-        public SchemaTable deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+        public SchemaTable deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
+            @SuppressWarnings("unchecked")
             final Map<String, Object> data = deserializationContext.readValue(jsonParser, Map.class);
             return SchemaTable.of((String)data.get("schema"), (String) data.get("table"));
         }

@@ -17,6 +17,7 @@ import java.util.*;
 /**
  * Created by pieter on 2015/10/26.
  */
+@SuppressWarnings("ALL")
 public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     private Path path;
@@ -207,7 +208,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     public int compareTo(Emit<E> emit) {
         if (this.replacedStepDepth != emit.replacedStepDepth) {
             //TODO what is this for again. find out and put a comment!
-            return Integer.valueOf(this.replacedStepDepth).compareTo(Integer.valueOf(emit.replacedStepDepth));
+            return Integer.compare(this.replacedStepDepth, emit.replacedStepDepth);
         }
         for (int i = 0; i < this.comparatorValues.size(); i++) {
             Pair<Object, Comparator<?>> comparatorPair1 = this.comparatorValues.get(i);

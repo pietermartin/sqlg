@@ -34,7 +34,7 @@ public class SqlgWhereTraversalStepStrategy<S> extends AbstractTraversalStrategy
             return;
         }
         List<WhereTraversalStep> whereTraversalSteps = TraversalHelper.getStepsOfAssignableClass(WhereTraversalStep.class, traversal);
-        for (WhereTraversalStep<S> whereTraversalStep : whereTraversalSteps) {
+        for (@SuppressWarnings("unchecked") WhereTraversalStep<S> whereTraversalStep : whereTraversalSteps) {
 
             List<Traversal.Admin<?, ?>> whereTraversals = whereTraversalStep.getLocalChildren();
             Preconditions.checkState(whereTraversals.size() == 1);
@@ -53,6 +53,7 @@ public class SqlgWhereTraversalStepStrategy<S> extends AbstractTraversalStrategy
             for (String label : whereTraversalStep.getLabels()) {
                 sqlgTraversalFilterStepBarrier.addLabel(label);
             }
+            //noinspection unchecked
             TraversalHelper.replaceStep(
                     whereTraversalStep,
                     sqlgTraversalFilterStepBarrier,

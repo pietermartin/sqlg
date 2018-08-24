@@ -3,10 +3,10 @@ package org.umlg.sqlg.mssqlserver;
 import com.microsoft.sqlserver.jdbc.ISQLServerBulkRecord;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.Timestamp;
@@ -17,25 +17,27 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.PropertyType.*;
+
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/08/09
  */
-public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
+abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
 
-    protected Map<Integer, ColumnMetadata> columnMetadata = new HashMap<>();
-    protected SortedSet<String> columns;
-    protected Map<String, PropertyColumn> propertyColumns;
+    final Map<Integer, ColumnMetadata> columnMetadata = new HashMap<>();
+    SortedSet<String> columns;
+    Map<String, PropertyColumn> propertyColumns;
     //Used for temp tables.
-    protected Map<String, PropertyType> properties;
+    Map<String, PropertyType> properties;
 
-    protected class ColumnMetadata {
-        String columnName;
-        int columnType;
-        int precision;
-        int scale;
-        DateTimeFormatter dateTimeFormatter = null;
-        PropertyType propertyType;
+    class ColumnMetadata {
+        final String columnName;
+        final int columnType;
+        final int precision;
+        final int scale;
+        final DateTimeFormatter dateTimeFormatter;
+        final PropertyType propertyType;
 
         ColumnMetadata(String name,
                        int type,
@@ -52,7 +54,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
         }
     }
 
-    protected int addMetaData(SQLServerBulkCopy bulkCopy, SqlgGraph sqlgGraph) throws SQLServerException {
+    int addMetaData(SQLServerBulkCopy bulkCopy, SqlgGraph sqlgGraph) throws SQLServerException {
         int i = 1;
         for (String column : this.columns) {
             PropertyType propertyType;
@@ -62,8 +64,8 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
             } else {
                 propertyType = this.properties.get(column);
             }
-            switch (propertyType) {
-                case BOOLEAN:
+            switch (propertyType.ordinal()) {
+                case BOOLEAN_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -75,14 +77,14 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             propertyType
                     ));
                     break;
-                case BYTE:
-                case SHORT:
-                case INTEGER:
-                case LONG:
-                case FLOAT:
-                case DOUBLE:
-                case JSON:
-                case STRING:
+                case BYTE_ORDINAL:
+                case SHORT_ORDINAL:
+                case INTEGER_ORDINAL:
+                case LONG_ORDINAL:
+                case FLOAT_ORDINAL:
+                case DOUBLE_ORDINAL:
+                case JSON_ORDINAL:
+                case STRING_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -94,7 +96,8 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             propertyType
                     ));
                     break;
-                case LOCALDATE:
+                case VARCHAR_ORDINAL:
+                    //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -105,7 +108,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             propertyType
                     ));
                     break;
-                case LOCALDATETIME:
+                case LOCALDATE_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -116,7 +119,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             propertyType
                     ));
                     break;
-                case LOCALTIME:
+                case LOCALDATETIME_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -127,7 +130,18 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             propertyType
                     ));
                     break;
-                case ZONEDDATETIME:
+                case LOCALTIME_ORDINAL:
+                    bulkCopy.addColumnMapping(i, column);
+                    this.columnMetadata.put(i++, new ColumnMetadata(
+                            column,
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            0,
+                            0,
+                            null,
+                            propertyType
+                    ));
+                    break;
+                case ZONEDDATETIME_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -147,7 +161,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             PropertyType.STRING
                     ));
                     break;
-                case PERIOD:
+                case PERIOD_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -176,7 +190,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             PropertyType.INTEGER
                     ));
                     break;
-                case DURATION:
+                case DURATION_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
@@ -196,7 +210,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             PropertyType.INTEGER
                     ));
                     break;
-                case byte_ARRAY:
+                case byte_ARRAY_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -208,7 +222,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                             propertyType
                     ));
                     break;
-                case BYTE_ARRAY:
+                case BYTE_ARRAY_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
@@ -259,7 +273,7 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
 
     abstract Object getValue(String column);
 
-    protected void addValues(List<Object> values) {
+    void addValues(List<Object> values) {
         for (String column : this.columns) {
             PropertyType propertyType;
             if (this.propertyColumns != null) {
@@ -268,52 +282,103 @@ public abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkReco
                 propertyType = this.properties.get(column);
             }
             Object value = getValue(column);
-            switch (propertyType) {
-                case BOOLEAN:
-                    values.add(value);
+            switch (propertyType.ordinal()) {
+                case BOOLEAN_ORDINAL:
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
                     break;
-                case BYTE:
-                case SHORT:
-                case INTEGER:
-                case LONG:
-                case FLOAT:
-                case DOUBLE:
-                case JSON:
-                case STRING:
-                    values.add(value);
+                case BYTE_ORDINAL:
+                case SHORT_ORDINAL:
+                case INTEGER_ORDINAL:
+                case LONG_ORDINAL:
+                case FLOAT_ORDINAL:
+                case DOUBLE_ORDINAL:
+                case JSON_ORDINAL:
+                case STRING_ORDINAL:
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
                     break;
-                case LOCALDATE:
-                    values.add(value.toString());
+                case VARCHAR_ORDINAL:
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
                     break;
-                case LOCALDATETIME:
-                    Timestamp timestamp = Timestamp.valueOf((LocalDateTime) value);
-                    values.add(timestamp.toString());
+                case LOCALDATE_ORDINAL:
+                    if (value != null) {
+                        values.add(value.toString());
+                    } else {
+                        values.add(null);
+                    }
                     break;
-                case LOCALTIME:
-                    values.add(value.toString());
+                case LOCALDATETIME_ORDINAL:
+                    if (value != null) {
+                        Timestamp timestamp = Timestamp.valueOf((LocalDateTime) value);
+                        values.add(timestamp.toString());
+                    } else {
+                        values.add(null);
+                    }
                     break;
-                case ZONEDDATETIME:
-                    values.add(((ZonedDateTime) value).toLocalDateTime());
-                    TimeZone tz = TimeZone.getTimeZone(((ZonedDateTime) value).getZone());
-                    values.add(tz.getID());
+                case LOCALTIME_ORDINAL:
+                    if (value != null) {
+                        values.add(value.toString());
+                    } else {
+                        values.add(null);
+                    }
                     break;
-                case PERIOD:
-                    Period period = (Period) value;
-                    values.add(period.getYears());
-                    values.add(period.getMonths());
-                    values.add(period.getDays());
+                case ZONEDDATETIME_ORDINAL:
+                    if (value != null) {
+                        values.add(((ZonedDateTime) value).toLocalDateTime());
+                        TimeZone tz = TimeZone.getTimeZone(((ZonedDateTime) value).getZone());
+                        values.add(tz.getID());
+                    } else {
+                        values.add(null);
+                        values.add(null);
+                    }
                     break;
-                case DURATION:
-                    Duration duration = (Duration) value;
-                    values.add(duration.getSeconds());
-                    values.add(duration.getNano());
+                case PERIOD_ORDINAL:
+                    if (value != null) {
+                        Period period = (Period) value;
+                        values.add(period.getYears());
+                        values.add(period.getMonths());
+                        values.add(period.getDays());
+                    } else {
+                        values.add(null);
+                        values.add(null);
+                        values.add(null);
+                    }
                     break;
-                case byte_ARRAY:
-                    values.add(value);
+                case DURATION_ORDINAL:
+                    if (value != null) {
+                        Duration duration = (Duration) value;
+                        values.add(duration.getSeconds());
+                        values.add(duration.getNano());
+                    } else {
+                        values.add(null);
+                        values.add(null);
+                    }
                     break;
-                case BYTE_ARRAY:
-                    byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) value);
-                    values.add(byteArray);
+                case byte_ARRAY_ORDINAL:
+                    if (value != null) {
+                        values.add(value);
+                    } else {
+                        values.add(null);
+                    }
+                    break;
+                case BYTE_ARRAY_ORDINAL:
+                    if (value != null) {
+                        byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) value);
+                        values.add(byteArray);
+                    } else {
+                        values.add(null);
+                    }
                     break;
                 default:
                     throw SqlgExceptions.invalidPropertyType(propertyType);

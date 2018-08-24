@@ -23,7 +23,7 @@ public class TestEdgeToDifferentLabeledVertexes extends BaseTest {
         v1.addEdge("label1", v3);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(2, vertexTraversal(this.sqlgGraph, v1).out().count().next(), 0);
-        Set<String> names = new HashSet();
+        Set<String> names = new HashSet<>();
         vertexTraversal(this.sqlgGraph, v1).out().forEachRemaining(
                v -> names.add(v.<String>property("name").value())
         );

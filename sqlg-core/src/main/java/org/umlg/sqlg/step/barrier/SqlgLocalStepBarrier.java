@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
@@ -20,7 +21,7 @@ public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
 
     private boolean first = true;
     private Traversal.Admin<S, E> localTraversal;
-    private List<Traverser.Admin<E>> results = new ArrayList<>();
+    private final List<Traverser.Admin<E>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<E>> resultIterator;
 
     public SqlgLocalStepBarrier(final Traversal.Admin traversal, LocalStep<S, E> localStep) {
@@ -28,6 +29,7 @@ public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
         this.localTraversal = localStep.getLocalChildren().get(0);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, E>> getLocalChildren() {
         return Collections.singletonList(this.localTraversal);
@@ -56,8 +58,7 @@ public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
             this.resultIterator = this.results.iterator();
         }
         if (this.resultIterator.hasNext()) {
-            Traverser.Admin<E> traverser = this.resultIterator.next();
-            return traverser;
+            return this.resultIterator.next();
         } else {
             throw FastNoSuchElementException.instance();
         }
@@ -82,6 +83,11 @@ public class SqlgLocalStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
     public void setTraversal(final Traversal.Admin<?, ?> parentTraversal) {
         super.setTraversal(parentTraversal);
         this.integrateChild(this.localTraversal);
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.stepString(this, this.localTraversal);
     }
 
     @Override

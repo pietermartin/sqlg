@@ -20,8 +20,8 @@ import java.util.*;
  */
 public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
-    private SqlgGraph sqlgGraph;
-    private Set<SchemaTableTree> rootSchemaTableTrees;
+    private final SqlgGraph sqlgGraph;
+    private final Set<SchemaTableTree> rootSchemaTableTrees;
     private boolean forParent = false;
     private Iterator<SchemaTableTree> rootSchemaTableTreeIterator = EmptyIterator.instance();
     private SchemaTableTree currentRootSchemaTableTree;
@@ -51,7 +51,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private boolean lazy = true;
 
     private boolean first = true;
-    private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
+    private final Map<String, Integer> lastElementIdCountMap = new HashMap<>();
     private QUERY queryState = QUERY.REGULAR;
 
     private enum QUERY {
@@ -221,6 +221,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public E next() {
         if (lazy) {
@@ -234,7 +235,8 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
      *
      * @return
      */
-    public E nextLazy() {
+    @SuppressWarnings("unchecked")
+    private E nextLazy() {
         //noinspection unchecked
         List<Emit<SqlgElement>> result = this.elements;
         this.elements = null;

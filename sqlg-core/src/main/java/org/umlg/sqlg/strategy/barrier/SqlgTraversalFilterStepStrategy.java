@@ -34,7 +34,7 @@ public class SqlgTraversalFilterStepStrategy<S> extends AbstractTraversalStrateg
             return;
         }
         List<TraversalFilterStep> traversalFilterSteps = TraversalHelper.getStepsOfAssignableClass(TraversalFilterStep.class, traversal);
-        for (TraversalFilterStep<S> traversalFilterStep : traversalFilterSteps) {
+        for (@SuppressWarnings("unchecked") TraversalFilterStep<S> traversalFilterStep : traversalFilterSteps) {
 
             List<Traversal.Admin<S, ?>> filterTraversals = traversalFilterStep.getLocalChildren();
             Preconditions.checkState(filterTraversals.size() == 1);
@@ -53,6 +53,7 @@ public class SqlgTraversalFilterStepStrategy<S> extends AbstractTraversalStrateg
             for (String label : traversalFilterStep.getLabels()) {
                 sqlgTraversalFilterStepBarrier.addLabel(label);
             }
+            //noinspection unchecked
             TraversalHelper.replaceStep(
                     traversalFilterStep,
                     sqlgTraversalFilterStepBarrier,
