@@ -10,6 +10,7 @@ import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.complex.TestComplex;
 import org.umlg.sqlg.test.complex.TestGithub;
+import org.umlg.sqlg.test.complex.TestMultipleSelect;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.event.TestTinkerPopEvent;
@@ -258,7 +259,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPropertyValues.class,
         TestReadOnlyRole.class,
         TestVarChar.class,
-        TestTopologySchemaDeleteMultipleGraphs.class
+        TestTopologySchemaDeleteMultipleGraphs.class,
+        TestMultipleSelect.class,
+        TestTraversalAddV.class
 })
 public class AllTest {
 
