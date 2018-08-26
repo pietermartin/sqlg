@@ -32,9 +32,7 @@ import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
-import org.umlg.sqlg.step.SqlgGraphStep;
-import org.umlg.sqlg.step.SqlgStep;
-import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
@@ -66,7 +64,9 @@ public abstract class BaseStrategy {
             RepeatStep.class,
             SelectStep.class,
             SelectOneStep.class,
-            DropStep.class
+            DropStep.class,
+            PropertiesStep.class,
+            PropertyMapStep.class
     );
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
@@ -156,7 +156,18 @@ public abstract class BaseStrategy {
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
                 handleOrderGlobalSteps(stepIterator, pathCount);
                 handleRangeGlobalSteps(stepIterator, pathCount);
-                return !stepIterator.hasNext() || !(stepIterator.next() instanceof SelectOneStep);
+                if (!stepIterator.hasNext()) {
+                    return true;
+                } else {
+                    Step<?, ?> next = stepIterator.next();
+                    if (!(next instanceof SelectOneStep)) {
+                        stepIterator.previous();
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+//                return !stepIterator.hasNext() || !(stepIterator.next() instanceof SelectOneStep);
             } else if (step instanceof DropStep && (!this.sqlgGraph.getSqlDialect().isMariaDb())) {
 
                 Traversal.Admin<?, ?> root = TraversalHelper.getRootTraversal(this.traversal);
@@ -172,8 +183,91 @@ public abstract class BaseStrategy {
                 return false;
             } else if (step instanceof DropStep && this.sqlgGraph.getSqlDialect().isMariaDb()) {
                 return false;
+            } else if (step instanceof PropertiesStep) {
+                return handlePropertiesStep(step);
+            } else if (step instanceof PropertyMapStep) {
+                return handlePropertyMapStep(step);
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
+            }
+        }
+        return true;
+    }
+
+    private boolean handlePropertyMapStep(Step<?, ?> step) {
+        Step<?, ?> dropStep = SqlgTraversalUtil.stepAfter(this.traversal, DropStep.class, step);
+        if (dropStep != null) {
+            return false;
+        }
+        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(this.traversal, OrderGlobalStep.class, step);
+        if (orderGlobalStep != null) {
+            return false;
+        }
+        Step<?, ?> selectOneStep = SqlgTraversalUtil.stepAfter(this.traversal, SelectOneStep.class, step);
+        if (selectOneStep != null) {
+            return false;
+        }
+        Step<?, ?> selectStep = SqlgTraversalUtil.stepAfter(this.traversal, SelectStep.class, step);
+        if (selectStep != null) {
+            return false;
+        }
+        Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(this.traversal, step);
+        if (lambdaStep == null) {
+            PropertyMapStep propertyMapStep = (PropertyMapStep) step;
+            List<String> propertiesToRestrict = getRestrictedProperties(step);
+            if (propertiesToRestrict != null) {
+                if (this.currentReplacedStep.getRestrictedProperties() == null) {
+                    this.currentReplacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
+                } else {
+                    this.currentReplacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
+                }
+                SqlgPropertyMapStep<?, ?> sqlgPropertiesStep = new SqlgPropertyMapStep<>(
+                        traversal,
+                        propertyMapStep.isIncludeTokens(),
+                        propertyMapStep.getReturnType(),
+                        propertyMapStep.getPropertyKeys());
+
+                for (String label : step.getLabels()) {
+                    sqlgPropertiesStep.addLabel(label);
+                }
+                sqlgPropertiesStep.setAppliesToLabels(this.currentReplacedStep.getLabels());
+                //noinspection unchecked
+                TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, traversal);
+            }
+        }
+        return true;
+    }
+
+    private boolean handlePropertiesStep(Step<?, ?> step) {
+        Step<?, ?> dropStep = SqlgTraversalUtil.stepAfter(this.traversal, DropStep.class, step);
+        if (dropStep != null) {
+            return false;
+        }
+        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(this.traversal, OrderGlobalStep.class, step);
+        if (orderGlobalStep != null) {
+            return false;
+        }
+        Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(this.traversal, step);
+        if (lambdaStep == null) {
+            PropertiesStep propertiesStep = (PropertiesStep) step;
+            List<String> propertiesToRestrict = getRestrictedProperties(step);
+            if (propertiesToRestrict != null) {
+                if (this.currentReplacedStep.getRestrictedProperties() == null) {
+                    this.currentReplacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
+                } else {
+                    this.currentReplacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
+                }
+                SqlgPropertiesStep<?> sqlgPropertiesStep = new SqlgPropertiesStep<>(
+                        traversal,
+                        propertiesStep.getReturnType(),
+                        propertiesStep.getPropertyKeys());
+
+                for (String label : step.getLabels()) {
+                    sqlgPropertiesStep.addLabel(label);
+                }
+                sqlgPropertiesStep.setAppliesToLabels(this.currentReplacedStep.getLabels());
+                //noinspection unchecked
+                TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, traversal);
             }
         }
         return true;
@@ -186,6 +280,20 @@ public abstract class BaseStrategy {
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
+
+        stepIterator.previous();
+        Step s4;
+        Step previous = null;
+        if (stepIterator.hasPrevious()) {
+            previous = stepIterator.previous();
+            stepIterator.next();
+            s4 = stepIterator.next();
+        } else {
+            s4 = stepIterator.next();
+
+        }
+        Preconditions.checkState(s4 == step);
+
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
                 step,
@@ -211,6 +319,10 @@ public abstract class BaseStrategy {
         }
         pathCount.increment();
         this.currentTreeNodeNode = treeNodeNode;
+        if (previous instanceof SelectOneStep) {
+            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + "x");
+            TraversalHelper.insertAfterStep(new SelectOneStep<>(this.traversal, Pop.last, "x"), previous, this.traversal);
+        }
     }
 
     private void handleRepeatStep(RepeatStep<?> repeatStep, MutableInt pathCount) {
@@ -699,6 +811,9 @@ public abstract class BaseStrategy {
             if (!lambdaMapSteps.isEmpty()) {
                 return false;
             }
+//            if (comparator.getValue1().toString().contains("$Lambda")) {
+//                return false;
+//            }
         }
         return true;
     }
@@ -884,7 +999,7 @@ public abstract class BaseStrategy {
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
                     hasContainer.getBiPredicate() instanceof FullText
-                    ) {
+            ) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }
@@ -917,8 +1032,7 @@ public abstract class BaseStrategy {
     }
 
     boolean canNotBeOptimized() {
-        @SuppressWarnings("unchecked")
-        final List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
+        @SuppressWarnings("unchecked") final List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
         final ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         List<Step<?, ?>> toCome = steps.subList(stepIterator.nextIndex(), steps.size());
         return toCome.stream().anyMatch(s ->
@@ -1081,4 +1195,20 @@ public abstract class BaseStrategy {
         }
     }
 
+    private List<String> getRestrictedProperties(Step<?, ?> step) {
+        List<String> ret = null;
+        if (step instanceof PropertiesStep<?>) {
+            PropertiesStep<?> ps = (PropertiesStep<?>) step;
+            ret = Arrays.asList(ps.getPropertyKeys());
+        } else if (step instanceof PropertyMapStep<?, ?>) {
+            PropertyMapStep<?, ?> pms = (PropertyMapStep<?, ?>) step;
+            ret = Arrays.asList(pms.getPropertyKeys());
+        }
+        // if no property keys are provided, all properties should be returned
+        if (ret != null && ret.isEmpty()) {
+            ret = null;
+        }
+
+        return ret;
+    }
 }
