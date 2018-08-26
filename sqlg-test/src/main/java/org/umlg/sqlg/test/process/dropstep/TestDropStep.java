@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.process.dropstep;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
@@ -75,6 +76,17 @@ public class TestDropStep extends BaseTest {
         } else {
             this.dropTraversal = this.sqlgGraph.traversal();
         }
+    }
+
+    @Test
+    public void g_V_properties_drop() {
+        loadModern();
+        final Traversal<Vertex, VertexProperty> traversal = (Traversal) this.sqlgGraph.traversal().V().properties().drop();
+        printTraversalForm(traversal);
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(6, IteratorUtils.count(this.sqlgGraph.traversal().V()));
+        Assert.assertEquals(6, IteratorUtils.count(this.sqlgGraph.traversal().E()));
+        this.sqlgGraph.traversal().V().forEachRemaining(vertex -> Assert.assertEquals(0, IteratorUtils.count(vertex.properties())));
     }
 
     @Test
