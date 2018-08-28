@@ -107,7 +107,7 @@ public abstract class BaseTest {
         if (configuration.getBoolean("distributed", false)) {
             this.sqlgGraph1 = SqlgGraph.open(configuration);
             assertNotNull(this.sqlgGraph1);
-            assertEquals(this.sqlgGraph.getBuildVersion(),this.sqlgGraph1.getBuildVersion());
+            assertEquals(this.sqlgGraph.getBuildVersion(), this.sqlgGraph1.getBuildVersion());
         }
         stopWatch.stop();
         logger.info("Startup time for test = " + stopWatch.toString());
@@ -256,6 +256,7 @@ public abstract class BaseTest {
 
     /**
      * print the traversal before and after execution
+     *
      * @param traversal
      */
     protected void printTraversalForm(final Traversal<?, ?> traversal) {
@@ -268,23 +269,24 @@ public abstract class BaseTest {
 
     /**
      * print the traversal before and after execution, and return the last SQL generated
+     *
      * @param traversal
      * @return the SQL or null
      */
-    protected String getSQL(final Traversal<?, ?> traversal){
-    	org.apache.log4j.Logger l=org.apache.log4j.Logger.getLogger(SqlgSqlExecutor.class);
-    	Level old=l.getLevel();
-    	try {
-    		l.setLevel(Level.DEBUG);
-	    	printTraversalForm(traversal);
-	    	org.apache.log4j.spi.LoggingEvent evt=TestAppender.getLast(SqlgSqlExecutor.class.getName());
-	    	if (evt!=null){
-	    		return String.valueOf(evt.getMessage());
-	    	}
-    	return null;
-    	} finally {
-    		l.setLevel(old);
-    	}
+    protected String getSQL(final Traversal<?, ?> traversal) {
+        org.apache.log4j.Logger l = org.apache.log4j.Logger.getLogger(SqlgSqlExecutor.class);
+        Level old = l.getLevel();
+        try {
+            l.setLevel(Level.DEBUG);
+            printTraversalForm(traversal);
+            org.apache.log4j.spi.LoggingEvent evt = TestAppender.getLast(SqlgSqlExecutor.class.getName());
+            if (evt != null) {
+                return String.valueOf(evt.getMessage());
+            }
+            return null;
+        } finally {
+            l.setLevel(old);
+        }
 
     }
 

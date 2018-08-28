@@ -32,7 +32,10 @@ import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
-import org.umlg.sqlg.step.*;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgPropertyMapStep;
+import org.umlg.sqlg.step.SqlgStep;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
@@ -156,15 +159,34 @@ public abstract class BaseStrategy {
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
                 handleOrderGlobalSteps(stepIterator, pathCount);
                 handleRangeGlobalSteps(stepIterator, pathCount);
-                if (!stepIterator.hasNext()) {
-                    return true;
-                } else {
-                    Step<?, ?> next = stepIterator.next();
-                    if (!(next instanceof SelectOneStep)) {
-                        stepIterator.previous();
-                        return true;
-                    } else {
-                        return false;
+                //select step can not be followed by a PropertyStep
+                if (step instanceof SelectOneStep) {
+                    SelectOneStep selectOneStep = (SelectOneStep) step;
+                    String key = (String) selectOneStep.getScopeKeys().iterator().next();
+                    if (stepIterator.hasNext()) {
+                        Step<?, ?> next = stepIterator.next();
+                        if (next instanceof PropertiesStep) {
+                            //get the step for the label
+                            Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
+                                    r -> {
+                                        //Take the first
+                                        if (!r.getLabels().isEmpty()) {
+                                            String label = r.getLabels().iterator().next();
+                                            String stepLabel = SqlgUtil.originalLabel(label);
+                                            return stepLabel.equals(key);
+                                        } else {
+                                            return false;
+                                        }
+                                    }
+                            ).findAny();
+                            Preconditions.checkState(labeledReplacedStep.isPresent());
+                            ReplacedStep<?, ?> replacedStep = labeledReplacedStep.get();
+                            handlePropertiesStep(replacedStep, next);
+                            return true;
+                        } else {
+                            stepIterator.previous();
+                            return false;
+                        }
                     }
                 }
 //                return !stepIterator.hasNext() || !(stepIterator.next() instanceof SelectOneStep);
@@ -184,7 +206,7 @@ public abstract class BaseStrategy {
             } else if (step instanceof DropStep && this.sqlgGraph.getSqlDialect().isMariaDb()) {
                 return false;
             } else if (step instanceof PropertiesStep) {
-                return handlePropertiesStep(step);
+                return handlePropertiesStep(this.currentReplacedStep, step);
             } else if (step instanceof PropertyMapStep) {
                 return handlePropertyMapStep(step);
             } else {
@@ -238,7 +260,7 @@ public abstract class BaseStrategy {
         return true;
     }
 
-    private boolean handlePropertiesStep(Step<?, ?> step) {
+    private boolean handlePropertiesStep(ReplacedStep replacedStep, Step<?, ?> step) {
         Step<?, ?> dropStep = SqlgTraversalUtil.stepAfter(this.traversal, DropStep.class, step);
         if (dropStep != null) {
             return false;
@@ -248,26 +270,15 @@ public abstract class BaseStrategy {
             return false;
         }
         Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(this.traversal, step);
-        if (lambdaStep == null) {
-            PropertiesStep propertiesStep = (PropertiesStep) step;
-            List<String> propertiesToRestrict = getRestrictedProperties(step);
-            if (propertiesToRestrict != null) {
-                if (this.currentReplacedStep.getRestrictedProperties() == null) {
-                    this.currentReplacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
-                } else {
-                    this.currentReplacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
-                }
-                SqlgPropertiesStep<?> sqlgPropertiesStep = new SqlgPropertiesStep<>(
-                        traversal,
-                        propertiesStep.getReturnType(),
-                        propertiesStep.getPropertyKeys());
-
-                for (String label : step.getLabels()) {
-                    sqlgPropertiesStep.addLabel(label);
-                }
-                sqlgPropertiesStep.setAppliesToLabels(this.currentReplacedStep.getLabels());
-                //noinspection unchecked
-                TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, traversal);
+        if (lambdaStep != null) {
+            return false;
+        }
+        List<String> propertiesToRestrict = getRestrictedProperties(step);
+        if (propertiesToRestrict != null) {
+            if (replacedStep.getRestrictedProperties() == null) {
+                replacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
+            } else {
+                replacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
             }
         }
         return true;
@@ -281,18 +292,18 @@ public abstract class BaseStrategy {
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
 
-        stepIterator.previous();
-        Step s4;
-        Step previous = null;
-        if (stepIterator.hasPrevious()) {
-            previous = stepIterator.previous();
-            stepIterator.next();
-            s4 = stepIterator.next();
-        } else {
-            s4 = stepIterator.next();
-
-        }
-        Preconditions.checkState(s4 == step);
+//        stepIterator.previous();
+//        Step s4;
+//        Step previous = null;
+//        if (stepIterator.hasPrevious()) {
+//            previous = stepIterator.previous();
+//            stepIterator.next();
+//            s4 = stepIterator.next();
+//        } else {
+//            s4 = stepIterator.next();
+//
+//        }
+//        Preconditions.checkState(s4 == step);
 
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
@@ -319,10 +330,10 @@ public abstract class BaseStrategy {
         }
         pathCount.increment();
         this.currentTreeNodeNode = treeNodeNode;
-        if (previous instanceof SelectOneStep) {
-            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + "x");
-            TraversalHelper.insertAfterStep(new SelectOneStep<>(this.traversal, Pop.last, "x"), previous, this.traversal);
-        }
+//        if (previous instanceof SelectOneStep) {
+//            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + "x");
+//            TraversalHelper.insertAfterStep(new SelectOneStep<>(this.traversal, Pop.last, "x"), previous, this.traversal);
+//        }
     }
 
     private void handleRepeatStep(RepeatStep<?> repeatStep, MutableInt pathCount) {
