@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ import java.util.ListIterator;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/03/04
+ * Date: 2017/03/04
  */
 public class VertexStrategy extends BaseStrategy {
 
@@ -85,14 +86,24 @@ public class VertexStrategy extends BaseStrategy {
      * EdgeOtherVertexStep can not be optimized as the direction information is lost.
      *
      * @param stepIterator The steps to iterate. Unused for the VertexStrategy
-     * @param step The current step.
-     * @param pathCount The path count.
+     * @param step         The current step.
+     * @param pathCount    The path count.
      * @return true if the optimization can continue else false.
      */
     @SuppressWarnings("unchecked")
     @Override
     protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
-        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof ChooseStep ||
+        if (step instanceof SelectOneStep) {
+            if (stepIterator.hasNext()) {
+                stepIterator.next();
+                return true;
+            } else {
+                return false;
+            }
+        }
+        if (!(step instanceof VertexStep ||
+                step instanceof EdgeVertexStep ||
+                step instanceof ChooseStep ||
                 step instanceof OptionalStep)) {
             return false;
         }

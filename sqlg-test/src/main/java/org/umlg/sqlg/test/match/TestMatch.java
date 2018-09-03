@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.match;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -16,6 +17,20 @@ import java.util.Map;
  * Time: 10:22 PM
  */
 public class TestMatch extends BaseTest {
+
+    @Test
+    public void g_V_matchXa__a_out_b__notXa_created_bXX() {
+        loadModern();
+        final Traversal<Vertex, Map<String, Object>> traversal = this.sqlgGraph.traversal().V().match(
+                __.as("a").out().as("b"),
+                __.not(__.as("a").out("created").as("b")));
+        printTraversalForm(traversal);
+        checkResults(makeMapList(2,
+                "a", convertToVertex(this.sqlgGraph, "marko"),
+                "b", convertToVertex(this.sqlgGraph, "josh"),
+                "a", convertToVertex(this.sqlgGraph, "marko"),
+                "b", convertToVertex(this.sqlgGraph, "vadas")), traversal);
+    }
 
     @Test
     public void testMatch() {
@@ -58,6 +73,6 @@ public class TestMatch extends BaseTest {
                 "a", convertToVertex(this.sqlgGraph, "marko"), "b", convertToVertex(this.sqlgGraph, "josh"), "c", convertToVertex(this.sqlgGraph, "lop")),
                 traversal
         );
-        
+
     }
 }

@@ -66,7 +66,7 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
             }
         } else {
             //Replace the WhereStartStep
-            List<WhereTraversalStep.WhereStartStep> whereStartSteps = TraversalHelper.getStepsOfAssignableClass(WhereTraversalStep.WhereStartStep.class, this.whereTraversal);
+            List<WhereTraversalStep.WhereStartStep> whereStartSteps = TraversalHelper.getStepsOfAssignableClassRecursively(WhereTraversalStep.WhereStartStep.class, this.whereTraversal);
             for (WhereTraversalStep.WhereStartStep whereStartStep : whereStartSteps) {
                 SqlgWhereStartStep sqlgWhereStartStep;
                 if (!whereStartStep.getScopeKeys().isEmpty()) {
@@ -81,8 +81,8 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
                 if (!whereEndSteps.isEmpty()) {
                     Preconditions.checkState(whereEndSteps.size() == 1);
                     WhereTraversalStep.WhereEndStep whereEndStep = whereEndSteps.get(0);
-                    this.sqlgWhereEndStep = new SqlgWhereEndStep(this.whereTraversal, whereEndStep.getScopeKeys().iterator().next());
-                    TraversalHelper.replaceStep(whereEndStep, this.sqlgWhereEndStep, this.whereTraversal);
+                    this.sqlgWhereEndStep = new SqlgWhereEndStep(whereStartStep.getTraversal(), whereEndStep.getScopeKeys().iterator().next());
+                    TraversalHelper.replaceStep(whereEndStep, this.sqlgWhereEndStep, whereStartStep.getTraversal());
                 }
             }
         }

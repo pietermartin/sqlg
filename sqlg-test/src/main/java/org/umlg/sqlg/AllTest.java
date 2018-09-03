@@ -258,7 +258,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPropertyValues.class,
         TestReadOnlyRole.class,
         TestVarChar.class,
-        TestTopologySchemaDeleteMultipleGraphs.class
+        TestTopologySchemaDeleteMultipleGraphs.class,
+        TestTraversalAddV.class
 })
 public class AllTest {
 

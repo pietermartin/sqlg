@@ -4,15 +4,23 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.LambdaFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaCollectingBarrierStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaFlatMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.LambdaSideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SackValueStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/04/29
+ * Date: 2017/04/29
  */
 public class SqlgTraversalUtil {
 
@@ -58,5 +66,54 @@ public class SqlgTraversalUtil {
             if (anyStepRecursively(predicate, globalChild)) return true;
         }
         return false;
+    }
+
+    public static <S> S lastLambdaHolderBefore(final Traversal.Admin<?, ?> traversal, Step<?,?> step) {
+        List<Class<? extends Step>> lambdaHolders = Arrays.asList(
+                SackValueStep.class,
+                LambdaFilterStep.class,
+                LambdaMapStep.class,
+                LambdaFlatMapStep.class,
+                LambdaCollectingBarrierStep.class,
+                LambdaSideEffectStep.class
+        );
+        for (Class<? extends Step> lambdaHolder : lambdaHolders) {
+            int index = TraversalHelper.stepIndex(step, traversal);
+            List<S> steps = TraversalHelper.getStepsOfAssignableClassRecursively((Class<S>)lambdaHolder, traversal);
+            Collections.reverse(steps);
+            for (S s : steps) {
+                int stepIndex = TraversalHelper.stepIndex((Step)s, traversal);
+                if (stepIndex < index) {
+                    return s;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static <S> S lastStepBefore(final Traversal.Admin<?, ?> traversal, final Class<S> stepClass, Step<?,?> step) {
+        int index = TraversalHelper.stepIndex(step, traversal);
+        List<S> steps = TraversalHelper.getStepsOfAssignableClass(stepClass, traversal);
+        Collections.reverse(steps);
+        for (S s : steps) {
+            int stepIndex = TraversalHelper.stepIndex((Step)s, traversal);
+            if (stepIndex < index) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    public static <S> S stepAfter(final Traversal.Admin<?, ?> traversal, final Class<S> stepClass, Step<?,?> step) {
+        int index = TraversalHelper.stepIndex(step, traversal);
+        List<S> steps = TraversalHelper.getStepsOfAssignableClass(stepClass, traversal);
+        Collections.reverse(steps);
+        for (S s : steps) {
+            int stepIndex = TraversalHelper.stepIndex((Step)s, traversal);
+            if (stepIndex > index) {
+                return s;
+            }
+        }
+        return null;
     }
 }
