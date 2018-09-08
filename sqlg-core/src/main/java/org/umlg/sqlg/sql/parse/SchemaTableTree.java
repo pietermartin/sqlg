@@ -2065,6 +2065,12 @@ public class SchemaTableTree {
                     toRemove.add(hasContainer);
                 }
             }
+            if (Contains.without.equals(hasContainer.getBiPredicate())){
+            	Object o=hasContainer.getValue();
+            	if (o instanceof Collection && ((Collection<?>)o).size()==0) {
+            		toRemove.add(hasContainer);
+            	}
+            }
         }
         schemaTableTree.hasContainers.removeAll(toRemove);
     }
