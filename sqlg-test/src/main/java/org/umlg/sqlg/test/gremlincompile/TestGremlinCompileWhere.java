@@ -542,4 +542,25 @@ public class TestGremlinCompileWhere extends BaseTest {
         Assert.assertEquals(0, vertices.size());
     }
 
+    @Test
+    public void testEmptyWithout() throws InterruptedException {
+        this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+        this.sqlgGraph.tx().commit();
+        testEmptyWithout_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testEmptyWithin_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testEmptyWithout_assert(SqlgGraph sqlgGraph) {
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+                .V().hasLabel("Person").has("age", P.without(Collections.emptyList()));
+        Assert.assertEquals(2, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(3, vertices.size());
+    }
 }
