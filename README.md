@@ -1,4 +1,4 @@
-<a href="http://154.65.43.238:8111/viewType.html?buildTypeId=sqlg_Sqlg&guest=1">
+<a href="http://154.65.43.238:8111/viewType.html?buildTypeId=Sqlg_Build&guest=1">
     <img src="http://154.65.43.238:8111/app/rest/builds/buildType:(id:Sqlg_Build)/statusIcon"/>
 </a>
 
