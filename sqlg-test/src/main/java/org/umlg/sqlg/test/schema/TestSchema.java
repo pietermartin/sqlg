@@ -11,6 +11,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.topology.ForeignKey;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -19,6 +20,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -26,6 +28,17 @@ import java.util.Set;
  * Time: 10:49 AM
  */
 public class TestSchema extends BaseTest {
+
+    @Test
+    public void testSchemaReturnEmpty() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a");
+        this.sqlgGraph.tx().commit();
+        Optional<Schema> schema = this.sqlgGraph.getTopology().getSchema(null);
+        Assert.assertTrue(!schema.isPresent());
+        schema = this.sqlgGraph.getTopology().getSchema("A");
+        Assert.assertTrue(schema.isPresent());
+    }
 
     @Test
     public void testEscapingEscapeCharacterInNames() {

@@ -1454,6 +1454,9 @@ public class Topology {
     }
 
     public Optional<Schema> getSchema(String schema) {
+        if (schema == null) {
+            return Optional.empty();
+        }
         if (isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedSchemas.contains(schema)) {
             return Optional.empty();
         }
