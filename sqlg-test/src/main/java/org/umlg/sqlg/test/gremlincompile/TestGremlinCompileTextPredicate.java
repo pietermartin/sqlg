@@ -1,6 +1,9 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -11,6 +14,9 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
+import java.util.Optional;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 
 /**
  * Date: 2017/02/10
@@ -458,5 +464,44 @@ public class TestGremlinCompileTextPredicate extends BaseTest {
         vertices = traversal5.toList();
         Assert.assertEquals(1, traversal5.getSteps().size());
         Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
+    public void testNotCompiledTextPredicates() throws InterruptedException {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
+        v1.addEdge("link", v2);
+        this.sqlgGraph.tx().commit();
+        testNotCompiledTextPredicates_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testNotCompiledTextPredicates_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testNotCompiledTextPredicates_assert(SqlgGraph graph) {
+        Optional<Vertex> v;
+
+        v = notCompiledTraversal(graph.traversal(), Text.startsWith("ab")).tryNext();
+        Assert.assertTrue(v.isPresent());
+        v = notCompiledTraversal(graph.traversal(), Text.endsWith("cd")).tryNext();
+        Assert.assertTrue(v.isPresent());
+        v = notCompiledTraversal(graph.traversal(), Text.nstartsWith("d")).tryNext();
+        Assert.assertTrue(v.isPresent());
+        v = notCompiledTraversal(graph.traversal(), Text.nendsWith("a")).tryNext();
+        Assert.assertTrue(v.isPresent());
+        v = notCompiledTraversal(graph.traversal(), Text.contains("bc")).tryNext();
+        Assert.assertTrue(v.isPresent());
+        v = notCompiledTraversal(graph.traversal(), Text.ncontains("ef")).tryNext();
+        Assert.assertTrue(v.isPresent());
+        v = notCompiledTraversal(graph.traversal(), Text.containsCIS("BC")).tryNext();
+        Assert.assertTrue(v.isPresent());
+        v = notCompiledTraversal(graph.traversal(), Text.ncontainsCIS("EF")).tryNext();
+        Assert.assertTrue(v.isPresent());
+    }
+
+    private GraphTraversal<Vertex, Vertex> notCompiledTraversal(GraphTraversalSource source, P<String> predicate) {
+        // use repeat to make query not compiled
+        return source.V().has("Person", "name", "aaaaa").repeat(out("link")).emit().has("name", predicate);
     }
 }

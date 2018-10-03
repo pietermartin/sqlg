@@ -74,7 +74,7 @@ public enum Text implements BiPredicate<String, String> {
     }, endsWith{
         @Override
         public boolean test(final String first, final String second) {
-            return first.startsWith(second);
+            return first.endsWith(second);
         }
 
         @Override
@@ -84,7 +84,7 @@ public enum Text implements BiPredicate<String, String> {
     }, nendsWith{
         @Override
         public boolean test(final String first, final String second) {
-            return !first.startsWith(second);
+            return !first.endsWith(second);
         }
 
         @Override
