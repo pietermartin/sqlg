@@ -643,7 +643,7 @@ public abstract class BaseStrategy {
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
             if (step instanceof OrderGlobalStep) {
-                if (optimizable((OrderGlobalStep) step)) {
+                if (optimizableOrderGlobalStep((OrderGlobalStep) step)) {
                     //add the label if any
                     for (String label : step.getLabels()) {
                         this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
@@ -809,7 +809,7 @@ public abstract class BaseStrategy {
         return Optional.of(outerAndOrHasContainer);
     }
 
-    private boolean optimizable(OrderGlobalStep step) {
+    private boolean optimizableOrderGlobalStep(OrderGlobalStep step) {
         @SuppressWarnings("unchecked")
         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = step.getComparators();
         for (Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : comparators) {
