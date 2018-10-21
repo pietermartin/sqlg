@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
@@ -13,8 +14,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -25,6 +26,66 @@ import java.util.stream.Collectors;
  * Time: 7:32 PM
  */
 public class TestOptionalWithOrder extends BaseTest {
+
+    @Test
+    public void testInlineOrder() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        this.sqlgGraph.tx().commit();
+        List<Path> paths  = sqlgGraph.traversal().V(a2, a1).order().by("name").optional(__.out()).path().toList();
+        Assert.assertEquals(2, paths.size());
+        Assert.assertEquals(1, paths.get(0).size());
+    }
+
+    @Test
+    public void testOrder() {
+
+        Vertex a1 = sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex b1 = sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = sqlgGraph.addVertex(T.label, "B", "name", "b2");
+
+        a1.addEdge("e_a", b1);
+        a2.addEdge("e_a", b2);
+
+        GraphTraversal<Vertex, Path> t = sqlgGraph.traversal().V(a1, a2).order().by("name").optional(__.out()).path();
+        Assert.assertTrue(t.hasNext());
+        Path p = t.next();
+        Assert.assertEquals(2, p.size());
+        Vertex v1 = p.get(0);
+        Assert.assertEquals("a1", v1.property("name").value());
+        Vertex v2 = p.get(1);
+        Assert.assertEquals("b1", v2.property("name").value());
+        Assert.assertTrue(t.hasNext());
+        p = t.next();
+        Assert.assertEquals(2, p.size());
+        v1 = p.get(0);
+        Assert.assertEquals("a2", v1.property("name").value());
+        v2 = p.get(1);
+        Assert.assertEquals("b2", v2.property("name").value());
+
+        b1.remove();
+        this.sqlgGraph.tx().commit();
+
+        List<Path> paths  = sqlgGraph.traversal().V(a2, a1).order().by("name").optional(__.out()).path().toList();
+        Assert.assertEquals(2, paths.size());
+        Assert.assertEquals(1, paths.get(0).size());
+
+        t = sqlgGraph.traversal().V(a2, a1).order().by("name").optional(__.out()).path();
+        Assert.assertTrue(t.hasNext());
+        p = t.next();
+        Assert.assertEquals(1, p.size());
+        v1 = p.get(0);
+        Assert.assertEquals("a1", v1.property("name").value());
+        Assert.assertTrue(t.hasNext());
+        p = t.next();
+        Assert.assertEquals(2, p.size());
+        v1 = p.get(0);
+        Assert.assertEquals("a2", v1.property("name").value());
+        v2 = p.get(1);
+        Assert.assertEquals("b2", v2.property("name").value());
+    }
 
     @Test
     public void testOptionalWithOrder() {
@@ -250,7 +311,7 @@ public class TestOptionalWithOrder extends BaseTest {
         //This query is no fully optimized.
         //The range messes it up, so it has a SqlgVertexStep
         assertStep(traversal.getSteps().get(0), true, false, false, true);
-        Step<?,?> step = traversal.getSteps().get(1);
+        Step<?, ?> step = traversal.getSteps().get(1);
         Assert.assertTrue(step instanceof SqlgOptionalStepBarrier);
 //        SqlgOptionalStepBarrier<?,?,?> sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier<?, ?, ?>) step;
         SqlgOptionalStepBarrier<?> sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier<?>) step;
@@ -339,10 +400,11 @@ public class TestOptionalWithOrder extends BaseTest {
                                 )
                 )
                 .path();
+//        printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
-        assertStep(traversal.getSteps().get(0), true, false, false, false);
+        assertStep(traversal.getSteps().get(0), true, true, false, true);
 
         Assert.assertEquals(7, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(
@@ -474,6 +536,49 @@ public class TestOptionalWithOrder extends BaseTest {
                         p.get(2).equals(b3)
         ).findAny().get());
         Assert.assertEquals(0, paths.size());
+    }
+
+    @Test
+    public void testOptionalWithOrderBy3() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "name", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "name", "d2");
+        Vertex d3 = this.sqlgGraph.addVertex(T.label, "D", "name", "d3");
+        Edge ab1 = a1.addEdge("ab", b1, "order", 3);
+        Edge ab2 = a1.addEdge("ab", b2, "order", 2);
+        Edge ab3 = a1.addEdge("ab", b3, "order", 1);
+        Edge ab4 = a2.addEdge("ab", b4, "order", 0);
+
+        Edge bc1 = b1.addEdge("bc", c1, "order", 3);
+        Edge bc2 = b1.addEdge("bc", c2, "order", 2);
+        Edge bc3 = b1.addEdge("bc", c3, "order", 1);
+        Edge cd1 = c1.addEdge("cd", d1, "order", 3);
+        Edge cd2 = c1.addEdge("cd", d2, "order", 2);
+        Edge cd3 = c1.addEdge("cd", d3, "order", 1);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1, a2)
+                .optional(
+                        __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.incr)
+                                .optional(
+                                        __.outE("bc").as("bc").otherV().as("vc").order().by(__.select("bc").by("order"), Order.incr)
+                                                .optional(
+                                                        __.outE("cd").as("cd").inV().as("vd").order().by(__.select("cd").by("order"), Order.incr)
+                                                )
+                                )
+                )
+                .path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        System.out.println(paths);
+
     }
 
     @Test

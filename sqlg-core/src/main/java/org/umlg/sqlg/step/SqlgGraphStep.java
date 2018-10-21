@@ -132,6 +132,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         return false;
     }
 
+    @Override
     public void setEagerLoad(boolean eager) {
         this.eagerLoad = eager;
     }
@@ -206,7 +207,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         Set<SchemaTableTree> rootSchemaTableTrees = parseForStrategy();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
         if (this.replacedStepTree.hasOrderBy()) {
-            if (isForMultipleQueries() || !this.replacedStepTree.orderByIsOrder()) {
+            if (isForMultipleQueries() || !this.replacedStepTree.orderByIsOrder() || this.replacedStepTree.orderByIsBeforeLeftJoin()) {
                 setEagerLoad(true);
                 //Remove the dbComparators
                 for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {

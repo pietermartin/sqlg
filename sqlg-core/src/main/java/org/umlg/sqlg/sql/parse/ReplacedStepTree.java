@@ -151,6 +151,20 @@ public class ReplacedStepTree {
         return false;
     }
 
+    public boolean orderByIsBeforeLeftJoin() {
+        List<ReplacedStep<?, ?>> steps = linearPathToLeafNode();
+        boolean foundOrderByStep = false;
+        for (ReplacedStep<?, ?> replacedStep : steps) {
+            if (!foundOrderByStep && !replacedStep.getSqlgComparatorHolder().getComparators().isEmpty()) {
+                foundOrderByStep = true;
+            }
+            if (foundOrderByStep && replacedStep.isLeftJoin()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean orderByIsOrder() {
         for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
