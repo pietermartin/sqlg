@@ -3526,3 +3526,7 @@ public void queryCache() {
 <5> Use the 'person' VertexLabel to get its 'knows' out edge.
 <6> Use the 'person' VertexLabel to get its 'name' property. Properties are represented by the `PropertyColumn` class.
 <7> On the `PropertyColumn` object one can get the `PropertyType`. PropertyType is an enum representing all data types supported by Sqlg.
+
+== Postgresql Partitioning
+
+Sqlg supports `postgresql` partitioning. To partition a table it needs to be created upfront using the `Topology` api.
