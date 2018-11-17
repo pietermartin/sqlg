@@ -7,11 +7,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.*;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IncidentToAdjacentStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.MatchPredicateStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.RepeatUnrollStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.barrier.SqlgBranchStepBarrier;
 import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -35,7 +39,10 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
         //noinspection OptionalGetWithoutIsPresent
-        if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         List<ChooseStep> chooseSteps = TraversalHelper.getStepsOfAssignableClass(ChooseStep.class, traversal);
@@ -87,7 +94,6 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                 MatchPredicateStrategy.class,
                 RepeatUnrollStrategy.class,
                 PathRetractionStrategy.class,
-//                InlineFilterStrategy.class,
                 MessagePassingReductionStrategy.class,
                 IncidentToAdjacentStrategy.class
         ).collect(Collectors.toSet());

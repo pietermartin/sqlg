@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.Inli
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.SqlgHasStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +30,10 @@ public class SqlgHasStepStrategy extends AbstractTraversalStrategy<TraversalStra
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
-        //noinspection OptionalGetWithoutIsPresent
         if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         List<HasStep> hasSteps = TraversalHelper.getStepsOfAssignableClass(HasStep.class, traversal);

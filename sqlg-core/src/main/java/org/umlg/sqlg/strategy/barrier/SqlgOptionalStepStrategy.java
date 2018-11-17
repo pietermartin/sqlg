@@ -14,6 +14,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.barrier.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -33,8 +34,10 @@ public class SqlgOptionalStepStrategy<S> extends AbstractTraversalStrategy<Trave
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
-        //noinspection OptionalGetWithoutIsPresent
         if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         List<OptionalStep> optionalSteps = TraversalHelper.getStepsOfAssignableClass(OptionalStep.class, traversal);

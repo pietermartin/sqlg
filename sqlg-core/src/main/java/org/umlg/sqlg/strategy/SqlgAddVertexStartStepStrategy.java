@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.SqlgAddVertexStartStep;
 import org.umlg.sqlg.strategy.barrier.SqlgVertexStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -25,8 +26,10 @@ public class SqlgAddVertexStartStepStrategy extends AbstractTraversalStrategy<Tr
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
-        //noinspection OptionalGetWithoutIsPresent
         if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         List<AddVertexStartStep> addVertexStartSteps = TraversalHelper.getStepsOfAssignableClassRecursively(AddVertexStartStep.class, traversal);

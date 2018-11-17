@@ -6,10 +6,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.util.NumberHelper;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,10 +37,25 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
 
     @Override
     public void addGlobalChildOption(final M pickToken, final Traversal.Admin<S, E> traversalOption) {
-        if (this.traversalOptions.containsKey(pickToken))
+        if (this.traversalOptions.containsKey(pickToken)) {
             this.traversalOptions.get(pickToken).add(traversalOption);
-        else
-            this.traversalOptions.put(pickToken, new ArrayList<>(Collections.singletonList(traversalOption)));
+        } else {
+            //ah well how about this little hack.
+            //BranchStep.PickTokenKey is private so reflecting it here.
+            if (pickToken.getClass().getSimpleName().equals("PickTokenKey")) {
+                try {
+                    Field privateStringField = pickToken.getClass().getDeclaredField("number");
+                    privateStringField.setAccessible(true);
+                    Number n = (Number) privateStringField.get(pickToken);
+                    //noinspection unchecked
+                    this.traversalOptions.put((M) PickTokenKey.make(n), new ArrayList<>(Collections.singletonList(traversalOption)));
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                this.traversalOptions.put(pickToken, new ArrayList<>(Collections.singletonList(traversalOption)));
+            }
+        }
         this.integrateChild(traversalOption);
     }
 
@@ -131,7 +148,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             } else {
                 for (Map.Entry<Traverser.Admin<S>, Object> entry : startBranchTraversalResults.entrySet()) {
                     Traverser.Admin<S> start = entry.getKey();
-                    Object branchEndObject = entry.getValue();
+                    Object branchEndObject = PickTokenKey.make(entry.getValue());
                     if (this.traversalOptions.containsKey(branchEndObject)) {
                         for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(branchEndObject)) {
                             optionTraversal.addStart(start);
@@ -246,4 +263,38 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
         return Collections.singletonList(this.branchTraversal);
     }
 
+    /**
+     * PickTokenKey is basically a wrapper for numbers that are used as a PickToken. This is
+     * required in order to treat equal numbers of different data types as a match.
+     */
+    private static class PickTokenKey {
+
+        final Number number;
+
+        private PickTokenKey(final Number number) {
+            this.number = number;
+        }
+
+        static Object make(final Object value) {
+            return value instanceof Number ? new PickTokenKey((Number) value) : value;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final PickTokenKey other = (PickTokenKey) o;
+            return 0 == NumberHelper.compare(number, other.number);
+        }
+
+        @Override
+        public int hashCode() {
+            return number.hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return number.toString();
+        }
+    }
 }

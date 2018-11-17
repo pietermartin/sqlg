@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.barrier.SqlgAndStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +32,9 @@ public class SqlgAndStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
         //Only optimize SqlgGraph. StarGraph also passes through here.
         //noinspection OptionalGetWithoutIsPresent
         if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         List<AndStep> andSteps = TraversalHelper.getStepsOfAssignableClass(AndStep.class, traversal);

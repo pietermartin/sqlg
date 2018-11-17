@@ -126,7 +126,7 @@ public class TestOptionalWithOrder extends BaseTest {
                 .V().hasLabel("A")
                 .optional(
                         __.out().order().by("name").optional(
-                                __.out().order().by("name", Order.decr)
+                                __.out().order().by("name", Order.desc)
                         )
                 )
                 .path();
@@ -232,7 +232,7 @@ public class TestOptionalWithOrder extends BaseTest {
                 .V().hasLabel("A")
                 .optional(
                         __.out().order().by("name").optional(
-                                __.out().order().by("name", Order.decr).range(2, 3)
+                                __.out().order().by("name", Order.desc).range(2, 3)
                         )
                 )
                 .path();
@@ -302,7 +302,7 @@ public class TestOptionalWithOrder extends BaseTest {
                 .V().hasLabel("A")
                 .optional(
                         __.out().order().by("name").range(1, 2).optional(
-                                __.out().order().by("name", Order.decr).range(2, 3)
+                                __.out().order().by("name", Order.desc).range(2, 3)
                         )
                 )
                 .path();
@@ -391,11 +391,11 @@ public class TestOptionalWithOrder extends BaseTest {
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1.id())
                 .optional(
-                        __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.incr)
+                        __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.asc)
                                 .optional(
-                                        __.outE("bc").as("bc").otherV().as("vc").order().by(__.select("bc").by("order"), Order.incr)
+                                        __.outE("bc").as("bc").otherV().as("vc").order().by(__.select("bc").by("order"), Order.asc)
                                                 .optional(
-                                                        __.outE("cd").as("cd").inV().as("vd").order().by(__.select("cd").by("order"), Order.incr)
+                                                        __.outE("cd").as("cd").inV().as("vd").order().by(__.select("cd").by("order"), Order.asc)
                                                 )
                                 )
                 )
@@ -566,11 +566,11 @@ public class TestOptionalWithOrder extends BaseTest {
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1, a2)
                 .optional(
-                        __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.incr)
+                        __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.asc)
                                 .optional(
-                                        __.outE("bc").as("bc").otherV().as("vc").order().by(__.select("bc").by("order"), Order.incr)
+                                        __.outE("bc").as("bc").otherV().as("vc").order().by(__.select("bc").by("order"), Order.asc)
                                                 .optional(
-                                                        __.outE("cd").as("cd").inV().as("vd").order().by(__.select("cd").by("order"), Order.incr)
+                                                        __.outE("cd").as("cd").inV().as("vd").order().by(__.select("cd").by("order"), Order.asc)
                                                 )
                                 )
                 )
@@ -621,7 +621,7 @@ public class TestOptionalWithOrder extends BaseTest {
                                 )
                 )
                 .out()
-                .order().by("order", Order.decr);
+                .order().by("order", Order.desc);
 
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();

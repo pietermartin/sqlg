@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.*;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,7 +24,10 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
-        if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         GraphStrategy.from(traversal).apply();

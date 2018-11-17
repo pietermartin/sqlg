@@ -10,6 +10,7 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.strategy.barrier.SqlgVertexStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +32,9 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
         if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().orElseThrow(IllegalStateException::new);

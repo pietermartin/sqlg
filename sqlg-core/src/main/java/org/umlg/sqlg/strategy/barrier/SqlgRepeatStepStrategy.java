@@ -15,6 +15,7 @@ import org.umlg.sqlg.step.barrier.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,8 +37,10 @@ public class SqlgRepeatStepStrategy extends AbstractTraversalStrategy<TraversalS
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
-        //noinspection OptionalGetWithoutIsPresent
         if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         while (true) {

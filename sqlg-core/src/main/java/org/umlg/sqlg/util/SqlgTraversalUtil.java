@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.LambdaFilterSt
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaCollectingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaFlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.LambdaSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SackValueStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
@@ -28,7 +29,6 @@ public class SqlgTraversalUtil {
         final Traverser.Admin<S> split = traverser.split();
         split.setSideEffects(traversal.getSideEffects());
         split.setBulk(1l);
-//        traversal.reset();
         traversal.addStart(split);
         return traversal.hasNext(); // filter
     }
@@ -91,19 +91,6 @@ public class SqlgTraversalUtil {
         return null;
     }
 
-    public static <S> S lastStepBefore(final Traversal.Admin<?, ?> traversal, final Class<S> stepClass, Step<?,?> step) {
-        int index = TraversalHelper.stepIndex(step, traversal);
-        List<S> steps = TraversalHelper.getStepsOfAssignableClass(stepClass, traversal);
-        Collections.reverse(steps);
-        for (S s : steps) {
-            int stepIndex = TraversalHelper.stepIndex((Step)s, traversal);
-            if (stepIndex < index) {
-                return s;
-            }
-        }
-        return null;
-    }
-
     public static <S> S stepAfter(final Traversal.Admin<?, ?> traversal, final Class<S> stepClass, Step<?,?> step) {
         int index = TraversalHelper.stepIndex(step, traversal);
         List<S> steps = TraversalHelper.getStepsOfAssignableClass(stepClass, traversal);
@@ -115,5 +102,9 @@ public class SqlgTraversalUtil {
             }
         }
         return null;
+    }
+
+    public static boolean mayOptimize(final Traversal.Admin<?, ?> traversal) {
+        return !TraversalHelper.hasStepOfAssignableClass(InjectStep.class, traversal);
     }
 }

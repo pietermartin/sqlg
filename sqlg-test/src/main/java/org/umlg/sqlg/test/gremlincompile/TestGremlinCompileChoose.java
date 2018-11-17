@@ -9,16 +9,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.core.Is;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2017/02/06
@@ -55,6 +54,48 @@ public class TestGremlinCompileChoose extends BaseTest {
             System.out.println(stopWatch.toString());
             stopWatch.reset();
         }
+    }
+
+    private static <A, B> void checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
+        final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted(Comparator.comparing(a -> a.getKey().toString())).collect(Collectors.toList());
+        final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted(Comparator.comparing(a -> a.getKey().toString())).collect(Collectors.toList());
+        Assert.assertEquals(expectedList.size(), actualList.size());
+        for (int i = 0; i < actualList.size(); i++) {
+            Assert.assertEquals(expectedList.get(i).getKey(), actualList.get(i).getKey());
+            Assert.assertEquals(expectedList.get(i).getValue(), actualList.get(i).getValue());
+        }
+    }
+
+    @Test
+    public void g_injectX1X_chooseXisX1X__constantX10Xfold__foldX() {
+        final Traversal<Integer, List<Integer>> traversal =  this.sqlgGraph.traversal()
+                .inject(1)
+                .choose(
+                        __.is(1),
+                        __.constant(10).fold(),
+                        __.fold()
+                );
+        printTraversalForm(traversal);
+        Assert.assertEquals(Collections.singletonList(10), traversal.next());
+        Assert.assertThat(traversal.hasNext(), Is.is(false));
+    }
+
+    @Test
+    public void g_V_hasLabelXpersonX_chooseXageX__optionX27L__constantXyoungXX_optionXnone__constantXoldXX_groupCount() {
+        loadModern();
+        final Traversal<Vertex, Map<String, Long>> traversal =  this.sqlgGraph.traversal()
+                .V().hasLabel("person").choose(__.values("age"))
+                .option(27, __.constant("young"))
+                .option(TraversalOptionParent.Pick.none, __.constant("old"))
+                .groupCount();
+
+        printTraversalForm(traversal);
+        final Map<String, Long> expected = new HashMap<>(2);
+        expected.put("young", 1L);
+        expected.put("old", 3L);
+        Assert.assertTrue(traversal.hasNext());
+        checkMap(expected, traversal.next());
+        Assert.assertFalse(traversal.hasNext());
     }
 
     @Test

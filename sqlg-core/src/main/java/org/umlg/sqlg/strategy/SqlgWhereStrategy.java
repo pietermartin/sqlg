@@ -10,6 +10,7 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.*;
 
@@ -32,9 +33,12 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
 	@SuppressWarnings("resource")
 	@Override
 	public void apply(Admin<?, ?> traversal) {
-		if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
-            return;
-        }
+		if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+			return;
+		}
+		if (!SqlgTraversalUtil.mayOptimize(traversal)) {
+			return;
+		}
         SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().get();
         //This is because in normal BatchMode the new vertices are cached with it edges.
         //The query will read from the cache if this is for a cached vertex

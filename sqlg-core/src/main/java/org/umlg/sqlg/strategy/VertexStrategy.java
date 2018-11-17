@@ -17,6 +17,7 @@ import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +42,10 @@ public class VertexStrategy extends BaseStrategy {
 
     public void apply() {
         //Only optimize graph step.
-        if (!(this.traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+            return;
+        }
+        if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {

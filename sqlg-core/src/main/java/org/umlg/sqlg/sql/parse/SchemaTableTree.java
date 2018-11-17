@@ -1399,7 +1399,11 @@ public class SchemaTableTree {
                 result += " " + alias;
                 if (comparator.getValue1() == Order.incr) {
                     result += " ASC";
+                } else if (comparator.getValue1() == Order.asc) {
+                    result += " ASC";
                 } else if (comparator.getValue1() == Order.decr) {
+                    result += " DESC";
+                } else if (comparator.getValue1() == Order.desc) {
                     result += " DESC";
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
@@ -1463,7 +1467,11 @@ public class SchemaTableTree {
                 result += " " + alias;
                 if (comparator.getValue1() == Order.incr) {
                     result += " ASC";
+                } else if (comparator.getValue1() == Order.asc) {
+                    result += " ASC";
                 } else if (comparator.getValue1() == Order.decr) {
+                    result += " DESC";
+                } else if (comparator.getValue1() == Order.desc) {
                     result += " DESC";
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.toString());
