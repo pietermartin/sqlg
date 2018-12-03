@@ -247,65 +247,84 @@ If you do not connections to the database will remain open and eventually the co
 === Gremlin Console
 
 .Postgresql
- [pieter@pieter-laptop bin]$ ./gremlin.sh
-          \,,,/
-          (o o)
- -----oOOo-(3)-oOOo-----
- plugin activated: tinkerpop.server
- plugin activated: tinkerpop.utilities
- plugin activated: tinkerpop.tinkergraph
- gremlin> :install org.umlg sqlg-postgres 2.0.0.
- ==>Loaded: [org.umlg, sqlg-postgres, 2.0.0]
- gremlin> :plugin list
- ==>tinkerpop.server[active]
- ==>tinkerpop.gephi
- ==>tinkerpop.utilities[active]
- ==>tinkerpop.sugar
- ==>tinkerpop.credentials
- ==>tinkerpop.tinkergraph[active]
- ==>sqlg.postgres
- gremlin> :plugin use sqlg.postgres
- ==>sqlg.postgres activated
- gremlin> graph = SqlgGraph.open('pathTo/sqlg.properties')
- ==>sqlggraph[SqlGraph]
- gremlin> g = graph.traversal()
- ==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb), standard]
- gremlin> graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
- ==>null
- gremlin> g.V().count()
- ==>808
- gremlin>
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh
 
-.HSQLDB
- [pieter@pieter-laptop bin]$ ./gremlin.sh
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin> :install org.umlg sqlg-postgres 2.0.1-SNAPSHOT
+==>Loaded: [org.umlg, sqlg-postgres, 2.0.1-SNAPSHOT] - restart the console to use [sqlg.postgres]
+gremlin> :x
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh
 
-          \,,,/
-          (o o)
- -----oOOo-(3)-oOOo-----
- plugin activated: tinkerpop.server
- plugin activated: tinkerpop.utilities
- plugin activated: tinkerpop.tinkergraph
- gremlin> :install org.umlg sqlg-hsqldb 2.0.0.
- ==>Loaded: [org.umlg, sqlg-hsqldb, 2.0.0]
- gremlin> :plugin list
- ==>tinkerpop.server[active]
- ==>tinkerpop.gephi
- ==>tinkerpop.utilities[active]
- ==>tinkerpop.sugar
- ==>tinkerpop.credentials
- ==>tinkerpop.tinkergraph[active]
- ==>sqlg.hsqldb
- gremlin> :plugin use sqlg.hsqldb
- ==>sqlg.hsqldb activated
- gremlin> graph = SqlgGraph.open('pathTo/sqlg.properties')
- ==>sqlggraph[SqlGraph]
- gremlin> g = graph.traversal()
- ==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:hsqldb:file:src/test/db/sqlgraphdb), standard]
- gremlin> graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
- ==>null
- gremlin> g.V().count()
- ==>808
- gremlin>
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin> :plugin list
+==>tinkerpop.server[active]
+==>tinkerpop.gephi
+==>tinkerpop.utilities[active]
+==>tinkerpop.sugar
+==>tinkerpop.credentials
+==>sqlg.postgres
+==>tinkerpop.tinkergraph[active]
+gremlin> :plugin use sqlg.postgres
+==>sqlg.postgres activated
+gremlin> graph = SqlgGraph.open('/pathTo/sqlg.properties')
+==>sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb) (user = postgres)
+gremlin> g = graph.traversal()
+==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb) (user = postgres), standard]
+gremlin> graph.io(GraphSONIo.build(GraphSONVersion.V3_0)).readGraph("/pathTo/grateful-dead-v3d0.json")
+==>null
+gremlin> g.V().count()
+==>820
+gremlin>
+
+.Mariadb
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin> :install org.umlg sqlg-mariadb 2.0.1-SNAPSHOT
+==>Loaded: [org.umlg, sqlg-mariadb, 2.0.1-SNAPSHOT]
+gremlin> :plugin list
+==>tinkerpop.server[active]
+==>tinkerpop.gephi
+==>tinkerpop.utilities[active]
+==>tinkerpop.sugar
+==>tinkerpop.credentials
+==>tinkerpop.tinkergraph[active]
+==>sqlg.mariadb
+gremlin> :x
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin> :plugin use sqlg.mariadb
+==>sqlg.mariadb activated
+gremlin> graph = SqlgGraph.open('/pathTo/sqlg.properties')
+==>sqlggraph[SqlGraph] (jdbc:mariadb://localhost:3306/?useSSL=false) (user = mariadb)
+gremlin> g = graph.traversal()
+==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:mariadb://localhost:3306/?useSSL=false) (user = mariadb), standard]
+gremlin> graph.io(GraphSONIo.build(GraphSONVersion.V3_0)).readGraph("/pathTo/grateful-dead-v3d0.json")
+==>null
+gremlin> g.V().count()
+==>815
+gremlin>
 
  [NOTE]
  If it is the first time to install sqlg, then you need to restart the gremlin console.

@@ -46,12 +46,17 @@ public class SqlgPostgresGremlinPlugin extends AbstractGremlinPlugin {
 
     private static final SqlgPostgresGremlinPlugin instance = new SqlgPostgresGremlinPlugin();
 
-    private SqlgPostgresGremlinPlugin() {
+    public SqlgPostgresGremlinPlugin() {
         super(NAME, imports);
     }
 
     public static SqlgPostgresGremlinPlugin instance() {
         return instance;
+    }
+
+    @Override
+    public boolean requireRestart() {
+        return true;
     }
 
 }

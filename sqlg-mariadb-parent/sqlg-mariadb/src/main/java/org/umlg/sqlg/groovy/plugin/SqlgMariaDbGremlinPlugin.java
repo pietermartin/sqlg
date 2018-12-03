@@ -7,12 +7,12 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 
 /**
- * Date: 2014/10/11
- * Time: 9:55 AM
+ * @author Pieter Martin (https://github.com/pietermartin)
+ * Date: 2018/12/03
  */
-public class SqlgMSSqlServerGremlinPlugin  extends AbstractGremlinPlugin {
+public class SqlgMariaDbGremlinPlugin extends AbstractGremlinPlugin {
 
-    private static final String NAME = "sqlg.mssqlserver";
+    private static final String NAME = "sqlg.mariadb";
     private static final ImportCustomizer imports;
 
     static {
@@ -44,18 +44,14 @@ public class SqlgMSSqlServerGremlinPlugin  extends AbstractGremlinPlugin {
         }
     }
 
-    private static final SqlgMSSqlServerGremlinPlugin instance = new SqlgMSSqlServerGremlinPlugin();
+    private static final SqlgMariaDbGremlinPlugin instance = new SqlgMariaDbGremlinPlugin();
 
-    public SqlgMSSqlServerGremlinPlugin() {
+    public SqlgMariaDbGremlinPlugin() {
         super(NAME, imports);
     }
 
-    public static SqlgMSSqlServerGremlinPlugin instance() {
+    public static SqlgMariaDbGremlinPlugin instance() {
         return instance;
     }
 
-    @Override
-    public boolean requireRestart() {
-        return true;
-    }
 }
