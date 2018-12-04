@@ -963,43 +963,22 @@ If you do not connections to the database will remain open and eventually the co
 </div>
 <div class="sect2">
 <h3 id="_gremlin_console">5.3. Gremlin Console</h3>
-<div class="literalblock">
+<div class="paragraph">
 <div class="title">Postgresql</div>
+<p>pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</p>
+</div>
+<div class="literalblock">
 <div class="content">
-<pre>[pieter@pieter-laptop bin]$ ./gremlin.sh
-         \,,,/
+<pre>         \,,,/
          (o o)
 -----oOOo-(3)-oOOo-----
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-gremlin&gt; :install org.umlg sqlg-postgres 2.0.0.
-==&gt;Loaded: [org.umlg, sqlg-postgres, 2.0.0]
-gremlin&gt; :plugin list
-==&gt;tinkerpop.server[active]
-==&gt;tinkerpop.gephi
-==&gt;tinkerpop.utilities[active]
-==&gt;tinkerpop.sugar
-==&gt;tinkerpop.credentials
-==&gt;tinkerpop.tinkergraph[active]
-==&gt;sqlg.postgres
-gremlin&gt; :plugin use sqlg.postgres
-==&gt;sqlg.postgres activated
-gremlin&gt; graph = SqlgGraph.open('pathTo/sqlg.properties')
-==&gt;sqlggraph[SqlGraph]
-gremlin&gt; g = graph.traversal()
-==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb), standard]
-gremlin&gt; graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
-==&gt;null
-gremlin&gt; g.V().count()
-==&gt;808
-gremlin&gt;</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="title">HSQLDB</div>
-<div class="content">
-<pre>[pieter@pieter-laptop bin]$ ./gremlin.sh</pre>
+gremlin&gt; :install org.umlg sqlg-postgres 2.0.1-SNAPSHOT
+==&gt;Loaded: [org.umlg, sqlg-postgres, 2.0.1-SNAPSHOT] - restart the console to use [sqlg.postgres]
+gremlin&gt; :x
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</pre>
 </div>
 </div>
 <div class="literalblock">
@@ -1010,8 +989,41 @@ gremlin&gt;</pre>
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-gremlin&gt; :install org.umlg sqlg-hsqldb 2.0.0.
-==&gt;Loaded: [org.umlg, sqlg-hsqldb, 2.0.0]
+gremlin&gt; :plugin list
+==&gt;tinkerpop.server[active]
+==&gt;tinkerpop.gephi
+==&gt;tinkerpop.utilities[active]
+==&gt;tinkerpop.sugar
+==&gt;tinkerpop.credentials
+==&gt;sqlg.postgres
+==&gt;tinkerpop.tinkergraph[active]
+gremlin&gt; :plugin use sqlg.postgres
+==&gt;sqlg.postgres activated
+gremlin&gt; graph = SqlgGraph.open('/pathTo/sqlg.properties')
+==&gt;sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb) (user = postgres)
+gremlin&gt; g = graph.traversal()
+==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb) (user = postgres), standard]
+gremlin&gt; graph.io(GraphSONIo.build(GraphSONVersion.V3_0)).readGraph("/pathTo/grateful-dead-v3d0.json")
+==&gt;null
+gremlin&gt; g.V().count()
+==&gt;820
+gremlin&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">Mariadb</div>
+<p>pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin&gt; :install org.umlg sqlg-mariadb 2.0.1-SNAPSHOT
+==&gt;Loaded: [org.umlg, sqlg-mariadb, 2.0.1-SNAPSHOT]
 gremlin&gt; :plugin list
 ==&gt;tinkerpop.server[active]
 ==&gt;tinkerpop.gephi
@@ -1019,17 +1031,29 @@ gremlin&gt; :plugin list
 ==&gt;tinkerpop.sugar
 ==&gt;tinkerpop.credentials
 ==&gt;tinkerpop.tinkergraph[active]
-==&gt;sqlg.hsqldb
-gremlin&gt; :plugin use sqlg.hsqldb
-==&gt;sqlg.hsqldb activated
-gremlin&gt; graph = SqlgGraph.open('pathTo/sqlg.properties')
-==&gt;sqlggraph[SqlGraph]
+==&gt;sqlg.mariadb
+gremlin&gt; :x
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin&gt; :plugin use sqlg.mariadb
+==&gt;sqlg.mariadb activated
+gremlin&gt; graph = SqlgGraph.open('/pathTo/sqlg.properties')
+==&gt;sqlggraph[SqlGraph] (jdbc:mariadb://localhost:3306/?useSSL=false) (user = mariadb)
 gremlin&gt; g = graph.traversal()
-==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:hsqldb:file:src/test/db/sqlgraphdb), standard]
-gremlin&gt; graph.io(graphml()).readGraph('pathTo/grateful-dead.xml')
+==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:mariadb://localhost:3306/?useSSL=false) (user = mariadb), standard]
+gremlin&gt; graph.io(GraphSONIo.build(GraphSONVersion.V3_0)).readGraph("/pathTo/grateful-dead-v3d0.json")
 ==&gt;null
 gremlin&gt; g.V().count()
-==&gt;808
+==&gt;815
 gremlin&gt;</pre>
 </div>
 </div>
@@ -5064,7 +5088,7 @@ public void testPartitioningList() {
 <div id="footer">
 <div id="footer-text">
 Version 2.0.0<br>
-Last updated 2018-11-12 07:29:51 SAST
+Last updated 2018-12-03 22:48:14 SAST
 </div>
 </div>
 <script src="tocbot.js"></script>
