@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -10,6 +11,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -17,6 +19,33 @@ import java.util.List;
  * Time: 6:22 AM
  */
 public class TestGremlinCompileWithInOutV extends BaseTest {
+
+    /**
+     * P.without(Collections.emptySet()) translates to the sql where clause IS NOT NULL
+     */
+    @Test
+    public void testWithoutEmptyCollection() {
+        Graph g = this.sqlgGraph;
+        Vertex v1 = g.addVertex(T.label, "A", "name", "a1");
+        Vertex v2 = g.addVertex(T.label, "A", "name", "a2", "prop", "p2");
+        Vertex v3 = g.addVertex(T.label, "A", "name", "a3", "prop", "p3");
+        Vertex v4 = g.addVertex(T.label, "A", "name", "a4", "prop", "");
+        Vertex v5 = g.addVertex(T.label, "A", "name", "a5");
+
+        v1.addEdge("e", v2);
+        v1.addEdge("e", v3);
+        v1.addEdge("e", v4);
+        v1.addEdge("e", v5);
+
+        g.tx().commit();
+
+        List<Vertex> result = g.traversal().V(v1).out("e").has("prop", P.without(Collections.emptySet())).toList();
+        Assert.assertEquals(3, result.size());
+        Assert.assertTrue(result.contains(v2));
+        Assert.assertTrue(result.contains(v3));
+        Assert.assertTrue(result.contains(v4));
+
+    }
 
     @Test
     public void testHasWithInMultipleHasContainers() {

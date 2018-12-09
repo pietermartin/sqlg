@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileChoose;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithInOutV;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileChoose;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileChoose.class
+        TestGremlinCompileWithInOutV.class
 })
 public class AnyTest {
 }
