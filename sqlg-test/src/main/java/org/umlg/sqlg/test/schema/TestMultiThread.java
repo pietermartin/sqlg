@@ -6,21 +6,26 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.junit.Assert.fail;
@@ -94,11 +99,20 @@ public class TestMultiThread extends BaseTest {
         threadTryCommitTx.join();
 
         Assert.assertTrue(noVerticesInFirstThread.get());
-        assertVertexEdgeCounts(0, 0);
+        assertVertexEdgeCounts(sqlgGraph, 0, 0);
     }
 
     @Test
     public void shouldExecuteWithCompetingThreads() throws InterruptedException {
+        //Create the schema upfront so that graphs (Hsqldb, H2, Mysql...) that do not support transactional schema's can succeed.
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("vertex", new HashMap<String, PropertyType>() {{
+            put("test", PropertyType.LONG);
+            put("blah", PropertyType.DOUBLE);
+        }});
+        vertexLabel.ensureEdgeLabelExist("friend", vertexLabel, new HashMap<String, PropertyType>() {{
+            put("bloop", PropertyType.INTEGER);
+        }});
+        this.sqlgGraph.tx().commit();
         final Graph graph = this.sqlgGraph;
         int totalThreads = 250;
         final AtomicInteger vertices = new AtomicInteger(0);
@@ -111,34 +125,32 @@ public class TestMultiThread extends BaseTest {
                 public void run() {
                     try {
                         final Random random = new Random();
-                        for (int i = 0; i < 100; i++) {
+                        if (random.nextBoolean()) {
+                            final Vertex a = graph.addVertex();
+                            final Vertex b = graph.addVertex();
+                            final Edge e = a.addEdge("friend", b);
+
+                            vertices.getAndAdd(2);
+                            a.property("test", this.getId());
+                            b.property("blah", random.nextDouble());
+                            e.property("bloop", random.nextInt());
+                            edges.getAndAdd(1);
+                            graph.tx().commit();
+                        } else {
+                            final Vertex a = graph.addVertex();
+                            final Vertex b = graph.addVertex();
+                            final Edge e = a.addEdge("friend", b);
+
+                            a.property("test", this.getId());
+                            b.property("blah", random.nextDouble());
+                            e.property("bloop", random.nextInt());
+
                             if (random.nextBoolean()) {
-                                final Vertex a = graph.addVertex();
-                                final Vertex b = graph.addVertex();
-                                final Edge e = a.addEdge("friend", b);
-
-                                vertices.getAndAdd(2);
-                                a.property("test", this.getId());
-                                b.property("blah", random.nextDouble());
-                                e.property("bloop", random.nextInt());
-                                edges.getAndAdd(1);
                                 graph.tx().commit();
+                                vertices.getAndAdd(2);
+                                edges.getAndAdd(1);
                             } else {
-                                final Vertex a = graph.addVertex();
-                                final Vertex b = graph.addVertex();
-                                final Edge e = a.addEdge("friend", b);
-
-                                a.property("test", this.getId());
-                                b.property("blah", random.nextDouble());
-                                e.property("bloop", random.nextInt());
-
-                                if (random.nextBoolean()) {
-                                    graph.tx().commit();
-                                    vertices.getAndAdd(2);
-                                    edges.getAndAdd(1);
-                                } else {
-                                    graph.tx().rollback();
-                                }
+                                graph.tx().rollback();
                             }
                         }
                         completedThreads.getAndAdd(1);
@@ -148,18 +160,26 @@ public class TestMultiThread extends BaseTest {
                         logger.error("failure", e);
                         fail(e.getMessage());
                     } finally {
-                    	countDownLatch.countDown();
+                        countDownLatch.countDown();
                     }
                 }
             }.start();
         }
-        countDownLatch.await(5,TimeUnit.MINUTES);
+        countDownLatch.await(5, TimeUnit.MINUTES);
         Assert.assertEquals(completedThreads.get(), totalThreads);
         System.out.println(vertices.get());
-        assertVertexEdgeCounts(vertices.get(), edges.get());
+        assertVertexEdgeCounts(graph, vertices.get(), edges.get());
     }
 
-    private static void assertVertexEdgeCounts(final int expectedVertexCount, final int expectedEdgeCount) {
+    private static void assertVertexEdgeCounts(final Graph graph, final int expectedVertexCount, final int expectedEdgeCount) {
+        getAssertVertexEdgeCounts(expectedVertexCount, expectedEdgeCount).accept(graph);
+    }
+
+    private static Consumer<Graph> getAssertVertexEdgeCounts(final int expectedVertexCount, final int expectedEdgeCount) {
+        return (g) -> {
+            Assert.assertEquals(expectedVertexCount, IteratorUtils.count(g.vertices()));
+            Assert.assertEquals(expectedEdgeCount, IteratorUtils.count(g.edges()));
+        };
     }
 
     @Test
