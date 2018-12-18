@@ -232,7 +232,13 @@ public class SqlgGraph implements Graph {
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {
-        return open(configuration, createDataSource(configuration));
+        SqlgDataSource dataSource = createDataSource(configuration);
+        try {
+            return open(configuration, dataSource);
+        } catch (Exception ex) {
+            dataSource.close();
+            throw ex;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -246,7 +252,7 @@ public class SqlgGraph implements Graph {
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
         sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
-        return (G) sqlgGraph;
+        return (G)sqlgGraph;
     }
 
     public static <G extends Graph> G open(final String pathToSqlgProperties) {
@@ -255,7 +261,13 @@ public class SqlgGraph implements Graph {
         Configuration configuration;
         try {
             configuration = new PropertiesConfiguration(pathToSqlgProperties);
-            return open(configuration, createDataSource(configuration));
+            SqlgDataSource dataSource = createDataSource(configuration);
+            try {
+                return open(configuration, dataSource);
+            } catch (Exception ex) {
+                dataSource.close();
+                throw ex;
+            }
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
