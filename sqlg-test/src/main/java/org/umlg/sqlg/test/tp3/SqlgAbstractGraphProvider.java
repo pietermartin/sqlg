@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -50,7 +49,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
         SqlgPlugin plugin = getSqlgPlugin();
         SqlDialect sqlDialect = plugin.instantiateDialect();
         try {
-            sqlgDataSource = SqlgGraph.createDataSourceFactory(configuration).setup(plugin.getDriverFor(configuration.getString("jdbc.url")), configuration);
+            sqlgDataSource = SqlgDataSourceFactory.create(configuration);
             try (Connection conn = sqlgDataSource.getDatasource().getConnection()) {
                 SqlgUtil.dropDb(sqlDialect, conn);
             }

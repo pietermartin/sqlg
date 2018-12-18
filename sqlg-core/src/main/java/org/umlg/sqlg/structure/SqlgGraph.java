@@ -28,9 +28,6 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.strategy.barrier.*;
-import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
-import org.umlg.sqlg.structure.ds.C3p0DataSourceFactory;
-import org.umlg.sqlg.structure.ds.JNDIDataSource;
 import org.umlg.sqlg.structure.topology.IndexType;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Topology;
@@ -235,17 +232,17 @@ public class SqlgGraph implements Graph {
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {
-        return open(configuration, createDataSourceFactory(configuration));
+        return open(configuration, createDataSource(configuration));
     }
 
     @SuppressWarnings("unchecked")
-    private static <G extends Graph> G open(final Configuration configuration, SqlgDataSourceFactory dataSourceFactory) {
+    private static <G extends Graph> G open(final Configuration configuration, SqlgDataSource dataSource) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
         if (!configuration.containsKey(JDBC_URL))
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", JDBC_URL));
 
-        SqlgGraph sqlgGraph = new SqlgGraph(configuration, dataSourceFactory);
+        SqlgGraph sqlgGraph = new SqlgGraph(configuration, dataSource);
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
         sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
@@ -258,44 +255,26 @@ public class SqlgGraph implements Graph {
         Configuration configuration;
         try {
             configuration = new PropertiesConfiguration(pathToSqlgProperties);
-            return open(configuration, createDataSourceFactory(configuration));
+            return open(configuration, createDataSource(configuration));
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static SqlgDataSourceFactory createDataSourceFactory(Configuration configuration) {
+    private static SqlgDataSource createDataSource(Configuration configuration) {
         try {
-            return (SqlgDataSourceFactory) Class.forName(configuration.getString("jdbc.factory", C3p0DataSourceFactory.class.getCanonicalName())).newInstance();
+            return SqlgDataSourceFactory.create(configuration);
         } catch (Exception ex) {
-            throw new IllegalStateException("Could not create sqlg factory", ex);
+            throw new IllegalStateException("Could not create sqlg data source.", ex);
         }
     }
 
-    private SqlgGraph(final Configuration configuration, SqlgDataSourceFactory dataSourceFactory) {
+    private SqlgGraph(final Configuration configuration, SqlgDataSource dataSource) {
         this.configuration = configuration;
+        this.jdbcUrl = this.configuration.getString(JDBC_URL);
+        this.sqlgDataSource = dataSource;
+        this.sqlDialect = dataSource.getDialect();
         try {
-            this.jdbcUrl = this.configuration.getString(JDBC_URL);
-
-            if (JNDIDataSource.isJNDIUrl(this.jdbcUrl)) {
-                this.sqlgDataSource = JNDIDataSource.create(configuration);
-
-                try (Connection conn = this.getConnection()) {
-                    SqlgPlugin p = findSqlgPlugin(conn.getMetaData());
-                    if (p == null) {
-                        throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + this.jdbcUrl);
-                    }
-                    this.sqlDialect = p.instantiateDialect();
-                }
-            } else {
-                SqlgPlugin p = findSqlgPlugin(this.jdbcUrl);
-                if (p == null) {
-                    throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + this.jdbcUrl);
-                }
-                this.sqlDialect = p.instantiateDialect();
-                this.sqlgDataSource = dataSourceFactory.setup(p.getDriverFor(jdbcUrl), this.configuration);
-            }
-
             logger.debug(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.getJdbcUrl(), configuration.getInt("maxPoolSize", 100)));
             try (Connection conn = this.getConnection()) {
                 //This is used by Hsqldb to set the transaction semantics. MVCC and cache
