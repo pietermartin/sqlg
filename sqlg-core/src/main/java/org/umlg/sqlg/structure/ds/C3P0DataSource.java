@@ -1,34 +1,93 @@
 package org.umlg.sqlg.structure.ds;
 
+import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.structure.SqlgDataSourceFactory;
+import org.umlg.sqlg.SqlgPlugin;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.structure.SqlgDataSource;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Date: 2014/07/12
  * Time: 7:00 AM
  */
-public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource {
+public class C3P0DataSource implements SqlgDataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(C3P0DataSource.class);
 
     private final ComboPooledDataSource dss;
     private final String jdbcUrl;
+    private final SqlDialect sqlDialect;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    C3P0DataSource(String jdbcUrl, ComboPooledDataSource dss) {
+    public static C3P0DataSource create(final Configuration configuration) throws Exception {
+        Preconditions.checkState(configuration.containsKey(SqlgGraph.JDBC_URL));
+        Preconditions.checkState(configuration.containsKey("jdbc.username"));
+        Preconditions.checkState(configuration.containsKey("jdbc.password"));
+
+        String jdbcUrl = configuration.getString(SqlgGraph.JDBC_URL);
+        SqlgPlugin p = findSqlgPlugin(jdbcUrl);
+        if (p == null) {
+            throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
+        }
+
+        SqlDialect sqlDialect = p.instantiateDialect();
+
+        String driver = p.getDriverFor(jdbcUrl);
+        String username = configuration.getString("jdbc.username");
+        String password = configuration.getString("jdbc.password");
+
+        ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
+        comboPooledDataSource.setDriverClass(driver);
+        comboPooledDataSource.setJdbcUrl(jdbcUrl);
+        comboPooledDataSource.setMaxPoolSize(configuration.getInt("maxPoolSize", 100));
+        comboPooledDataSource.setMaxIdleTime(configuration.getInt("maxIdleTime", 3600));
+        comboPooledDataSource.setForceUseNamedDriverClass(true);
+        if (!StringUtils.isEmpty(username)) {
+            comboPooledDataSource.setUser(username);
+        }
+
+        if (!StringUtils.isEmpty(password)) {
+            comboPooledDataSource.setPassword(password);
+        }
+
+        return new C3P0DataSource(jdbcUrl, comboPooledDataSource, sqlDialect);
+    }
+
+    private static SqlgPlugin findSqlgPlugin(String connectionUri) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, C3P0DataSource.class.getClassLoader())) {
+            if (p.getDriverFor(connectionUri) != null) {
+                return p;
+            }
+        }
+
+        return null;
+    }
+
+    private C3P0DataSource(String jdbcUrl, ComboPooledDataSource dss, SqlDialect sqlDialect) {
         this.dss = dss;
         this.jdbcUrl = jdbcUrl;
+        this.sqlDialect = sqlDialect;
     }
 
     @Override
     public final DataSource getDatasource() {
         return this.dss;
+    }
+
+    @Override
+    public SqlDialect getDialect() {
+        return this.sqlDialect;
     }
 
     @Override
