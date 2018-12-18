@@ -1,3 +1,12 @@
+##2.0.1
+* TestMultiThread.shouldExecuteWithCompetingThreads was failing on `RDBMS` that do not support transaction schema 
+manipulation. Creating the schema upfront now.
+* Fix bug [#322](https://github.com/pietermartin/sqlg/issues/322) Leaked database connections if `SqlgGraph` failed to 
+start up.
+* Fix bug [#321](https://github.com/pietermartin/sqlg/issues/321) Fix a bug with `P.without`.
+* Fix bug [#320](https://github.com/pietermartin/sqlg/issues/320) Fix regressions with respect to Sqlg executing properly 
+in the gremlin console.
+
 ##2.0.0
 * Add user supplied primary key support.
 * Add partitioning support on Postgresql 10.
