@@ -81,6 +81,10 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         reason = "Fails for HSQLDB. HSQLDB has its own interrupt logic that does not play well with TinkerPop's interrupt.")
 @OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
+        method = "shouldExecuteWithCompetingThreads",
+        reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
         reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
 @OptOut(
