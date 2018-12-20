@@ -255,8 +255,8 @@ pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-grem
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-gremlin> :install org.umlg sqlg-postgres 2.0.1-SNAPSHOT
-==>Loaded: [org.umlg, sqlg-postgres, 2.0.1-SNAPSHOT] - restart the console to use [sqlg.postgres]
+gremlin> :install org.umlg sqlg-postgres 2.0.1
+==>Loaded: [org.umlg, sqlg-postgres, 2.0.1] - restart the console to use [sqlg.postgres]
 gremlin> :x
 pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh
 
@@ -295,8 +295,8 @@ pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-grem
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-gremlin> :install org.umlg sqlg-mariadb 2.0.1-SNAPSHOT
-==>Loaded: [org.umlg, sqlg-mariadb, 2.0.1-SNAPSHOT]
+gremlin> :install org.umlg sqlg-mariadb 2.0.1
+==>Loaded: [org.umlg, sqlg-mariadb, 2.0.1]
 gremlin> :plugin list
 ==>tinkerpop.server[active]
 ==>tinkerpop.gephi
