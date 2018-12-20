@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test;
+package org.umlg.sqlg.test.datasource;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
