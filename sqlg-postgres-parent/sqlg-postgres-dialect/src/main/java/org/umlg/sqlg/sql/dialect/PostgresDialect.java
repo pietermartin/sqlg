@@ -1302,7 +1302,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             }
 
-            sql.append("\n) AS v(id, ");
+            sql.append("\n) AS v(sqlg_special_reserved_id, ");
             count = 1;
             for (String key : keys) {
                 PropertyType propertyType = keyPropertyTypeMap.get(key);
@@ -1312,7 +1312,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             }
             sql.append(")");
-            sql.append("\nWHERE a.\"ID\" = v.id");
+            sql.append("\nWHERE a.\"ID\" = v.sqlg_special_reserved_id");
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
