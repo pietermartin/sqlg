@@ -114,6 +114,7 @@ public abstract class BaseStrategy {
      */
     boolean handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
         Step<?, ?> step = stepIterator.next();
+        removeTinkerPopLabels(step);
         if (step instanceof GraphStep) {
             doFirst(stepIterator, step, pathCount);
         } else if (this.sqlgStep == null) {
@@ -214,6 +215,15 @@ public abstract class BaseStrategy {
             }
         }
         return true;
+    }
+
+    private void removeTinkerPopLabels(Step<?, ?> step) {
+        Set<String> labelCopy = new HashSet<>(step.getLabels());
+        for (String label : labelCopy) {
+            if (Graph.Hidden.isHidden(label)) {
+                step.removeLabel(label);
+            }
+        }
     }
 
     private boolean handlePropertyMapStep(Step<?, ?> step) {
@@ -410,6 +420,7 @@ public abstract class BaseStrategy {
         ListIterator<Step<?, ?>> optionalStepsIterator = optionalTraversalSteps.listIterator();
         while (optionalStepsIterator.hasNext()) {
             Step internalOptionalStep = optionalStepsIterator.next();
+            removeTinkerPopLabels(internalOptionalStep);
             if (internalOptionalStep instanceof VertexStep || internalOptionalStep instanceof EdgeVertexStep || internalOptionalStep instanceof EdgeOtherVertexStep) {
                 handleVertexStep(optionalStepsIterator, (AbstractStep<?, ?>) internalOptionalStep, pathCount);
                 //if the chooseStepStack size is greater than the chooseStepNestedCount then it means the just executed

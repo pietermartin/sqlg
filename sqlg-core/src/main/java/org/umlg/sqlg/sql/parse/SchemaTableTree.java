@@ -178,6 +178,12 @@ public class SchemaTableTree {
         initializeAliasColumnNameMaps();
     }
 
+//    public void addLabel(String label) {
+//        Set<String> newLabels = new HashSet<>(getLabels());
+//        newLabels.add(label);
+//        this.labels = Collections.unmodifiableSet(newLabels);
+//    }
+
     private void setIdentifiersAndDistributionColumn() {
         if (this.schemaTable.isVertexTable()) {
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getVertexLabel(
@@ -516,10 +522,12 @@ public class SchemaTableTree {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //left joins but not the leave nodes as they are already present in the main sql result set.
         if (current.isOptionalLeftJoin() && (current.getStepDepth() < current.getReplacedStepDepth())) {
-            Set<SchemaTableTree> leftyChildren = new HashSet<>();
-            leftyChildren.addAll(current.children);
+            Set<SchemaTableTree> leftyChildren = new HashSet<>(current.children);
             Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> p = Pair.of(stack, leftyChildren);
             result.add(p);
+//            if (current.getStepDepth() > 0 && current.getLabels().isEmpty()) {
+//                current.addLabel(current.getReplacedStepDepth() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+//            }
         }
         for (SchemaTableTree child : current.children) {
             if (child.isVertexStep() && child.getSchemaTable().isVertexTable()) {
@@ -885,7 +893,7 @@ public class SchemaTableTree {
             startIndexColumns++;
         }
 
-        singlePathSql.append(constructFromClause(sqlgGraph, currentColumnList, distinctQueryStack, lastOfPrevious, firstOfNextStack));
+        singlePathSql.append(constructSelectClause(sqlgGraph, currentColumnList, distinctQueryStack, lastOfPrevious, firstOfNextStack));
         singlePathSql.append("\nFROM\n\t");
         singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTableTree.getSchemaTable().getSchema()));
         singlePathSql.append(".");
@@ -1562,7 +1570,7 @@ public class SchemaTableTree {
      * @param previousSchemaTableTree The previous schemaTableTree that will be joined to.
      * @param nextSchemaTableTree     represents the table to join to. it is null for the last table as there is nothing to join to.  @return
      */
-    private static String constructFromClause(
+    private static String constructSelectClause(
             SqlgGraph sqlgGraph,
             ColumnList columnList,
             LinkedList<SchemaTableTree> distinctQueryStack,
