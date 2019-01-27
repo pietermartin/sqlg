@@ -42,6 +42,7 @@ public class SqlgSqlExecutor {
             SchemaTableTree rootSchemaTableTree,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
+        sqlgGraph.getTopology().threadWriteLock();
         List<Triple<DROP_QUERY, String, SchemaTable>> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
         for (Triple<DROP_QUERY, String, SchemaTable> sqlPair : sqls) {
             DROP_QUERY dropQuery = sqlPair.getLeft();

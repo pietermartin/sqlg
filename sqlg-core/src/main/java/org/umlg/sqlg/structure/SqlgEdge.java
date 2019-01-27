@@ -92,6 +92,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     @Override
     public void remove() {
         this.sqlgGraph.tx().readWrite();
+        this.sqlgGraph.getTopology().threadWriteLock();
         if (this.removed)
             throw new IllegalStateException(String.format("Edge with id %s was removed.", id().toString()));
 

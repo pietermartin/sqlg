@@ -262,6 +262,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public void remove() {
         this.sqlgGraph.tx().readWrite();
+        this.sqlgGraph.getTopology().threadWriteLock();
 
         if (this.removed)
             throw new IllegalStateException(String.format("Vertex with id %s was removed.", id().toString()));
@@ -292,6 +293,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     private void deleteEdges(Direction direction, SchemaTable edgeSchemaTable) {
+        this.sqlgGraph.getTopology().threadWriteLock();
         StringBuilder sql = new StringBuilder("DELETE FROM ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getSchema()));
         sql.append(".");
