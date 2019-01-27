@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Date: 2015/12/31
@@ -84,9 +85,9 @@ public class TestBatchStreamTemporaryVertex extends BaseTest {
                     put("this", "that");
                 }});
                 try {
-                    countDownLatch2.await();
+                    countDownLatch2.await(2, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    //swallow
                 }
                 //If Topology.temporaryTable has been cleared then the next line will block.
                 //It will block because it will try to create the temp table but the copy command is already in progress.

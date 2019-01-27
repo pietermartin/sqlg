@@ -33,6 +33,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class Topology {
 
+//    private static final Logger logger = LoggerFactory.getLogger(Topology.class);
+
     public static final String GRAPH = "graph";
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
@@ -52,8 +54,28 @@ public class Topology {
     private final SqlgGraph sqlgGraph;
     private final boolean distributed;
 
-    //Used to ensure that only one thread can modify the topology.
+    /**
+     * Used to ensure that only one thread can modify the topology. I.e. execute schema change statements on the db.
+     * The primary function of this lock is tho prevent the database from dead locking as conflicting threads modify the db.
+     *
+     * The locking strategy is as follows.
+     * Only one thread my modify the db schema at a time.
+     * Active write threads blocks other threads from doing schema modifications. I.e. taking the topologySqlWriteLock's lock.
+     * Schema modifications blocks write threads. I.e. from taking the topologyWriteUpDownLatch
+     */
     private final ReentrantLock topologySqlWriteLock;
+    /**
+     * A {@link CountUpDownLatch} that counts the number of write threads active at any time.
+     * Only if the count is zero can the topologySqlWriteLock be taken.
+     * Writing to a table blocks another thread from changing the table.
+     */
+    private final CountUpDownLatch threadWriteUpDownLatch;
+    /**
+     * A {@link CountUpDownLatch} that counts the number of threads that are attempting to acquire topologySqlWriteLock.
+     * Only if the count is zero the write thread continue.
+     * Writing to a table blocks other threads from changing the table.
+     */
+    private final CountUpDownLatch topologyWriteUpDownLatch;
     //Used to protect the topology maps.
     //The maps are only updated during afterCommit.
     //afterCommit locks access to the map
@@ -385,6 +407,8 @@ public class Topology {
         this.sqlgGraph = sqlgGraph;
         this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
         this.topologySqlWriteLock = new ReentrantLock(true);
+        this.threadWriteUpDownLatch = new CountUpDownLatch();
+        this.topologyWriteUpDownLatch = new CountUpDownLatch();
         this.topologyMapLock = new ReentrantReadWriteLock(true);
 
         //Pre-create the meta topology.
@@ -573,36 +597,60 @@ public class Topology {
         return this.sqlgGraph.configuration().getBoolean("implement.foreign.keys", true);
     }
 
+    public void threadWriteLock() {
+        if (!this.sqlgGraph.tx().isWriteTransaction()) {
+            if (!isSqlWriteLockHeldByCurrentThread()) {
+                try {
+                    this.topologyWriteUpDownLatch.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            this.threadWriteUpDownLatch.countUp();
+            this.sqlgGraph.tx().setWriteTransaction(true);
+        }
+    }
+
     /**
      * Global lock on the topology.
      * For distributed graph (multiple jvm) this happens on the db via a lock sql statement.
      */
     void lock() {
         //only lock if the lock is not already owned by this thread.
-        if (!isSqlWriteLockHeldByCurrentThread()) {
-            this.sqlgGraph.tx().readWrite();
-            z_internalSqlWriteLock();
-            if (this.distributed) {
-                ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
-                //load the log to see if the schema has not already been created.
-                //the last loaded log
-                if (!this.notificationTimestamps.isEmpty()) {
-                    LocalDateTime timestamp = this.notificationTimestamps.last();
-                    List<Vertex> logs = this.sqlgGraph.topology().V()
-                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                            .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
-                            .toList();
-                    for (Vertex logVertex : logs) {
-                        int pid = logVertex.value("pid");
-                        LocalDateTime timestamp2 = logVertex.value("timestamp");
-                        if (!ownPids.contains(new ImmutablePair<>(pid, timestamp2))) {
-                            ObjectNode log = logVertex.value("log");
-                            fromNotifyJson(timestamp, log);
+        try {
+            if (!isSqlWriteLockHeldByCurrentThread()) {
+                this.sqlgGraph.tx().readWrite();
+                if (this.sqlgGraph.tx().isWriteTransaction()) {
+                    this.threadWriteUpDownLatch.countDown();
+                    this.threadWriteUpDownLatch.await();
+                    this.threadWriteUpDownLatch.countUp();
+                }
+                this.topologyWriteUpDownLatch.countUp();
+                z_internalSqlWriteLock();
+                if (this.distributed) {
+                    ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
+                    //load the log to see if the schema has not already been created.
+                    //the last loaded log
+                    if (!this.notificationTimestamps.isEmpty()) {
+                        LocalDateTime timestamp = this.notificationTimestamps.last();
+                        List<Vertex> logs = this.sqlgGraph.topology().V()
+                                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                                .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
+                                .toList();
+                        for (Vertex logVertex : logs) {
+                            int pid = logVertex.value("pid");
+                            LocalDateTime timestamp2 = logVertex.value("timestamp");
+                            if (!ownPids.contains(new ImmutablePair<>(pid, timestamp2))) {
+                                ObjectNode log = logVertex.value("log");
+                                fromNotifyJson(timestamp, log);
+                            }
+                            this.notificationTimestamps.add(timestamp2);
                         }
-                        this.notificationTimestamps.add(timestamp2);
                     }
                 }
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -630,6 +678,8 @@ public class Topology {
     private void z_internalSqlWriteUnlock() {
         Preconditions.checkState(isSqlWriteLockHeldByCurrentThread());
         this.topologySqlWriteLock.unlock();
+        this.topologyWriteUpDownLatch.countDown();
+        this.sqlgGraph.tx().setWriteTransaction(false);
     }
 
     private void z_internalTopologyMapReadLock() {
@@ -967,6 +1017,9 @@ public class Topology {
     }
 
     private void afterCommit() {
+        if (this.sqlgGraph.tx().isWriteTransaction()) {
+            this.threadWriteUpDownLatch.countDown();
+        }
         if (this.isSqlWriteLockHeldByCurrentThread()) {
             z_internalTopologyMapWriteLock();
             try {
@@ -1024,6 +1077,9 @@ public class Topology {
     }
 
     private void afterRollback() {
+        if (this.sqlgGraph.tx().isWriteTransaction()) {
+            this.threadWriteUpDownLatch.countDown();
+        }
         if (this.isSqlWriteLockHeldByCurrentThread()) {
             getPublicSchema().removeTemporaryTables();
             for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {

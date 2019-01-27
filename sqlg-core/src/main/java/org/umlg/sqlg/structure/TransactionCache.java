@@ -19,6 +19,7 @@ class TransactionCache {
     private BatchManager batchManager;
     private boolean cacheVertices = false;
     private final Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
+    private boolean writeTransaction;
 
     /**
      * are query result processed lazily or not?
@@ -61,6 +62,14 @@ class TransactionCache {
 
     Connection getConnection() {
         return this.connection;
+    }
+
+    public boolean isWriteTransaction() {
+        return writeTransaction;
+    }
+
+    public void setWriteTransaction(boolean writeTransaction) {
+        this.writeTransaction = writeTransaction;
     }
 
     Map<ElementPropertyRollback, Object> getElementPropertyRollback() {

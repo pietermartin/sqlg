@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithInOutV;
+import org.umlg.sqlg.test.datasource.TestDataSource;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,14 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithInOutV;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithInOutV.class
+        TestDataSource.class,
+//        TestDeadLock.class,
+//        TestMultipleThreadMultipleJvm.class,
+//        TestMultiThread.class,
+//        TestNotifyJson.class,
+//        TestLoadSchemaViaNotify.class,
+//        TestMultiThreadedBatch.class,
+//        TestBatchStreamTemporaryVertex.class
 })
 public class AnyTest {
 }

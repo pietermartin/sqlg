@@ -379,6 +379,7 @@ public class SqlgGraph implements Graph {
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
             SchemaTable schemaTablePair = SchemaTable.from(this, label);
             this.tx().readWrite();
+            this.getTopology().threadWriteLock();
             VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
             if (!vertexLabel.hasIDPrimaryKey()) {
                 Preconditions.checkArgument(columns.keySet().containsAll(vertexLabel.getIdentifiers()), "identifiers must be present %s", vertexLabel.getIdentifiers());

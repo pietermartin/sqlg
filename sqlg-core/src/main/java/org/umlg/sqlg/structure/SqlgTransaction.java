@@ -25,7 +25,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private static final String BATCH_MODE_NOT_SUPPORTED = "Batch mode not supported!";
     @SuppressWarnings("WeakerAccess")
     public static final String QUERY_LAZY = "query.lazy";
-    
+
     private final SqlgGraph sqlgGraph;
     private BeforeCommit beforeCommitFunction;
     private AfterCommit afterCommitFunction;
@@ -43,7 +43,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private Integer defaultFetchSize = null;
 
 
-	SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
+    SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
         super(sqlgGraph);
         this.sqlgGraph = (SqlgGraph) sqlgGraph;
         this.cacheVertices = cacheVertices;
@@ -61,12 +61,12 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
                 }
                 // read default setting for laziness
-                boolean lazy=this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY,true);
-                TransactionCache tc=null;
+                boolean lazy = this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY, true);
+                TransactionCache tc;
                 if (supportsBatchMode()) {
-                   tc = TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy);
+                    tc = TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect) this.sqlgGraph.getSqlDialect())), lazy);
                 } else {
-                   tc = TransactionCache.of(this.cacheVertices, connection, lazy);
+                    tc = TransactionCache.of(this.cacheVertices, connection, lazy);
                 }
                 tc.setFetchSize(getDefaultFetchSize());
                 this.threadLocalTx.set(tc);
@@ -299,56 +299,70 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     public PreparedStatementCache getPreparedStatementCache() {
         return threadLocalPreparedStatementTx.get();
     }
-    
+
     /**
      * are we reading the SQL query results lazily?
+     *
      * @return true if we are processing the results lazily, false otherwise
      */
     @SuppressWarnings("WeakerAccess")
-    public boolean isLazyQueries(){
-    	return this.threadLocalTx.get().isLazyQueries();
+    public boolean isLazyQueries() {
+        return this.threadLocalTx.get().isLazyQueries();
     }
-    
+
     /**
      * set the laziness on query result reading
+     *
      * @param lazy boolean to set the query as lazy or not.
      */
-    public void setLazyQueries(boolean lazy){
-    	readWrite();
-    	this.threadLocalTx.get().setLazyQueries(lazy);
+    public void setLazyQueries(boolean lazy) {
+        readWrite();
+        this.threadLocalTx.get().setLazyQueries(lazy);
     }
-    
+
     /**
      * get default fetch size
+     *
      * @return
      */
     private Integer getDefaultFetchSize() {
-		return defaultFetchSize;
-	}
+        return defaultFetchSize;
+    }
 
     /**
      * set default fetch size
+     *
      * @param fetchSize
      */
-	public void setDefaultFetchSize(Integer fetchSize) {
-		this.defaultFetchSize = fetchSize;
-	}
-	
-	/**
-	 * get fetch size for current transaction
-	 * @return
-	 */
-	public Integer getFetchSize() {
-		readWrite();
-		return this.threadLocalTx.get().getFetchSize();
-	}
+    public void setDefaultFetchSize(Integer fetchSize) {
+        this.defaultFetchSize = fetchSize;
+    }
 
-	/**
-	 * set fetch size for current transaction
-	 * @param fetchSize
-	 */
-	public void setFetchSize(Integer fetchSize) {
-		readWrite();
-    	this.threadLocalTx.get().setFetchSize(fetchSize);
-	}
+    /**
+     * get fetch size for current transaction
+     *
+     * @return
+     */
+    public Integer getFetchSize() {
+        readWrite();
+        return this.threadLocalTx.get().getFetchSize();
+    }
+
+    /**
+     * set fetch size for current transaction
+     *
+     * @param fetchSize
+     */
+    public void setFetchSize(Integer fetchSize) {
+        readWrite();
+        this.threadLocalTx.get().setFetchSize(fetchSize);
+    }
+
+    public boolean isWriteTransaction() {
+        return this.threadLocalTx.get().isWriteTransaction();
+    }
+
+    public void setWriteTransaction(boolean b) {
+        this.threadLocalTx.get().setWriteTransaction(b);
+    }
 }

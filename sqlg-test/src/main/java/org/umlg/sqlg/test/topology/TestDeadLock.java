@@ -8,14 +8,75 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/06/19
+ * Date: 2017/06/19
  */
+@SuppressWarnings("Duplicates")
 public class TestDeadLock extends BaseTest {
+
+    @Test
+    public void testDeadLock3() throws InterruptedException {
+        SqlgGraph g = this.sqlgGraph;
+        Map<String, Object> m1 = new HashMap<>();
+        m1.put("name", "name1");
+        g.addVertex("s1.v1", m1);
+        g.tx().commit();
+        CountDownLatch t1Wrote = new CountDownLatch(1);
+        CountDownLatch t2Wrote = new CountDownLatch(1);
+
+        Thread t1 = new Thread(() -> {
+            Map<String, Object> m11 = new HashMap<>();
+            m11.put("name", "name2");
+            g.addVertex("s1.v1", m11);
+
+            t1Wrote.countDown();
+            try {
+                t2Wrote.await(10, TimeUnit.SECONDS);
+
+                Map<String, Object> m2 = new HashMap<>();
+                m2.put("name", "name3");
+                m2.put("att1", "val1");
+                g.addVertex("s1.v1", m2);
+
+
+                g.tx().commit();
+            } catch (InterruptedException ie) {
+                Assert.fail(ie.getMessage());
+            }
+        }, "First writer");
+
+        Thread t2 = new Thread(() -> {
+            try {
+                t1Wrote.await();
+
+                Map<String, Object> m112 = new HashMap<>();
+                m112.put("name", "name4");
+                m112.put("att2", "val2");
+                g.addVertex("s1.v1", m112);
+
+                t2Wrote.countDown();
+
+                g.tx().commit();
+            } catch (InterruptedException ie) {
+                Assert.fail(ie.getMessage());
+            }
+        }, "Second writer");
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        Assert.assertEquals(4L, g.traversal().V().hasLabel("s1.v1").count().next(), 0);
+    }
 
     @Test
     public void testDeadLock2() throws InterruptedException {
