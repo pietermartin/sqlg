@@ -1,6 +1,7 @@
 package org.umlg.sqlg.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.collections4.set.ListOrderedSet;
@@ -116,21 +117,22 @@ public class SqlgUtil {
                 result.addAll(labeledElements);
                 if (subQueryDepth == subQueryStacks.size()) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
-                    if (labeledElements.isEmpty()) {
-                        SqlgElement e = SqlgUtil.loadElement(
-                                sqlgGraph, idColumnCountMap, resultSet, lastSchemaTableTree
-                        );
-                        Emit<SqlgElement> emit;
-                        if (!forParent) {
-                            emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
-                        } else {
-                            emit = new Emit<>(resultSet.getLong(1), e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
-                        }
-                        if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
-                            emit.setIncomingOnlyLocalOptionalStep(true);
-                        }
-                        result.add(emit);
-                    }
+                    Preconditions.checkState(!labeledElements.isEmpty());
+//                    if (labeledElements.isEmpty()) {
+//                        SqlgElement e = SqlgUtil.loadElement(
+//                                sqlgGraph, idColumnCountMap, resultSet, lastSchemaTableTree
+//                        );
+//                        Emit<SqlgElement> emit;
+//                        if (!forParent) {
+//                            emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+//                        } else {
+//                            emit = new Emit<>(resultSet.getLong(1), e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+//                        }
+//                        if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
+//                            emit.setIncomingOnlyLocalOptionalStep(true);
+//                        }
+//                        result.add(emit);
+//                    }
                     if (lastSchemaTableTree.getReplacedStepDepth() == lastSchemaTableTree.getStepDepth() &&
                             lastSchemaTableTree.isEmit() &&
                             lastSchemaTableTree.isUntilFirst()) {
@@ -230,26 +232,32 @@ public class SqlgUtil {
                     //i.e. for emit queries with labels
                     //Only the last node in the subQueryStacks' subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
                     //Elements that come before the last element in the path must not get the labels.
+                    Emit<E> emit;
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
                         if (forParent) {
                             //1 is the parentIndex. This is the id of the incoming parent.
-                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         } else {
-                            result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            emit = new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         }
                     } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
                         if (forParent) {
-                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         } else {
-                            result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            emit = new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         }
                     } else {
                         if (forParent) {
-                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            emit = new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         } else {
-                            result.add(new Emit<>(sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            emit = new Emit<>(sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder());
                         }
                     }
+                    SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
+                    if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
+                        emit.setIncomingOnlyLocalOptionalStep(true);
+                    }
+                    result.add(emit);
                 }
             }
             count++;

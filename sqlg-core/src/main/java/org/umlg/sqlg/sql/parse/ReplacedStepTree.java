@@ -97,7 +97,7 @@ public class ReplacedStepTree {
         List<TreeNode> leafNodes = this.leafNodes();
         for (TreeNode leafNode : leafNodes) {
             ReplacedStep<?,?> replacedStep = leafNode.getReplacedStep();
-            if (!replacedStep.isEmit() && replacedStep.getLabels().isEmpty()) {
+            if (!replacedStep.isEmit() && !replacedStep.hasLabels()) {
                 replacedStep.addLabel((leafNode.depth) + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
         }

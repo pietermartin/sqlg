@@ -109,7 +109,7 @@ public class GraphStrategy extends BaseStrategy {
         if (this.sqlgStep instanceof SqlgGraphStep && ((SqlgGraphStep) this.sqlgStep).getIds().length > 0) {
             addHasContainerForIds((SqlgGraphStep) this.sqlgStep);
         }
-        if (this.currentReplacedStep.getLabels().isEmpty()) {
+        if (!this.currentReplacedStep.hasLabels()) {
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
             if (precedesPathStep) {
                 this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);

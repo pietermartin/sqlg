@@ -13,7 +13,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
-import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -79,10 +78,6 @@ public class VertexStrategy extends BaseStrategy {
                 //restart
                 this.sqlgStep = null;
             }
-        }
-        if (this.currentTreeNodeNode != null) {
-            ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
-            replacedStepTree.maybeAddLabelToLeafNodes();
         }
     }
 

@@ -198,11 +198,11 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         }
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-        Set<SchemaTableTree> rootSchemaTableTrees = doLast();
+        Set<SchemaTableTree> rootSchemaTableTrees = prepare();
         return new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
     }
 
-    private Set<SchemaTableTree> doLast() {
+    private Set<SchemaTableTree> prepare() {
         this.replacedStepTree.maybeAddLabelToLeafNodes();
         Set<SchemaTableTree> rootSchemaTableTrees = parseForStrategy();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
@@ -246,13 +246,12 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         return this.replacedSteps;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep<?, ?> replacedStep) {
         //depth is + 1 because there is always a root node who's depth is 0
         replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
-
-        //New way of interpreting steps
         if (this.replacedStepTree == null) {
             //the first root node
             this.replacedStepTree = new ReplacedStepTree(replacedStep);

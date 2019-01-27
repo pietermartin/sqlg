@@ -131,6 +131,10 @@ public class ReplacedStep<S, E> {
         return this.labels;
     }
 
+    public boolean hasLabels() {
+        return !this.labels.isEmpty();
+    }
+
     private Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
         if (this.step instanceof VertexStep) {
             return appendPathForVertexStep(schemaTableTree);
@@ -314,9 +318,7 @@ public class ReplacedStep<S, E> {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             schemaTable,
                             Direction.OUT,
-                            Vertex.class,
                             this,
-                            true,
                             this.labels
                     );
                     List<Multimap<BiPredicate, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
@@ -330,9 +332,7 @@ public class ReplacedStep<S, E> {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             schemaTable,
                             Direction.IN,
-                            Vertex.class,
                             this,
-                            true,
                             this.labels
                     );
                     List<Multimap<BiPredicate, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());

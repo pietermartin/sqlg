@@ -499,6 +499,28 @@ public class TestDropStep extends BaseTest {
         }
     }
 
+    @Test
+    public void testOptionalAndDrop() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        b2.addEdge("bc", c1);
+        b2.addEdge("bc", c2);
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.traversal().V().hasLabel("A").out().optional(__.out()).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(a1));
+        Assert.assertTrue(vertices.contains(b2));
+    }
+
     static abstract class AbstractMutationListener implements MutationListener {
         @Override
         public void vertexAdded(final Vertex vertex) {

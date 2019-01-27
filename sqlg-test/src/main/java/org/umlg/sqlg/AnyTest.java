@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithInOutV;
+import org.umlg.sqlg.test.process.dropstep.TestDropStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,10 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithInOutV;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithInOutV.class
+//        TestLocalVertexStepOptional.class
+//        TestColumnRefactor.class,
+        TestDropStep.class,
+//        TestGraphStepOrderBy.class
 })
 public class AnyTest {
 }

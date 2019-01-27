@@ -240,12 +240,14 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
+        this.replacedStepTree.maybeAddLabelToLeafNodes();
         rootSchemaTableTree.setParentIdsAndIndexes(this.schemaTableParentIds.get(schemaTable));
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
         rootSchemaTableTrees.add(rootSchemaTableTree);
         return new SqlgCompiledResultListIterator<>(new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true));
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep replacedStep) {
         replacedStep.setDepth(this.replacedSteps.size());

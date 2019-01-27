@@ -74,6 +74,7 @@ public abstract class BaseStrategy {
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
+    public static final String SQLG_PATH_TEMP_FAKE_LABEL = "sqlgPathTempFakeLabel";
     public static final String SQLG_PATH_ORDER_RANGE_LABEL = "sqlgPathOrderRangeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte
@@ -171,7 +172,7 @@ public abstract class BaseStrategy {
                             Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
                                     r -> {
                                         //Take the first
-                                        if (!r.getLabels().isEmpty()) {
+                                        if (r.hasLabels()) {
                                             String label = r.getLabels().iterator().next();
                                             String stepLabel = SqlgUtil.originalLabel(label);
                                             return stepLabel.equals(key);
@@ -332,7 +333,7 @@ public abstract class BaseStrategy {
         if (index != -1) {
             this.traversal.removeStep(step);
         }
-        if (this.currentReplacedStep.getLabels().isEmpty()) {
+        if (!this.currentReplacedStep.hasLabels()) {
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
             if (precedesPathStep) {
                 this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
@@ -675,7 +676,7 @@ public abstract class BaseStrategy {
                         Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
                                 r -> {
                                     //Take the first
-                                    if (!r.getLabels().isEmpty()) {
+                                    if (r.hasLabels()) {
                                         String label = r.getLabels().iterator().next();
                                         String stepLabel = SqlgUtil.originalLabel(label);
                                         return stepLabel.equals(key);
@@ -688,7 +689,7 @@ public abstract class BaseStrategy {
                         ReplacedStep<?, ?> replacedStep = labeledReplacedStep.get();
                         replacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
-                        if (replacedStep.getLabels().isEmpty()) {
+                        if (!replacedStep.hasLabels()) {
                             replacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     } else if (previousStep instanceof OptionalStep) {
@@ -699,7 +700,7 @@ public abstract class BaseStrategy {
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
                         this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
-                        if (this.currentReplacedStep.getLabels().isEmpty()) {
+                        if (!this.currentReplacedStep.hasLabels()) {
                             this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     } else {
@@ -707,7 +708,7 @@ public abstract class BaseStrategy {
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
                         this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
-                        if (this.currentReplacedStep.getLabels().isEmpty()) {
+                        if (!this.currentReplacedStep.hasLabels()) {
                             this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     }
@@ -863,7 +864,7 @@ public abstract class BaseStrategy {
                     this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(Range.between(rgs.getLowRange(), high)));
                 }
                 //add a label if the step does not yet have one and is not a leaf node
-                if (this.currentReplacedStep.getLabels().isEmpty()) {
+                if (!this.currentReplacedStep.hasLabels()) {
                     this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                 }
                 this.reset = true;

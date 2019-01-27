@@ -46,21 +46,20 @@ public class SqlgSqlExecutor {
         for (Triple<DROP_QUERY, String, SchemaTable> sqlPair : sqls) {
             DROP_QUERY dropQuery = sqlPair.getLeft();
             String sql = sqlPair.getMiddle();
-            SchemaTable deletedSchemaTable = sqlPair.getRight();
             switch (dropQuery) {
                 case ALTER:
-                    executeDropQuery(sqlgGraph, sql, new LinkedList<>(), deletedSchemaTable);
+                    executeDropQuery(sqlgGraph, sql, new LinkedList<>());
                     break;
                 case EDGE:
                     LinkedList<SchemaTableTree> tmp = new LinkedList<>(distinctQueryStack);
                     tmp.removeLast();
-                    executeDropQuery(sqlgGraph, sql, tmp, deletedSchemaTable);
+                    executeDropQuery(sqlgGraph, sql, tmp);
                     break;
                 case NORMAL:
-                    executeDropQuery(sqlgGraph, sql, distinctQueryStack, deletedSchemaTable);
+                    executeDropQuery(sqlgGraph, sql, distinctQueryStack);
                     break;
                 case TRUNCATE:
-                    executeDropQuery(sqlgGraph, sql, new LinkedList<>(), deletedSchemaTable);
+                    executeDropQuery(sqlgGraph, sql, new LinkedList<>());
                     break;
                 default:
                     throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery.toString());
@@ -90,7 +89,7 @@ public class SqlgSqlExecutor {
             SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree,
             LinkedList<SchemaTableTree> leftJoinQuery) {
 
-        String sql = rootSchemaTableTree.constructSqlForEmit(leftJoinQuery);
+        String sql = rootSchemaTableTree.constructSql(leftJoinQuery);
         return executeQuery(sqlgGraph, sql, leftJoinQuery);
     }
 
@@ -147,7 +146,7 @@ public class SqlgSqlExecutor {
         }
     }
 
-    private static void executeDropQuery(SqlgGraph sqlgGraph, String sql, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTable deletedSchemaTable) {
+    private static void executeDropQuery(SqlgGraph sqlgGraph, String sql, LinkedList<SchemaTableTree> distinctQueryStack) {
         if (sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().flush();
         }
