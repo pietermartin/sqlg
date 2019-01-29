@@ -22,6 +22,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestDeadLock extends BaseTest {
 
     @Test
+    public void testDeadLock4() {
+        //First thread writes,
+        //Second writes,
+        //Second must block on postgres, waiting for the first.
+        //First tried to take topology lock
+    }
+
+    @Test
     public void testDeadLock3() throws InterruptedException {
         SqlgGraph g = this.sqlgGraph;
         Map<String, Object> m1 = new HashMap<>();

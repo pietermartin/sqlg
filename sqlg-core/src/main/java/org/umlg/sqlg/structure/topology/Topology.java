@@ -112,7 +112,7 @@ public class Topology {
     private final List<TopologyValidationError> validationErrors = new ArrayList<>();
     private final List<TopologyListener> topologyListeners = new ArrayList<>();
 
-    private static final int LOCK_TIMEOUT = 2;
+    private int LOCK_TIMEOUT = 2;
 
     @SuppressWarnings("WeakerAccess")
     public static final String CREATED_ON = "createdOn";
@@ -597,11 +597,15 @@ public class Topology {
         return this.sqlgGraph.configuration().getBoolean("implement.foreign.keys", true);
     }
 
+    public void setLOCK_TIMEOUT(int LOCK_TIMEOUT) {
+        this.LOCK_TIMEOUT = LOCK_TIMEOUT;
+    }
+
     public void threadWriteLock() {
         if (!this.sqlgGraph.tx().isWriteTransaction()) {
             if (!isSqlWriteLockHeldByCurrentThread()) {
                 try {
-                    this.topologyWriteUpDownLatch.await();
+                    this.topologyWriteUpDownLatch.await(LOCK_TIMEOUT, TimeUnit.MINUTES);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -622,7 +626,7 @@ public class Topology {
                 this.sqlgGraph.tx().readWrite();
                 if (this.sqlgGraph.tx().isWriteTransaction()) {
                     this.threadWriteUpDownLatch.countDown();
-                    this.threadWriteUpDownLatch.await();
+                    this.threadWriteUpDownLatch.await(LOCK_TIMEOUT, TimeUnit.MINUTES);
                     this.threadWriteUpDownLatch.countUp();
                 }
                 this.topologyWriteUpDownLatch.countUp();
@@ -1119,7 +1123,7 @@ public class Topology {
         //loaded as the notification might not have been received yet.
         List<Vertex> logs = traversalSource.V()
                 .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                .order().by(SQLG_SCHEMA_LOG_TIMESTAMP, Order.decr)
+                .order().by(SQLG_SCHEMA_LOG_TIMESTAMP, Order.desc)
                 .limit(1)
                 .toList();
         Preconditions.checkState(logs.size() <= 1, "must load one or zero logs in cacheTopology");
