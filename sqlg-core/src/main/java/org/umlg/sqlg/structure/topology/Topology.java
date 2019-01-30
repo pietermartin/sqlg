@@ -112,7 +112,7 @@ public class Topology {
     private final List<TopologyValidationError> validationErrors = new ArrayList<>();
     private final List<TopologyListener> topologyListeners = new ArrayList<>();
 
-    private int LOCK_TIMEOUT = 2;
+    private int LOCK_TIMEOUT_MINUTES = 2;
 
     @SuppressWarnings("WeakerAccess")
     public static final String CREATED_ON = "createdOn";
@@ -597,15 +597,15 @@ public class Topology {
         return this.sqlgGraph.configuration().getBoolean("implement.foreign.keys", true);
     }
 
-    public void setLOCK_TIMEOUT(int LOCK_TIMEOUT) {
-        this.LOCK_TIMEOUT = LOCK_TIMEOUT;
+    public void setLOCK_TIMEOUT_MINUTES(int LOCK_TIMEOUT_MINUTES) {
+        this.LOCK_TIMEOUT_MINUTES = LOCK_TIMEOUT_MINUTES;
     }
 
     public void threadWriteLock() {
         if (!this.sqlgGraph.tx().isWriteTransaction()) {
             if (!isSqlWriteLockHeldByCurrentThread()) {
                 try {
-                    this.topologyWriteUpDownLatch.await(LOCK_TIMEOUT, TimeUnit.MINUTES);
+                    this.topologyWriteUpDownLatch.await(LOCK_TIMEOUT_MINUTES, TimeUnit.MINUTES);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -626,7 +626,7 @@ public class Topology {
                 this.sqlgGraph.tx().readWrite();
                 if (this.sqlgGraph.tx().isWriteTransaction()) {
                     this.threadWriteUpDownLatch.countDown();
-                    this.threadWriteUpDownLatch.await(LOCK_TIMEOUT, TimeUnit.MINUTES);
+                    this.threadWriteUpDownLatch.await(LOCK_TIMEOUT_MINUTES, TimeUnit.MINUTES);
                     this.threadWriteUpDownLatch.countUp();
                 }
                 this.topologyWriteUpDownLatch.countUp();
@@ -667,7 +667,7 @@ public class Topology {
     private void z_internalSqlWriteLock() {
         Preconditions.checkState(!isSqlWriteLockHeldByCurrentThread());
         try {
-            if (!this.topologySqlWriteLock.tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES)) {
+            if (!this.topologySqlWriteLock.tryLock(LOCK_TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
                 throw new RuntimeException("Timeout lapsed to acquire write lock for notification.");
             }
         } catch (InterruptedException e) {
@@ -688,7 +688,7 @@ public class Topology {
 
     private void z_internalTopologyMapReadLock() {
         try {
-            this.topologyMapLock.readLock().tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES);
+            this.topologyMapLock.readLock().tryLock(LOCK_TIMEOUT_MINUTES, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -704,7 +704,7 @@ public class Topology {
      */
     private void z_internalTopologyMapWriteLock() {
         try {
-            this.topologyMapLock.writeLock().tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES);
+            this.topologyMapLock.writeLock().tryLock(LOCK_TIMEOUT_MINUTES, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
