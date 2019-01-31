@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestDeadLock;
+import org.umlg.sqlg.test.schema.TestMultiThread;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,13 @@ import org.umlg.sqlg.test.topology.TestDeadLock;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestDataSource.class,
-        TestDeadLock.class,
+//        TestReadOnlyRole.class,
 //        TestMultipleThreadMultipleJvm.class,
-//        TestMultiThread.class,
+//        TestDataSource.class,
+//        TestDeadLock.class,
+//        TestDataSource.class,
+//        TestMultipleThreadMultipleJvm.class,
+        TestMultiThread.class,
 //        TestNotifyJson.class,
 //        TestLoadSchemaViaNotify.class,
 //        TestMultiThreadedBatch.class,

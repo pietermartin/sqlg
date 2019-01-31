@@ -319,13 +319,14 @@ public class TestMultiThread extends BaseTest {
 
         ExecutorService executorService = newFixedThreadPool(200);
         int loop = 20;
+//        int loop = 2;
         for (int i = 0; i < loop; i++) {
             String n = "person" + i;
             executorService.submit(() -> {
                 try {
-                    try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-                        sqlgGraph1.addVertex(T.label, "Person" + n, "name", n);
-                        sqlgGraph1.tx().commit();
+                    try (SqlgGraph sqlgGraph2 = SqlgGraph.open(configuration)) {
+                        sqlgGraph2.addVertex(T.label, "Person" + n, "name", n);
+                        sqlgGraph2.tx().commit();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -335,12 +336,13 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         executorService.awaitTermination(10, TimeUnit.SECONDS);
-        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        try (SqlgGraph sqlgGraph2 = SqlgGraph.open(configuration)) {
             for (int i = 0; i < loop; i++) {
                 String n = "person" + i;
-                Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("Person" + n).count().next().longValue());
+                Assert.assertEquals(1, sqlgGraph2.traversal().V().hasLabel("Person" + n).count().next().longValue());
             }
         }
+        System.out.println("");
     }
 
     @Test
@@ -386,35 +388,48 @@ public class TestMultiThread extends BaseTest {
 
     @Test
     public void simulateReadWriteChange() throws ExecutionException, InterruptedException {
+        //Sleep here, help with testing connections from previous test staying idle on postgres.
+        Thread.sleep(3_000);
         List<String> labels = new ArrayList<>();
         List<String> properties = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             labels.add("label" + i);
             properties.add("property" + i);
         }
-        ExecutorService executorService = newFixedThreadPool(6);
+        ExecutorService executorService = newFixedThreadPool(1);
         List<Future<Integer>> futureList = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
             int count = i;
             futureList.add(executorService.submit(() -> {
-                for (int i1 = 0; i1 < 1000; i1++) {
-                    sqlgGraph.addVertex(T.label, labels.get(i1), properties.get(i1), "asd");
-                    sqlgGraph.tx().commit();
+                try {
+                    for (int i1 = 0; i1 < 1000; i1++) {
+                        sqlgGraph.addVertex(T.label, labels.get(i1), properties.get(i1), "asd");
+                        sqlgGraph.tx().commit();
+                    }
+                    return count;
+                } catch (Exception e) {
+                    sqlgGraph.tx().rollback();
+                    throw new RuntimeException(e);
                 }
-                return count;
             }));
         }
         for (int i = 0; i < 3; i++) {
             int count = i;
             futureList.add(executorService.submit(() -> {
-                for (int i12 = 0; i12 < 1000; i12++) {
-                    sqlgGraph.traversal().V().hasLabel(labels.get(i12)).iterate();
+                try {
+                    for (int i12 = 0; i12 < 1000; i12++) {
+                        sqlgGraph.traversal().V().hasLabel(labels.get(i12)).iterate();
+                        sqlgGraph.tx().rollback();
+                    }
+                    return count;
+                } catch (Exception e) {
                     sqlgGraph.tx().rollback();
+                    throw new RuntimeException(e);
                 }
-                return count;
             }));
         }
+        executorService.shutdown();
         for (Future<Integer> integerFuture : futureList) {
             logger.info("done " + integerFuture.get());
         }
