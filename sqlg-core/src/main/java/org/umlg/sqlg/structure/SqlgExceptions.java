@@ -19,6 +19,18 @@ public class SqlgExceptions {
         return new UnsupportedOperationException(String.format(BATCH_MODE_NOT_SUPPORTED, dialect));
     }
 
+    public static TopologyLockTimeout topologyLockTimeout(String message) {
+        return new TopologyLockTimeout(message);
+    }
+
+    public static WriteLockTimeout writeLockTimeout(String message) {
+        return new WriteLockTimeout(message);
+    }
+
+    public static DeadLockDetected deadLockDetected(String message) {
+        return new DeadLockDetected(message);
+    }
+
     static InvalidIdException invalidId(String invalidId) {
         return new InvalidIdException("Sqlg ids must be a String.\nFor sequence ids the format is 'label:::id' The id must be a long.\n" +
                 "For user supplied identifiers the identifiers must be in array format. i.e. [x,y,z].\n" +
@@ -55,6 +67,30 @@ public class SqlgExceptions {
 
     public static InvalidFromRecordIdException invalidFromRecordId(String elementId) {
         throw new InvalidFromRecordIdException(String.format("To convert a String representation of an id for an user supplied identifier element use RecordId.from(SqlgGraph, Object). Given id is %s", elementId));
+    }
+
+    public static class WriteLockTimeout extends RuntimeException {
+
+        WriteLockTimeout(String message) {
+            super(message);
+        }
+
+    }
+
+    public static class TopologyLockTimeout extends RuntimeException {
+
+        TopologyLockTimeout(String message) {
+            super(message);
+        }
+
+    }
+
+    public static class DeadLockDetected extends RuntimeException {
+
+        DeadLockDetected(String message) {
+            super(message);
+        }
+
     }
 
     public static class InvalidFromRecordIdException extends RuntimeException {
