@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.Range;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.FullText;
@@ -1239,5 +1240,13 @@ public interface SqlDialect {
 
     default void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
         throw new RuntimeException("Not yet implemented!");
+    }
+
+    default Pair<Boolean, String> getBlocked(int pid, Connection connection) {
+        return Pair.of(false, "");
+    }
+
+    default int getConnectionBackendPid(Connection connection) {
+        return -1;
     }
 }
