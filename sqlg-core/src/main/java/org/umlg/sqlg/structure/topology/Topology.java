@@ -628,23 +628,26 @@ public class Topology {
                 this.sqlgGraph.tx().readWrite();
                 if (this.sqlgGraph.tx().isWriteTransaction()) {
                     this.threadWriteUpDownLatch.countDown();
-                    if (this.threadWriteUpDownLatch.getCount() > 0) {
-                        try {
-                            try (Connection conn = this.sqlgGraph.getSqlgDataSource().getDatasource().getConnection()) {
-                                int pid = this.sqlgGraph.getSqlDialect().getConnectionBackendPid(this.sqlgGraph.tx().getConnection());
-                                Pair<Boolean, String> blocked = this.sqlgGraph.getSqlDialect().getBlocked(pid, conn);
-                                if (blocked.getLeft()) {
-                                    throw SqlgExceptions.deadLockDetected(blocked.getRight());
+                    try {
+                        if (this.threadWriteUpDownLatch.getCount() > 0) {
+                            try {
+                                try (Connection conn = this.sqlgGraph.getSqlgDataSource().getDatasource().getConnection()) {
+                                    int pid = this.sqlgGraph.getSqlDialect().getConnectionBackendPid(this.sqlgGraph.tx().getConnection());
+                                    Pair<Boolean, String> blocked = this.sqlgGraph.getSqlDialect().getBlocked(pid, conn);
+                                    if (blocked.getLeft()) {
+                                        throw SqlgExceptions.deadLockDetected(blocked.getRight());
+                                    }
                                 }
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
                             }
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
                         }
+                        if (!this.threadWriteUpDownLatch.await(LOCK_TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
+                            throw SqlgExceptions.topologyLockTimeout("Timeout on the topology write thread lock! This indicates another thread is busy writing so the topology lock can not be granted.");
+                        }
+                    } finally {
+                        this.threadWriteUpDownLatch.countUp();
                     }
-                    if (!this.threadWriteUpDownLatch.await(LOCK_TIMEOUT_MINUTES, TimeUnit.MINUTES)) {
-                        throw SqlgExceptions.topologyLockTimeout("Timeout on the topology write thread lock! This indicates another thread is busy writing so the topology lock can not be granted.");
-                    }
-                    this.threadWriteUpDownLatch.countUp();
                 }
                 this.topologyWriteUpDownLatch.countUp();
                 z_internalSqlWriteLock();
