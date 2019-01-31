@@ -25,7 +25,7 @@ public class C3P0DataSource implements SqlgDataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(C3P0DataSource.class);
 
-    private final ComboPooledDataSource dss;
+    private ComboPooledDataSource dss;
     private final String jdbcUrl;
     private final SqlDialect sqlDialect;
     private final AtomicBoolean closed = new AtomicBoolean(false);
@@ -103,7 +103,8 @@ public class C3P0DataSource implements SqlgDataSource {
         } catch (SQLException e) {
             throw new IllegalStateException("Could not close connection " + jdbcUrl, e);
         } finally {
-            dss.close();
+            this.dss.close();
+            this.dss = null;
         }
     }
 
