@@ -1,21 +1,222 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/06/19
+ * Date: 2017/06/19
  */
+@SuppressWarnings("Duplicates")
 public class TestDeadLock extends BaseTest {
+
+    private Logger logger = LoggerFactory.getLogger(TestDeadLock.class);
+
+    @Test
+    public void testDeadLockDetected() throws InterruptedException {
+        Assume.assumeTrue(isPostgres());
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "nameA1", "haloA1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "nameB1", "haloB1");
+        this.sqlgGraph.tx().commit();
+
+        CountDownLatch t1Wrote = new CountDownLatch(1);
+        CountDownLatch t2Wrote = new CountDownLatch(1);
+
+        MutableBoolean deadLockDetected = new MutableBoolean(false);
+        Thread t1 = new Thread(() -> {
+            try {
+                a1.property("nameA1", "haloA11");
+                t1Wrote.countDown();
+                try {
+                    t2Wrote.await(3, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                //Take a topology lock
+                this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+                this.sqlgGraph.tx().commit();
+            } catch (Exception e) {
+                deadLockDetected.setTrue();
+                this.sqlgGraph.tx().rollback();
+            }
+        }, "First writer");
+
+        Thread t2 = new Thread(() -> {
+            try {
+                t1Wrote.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            logger.debug("before update");
+            a1.property("nameA1", "haloA12");
+            logger.debug("after update");
+            t2Wrote.countDown();
+            this.sqlgGraph.tx().commit();
+        }, "Second writer");
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        Assert.assertTrue(deadLockDetected.booleanValue());
+    }
+
+//    @Test
+//    public void testDeadLock5PureSql() throws InterruptedException {
+//        Connection connection = this.sqlgGraph.tx().getConnection();
+//        try (Statement statement = connection.createStatement()) {
+//            statement.execute("CREATE TABLE \"public\".\"V_A\" (\"ID\" BIGSERIAL PRIMARY KEY, \t\"nameA1\" TEXT);");
+//            statement.execute("INSERT INTO \"public\".\"V_A\" (\"nameA1\") VALUES ('haloA1');");
+//            statement.execute("CREATE TABLE \"public\".\"V_B\" (\"ID\" BIGSERIAL PRIMARY KEY, \t\"nameB1\" TEXT);");
+//            statement.execute("INSERT INTO \"public\".\"V_B\" (\"nameB1\") VALUES ('haloB1');");
+//        } catch (SQLException e) {
+//            this.sqlgGraph.tx().rollback();
+//            throw new RuntimeException(e);
+//        }
+//        this.sqlgGraph.tx().commit();
+//
+//        Thread t1 = new Thread(() -> {
+//            Connection connection1 = this.sqlgGraph.tx().getConnection();
+//            try (Statement statement = connection1.createStatement()) {
+//                statement.execute("ALTER TABLE \"public\".\"V_A\" ADD \"nameA2\" TEXT;");
+//                statement.execute("INSERT INTO \"public\".\"V_A\" (\"nameA2\") VALUES ('haloA2');");
+//                statement.execute("UPDATE \"public\".\"V_B\" SET \"nameB1\" = 'haloAgainB2' WHERE \"ID\" = 1;");
+//            } catch (SQLException e) {
+//                this.sqlgGraph.tx().rollback();
+//                logger.error(e.getMessage(), e);
+//                throw new RuntimeException(e);
+//            }
+//            this.sqlgGraph.tx().commit();
+//        }, "First writer");
+//
+//        Thread t2 = new Thread(() -> {
+//            Connection connection1 = this.sqlgGraph.tx().getConnection();
+//            try (Statement statement = connection1.createStatement()) {
+//                statement.execute("ALTER TABLE \"public\".\"V_B\" ADD \"nameB2\" TEXT;");
+//                statement.execute("INSERT INTO \"public\".\"V_B\" (\"nameB2\") VALUES ('haloB2');");
+//                statement.execute("UPDATE \"public\".\"V_A\" SET \"nameA1\" = 'haloAgainA1' WHERE \"ID\" = 1;");
+//            } catch (SQLException e) {
+//                this.sqlgGraph.tx().rollback();
+//                logger.error(e.getMessage(), e);
+//                throw new RuntimeException(e);
+//            }
+//            this.sqlgGraph.tx().commit();
+//        }, "Second writer");
+//
+//        t1.start();
+//        t2.start();
+//
+//        t1.join();
+//        t2.join();
+//        System.out.println("done");
+//    }
+//
+    @Test
+    public void testDeadLock4() throws InterruptedException {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "nameA1", "haloA1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "nameB1", "haloB1");
+        this.sqlgGraph.tx().commit();
+
+        Thread t1 = new Thread(() -> {
+            //Lock table A
+            this.sqlgGraph.addVertex(T.label, "A", "nameA2", "haloA2");
+            b1.property("nameB1", "haloAgainB2");
+            this.sqlgGraph.tx().commit();
+        }, "First writer");
+
+        Thread t2 = new Thread(() -> {
+            //Lock table B
+            this.sqlgGraph.addVertex(T.label, "B", "nameB2", "haloB2");
+            a1.property("nameA1", "haloAgainA1");
+            this.sqlgGraph.tx().commit();
+        }, "Second writer");
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").has("nameB1", "haloAgainB2").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("nameA1", "haloAgainA1").count().next(), 0);
+
+    }
+
+    @Test
+    public void testDeadLock3() throws InterruptedException {
+        SqlgGraph g = this.sqlgGraph;
+        Map<String, Object> m1 = new HashMap<>();
+        m1.put("name", "name1");
+        g.addVertex("s1.v1", m1);
+        g.tx().commit();
+        CountDownLatch t1Wrote = new CountDownLatch(1);
+        CountDownLatch t2Wrote = new CountDownLatch(1);
+
+        Thread t1 = new Thread(() -> {
+            Map<String, Object> m11 = new HashMap<>();
+            m11.put("name", "name2");
+            g.addVertex("s1.v1", m11);
+
+            t1Wrote.countDown();
+            try {
+                t2Wrote.await(10, TimeUnit.SECONDS);
+
+                Map<String, Object> m2 = new HashMap<>();
+                m2.put("name", "name3");
+                m2.put("att1", "val1");
+                g.addVertex("s1.v1", m2);
+
+
+                g.tx().commit();
+            } catch (InterruptedException ie) {
+                Assert.fail(ie.getMessage());
+            }
+        }, "First writer");
+
+        Thread t2 = new Thread(() -> {
+            try {
+                t1Wrote.await();
+
+                Map<String, Object> m112 = new HashMap<>();
+                m112.put("name", "name4");
+                m112.put("att2", "val2");
+                g.addVertex("s1.v1", m112);
+
+                t2Wrote.countDown();
+
+                g.tx().commit();
+            } catch (InterruptedException ie) {
+                Assert.fail(ie.getMessage());
+            }
+        }, "Second writer");
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        Assert.assertEquals(4L, g.traversal().V().hasLabel("s1.v1").count().next(), 0);
+    }
 
     @Test
     public void testDeadLock2() throws InterruptedException {

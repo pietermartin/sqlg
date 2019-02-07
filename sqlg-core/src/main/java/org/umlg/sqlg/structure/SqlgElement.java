@@ -227,6 +227,7 @@ public abstract class SqlgElement implements Element {
         ElementHelper.validateProperty(key, value);
         this.sqlgGraph.tx().readWrite();
         this.sqlgGraph.getSqlDialect().validateProperty(key, value);
+        this.sqlgGraph.getTopology().threadWriteLock();
         if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
         }

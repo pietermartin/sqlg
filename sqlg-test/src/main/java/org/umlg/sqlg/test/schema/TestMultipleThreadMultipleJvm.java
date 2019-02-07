@@ -4,6 +4,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -11,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -22,7 +23,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/10/29
@@ -129,7 +129,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
                 for (Schema schema : graph.getTopology().getSchemas()) {
-                    assertTrue(schema.isCommitted());
+                    Assert.assertTrue(schema.isCommitted());
                 }
             }
         } finally {
@@ -353,7 +353,6 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                 for (int i = 0; i < NUMBER_OF_SCHEMAS; i++) {
                     readResults.add(
                             readPoolPerGraphsExecutorCompletionService.submit(() -> {
-                                        //noinspection Duplicates
                                         try {
                                             while (keepReading.get()) {
                                                 sqlgGraphAsync.getTopology().getAllTables();
@@ -373,11 +372,13 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             readPoolPerGraph.shutdown();
 
             for (Future<SqlgGraph> result : results) {
-                result.get(30, TimeUnit.SECONDS);
+                SqlgGraph graph = result.get(30, TimeUnit.SECONDS);
+                logger.info("graph results returned");
             }
             keepReading.set(false);
             for (Future<SqlgGraph> result : readResults) {
-                result.get(30, TimeUnit.SECONDS);
+                SqlgGraph g = result.get(30, TimeUnit.SECONDS);
+                logger.info("graph readResults returned");
             }
             logger.info("starting querying data");
             List<Vertex> vertices = this.sqlgGraph.traversal().V().out().toList();

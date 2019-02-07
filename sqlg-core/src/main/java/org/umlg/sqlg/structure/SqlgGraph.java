@@ -312,6 +312,7 @@ public class SqlgGraph implements Graph {
         this.tx().readWrite();
         //Instantiating Topology will create the 'public' schema if it does not exist.
         this.topology = new Topology(this);
+        this.topology.setLOCK_TIMEOUT_MINUTES(configuration.getInt("lock.timeout.minutes", 2));
         this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportsSchemas() && !this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isPresent()) {
             //This is for mariadb. Need to make sure a db called public exist
@@ -379,6 +380,7 @@ public class SqlgGraph implements Graph {
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
             SchemaTable schemaTablePair = SchemaTable.from(this, label);
             this.tx().readWrite();
+            this.getTopology().threadWriteLock();
             VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
             if (!vertexLabel.hasIDPrimaryKey()) {
                 Preconditions.checkArgument(columns.keySet().containsAll(vertexLabel.getIdentifiers()), "identifiers must be present %s", vertexLabel.getIdentifiers());

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,8 +32,8 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -3422,6 +3423,81 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             } else {
                 throw new IllegalStateException("PostGis property type for column " + column + " not found");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public int getConnectionBackendPid(Connection connection) {
+        C3P0ProxyConnection c3P0ProxyConnection = (C3P0ProxyConnection) connection;
+        try {
+            PGConnection pgConnection = c3P0ProxyConnection.unwrap(PGConnection.class);
+            return pgConnection.getBackendPID();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Pair<Boolean, String> getBlocked(int pid, Connection connection) {
+        try {
+            String sql = "SELECT blocked_locks.pid     AS blocked_pid,\n" +
+                    "         blocked_activity.usename  AS blocked_user,\n" +
+                    "         blocking_locks.pid     AS blocking_pid,\n" +
+                    "         blocking_activity.usename AS blocking_user,\n" +
+                    "         blocked_activity.query    AS blocked_statement,\n" +
+                    "         blocking_activity.query   AS current_statement_in_blocking_process\n" +
+                    "   FROM  pg_catalog.pg_locks         blocked_locks\n" +
+                    "    JOIN pg_catalog.pg_stat_activity blocked_activity  ON blocked_activity.pid = blocked_locks.pid\n" +
+                    "    JOIN pg_catalog.pg_locks         blocking_locks \n" +
+                    "        ON blocking_locks.locktype = blocked_locks.locktype\n" +
+                    "        AND blocking_locks.DATABASE IS NOT DISTINCT FROM blocked_locks.DATABASE\n" +
+                    "        AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation\n" +
+                    "        AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page\n" +
+                    "        AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple\n" +
+                    "        AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid\n" +
+                    "        AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid\n" +
+                    "        AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid\n" +
+                    "        AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid\n" +
+                    "        AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid\n" +
+                    "        AND blocking_locks.pid != blocked_locks.pid\n" +
+                    " \n" +
+                    "    JOIN pg_catalog.pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid\n" +
+                    "   WHERE NOT blocked_locks.GRANTED\n" +
+                    "   AND blocking_locks.pid = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+                statement.setInt(1, pid);
+                ResultSet resultSet = statement.executeQuery();
+                boolean result = false;
+                StringBuilder sb = new StringBuilder();
+                while (resultSet.next()) {
+                    if (result) {
+                        sb.append("\n");
+                    }
+                    int blockedPid = resultSet.getInt("blocked_pid");
+                    sb.append("blocked_pid = ");
+                    sb.append(blockedPid);
+                    String blockedUser = resultSet.getString("blocked_user");
+                    sb.append(", blocked_user = ");
+                    sb.append(blockedUser);
+                    int blockingPid = resultSet.getInt("blocking_pid");
+                    sb.append(", blocking_pid = ");
+                    sb.append(blockingPid);
+                    String blockingUser = resultSet.getString("blocking_user");
+                    sb.append(", blocking_user = ");
+                    sb.append(blockingUser);
+                    String blockedStatement = resultSet.getString("blocked_statement");
+                    sb.append(", blocked_statement = ");
+                    sb.append(blockedStatement);
+                    String current_statement_in_blocking_process = resultSet.getString("current_statement_in_blocking_process");
+                    sb.append(", current_statement_in_blocking_process = ");
+                    sb.append(current_statement_in_blocking_process);
+                    result = true;
+                }
+                return Pair.of(result, sb.toString());
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

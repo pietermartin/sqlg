@@ -1309,9 +1309,15 @@ public class SchemaTableTree {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
                 result += " " + alias;
+                //noinspection deprecation
                 if (elementValueComparator.getValueComparator() == Order.incr) {
                     result += " ASC";
-                } else if (elementValueComparator.getValueComparator() == Order.decr) {
+                } else if (elementValueComparator.getValueComparator() == Order.asc) {
+                    result += " ASC";
+                } else //noinspection deprecation
+                    if (elementValueComparator.getValueComparator() == Order.decr) {
+                    result += " DESC";
+                } else if (elementValueComparator.getValueComparator() == Order.desc) {
                     result += " DESC";
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
@@ -1356,11 +1362,13 @@ public class SchemaTableTree {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
                 result += " " + alias;
+                //noinspection deprecation
                 if (comparator.getValue1() == Order.incr) {
                     result += " ASC";
                 } else if (comparator.getValue1() == Order.asc) {
                     result += " ASC";
-                } else if (comparator.getValue1() == Order.decr) {
+                } else //noinspection deprecation
+                    if (comparator.getValue1() == Order.decr) {
                     result += " DESC";
                 } else if (comparator.getValue1() == Order.desc) {
                     result += " DESC";
@@ -1424,11 +1432,13 @@ public class SchemaTableTree {
                     alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
                 result += " " + alias;
+                //noinspection deprecation
                 if (comparator.getValue1() == Order.incr) {
                     result += " ASC";
                 } else if (comparator.getValue1() == Order.asc) {
                     result += " ASC";
-                } else if (comparator.getValue1() == Order.decr) {
+                } else //noinspection deprecation
+                    if (comparator.getValue1() == Order.decr) {
                     result += " DESC";
                 } else if (comparator.getValue1() == Order.desc) {
                     result += " DESC";

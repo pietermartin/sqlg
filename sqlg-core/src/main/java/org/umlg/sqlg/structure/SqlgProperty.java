@@ -59,6 +59,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
 
     @Override
     public void remove() {
+        this.sqlgGraph.getTopology().threadWriteLock();
         this.element.properties.remove(this.key);
         boolean elementInInsertedCache = false;
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
