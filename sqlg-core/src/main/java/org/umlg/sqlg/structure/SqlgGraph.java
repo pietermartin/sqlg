@@ -186,6 +186,7 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
 public class SqlgGraph implements Graph {
 
+    public static final String DATA_SOURCE = "sqlg.dataSource";
     public static final String JDBC_URL = "jdbc.url";
     public static final String DISTRIBUTED = "distributed";
     private static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
@@ -235,8 +236,18 @@ public class SqlgGraph implements Graph {
         );
     }
 
+    public static <G extends Graph> G open(final String pathToSqlgProperties) {
+        if (null == pathToSqlgProperties) throw Graph.Exceptions.argumentCanNotBeNull("pathToSqlgProperties");
+
+        try {
+            return open(new PropertiesConfiguration(pathToSqlgProperties));
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }  
+    
     public static <G extends Graph> G open(final Configuration configuration) {
-        SqlgDataSource dataSource = createDataSource(configuration);
+        SqlgDataSource dataSource = SqlgDataSourceFactory.create(configuration);
         try {
             return open(configuration, dataSource);
         } catch (Exception ex) {
@@ -246,7 +257,7 @@ public class SqlgGraph implements Graph {
     }
 
     @SuppressWarnings("unchecked")
-    private static <G extends Graph> G open(final Configuration configuration, SqlgDataSource dataSource) {
+    private static <G extends Graph> G open(final Configuration configuration, final SqlgDataSource dataSource) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
         if (!configuration.containsKey(JDBC_URL))
@@ -257,32 +268,6 @@ public class SqlgGraph implements Graph {
         sqlgStartupManager.loadSqlgSchema();
         sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
         return (G)sqlgGraph;
-    }
-
-    public static <G extends Graph> G open(final String pathToSqlgProperties) {
-        if (null == pathToSqlgProperties) throw Graph.Exceptions.argumentCanNotBeNull("pathToSqlgProperties");
-
-        Configuration configuration;
-        try {
-            configuration = new PropertiesConfiguration(pathToSqlgProperties);
-            SqlgDataSource dataSource = createDataSource(configuration);
-            try {
-                return open(configuration, dataSource);
-            } catch (Exception ex) {
-                dataSource.close();
-                throw ex;
-            }
-        } catch (ConfigurationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static SqlgDataSource createDataSource(Configuration configuration) {
-        try {
-            return SqlgDataSourceFactory.create(configuration);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Could not create sqlg data source.", ex);
-        }
     }
 
     private SqlgGraph(final Configuration configuration, SqlgDataSource dataSource) {
@@ -1163,27 +1148,6 @@ public class SqlgGraph implements Graph {
 //    public boolean isImplementForeignKeys() {
 //        return this.implementForeignKeys;
 //    }
-
-    private SqlgPlugin findSqlgPlugin(DatabaseMetaData metadata) throws SQLException {
-        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, this.getClass().getClassLoader())) {
-            logger.info("found plugin for SqlgPlugin.class");
-            if (p.canWorkWith(metadata)) {
-                return p;
-            } else {
-                logger.info("can not work with SqlgPlugin.class");
-            }
-        }
-        return null;
-    }
-
-    private SqlgPlugin findSqlgPlugin(String connectionUri) {
-        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, this.getClass().getClassLoader())) {
-            if (p.getDriverFor(connectionUri) != null) {
-                return p;
-            }
-        }
-        return null;
-    }
 
     @SuppressWarnings("unchecked")
     private <X extends Element> Iterable<X> elements(boolean returnVertices, final List<RecordId> elementIds) {
