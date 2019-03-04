@@ -48,12 +48,12 @@ public interface SqlgPlugin {
      * @throws IllegalStateException if no suitable Sqlg plugin could be found
      */
     public static SqlgPlugin load(String connectionUrl) {
-    	for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
             if (p.getDriverFor(connectionUrl) != null) {
                 return p;
             }
         }
-    	throw new IllegalStateException("Could not find suitable Sqlg plugin for the JDBC URL: " + connectionUrl);
+        throw new IllegalStateException("Could not find suitable Sqlg plugin for the JDBC URL: " + connectionUrl);
     }
     
     /**
@@ -64,11 +64,11 @@ public interface SqlgPlugin {
      * @throws IllegalStateException if no suitable Sqlg plugin could be found
      */
     public static SqlgPlugin load(DatabaseMetaData metaData) throws SQLException {
-    	for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
             if (p.canWorkWith(metaData)) {
                 return p;
             }
         }
-    	throw new IllegalStateException("Could not find suitable Sqlg plugin for the database: " + metaData.getDatabaseProductName());
+        throw new IllegalStateException("Could not find suitable Sqlg plugin for the database: " + metaData.getDatabaseProductName());
     }
 }

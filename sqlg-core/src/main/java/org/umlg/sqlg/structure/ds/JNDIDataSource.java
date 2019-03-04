@@ -41,7 +41,7 @@ public final class JNDIDataSource implements SqlgDataSource {
 
         SqlDialect sqlDialect;
         try (Connection conn = ds.getConnection()) {
-        	sqlDialect = SqlgPlugin.load(conn.getMetaData()).instantiateDialect();
+            sqlDialect = SqlgPlugin.load(conn.getMetaData()).instantiateDialect();
         }
 
         return new JNDIDataSource(url, ds, sqlDialect);
