@@ -14,14 +14,13 @@ import org.umlg.sqlg.structure.SqlgGraph;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Date: 2014/07/12
  * Time: 7:00 AM
  */
-public class C3P0DataSource implements SqlgDataSource {
+public final class C3P0DataSource implements SqlgDataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(C3P0DataSource.class);
 
@@ -36,14 +35,10 @@ public class C3P0DataSource implements SqlgDataSource {
         Preconditions.checkState(configuration.containsKey("jdbc.password"));
 
         String jdbcUrl = configuration.getString(SqlgGraph.JDBC_URL);
-        SqlgPlugin p = findSqlgPlugin(jdbcUrl);
-        if (p == null) {
-            throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
-        }
+        SqlgPlugin sqlgPlugin = SqlgPlugin.load(jdbcUrl);
+        SqlDialect sqlDialect = sqlgPlugin.instantiateDialect();
 
-        SqlDialect sqlDialect = p.instantiateDialect();
-
-        String driver = p.getDriverFor(jdbcUrl);
+        String driver = sqlgPlugin.getDriverFor(jdbcUrl);
         String username = configuration.getString("jdbc.username");
         String password = configuration.getString("jdbc.password");
 
@@ -52,6 +47,7 @@ public class C3P0DataSource implements SqlgDataSource {
         comboPooledDataSource.setJdbcUrl(jdbcUrl);
         comboPooledDataSource.setMaxPoolSize(configuration.getInt("maxPoolSize", 100));
         comboPooledDataSource.setMaxIdleTime(configuration.getInt("maxIdleTime", 3600));
+        comboPooledDataSource.setAcquireRetryAttempts(configuration.getInt("jdbc.acquireRetryAttempts", 30));
         comboPooledDataSource.setForceUseNamedDriverClass(true);
         if (!StringUtils.isEmpty(username)) {
             comboPooledDataSource.setUser(username);
@@ -62,16 +58,6 @@ public class C3P0DataSource implements SqlgDataSource {
         }
 
         return new C3P0DataSource(jdbcUrl, comboPooledDataSource, sqlDialect);
-    }
-
-    private static SqlgPlugin findSqlgPlugin(String connectionUri) {
-        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, C3P0DataSource.class.getClassLoader())) {
-            if (p.getDriverFor(connectionUri) != null) {
-                return p;
-            }
-        }
-
-        return null;
     }
 
     private C3P0DataSource(String jdbcUrl, ComboPooledDataSource dss, SqlDialect sqlDialect) {
