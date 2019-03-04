@@ -12,7 +12,7 @@ import org.umlg.sqlg.structure.ds.JNDIDataSource;
 /**
  * Created by petercipov on 27/02/2017.
  */
-class SqlgDataSourceFactory {
+public class SqlgDataSourceFactory {
     public static SqlgDataSource create(final Configuration configuration) {
         if (null == configuration)
             throw Graph.Exceptions.argumentCanNotBeNull("configuration");

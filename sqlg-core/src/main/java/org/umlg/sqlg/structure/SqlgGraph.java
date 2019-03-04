@@ -22,7 +22,6 @@ import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
