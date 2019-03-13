@@ -1,5 +1,7 @@
 ##2.0.2
 
+*Fix bug [#336](https://github.com/pietermartin/sqlg/issues/336). Added a check for the presence of partitions.
+
 *Fix bug [#335](https://github.com/pietermartin/sqlg/issues/335). Remove `ONLY` from `TRUNCATE ONLY` statement on 
 postgresql as its not supported by partitioned tables.
 

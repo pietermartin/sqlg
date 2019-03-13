@@ -339,7 +339,9 @@ public class EdgeLabel extends AbstractLabel {
         }
 
         //foreign key definition start
-        if (partitionType.isNone() && this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
+        if (inVertexLabel.getPartitionType().isNone() && outVertexLabel.getPartitionType().isNone() &&
+                this.partitionType.isNone() && this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
+
             sql.append(",\n\t");
             sql.append("FOREIGN KEY (");
             if (inVertexLabel.hasIDPrimaryKey()) {

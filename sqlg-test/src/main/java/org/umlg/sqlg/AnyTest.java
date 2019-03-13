@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestMultiThread;
+import org.umlg.sqlg.test.topology.TestPartitioning;
 
 /**
  * Date: 2014/07/16
@@ -10,17 +10,7 @@ import org.umlg.sqlg.test.schema.TestMultiThread;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestReadOnlyRole.class,
-//        TestMultipleThreadMultipleJvm.class,
-//        TestDataSource.class,
-//        TestDeadLock.class,
-//        TestDataSource.class,
-//        TestMultipleThreadMultipleJvm.class,
-        TestMultiThread.class,
-//        TestNotifyJson.class,
-//        TestLoadSchemaViaNotify.class,
-//        TestMultiThreadedBatch.class,
-//        TestBatchStreamTemporaryVertex.class
+        TestPartitioning.class,
 })
 public class AnyTest {
 }
