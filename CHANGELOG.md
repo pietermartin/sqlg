@@ -3,6 +3,8 @@
 *Fix bug [#335](https://github.com/pietermartin/sqlg/issues/335). Remove `ONLY` from `TRUNCATE ONLY` statement on 
 postgresql as its not supported by partitioned tables.
 
+* Added support to specify a custom datasource.
+
 *Fix bug [#332](https://github.com/pietermartin/sqlg/issues/332). Added quotes to the `partition` sql expression.
 
 * Fix bug [#329](https://github.com/pietermartin/sqlg/issues/329). Sqlg now only allows topology changes to be made when 
