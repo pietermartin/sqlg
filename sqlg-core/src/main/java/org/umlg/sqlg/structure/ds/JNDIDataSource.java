@@ -1,13 +1,9 @@
 package org.umlg.sqlg.structure.ds;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.util.ServiceLoader;
 
 import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgDataSource;
@@ -20,9 +16,8 @@ import javax.sql.DataSource;
 /**
  * Created by petercipov on 27/02/2017.
  */
-public class JNDIDataSource implements SqlgDataSource {
+public final class JNDIDataSource implements SqlgDataSource {
 
-    private static final Logger logger = LoggerFactory.getLogger(JNDIDataSource.class);
     private static final String JNDI_PREFIX = "jndi:";
 
     private final DataSource dataSource;
@@ -46,28 +41,10 @@ public class JNDIDataSource implements SqlgDataSource {
 
         SqlDialect sqlDialect;
         try (Connection conn = ds.getConnection()) {
-            SqlgPlugin p = findSqlgPlugin(conn.getMetaData());
-            if (p == null) {
-                throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + url);
-            }
-
-            sqlDialect = p.instantiateDialect();
+            sqlDialect = SqlgPlugin.load(conn.getMetaData()).instantiateDialect();
         }
 
         return new JNDIDataSource(url, ds, sqlDialect);
-    }
-
-    private static SqlgPlugin findSqlgPlugin(DatabaseMetaData metadata) throws SQLException {
-        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, JNDIDataSource.class.getClassLoader())) {
-            logger.info("found plugin for SqlgPlugin.class");
-            if (p.canWorkWith(metadata)) {
-                return p;
-            } else {
-                logger.info("can not work with SqlgPlugin.class");
-            }
-        }
-
-        return null;
     }
 
     private JNDIDataSource(String jdbcUrl, DataSource dataSource, SqlDialect sqlDialect) {

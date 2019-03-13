@@ -13,7 +13,6 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.beans.PropertyVetoException;
 import java.sql.Connection;
 import java.util.HashSet;
 import java.util.Set;
@@ -53,8 +52,6 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
             try (Connection conn = sqlgDataSource.getDatasource().getConnection()) {
                 SqlgUtil.dropDb(sqlDialect, conn);
             }
-        } catch (PropertyVetoException e) {
-            throw new RuntimeException(e);
         } finally {
             if (sqlgDataSource != null) {
                 sqlgDataSource.close();

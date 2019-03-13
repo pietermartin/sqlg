@@ -4,6 +4,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.ServiceLoader;
 
 /**
  * @author Lukas Krejci
@@ -38,4 +39,36 @@ public interface SqlgPlugin {
      * @return the dialect to use, never null
      */
     SqlDialect instantiateDialect();
+    
+    /**
+     * Loads the plugin to use for the provided JDBC URL.
+     * 
+     * @param connectionUrl the JDBC URL of the database to connect to
+     * @return the plugin to use, never null
+     * @throws IllegalStateException if no suitable Sqlg plugin could be found
+     */
+    public static SqlgPlugin load(String connectionUrl) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
+            if (p.getDriverFor(connectionUrl) != null) {
+                return p;
+            }
+        }
+        throw new IllegalStateException("Could not find suitable Sqlg plugin for the JDBC URL: " + connectionUrl);
+    }
+    
+    /**
+     * Loads the plugin to use for the provided database meta data.
+     * 
+     * @param metaData the JDBC meta data from an established database connection
+     * @return the plugin to use, never null
+     * @throws IllegalStateException if no suitable Sqlg plugin could be found
+     */
+    public static SqlgPlugin load(DatabaseMetaData metaData) throws SQLException {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
+            if (p.canWorkWith(metaData)) {
+                return p;
+            }
+        }
+        throw new IllegalStateException("Could not find suitable Sqlg plugin for the database: " + metaData.getDatabaseProductName());
+    }
 }
