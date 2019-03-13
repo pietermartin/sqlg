@@ -4401,7 +4401,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             }
         }
-        StringBuilder sql = new StringBuilder("TRUNCATE ONLY ");
+        StringBuilder sql = new StringBuilder("TRUNCATE ");
         int count = 1;
         for (String edgeToTruncate : edgesToTruncate) {
             sql.append(edgeToTruncate);

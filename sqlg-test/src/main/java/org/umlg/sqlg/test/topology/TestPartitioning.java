@@ -28,6 +28,47 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
+    public void testPartitionOnColumnWithCapitals() {
+        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
+        attributeMap.put("name", PropertyType.STRING);
+        attributeMap.put("cmUid", PropertyType.STRING);
+        attributeMap.put("vendorTechnology", PropertyType.STRING);
+
+        VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "RealWorkspaceElement",
+                attributeMap,
+                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                PartitionType.LIST,
+                "\"vendorTechnology\""
+        );
+        for (TEST test : TEST.values()) {
+            Partition partition = realWorkspaceElementVertexLabel.ensureListPartitionExists(
+                    test.name(),
+                    "'" + test.name() + "'"
+            );
+        }
+        PropertyColumn propertyColumn = realWorkspaceElementVertexLabel.getProperty("cmUid").orElseThrow(IllegalStateException::new);
+        realWorkspaceElementVertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumn));
+        sqlgGraph.tx().commit();
+        sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a", "vendorTechnology", TEST.TEST1.name());
+        sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b", "vendorTechnology", TEST.TEST2.name());
+        sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c", "vendorTechnology", TEST.TEST3.name());
+        sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+
+    }
+
+    private enum TEST {
+        TEST1,
+        TEST2,
+        TEST3
+    }
+
+    @Test
     public void testReloadVertexLabelWithNoPartitions() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensurePartitionedVertexLabelExist(
