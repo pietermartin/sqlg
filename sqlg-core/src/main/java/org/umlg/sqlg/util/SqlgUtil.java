@@ -1174,6 +1174,10 @@ public class SqlgUtil {
                         s = resultSet.getString(column.getColumnIndex());
                         result.add(s);
                         break;
+                    case  INTEGER_ORDINAL:
+                        Integer i = resultSet.getInt(column.getColumnIndex());
+                        result.add(i);
+                        break;
                     default:
                         throw new IllegalStateException(String.format("PropertyType %s is not implemented.", propertyType.name()));
                 }

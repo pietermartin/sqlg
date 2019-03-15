@@ -101,7 +101,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
         } else {
             super.remove();
         }
-
     }
 
     public SqlgVertex getInVertex() {
@@ -315,17 +314,75 @@ public class SqlgEdge extends SqlgElement implements Edge {
             //Generate the columns to prevent 'ERROR: cached plan must not change result type" error'
             //This happens when the schema changes after the statement is prepared.
             @SuppressWarnings("OptionalGetWithoutIsPresent")
-            EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getSchema(this.schema).orElseThrow(()-> new IllegalStateException(String.format("Schema %s not found", this.schema))).getEdgeLabel(this.table).orElseThrow(()-> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)));
+            EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema))).getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)));
             StringBuilder sql = new StringBuilder("SELECT\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             appendProperties(edgeLabel, sql);
+            List<VertexLabel> outForeignKeys = new ArrayList<>();
             for (VertexLabel vertexLabel : edgeLabel.getOutVertexLabels()) {
+                outForeignKeys.add(vertexLabel);
                 sql.append(", ");
-                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    String foreignKey = vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END;
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey));
+                } else {
+                    int countIdentifier = 1;
+                    for (String identifier : vertexLabel.getIdentifiers()) {
+                        PropertyColumn propertyColumn = vertexLabel.getProperty(identifier).orElseThrow(
+                                () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                        );
+                        PropertyType propertyType = propertyColumn.getPropertyType();
+                        String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                        int count = 1;
+                        for (String ignored : propertyTypeToSqlDefinition) {
+                            if (count > 1) {
+                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.OUT_VERTEX_COLUMN_END));
+                            } else {
+                                //The first column existVertexLabel no postfix
+                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                            }
+                            if (count++ < propertyTypeToSqlDefinition.length) {
+                                sql.append(", ");
+                            }
+                        }
+                        if (countIdentifier++ < vertexLabel.getIdentifiers().size()) {
+                            sql.append(", ");
+                        }
+                    }
+                }
             }
+            List<VertexLabel> inForeignKeys = new ArrayList<>();
             for (VertexLabel vertexLabel : edgeLabel.getInVertexLabels()) {
                 sql.append(", ");
-                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
+                inForeignKeys.add(vertexLabel);
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    String foreignKey = vertexLabel.getSchema().getName() + "." + vertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END;
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey));
+                } else {
+                    int countIdentifier = 1;
+                    for (String identifier : vertexLabel.getIdentifiers()) {
+                        PropertyColumn propertyColumn = vertexLabel.getProperty(identifier).orElseThrow(
+                                () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                        );
+                        PropertyType propertyType = propertyColumn.getPropertyType();
+                        String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                        int count = 1;
+                        for (String ignored : propertyTypeToSqlDefinition) {
+                            if (count > 1) {
+                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.IN_VERTEX_COLUMN_END));
+                            } else {
+                                //The first column existVertexLabel no postfix
+                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                            }
+                            if (count++ < propertyTypeToSqlDefinition.length) {
+                                sql.append(", ");
+                            }
+                        }
+                        if (countIdentifier++ < vertexLabel.getIdentifiers().size()) {
+                            sql.append(", ");
+                        }
+                    }
+                }
             }
             sql.append("\nFROM\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
@@ -365,13 +422,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 }
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
-                    loadResultSet(resultSet);
+                    loadResultSet(resultSet, inForeignKeys, outForeignKeys);
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
     }
+
 
 
     public void loadInVertex(ResultSet resultSet, SchemaTable inVertexSchemaTable, int columnIdx) throws SQLException {
@@ -410,12 +468,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
         );
     }
 
-    @Override
-    public void loadResultSet(ResultSet resultSet) throws SQLException {
+    private void loadResultSet(ResultSet resultSet, List<VertexLabel> inForeignKeys, List<VertexLabel> outForeignKeys) throws SQLException {
         SchemaTable inVertexColumnName = null;
         SchemaTable outVertexColumnName = null;
-        int inVertexColumnIndex = 0;
-        int outVertexColumnIndex = 0;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
@@ -425,22 +480,81 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
                 loadProperty(resultSet, columnName, i);
             }
-            if (columnName.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                inVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName);
-                inVertexColumnIndex = i;
-            } else if (columnName.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                outVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName);
-                outVertexColumnIndex = i;
+        }
+        long inId = -1;
+        ListOrderedSet<Comparable> inComparables = new ListOrderedSet<>();
+        for (VertexLabel inVertexLabel: inForeignKeys) {
+            inVertexColumnName = SchemaTable.of(inVertexLabel.getSchema().getName(), inVertexLabel.getLabel());
+            if (inVertexLabel.hasIDPrimaryKey()) {
+                String foreignKey = inVertexLabel.getSchema().getName() + "." + inVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END;
+                inId = resultSet.getLong(foreignKey);
+                if (!resultSet.wasNull()) {
+                    break;
+                }
+            } else {
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    PropertyColumn propertyColumn = inVertexLabel.getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                    );
+                    PropertyType propertyType = propertyColumn.getPropertyType();
+                    String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                    int count = 1;
+                    for (String ignored : propertyTypeToSqlDefinition) {
+                        if (count > 1) {
+                            inComparables.add((Comparable)resultSet.getObject(inVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.IN_VERTEX_COLUMN_END));
+                        } else {
+                            //The first column existVertexLabel no postfix
+                            inComparables.add((Comparable)resultSet.getObject(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                        }
+                        count++;
+                    }
+                }
+
+            }
+
+        }
+        long outId = -1;
+        ListOrderedSet<Comparable> outComparables = new ListOrderedSet<>();
+        for (VertexLabel outVertexLabel: outForeignKeys) {
+            outVertexColumnName = SchemaTable.of(outVertexLabel.getSchema().getName(), outVertexLabel.getLabel());
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                String foreignKey = outVertexLabel.getSchema().getName() + "." + outVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END;
+                outId = resultSet.getLong(foreignKey);
+                if (!resultSet.wasNull()) {
+                    break;
+                }
+            } else {
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    PropertyColumn propertyColumn = outVertexLabel.getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                    );
+                    PropertyType propertyType = propertyColumn.getPropertyType();
+                    String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                    int count = 1;
+                    for (String ignored : propertyTypeToSqlDefinition) {
+                        if (count > 1) {
+                            outComparables.add((Comparable)resultSet.getObject(outVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.OUT_VERTEX_COLUMN_END));
+                        } else {
+                            //The first column existVertexLabel no postfix
+                            outComparables.add((Comparable)resultSet.getObject(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                        }
+                        count++;
+                    }
+                }
             }
         }
-        if (inVertexColumnName == null || inVertexColumnIndex == 0 || outVertexColumnName == null || outVertexColumnIndex == 0) {
-            throw new IllegalStateException("in or out vertex id not set!!!!");
+        if (inId != -1) {
+            this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+        } else {
+            Preconditions.checkState(!inComparables.isEmpty(), "The in ids are not found for the edge!");
+            this.inVertex = SqlgVertex.of(this.sqlgGraph, inComparables, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
         }
-        Long inId = resultSet.getLong(inVertexColumnIndex);
-        Long outId = resultSet.getLong(outVertexColumnIndex);
-
-        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
-        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+        if (outId != -1) {
+            this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+        } else {
+            Preconditions.checkState(!outComparables.isEmpty(), "The out ids are not found for the edge!");
+            this.outVertex = SqlgVertex.of(this.sqlgGraph, outComparables, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+        }
     }
 
 

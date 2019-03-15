@@ -909,7 +909,7 @@ public abstract class SqlgElement implements Element {
         loadProperty(resultSet, propertyName, columnIndex, Collections.emptyMap(), -1, propertyType);
     }
 
-    public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
+//    public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
     public long getInternalStartTraverserIndex() {
         return this.internalStartTraverserIndex;

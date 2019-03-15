@@ -11,6 +11,7 @@ import org.umlg.sqlg.test.topology.TestPartitioning;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestPartitioning.class,
+//        TestLoadEdge.class
 })
 public class AnyTest {
 }

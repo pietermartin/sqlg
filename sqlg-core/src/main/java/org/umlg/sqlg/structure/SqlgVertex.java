@@ -504,7 +504,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     //TODO optimize the if statement here to be outside the main ResultSet loop
-    @Override
+//    @Override
     public void loadResultSet(ResultSet resultSet) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
