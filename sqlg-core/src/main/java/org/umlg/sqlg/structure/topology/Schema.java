@@ -298,6 +298,56 @@ public class Schema implements TopologyInf {
         }
         return edgeLabel;
     }
+    public EdgeLabel ensurePartitionedEdgeLabelExistOnInOrOutVertexLabel(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
+            PartitionType partitionType,
+            VertexLabel foreignKeyVertexLabel) {
+
+        Preconditions.checkState(foreignKeyVertexLabel.equals(outVertexLabel) || foreignKeyVertexLabel.equals(inVertexLabel),
+                "foreignKeyVertexLabel must be either the outVertexLabel or inVertexLabel!");
+
+        StringBuilder partitionExpression = new StringBuilder();
+        Direction direction;
+        if (foreignKeyVertexLabel.equals(outVertexLabel)) {
+            direction = Direction.OUT;
+        } else {
+            direction = Direction.IN;
+        }
+        if (foreignKeyVertexLabel.hasIDPrimaryKey()) {
+            partitionExpression = new StringBuilder(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKeyVertexLabel.getSchema().getName() + "." + foreignKeyVertexLabel.getLabel() + (direction == Direction.OUT ? OUT_VERTEX_COLUMN_END : IN_VERTEX_COLUMN_END)));
+        } else {
+            int countIdentifier = 1;
+            for (String identifier : foreignKeyVertexLabel.getIdentifiers()) {
+                PropertyColumn propertyColumn = foreignKeyVertexLabel.getProperty(identifier).orElseThrow(
+                        () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                );
+                PropertyType propertyType = propertyColumn.getPropertyType();
+                String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                int count = 1;
+                for (String ignored : propertyTypeToSqlDefinition) {
+                    if (count > 1) {
+                        partitionExpression = new StringBuilder(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                foreignKeyVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + (direction == Direction.OUT ? OUT_VERTEX_COLUMN_END : IN_VERTEX_COLUMN_END)
+                        ));
+                    } else {
+                        //The first column existVertexLabel no postfix
+                        partitionExpression = new StringBuilder(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                foreignKeyVertexLabel.getFullName() + "." + identifier + (direction == Direction.OUT ? OUT_VERTEX_COLUMN_END : IN_VERTEX_COLUMN_END)
+                        ));
+                    }
+                    count++;
+                }
+                if (countIdentifier++ < foreignKeyVertexLabel.getIdentifiers().size()) {
+                    partitionExpression.append(", ");
+                }
+            }
+        }
+        return ensurePartitionedEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, partitionType, partitionExpression.toString());
+    }
 
     public EdgeLabel ensurePartitionedEdgeLabelExist(
             final String edgeLabelName,

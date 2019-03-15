@@ -206,11 +206,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 } else {
                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
                     if (outVertexLabel.isDistributed()) {
-                        if (i++ < inVertexLabel.getIdentifiers().size() - 1) {
+                        if (i++ < outVertexLabel.getIdentifiers().size() - 1) {
                             sql.append(", ");
                         }
                     } else {
-                        if (i++ < inVertexLabel.getIdentifiers().size()) {
+                        if (i++ < outVertexLabel.getIdentifiers().size()) {
                             sql.append(", ");
                         }
                     }

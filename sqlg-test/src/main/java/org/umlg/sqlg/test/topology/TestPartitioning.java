@@ -9,6 +9,7 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
@@ -35,7 +36,243 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
-    public void testPartitionOnForeignKeyColumn() {
+    public void testPartitionEdgeOnMultipleUserDefinedForeignKey() {
+        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
+        attributeMap.put("name", PropertyType.STRING);
+        attributeMap.put("cmUid", PropertyType.STRING);
+        attributeMap.put("vendorTechnology", PropertyType.STRING);
+
+        VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "RealWorkspaceElement",
+                attributeMap,
+                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                PartitionType.LIST,
+                "\"vendorTechnology\""
+        );
+        for (TEST test : TEST.values()) {
+            Partition partition = realWorkspaceElementVertexLabel.ensureListPartitionExists(
+                    test.name(),
+                    "'" + test.name() + "'"
+            );
+        }
+        PropertyColumn propertyColumn = realWorkspaceElementVertexLabel.getProperty("cmUid").orElseThrow(IllegalStateException::new);
+        realWorkspaceElementVertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumn));
+
+        VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "VirtualGroup",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExistOnInOrOutVertexLabel(
+                "virtualGroup_RealWorkspaceElement",
+                virtualGroupVertexLabel,
+                realWorkspaceElementVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                PartitionType.LIST,
+                virtualGroupVertexLabel
+        );
+
+
+        this.sqlgGraph.tx().commit();
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a", "vendorTechnology", TEST.TEST1.name());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b", "vendorTechnology", TEST.TEST2.name());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c", "vendorTechnology", TEST.TEST3.name());
+        this.sqlgGraph.tx().commit();
+
+        Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "Northern");
+        Partition partition = edgeLabel.ensureListPartitionExists(
+                "Northern",
+                "'" + ((RecordId)northern.id()).getID().getIdentifiers().get(0).toString() + "','" + ((RecordId)northern.id()).getID().getIdentifiers().get(1).toString() + "'"
+        );
+        Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "Western");
+        partition = edgeLabel.ensureListPartitionExists(
+                "Western",
+                "'" + ((RecordId)western.id()).getID().getIdentifiers().get(0).toString() + "','" + ((RecordId)western.id()).getID().getIdentifiers().get(1).toString() + "'"
+        );
+        Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        e.properties("what", "this");
+        e = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        e.properties("what", "this");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertEquals(northern, vertices.get(0));
+        Assert.assertEquals(western, vertices.get(1));
+    }
+
+    @Test
+    public void testPartitionEdgeOnUserDefinedForeignKey() {
+        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
+        attributeMap.put("name", PropertyType.STRING);
+        attributeMap.put("cmUid", PropertyType.STRING);
+        attributeMap.put("vendorTechnology", PropertyType.STRING);
+
+        VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "RealWorkspaceElement",
+                attributeMap,
+                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                PartitionType.LIST,
+                "\"vendorTechnology\""
+        );
+        for (TEST test : TEST.values()) {
+            Partition partition = realWorkspaceElementVertexLabel.ensureListPartitionExists(
+                    test.name(),
+                    "'" + test.name() + "'"
+            );
+        }
+        PropertyColumn propertyColumn = realWorkspaceElementVertexLabel.getProperty("cmUid").orElseThrow(IllegalStateException::new);
+        realWorkspaceElementVertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumn));
+
+        VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "VirtualGroup",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExistOnInOrOutVertexLabel(
+                "virtualGroup_RealWorkspaceElement",
+                virtualGroupVertexLabel,
+                realWorkspaceElementVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                PartitionType.LIST,
+                virtualGroupVertexLabel
+        );
+
+
+        this.sqlgGraph.tx().commit();
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a", "vendorTechnology", TEST.TEST1.name());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b", "vendorTechnology", TEST.TEST2.name());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c", "vendorTechnology", TEST.TEST3.name());
+        this.sqlgGraph.tx().commit();
+
+        Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "uid", UUID.randomUUID().toString(), "name", "Northern");
+        Partition partition = edgeLabel.ensureListPartitionExists(
+                "Northern",
+                "'" + ((RecordId)northern.id()).getID().getIdentifiers().get(0).toString() + "'"
+        );
+        Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "uid", UUID.randomUUID().toString(), "name", "Western");
+        partition = edgeLabel.ensureListPartitionExists(
+                "Western",
+                "'" + ((RecordId)western.id()).getID().getIdentifiers().get(0).toString() + "'"
+        );
+        Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        e.properties("what", "this");
+        e = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        e.properties("what", "this");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertEquals(northern, vertices.get(0));
+        Assert.assertEquals(western, vertices.get(1));
+    }
+
+    @Test
+    public void testPartitionEdgeOnForeignKey() {
+        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
+        attributeMap.put("name", PropertyType.STRING);
+        attributeMap.put("cmUid", PropertyType.STRING);
+        attributeMap.put("vendorTechnology", PropertyType.STRING);
+
+        VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "RealWorkspaceElement",
+                attributeMap,
+                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                PartitionType.LIST,
+                "\"vendorTechnology\""
+        );
+        for (TEST test : TEST.values()) {
+            Partition partition = realWorkspaceElementVertexLabel.ensureListPartitionExists(
+                    test.name(),
+                    "'" + test.name() + "'"
+            );
+        }
+        PropertyColumn propertyColumn = realWorkspaceElementVertexLabel.getProperty("cmUid").orElseThrow(IllegalStateException::new);
+        realWorkspaceElementVertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumn));
+
+        VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "VirtualGroup",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }}
+        );
+
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExistOnInOrOutVertexLabel(
+                "virtualGroup_RealWorkspaceElement",
+                virtualGroupVertexLabel,
+                realWorkspaceElementVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                PartitionType.LIST,
+                virtualGroupVertexLabel
+        );
+
+
+        this.sqlgGraph.tx().commit();
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a", "vendorTechnology", TEST.TEST1.name());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b", "vendorTechnology", TEST.TEST2.name());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c", "vendorTechnology", TEST.TEST3.name());
+        this.sqlgGraph.tx().commit();
+
+        Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Northern");
+        Partition partition = edgeLabel.ensureListPartitionExists(
+                "Northern",
+                ((RecordId)northern.id()).getID().getSequenceId().toString()
+        );
+        Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Western");
+        partition = edgeLabel.ensureListPartitionExists(
+                "Western",
+                ((RecordId)western.id()).getID().getSequenceId().toString()
+        );
+        Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        e.properties("what", "this");
+        e = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        e.properties("what", "this");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertEquals(northern, vertices.get(0));
+        Assert.assertEquals(western, vertices.get(1));
+    }
+
+    @Test
+    public void testPartitionEdge() {
         LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
         attributeMap.put("name", PropertyType.STRING);
         attributeMap.put("cmUid", PropertyType.STRING);
