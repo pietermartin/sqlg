@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestPartitioning;
+import org.umlg.sqlg.test.batch.TestBatchServerSideEdgeCreation;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,9 @@ import org.umlg.sqlg.test.topology.TestPartitioning;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestPartitioning.class,
+        TestSimpleJoinGremlin.class,
+        TestBatchServerSideEdgeCreation.class,
+//        TestPartitioning.class,
 //        TestLoadEdge.class
 })
 public class AnyTest {

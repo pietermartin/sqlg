@@ -520,6 +520,7 @@ public abstract class AbstractLabel implements TopologyInf {
         //if there are identifiers, do them first.
         for (String identifier : identifiers) {
             PropertyType propertyType = columns.get(identifier);
+            Preconditions.checkState(propertyType != null, "PropertyType is null for %s", identifier);
             int count = 1;
             String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             for (String sqlDefinition : propertyTypeToSqlDefinition) {

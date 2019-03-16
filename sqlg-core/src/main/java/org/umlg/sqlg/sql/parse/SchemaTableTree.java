@@ -1809,10 +1809,10 @@ public class SchemaTableTree {
         ListOrderedSet<String> identifiers = lastSchemaTableTree.getIdentifiers();
         for (String identifier : identifiers) {
             PropertyType propertyType = propertyTypeMap.get(identifier);
-            String alias = lastSchemaTableTree.calculateAliasPropertyName(identifier);
+            String alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(identifier);
             cols.add(lastSchemaTableTree, identifier, alias);
             for (String postFix : propertyType.getPostFixes()) {
-                alias = lastSchemaTableTree.calculateAliasPropertyName(identifier + postFix);
+                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(identifier + postFix);
                 cols.add(lastSchemaTableTree, identifier + postFix, alias);
             }
         }
@@ -1998,7 +1998,8 @@ public class SchemaTableTree {
     }
 
     private String lastMappedAliasIdentifier(String identifier) {
-        String result = this.stepDepth + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + identifier;
+        String reducedLabels = reducedLabels();
+        String result = this.stepDepth + ALIAS_SEPARATOR + reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + identifier;
         return this.getColumnNameAliasMap().get(result);
     }
 

@@ -2743,32 +2743,154 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(EDGE_PREFIX + edgeLabel));
             sql.append(" (");
-            sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + Topology.OUT_VERTEX_COLUMN_END));
+            if (outVertexLabelOptional.get().hasIDPrimaryKey()) {
+                sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + Topology.OUT_VERTEX_COLUMN_END));
+            } else {
+                int countIdentifier = 1;
+                for (String identifier : outVertexLabelOptional.get().getIdentifiers()) {
+                    PropertyColumn propertyColumn = outVertexLabelOptional.get().getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                    );
+                    PropertyType propertyType = propertyColumn.getPropertyType();
+                    String[] propertyTypeToSqlDefinition = propertyTypeToSqlDefinition(propertyType);
+                    int count = 1;
+                    for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                        if (count > 1) {
+                            sql.append(maybeWrapInQoutes(
+                                    outVertexLabelOptional.get().getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.OUT_VERTEX_COLUMN_END)
+                            );
+                        } else {
+                            //The first column existVertexLabel no postfix
+                            sql.append(maybeWrapInQoutes(
+                                    outVertexLabelOptional.get().getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END)
+                            );
+                        }
+                        count++;
+                    }
+                    if (countIdentifier++ < outVertexLabelOptional.get().getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(",");
-            sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + Topology.IN_VERTEX_COLUMN_END));
+            if (inVertexLabelOptional.get().hasIDPrimaryKey()) {
+                sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + Topology.IN_VERTEX_COLUMN_END));
+            } else {
+                int countIdentifier = 1;
+                for (String identifier : inVertexLabelOptional.get().getIdentifiers()) {
+                    PropertyColumn propertyColumn = inVertexLabelOptional.get().getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                    );
+                    PropertyType propertyType = propertyColumn.getPropertyType();
+                    String[] propertyTypeToSqlDefinition = propertyTypeToSqlDefinition(propertyType);
+                    int count = 1;
+                    for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                        if (count > 1) {
+                            sql.append(maybeWrapInQoutes(
+                                    inVertexLabelOptional.get().getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.IN_VERTEX_COLUMN_END)
+                            );
+                        } else {
+                            //The first column existVertexLabel no postfix
+                            sql.append(maybeWrapInQoutes(
+                                    inVertexLabelOptional.get().getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END)
+                            );
+                        }
+                        count++;
+                    }
+                    if (countIdentifier++ < inVertexLabelOptional.get().getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             edgePropertyMap.keySet().forEach(k -> sql.append(',').append(this.maybeWrapInQoutes(k)));
             sql.append(") \n");
-            sql.append("select _out.\"ID\" as \"");
-            sql.append(out.getSchema()).append(".").append(out.getTable()).append(Topology.OUT_VERTEX_COLUMN_END);
-            sql.append("\", _in.\"ID\" as \"");
-            sql.append(in.getSchema()).append(".").append(in.getTable()).append(Topology.IN_VERTEX_COLUMN_END);
-            sql.append("\"");
+            if (outVertexLabelOptional.get().hasIDPrimaryKey()) {
+                sql.append("select \n\t_out.\"ID\" as ");
+                sql.append(maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + Topology.OUT_VERTEX_COLUMN_END));
+            } else {
+                sql.append("select _out.");
+                int countIdentifier = 1;
+                for (String identifier : outVertexLabelOptional.get().getIdentifiers()) {
+                    PropertyColumn propertyColumn = outVertexLabelOptional.get().getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                    );
+                    PropertyType propertyType = propertyColumn.getPropertyType();
+                    String[] propertyTypeToSqlDefinition = propertyTypeToSqlDefinition(propertyType);
+                    int count = 1;
+                    for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                        if (count > 1) {
+                            sql.append(maybeWrapInQoutes(identifier + propertyType.getPostFixes()[count - 2]));
+                            sql.append(" as ");
+                            sql.append(maybeWrapInQoutes(
+                                    outVertexLabelOptional.get().getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.OUT_VERTEX_COLUMN_END)
+                            );
+                        } else {
+                            //The first column existVertexLabel no postfix
+                            sql.append(maybeWrapInQoutes(identifier));
+                            sql.append(" as ");
+                            sql.append(maybeWrapInQoutes(
+                                    outVertexLabelOptional.get().getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END)
+                            );
+                        }
+                        count++;
+                    }
+                    if (countIdentifier++ < outVertexLabelOptional.get().getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
+            if (inVertexLabelOptional.get().hasIDPrimaryKey()) {
+                sql.append("\n\t, _in.\"ID\" as ");
+                sql.append(maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + Topology.IN_VERTEX_COLUMN_END));
+            } else {
+                sql.append(", _in.");
+                int countIdentifier = 1;
+                for (String identifier : inVertexLabelOptional.get().getIdentifiers()) {
+                    PropertyColumn propertyColumn = inVertexLabelOptional.get().getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                    );
+                    PropertyType propertyType = propertyColumn.getPropertyType();
+                    String[] propertyTypeToSqlDefinition = propertyTypeToSqlDefinition(propertyType);
+                    int count = 1;
+                    for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                        if (count > 1) {
+                            sql.append(maybeWrapInQoutes(identifier + propertyType.getPostFixes()[count - 2]));
+                            sql.append(" as ");
+                            sql.append(maybeWrapInQoutes(
+                                    inVertexLabelOptional.get().getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.IN_VERTEX_COLUMN_END)
+                            );
+                        } else {
+                            //The first column existVertexLabel no postfix
+                            sql.append(maybeWrapInQoutes(identifier));
+                            sql.append(" as ");
+                            sql.append(maybeWrapInQoutes(
+                                    inVertexLabelOptional.get().getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END)
+                            );
+                        }
+                        count++;
+                    }
+                    if (countIdentifier++ < inVertexLabelOptional.get().getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+
+            }
             edgePropertyMap.forEach((k, v) -> {
                 sql.append(',');
                 sql.append(this.valueToValuesString(edgeColumns.get(k), v));
                 sql.append(" as ");
                 sql.append(this.maybeWrapInQoutes(k));
             });
-            sql.append(" FROM ");
+            sql.append("\nFROM\n\t");
             sql.append(this.maybeWrapInQoutes(in.getSchema()));
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(VERTEX_PREFIX + in.getTable()));
-            sql.append(" _in join ");
-            sql.append(this.maybeWrapInQoutes(tmpTableIdentified)).append(" ab on ab.in = _in.").append(this.maybeWrapInQoutes(idFields.getRight())).append(" join ");
+            sql.append(" _in JOIN\n\t");
+            sql.append(this.maybeWrapInQoutes(tmpTableIdentified)).append(" ab ON ab.in = _in.").append(this.maybeWrapInQoutes(idFields.getRight())).append(" JOIN\n\t");
             sql.append(this.maybeWrapInQoutes(out.getSchema()));
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(VERTEX_PREFIX + out.getTable()));
-            sql.append(" _out on ab.out = _out.").append(this.maybeWrapInQoutes(idFields.getLeft()));
+            sql.append(" _out ON ab.out = _out.").append(this.maybeWrapInQoutes(idFields.getLeft()));
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
