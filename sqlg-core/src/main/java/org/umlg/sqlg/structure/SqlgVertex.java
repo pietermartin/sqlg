@@ -1,12 +1,11 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -50,9 +49,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    /**
-     * Only called for streaming temporary vertices. {@link SqlgGraph#internalStreamTemporaryVertex(Object...)} (Object...)}
-     */
     SqlgVertex(SqlgGraph sqlgGraph, String table, Map<String, Object> keyValueMap) {
         super(sqlgGraph, "", table);
         Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
@@ -67,7 +63,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    public static SqlgVertex of(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
+    public static SqlgVertex of(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {
         if (!sqlgGraph.tx().isInBatchMode()) {
             return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
         } else {
@@ -87,7 +83,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         super(sqlgGraph, id, schema, table);
     }
 
-    SqlgVertex(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
+    SqlgVertex(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {
         super(sqlgGraph, identifiers, schema, table);
     }
 
@@ -415,7 +411,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
             preparedStatement.executeUpdate();
             if (!temporary && !vertexLabel.getIdentifiers().isEmpty()) {
-                ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                List<Comparable> identifiers = new ArrayList<>();
                 for (String identifier : vertexLabel.getIdentifiers()) {
                     //noinspection unchecked
                     identifiers.add((Comparable) propertyTypeValueMap.get(identifier).getRight());

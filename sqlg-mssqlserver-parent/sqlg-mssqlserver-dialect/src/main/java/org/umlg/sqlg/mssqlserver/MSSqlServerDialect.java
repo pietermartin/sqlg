@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableSet;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopyOptions;
 import com.microsoft.sqlserver.jdbc.SQLServerConnection;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -969,7 +968,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     for (Map.Entry<SqlgVertex, Map<String, Object>> sqlgVertexMapEntry : vertices.getRight().entrySet()) {
                         SqlgVertex sqlgVertex = sqlgVertexMapEntry.getKey();
                         Map<String, Object> values = sqlgVertexMapEntry.getValue();
-                        ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                        List<Comparable> identifiers = new ArrayList<>();
                         for (String identifier : vertexLabel.getIdentifiers()) {
                             identifiers.add((Comparable) values.get(identifier));
                         }
@@ -1028,7 +1027,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                         for (Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleEntry : triples.getRight().entrySet()) {
                             SqlgEdge sqlgEdge = sqlgEdgeTripleEntry.getKey();
                             Map<String, Object> values = sqlgEdgeTripleEntry.getValue().getRight();
-                            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                            List<Comparable> identifiers = new ArrayList<>();
                             for (String identifier : edgeLabel.getIdentifiers()) {
                                 identifiers.add((Comparable) values.get(identifier));
                             }

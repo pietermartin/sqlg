@@ -2,7 +2,6 @@ package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -221,7 +220,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                             }
                         }
                         if (vertexLabel != null && !vertexLabel.hasIDPrimaryKey()) {
-                            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                            List<Comparable> identifiers = new ArrayList<>();
                             for (String identifier : vertexLabel.getIdentifiers()) {
                                 identifiers.add((Comparable) parameterValueMap.get(identifier));
                             }
@@ -416,7 +415,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                         }
                     }
                     if (!edgeLabel.hasIDPrimaryKey()) {
-                        ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                        List<Comparable> identifiers = new ArrayList<>();
                         for (String identifier : edgeLabel.getIdentifiers()) {
                             identifiers.add((Comparable) parameterValueMap.getRight().get(identifier));
                         }

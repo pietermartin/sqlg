@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -272,7 +271,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                     numberInserted++;
                     if (vertexLabel != null && !vertexLabel.hasIDPrimaryKey()) {
-                        ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                        List<Comparable> identifiers = new ArrayList<>();
                         for (String identifier : vertexLabel.getIdentifiers()) {
                             identifiers.add((Comparable) values.get(identifier));
                         }
@@ -500,7 +499,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
                         numberInserted++;
                         if (!edgeLabel.hasIDPrimaryKey()) {
-                            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                            List<Comparable> identifiers = new ArrayList<>();
                             for (String identifier : edgeLabel.getIdentifiers()) {
                                 identifiers.add((Comparable) values.get(identifier));
                             }

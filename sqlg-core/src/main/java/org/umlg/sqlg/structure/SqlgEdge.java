@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -76,7 +75,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         super(sqlgGraph, id, schema, table);
     }
 
-    public SqlgEdge(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
+    public SqlgEdge(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {
         super(sqlgGraph, identifiers, schema, table);
     }
 
@@ -274,7 +273,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     throw new RuntimeException("Could not retrieve the id after an insert into " + Topology.VERTICES);
                 }
             } else {
-                ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+                List<Comparable> identifiers = new ArrayList<>();
                 for (String identifier : edgeLabel.getIdentifiers()) {
                     //noinspection unchecked
                     identifiers.add((Comparable<Object>) propertyTypeValueMap.get(identifier).getRight());
@@ -444,7 +443,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ColumnList.Column column = inForeignKeyColumns.get(0);
         this.inVertex = SqlgVertex.of(
                 this.sqlgGraph,
-                ListOrderedSet.listOrderedSet(identifiers),
+                identifiers,
                 column.getForeignSchemaTable().getSchema(),
                 column.getForeignSchemaTable().getTable()
         );
@@ -462,7 +461,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ColumnList.Column column = outForeignKeyColumns.get(0);
         this.outVertex = SqlgVertex.of(
                 this.sqlgGraph,
-                ListOrderedSet.listOrderedSet(identifiers),
+                identifiers,
                 column.getForeignSchemaTable().getSchema(),
                 column.getForeignSchemaTable().getTable()
         );
@@ -482,7 +481,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             }
         }
         long inId = -1;
-        ListOrderedSet<Comparable> inComparables = new ListOrderedSet<>();
+        List<Comparable> inComparables = new ArrayList<>();
         for (VertexLabel inVertexLabel: inForeignKeys) {
             inVertexColumnName = SchemaTable.of(inVertexLabel.getSchema().getName(), inVertexLabel.getLabel());
             if (inVertexLabel.hasIDPrimaryKey()) {
@@ -514,7 +513,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
         }
         long outId = -1;
-        ListOrderedSet<Comparable> outComparables = new ListOrderedSet<>();
+        List<Comparable> outComparables = new ArrayList<>();
         for (VertexLabel outVertexLabel: outForeignKeys) {
             outVertexColumnName = SchemaTable.of(outVertexLabel.getSchema().getName(), outVertexLabel.getLabel());
             if (outVertexLabel.hasIDPrimaryKey()) {

@@ -2624,8 +2624,8 @@ public class SchemaTableTree {
         }
     }
 
-    public ListOrderedSet<Comparable> loadIdentifierObjects(Map<String, Integer> idColumnCountMap, ResultSet resultSet) throws SQLException {
-        ListOrderedSet<Comparable> identifierObjects = new ListOrderedSet<>();
+    public List<Comparable> loadIdentifierObjects(Map<String, Integer> idColumnCountMap, ResultSet resultSet) throws SQLException {
+        List<Comparable> identifierObjects = new ArrayList<>();
         for (String identifier : this.identifiers) {
             String labelledAliasIdentifier = labeledAliasIdentifier(identifier);
             int count = idColumnCountMap.get(labelledAliasIdentifier);
