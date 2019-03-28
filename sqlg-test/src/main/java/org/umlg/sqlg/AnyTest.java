@@ -2,8 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchServerSideEdgeCreation;
-import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestMultipleIDQuery;
 
 /**
  * Date: 2014/07/16
@@ -11,8 +10,12 @@ import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSimpleJoinGremlin.class,
-        TestBatchServerSideEdgeCreation.class,
+        TestMultipleIDQuery.class
+//        TestDeletedVertex.class,
+//        TestGremlinCompileWithHas.class,
+//        TestTopology.class
+//        TestSimpleJoinGremlin.class,
+//        TestBatchServerSideEdgeCreation.class,
 //        TestPartitioning.class,
 //        TestLoadEdge.class
 })

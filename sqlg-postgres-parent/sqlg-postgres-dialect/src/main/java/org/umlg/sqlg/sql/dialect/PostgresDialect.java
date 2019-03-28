@@ -1614,8 +1614,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 writer.write(((RecordId) outVertex.id()).getID().toString());
                 writer.write(COPY_COMMAND_DELIMITER);
             } else {
+                int count = 0;
                 for (String identifier : outVertexLabel.getIdentifiers()) {
-                    Object value = outVertex.value(identifier);
+//                    Object value = outVertex.value(identifier);
+                    Object value = ((RecordId)outVertex.id()).getID().getIdentifiers().get(count++);
                     PropertyType propertyType = outVertexLabel.getProperty(identifier).orElseThrow(
                             () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, outVertexLabel.getFullName()))
                     ).getPropertyType();
@@ -1627,8 +1629,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 writer.write(((RecordId) inVertex.id()).getID().toString());
             } else {
                 int i = 1;
+                int count = 0;
                 for (String identifier : inVertexLabel.getIdentifiers()) {
-                    Object value = inVertex.value(identifier);
+//                    Object value = inVertex.value(identifier);
+                    Object value = ((RecordId)inVertex.id()).getID().getIdentifiers().get(count++);
                     PropertyType propertyType = inVertexLabel.getProperty(identifier).orElseThrow(
                             () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, inVertexLabel.getFullName()))
                     ).getPropertyType();
