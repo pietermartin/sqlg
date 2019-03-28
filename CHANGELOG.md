@@ -1,5 +1,7 @@
 ##2.0.2
 
+*Fix bug [#344](https://github.com/pietermartin/sqlg/issues/344). Fix generation of `WHERE` clause. 
+
 *Fix bug [#339](https://github.com/pietermartin/sqlg/issues/339). Fix the in out vertices being incorrectly set on 
 updating of an edge.
 
