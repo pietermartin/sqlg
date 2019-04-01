@@ -1646,7 +1646,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 String key = entry.getKey();
                 Object value = entry.getValue();
                 PropertyType propertyType;
-                if (key == Topology.ID) {
+                if (key.equals(Topology.ID)) {
                     propertyType = PropertyType.LONG;
                 } else {
                     propertyType = edgeLabel.getProperties().get(key).getPropertyType();
