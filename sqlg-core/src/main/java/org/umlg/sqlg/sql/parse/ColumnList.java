@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.umlg.sqlg.structure.PropertyType;
@@ -43,6 +44,9 @@ public class ColumnList {
      */
     private final Map<String, Map<String, PropertyType>> filteredAllTables;
 
+    private ListOrderedSet<String> identifiers;
+
+
     /**
      * build a new empty column list
      *
@@ -50,11 +54,12 @@ public class ColumnList {
      * @param drop
      * @param filteredAllTables
      */
-    public ColumnList(SqlgGraph graph, boolean drop, Map<String, Map<String, PropertyType>> filteredAllTables) {
+    public ColumnList(SqlgGraph graph, boolean drop, ListOrderedSet<String> identifiers, Map<String, Map<String, PropertyType>> filteredAllTables) {
         super();
         this.sqlgGraph = graph;
         this.drop = drop;
         this.filteredAllTables = filteredAllTables;
+        this.identifiers = identifiers;
     }
 
     /**
@@ -177,6 +182,7 @@ public class ColumnList {
     public String toString() {
         String sep = "";
         StringBuilder sb = new StringBuilder();
+        int count = 1;
         for (Map.Entry<Column, String> columnEntry : this.columns.entrySet()) {
             Column c = columnEntry.getKey();
             String alias = columnEntry.getValue();
@@ -185,7 +191,7 @@ public class ColumnList {
             c.toString(sb);
             sb.append(" AS ");
             sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
-            if (this.drop) {
+            if (this.drop && (this.identifiers.isEmpty() || count++ == this.identifiers.size())) {
                 break;
             }
         }

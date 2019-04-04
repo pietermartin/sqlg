@@ -3,6 +3,8 @@ package org.umlg.sqlg.test.usersuppliedpk.topology;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,10 +15,7 @@ import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -38,6 +37,69 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         } catch (ConfigurationException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Test
+    public void testAddEdgeUserSuppliedPK() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.STRING);
+                    put("uid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b1");
+        a1.addEdge("e1", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a2");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c2");
+        a2.addEdge("e1", c2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+
+        this.sqlgGraph.tx().commit();
+
+
     }
 
     @Test

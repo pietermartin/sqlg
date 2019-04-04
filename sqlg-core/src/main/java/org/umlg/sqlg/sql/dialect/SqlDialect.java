@@ -838,7 +838,19 @@ public interface SqlDialect {
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append("\nWHERE ");
-                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
+                    if (lastVertexLabel.hasIDPrimaryKey()) {
+                        sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
+                    } else {
+                        int count = 1;
+                        sb.append("(");
+                        for (String identifier : lastVertexLabel.getIdentifiers()) {
+                            sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                            if (count++ < lastVertexLabel.getIdentifiers().size()) {
+                                sb.append(", ");
+                            }
+                        }
+                        sb.append(")");
+                    }
                     sb.append(" IN\n\t(");
                     sb.append(leafElementsToDelete);
                     sb.append(")");
@@ -855,7 +867,19 @@ public interface SqlDialect {
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append("\nWHERE ");
-                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
+                    if (lastVertexLabel.hasIDPrimaryKey()) {
+                        sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
+                    } else {
+                        sb.append("(");
+                        int count = 1;
+                        for (String identifier : lastVertexLabel.getIdentifiers()) {
+                            sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                            if (count++ < lastVertexLabel.getIdentifiers().size()) {
+                                sb.append(", ");
+                            }
+                        }
+                        sb.append(")");
+                    }
                     sb.append(" IN\n\t(");
                     sb.append(leafElementsToDelete);
                     sb.append(")");
@@ -869,13 +893,25 @@ public interface SqlDialect {
             String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), lastEdge.getSchemaTable()));
         }
-        //Delete the leaf vertices, if there are foreign keys then its been deferred.
+//        Delete the leaf vertices, if there are foreign keys then its been deferred.
         StringBuilder sb = new StringBuilder();
         sb.append("DELETE FROM ");
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
         sb.append(".");
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
-        sb.append("\nWHERE \"ID\" IN (\n\t");
+        if (last.isHasIDPrimaryKey()) {
+            sb.append("\nWHERE \"ID\" IN (\n\t");
+        } else {
+            sb.append("\nWHERE (");
+            int count = 1;
+            for (String identifier : last.getIdentifiers()) {
+                sb.append(maybeWrapInQoutes(identifier));
+                if (count++ < last.getIdentifiers().size()) {
+                    sb.append(", ");
+                }
+            }
+            sb.append(") IN (\n\t");
+        }
         sb.append(leafElementsToDelete);
         sb.append(")");
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), null));
@@ -886,7 +922,19 @@ public interface SqlDialect {
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
-            sb.append("\nWHERE \"ID\" IN (\n\t");
+            if (lastEdge.isHasIDPrimaryKey()) {
+                sb.append("\nWHERE \"ID\" IN (\n\t");
+            } else {
+                sb.append("\nWHERE (");
+                int count = 1;
+                for (String identifier : lastEdge.getIdentifiers()) {
+                    sb.append(maybeWrapInQoutes(identifier));
+                    if (count++ < lastEdge.getIdentifiers().size()) {
+                        sb.append(", ");
+                    }
+                }
+                sb.append(") IN (\n\t");
+            }
             sb.append(edgesToDelete);
             sb.append(")");
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));

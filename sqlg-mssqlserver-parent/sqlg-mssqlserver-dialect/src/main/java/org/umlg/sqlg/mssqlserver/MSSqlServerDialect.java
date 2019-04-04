@@ -1176,7 +1176,11 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable  String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(
+            SqlgGraph sqlgGraph,
+            String leafElementsToDelete,
+            @Nullable  String edgesToDelete,
+            LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
@@ -1216,11 +1220,29 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
-                    sb.append("\nWHERE ");
-                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
-                    sb.append(" IN(");
+                    sb.append("\nFROM (");
                     sb.append(leafElementsToDelete);
-                    sb.append(")");
+                    sb.append("\n) x\n");
+                    sb.append("WHERE ");
+                    if (edgeLabel.hasIDPrimaryKey()) {
+                        sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                        sb.append(".");
+                        sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                        sb.append(".").append(maybeWrapInQoutes("ID"));
+                        sb.append(" = x.").append("alias1");
+                    } else {
+                        int count = 1;
+                        for (String identifier : edgeLabel.getIdentifiers()) {
+                            sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                            sb.append(".");
+                            sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                            sb.append(".").append(maybeWrapInQoutes(identifier));
+                            sb.append(" = x.").append("alias").append(count);
+                            if (count++ < edgeLabel.getIdentifiers().size()) {
+                                sb.append(" AND ");
+                            }
+                        }
+                    }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
             }
@@ -1233,11 +1255,29 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
-                    sb.append("\nWHERE ");
-                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
-                    sb.append(" IN\n\t(");
+                    sb.append("\nFROM (");
                     sb.append(leafElementsToDelete);
-                    sb.append(")");
+                    sb.append("\n) x\n");
+                    sb.append("WHERE ");
+                    if (edgeLabel.hasIDPrimaryKey()) {
+                        sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                        sb.append(".");
+                        sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                        sb.append(".").append(maybeWrapInQoutes("ID"));
+                        sb.append(" = x.").append("alias1");
+                    } else {
+                        int count = 1;
+                        for (String identifier : edgeLabel.getIdentifiers()) {
+                            sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+                            sb.append(".");
+                            sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+                            sb.append(".").append(maybeWrapInQoutes(identifier));
+                            sb.append(" = x.").append("alias").append(count);
+                            if (count++ < edgeLabel.getIdentifiers().size()) {
+                                sb.append(" AND ");
+                            }
+                        }
+                    }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
             }
@@ -1245,8 +1285,14 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
         //Need to defer foreign key constraint checks.
         if (queryTraversesEdge) {
-            String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), lastEdge.getSchemaTable()));
+            for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
+                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." +  maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), SchemaTable.of(edgeLabel.getSchema().getName(), edgeLabel.getLabel())));
+            }
+            for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
+                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), SchemaTable.of(edgeLabel.getSchema().getName(), edgeLabel.getLabel())));
+            }
         }
         //Delete the leaf vertices, if there are foreign keys then its been deferred.
         StringBuilder sb = new StringBuilder();
@@ -1254,9 +1300,29 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
         sb.append(".");
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
-        sb.append("\nWHERE \"ID\" IN (");
+        sb.append("\nFROM (");
         sb.append(leafElementsToDelete);
-        sb.append(")");
+        sb.append("\n) x\n");
+        sb.append("WHERE ");
+        if (last.isHasIDPrimaryKey()) {
+            sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
+            sb.append(".").append(maybeWrapInQoutes("ID"));
+            sb.append(" = x.").append("alias1");
+        } else {
+            int count = 1;
+            for (String identifier : last.getIdentifiers()) {
+                sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
+                sb.append(".");
+                sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
+                sb.append(".").append(maybeWrapInQoutes(identifier));
+                sb.append(" = x.").append("alias").append(count);
+                if (count++ < last.getIdentifiers().size()) {
+                    sb.append(" AND ");
+                }
+            }
+        }
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
         if (queryTraversesEdge) {
@@ -1265,15 +1331,42 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
-            sb.append("\nWHERE \"ID\" IN (\n\t");
+            sb.append("\nFROM (");
             sb.append(edgesToDelete);
-            sb.append(")");
+            sb.append("\n) x\n");
+            sb.append("WHERE ");
+            if (lastEdge.isHasIDPrimaryKey()) {
+                sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
+                sb.append(".");
+                sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
+                sb.append(".").append(maybeWrapInQoutes("ID"));
+                sb.append(" = x.").append("alias1");
+            } else {
+                int count = 1;
+                for (String identifier : lastEdge.getIdentifiers()) {
+                    sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema()));
+                    sb.append(".");
+                    sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
+                    sb.append(".").append(maybeWrapInQoutes(identifier));
+                    sb.append(" = x.").append("alias").append(count);
+                    if (count++ < last.getIdentifiers().size()) {
+                        sb.append(" AND ");
+                    }
+                }
+            }
+
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
         //Enable the foreign key constraint
         if (queryTraversesEdge) {
-            String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), null));
+            for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
+                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." +  maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), null));
+            }
+            for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
+                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), null));
+            }
         }
         return sqls;
     }

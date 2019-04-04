@@ -4164,7 +4164,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(
+            SqlgGraph sqlgGraph,
+            String leafElementsToDelete,
+            String edgesToDelete,
+            LinkedList<SchemaTableTree> distinctQueryStack) {
+
         List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
@@ -4172,6 +4177,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         //if the leaf elements are vertices then we need to delete its in and out edges.
         boolean isVertex = last.getSchemaTable().isVertexTable();
         VertexLabel lastVertexLabel = null;
+        EdgeLabel lastEdgeLabel = null;
         if (isVertex) {
             Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(last.getSchemaTable().getSchema());
             Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().getSchema());
@@ -4179,9 +4185,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(last.getSchemaTable().withOutPrefix().getTable());
             Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().withOutPrefix().getTable());
             lastVertexLabel = vertexLabelOptional.get();
+        } else {
+            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(last.getSchemaTable().getSchema());
+            Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().getSchema());
+            Schema schema = schemaOptional.get();
+            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(last.getSchemaTable().withOutPrefix().getTable());
+            Preconditions.checkState(edgeLabelOptional.isPresent(), "BUG: %s not found in the topology.", last.getSchemaTable().withOutPrefix().getTable());
+            lastEdgeLabel = edgeLabelOptional.get();
         }
         boolean queryTraversesEdge = isVertex && (distinctQueryStack.size() > 1);
-        EdgeLabel lastEdgeLabel = null;
         if (queryTraversesEdge) {
             lastEdge = distinctQueryStack.get(distinctQueryStack.size() - 2);
             Optional<Schema> edgeSchema = sqlgGraph.getTopology().getSchema(lastEdge.getSchemaTable().getSchema());
@@ -4205,9 +4217,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append(" a USING todelete\nWHERE a.");
-                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
-                    sb.append(" = todelete.");
-                    sb.append(maybeWrapInQoutes("alias1"));
+                    if (edgeLabel.hasIDPrimaryKey()) {
+                        sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
+                        sb.append(" = todelete.");
+                        sb.append(maybeWrapInQoutes("alias1"));
+                    } else {
+                        int count = 1;
+                        for (String identifier : edgeLabel.getIdentifiers()) {
+                            sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                            sb.append(" = todelete.");
+                            sb.append(maybeWrapInQoutes("alias" + count));
+                            if (count++ < edgeLabel.getIdentifiers().size()) {
+                                sb.append(" AND\n");
+                            }
+                        }
+                    }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
             }
@@ -4222,9 +4246,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append(" a USING todelete\nWHERE a.");
-                    sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
-                    sb.append(" = todelete.");
-                    sb.append(maybeWrapInQoutes("alias1"));
+                    if (edgeLabel.hasIDPrimaryKey()) {
+                        sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
+                        sb.append(" = todelete.");
+                        sb.append(maybeWrapInQoutes("alias1"));
+                    } else {
+                        int count = 1;
+                        for (String identifier : edgeLabel.getIdentifiers()) {
+                            sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                            sb.append(" = todelete.");
+                            sb.append(maybeWrapInQoutes("alias" + count));
+                            if (count++ < edgeLabel.getIdentifiers().size()) {
+                                sb.append(" AND\n");
+                            }
+                        }
+                    }
                     sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
                 }
             }
@@ -4242,10 +4278,32 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));
         sb.append(".");
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
-        sb.append(" a USING todelete\nWHERE a.");
-        sb.append(maybeWrapInQoutes("ID"));
-        sb.append(" = todelete.");
-        sb.append(maybeWrapInQoutes("alias1"));
+        sb.append(" a USING todelete\nWHERE ");
+        if (last.isHasIDPrimaryKey()) {
+            sb.append("a.");
+            sb.append(maybeWrapInQoutes("ID"));
+            sb.append(" = todelete.");
+            sb.append(maybeWrapInQoutes("alias1"));
+        } else {
+            int count = 1;
+            AbstractLabel abstractLabel;
+            if (isVertex) {
+                abstractLabel = lastVertexLabel;
+            } else {
+                abstractLabel = lastEdgeLabel;
+            }
+            for (String identifier : abstractLabel.getIdentifiers()) {
+                sb.append("a.");
+                sb.append(maybeWrapInQoutes( identifier));
+                sb.append(" = todelete.");
+                sb.append(maybeWrapInQoutes("alias" + count));
+                if (count < abstractLabel.getIdentifiers().size()) {
+                    sb.append(" AND\n");
+                }
+                count++;
+            }
+
+        }
         sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
 
         if (queryTraversesEdge) {
@@ -4257,9 +4315,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
             sb.append(" a USING todelete\nWHERE a.");
-            sb.append(maybeWrapInQoutes("ID"));
-            sb.append(" = todelete.");
-            sb.append(maybeWrapInQoutes("alias1"));
+            if (lastEdgeLabel.hasIDPrimaryKey()) {
+                sb.append(maybeWrapInQoutes("ID"));
+                sb.append(" = todelete.");
+                sb.append(maybeWrapInQoutes("alias1"));
+            } else {
+                int count = 1;
+                for (String identifier : lastEdgeLabel.getIdentifiers()) {
+                    sb.append(maybeWrapInQoutes(identifier));
+                    sb.append(" = todelete.");
+                    sb.append(maybeWrapInQoutes("alias" + count));
+                    if (count++ < lastEdgeLabel.getIdentifiers().size()) {
+                        sb.append(" AND\n");
+                    }
+                }
+            }
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
         }
         //Enable the foreign key constraint

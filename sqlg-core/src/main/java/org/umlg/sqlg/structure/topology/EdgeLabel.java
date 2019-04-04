@@ -760,13 +760,13 @@ public class EdgeLabel extends AbstractLabel {
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
         }
-        SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
         if (!foreignKeysContains(direction, vertexLabel)) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
             schema.getTopology().lock();
             if (!foreignKeysContains(direction, vertexLabel)) {
-                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
+                SchemaTable foreignKeySchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
+                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKeySchemaTable);
                 if (direction == Direction.IN) {
                     this.uncommittedInVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedInEdgeLabels(schema, this);
@@ -774,6 +774,9 @@ public class EdgeLabel extends AbstractLabel {
                     this.uncommittedOutVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedOutEdgeLabels(schema, this);
                 }
+                //addEdgeForeignKey is not creating foreignKeys for user supplied ids.
+                //TODO investigate user supplied id foreignKeys
+                SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
                 addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), vertexLabel, direction, foreignKey);
                 SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
                 this.getSchema().getTopology().fire(this, vertexSchemaTable.toString(), TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE);
@@ -801,14 +804,14 @@ public class EdgeLabel extends AbstractLabel {
                 PropertyType propertyType = propertyColumn.getPropertyType();
                 String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
                 int count = 1;
-                for (String ignored : propertyTypeToSqlDefinition) {
+                for (String foreignKeyType : propertyTypeToSqlDefinition) {
                     if (count > 1) {
                         addEdgeSqls.add(
                                 this.sqlgGraph.getSqlDialect().addColumnStatement(
                                         schema,
                                         table,
                                         foreignVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END),
-                                        this.sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition()
+                                        foreignKeyType
                                 )
                         );
                     } else {
@@ -818,7 +821,7 @@ public class EdgeLabel extends AbstractLabel {
                                         schema,
                                         table,
                                         foreignVertexLabel.getFullName() + "." + identifier + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END),
-                                        this.sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition()
+                                        foreignKeyType
                                 )
                         );
                     }

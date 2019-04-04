@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.process.dropstep;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -18,13 +19,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+//import org.apache.tinkerpop.gremlin.structure.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -48,6 +52,7 @@ public class TestDropStep extends BaseTest {
 //        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.FALSE});
 //        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.TRUE});
     }
+
 
     @Before
     public void before() throws Exception {
@@ -79,6 +84,43 @@ public class TestDropStep extends BaseTest {
     }
 
     @Test
+    public void testUserSuppliedDrop() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        String uid1 = UUID.randomUUID().toString();
+        String uid2 = UUID.randomUUID().toString();
+        this.sqlgGraph.addVertex(T.label, "A", "uid1", uid1, "uid2", uid2, "name", "a1");
+        this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a2");
+        this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a3");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+
+        SchemaTable schemaTable = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
+        this.sqlgGraph.traversal().V().hasLabel("A")
+                .hasId(RecordId.from(sqlgGraph, schemaTable.getSchema() + "." + schemaTable.getTable() + RecordId.RECORD_ID_DELIMITER +  "[" + uid1 + "," + uid2 + "]"))
+                .drop().iterate();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+
+        this.sqlgGraph.addVertex(T.label, "A", "uid1", uid1, "uid2", uid2, "name", "a1");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+
+        this.sqlgGraph.traversal().V().hasLabel("A")
+                .has("name", "a1")
+                .drop().iterate();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+    }
+
+    @Test
     public void g_V_properties_drop() {
         loadModern();
         final Traversal<Vertex, VertexProperty> traversal = (Traversal) this.sqlgGraph.traversal().V().properties().drop();
@@ -93,6 +135,47 @@ public class TestDropStep extends BaseTest {
     public void shouldReferenceVertexWhenRemoved() {
         final AtomicBoolean triggered = new AtomicBoolean(false);
         final Vertex v = this.sqlgGraph.addVertex();
+        final String label = v.label();
+        final Object id = v.id();
+
+        final MutationListener listener = new AbstractMutationListener() {
+            @Override
+            public void vertexRemoved(final Vertex element) {
+                Assert.assertThat(element, IsInstanceOf.instanceOf(ReferenceVertex.class));
+                Assert.assertEquals(id, element.id());
+                Assert.assertEquals(label, element.label());
+                triggered.set(true);
+            }
+        };
+        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener).detach(ReferenceFactory.class);
+
+        if (this.sqlgGraph.features().graph().supportsTransactions())
+            builder.eventQueue(new EventStrategy.TransactionalEventQueue(this.sqlgGraph));
+
+        final EventStrategy eventStrategy = builder.create();
+        final GraphTraversalSource gts = this.sqlgGraph.traversal().withStrategies(eventStrategy);
+
+        gts.V(v).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        AbstractGremlinTest.assertVertexEdgeCounts(this.sqlgGraph, 0, 0);
+        Assert.assertThat(triggered.get(), CoreMatchers.is(true));
+    }
+
+    @Test
+    public void shouldReferenceVertexWhenRemovedUserSuppliedIds() {
+
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2")));
+        this.sqlgGraph.tx().commit();
+
+        final AtomicBoolean triggered = new AtomicBoolean(false);
+        final Vertex v = this.sqlgGraph.addVertex(T.label, "A", "uid1", "1", "uid2", "2");
         final String label = v.label();
         final Object id = v.id();
 
@@ -139,6 +222,33 @@ public class TestDropStep extends BaseTest {
     }
 
     @Test
+    public void testDropStepUserSuppliedIds() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                    put("uid", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        this.sqlgGraph.tx().commit();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a3");
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V().hasLabel("A").has("name", "a1").drop().iterate();
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.containsAll(Arrays.asList(a2, a3)));
+        if (this.mutatingCallback) {
+            Assert.assertEquals(1, this.removedVertices.size());
+            Assert.assertTrue(this.removedVertices.contains(a1));
+        }
+    }
+
+    @Test
     public void testDropStepRepeat1() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
@@ -147,6 +257,92 @@ public class TestDropStep extends BaseTest {
         a1.addEdge("ab", b1);
         b1.addEdge("bc", c1);
         c1.addEdge("cd", d1);
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V().hasLabel("A")
+                .repeat(__.out())
+                .times(3)
+                .drop()
+                .hasNext();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertFalse(this.sqlgGraph.traversal().V().hasLabel("D").hasNext());
+        Assert.assertFalse(this.sqlgGraph.traversal().E().hasLabel("cd").hasNext());
+        if (this.mutatingCallback) {
+            Assert.assertEquals(1, this.removedVertices.size());
+            Assert.assertEquals(1, this.removedEdges.size());
+        }
+    }
+
+    @Test
+    public void testDropStepRepeat1UserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "D",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        bVertexLabel.ensureEdgeLabelExist(
+                "bc",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        cVertexLabel.ensureEdgeLabelExist(
+                "cd",
+                dVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        a1.addEdge("ab", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        c1.addEdge("cd", d1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
 
         this.dropTraversal.V().hasLabel("A")
@@ -180,6 +376,139 @@ public class TestDropStep extends BaseTest {
         b2.addEdge("ab", a2);
         c2.addEdge("bc", b2);
         d2.addEdge("cd", c2);
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V().hasLabel("A")
+                .repeat(__.out()).times(3)
+                .drop()
+                .iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("D").count().next(), 0);
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(1, this.removedVertices.size());
+            Assert.assertEquals(1, this.removedEdges.size());
+        }
+
+        this.dropTraversal.V().hasLabel("A")
+                .repeat(__.in()).times(3)
+                .drop()
+                .iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("D").count().next(), 0);
+        if (this.mutatingCallback) {
+            Assert.assertEquals(2, this.removedVertices.size());
+            Assert.assertEquals(2, this.removedEdges.size());
+        }
+    }
+
+    @Test
+    public void testDropStepRepeat2UserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "D",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        bVertexLabel.ensureEdgeLabelExist(
+                "bc",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        cVertexLabel.ensureEdgeLabelExist(
+                "cd",
+                dVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+
+        bVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                aVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        cVertexLabel.ensureEdgeLabelExist(
+                "bc",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        dVertexLabel.ensureEdgeLabelExist(
+                "cd",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        a1.addEdge("ab", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        c1.addEdge("cd", d1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b2.addEdge("ab", a2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        c2.addEdge("bc", b2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        d2.addEdge("cd", c2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
 
         this.dropTraversal.V().hasLabel("A")
@@ -247,6 +576,92 @@ public class TestDropStep extends BaseTest {
     }
 
     @Test
+    public void testDropStepWithJoinWithuserSuppliedIds() {
+
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        bVertexLabel.ensureEdgeLabelExist(
+                "bc",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c1");
+        Edge e1 = a1.addEdge("ab", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge e2 = a1.addEdge("ab", b2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge e3 = a1.addEdge("ab", b3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge e4 = b1.addEdge("bc", c1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge e5 = b2.addEdge("bc", c1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge e6 = b3.addEdge("bc", c1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal
+                .V().hasLabel("A").as("a")
+                .out("ab").has("name", "b2")
+                .drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").out("ab").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.containsAll(Arrays.asList(b1, b3)));
+        vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.containsAll(Arrays.asList(b1, b3)));
+        List<Edge> edges = this.sqlgGraph.traversal().E().hasLabel("ab").toList();
+        Assert.assertEquals(2, edges.size());
+        Assert.assertTrue(edges.containsAll(Arrays.asList(e1, e3)));
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(1, this.removedVertices.size());
+            Assert.assertTrue(this.removedVertices.contains(b2));
+            Assert.assertTrue(this.removedEdges.contains(e2));
+        }
+    }
+
+    @Test
     public void testDropEdges() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -275,7 +690,78 @@ public class TestDropStep extends BaseTest {
             Assert.assertEquals(0, this.removedVertices.size());
             Assert.assertTrue(this.removedEdges.containsAll(Arrays.asList(e1, e2, e3)));
         }
+    }
 
+    @Test
+    public void testDropEdgesUserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        bVertexLabel.ensureEdgeLabelExist(
+                "bc",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "uid", UUID.randomUUID().toString(), "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "uid", UUID.randomUUID().toString(), "name", "c1");
+        Edge e1 = a1.addEdge("ab", b1, "uid", UUID.randomUUID().toString());
+        Edge e2 = a1.addEdge("ab", b2, "uid", UUID.randomUUID().toString());
+        Edge e3 = a1.addEdge("ab", b3, "uid", UUID.randomUUID().toString());
+        Edge e4 = b1.addEdge("bc", c1, "uid", UUID.randomUUID().toString());
+        Edge e5 = b2.addEdge("bc", c1, "uid", UUID.randomUUID().toString());
+        Edge e6 = b3.addEdge("bc", c1, "uid", UUID.randomUUID().toString());
+
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal
+                .V().hasLabel("A").as("a")
+                .outE("ab")
+                .drop().hasNext();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertFalse(this.sqlgGraph.traversal().E().hasLabel("ab").hasNext());
+        Assert.assertEquals(3L, this.sqlgGraph.traversal().E().hasLabel("bc").count().next(), 0L);
+        if (this.mutatingCallback) {
+            Assert.assertEquals(3, this.removedEdges.size());
+            Assert.assertEquals(0, this.removedVertices.size());
+            Assert.assertTrue(this.removedEdges.containsAll(Arrays.asList(e1, e2, e3)));
+        }
     }
 
     @Test
@@ -306,6 +792,7 @@ public class TestDropStep extends BaseTest {
         }
     }
 
+
     @Test
     public void dropMultiplePathsToVertices() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
@@ -326,6 +813,100 @@ public class TestDropStep extends BaseTest {
         b2.addEdge("bc", c3);
         b2.addEdge("bc", c4);
         b2.addEdge("bc", c5);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .out()
+                .out()
+                .toList();
+        Assert.assertEquals(6, vertices.size());
+        Assert.assertTrue(vertices.removeAll(Arrays.asList(c1, c2, c3, c4, c5)));
+        Assert.assertEquals(0, vertices.size());
+
+        this.dropTraversal.V().hasLabel("A")
+                .out()
+                .out()
+                .drop()
+                .iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(0L, this.sqlgGraph.traversal().V().hasLabel("C").count().next(), 0L);
+        Assert.assertEquals(0L, this.sqlgGraph.traversal().E().hasLabel("bc").count().next(), 0L);
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(5, this.removedVertices.size());
+            Assert.assertEquals(6, this.removedEdges.size());
+        }
+
+    }
+
+    @Test
+    public void dropMultiplePathsToVerticesUserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        bVertexLabel.ensureEdgeLabelExist(
+                "bc",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c3");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c4");
+        Vertex c5 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c5");
+        a1.addEdge("ab", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        a1.addEdge("ab", b2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b2.addEdge("bc", c3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b2.addEdge("bc", c4, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b2.addEdge("bc", c5, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
@@ -400,6 +981,99 @@ public class TestDropStep extends BaseTest {
     }
 
     @Test
+    public void dropMultiplePathsToVerticesWithHasWithUserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        bVertexLabel.ensureEdgeLabelExist(
+                "bc",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c3");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c4");
+        Vertex c5 = this.sqlgGraph.addVertex(T.label, "C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c5");
+        a1.addEdge("ab", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        a1.addEdge("ab", b2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b1.addEdge("bc", c3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b2.addEdge("bc", c3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b2.addEdge("bc", c4, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        b2.addEdge("bc", c5, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .out()
+                .out().has("name", P.within("c1", "c2", "c3", "c4"))
+                .toList();
+        Assert.assertEquals(5, vertices.size());
+        Assert.assertTrue(vertices.removeAll(Arrays.asList(c1, c2, c3, c4)));
+        Assert.assertEquals(0, vertices.size());
+
+        this.dropTraversal.V().hasLabel("A")
+                .out()
+                .out().has("name", P.within("c1", "c2", "c3", "c4"))
+                .drop()
+                .iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1L, this.sqlgGraph.traversal().V().hasLabel("C").count().next(), 0L);
+        Assert.assertEquals(1L, this.sqlgGraph.traversal().E().hasLabel("bc").count().next(), 0L);
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(4, this.removedVertices.size());
+            Assert.assertEquals(5, this.removedEdges.size());
+        }
+    }
+
+    @Test
     public void testDropStepWithJoinVertexStep() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
@@ -410,6 +1084,71 @@ public class TestDropStep extends BaseTest {
         Edge e1 = a1.addEdge("ab", b1);
         Edge e2 = a1.addEdge("ab", b2);
         Edge e3 = a1.addEdge("ab", b3);
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal
+                .V().hasLabel("A")
+                .local(
+                        __.out("ab").has("name", "b2").drop()
+                )
+                .iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").out("ab").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.containsAll(Arrays.asList(b1, b3)));
+        vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.containsAll(Arrays.asList(b1, b3)));
+        List<Edge> edges = this.sqlgGraph.traversal().E().hasLabel("ab").toList();
+        Assert.assertEquals(2, edges.size());
+        Assert.assertTrue(edges.containsAll(Arrays.asList(e1, e3)));
+        if (this.mutatingCallback) {
+            Assert.assertEquals(1, this.removedVertices.size());
+            Assert.assertEquals(1, this.removedEdges.size());
+        }
+    }
+
+    @Test
+    public void testDropStepWithJoinVertexStepUserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a3");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b3");
+        Edge e1 = a1.addEdge("ab", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge e2 = a1.addEdge("ab", b2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+        Edge e3 = a1.addEdge("ab", b3, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
 
         this.dropTraversal
@@ -468,6 +1207,159 @@ public class TestDropStep extends BaseTest {
     }
 
     @Test
+    public void testDropOutMultipleOneUserSuppliedId() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", "a1", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", "b1", "name", "b1");
+        a1.addEdge("e1", b1, "uid1", "e1");
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", "a2", "name", "a2");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "uid1", "c1", "name", "c2");
+        a2.addEdge("e1", c2, "uid1", "e2");
+
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("C").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(0, vertices.size());
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(4, this.removedVertices.size());
+            Assert.assertTrue(this.removedVertices.contains(b1));
+            Assert.assertTrue(this.removedVertices.contains(c2));
+            Assert.assertTrue(this.removedVertices.contains(a1));
+            Assert.assertTrue(this.removedVertices.contains(a2));
+        }
+    }
+
+    @Test
+    public void testDropOutMultipleUserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", "a1", "uid2", "a11", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", "b1", "uid2", "b11", "name", "b1");
+        a1.addEdge("e1", b1, "uid1", "e1", "uid2", "e11");
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", "a2", "uid2", "a22", "name", "a2");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "uid1", "c1", "uid2", "c11", "name", "c2");
+        a2.addEdge("e1", c2, "uid1", "e2", "uid2", "e22");
+
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("C").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(0, vertices.size());
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(4, this.removedVertices.size());
+            Assert.assertTrue(this.removedVertices.contains(b1));
+            Assert.assertTrue(this.removedVertices.contains(c2));
+            Assert.assertTrue(this.removedVertices.contains(a1));
+            Assert.assertTrue(this.removedVertices.contains(a2));
+        }
+    }
+
+    @Test
     public void testDropOutMultipleAcrossSchemas() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
@@ -476,6 +1368,85 @@ public class TestDropStep extends BaseTest {
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a2");
         Vertex c2 = this.sqlgGraph.addVertex(T.label, "C.C", "name", "c2");
         a2.addEdge("e1", c2);
+
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("C").toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(0, vertices.size());
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(4, this.removedVertices.size());
+            Assert.assertTrue(this.removedVertices.contains(b1));
+            Assert.assertTrue(this.removedVertices.contains(c2));
+            Assert.assertTrue(this.removedVertices.contains(a1));
+            Assert.assertTrue(this.removedVertices.contains(a2));
+        }
+    }
+
+    @Test
+    public void testDropOutMultipleAcrossSchemasuserSuppliedIds() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                cVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "b1");
+        a1.addEdge("e1", b1, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "a2");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C.C", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "c2");
+        a2.addEdge("e1", c2, "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString());
 
         this.sqlgGraph.tx().commit();
 

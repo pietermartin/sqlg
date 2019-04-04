@@ -42,8 +42,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "TestHierarchy",
                 new LinkedHashMap<String, PropertyType>() {{
-                    put("column1", PropertyType.STRING);
-                    put("column2", PropertyType.STRING);
+                    put("column1", PropertyType.varChar(100));
+                    put("column2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("column1", "column2"))
