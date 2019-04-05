@@ -339,7 +339,9 @@ public class EdgeLabel extends AbstractLabel {
         }
 
         //foreign key definition start
-        if (partitionType.isNone() && this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
+        if (inVertexLabel.getPartitionType().isNone() && outVertexLabel.getPartitionType().isNone() &&
+                this.partitionType.isNone() && this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
+
             sql.append(",\n\t");
             sql.append("FOREIGN KEY (");
             if (inVertexLabel.hasIDPrimaryKey()) {
@@ -758,13 +760,13 @@ public class EdgeLabel extends AbstractLabel {
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
         }
-        SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
         if (!foreignKeysContains(direction, vertexLabel)) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
             schema.getTopology().lock();
             if (!foreignKeysContains(direction, vertexLabel)) {
-                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
+                SchemaTable foreignKeySchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
+                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKeySchemaTable);
                 if (direction == Direction.IN) {
                     this.uncommittedInVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedInEdgeLabels(schema, this);
@@ -772,29 +774,78 @@ public class EdgeLabel extends AbstractLabel {
                     this.uncommittedOutVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedOutEdgeLabels(schema, this);
                 }
+                //addEdgeForeignKey is not creating foreignKeys for user supplied ids.
+                //TODO investigate user supplied id foreignKeys
+                SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
+                addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), vertexLabel, direction, foreignKey);
                 SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
-                addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
                 this.getSchema().getTopology().fire(this, vertexSchemaTable.toString(), TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE);
             }
         }
     }
 
-    private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
+    private void addEdgeForeignKey(String schema, String table, VertexLabel foreignVertexLabel, Direction direction, SchemaTable foreignKey) {
         Preconditions.checkState(!this.getSchema().isSqlgSchema(), "BUG: ensureEdgeVertexLabelExist may not be called for %s", SQLG_SCHEMA);
-        String sqlStr = this.sqlgGraph.getSqlDialect().addColumnStatement(schema, table,
-                foreignKey.getSchema() + "." + foreignKey.getTable(), this.sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition());
+        List<String> addEdgeSqls = new ArrayList<>();
+        if (foreignVertexLabel.hasIDPrimaryKey()) {
+            addEdgeSqls.add(
+                    this.sqlgGraph.getSqlDialect().addColumnStatement(
+                            schema,
+                            table,
+                            foreignVertexLabel.getSchema().getName() + "." + foreignVertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END),
+                            this.sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition()
+                    )
+            );
+        } else {
+            for (String identifier : foreignVertexLabel.getIdentifiers()) {
+                PropertyColumn propertyColumn = foreignVertexLabel.getProperty(identifier).orElseThrow(
+                        () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                );
+                PropertyType propertyType = propertyColumn.getPropertyType();
+                String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                int count = 1;
+                for (String foreignKeyType : propertyTypeToSqlDefinition) {
+                    if (count > 1) {
+                        addEdgeSqls.add(
+                                this.sqlgGraph.getSqlDialect().addColumnStatement(
+                                        schema,
+                                        table,
+                                        foreignVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END),
+                                        foreignKeyType
+                                )
+                        );
+                    } else {
+                        //The first column existVertexLabel no postfix
+                        addEdgeSqls.add(
+                                this.sqlgGraph.getSqlDialect().addColumnStatement(
+                                        schema,
+                                        table,
+                                        foreignVertexLabel.getFullName() + "." + identifier + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END),
+                                        foreignKeyType
+                                )
+                        );
+                    }
+                    count++;
+                }
+            }
+
+        }
         if (logger.isDebugEnabled()) {
-            logger.debug(sqlStr);
+            for (String addEdgeSql : addEdgeSqls) {
+                logger.debug(addEdgeSql);
+            }
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sqlStr)) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        for (String addEdgeSql : addEdgeSqls) {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(addEdgeSql)) {
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
         StringBuilder sql = new StringBuilder();
         //foreign key definition start
-        if (this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
+        if (foreignVertexLabel.hasIDPrimaryKey() && this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
             sql.append(" ALTER TABLE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sql.append(".");
@@ -804,9 +855,9 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(" FOREIGN KEY (");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
             sql.append(") REFERENCES ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(otherVertex.getSchema()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignVertexLabel.getSchema().getName()));
             sql.append(".");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + foreignVertexLabel.getLabel()));
             sql.append(" (");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             if (this.sqlgGraph.getSqlDialect().supportsDeferrableForeignKey()) {
@@ -844,7 +895,35 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
             sql.append(" (");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+            if (foreignVertexLabel.hasIDPrimaryKey()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+            } else {
+                int countIdentifier = 1;
+                for (String identifier : foreignVertexLabel.getIdentifiers()) {
+                    PropertyColumn propertyColumn = foreignVertexLabel.getProperty(identifier).orElseThrow(
+                            () -> new IllegalStateException(String.format("identifier %s column must be a property", identifier))
+                    );
+                    PropertyType propertyType = propertyColumn.getPropertyType();
+                    String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                    int count = 1;
+                    for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                        if (count > 1) {
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                    foreignVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END))
+                            );
+                        } else {
+                            //The first column existVertexLabel no postfix
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                    foreignVertexLabel.getFullName() + "." + identifier + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END))
+                            );
+                        }
+                        count++;
+                    }
+                    if (countIdentifier++ < foreignVertexLabel.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
             sql.append(")");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");

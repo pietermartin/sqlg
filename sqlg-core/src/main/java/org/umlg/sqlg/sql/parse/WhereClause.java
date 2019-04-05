@@ -44,11 +44,11 @@ public class WhereClause {
         prefix += ".";
         prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
 
-        if (p.getValue() instanceof PropertyReference && p.getBiPredicate() instanceof Compare){
-        	result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-        	String column= prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(((PropertyReference)p.getValue()).getColumnName());
-        	result += compareToSql((Compare) p.getBiPredicate(),column);
-        	return result;
+        if (p.getValue() instanceof PropertyReference && p.getBiPredicate() instanceof Compare) {
+            result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            String column = prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(((PropertyReference) p.getValue()).getColumnName());
+            result += compareToSql((Compare) p.getBiPredicate(), column);
+            return result;
         } else if (p.getBiPredicate() instanceof Compare) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 if (schemaTableTree.isHasIDPrimaryKey()) {
@@ -80,7 +80,7 @@ public class WhereClause {
                         result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier);
                         result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
                         if (i++ < schemaTableTree.getIdentifiers().size()) {
-                            result += " AND ";
+                            result += " OR ";
                         }
                     }
                 }
@@ -125,15 +125,15 @@ public class WhereClause {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             result += textToSql(sqlgGraph.getSqlDialect(), prefix, (Text) p.getBiPredicate());
             return result;
-        } else if (p.getBiPredicate() instanceof FullText){
-        	prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-        	FullText ft=(FullText)p.getBiPredicate();
-        	result += sqlgGraph.getSqlDialect().getFullTextQueryText(ft, prefix);
-        	return result;
-        } else if (p.getBiPredicate() instanceof Existence){
-        	result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-        	result += " "+p.getBiPredicate().toString();
-        	return result;
+        } else if (p.getBiPredicate() instanceof FullText) {
+            prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            FullText ft = (FullText) p.getBiPredicate();
+            result += sqlgGraph.getSqlDialect().getFullTextQueryText(ft, prefix);
+            return result;
+        } else if (p.getBiPredicate() instanceof Existence) {
+            result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            result += " " + p.getBiPredicate().toString();
+            return result;
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
     }
@@ -157,7 +157,7 @@ public class WhereClause {
         }
     }
 
-    private static String compareToSql(Compare compare,String column) {
+    private static String compareToSql(Compare compare, String column) {
         switch (compare) {
             case eq:
                 return " = " + column;
@@ -176,7 +176,7 @@ public class WhereClause {
         }
     }
 
-    
+
     private static String containsToSql(Contains contains, int size) {
         String result;
         if (size == 1) {
@@ -288,18 +288,27 @@ public class WhereClause {
                     }
                 }
             } else {
-                int i = 0;
-                for (String identifier : schemaTableTree.getIdentifiers()) {
-                    for (Object value : values) {
-                        if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                            keyValueMap.put(identifier, ((RecordId) value).getIdentifiers().get(i));
-                        } else {
-                            keyValueMap.put(hasContainer.getKey(), value);
+                for (Object value : values) {
+                    if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                        int i = 0;
+                        for (String identifier : schemaTableTree.getIdentifiers()) {
+                            keyValueMap.put(identifier, ((RecordId) value).getIdentifiers().get(i++));
                         }
+                    } else {
+                        keyValueMap.put(hasContainer.getKey(), value);
                     }
-                    i++;
                 }
-
+//                for (String identifier : schemaTableTree.getIdentifiers()) {
+//                    for (Object value : values) {
+//                        if (hasContainer.getKey().equals(T.id.getAccessor())) {
+//                            keyValueMap.put(identifier, ((RecordId) value).getIdentifiers().get(i));
+//                            break;
+//                        } else {
+//                            keyValueMap.put(hasContainer.getKey(), value);
+//                        }
+//                    }
+//                    i++;
+//                }
             }
         } else if (p.getBiPredicate() == Text.contains || p.getBiPredicate() == Text.ncontains ||
                 p.getBiPredicate() == Text.containsCIS || p.getBiPredicate() == Text.ncontainsCIS) {
@@ -308,13 +317,13 @@ public class WhereClause {
             keyValueMap.put(hasContainer.getKey(), hasContainer.getValue() + "%");
         } else if (p.getBiPredicate() == Text.endsWith || p.getBiPredicate() == Text.nendsWith) {
             keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue());
-        } else if (p.getBiPredicate() instanceof Existence){
-        	// no value
+        } else if (p.getBiPredicate() instanceof Existence) {
+            // no value
         } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
                 hasContainer.getValue() instanceof RecordId &&
-                !((RecordId)hasContainer.getValue()).hasSequenceId()) {
+                !((RecordId) hasContainer.getValue()).hasSequenceId()) {
 
-            RecordId recordId = (RecordId)hasContainer.getValue();
+            RecordId recordId = (RecordId) hasContainer.getValue();
             int i = 0;
             for (Object identifier : recordId.getIdentifiers()) {
                 keyValueMap.put(schemaTableTree.getIdentifiers().get(i++), identifier);

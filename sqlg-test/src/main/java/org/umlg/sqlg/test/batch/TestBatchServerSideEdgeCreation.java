@@ -1,24 +1,25 @@
 package org.umlg.sqlg.test.batch;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.PartitionType;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
 public class TestBatchServerSideEdgeCreation extends BaseTest {
@@ -34,6 +35,69 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
+    }
+
+    private void testBulkEdges_assert(SqlgGraph sqlgGraph) { assertEquals(10, sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        assertEquals(100, sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+        assertEquals(100, sqlgGraph.traversal().V().hasLabel("A").out().count().next(), 0);
+        assertEquals("y", sqlgGraph.traversal().E().hasLabel("AB").values("x").dedup().next());
+    }
+
+    @Test
+    public void testBulkEdgesOnUserSuppliedIds() throws InterruptedException {
+
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(),
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("index", PropertyType.INTEGER);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("index"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(),
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("index", PropertyType.INTEGER);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("index"))
+        );
+        EdgeLabel edgeLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExist(
+                "AB",
+                aVertexLabel,
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.STRING);
+                    put("part", PropertyType.STRING);
+                    put("x", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                PartitionType.LIST,
+                "part"
+        );
+        edgeLabel.ensureListPartitionExists("part1", "'part1'");
+        edgeLabel.ensureListPartitionExists("part2", "'part2'");
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        int count = 0;
+        List<Pair<String, String>> uids = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "index", Integer.toString(i));
+            for (int j = 0; j < 10; j++) {
+                this.sqlgGraph.addVertex(T.label, "B", "index", Integer.toString(count));
+                uids.add(Pair.of(Integer.toString(i), Integer.toString(count++)));
+            }
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        this.sqlgGraph.bulkAddEdges("A", "B", "AB", Pair.of("index", "index"), uids, "uid", UUID.randomUUID().toString(), "part", "part1", "x", "y");
+        this.sqlgGraph.tx().commit();
+
+        testBulkEdges_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBulkEdges_assert(this.sqlgGraph1);
+        }
     }
 
     @Test
@@ -60,11 +124,6 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
     }
 
-    private void testBulkEdges_assert(SqlgGraph sqlgGraph) { assertEquals(10, sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-        assertEquals(100, sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
-        assertEquals(100, sqlgGraph.traversal().V().hasLabel("A").out().count().next(), 0);
-        assertEquals("y", sqlgGraph.traversal().E().hasLabel("AB").values("x").dedup().next());
-    }
 
     @Test
     public void testBulkEdgesCrossSchemas() throws InterruptedException {
@@ -141,13 +200,13 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
 
     private void testBulkEdges2_assert(SqlgGraph sqlgGraph, String uuid1Cache, String uuid2Cache) {
         GraphTraversal<Vertex, Vertex> has = sqlgGraph.traversal().V().hasLabel("Person").has("id", uuid1Cache);
-        assertTrue(has.hasNext());
+        Assert.assertTrue(has.hasNext());
         Vertex person50 = has.next();
 
         GraphTraversal<Vertex, Vertex> has1 = sqlgGraph.traversal().V().hasLabel("Person").has("id", uuid2Cache);
-        assertTrue(has1.hasNext());
+        Assert.assertTrue(has1.hasNext());
         Vertex person250 = has1.next();
-        assertTrue(sqlgGraph.traversal().V(person50.id()).out().hasNext());
+        Assert.assertTrue(sqlgGraph.traversal().V(person50.id()).out().hasNext());
         Vertex person250Please = sqlgGraph.traversal().V(person50.id()).out().next();
         assertEquals(person250, person250Please);
     }
@@ -216,9 +275,9 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
     }
 
     private void testBulkAddEdgeStringAndIntegerIds_assert(SqlgGraph sqlgGraph, Vertex realWorkspaceElement1, Vertex realWorkspaceElement2, Vertex virtualGroup) {
-        assertTrue(sqlgGraph.traversal().V(realWorkspaceElement1.id()).out("realWorkspaceElement_virtualGroup").hasNext());
-        assertTrue(sqlgGraph.traversal().V(realWorkspaceElement2.id()).out("realWorkspaceElement_virtualGroup").hasNext());
-        assertTrue(sqlgGraph.traversal().V(virtualGroup.id()).in("realWorkspaceElement_virtualGroup").hasNext());
+        Assert.assertTrue(sqlgGraph.traversal().V(realWorkspaceElement1.id()).out("realWorkspaceElement_virtualGroup").hasNext());
+        Assert.assertTrue(sqlgGraph.traversal().V(realWorkspaceElement2.id()).out("realWorkspaceElement_virtualGroup").hasNext());
+        Assert.assertTrue(sqlgGraph.traversal().V(virtualGroup.id()).in("realWorkspaceElement_virtualGroup").hasNext());
     }
 
     @Test

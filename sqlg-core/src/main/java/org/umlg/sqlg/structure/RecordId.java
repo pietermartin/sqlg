@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
@@ -45,7 +44,7 @@ public class RecordId implements KryoSerializable, Comparable {
         this.id = ID.from(id);
     }
 
-    private RecordId(SchemaTable schemaTable, ListOrderedSet<Comparable> identifiers) {
+    private RecordId(SchemaTable schemaTable, List<Comparable> identifiers) {
         this.schemaTable = schemaTable;
         this.id = ID.from(identifiers);
     }
@@ -59,7 +58,7 @@ public class RecordId implements KryoSerializable, Comparable {
         return new RecordId(schemaTable, id);
     }
 
-    public static RecordId from(SchemaTable schemaTable, ListOrderedSet<Comparable> identifiers) {
+    public static RecordId from(SchemaTable schemaTable, List<Comparable> identifiers) {
         return new RecordId(schemaTable, identifiers);
     }
 
@@ -143,7 +142,7 @@ public class RecordId implements KryoSerializable, Comparable {
             abstractLabel = vertexLabel.get();
         }
         Preconditions.checkArgument(abstractLabel.getIdentifiers().size() == identifiers.length, "%d identifiers expected in the RecordId. Found %d. given id = %s", abstractLabel.getIdentifiers().size(), identifiers.length, label + id);
-        ListOrderedSet<Comparable> identifierValues = new ListOrderedSet<>();
+        List<Comparable> identifierValues = new ArrayList<>();
         int count = 0;
         for (String identifier : abstractLabel.getIdentifiers()) {
             Optional<PropertyColumn> propertyColumn = abstractLabel.getProperty(identifier);
@@ -207,7 +206,7 @@ public class RecordId implements KryoSerializable, Comparable {
         return this.id.sequenceId;
     }
 
-    public ListOrderedSet<Comparable> getIdentifiers() {
+    public List<Comparable> getIdentifiers() {
         return this.id.identifiers;
     }
 
@@ -266,7 +265,7 @@ public class RecordId implements KryoSerializable, Comparable {
             this.id = ID.from(input.readLong());
         } else {
             int size = input.readInt();
-            ListOrderedSet<Comparable> identifiers = new ListOrderedSet<>();
+            List<Comparable> identifiers = new ArrayList<>();
             for (int i = 0; i < size; i++) {
                 String identifier = input.readString();
                 identifiers.add(identifier);
@@ -388,7 +387,7 @@ public class RecordId implements KryoSerializable, Comparable {
                 return RecordId.from(schemaTable, (Long) data.get("id"));
             } else {
                 @SuppressWarnings("unchecked")
-                ListOrderedSet<Comparable> identifiers = ListOrderedSet.listOrderedSet((List<Comparable>)data.get("id"));
+                List<Comparable> identifiers = (List<Comparable>)data.get("id");
                 return RecordId.from(schemaTable, identifiers);
             }
         }
@@ -430,7 +429,7 @@ public class RecordId implements KryoSerializable, Comparable {
                 return RecordId.from(schemaTable, (Long) data.get("id"));
             } else {
                 @SuppressWarnings("unchecked")
-                ListOrderedSet<Comparable> identifiers = ListOrderedSet.listOrderedSet((Set<Comparable>)data.get("id"));
+                List<Comparable> identifiers = new ArrayList<>((List<Comparable>)data.get("id"));
                 return RecordId.from(schemaTable, identifiers);
             }
         }
@@ -444,9 +443,9 @@ public class RecordId implements KryoSerializable, Comparable {
     public static final class ID implements Comparable<ID> {
 
         private Long sequenceId;
-        private ListOrderedSet<Comparable> identifiers;
+        private List<Comparable> identifiers;
 
-        private ID(ListOrderedSet<Comparable> identifiers) {
+        private ID(List<Comparable> identifiers) {
             this.identifiers = identifiers;
         }
 
@@ -458,7 +457,7 @@ public class RecordId implements KryoSerializable, Comparable {
             return new ID(sequenceId);
         }
 
-        static ID from(ListOrderedSet<Comparable> identifiers) {
+        static ID from(List<Comparable> identifiers) {
             return new ID(identifiers);
         }
 
@@ -518,7 +517,7 @@ public class RecordId implements KryoSerializable, Comparable {
             return sequenceId;
         }
 
-        public ListOrderedSet<Comparable> getIdentifiers() {
+        public List<Comparable> getIdentifiers() {
             return identifiers;
         }
     }

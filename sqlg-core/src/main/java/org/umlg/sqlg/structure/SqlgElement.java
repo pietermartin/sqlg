@@ -1,11 +1,10 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +64,7 @@ public abstract class SqlgElement implements Element {
 //        }
     }
 
-    public SqlgElement(SqlgGraph sqlgGraph, ListOrderedSet<Comparable> identifiers, String schema, String table) {
+    public SqlgElement(SqlgGraph sqlgGraph, List<Comparable> identifiers, String schema, String table) {
         if (table.startsWith(VERTEX_PREFIX) || table.startsWith(EDGE_PREFIX)) {
             throw new IllegalStateException("SqlgElement.table may not be prefixed with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }
@@ -909,7 +908,7 @@ public abstract class SqlgElement implements Element {
         loadProperty(resultSet, propertyName, columnIndex, Collections.emptyMap(), -1, propertyType);
     }
 
-    public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
+//    public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
     public long getInternalStartTraverserIndex() {
         return this.internalStartTraverserIndex;

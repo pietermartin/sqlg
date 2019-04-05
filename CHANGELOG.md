@@ -1,3 +1,26 @@
+##2.0.2
+
+*Fix bug [#344](https://github.com/pietermartin/sqlg/issues/344). Fix generation of `WHERE` clause. 
+
+*Fix bug [#339](https://github.com/pietermartin/sqlg/issues/339). Fix the in out vertices being incorrectly set on 
+updating of an edge.
+
+*Fix bug [#336](https://github.com/pietermartin/sqlg/issues/336). Added a check for the presence of partitions.
+
+*Fix bug [#335](https://github.com/pietermartin/sqlg/issues/335). Remove `ONLY` from `TRUNCATE ONLY` statement on 
+postgresql as its not supported by partitioned tables.
+
+* Added support to specify a custom datasource.
+
+*Fix bug [#332](https://github.com/pietermartin/sqlg/issues/332). Added quotes to the `partition` sql expression.
+
+* Fix bug [#329](https://github.com/pietermartin/sqlg/issues/329). Sqlg now only allows topology changes to be made when 
+no write threads are active. It will detect a dead lock and throw an exception if a topology thread is waiting on a 
+write thread that is waiting on the topology thread.
+
+* Fix bug [#317](https://github.com/pietermartin/sqlg/issues/317). Made the timestamp precondition drop the 3 zero's of 
+the nano seconds. ZULU JDK has more nano's than Oracle JDK and they are dropped by the database.
+
 ##2.0.1
 * TestMultiThread.shouldExecuteWithCompetingThreads was failing on `RDBMS` that do not support transaction schema 
 manipulation. Creating the schema upfront now.

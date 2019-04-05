@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
@@ -16,10 +17,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -37,6 +35,53 @@ public class TestGremlinCompileWithHas extends BaseTest {
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
         }
+    }
+
+    @Test
+    public void testMultipleHasWithinUserSuppliedIds() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "TestHierarchy",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("column1", PropertyType.varChar(100));
+                    put("column2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("column1", "column2"))
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "TestHierarchy", "column1", "a1", "column2", "a2", "name", "name1");
+        this.sqlgGraph.addVertex(T.label, "TestHierarchy", "column1", "b1", "column2", "b2", "name", "name1");
+        this.sqlgGraph.addVertex(T.label, "TestHierarchy", "column1", "c1", "column2", "c2", "name", "name1");
+        this.sqlgGraph.addVertex(T.label, "TestHierarchy", "column1", "d1", "column2", "d2", "name", "name1");
+        this.sqlgGraph.tx().commit();
+
+        List<String> values1 = Collections.singletonList("");
+        List<String> values2 = Collections.singletonList("");
+        List<Vertex> vertexList = this.sqlgGraph.traversal().V()
+                .hasLabel("TestHierarchy")
+                .has("column1", P.within(values1))
+                .has("column2", P.within(values2))
+                .toList();
+        Assert.assertEquals(0, vertexList.size());
+
+        values1 = Arrays.asList("a1", "b1", "c1");
+        values2 = Arrays.asList("a2", "b2", "c2");
+
+        vertexList = this.sqlgGraph.traversal().V()
+                .hasLabel("TestHierarchy")
+                .has("column1", P.within(values1))
+                .has("column2", P.within(values2))
+                .toList();
+        Assert.assertEquals(3, vertexList.size());
+
+        values1 = Arrays.asList("a1");
+        values2 = Arrays.asList("a2", "b2", "c2");
+        vertexList = this.sqlgGraph.traversal().V()
+                .hasLabel("TestHierarchy")
+                .has("column1", P.within(values1))
+                .has("column2", P.within(values2))
+                .toList();
+        Assert.assertEquals(1, vertexList.size());
     }
 
     @Test

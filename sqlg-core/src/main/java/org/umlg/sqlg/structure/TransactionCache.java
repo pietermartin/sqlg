@@ -1,9 +1,8 @@
 package org.umlg.sqlg.structure;
 
-import org.apache.commons.collections4.set.ListOrderedSet;
-
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -119,7 +118,7 @@ class TransactionCache {
         return sqlgVertex;
     }
 
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Comparable> identifiers) {
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, List<Comparable> identifiers) {
         RecordId recordId = RecordId.from(SchemaTable.of(schema, table), identifiers);
         SqlgVertex sqlgVertex;
         if (this.cacheVertices) {

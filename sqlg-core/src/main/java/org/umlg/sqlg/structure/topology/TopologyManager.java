@@ -698,9 +698,11 @@ public class TopologyManager {
 
             String foreignKeyVertexTable;
             if (in) {
-                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.IN_VERTEX_COLUMN_END.length());
+//                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.IN_VERTEX_COLUMN_END.length());
+                foreignKeyVertexTable = foreignKey.getTable();
             } else {
-                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.OUT_VERTEX_COLUMN_END.length());
+//                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.OUT_VERTEX_COLUMN_END.length());
+                foreignKeyVertexTable = foreignKey.getTable();
             }
             List<Vertex> foreignKeyVertices = traversalSource.V(foreignKeySchemaVertex)
                     .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -28,8 +27,8 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Topology;
 
 import java.lang.reflect.Array;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -212,7 +211,7 @@ public class SqlgUtil {
                         }
                     }
                 } else {
-                    ListOrderedSet<Comparable> identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
+                    List<Comparable> identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
                     resultSetWasNull = resultSet.wasNull();
                     if (!resultSetWasNull) {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
@@ -1181,6 +1180,10 @@ public class SqlgUtil {
                     case VARCHAR_ORDINAL:
                         s = resultSet.getString(column.getColumnIndex());
                         result.add(s);
+                        break;
+                    case  INTEGER_ORDINAL:
+                        Integer i = resultSet.getInt(column.getColumnIndex());
+                        result.add(i);
                         break;
                     default:
                         throw new IllegalStateException(String.format("PropertyType %s is not implemented.", propertyType.name()));

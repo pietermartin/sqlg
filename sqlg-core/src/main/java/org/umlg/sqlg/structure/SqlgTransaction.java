@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -13,6 +12,7 @@ import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlGraph.
@@ -277,7 +277,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, id);
     }
 
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, ListOrderedSet<Comparable> identifiers) {
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, List<Comparable> identifiers) {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
     }
 

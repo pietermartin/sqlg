@@ -125,7 +125,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
                     preparedStatement.setLong(parameterIndex, recordId.sequenceId());
                 } else {
                     for (Comparable identifierValue : recordId.getIdentifiers()) {
-                        preparedStatement.setObject(parameterIndex, identifierValue);
+                        preparedStatement.setObject(parameterIndex++, identifierValue);
                     }
                 }
                 int numberOfRowsUpdated = preparedStatement.executeUpdate();
