@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.process.dropstep.TestDropStep;
+import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestDropStep.class,
+//        TestLocalVertexStepOptional.class,
+        TestDropStepBarrier.class,
 //        TestUserSuppliedPKTopology.class
 //        TestDeletedVertex.class,
 //        TestGremlinCompileWithHas.class,
