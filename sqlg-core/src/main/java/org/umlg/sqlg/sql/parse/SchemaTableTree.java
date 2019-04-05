@@ -1316,19 +1316,37 @@ public class SchemaTableTree {
                 result.append(")");
             }
         } else {
-            if (!this.parent.hasIDPrimaryKey) {
-                throw new IllegalStateException("Not yet implemeneted");
-            }
             Preconditions.checkState(this.parent.getSchemaTable().isVertexTable(), "Optional left join non drop queries must be for an vertex!");
-            String rawLabel = this.parent.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
-            result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
-            result.append(".");
-            result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));
-            result.append(".");
-            result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                    this.parent.getSchemaTable().getSchema() + "." + rawLabel +
-                            (this.getDirection() == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END)));
-            result.append(" IS NULL)");
+            if (this.parent.hasIDPrimaryKey) {
+                String rawLabel = this.parent.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
+                result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
+                result.append(".");
+                result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));
+                result.append(".");
+                result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                        this.parent.getSchemaTable().getSchema() + "." + rawLabel +
+                                (this.getDirection() == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END)));
+                result.append(" IS NULL)");
+            } else {
+                String rawLabel = this.parent.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
+                result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
+                result.append(".");
+                result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));
+                result.append(".");
+                int count = 1;
+                for (String identifier : this.parent.getIdentifiers()) {
+                    result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                            this.parent.getSchemaTable().getSchema() + "." + rawLabel +
+                                    "." + identifier +
+                                    (this.getDirection() == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END)));
+                    result.append(" IS NULL");
+                    if (count++ < this.parent.getIdentifiers().size()) {
+                        result.append(") AND (");
+                    }
+                }
+                result.append(")");
+
+            }
         }
         return result.toString();
     }
