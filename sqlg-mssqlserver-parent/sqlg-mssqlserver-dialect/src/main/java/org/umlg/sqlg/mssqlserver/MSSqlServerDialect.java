@@ -1224,20 +1224,22 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     sb.append(leafElementsToDelete);
                     sb.append("\n) x\n");
                     sb.append("WHERE ");
-                    if (edgeLabel.hasIDPrimaryKey()) {
-                        sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
-                        sb.append(".");
-                        sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
-                        sb.append(".").append(maybeWrapInQoutes("ID"));
-                        sb.append(" = x.").append("alias1");
+                    if (last.isHasIDPrimaryKey()) {
+                        sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
+
+//                        sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+//                        sb.append(".");
+//                        sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+//                        sb.append(".").append(maybeWrapInQoutes("ID"));
+                        sb.append(" = x.").append(last.lastMappedAliasIdentifier("ID"));
                     } else {
                         int count = 1;
-                        for (String identifier : edgeLabel.getIdentifiers()) {
+                        for (String identifier : last.getIdentifiers()) {
                             sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
                             sb.append(".");
                             sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                             sb.append(".").append(maybeWrapInQoutes(identifier));
-                            sb.append(" = x.").append("alias").append(count);
+                            sb.append(" = x.").append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
                             if (count++ < edgeLabel.getIdentifiers().size()) {
                                 sb.append(" AND ");
                             }
@@ -1259,20 +1261,24 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     sb.append(leafElementsToDelete);
                     sb.append("\n) x\n");
                     sb.append("WHERE ");
-                    if (edgeLabel.hasIDPrimaryKey()) {
-                        sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
-                        sb.append(".");
-                        sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
-                        sb.append(".").append(maybeWrapInQoutes("ID"));
-                        sb.append(" = x.").append("alias1");
+                    if (last.isHasIDPrimaryKey()) {
+
+
+                        sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
+
+//                        sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+//                        sb.append(".");
+//                        sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+//                        sb.append(".").append(maybeWrapInQoutes("ID"));
+                        sb.append(" = x.").append(maybeWrapInQoutes(last.lastMappedAliasIdentifier("ID")));
                     } else {
                         int count = 1;
-                        for (String identifier : edgeLabel.getIdentifiers()) {
+                        for (String identifier : last.getIdentifiers()) {
                             sb.append(maybeWrapInQoutes(edgeLabel.getSchema().getName()));
                             sb.append(".");
                             sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                             sb.append(".").append(maybeWrapInQoutes(identifier));
-                            sb.append(" = x.").append("alias").append(count);
+                            sb.append(" = x.").append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
                             if (count++ < edgeLabel.getIdentifiers().size()) {
                                 sb.append(" AND ");
                             }
@@ -1309,7 +1315,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             sb.append(".");
             sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
             sb.append(".").append(maybeWrapInQoutes("ID"));
-            sb.append(" = x.").append("alias1");
+            sb.append(" = x.").append(maybeWrapInQoutes(last.lastMappedAliasIdentifier("ID")));
         } else {
             int count = 1;
             for (String identifier : last.getIdentifiers()) {
@@ -1317,7 +1323,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 sb.append(".");
                 sb.append(maybeWrapInQoutes(last.getSchemaTable().getTable()));
                 sb.append(".").append(maybeWrapInQoutes(identifier));
-                sb.append(" = x.").append("alias").append(count);
+                sb.append(" = x.").append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
                 if (count++ < last.getIdentifiers().size()) {
                     sb.append(" AND ");
                 }
@@ -1340,7 +1346,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 sb.append(".");
                 sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
                 sb.append(".").append(maybeWrapInQoutes("ID"));
-                sb.append(" = x.").append("alias1");
+                sb.append(" = x.").append(maybeWrapInQoutes(lastEdge.lastMappedAliasIdentifier("ID")));
             } else {
                 int count = 1;
                 for (String identifier : lastEdge.getIdentifiers()) {
@@ -1348,7 +1354,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
                     sb.append(".").append(maybeWrapInQoutes(identifier));
-                    sb.append(" = x.").append("alias").append(count);
+                    sb.append(" = x.").append(maybeWrapInQoutes(lastEdge.lastMappedAliasIdentifier(identifier)));
                     if (count++ < last.getIdentifiers().size()) {
                         sb.append(" AND ");
                     }

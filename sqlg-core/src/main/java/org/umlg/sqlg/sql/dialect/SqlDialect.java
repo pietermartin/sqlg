@@ -893,7 +893,7 @@ public interface SqlDialect {
             String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
             sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), lastEdge.getSchemaTable()));
         }
-//        Delete the leaf vertices, if there are foreign keys then its been deferred.
+        //Delete the leaf vertices, if there are foreign keys then its been deferred.
         StringBuilder sb = new StringBuilder();
         sb.append("DELETE FROM ");
         sb.append(maybeWrapInQoutes(last.getSchemaTable().getSchema()));

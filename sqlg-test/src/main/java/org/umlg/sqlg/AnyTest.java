@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestSetProperty;
+import org.umlg.sqlg.test.process.dropstep.TestDropStep;
 
 /**
  * Date: 2014/07/16
@@ -10,33 +10,7 @@ import org.umlg.sqlg.test.TestSetProperty;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSetProperty.class,
-//        TestDropStep.class,
-//        TestDropStepBarrier.class,
-//        TestReadOnlyRole.class,
-//        TestMultipleThreadMultipleJvm.class,
-//        TestDataSource.class,
-//        TestDeadLock.class,
-//        TestDataSource.class,
-//        TestMultipleThreadMultipleJvm.class,
-//        TestMultiThread.class,
-//        TestNotifyJson.class,
-//        TestLoadSchemaViaNotify.class,
-//        TestMultiThreadedBatch.class,
-//        TestBatchStreamTemporaryVertex.class
-
-//        TestLocalVertexStepOptional.class,
-//        TestColumnRefactor.class,
-//        TestGraphStepOrderBy.class
-
-//        TestUserSuppliedPKTopology.class
-//        TestDeletedVertex.class,
-//        TestGremlinCompileWithHas.class,
-//        TestTopology.class
-//        TestSimpleJoinGremlin.class,
-//        TestBatchServerSideEdgeCreation.class,
-//        TestPartitioning.class,
-//        TestLoadEdge.class
+        TestDropStep.class,
 })
 public class AnyTest {
 }

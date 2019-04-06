@@ -28,8 +28,6 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-//import org.apache.tinkerpop.gremlin.structure.*;
-
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/11/11
@@ -84,6 +82,141 @@ public class TestDropStep extends BaseTest {
     }
 
     @Test
+    public void testUserSuppliedIdsWithinID() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "PolicyDiscrepancy",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "PolicyDiscrepancy",
+                    "uid1", "uid1" + i,
+                    "uid2", "uid2" + i,
+                    "name", "name" + i
+            );
+        }
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("PolicyDiscrepancy").toList().size(), 0);
+
+        sqlgGraph.traversal().V()
+                .hasLabel("PolicyDiscrepancy")
+                .has("uid1", "uid10")
+                .has("uid2", "uid20")
+                .drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(9, this.sqlgGraph.traversal().V().hasLabel("PolicyDiscrepancy").toList().size(), 0);
+
+        List<String> uids = Arrays.asList("uid11", "uid12", "uid13");
+        sqlgGraph.traversal().V()
+                .hasLabel("PolicyDiscrepancy")
+                .has("uid1", P.within(uids))
+                .drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(6, this.sqlgGraph.traversal().V().hasLabel("PolicyDiscrepancy").toList().size(), 0);
+    }
+
+    @Test
+    public void testNormalAndUserSuppliedIdsIn() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }}
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid", "uid1", "name", "name1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "name1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "name2");
+        a1.addEdge("ab", b1, "uid", "uid1");
+        a1.addEdge("ab", b2, "uid", "uid2");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").out().toList().size(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("B").toList().size(), 0);
+
+
+        this.sqlgGraph.traversal().V()
+                .hasLabel("B")
+                .has("name", P.within("name1"))
+                .drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").toList().size(), 0);
+    }
+
+    @Test
+    public void testNormalAndUserSuppliedIdsOut() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }}
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("uid", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "name1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B","uid", "uid1",  "name", "name1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B","uid", "uid2",  "name", "name2");
+        a1.addEdge("ab", b1, "uid", "uid1");
+        a1.addEdge("ab", b2, "uid", "uid2");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").out().toList().size(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("B").toList().size(), 0);
+
+
+        this.sqlgGraph.traversal().V()
+                .hasLabel("A")
+                .has("name", P.within("name1"))
+                .drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").toList().size(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("B").toList().size(), 0);
+        Assert.assertEquals(0, this.sqlgGraph.traversal().E().hasLabel("ab").toList().size(), 0);
+    }
+
+    @Test
     public void testUserSuppliedDrop() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
@@ -106,7 +239,7 @@ public class TestDropStep extends BaseTest {
 
         SchemaTable schemaTable = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
         this.sqlgGraph.traversal().V().hasLabel("A")
-                .hasId(RecordId.from(sqlgGraph, schemaTable.getSchema() + "." + schemaTable.getTable() + RecordId.RECORD_ID_DELIMITER +  "[" + uid1 + "," + uid2 + "]"))
+                .hasId(RecordId.from(sqlgGraph, schemaTable.getSchema() + "." + schemaTable.getTable() + RecordId.RECORD_ID_DELIMITER + "[" + uid1 + "," + uid2 + "]"))
                 .drop().iterate();
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
 
@@ -577,7 +710,6 @@ public class TestDropStep extends BaseTest {
 
     @Test
     public void testDropStepWithJoinWithuserSuppliedIds() {
-
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<String, PropertyType>() {{
@@ -1186,8 +1318,8 @@ public class TestDropStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
-        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.dropTraversal.V(a1, a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1, a2).drop().iterate();
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
@@ -1260,8 +1392,8 @@ public class TestDropStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
-        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.dropTraversal.V(a1, a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1, a2).drop().iterate();
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
@@ -1339,8 +1471,8 @@ public class TestDropStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
-        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.dropTraversal.V(a1, a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1, a2).drop().iterate();
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
@@ -1371,8 +1503,8 @@ public class TestDropStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
-        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.dropTraversal.V(a1, a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1, a2).drop().iterate();
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();
@@ -1450,8 +1582,8 @@ public class TestDropStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        this.dropTraversal.V(a1,a2).out("e1").drop().iterate();
-        this.dropTraversal.V(a1,a2).drop().iterate();
+        this.dropTraversal.V(a1, a2).out("e1").drop().iterate();
+        this.dropTraversal.V(a1, a2).drop().iterate();
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").toList();

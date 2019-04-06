@@ -4217,13 +4217,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append(" a USING todelete\nWHERE a.");
-                    if (edgeLabel.hasIDPrimaryKey()) {
+                    if (last.isHasIDPrimaryKey()) {
                         sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
                         sb.append(" = todelete.");
                         sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier("ID")));
                     } else {
                         int count = 1;
-                        for (String identifier : edgeLabel.getIdentifiers()) {
+                        for (String identifier : last.getIdentifiers()) {
                             sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
                             sb.append(" = todelete.");
                             sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
@@ -4246,13 +4246,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sb.append(".");
                     sb.append(maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                     sb.append(" a USING todelete\nWHERE a.");
-                    if (edgeLabel.hasIDPrimaryKey()) {
+                    if (last.isHasIDPrimaryKey()) {
                         sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
                         sb.append(" = todelete.");
                         sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier("ID")));
                     } else {
                         int count = 1;
-                        for (String identifier : edgeLabel.getIdentifiers()) {
+                        for (String identifier : last.getIdentifiers()) {
                             sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
                             sb.append(" = todelete.");
                             sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
@@ -4292,7 +4292,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             } else {
                 abstractLabel = lastEdgeLabel;
             }
-            for (String identifier : abstractLabel.getIdentifiers()) {
+            for (String identifier : last.getIdentifiers()) {
                 sb.append("a.");
                 sb.append(maybeWrapInQoutes( identifier));
                 sb.append(" = todelete.");
@@ -4315,13 +4315,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sb.append(".");
             sb.append(maybeWrapInQoutes(lastEdge.getSchemaTable().getTable()));
             sb.append(" a USING todelete\nWHERE a.");
-            if (lastEdgeLabel.hasIDPrimaryKey()) {
+            if (lastEdge.isHasIDPrimaryKey()) {
                 sb.append(maybeWrapInQoutes("ID"));
                 sb.append(" = todelete.");
                 sb.append(maybeWrapInQoutes(lastEdge.lastMappedAliasIdentifier("ID")));
             } else {
                 int count = 1;
-                for (String identifier : lastEdgeLabel.getIdentifiers()) {
+                for (String identifier : lastEdge.getIdentifiers()) {
                     sb.append(maybeWrapInQoutes(identifier));
                     sb.append(" = todelete.");
                     sb.append(maybeWrapInQoutes(lastEdge.lastMappedAliasIdentifier(identifier)));
