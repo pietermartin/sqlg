@@ -4220,13 +4220,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     if (edgeLabel.hasIDPrimaryKey()) {
                         sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.OUT_VERTEX_COLUMN_END));
                         sb.append(" = todelete.");
-                        sb.append(maybeWrapInQoutes("alias1"));
+                        sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier("ID")));
                     } else {
                         int count = 1;
                         for (String identifier : edgeLabel.getIdentifiers()) {
                             sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
                             sb.append(" = todelete.");
-                            sb.append(maybeWrapInQoutes("alias" + count));
+                            sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
                             if (count++ < edgeLabel.getIdentifiers().size()) {
                                 sb.append(" AND\n");
                             }
@@ -4249,13 +4249,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     if (edgeLabel.hasIDPrimaryKey()) {
                         sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + Topology.IN_VERTEX_COLUMN_END));
                         sb.append(" = todelete.");
-                        sb.append(maybeWrapInQoutes("alias1"));
+                        sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier("ID")));
                     } else {
                         int count = 1;
                         for (String identifier : edgeLabel.getIdentifiers()) {
                             sb.append(maybeWrapInQoutes(lastVertexLabel.getSchema().getName() + "." + lastVertexLabel.getName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
                             sb.append(" = todelete.");
-                            sb.append(maybeWrapInQoutes("alias" + count));
+                            sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
                             if (count++ < edgeLabel.getIdentifiers().size()) {
                                 sb.append(" AND\n");
                             }
@@ -4283,7 +4283,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sb.append("a.");
             sb.append(maybeWrapInQoutes("ID"));
             sb.append(" = todelete.");
-            sb.append(maybeWrapInQoutes("alias1"));
+            sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier("ID")));
         } else {
             int count = 1;
             AbstractLabel abstractLabel;
@@ -4296,7 +4296,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sb.append("a.");
                 sb.append(maybeWrapInQoutes( identifier));
                 sb.append(" = todelete.");
-                sb.append(maybeWrapInQoutes("alias" + count));
+                sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
                 if (count < abstractLabel.getIdentifiers().size()) {
                     sb.append(" AND\n");
                 }
@@ -4318,13 +4318,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             if (lastEdgeLabel.hasIDPrimaryKey()) {
                 sb.append(maybeWrapInQoutes("ID"));
                 sb.append(" = todelete.");
-                sb.append(maybeWrapInQoutes("alias1"));
+                sb.append(maybeWrapInQoutes(lastEdge.lastMappedAliasIdentifier("ID")));
             } else {
                 int count = 1;
                 for (String identifier : lastEdgeLabel.getIdentifiers()) {
                     sb.append(maybeWrapInQoutes(identifier));
                     sb.append(" = todelete.");
-                    sb.append(maybeWrapInQoutes("alias" + count));
+                    sb.append(maybeWrapInQoutes(lastEdge.lastMappedAliasIdentifier(identifier)));
                     if (count++ < lastEdgeLabel.getIdentifiers().size()) {
                         sb.append(" AND\n");
                     }

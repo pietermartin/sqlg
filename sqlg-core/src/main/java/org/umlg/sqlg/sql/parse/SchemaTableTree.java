@@ -440,7 +440,7 @@ public class SchemaTableTree {
             return this.sqlgGraph.getSqlDialect().sqlTruncate(this.sqlgGraph, schemaTableTree.getSchemaTable());
         } else {
             String leafNodeToDelete = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null, true);
-            resetColumnAliasMaps();
+//            resetColumnAliasMaps();
 
             Optional<String> edgesToDelete = Optional.empty();
             if (distinctQueryStack.size() > 1 && distinctQueryStack.getLast().getSchemaTable().isVertexTable()) {
@@ -803,7 +803,7 @@ public class SchemaTableTree {
             }
         }
 //      columnList holds the columns per sub query.
-        ColumnList currentColumnList = new ColumnList(sqlgGraph, dropStep, this.getFilteredAllTables());
+        ColumnList currentColumnList = new ColumnList(sqlgGraph, dropStep, this.getIdentifiers(), this.getFilteredAllTables());
         this.columnListStack.add(currentColumnList);
         int startIndexColumns = 1;
 
@@ -1846,25 +1846,34 @@ public class SchemaTableTree {
 
     private static void printLabeledFromClauseFor(SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+        //first print the identifiers
+        ListOrderedSet<String> identifiers = lastSchemaTableTree.getIdentifiers();
+        for (String col: identifiers) {
+            printColumn(lastSchemaTableTree, cols, propertyTypeMap, col);
+        }
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
             String col = propertyTypeMapEntry.getKey();
-            if (lastSchemaTableTree.shouldSelectProperty(col)) {
-                String alias = cols.getAlias(lastSchemaTableTree, col);
-                if (alias == null) {
-                    alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
-                    cols.add(lastSchemaTableTree, col, alias);
-                } else {
-                    lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
-                }
-                for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                    col = propertyTypeMapEntry.getKey() + postFix;
-                    alias = cols.getAlias(lastSchemaTableTree, col);
-                    // postfix do not use labeled methods
-                    if (alias == null) {
-                        alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                        cols.add(lastSchemaTableTree, col, alias);
-                    }
-                }
+            if (!identifiers.contains(col) && lastSchemaTableTree.shouldSelectProperty(col)) {
+                printColumn(lastSchemaTableTree, cols, propertyTypeMap, col);
+            }
+        }
+    }
+
+    private static void printColumn(SchemaTableTree lastSchemaTableTree, ColumnList cols, Map<String, PropertyType> propertyTypeMap, String col) {
+        String alias = cols.getAlias(lastSchemaTableTree, col);
+        if (alias == null) {
+            alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(col);
+            cols.add(lastSchemaTableTree, col, alias);
+        } else {
+            lastSchemaTableTree.calculateLabeledAliasPropertyName(col, alias);
+        }
+        for (String postFix : propertyTypeMap.get(col).getPostFixes()) {
+            String postFixedCol = col + postFix;
+            alias = cols.getAlias(lastSchemaTableTree, postFixedCol);
+            // postfix do not use labeled methods
+            if (alias == null) {
+                alias = lastSchemaTableTree.calculateAliasPropertyName(postFixedCol);
+                cols.add(lastSchemaTableTree, postFixedCol, alias);
             }
         }
     }
@@ -2000,7 +2009,7 @@ public class SchemaTableTree {
         return this.labeledAliasId;
     }
 
-    private String lastMappedAliasIdentifier(String identifier) {
+    public String lastMappedAliasIdentifier(String identifier) {
         String reducedLabels = reducedLabels();
         String result = this.stepDepth + ALIAS_SEPARATOR + reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + identifier;
         return this.getColumnNameAliasMap().get(result);

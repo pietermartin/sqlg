@@ -445,8 +445,6 @@ public class TestSetProperty extends BaseTest {
         assertProperty(e2, "zdt", zdt);
         assertProperty(e2, "p", p);
         assertProperty(e2, "d", d);
-
-
     }
 
     @Test

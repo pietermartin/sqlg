@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestMultiThread;
+import org.umlg.sqlg.test.TestSetProperty;
 
 /**
  * Date: 2014/07/16
@@ -10,26 +10,25 @@ import org.umlg.sqlg.test.schema.TestMultiThread;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        TestSetProperty.class,
+//        TestDropStep.class,
+//        TestDropStepBarrier.class,
 //        TestReadOnlyRole.class,
 //        TestMultipleThreadMultipleJvm.class,
 //        TestDataSource.class,
 //        TestDeadLock.class,
 //        TestDataSource.class,
 //        TestMultipleThreadMultipleJvm.class,
-        TestMultiThread.class,
+//        TestMultiThread.class,
 //        TestNotifyJson.class,
 //        TestLoadSchemaViaNotify.class,
 //        TestMultiThreadedBatch.class,
 //        TestBatchStreamTemporaryVertex.class
 
-//        TestLocalVertexStepOptional.class
+//        TestLocalVertexStepOptional.class,
 //        TestColumnRefactor.class,
-        TestDropStep.class,
 //        TestGraphStepOrderBy.class
 
-
-//        TestLocalVertexStepOptional.class,
-        TestDropStepBarrier.class,
 //        TestUserSuppliedPKTopology.class
 //        TestDeletedVertex.class,
 //        TestGremlinCompileWithHas.class,
