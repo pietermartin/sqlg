@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.process.dropstep.TestDropStep;
+import org.umlg.sqlg.test.batch.TestBatchStreamVertex;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestDropStep.class,
+        TestBatchStreamVertex.class,
 })
 public class AnyTest {
 }

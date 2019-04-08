@@ -10,10 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.*;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SqlgExceptions;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
@@ -39,6 +36,41 @@ public class TestBatchStreamVertex extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
+    }
+
+    @Test(expected = SqlgExceptions.InvalidTableException.class)
+    public void testStreamTooLongLabelName() {
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        this.sqlgGraph.streamVertex(T.label, "AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH", "name", "halo");
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test(expected = SqlgExceptions.InvalidTableException.class)
+    public void testStreamTooLongLabelNameEnsureMethods() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("name", PropertyType.STRING);
+                }}
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        this.sqlgGraph.streamVertex(T.label, "AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH", "name", "halo");
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test(expected = SqlgExceptions.InvalidColumnException.class)
+    public void testStreamColumnTooLongLabelNameEnsureMethods() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "AAAAAAAAAA",
+                new LinkedHashMap<String, PropertyType>() {{
+                    put("AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH", PropertyType.STRING);
+                }}
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        this.sqlgGraph.streamVertex(T.label, "AAAAAAAAAA", "AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH", "halo");
+        this.sqlgGraph.tx().commit();
     }
 
     @Test(expected = IllegalStateException.class)

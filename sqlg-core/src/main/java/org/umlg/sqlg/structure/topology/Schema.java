@@ -227,6 +227,11 @@ public class Schema implements TopologyInf {
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
         Objects.requireNonNull(identifiers, "Given identifiers may not be null");
 
+        this.sqlgGraph.getSqlDialect().validateTableName(edgeLabelName);
+        for (String columnName : columns.keySet()) {
+            this.sqlgGraph.getSqlDialect().validateColumnName(columnName);
+        }
+
         for (String identifier : identifiers) {
             Preconditions.checkState(columns.containsKey(identifier), "The identifiers must be in the specified columns. \"%s\" not found", identifier);
         }
@@ -496,6 +501,11 @@ public class Schema implements TopologyInf {
     private VertexLabel createVertexLabel(String vertexLabelName, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
+        this.sqlgGraph.getSqlDialect().validateTableName(vertexLabelName);
+        for (String columnName : columns.keySet()) {
+            this.sqlgGraph.getSqlDialect().validateColumnName(columnName);
+        }
+
         this.uncommittedRemovedVertexLabels.remove(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         VertexLabel vertexLabel = VertexLabel.createVertexLabel(this.sqlgGraph, this, vertexLabelName, columns, identifiers);
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
@@ -512,6 +522,11 @@ public class Schema implements TopologyInf {
 
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
+        this.sqlgGraph.getSqlDialect().validateTableName(vertexLabelName);
+        for (String columnName : columns.keySet()) {
+            this.sqlgGraph.getSqlDialect().validateColumnName(columnName);
+        }
+
         this.uncommittedRemovedVertexLabels.remove(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         VertexLabel vertexLabel = VertexLabel.createPartitionedVertexLabel(
                 this.sqlgGraph,

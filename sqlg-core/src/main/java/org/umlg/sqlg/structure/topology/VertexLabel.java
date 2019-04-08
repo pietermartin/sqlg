@@ -407,6 +407,7 @@ public class VertexLabel extends AbstractLabel {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
+                this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
                     this.schema.getTopology().lock();
                     if (!getProperty(column.getKey()).isPresent()) {

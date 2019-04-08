@@ -189,6 +189,7 @@ public class EdgeLabel extends AbstractLabel {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.getSchema().isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
+                this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
                     this.getSchema().getTopology().lock();
                     if (!getProperty(column.getKey()).isPresent()) {
