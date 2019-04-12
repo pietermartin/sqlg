@@ -26,6 +26,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
+import org.umlg.sqlg.predicate.ArrayContains;
+import org.umlg.sqlg.predicate.ArrayOverlaps;
 import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
@@ -529,6 +531,7 @@ public abstract class BaseStrategy {
                     toRemoveHasContainers.addAll(optimizeInside(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeOutside(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeArray(this.currentReplacedStep, hasContainers));
                     if (toRemoveHasContainers.size() == hasContainers.size()) {
                         if (!currentStep.getLabels().isEmpty()) {
                             final IdentityStep identityStep = new IdentityStep<>(this.traversal);
@@ -786,8 +789,10 @@ public abstract class BaseStrategy {
                                     andOrHasContainer.addHasContainer(hasContainer);
                                 }
                             }
-                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getBiPredicate() instanceof Text ||
-                                hasContainer.getBiPredicate() instanceof FullText) {
+                        } else if (hasContainerKeyNotIdOrLabel && hasContainer.getBiPredicate() instanceof Text
+                                || hasContainer.getBiPredicate() instanceof FullText
+                                || hasContainer.getBiPredicate() instanceof ArrayContains
+                                || hasContainer.getBiPredicate() instanceof ArrayOverlaps) {
                             andOrHasContainer.addHasContainer(hasContainer);
                         } else {
                             return Optional.empty();
@@ -1023,6 +1028,19 @@ public abstract class BaseStrategy {
             if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
                     hasContainer.getBiPredicate() instanceof FullText
             ) {
+                replacedStep.addHasContainer(hasContainer);
+                result.add(hasContainer);
+            }
+        }
+        return result;
+    }
+
+    private List<HasContainer> optimizeArray(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
+        List<HasContainer> result = new ArrayList<>();
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer)
+                && ( hasContainer.getBiPredicate() instanceof ArrayContains
+                    || hasContainer.getBiPredicate() instanceof ArrayOverlaps)) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }

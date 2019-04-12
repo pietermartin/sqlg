@@ -136,6 +136,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestGremlinCompileChoose.class,
         TestGremlinCompileVertexStep.class,
         TestGremlinCompileWhereLocalDate.class,
+        TestGremlinCompileArrayContains.class,
+        TestGremlinCompileArrayOverlaps.class,
         TestColumnNameTranslation.class,
         TestGraphStepOrderBy.class,
         TestVertexStepOrderBy.class,
