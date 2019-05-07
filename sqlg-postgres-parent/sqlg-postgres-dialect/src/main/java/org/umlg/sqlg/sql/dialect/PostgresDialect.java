@@ -1277,11 +1277,28 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             sql.append(")\nFROM (\nVALUES\n\t");
             count = 1;
+
+            AbstractLabel abstractLabel;
+            if (forVertices) {
+                abstractLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).get().getVertexLabel(schemaTable.getTable()).get();
+            } else {
+                abstractLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).get().getEdgeLabel(schemaTable.getTable()).get();
+            }
+
             for (SqlgElement sqlgElement : vertexPropertyCache.keySet()) {
                 Map<String, Object> properties = vertexPropertyCache.get(sqlgElement);
                 sql.append("(");
-                sql.append(((RecordId) sqlgElement.id()).getID());
-                sql.append(", ");
+                if (abstractLabel.hasIDPrimaryKey()) {
+                    sql.append(((RecordId) sqlgElement.id()).getID());
+                    sql.append(", ");
+                } else {
+                    int countIdentifiers = 0;
+                    for (Comparable identifier : ((RecordId) sqlgElement.id()).getID().getIdentifiers()) {
+                        String identifierProperty = abstractLabel.getIdentifiers().get(countIdentifiers++);
+                        appendSqlValue(sql, identifier, abstractLabel.getProperty(identifierProperty).get().getPropertyType());
+                        sql.append(",");
+                    }
+                }
                 int countProperties = 1;
                 for (String key : keys) {
                     Object value = properties.get(key);
@@ -1302,7 +1319,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             }
 
-            sql.append("\n) AS v(sqlg_special_reserved_id, ");
+            if (abstractLabel.hasIDPrimaryKey()) {
+                sql.append("\n) AS v(sqlg_special_reserved_id, ");
+            } else {
+                sql.append("\n) AS v(");
+                for (String identifier : abstractLabel.getIdentifiers()) {
+                    sql.append(maybeWrapInQoutes(identifier));
+                    sql.append(", ");
+                }
+            }
             count = 1;
             for (String key : keys) {
                 PropertyType propertyType = keyPropertyTypeMap.get(key);
@@ -1312,7 +1337,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
             }
             sql.append(")");
-            sql.append("\nWHERE a.\"ID\" = v.sqlg_special_reserved_id");
+            sql.append("\nWHERE ");
+            if (abstractLabel.hasIDPrimaryKey()) {
+                sql.append("a.\"ID\" = v.sqlg_special_reserved_id");
+            } else {
+                int countIdentifers = 1;
+                for (String identifier : abstractLabel.getIdentifiers()) {
+                    sql.append("a.");
+                    sql.append(maybeWrapInQoutes(identifier));
+                    sql.append(" = v.");
+                    sql.append(maybeWrapInQoutes(identifier));
+                    if (countIdentifers++ < abstractLabel.getIdentifiers().size()) {
+                        sql.append(" AND\n\t");
+                    }
+                }
+            }
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchStreamVertex;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKBulkMode;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.batch.TestBatchStreamVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchStreamVertex.class,
+        TestUserSuppliedPKBulkMode.class,
 })
 public class AnyTest {
 }

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.usersuppliedpk.topology;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -18,6 +19,101 @@ import java.util.*;
  * Date: 2018/03/31
  */
 public class TestUserSuppliedPKBulkMode extends BaseTest {
+
+    @Test
+    public void testBulkUpdateUser() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "nameA", "a1", "nameB", "b1", "nameC", "c1", "other", "a");
+        this.sqlgGraph.addVertex(T.label, "A", "nameA", "a2", "nameB", "b1", "nameC", "c1", "other", "b");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        for (Vertex vertex : vertices) {
+            vertex.property("other", "c");
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(2, vertices.size());
+        for (Vertex vertex : vertices) {
+            Assert.assertEquals("c", vertex.value("other"));
+        }
+    }
+
+    @Test
+    public void testBulkUpdateUserSuppliedBulkMode() {
+        this.sqlgGraph.getTopology().ensureVertexLabelExist(
+                "A",
+                new HashMap<String, PropertyType>() {{
+                    put("nameA", PropertyType.STRING);
+                    put("nameB", PropertyType.STRING);
+                    put("nameC", PropertyType.STRING);
+                    put("other", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("nameA", "nameB", "nameC"))
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "nameA", "a1", "nameB", "b1", "nameC", "c1", "other", "a");
+        this.sqlgGraph.addVertex(T.label, "A", "nameA", "a2", "nameB", "b1", "nameC", "c1", "other", "b");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        for (Vertex vertex : vertices) {
+            vertex.property("other", "c");
+        }
+        this.sqlgGraph.tx().commit();
+
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(2, vertices.size());
+        for (Vertex vertex : vertices) {
+            Assert.assertEquals("c", vertex.value("other"));
+        }
+
+    }
+
+    @Test
+    public void testBulkUpdateUserSuppliedBulkModeOnEdges() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("A");
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("B");
+        aVertexLabel.ensureEdgeLabelExist(
+                "ab",
+                bVertexLabel,
+                new HashMap<String, PropertyType>() {{
+                    put("nameA", PropertyType.STRING);
+                    put("nameB", PropertyType.STRING);
+                    put("nameC", PropertyType.STRING);
+                    put("other", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("nameA", "nameB", "nameC"))
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1, "nameA", "a1", "nameB", "b1", "nameC", "c1", "other", "o1");
+        a1.addEdge("ab", b2, "nameA", "a2", "nameB", "b1", "nameC", "c1", "other", "o1");
+        a2.addEdge("ab", b1, "nameA", "a3", "nameB", "b1", "nameC", "c1", "other", "o1");
+        a2.addEdge("ab", b2, "nameA", "a4", "nameB", "b1", "nameC", "c1", "other", "o1");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        List<Edge> edges = this.sqlgGraph.traversal().E().hasLabel("ab").toList();
+        for (Edge edge : edges) {
+            edge.property("other", "c");
+        }
+        this.sqlgGraph.tx().commit();
+
+        edges = this.sqlgGraph.traversal().E().hasLabel("ab").toList();
+        Assert.assertEquals(4, edges.size());
+        for (Edge edge : edges) {
+            Assert.assertEquals("c", edge.value("other"));
+        }
+
+    }
 
     @Test
     public void testVertexLabelUserSuppliedBulkMode() {
