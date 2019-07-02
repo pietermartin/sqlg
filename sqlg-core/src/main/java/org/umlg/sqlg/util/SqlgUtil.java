@@ -111,27 +111,13 @@ public class SqlgUtil {
                         subQueryStack,
                         subQueryDepth == subQueryStacks.size(),
                         idColumnCountMap,
-                        forParent
+                        forParent,
+                        subQueryStacks.get(subQueryStacks.size() - 1).getLast().hasAggregateFunction()
                 );
                 result.addAll(labeledElements);
                 if (subQueryDepth == subQueryStacks.size()) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
                     Preconditions.checkState(!labeledElements.isEmpty());
-//                    if (labeledElements.isEmpty()) {
-//                        SqlgElement e = SqlgUtil.loadElement(
-//                                sqlgGraph, idColumnCountMap, resultSet, lastSchemaTableTree
-//                        );
-//                        Emit<SqlgElement> emit;
-//                        if (!forParent) {
-//                            emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
-//                        } else {
-//                            emit = new Emit<>(resultSet.getLong(1), e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
-//                        }
-//                        if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
-//                            emit.setIncomingOnlyLocalOptionalStep(true);
-//                        }
-//                        result.add(emit);
-//                    }
                     if (lastSchemaTableTree.getReplacedStepDepth() == lastSchemaTableTree.getStepDepth() &&
                             lastSchemaTableTree.isEmit() &&
                             lastSchemaTableTree.isUntilFirst()) {
@@ -184,7 +170,8 @@ public class SqlgUtil {
             LinkedList<SchemaTableTree> subQueryStack,
             boolean lastQueryStack,
             Map<String, Integer> idColumnCountMap,
-            boolean forParent
+            boolean forParent,
+            boolean hasAggregateFunction
     ) throws SQLException {
 
         List<Emit<E>> result = new ArrayList<>();
@@ -192,12 +179,16 @@ public class SqlgUtil {
         for (SchemaTableTree schemaTableTree : subQueryStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 E sqlgElement = null;
-                boolean resultSetWasNull;
+                boolean resultSetWasNull = false;
+                Long id = -1L;
                 if (schemaTableTree.isHasIDPrimaryKey()) {
-                    String idProperty = schemaTableTree.labeledAliasId();
-                    Integer columnCount = idColumnCountMap.get(idProperty);
-                    Long id = resultSet.getLong(columnCount);
-                    resultSetWasNull = resultSet.wasNull();
+                    //aggregate queries have no ID
+                    if (!schemaTableTree.hasAggregateFunction()) {
+                        String idProperty = schemaTableTree.labeledAliasId();
+                        Integer columnCount = idColumnCountMap.get(idProperty);
+                        id = resultSet.getLong(columnCount);
+                        resultSetWasNull = resultSet.wasNull();
+                    }
                     if (!resultSetWasNull) {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
@@ -265,30 +256,6 @@ public class SqlgUtil {
     }
 
     @SuppressWarnings("unchecked")
-    private static <E> E loadElement(
-            SqlgGraph sqlgGraph,
-            Map<String, Integer> columnMap,
-            ResultSet resultSet,
-            SchemaTableTree leafSchemaTableTree) throws SQLException {
-
-        SchemaTable schemaTable = leafSchemaTableTree.getSchemaTable();
-        String idProperty = leafSchemaTableTree.idProperty();
-        Integer columnCount = columnMap.get(idProperty);
-        Long id = resultSet.getLong(columnCount);
-        SqlgElement sqlgElement;
-        if (schemaTable.isVertexTable()) {
-            String rawLabel = schemaTable.getTable().substring(VERTEX_PREFIX.length());
-            sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-            leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
-        } else {
-            String rawLabel = schemaTable.getTable().substring(EDGE_PREFIX.length());
-            sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-            leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
-            leafSchemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
-        }
-        return (E) sqlgElement;
-    }
-
     public static boolean isBulkWithinAndOut(SqlgGraph sqlgGraph, HasContainer hasContainer) {
         BiPredicate p = hasContainer.getPredicate().getBiPredicate();
         return (p == Contains.within || p == Contains.without) && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
@@ -317,7 +284,6 @@ public class SqlgUtil {
         //This is for selects
         setKeyValuesAsParameter(sqlgGraph, false, parameterIndex, preparedStatement, typeAndValues);
     }
-
 
     //This is called for inserts
     public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, int i, PreparedStatement preparedStatement, Map<String, Pair<PropertyType, Object>> properties) throws SQLException {

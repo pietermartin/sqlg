@@ -548,81 +548,113 @@ public abstract class SqlgElement implements Element {
         return SqlgElement.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
-    public void loadProperty(ResultSet resultSet, String propertyName, int columnIndex, Map<String, String> columnNameAliasMap, int stepDepth, PropertyType propertyType) throws SQLException {
+    /**
+     * @return true if the property was setted, else false.
+     * @throws SQLException
+     */
+    public boolean loadProperty(
+            ResultSet resultSet,
+            String propertyName,
+            int columnIndex, Map<String, String> columnNameAliasMap,
+            int stepDepth,
+            PropertyType propertyType) throws SQLException {
+
         if (propertyName.endsWith(Topology.ZONEID) ||
                 propertyName.endsWith(Topology.MONTHS) ||
                 propertyName.endsWith(Topology.DAYS) ||
                 propertyName.endsWith(Topology.DURATION_NANOS)
-                ) {
-            return;
+        ) {
+            return false;
         }
         switch (propertyType.ordinal()) {
             case BOOLEAN_ORDINAL:
                 boolean aBoolean = resultSet.getBoolean(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, aBoolean);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case BYTE_ORDINAL:
                 byte aByte = resultSet.getByte(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, aByte);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case SHORT_ORDINAL:
                 short s = resultSet.getShort(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, s);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case INTEGER_ORDINAL:
                 int anInt = resultSet.getInt(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, anInt);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LONG_ORDINAL:
                 long aLong = resultSet.getLong(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, aLong);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case FLOAT_ORDINAL:
                 float aFloat = resultSet.getFloat(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, aFloat);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case DOUBLE_ORDINAL:
                 double aDouble = resultSet.getDouble(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, aDouble);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case STRING_ORDINAL:
                 String string = resultSet.getString(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, string);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case VARCHAR_ORDINAL:
                 string = resultSet.getString(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, string);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LOCALDATE_ORDINAL:
                 java.sql.Date date = resultSet.getDate(columnIndex);
                 if (date != null) {
                     this.properties.put(propertyName, date.toLocalDate());
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LOCALDATETIME_ORDINAL:
                 Timestamp timestamp = resultSet.getTimestamp(columnIndex);
                 if (timestamp != null) {
                     this.properties.put(propertyName, timestamp.toLocalDateTime());
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case ZONEDDATETIME_ORDINAL:
                 Timestamp timestamp1 = resultSet.getTimestamp(columnIndex);
                 if (timestamp1 != null) {
@@ -635,14 +667,18 @@ public abstract class SqlgElement implements Element {
                     ZoneId zoneId1 = ZoneId.of(zoneId);
                     ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(timestamp1.toLocalDateTime(), zoneId1);
                     this.properties.put(propertyName, zonedDateTimeAGT);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LOCALTIME_ORDINAL:
                 Time time = resultSet.getTime(columnIndex);
                 if (time != null) {
                     this.properties.put(propertyName, time.toLocalTime());
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case PERIOD_ORDINAL:
                 int years = resultSet.getInt(columnIndex);
                 if (!resultSet.wasNull()) {
@@ -659,8 +695,10 @@ public abstract class SqlgElement implements Element {
                     }
                     int days = resultSet.getInt(aliasedDay);
                     this.properties.put(propertyName, Period.of(years, months, days));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case DURATION_ORDINAL:
                 long seconds = resultSet.getLong(columnIndex);
                 if (!resultSet.wasNull()) {
@@ -672,152 +710,202 @@ public abstract class SqlgElement implements Element {
                     }
                     int nanos = resultSet.getInt(aliasedNanos);
                     this.properties.put(propertyName, Duration.ofSeconds(seconds, nanos));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case JSON_ORDINAL:
                 Object object = resultSet.getObject(columnIndex);
                 if (object != null) {
                     sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object, propertyType);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case POINT_ORDINAL:
                 Object object1 = resultSet.getObject(columnIndex);
                 if (object1 != null) {
                     sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object1, propertyType);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LINESTRING_ORDINAL:
                 Object object2 = resultSet.getObject(columnIndex);
                 if (object2 != null) {
                     sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object2, propertyType);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case POLYGON_ORDINAL:
                 Object object3 = resultSet.getObject(columnIndex);
                 if (object3 != null) {
                     sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object3, propertyType);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case GEOGRAPHY_POINT_ORDINAL:
                 Object object4 = resultSet.getObject(columnIndex);
                 if (object4 != null) {
                     sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object4, propertyType);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case GEOGRAPHY_POLYGON_ORDINAL:
                 Object object5 = resultSet.getObject(columnIndex);
                 if (object5 != null) {
                     sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object5, propertyType);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case boolean_ARRAY_ORDINAL:
                 java.sql.Array array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case BOOLEAN_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case byte_ARRAY_ORDINAL:
                 Object object6 = resultSet.getObject(columnIndex);
                 if (object6 != null) {
                     this.properties.put(propertyName, object6);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case BYTE_ARRAY_ORDINAL:
                 Object object7 = resultSet.getObject(columnIndex);
                 if (object7 != null) {
                     this.properties.put(propertyName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[]) object7));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case short_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case SHORT_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case int_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case INTEGER_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case long_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LONG_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case float_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case FLOAT_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case double_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case DOUBLE_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case STRING_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LOCALDATETIME_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LOCALDATE_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case LOCALTIME_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case ZONEDDATETIME_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
@@ -837,8 +925,10 @@ public abstract class SqlgElement implements Element {
                         zonedDateTimes[count++] = zonedDateTime;
                     }
                     this.properties.put(propertyName, zonedDateTimes);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case DURATION_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
@@ -856,8 +946,10 @@ public abstract class SqlgElement implements Element {
                         durations[count] = Duration.ofSeconds(second, nanoArray[count++]);
                     }
                     this.properties.put(propertyName, durations);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case PERIOD_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
@@ -882,18 +974,26 @@ public abstract class SqlgElement implements Element {
                         periods[count] = Period.of(year, monthsIntegers[count], daysIntegers[count++]);
                     }
                     this.properties.put(propertyName, periods);
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             case JSON_ARRAY_ORDINAL:
                 array = resultSet.getArray(columnIndex);
                 if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                    return true;
+                } else {
+                    return false;
                 }
-                break;
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
         }
 
+    }
+
+    public void internalSetProperty(String property, Object value) {
+        this.properties.put(property, value);
     }
 
     void loadProperty(ResultSet resultSet, String propertyName, int columnIndex) throws SQLException {
@@ -901,14 +1001,12 @@ public abstract class SqlgElement implements Element {
                 propertyName.endsWith(Topology.MONTHS) ||
                 propertyName.endsWith(Topology.DAYS) ||
                 propertyName.endsWith(Topology.DURATION_NANOS)
-                ) {
+        ) {
             return;
         }
         PropertyType propertyType = this.sqlgGraph.getTopology().getTableFor(getSchemaTablePrefixed()).get(propertyName);
         loadProperty(resultSet, propertyName, columnIndex, Collections.emptyMap(), -1, propertyType);
     }
-
-//    public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
     public long getInternalStartTraverserIndex() {
         return this.internalStartTraverserIndex;

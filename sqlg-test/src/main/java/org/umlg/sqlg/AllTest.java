@@ -49,6 +49,7 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
 import org.umlg.sqlg.test.process.dropstep.TestDropStepTruncate;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.properties.TestPropertyValues;
+import org.umlg.sqlg.test.reducing.TestReducing;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 import org.umlg.sqlg.test.roles.TestReadOnlyRole;
@@ -265,6 +266,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTraversalAddV.class,
         TestDataSource.class,
         TestCustomDataSource.class,
+        TestReducing.class
 })
 public class AllTest {
 

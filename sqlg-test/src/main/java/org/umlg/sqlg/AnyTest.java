@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKBulkMode;
+import org.umlg.sqlg.test.process.dropstep.TestDropStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKBulkMode;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestUserSuppliedPKBulkMode.class,
+//        TestReducing.class,
+        TestDropStep.class
 })
 public class AnyTest {
 }

@@ -46,6 +46,10 @@ public class ColumnList {
 
     private ListOrderedSet<String> identifiers;
 
+    /**
+     * Indicates if any of the Column's have an aggregateFunction
+     */
+    private boolean containsAggregate;
 
     /**
      * build a new empty column list
@@ -71,11 +75,28 @@ public class ColumnList {
      * @param stepDepth
      * @param alias
      */
-    private Column add(String schema, String table, String column, int stepDepth, String alias) {
-        Column c = new Column(schema, table, column, this.filteredAllTables.get(schema + "." + table).get(column), stepDepth);
+    private Column internalAdd(String schema, String table, String column, int stepDepth, String alias, String aggregateFunction) {
+        Column c = new Column(schema, table, column, this.filteredAllTables.get(schema + "." + table).get(column), stepDepth, aggregateFunction);
         this.columns.put(c, alias);
         this.aliases.put(alias, c);
+        this.containsAggregate = this.containsAggregate || aggregateFunction != null;
         return c;
+    }
+
+    public void add(SchemaTable st, String column, int stepDepth, String alias, String aggregateFunction) {
+        internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, aggregateFunction);
+    }
+
+    /**
+     * add a new column
+     *
+     * @param st
+     * @param column
+     * @param stepDepth
+     * @param alias
+     */
+    public void add(SchemaTable st, String column, int stepDepth, String alias) {
+        internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, null);
     }
 
     /**
@@ -89,7 +110,7 @@ public class ColumnList {
      * @param foreignKeyParts The foreign key column broken up into its parts. schema, table and for user supplied identifiers the property name.
      */
     private void addForeignKey(String schema, String table, String column, int stepDepth, String alias, String[] foreignKeyParts) {
-        Column c = add(schema, table, column, stepDepth, alias);
+        Column c = internalAdd(schema, table, column, stepDepth, alias, null);
         c.isForeignKey = true;
         if (foreignKeyParts.length == 3) {
             Map<String, PropertyType> properties = this.filteredAllTables.get(foreignKeyParts[0] + "." + Topology.VERTEX_PREFIX + foreignKeyParts[1]);
@@ -112,30 +133,8 @@ public class ColumnList {
         }
     }
 
-    /**
-     * add a new column
-     *
-     * @param stt
-     * @param column
-     * @param alias
-     */
-    public void add(SchemaTableTree stt, String column, String alias) {
-        add(stt.getSchemaTable(), column, stt.getStepDepth(), alias);
-    }
 
-    /**
-     * add a new column
-     *
-     * @param st
-     * @param column
-     * @param stepDepth
-     * @param alias
-     */
-    public void add(SchemaTable st, String column, int stepDepth, String alias) {
-        add(st.getSchema(), st.getTable(), column, stepDepth, alias);
-    }
-
-    public void addForeignKey(SchemaTableTree stt, String column, String alias) {
+    void addForeignKey(SchemaTableTree stt, String column, String alias) {
         String[] foreignKeyParts = column.split("\\.");
         Preconditions.checkState(foreignKeyParts.length == 2 || foreignKeyParts.length == 3, "Edge table foreign must be schema.table__I\\O or schema.table.property__I\\O. Found %s", column);
         addForeignKey(stt.getSchemaTable().getSchema(), stt.getSchemaTable().getTable(), column, stt.getStepDepth(), alias, foreignKeyParts);
@@ -151,7 +150,7 @@ public class ColumnList {
      */
     private String getAlias(String schema, String table, String column, int stepDepth) {
         //PropertyType is not part of equals or hashCode so not needed for the lookup.
-        Column c = new Column(schema, table, column, null, stepDepth);
+        Column c = new Column(schema, table, column, null, stepDepth, null);
         return columns.get(c);
     }
 
@@ -178,8 +177,7 @@ public class ColumnList {
         return getAlias(st.getSchema(), st.getTable(), column, stepDepth);
     }
 
-    @Override
-    public String toString() {
+    public String toFromString(boolean partOfDuplicateQuery) {
         String sep = "";
         StringBuilder sb = new StringBuilder();
         int count = 1;
@@ -188,7 +186,7 @@ public class ColumnList {
             String alias = columnEntry.getValue();
             sb.append(sep);
             sep = ",\n\t";
-            c.toString(sb);
+            c.toString(sb, partOfDuplicateQuery);
             sb.append(" AS ");
             sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
             if (this.drop && (this.identifiers.isEmpty() || count++ == this.identifiers.size())) {
@@ -196,6 +194,15 @@ public class ColumnList {
             }
         }
         return sb.toString();
+    }
+
+    public boolean isContainsAggregate() {
+        return containsAggregate;
+    }
+
+    @Override
+    public String toString() {
+        return toFromString(false);
     }
 
     public Pair<String, PropertyType> getPropertyType(String alias) {
@@ -207,19 +214,31 @@ public class ColumnList {
         }
     }
 
-    public String toString(String prefix) {
+    public String toOuterFromString(String prefix, boolean stackContainsAggregate) {
         StringBuilder sb = new StringBuilder();
         int i = 1;
         List<String> fromAliases = this.aliases.keySet().stream().filter(
                 (alias) -> !alias.endsWith(Topology.IN_VERTEX_COLUMN_END) && !alias.endsWith(Topology.OUT_VERTEX_COLUMN_END))
                 .collect(Collectors.toList());
         for (String alias : fromAliases) {
+            Column c = this.aliases.get(alias);
+            if (stackContainsAggregate && c.isID()) {
+                continue;
+            }
+            if (c.aggregateFunction != null) {
+                sb.append(c.aggregateFunction.toUpperCase());
+                sb.append("(");
+            }
             sb.append(prefix);
             sb.append(".");
             sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
-            if (i++ < fromAliases.size()) {
-                sb.append(", ");
+            if (c.aggregateFunction != null) {
+                sb.append(")");
             }
+            sb.append(", ");
+        }
+        if (sb.length() > 1) {
+            sb.deleteCharAt(sb.length() - 2);
         }
         return sb.toString();
     }
@@ -256,19 +275,27 @@ public class ColumnList {
     public void indexColumns(int startColumnIndex) {
         int i = startColumnIndex;
         for (Column column : columns.keySet()) {
-            column.columnIndex = i++;
-        }
-        i++;
-    }
-
-    public int indexColumnsExcludeForeignKey(int startColumnIndex) {
-        int i = startColumnIndex;
-        for (String alias : this.aliases.keySet()) {
-            if (!alias.endsWith(Topology.IN_VERTEX_COLUMN_END) && !alias.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                this.aliases.get(alias).columnIndex = i++;
+            if (!this.containsAggregate) {
+                column.columnIndex = i++;
+            } else if (!column.isID() && !column.isForeignKey) {
+                column.columnIndex = i++;
             }
         }
-        return i++;
+    }
+
+    public int indexColumnsExcludeForeignKey(int startColumnIndex, boolean stackContainsAggregate) {
+        int i = startColumnIndex;
+        for (String alias : this.aliases.keySet()) {
+            Column column = this.aliases.get(alias);
+            if (stackContainsAggregate && column.isID() ||
+                    alias.endsWith(Topology.IN_VERTEX_COLUMN_END) ||
+                    alias.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+
+                continue;
+            }
+            this.aliases.get(alias).columnIndex = i++;
+        }
+        return i;
     }
 
     /**
@@ -292,7 +319,9 @@ public class ColumnList {
         //Only set for user identifier primary keys
         private String foreignKeyProperty;
 
-        Column(String schema, String table, String column, PropertyType propertyType, int stepDepth) {
+        private String aggregateFunction;
+
+        Column(String schema, String table, String column, PropertyType propertyType, int stepDepth, String aggregateFunction) {
             super();
             this.schema = schema;
             this.table = table;
@@ -300,6 +329,7 @@ public class ColumnList {
             this.propertyType = propertyType;
             this.stepDepth = stepDepth;
             this.ID = this.column.equals(Topology.ID);
+            this.aggregateFunction = aggregateFunction;
         }
 
         @Override
@@ -340,6 +370,14 @@ public class ColumnList {
                     return false;
             } else if (!table.equals(other.table))
                 return false;
+
+            if (this.aggregateFunction == null) {
+                if (other.aggregateFunction != null) {
+                    return false;
+                }
+            } else if (!this.aggregateFunction.equals(other.aggregateFunction)) {
+                return false;
+            }
             return this.stepDepth == other.stepDepth;
         }
 
@@ -395,7 +433,7 @@ public class ColumnList {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            toString(sb);
+            toString(sb, false);
             return sb.toString();
         }
 
@@ -404,12 +442,19 @@ public class ColumnList {
          *
          * @param sb
          */
-        void toString(StringBuilder sb) {
+        void toString(StringBuilder sb, boolean partOfDuplicateQuery) {
+            if (!partOfDuplicateQuery && this.aggregateFunction != null) {
+                sb.append(this.aggregateFunction.toUpperCase());
+                sb.append("(");
+            }
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sb.append(".");
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
             sb.append(".");
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+            if (!partOfDuplicateQuery && this.aggregateFunction != null) {
+                sb.append(")");
+            }
         }
 
         boolean isFor(int stepDepth, SchemaTable schemaTable) {
@@ -420,5 +465,8 @@ public class ColumnList {
             return this.stepDepth == stepDepth && this.schema.equals(schemaTable.getSchema()) && this.table.equals(schemaTable.getTable());
         }
 
+        public String getAggregateFunction() {
+            return aggregateFunction;
+        }
     }
 }

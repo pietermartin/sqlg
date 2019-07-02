@@ -63,6 +63,13 @@ public class ReplacedStep<S, E> {
     private boolean drop;
 
     /**
+     * The reducing barrier's aggregate function. i.e. max, min, mean...
+     * The pair's left is the aggregate function and the right is the columns over which to aggregate.
+     */
+    private Pair<String, List<String>> aggregateFunction;
+    private List<String> groupBy;
+
+    /**
      * restrict properties to only a subset if not null
      */
     private Set<String> restrictedProperties = null;
@@ -536,7 +543,9 @@ public class ReplacedStep<S, E> {
                 this.leftJoin,
                 this.drop,
                 replacedStepDepth,
-                this.labels
+                this.labels,
+                aggregateFunction,
+                groupBy
         );
         schemaTableTree.setRestrictedProperties(getRestrictedProperties());
         result.add(schemaTableTree);
@@ -821,4 +830,25 @@ public class ReplacedStep<S, E> {
     public void markForGuiSchema() {
         this.isForGuiSchema = true;
     }
+
+    public Pair<String, List<String>> getAggregateFunction() {
+        return this.aggregateFunction;
+    }
+
+    public boolean hasAggregateFunction() {
+        return this.aggregateFunction != null;
+    }
+
+    public void setAggregateFunction(Pair<String, List<String>> aggregateFunction) {
+        this.aggregateFunction = aggregateFunction;
+    }
+
+    public List<String> getGroupBy() {
+        return groupBy;
+    }
+
+    public void setGroupBy(List<String> groupBy) {
+        this.groupBy = groupBy;
+    }
+
 }
