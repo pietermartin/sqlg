@@ -17,7 +17,7 @@ import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgTraverserGenerator;
+import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.*;

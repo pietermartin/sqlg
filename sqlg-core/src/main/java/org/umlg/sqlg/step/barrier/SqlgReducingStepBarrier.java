@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.umlg.sqlg.step.SqlgAbstractStep;
-import org.umlg.sqlg.structure.SqlgTraverserGenerator;
+import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

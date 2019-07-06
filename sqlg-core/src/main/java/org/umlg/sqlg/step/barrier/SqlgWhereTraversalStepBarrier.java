@@ -20,7 +20,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.step.SqlgFilterStep;
 import org.umlg.sqlg.step.SqlgMapStep;
-import org.umlg.sqlg.structure.SqlgTraverser;
+import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 
 import java.util.*;
 
