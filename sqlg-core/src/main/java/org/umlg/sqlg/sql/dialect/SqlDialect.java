@@ -10,6 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
@@ -1296,5 +1297,20 @@ public interface SqlDialect {
 
     default int getConnectionBackendPid(Connection connection) {
         return -1;
+    }
+
+    default void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column) {
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            sb.append(column.getAggregateFunction().toUpperCase());
+            sb.append("(");
+        }
+        sb.append(maybeWrapInQoutes(column.getSchema()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getTable()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getColumn()));
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            sb.append(")");
+        }
     }
 }

@@ -38,7 +38,7 @@ import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.*;
-import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
+import org.umlg.sqlg.step.barrier.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -50,6 +50,8 @@ import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -217,11 +219,11 @@ public abstract class BaseStrategy {
             } else if (step instanceof PropertyMapStep) {
                 return handlePropertyMapStep(step);
             } else if (step instanceof MaxGlobalStep) {
-                return handleAggregateGlobalStep(this.currentReplacedStep, step, GraphTraversal.Symbols.max);
+                return handleAggregateGlobalStep(this.currentReplacedStep, step, max);
             } else if (step instanceof MinGlobalStep) {
-                return handleAggregateGlobalStep(this.currentReplacedStep, step, GraphTraversal.Symbols.min);
+                return handleAggregateGlobalStep(this.currentReplacedStep, step, min);
             } else if (step instanceof SumGlobalStep) {
-                return handleAggregateGlobalStep(this.currentReplacedStep, step, GraphTraversal.Symbols.sum);
+                return handleAggregateGlobalStep(this.currentReplacedStep, step, sum);
             } else if (step instanceof MeanGlobalStep) {
                 return handleAggregateGlobalStep(this.currentReplacedStep, step, "avg");
             } else if (step instanceof GroupStep) {
@@ -1240,10 +1242,28 @@ public abstract class BaseStrategy {
         return ret;
     }
 
+    @SuppressWarnings("unchecked")
     private boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step<?, ?> maxStep, String aggr) {
         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(aggr, Collections.emptyList()));
-        if (this.traversal.getSteps().contains(maxStep)) {
-            this.traversal.removeStep(maxStep);
+        switch (aggr) {
+            case sum:
+                SqlgSumGlobalStep sqlgSumGlobalStep = new SqlgSumGlobalStep(this.traversal);
+                TraversalHelper.replaceStep(maxStep, sqlgSumGlobalStep, this.traversal);
+                break;
+            case max:
+                SqlgMaxGlobalStep sqlgMaxGlobalStep = new SqlgMaxGlobalStep(this.traversal);
+                TraversalHelper.replaceStep(maxStep, sqlgMaxGlobalStep, this.traversal);
+                break;
+            case min:
+                SqlgMinGlobalStep sqlgMinGlobalStep = new SqlgMinGlobalStep(this.traversal);
+                TraversalHelper.replaceStep(maxStep, sqlgMinGlobalStep, this.traversal);
+                break;
+            case "avg":
+                SqlgAvgGlobalStep sqlgAvgGlobalStep = new SqlgAvgGlobalStep(this.traversal);
+                TraversalHelper.replaceStep(maxStep, sqlgAvgGlobalStep, this.traversal);
+                break;
+            default:
+                throw new IllegalStateException("Unhandled aggregation " + aggr);
         }
         return false;
     }
@@ -1255,7 +1275,7 @@ public abstract class BaseStrategy {
             Traversal.Admin<?, ?> groupByTraversal = localChildren.get(0);
             Traversal.Admin<?, ?> aggregateOverTraversal = localChildren.get(1);
             boolean isPropertiesStep = false;
-            List<String> groupByKeys  = new ArrayList<>();
+            List<String> groupByKeys = new ArrayList<>();
             if (groupByTraversal instanceof ElementValueTraversal) {
                 ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal) groupByTraversal;
                 groupByKeys.add(elementValueTraversal.getPropertyKey());
@@ -1268,7 +1288,7 @@ public abstract class BaseStrategy {
                 } else {
                     return false;
                 }
-            } else if (groupByTraversal instanceof TokenTraversal){
+            } else if (groupByTraversal instanceof TokenTraversal) {
                 TokenTraversal<?, ?> tokenTraversal = (TokenTraversal) groupByTraversal;
                 if (tokenTraversal.getToken() == T.label) {
                     groupByKeys.add(T.label.getAccessor());
@@ -1302,15 +1322,15 @@ public abstract class BaseStrategy {
                     } else if (two instanceof MinGlobalStep) {
                         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(GraphTraversal.Symbols.min, aggregationFunctionProperty));
                     } else if (two instanceof SumGlobalStep) {
-                        replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(GraphTraversal.Symbols.sum, aggregationFunctionProperty));
+                        replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(sum, aggregationFunctionProperty));
                     } else if (two instanceof MeanGlobalStep) {
                         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of("avg", aggregationFunctionProperty));
                     } else {
                         throw new IllegalStateException(String.format("Unhandled group by aggregation %s", two.getClass().getSimpleName()));
                     }
-                    SqlgGroupStep<?, ?> sqlgPropertiesStep = new SqlgGroupStep<>(this.traversal, groupByKeys, aggregationFunctionProperty.get(0), isPropertiesStep);
+                    SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, aggregationFunctionProperty.get(0), isPropertiesStep);
                     //noinspection unchecked
-                    TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, this.traversal);
+                    TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
                 }
             }
             return false;

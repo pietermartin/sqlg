@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.h2.jdbc.JdbcArray;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
+import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -1019,5 +1020,21 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
         //Do nothing, we are not testing readOnly on H2
+    }
+
+    @Override
+    public void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column) {
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            sb.append(column.getAggregateFunction().toUpperCase());
+            sb.append("(CAST(");
+        }
+        sb.append(maybeWrapInQoutes(column.getSchema()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getTable()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getColumn()));
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            sb.append(" as DOUBLE PRECISION))");
+        }
     }
 }

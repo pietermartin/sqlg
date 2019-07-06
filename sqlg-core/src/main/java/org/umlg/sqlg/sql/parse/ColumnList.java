@@ -177,7 +177,7 @@ public class ColumnList {
         return getAlias(st.getSchema(), st.getTable(), column, stepDepth);
     }
 
-    public String toFromString(boolean partOfDuplicateQuery) {
+    public String toSelectString(boolean partOfDuplicateQuery) {
         String sep = "";
         StringBuilder sb = new StringBuilder();
         int count = 1;
@@ -186,7 +186,7 @@ public class ColumnList {
             String alias = columnEntry.getValue();
             sb.append(sep);
             sep = ",\n\t";
-            c.toString(sb, partOfDuplicateQuery);
+            c.toSelectString(sb, partOfDuplicateQuery);
             sb.append(" AS ");
             sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
             if (this.drop && (this.identifiers.isEmpty() || count++ == this.identifiers.size())) {
@@ -202,7 +202,7 @@ public class ColumnList {
 
     @Override
     public String toString() {
-        return toFromString(false);
+        return toSelectString(false);
     }
 
     public Pair<String, PropertyType> getPropertyType(String alias) {
@@ -216,13 +216,12 @@ public class ColumnList {
 
     public String toOuterFromString(String prefix, boolean stackContainsAggregate) {
         StringBuilder sb = new StringBuilder();
-        int i = 1;
         List<String> fromAliases = this.aliases.keySet().stream().filter(
                 (alias) -> !alias.endsWith(Topology.IN_VERTEX_COLUMN_END) && !alias.endsWith(Topology.OUT_VERTEX_COLUMN_END))
                 .collect(Collectors.toList());
         for (String alias : fromAliases) {
             Column c = this.aliases.get(alias);
-            if (stackContainsAggregate && c.isID()) {
+            if (stackContainsAggregate && (c.isID() || c.isForeignKey())) {
                 continue;
             }
             if (c.aggregateFunction != null) {
@@ -287,13 +286,13 @@ public class ColumnList {
         int i = startColumnIndex;
         for (String alias : this.aliases.keySet()) {
             Column column = this.aliases.get(alias);
-            if (stackContainsAggregate && column.isID() ||
+            if (stackContainsAggregate && (column.isID() || column.isForeignKey()) ||
                     alias.endsWith(Topology.IN_VERTEX_COLUMN_END) ||
                     alias.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
 
                 continue;
             }
-            this.aliases.get(alias).columnIndex = i++;
+            column.columnIndex = i++;
         }
         return i;
     }
@@ -326,6 +325,7 @@ public class ColumnList {
             this.schema = schema;
             this.table = table;
             this.column = column;
+            this.isForeignKey = column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END);
             this.propertyType = propertyType;
             this.stepDepth = stepDepth;
             this.ID = this.column.equals(Topology.ID);
@@ -433,7 +433,7 @@ public class ColumnList {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            toString(sb, false);
+            toSelectString(sb, false);
             return sb.toString();
         }
 
@@ -442,19 +442,8 @@ public class ColumnList {
          *
          * @param sb
          */
-        void toString(StringBuilder sb, boolean partOfDuplicateQuery) {
-            if (!partOfDuplicateQuery && this.aggregateFunction != null) {
-                sb.append(this.aggregateFunction.toUpperCase());
-                sb.append("(");
-            }
-            sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
-            sb.append(".");
-            sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
-            sb.append(".");
-            sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-            if (!partOfDuplicateQuery && this.aggregateFunction != null) {
-                sb.append(")");
-            }
+        void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery) {
+            sqlgGraph.getSqlDialect().toSelectString(sb, partOfDuplicateQuery, this);
         }
 
         boolean isFor(int stepDepth, SchemaTable schemaTable) {

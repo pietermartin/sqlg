@@ -1,20 +1,25 @@
 package org.umlg.sqlg.test.reducing;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgGroupStep;
+import org.umlg.sqlg.step.barrier.SqlgAvgGlobalStep;
+import org.umlg.sqlg.step.barrier.SqlgMaxGlobalStep;
+import org.umlg.sqlg.step.barrier.SqlgMinGlobalStep;
+import org.umlg.sqlg.step.barrier.SqlgSumGlobalStep;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -22,6 +27,17 @@ import java.util.Map;
  */
 @SuppressWarnings({"Duplicates", "unchecked"})
 public class TestReducing extends BaseTest {
+
+    @Before
+    public void before() throws Exception {
+        super.before();
+        if (isHsqldb()) {
+            Connection connection = this.sqlgGraph.tx().getConnection();
+            Statement statement = connection.createStatement();
+            statement.execute("SET DATABASE SQL AVG SCALE 2");
+            this.sqlgGraph.tx().commit();
+        }
+    }
 
     @SuppressWarnings("Duplicates")
     @Test
@@ -34,9 +50,10 @@ public class TestReducing extends BaseTest {
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().hasLabel("Person").values("age").max();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertEquals(3, traversal.next(), 0);
     }
 
@@ -51,9 +68,10 @@ public class TestReducing extends BaseTest {
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().hasLabel("Person").values("age").min();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMinGlobalStep);
         Assert.assertEquals(0, traversal.next(), 0);
     }
 
@@ -67,9 +85,10 @@ public class TestReducing extends BaseTest {
 
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().hasLabel("Person").values("age").sum();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgSumGlobalStep);
         Assert.assertEquals(6, traversal.next(), 0L);
     }
 
@@ -82,9 +101,10 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
         DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").mean();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgAvgGlobalStep);
         Double d = traversal.next();
         Assert.assertEquals(1.5, d, 0D);
     }
@@ -372,9 +392,10 @@ public class TestReducing extends BaseTest {
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("aa").values("age").max();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Integer max = traversal.next();
         Assert.assertEquals(7, max, 0);
@@ -396,9 +417,10 @@ public class TestReducing extends BaseTest {
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V(a1).out("aa").out("aa").values("age").max();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Integer max = traversal.next();
         Assert.assertEquals(7, max, 0);
@@ -435,6 +457,78 @@ public class TestReducing extends BaseTest {
     }
 
     @Test
+    public void duplicateQueryMax() {
+        this.sqlgGraph.addVertex(T.label, "A", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "B", "age", 2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().values("age").max();
+        printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
+
+        Assert.assertEquals(2, traversal.next(), 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void duplicateQueryMin() {
+        this.sqlgGraph.addVertex(T.label, "A", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "B", "age", 2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().values("age").min();
+        printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMinGlobalStep);
+
+        Assert.assertEquals(1, traversal.next(), 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void duplicateQuerySum() {
+        this.sqlgGraph.addVertex(T.label, "A", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "B", "age", 2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().values("age").sum();
+        printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgSumGlobalStep);
+
+        Assert.assertEquals(3, traversal.next(), 0L);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void duplicateQueryMean() {
+        this.sqlgGraph.addVertex(T.label, "A", "age", 1);
+
+        this.sqlgGraph.addVertex(T.label, "B", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "B", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "B", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "B", "age", 2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().values("age").mean();
+        printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgAvgGlobalStep);
+
+        Assert.assertEquals(1.8, traversal.next(), 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
     public void testDuplicateQueryNoLabel() {
         Vertex p1 = this.sqlgGraph.addVertex(T.label, "person", "age", 1);
         Vertex p2 = this.sqlgGraph.addVertex(T.label, "person", "age", 2);
@@ -443,9 +537,10 @@ public class TestReducing extends BaseTest {
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().hasLabel("person").out().out().values("age").max();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Number m = traversal.next();
         Assert.assertTrue(m instanceof Double);
@@ -459,9 +554,10 @@ public class TestReducing extends BaseTest {
         loadModern();
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().hasLabel("person").out().out().values("age").max();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Number m = traversal.next();
         Assert.assertTrue(m instanceof Double);
@@ -475,9 +571,10 @@ public class TestReducing extends BaseTest {
         loadModern();
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal)this.sqlgGraph.traversal().V().hasLabel("person").repeat(__.out()).times(2).values("age").max();
         printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Number m = traversal.next();
         Assert.assertTrue(m instanceof Double);
@@ -485,165 +582,165 @@ public class TestReducing extends BaseTest {
         Assert.assertFalse(traversal.hasNext());
     }
 
-//    @Test
-//    public void g_V_repeatXbothX_timesX5X_age_max() {
-//        loadModern();
-//        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().repeat(__.both()).times(5).values("age").max();
-//        printTraversalForm(traversal);
-//        checkResults(Collections.singletonList(35), traversal);
-//    }
-//
-//    @Test
-//    public void g_V_hasLabelXsoftwareX_group_byXnameX_byXbothE_weight_maxX() {
-//        loadModern();
-//        final Traversal<Vertex, Map<String, Number>> traversal = this.sqlgGraph.traversal()
-//                .V().hasLabel("software")
-//                .<String, Number>group().by("name").by(
-//                        __.bothE().values("weight").max()
-//                );
-//        printTraversalForm(traversal);
-//        Assert.assertTrue(traversal.hasNext());
-//        final Map<String, Number> map = traversal.next();
-//        Assert.assertFalse(traversal.hasNext());
-//        Assert.assertEquals(2, map.size());
-//        Assert.assertEquals(1.0, map.get("ripple"));
-//        Assert.assertEquals(0.4, map.get("lop"));
-//    }
-//
-//    @Test
-//    public void testMaxAgain() {
-//        this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
-//        this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
-//        this.sqlgGraph.addVertex(T.label, "Person", "age", 5);
-//        this.sqlgGraph.addVertex(T.label, "Dog", "age", 7);
-//        this.sqlgGraph.tx().commit();
-//        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().values("age").max();
-//        printTraversalForm(traversal);
-//        Integer max = traversal.next();
-//        Assert.assertFalse(traversal.hasNext());
-//        Assert.assertEquals(7, max, 0);
-//    }
-//
-//    @Test
-//    public void testMax2() {
-//        loadModern();
-//        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().values("age").max();
-//        printTraversalForm(traversal);
-//        checkResults(Arrays.asList(35), traversal);
-//    }
-//
-//    @Test
-//    public void g_V_outXfollowedByX_group_byXsongTypeX_byXbothE_group_byXlabelX_byXweight_sumXX() {
-//        loadGratefulDead();
-//        final Traversal<Vertex, Map<String, Map<String, Number>>> traversal = this.sqlgGraph.traversal()
-//                .V().out("followedBy")
-//                .<String, Map<String, Number>>group()
-//                .by("songType")
-//                .by(
-//                        __.bothE()
-//                                .group()
-//                                .by(T.label)
-//                                .by(__.values("weight").sum())
-//                );
-//        printTraversalForm(traversal);
-//        final Map<String, Map<String, Number>> map = traversal.next();
-//        Assert.assertFalse(traversal.hasNext());
-//        Assert.assertEquals(3, map.size());
-//        Assert.assertTrue(map.containsKey(""));
-//        Assert.assertTrue(map.containsKey("original"));
-//        Assert.assertTrue(map.containsKey("cover"));
-//        //
-//        Map<String, Number> subMap = map.get("");
-//        Assert.assertEquals(1, subMap.size());
-//        Assert.assertEquals(179350, subMap.get("followedBy").intValue());
-//        //
-//        subMap = map.get("original");
-////        Assert.assertEquals(3, subMap.size());
-//        Assert.assertEquals(2185613, subMap.get("followedBy").intValue());
-////        Assert.assertEquals(0, subMap.get("writtenBy").intValue());
-////        Assert.assertEquals(0, subMap.get("sungBy").intValue());
-//        //
-//        subMap = map.get("cover");
-////        Assert.assertEquals(3, subMap.size());
-//        Assert.assertEquals(777982, subMap.get("followedBy").intValue());
-////        Assert.assertEquals(0, subMap.get("writtenBy").intValue());
-////        Assert.assertEquals(0, subMap.get("sungBy").intValue());
-//    }
-//
-//    @Test
-//    public void testSummingNothing() {
-//        this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
-//        this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "age", 1);
-//        this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "age", 1);
-//        this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "age", 1);
-//        this.sqlgGraph.tx().commit();
-//
-//        Traversal<Vertex, Map<String, Integer>> traversal = this.sqlgGraph.traversal()
-//                .V().has("name", "a5")
-//                .<String, Integer>group().by(T.label).by(__.values("age").sum());
-//        printTraversalForm(traversal);
-//        Assert.assertTrue(traversal.hasNext());
-//        System.out.println(traversal.next());
-//    }
-//
-//    @Test
-//    public void testCount() {
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.tx().commit();
-//        Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().count();
-//        printTraversalForm(traversal);
-//        Assert.assertEquals(4, traversal.next(), 0);
-//    }
-//
-//    @Test
-//    public void testCountMultipleLabels() {
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.addVertex(T.label, "A");
-//        this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//        this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-//        this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
-//        this.sqlgGraph.tx().commit();
-//        Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().count();
-//        printTraversalForm(traversal);
-//        Assert.assertEquals(8, traversal.next(), 0);
-//    }
-//
-//    @Test
-//    public void testCountDuplicatePaths() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-//        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
-//        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
-//        a1.addEdge("aa", a2);
-//        a2.addEdge("aa", a3);
-//        a2.addEdge("aa", a4);
-//        this.sqlgGraph.tx().commit();
-//
-//        Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V(a1).out().out().count();
-//        printTraversalForm(traversal);
-//        Assert.assertEquals(2, traversal.next(), 0);
-//    }
-//
-//    @Test
-//    public void testMaxDuplicatePaths() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
-//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "age", 2);
-//        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "age", 3);
-//        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "age", 4);
-//        a1.addEdge("aa", a2);
-//        a2.addEdge("aa", a3);
-//        a2.addEdge("aa", a4);
-//        this.sqlgGraph.tx().commit();
-//
-//        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V(a1).out().out().values("age").max();
-//        printTraversalForm(traversal);
-//        Assert.assertEquals(4, traversal.next(), 0);
-//    }
+    @Test
+    public void g_V_repeatXbothX_timesX5X_age_max() {
+        loadModern();
+        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().repeat(__.both()).times(5).values("age").max();
+        printTraversalForm(traversal);
+        checkResults(Collections.singletonList(35), traversal);
+    }
+
+    @Test
+    public void g_V_hasLabelXsoftwareX_group_byXnameX_byXbothE_weight_maxX() {
+        loadModern();
+        final Traversal<Vertex, Map<String, Number>> traversal = this.sqlgGraph.traversal()
+                .V().hasLabel("software")
+                .<String, Number>group().by("name").by(
+                        __.bothE().values("weight").max()
+                );
+        printTraversalForm(traversal);
+        Assert.assertTrue(traversal.hasNext());
+        final Map<String, Number> map = traversal.next();
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, map.size());
+        Assert.assertEquals(1.0, map.get("ripple"));
+        Assert.assertEquals(0.4, map.get("lop"));
+    }
+
+    @Test
+    public void testMaxAgain() {
+        this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "Person", "age", 5);
+        this.sqlgGraph.addVertex(T.label, "Dog", "age", 7);
+        this.sqlgGraph.tx().commit();
+        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().values("age").max();
+        printTraversalForm(traversal);
+        Integer max = traversal.next();
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(7, max, 0);
+    }
+
+    @Test
+    public void testMax2() {
+        loadModern();
+        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().values("age").max();
+        printTraversalForm(traversal);
+        checkResults(Arrays.asList(35), traversal);
+    }
+
+    @Test
+    public void g_V_outXfollowedByX_group_byXsongTypeX_byXbothE_group_byXlabelX_byXweight_sumXX() {
+        loadGratefulDead();
+        final Traversal<Vertex, Map<String, Map<String, Number>>> traversal = this.sqlgGraph.traversal()
+                .V().out("followedBy")
+                .<String, Map<String, Number>>group()
+                .by("songType")
+                .by(
+                        __.bothE()
+                                .group()
+                                .by(T.label)
+                                .by(__.values("weight").sum())
+                );
+        printTraversalForm(traversal);
+        final Map<String, Map<String, Number>> map = traversal.next();
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(3, map.size());
+        Assert.assertTrue(map.containsKey(""));
+        Assert.assertTrue(map.containsKey("original"));
+        Assert.assertTrue(map.containsKey("cover"));
+        //
+        Map<String, Number> subMap = map.get("");
+        Assert.assertEquals(1, subMap.size());
+        Assert.assertEquals(179350, subMap.get("followedBy").intValue());
+        //
+        subMap = map.get("original");
+//        Assert.assertEquals(3, subMap.size());
+        Assert.assertEquals(2185613, subMap.get("followedBy").intValue());
+//        Assert.assertEquals(0, subMap.get("writtenBy").intValue());
+//        Assert.assertEquals(0, subMap.get("sungBy").intValue());
+        //
+        subMap = map.get("cover");
+//        Assert.assertEquals(3, subMap.size());
+        Assert.assertEquals(777982, subMap.get("followedBy").intValue());
+//        Assert.assertEquals(0, subMap.get("writtenBy").intValue());
+//        Assert.assertEquals(0, subMap.get("sungBy").intValue());
+    }
+
+    @Test
+    public void testSummingNothing() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "age", 1);
+        this.sqlgGraph.tx().commit();
+
+        Traversal<Vertex, Map<String, Integer>> traversal = this.sqlgGraph.traversal()
+                .V().has("name", "a5")
+                .<String, Integer>group().by(T.label).by(__.values("age").sum());
+        printTraversalForm(traversal);
+        Assert.assertTrue(traversal.hasNext());
+        System.out.println(traversal.next());
+    }
+
+    @Test
+    public void testCount() {
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().count();
+        printTraversalForm(traversal);
+        Assert.assertEquals(4, traversal.next(), 0);
+    }
+
+    @Test
+    public void testCountMultipleLabels() {
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
+        this.sqlgGraph.tx().commit();
+        Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().count();
+        printTraversalForm(traversal);
+        Assert.assertEquals(8, traversal.next(), 0);
+    }
+
+    @Test
+    public void testCountDuplicatePaths() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
+        a1.addEdge("aa", a2);
+        a2.addEdge("aa", a3);
+        a2.addEdge("aa", a4);
+        this.sqlgGraph.tx().commit();
+
+        Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V(a1).out().out().count();
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.next(), 0);
+    }
+
+    @Test
+    public void testMaxDuplicatePaths() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "age", 2);
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "age", 3);
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "age", 4);
+        a1.addEdge("aa", a2);
+        a2.addEdge("aa", a3);
+        a2.addEdge("aa", a4);
+        this.sqlgGraph.tx().commit();
+
+        Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V(a1).out().out().values("age").max();
+        printTraversalForm(traversal);
+        Assert.assertEquals(4, traversal.next(), 0);
+    }
 
 }
