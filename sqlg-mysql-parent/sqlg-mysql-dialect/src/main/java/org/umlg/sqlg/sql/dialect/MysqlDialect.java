@@ -632,6 +632,11 @@ public class MysqlDialect extends BaseSqlDialect {
     }
 
     @Override
+    public String addDbVersionToGraph(DatabaseMetaData metadata) {
+        return "ALTER TABLE `sqlg_schema`.`V_graph` ADD COLUMN `dbVersion` TEXT;";
+    }
+
+    @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
