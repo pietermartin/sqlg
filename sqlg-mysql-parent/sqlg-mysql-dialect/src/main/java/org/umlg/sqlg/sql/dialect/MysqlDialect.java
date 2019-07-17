@@ -632,6 +632,97 @@ public class MysqlDialect extends BaseSqlDialect {
     }
 
     @Override
+    public String addDbVersionToGraph(DatabaseMetaData metadata) {
+        return "ALTER TABLE `sqlg_schema`.`V_graph` ADD COLUMN `dbVersion` TEXT;";
+    }
+
+    @Override
+    public List<String> addPartitionTables() {
+        return Arrays.asList(
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_vertex` SET `partitionType` = 'NONE';",
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `partitionExpression` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_vertex` ADD COLUMN `shardCount` INTEGER;",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionType` TEXT;",
+                "UPDATE `sqlg_schema`.`V_edge` SET `partitionType` = 'NONE';",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `partitionExpression` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_edge` ADD COLUMN `shardCount` INTEGER;",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`createdOn` DATETIME, " +
+                        "`name` TEXT, " +
+                        "`from` TEXT, " +
+                        "`to` TEXT, " +
+                        "`in` TEXT, " +
+                        "`partitionType` TEXT, " +
+                        "`partitionExpression` TEXT);",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`));",
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_partition_partition`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.partition__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.partition__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.partition__I`) REFERENCES `sqlg_schema`.`V_partition` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.partition__O`) REFERENCES `sqlg_schema`.`V_partition` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_identifier`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "`identifier_index` INTEGER, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_identifier`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "`identifier_index` INTEGER, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_distribution`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "vertex_colocate`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_distribution`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "property` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));",
+
+                "CREATE TABLE IF NOT EXISTS `sqlg_schema`.`" + Topology.EDGE_PREFIX + "edge_colocate`(" +
+                        "`ID` SERIAL PRIMARY KEY, " +
+                        "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                        "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                        "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "vertex` (`ID`), " +
+                        "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`" + Topology.VERTEX_PREFIX + "edge` (`ID`));"
+        );
+    }
+
+    @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
