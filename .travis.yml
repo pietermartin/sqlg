@@ -25,7 +25,7 @@ script:
   - cd $TRAVIS_BUILD_DIR
   - sudo rm /etc/mavenrc
   - export MAVEN_OPTS="-Djava.security.egd=file:/dev/urandom -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx5012m"
-  - mvn test
+  - mvn -T4 test
 
 notifications:
   email:
