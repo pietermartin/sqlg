@@ -9,8 +9,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
-import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceFactory;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.hamcrest.CoreMatchers;
