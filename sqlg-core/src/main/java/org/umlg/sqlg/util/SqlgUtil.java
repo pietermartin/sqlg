@@ -889,8 +889,14 @@ public class SqlgUtil {
                 ResultSet rs = statement.executeQuery("SELECT 1 FROM pg_roles WHERE rolname='sqlgReadOnly'");
                 if (rs.next()) {
                     try (Statement s = conn.createStatement()) {
-                        s.execute("REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM \"sqlgReadOnly\"");
                         s.execute("REVOKE USAGE ON SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE USAGE ON SCHEMA gui_schema FROM \"sqlgReadOnly\"");
                         s.execute("DROP ROLE \"sqlgReadOnly\"");
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
