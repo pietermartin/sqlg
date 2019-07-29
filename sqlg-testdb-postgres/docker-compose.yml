@@ -1,0 +1,7 @@
+version: "2"
+services:
+  sqlg-test-postgres:
+    build: .
+    privileged: true
+    ports:
+      - "9700:5432"
