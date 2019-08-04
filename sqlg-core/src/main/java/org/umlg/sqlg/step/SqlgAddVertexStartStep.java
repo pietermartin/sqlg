@@ -2,6 +2,7 @@ package org.umlg.sqlg.step;
 
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Mutating;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Parameterizing;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Scoping;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Parameters;
@@ -24,13 +25,18 @@ import java.util.Set;
  */
 public class SqlgAddVertexStartStep extends SqlgAbstractStep<Vertex, Vertex> implements Mutating<Event.VertexAddedEvent>, TraversalParent, Parameterizing, Scoping {
 
-    private Parameters parameters = new Parameters();
+    private Parameters parameters;
     private boolean first = true;
     private CallbackRegistry<Event.VertexAddedEvent> callbackRegistry;
 
     public SqlgAddVertexStartStep(final Traversal.Admin traversal, Parameters parameters) {
         super(traversal);
         this.parameters = parameters;
+    }
+
+    @Override
+    public void configure(final Object... keyValues) {
+        this.parameters.set(this, keyValues);
     }
 
     @Override
@@ -46,11 +52,6 @@ public class SqlgAddVertexStartStep extends SqlgAbstractStep<Vertex, Vertex> imp
     @Override
     public <S, E> List<Traversal.Admin<S, E>> getLocalChildren() {
         return this.parameters.getTraversals();
-    }
-
-    @Override
-    public void addPropertyMutations(final Object... keyValues) {
-        this.parameters.set(this, keyValues);
     }
 
     @Override

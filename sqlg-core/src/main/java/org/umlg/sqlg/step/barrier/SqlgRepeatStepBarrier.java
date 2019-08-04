@@ -298,7 +298,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                         while (this.starts.hasNext()) {
                             foundSomething = true;
                             Traverser.Admin<S> start = starts.next();
-                            start.incrLoops(this.getId());
+                            start.initialiseLoops(this.getId(), null);
+                            start.incrLoops();
                             repeatStep.addStart(start);
                             if (repeatStep.doEmit(start, false)) {
                                 final Traverser.Admin<S> emitSplit = start.split();
@@ -314,7 +315,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                     while (this.starts.hasNext()) {
                         foundSomething = true;
                         Traverser.Admin<S> cachedStart = this.starts.next();
-                        cachedStart.incrLoops(this.getId());
+                        cachedStart.initialiseLoops(this.getId(), null);
+                        cachedStart.incrLoops();
                         if (repeatStep.doUntil(cachedStart, false)) {
                             cachedStart.resetLoops();
                             toReturn.add(IteratorUtils.of(cachedStart));
@@ -393,7 +395,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         while (starts.hasNext()) {
             foundSomething = true;
             Traverser.Admin<S> cachedStart = starts.next();
-            cachedStart.incrLoops(this.getId());
+            cachedStart.initialiseLoops(this.getId(), null);
+            cachedStart.incrLoops();
             List<Object> startObjects = cachedStart.path().objects();
             StringBuilder recordIdConcatenated = new StringBuilder();
             for (Object startObject : startObjects) {

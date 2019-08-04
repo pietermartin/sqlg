@@ -1,5 +1,5 @@
 ALTER SYSTEM SET max_connections TO '1000';
-ALTER SYSTEM SET max_locks_per_transaction TO '256';
+ALTER SYSTEM SET max_locks_per_transaction TO '1024';
 ALTER SYSTEM SET shared_buffers TO '1024MB';
 
 CREATE DATABASE "sqlgraphdb";

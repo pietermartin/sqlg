@@ -9,7 +9,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceFactory;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.hamcrest.CoreMatchers;
@@ -280,7 +279,8 @@ public class TestDropStep extends BaseTest {
                 triggered.set(true);
             }
         };
-        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener).detach(ReferenceFactory.class);
+        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener)
+            .detach(EventStrategy.Detachment.REFERENCE);
 
         if (this.sqlgGraph.features().graph().supportsTransactions())
             builder.eventQueue(new EventStrategy.TransactionalEventQueue(this.sqlgGraph));
@@ -321,7 +321,8 @@ public class TestDropStep extends BaseTest {
                 triggered.set(true);
             }
         };
-        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener).detach(ReferenceFactory.class);
+        final EventStrategy.Builder builder = EventStrategy.build().addListener(listener)
+            .detach(EventStrategy.Detachment.REFERENCE);
 
         if (this.sqlgGraph.features().graph().supportsTransactions())
             builder.eventQueue(new EventStrategy.TransactionalEventQueue(this.sqlgGraph));
@@ -1636,7 +1637,8 @@ public class TestDropStep extends BaseTest {
         }
 
         @Override
-        public void vertexPropertyChanged(final Vertex element, final Property oldValue, final Object setValue, final Object... vertexPropertyKeyValues) {
+        public void vertexPropertyChanged(Vertex element, VertexProperty oldValue,
+                                          Object setValue, Object... vertexPropertyKeyValues) {
 
         }
 
