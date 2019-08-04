@@ -855,7 +855,20 @@ public class SqlgUtil {
                 ResultSet rs = statement.executeQuery("SELECT 1 FROM pg_roles WHERE rolname='sqlgReadOnly'");
                 if (rs.next()) {
                     try (Statement s = conn.createStatement()) {
-                        s.execute("REVOKE ALL PRIVILEGES ON SCHEMA public FROM \"sqlgReadOnly\"");
+                        // Revokes all privileges against the public Postgres schema.
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM \"sqlgReadOnly\"");
+                        s.execute("REVOKE USAGE ON SCHEMA public FROM \"sqlgReadOnly\"");
+
+                        // If gui_schema has been created, we must revoke privileges against it as well.
+                        ResultSet rs2 = statement.executeQuery("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'gui_schema'");
+                        if (rs2.next()) {
+                            s.execute("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
+                            s.execute("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
+                            s.execute("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
+                            s.execute("REVOKE USAGE ON SCHEMA gui_schema FROM \"sqlgReadOnly\"");
+                        }
                         s.execute("DROP ROLE \"sqlgReadOnly\"");
                     } catch (SQLException e) {
                         throw new RuntimeException(e);

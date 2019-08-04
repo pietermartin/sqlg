@@ -198,12 +198,12 @@ public class TestPropertyValues extends BaseTest {
     @Test
     public void testValueMapOneObject() {
         loadModern();
-        final Traversal<Vertex, Map<String, Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap("name");
+        final Traversal<Vertex, Map<Object, Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap("name");
         checkColumnsNotPresent(traversal, "age");
         checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, "name");
         Set<String> names = new HashSet<>();
         while (traversal.hasNext()) {
-            Map<String, Object> m = traversal.next();
+            Map<Object, Object> m = traversal.next();
             Assert.assertNotNull(m);
             Assert.assertEquals(1, m.size());
             Assert.assertTrue(m.containsKey("name"));
@@ -222,13 +222,13 @@ public class TestPropertyValues extends BaseTest {
     @Test
     public void testValueMapAllObject() {
         loadModern();
-        final Traversal<Vertex, Map<String, Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap();
+        final Traversal<Vertex, Map<Object, Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap();
         printTraversalForm(traversal);
         checkNoRestrictedProperties(traversal);
         Set<String> names = new HashSet<>();
         Set<Integer> ages = new HashSet<>();
         while (traversal.hasNext()) {
-            Map<String, Object> m = traversal.next();
+            Map<Object, Object> m = traversal.next();
             Assert.assertNotNull(m);
             Assert.assertEquals(2, m.size());
             Assert.assertTrue(m.containsKey("name"));

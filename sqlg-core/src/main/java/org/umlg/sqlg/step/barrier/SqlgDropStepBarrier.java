@@ -7,6 +7,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Mutating;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.Parameters;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.CallbackRegistry;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.Event;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.ListCallbackRegistry;
@@ -32,6 +33,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutatin
     private CallbackRegistry<Event> callbackRegistry;
     private final SqlgGraph sqlgGraph;
     private boolean first = true;
+    private final Parameters parameters = new Parameters();
     private final Set<RecordId> idsToDelete = new HashSet<>();
     private final MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyOutEdgesToDelete = new HashSetValuedHashMap<>();
     private final MultiValuedMap<Pair<EdgeLabel, VertexLabel>, RecordId.ID> foreignKeyInEdgesToDelete = new HashSetValuedHashMap<>();
@@ -42,6 +44,19 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutatin
         super(traversal);
         this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
         this.callbackRegistry = callbackRegistry;
+    }
+
+    /**
+     * This method doesn't do anything as {@code drop()} doesn't take property mutation arguments.
+     */
+    @Override
+    public void configure(final Object... keyValues) {
+        // Do nothing.
+    }
+
+    @Override
+    public Parameters getParameters() {
+        return parameters;
     }
 
     @Override
@@ -181,12 +196,5 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutatin
     public CallbackRegistry<Event> getMutatingCallbackRegistry() {
         if (null == callbackRegistry) callbackRegistry = new ListCallbackRegistry<>();
         return callbackRegistry;
-    }
-
-    /**
-     * This method doesn't do anything as {@code drop()} doesn't take property mutation arguments.
-     */
-    public void addPropertyMutations(final Object... keyValues) {
-        // do nothing
     }
 }

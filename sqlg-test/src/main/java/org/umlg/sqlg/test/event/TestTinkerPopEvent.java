@@ -99,7 +99,7 @@ public class TestTinkerPopEvent extends BaseTest {
         }
 
         @Override
-        public void vertexPropertyChanged(final Vertex element, final Property oldValue, final Object setValue, final Object... vertexPropertyKeyValues) {
+        public void vertexPropertyChanged(Vertex element, VertexProperty oldValue, Object setValue, Object... vertexPropertyKeyValues) {
 
         }
 

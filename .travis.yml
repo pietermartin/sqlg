@@ -1,20 +1,31 @@
-dist: trusty
 sudo: required
+
 services:
   - docker
+
 before_install:
+  # Stops the local instance of Postgres.
   - sudo /etc/init.d/postgresql stop
-  - docker run -d -p 5432:5432 --name sqlg-testdb-postgres $(docker build -q sqlg-testdb-postgres/)
+  
+  # Checks which Docker containers are running for debug purposes.
+  - docker ps
+
+  # Starts the test Postgres server within a Docker container.
+  - cd sqlg-testdb-postgres && ./start.sh
+
+  # Sleeps 30 seconds to allow Postgres database to start.
+  - sleep 30
+
 language: java
+
 jdk:
   - oraclejdk8
-#env:
-#    - MAVEN_OPTS="-Xmx4096m"
-#script: "./run-tests.sh"
+
 script:
+  - cd $TRAVIS_BUILD_DIR
   - sudo rm /etc/mavenrc
-  - export MAVEN_OPTS="-Djava.security.egd=file:/dev/./urandom -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx5012m"
-  - mvn -e -T40 test
+  - export MAVEN_OPTS="-Djava.security.egd=file:/dev/urandom -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx5012m"
+  - mvn -T4 test
 
 notifications:
   email:
