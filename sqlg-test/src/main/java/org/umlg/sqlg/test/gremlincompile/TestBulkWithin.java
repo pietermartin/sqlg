@@ -9,7 +9,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
@@ -438,7 +437,6 @@ public class TestBulkWithin extends BaseTest {
     }
 
     @Test
-    @Ignore
     public void testBulkWithinLocalTime() {
         LocalTime localTime1 = LocalTime.now();
         LocalTime localTime2 = LocalTime.now().minusHours(1);
