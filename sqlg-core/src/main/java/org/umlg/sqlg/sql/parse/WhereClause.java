@@ -135,6 +135,7 @@ public class WhereClause {
         } else if (p.getBiPredicate() instanceof Existence) {
             result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             result += " " + p.getBiPredicate().toString();
+            return result;
         } else if (p.getBiPredicate() instanceof ArrayContains) {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             result += sqlgGraph.getSqlDialect().getArrayContainsQueryText(prefix);
