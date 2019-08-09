@@ -13,8 +13,12 @@ import java.util.Map;
  */
 public class IndexType {
 
+	// GIN index is different from GIN_FULLTEXT since it do not need any configuration property
+	public static final String GIN_INDEX_NAME = "GIN";
+
 	public static final IndexType UNIQUE=new IndexType("UNIQUE");
 	public static final IndexType NON_UNIQUE=new IndexType("NON_UNIQUE");
+	public static final IndexType GIN=new IndexType(GIN_INDEX_NAME);
 
 	public static final String GIN_FULLTEXT="GIN_FULLTEXT";
 	public static final String GIN_CONFIGURATION="config";
@@ -42,7 +46,7 @@ public class IndexType {
 	}
 
 	public boolean isGIN(){
-		return GIN_FULLTEXT.equals(name);
+		return GIN_INDEX_NAME.equals(name) || GIN_FULLTEXT.equals(name);
 	}
 	
 	@Override

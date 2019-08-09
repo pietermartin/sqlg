@@ -6,6 +6,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WherePredicateStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.umlg.sqlg.predicate.ArrayContains;
+import org.umlg.sqlg.predicate.ArrayOverlaps;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
@@ -15,7 +17,9 @@ import org.umlg.sqlg.util.SqlgTraversalUtil;
 import java.util.*;
 
 /**
- * When a Where step uses a FullText predicate, we attach it to the step itself as a special hasContainer
+ * When a Where step uses a FullText, ArrayContains or ArrayOverlaps predicate, we attach it to the step itself as a
+ * special hasContainer
+ *
  * @author jpmoresmau
  *
  */
@@ -59,7 +63,9 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
             	WherePredicateStep<?> wps=(WherePredicateStep<?>)step;
             
 	        	if (wps.getPredicate().isPresent()
-	        		&& wps.getPredicate().get().getBiPredicate() instanceof FullText){
+	        		&& (wps.getPredicate().get().getBiPredicate() instanceof FullText
+						|| wps.getPredicate().get().getBiPredicate() instanceof ArrayContains
+						|| wps.getPredicate().get().getBiPredicate() instanceof ArrayOverlaps)){
 	        		Object referTo=previous;
 	        		if (wps.getStartKey().isPresent()){
 	        			referTo=stepsByLabel.get(wps.getStartKey().get());
