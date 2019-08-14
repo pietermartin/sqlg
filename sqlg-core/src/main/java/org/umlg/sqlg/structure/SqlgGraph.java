@@ -206,11 +206,6 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
         method = "g_io_writeXkryoX",
         reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
-
-
-
-
-
 public class SqlgGraph implements Graph {
 
     public static final String DATA_SOURCE = "sqlg.dataSource";
