@@ -21,6 +21,7 @@ import org.umlg.sqlg.step.SqlgComputerAwareStep;
 import org.umlg.sqlg.step.SqlgExpandableStepIterator;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -44,6 +45,8 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
     private SqlgRangeHolder sqlgRangeHolder;
     private long rangeCount = 0;
 
+    private String loopName = null;
+
     @SuppressWarnings("unchecked")
     public SqlgRepeatStepBarrier(final Traversal.Admin traversal, RepeatStep<S> repeatStep) {
         super(traversal);
@@ -52,9 +55,20 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         this.emitTraversal = repeatStep.getEmitTraversal();
         this.untilFirst = repeatStep.untilFirst;
         this.emitFirst = repeatStep.emitFirst;
+        try {
+            Field f = repeatStep.getClass().getDeclaredField("loopName");
+            f.setAccessible(true);
+            this.loopName = (String)f.get(repeatStep);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
         List<RepeatStep.RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfAssignableClass(RepeatStep.RepeatEndStep.class, this.repeatTraversal);
         Preconditions.checkState(repeatEndSteps.size() == 1, "Only handling one RepeatEndStep! Found " + repeatEndSteps.size());
-        TraversalHelper.replaceStep(repeatEndSteps.get(0), new SqlgRepeatStepBarrier.SqlgRepeatEndStepBarrier(this.repeatTraversal), this.repeatTraversal);
+        SqlgRepeatEndStepBarrier sqlgRepeatEndStepBarrier = new SqlgRepeatEndStepBarrier(this.repeatTraversal);
+        TraversalHelper.replaceStep(repeatEndSteps.get(0), sqlgRepeatEndStepBarrier, this.repeatTraversal);
+//        sqlgRepeatEndStepBarrier.setId(repeatEndSteps.get(0).getId());
     }
 
     public void setSqlgRangeHolder(SqlgRangeHolder sqlgRangeHolder) {
@@ -215,6 +229,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                     while (this.starts.hasNext()) {
                         foundSomething = true;
                         Traverser.Admin<S> cachedStart = this.starts.next();
+                        cachedStart.initialiseLoops(this.getId(), this.loopName);
                         if (doUntil(cachedStart, true)) {
                             cachedStart.resetLoops();
                             this.toReturn.add(IteratorUtils.of(cachedStart));
@@ -298,7 +313,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                         while (this.starts.hasNext()) {
                             foundSomething = true;
                             Traverser.Admin<S> start = starts.next();
-                            start.initialiseLoops(this.getId(), null);
+                            start.initialiseLoops(SqlgRepeatStepBarrier.this.getId(), SqlgRepeatStepBarrier.this.loopName);
                             start.incrLoops();
                             repeatStep.addStart(start);
                             if (repeatStep.doEmit(start, false)) {
@@ -315,7 +330,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
                     while (this.starts.hasNext()) {
                         foundSomething = true;
                         Traverser.Admin<S> cachedStart = this.starts.next();
-                        cachedStart.initialiseLoops(this.getId(), null);
+                        cachedStart.initialiseLoops(SqlgRepeatStepBarrier.this.getId(), SqlgRepeatStepBarrier.this.loopName);
                         cachedStart.incrLoops();
                         if (repeatStep.doUntil(cachedStart, false)) {
                             cachedStart.resetLoops();
@@ -395,7 +410,7 @@ public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implem
         while (starts.hasNext()) {
             foundSomething = true;
             Traverser.Admin<S> cachedStart = starts.next();
-            cachedStart.initialiseLoops(this.getId(), null);
+            cachedStart.initialiseLoops(this.getId(), SqlgRepeatStepBarrier.this.loopName);
             cachedStart.incrLoops();
             List<Object> startObjects = cachedStart.path().objects();
             StringBuilder recordIdConcatenated = new StringBuilder();

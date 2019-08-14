@@ -19,18 +19,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
-import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
-import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.util.*;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
-import org.umlg.sqlg.predicate.ArrayContains;
-import org.umlg.sqlg.predicate.ArrayOverlaps;
-import org.umlg.sqlg.predicate.Existence;
-import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
+import org.umlg.sqlg.predicate.*;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
@@ -43,6 +37,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
@@ -256,16 +251,27 @@ public abstract class BaseStrategy {
                 } else {
                     this.currentReplacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
                 }
+                TraversalRing traversalRing;
+                try {
+                    Field f = propertyMapStep.getClass().getDeclaredField("traversalRing");
+                    f.setAccessible(true);
+                    traversalRing = (TraversalRing)f.get(propertyMapStep);
+                } catch (NoSuchFieldException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
                 SqlgPropertyMapStep<?, ?> sqlgPropertiesStep = new SqlgPropertyMapStep<>(
                         traversal,
-                        propertyMapStep.isIncludeTokens(),
+                        propertyMapStep.getIncludedTokens(),
                         propertyMapStep.getReturnType(),
+                        traversalRing,
                         propertyMapStep.getPropertyKeys());
 
                 for (String label : step.getLabels()) {
                     sqlgPropertiesStep.addLabel(label);
                 }
-                sqlgPropertiesStep.setAppliesToLabels(this.currentReplacedStep.getLabels());
+//                sqlgPropertiesStep.setAppliesToLabels(this.currentReplacedStep.getLabels());
                 //noinspection unchecked
                 TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, traversal);
             }
@@ -1229,8 +1235,12 @@ public abstract class BaseStrategy {
                 List<Step> repeatInternalSteps = admin.getSteps();
                 collectedRepeatInternalSteps.addAll(repeatInternalSteps);
             }
-            return !collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
-                    .allMatch((s) -> isReplaceableStep(s.getClass()));
+            if (collectedRepeatInternalSteps.stream().map(s -> s.getClass()).anyMatch(c -> c.equals(RepeatStep.class))) {
+                return true;
+            } else {
+                return !collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
+                        .allMatch((s) -> isReplaceableStep(s.getClass()));
+            }
         } else {
             return true;
         }

@@ -175,6 +175,10 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
         reason = "Takes too long")
 @OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
+        method = "g_VX3X_repeatXbothX_createdXX_untilXloops_is_40XXemit_repeatXin_knowsXX_emit_loopsXisX1Xdedup_values",
+        reason = "Takes too long")
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
