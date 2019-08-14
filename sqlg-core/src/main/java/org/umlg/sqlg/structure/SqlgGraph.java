@@ -187,6 +187,30 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
+
+
+//IOTest that need to register the SqlgIORegistry
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_write_withXwrite_gryoX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_write_withXwriter_graphsonX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_writeXjsonX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_writeXkryoX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+
+
+
+
+
 public class SqlgGraph implements Graph {
 
     public static final String DATA_SOURCE = "sqlg.dataSource";

@@ -2,6 +2,9 @@ package org.umlg.sqlg.test.io;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.TestHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.IO;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.GraphWriter;
@@ -10,11 +13,14 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SqlgIoRegistryV3;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
@@ -22,9 +28,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/06/13
+ * Date: 2017/06/13
  */
 public class TestIo extends BaseTest {
 
@@ -38,9 +47,81 @@ public class TestIo extends BaseTest {
 
     private Function<Graph, GraphWriter> writerMaker;
 
+    //Test are copied from ProcessStandardSuite. They fail there as the registery is not registered.
+    @Test
+    public void g_io_write_withXwrite_gryoX() throws IOException {
+        loadModern();
+        final String fileToWrite = TestHelper.generateTempFile(WriteTest.class, "tinkerpop-modern-v3d0", ".kryo").getAbsolutePath().replace('\\', '/');
+        final File f = new File(fileToWrite);
+        assertThat(f.length() == 0, is(true));
+        final Traversal<Object, Object> traversal = this.sqlgGraph.traversal().io(fileToWrite)
+                .with(IO.writer, IO.gryo)
+                .with(IO.registry, SqlgIoRegistryV3.instance())
+                .write();
+        printTraversalForm(traversal);
+        traversal.iterate();
+        assertThat(f.length() > 0, is(true));
+    }
+
+    @Test
+    public void g_io_write_withXwriter_graphsonX() throws IOException {
+        loadModern();
+        final String fileToWrite = TestHelper.generateTempFile(WriteTest.class, "tinkerpop-modern-v3d0", ".json").getAbsolutePath().replace('\\', '/');
+
+        final File f = new File(fileToWrite);
+        assertThat(f.length() == 0, is(true));
+
+        final Traversal<Object, Object> traversal = this.sqlgGraph.traversal().io(fileToWrite)
+                .with(IO.writer, IO.graphson)
+                .with(IO.registry, SqlgIoRegistryV3.instance())
+                .write();
+        printTraversalForm(traversal);
+        traversal.iterate();
+
+        assertThat(f.length() > 0, is(true));
+    }
+
+    @Test
+    public void g_io_writeXjsonX() throws IOException {
+        loadModern();
+        final String fileToWrite = TestHelper.generateTempFile(WriteTest.class,"tinkerpop-modern-v3d0", ".json").getAbsolutePath().replace('\\', '/');
+
+        final File f = new File(fileToWrite);
+        assertThat(f.length() == 0, is(true));
+
+        final Traversal<Object,Object> traversal =  this.sqlgGraph.traversal()
+                .io(fileToWrite)
+                .with(IO.writer, IO.graphson)
+                .with(IO.registry, SqlgIoRegistryV3.instance())
+                .write();
+        printTraversalForm(traversal);
+        traversal.iterate();
+
+        assertThat(f.length() > 0, is(true));
+    }
+
+
+    @Test
+    public void g_io_writeXkryoX() throws IOException {
+        loadModern();
+        final String fileToWrite = TestHelper.generateTempFile(WriteTest.class, "tinkerpop-modern-v3d0", ".kryo").getAbsolutePath().replace('\\', '/');
+
+        final File f = new File(fileToWrite);
+        assertThat(f.length() == 0, is(true));
+
+        final Traversal<Object,Object> traversal = this.sqlgGraph.traversal()
+                .io(fileToWrite)
+                .with(IO.writer, IO.gryo)
+                .with(IO.registry, SqlgIoRegistryV3.instance())
+                .write();
+        printTraversalForm(traversal);
+        traversal.iterate();
+
+        assertThat(f.length() > 0, is(true));
+    }
+
     @Test
     public void shouldReadWriteVertexWithBOTHEdges() throws Exception {
-
         this.ioType = "graphson-v1-embedded";
         this.assertViaDirectEquality = true;
         this.assertEdgesAtSameTimeAsVertex = false;
