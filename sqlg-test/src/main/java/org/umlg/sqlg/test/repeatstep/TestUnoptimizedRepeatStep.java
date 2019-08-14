@@ -28,21 +28,90 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static org.junit.Assert.assertFalse;
+
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/06/06
  */
 public class TestUnoptimizedRepeatStep extends BaseTest {
 
-    @Test
-    public void testDot() {
-        this.sqlgGraph.addVertex(T.label, "R_NTXSAM.xml_lag.Interface");
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("R_NTXSAM.xml_lag.Interface").toList();
-        Assert.assertEquals(1, vertices.size());
+//    @Test
+    //Takes very long need to investigate
+    public void g_VX3X_repeatXbothX_createdXX_untilXloops_is_40XXemit_repeatXin_knowsXX_emit_loopsXisX1Xdedup_values() {
+        loadModern();
+        Object id = convertToVertexId("lop");
+//        final Traversal<Vertex, String> traversal =  this.sqlgGraph.traversal().V(id)
+//                .repeat(__.both("created"))
+//                .until(loops().is(40))
+//                .emit(
+//                        __.repeat(__.in("knows"))
+//                                .emit(loops().is(1)))
+//                .dedup().values("name");
+
+
+        final Traversal<Vertex, String> traversal =  this.sqlgGraph.traversal().V(id)
+                .repeat(__.both("created"))
+                .times(40)
+                .dedup().values("name");
+
+        printTraversalForm(traversal);
+        checkResults(Arrays.asList("josh", "ripple", "lop"), traversal);
+        assertFalse(traversal.hasNext());
     }
 
-//    @Test
+    //    @Test
+    public void testRepeatStepPerformance() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 1000; i++) {
+            Vertex a;
+            if (i % 100 == 0) {
+                a = this.sqlgGraph.addVertex(T.label, "A", "hubSite", true);
+            } else {
+                a = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+            }
+            for (int j = 0; j < 10; j++) {
+                Vertex b = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+                a.addEdge("link", b);
+                for (int k = 0; k < 10; k++) {
+                    Vertex c;
+                    if (k == 5) {
+                        c = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+                    } else {
+                        c = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
+                    }
+                    b.addEdge("link", c);
+
+                    for (int l = 0; l < 10; l++) {
+                        Vertex d = this.sqlgGraph.addVertex(T.label, "A", "hubSite", true);
+                        c.addEdge("link", d);
+                    }
+                }
+            }
+        }
+        this.sqlgGraph.tx().commit();
+
+        System.out.println("===========================");
+
+        StopWatch stopWatch = new StopWatch();
+        for (int i = 0; i < 1000; i++) {
+            stopWatch.start();
+            List<Path> vertices = this.sqlgGraph.traversal()
+                    .V().has("hubSite", true)
+                    .repeat(__.out())
+                    .until(__.or(__.loops().is(P.gt(3)), __.has("hubSite", true)))
+//                    .until(__.has("hubSite", true))
+                    .path()
+                    .toList();
+            Assert.assertEquals(10000, vertices.size());
+            stopWatch.stop();
+            System.out.println(stopWatch.toString());
+            stopWatch.reset();
+        }
+    }
+
+
+    //    @Test
     public void testRepeatUtilFirstPerformance() {
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10_000; i++) {
@@ -427,56 +496,6 @@ public class TestUnoptimizedRepeatStep extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertTrue(vertices.contains(b1) || vertices.contains(b2));
 
-    }
-
-    //    @Test
-    public void testRepeatStepPerformance() {
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 1000; i++) {
-            Vertex a;
-            if (i % 100 == 0) {
-                a = this.sqlgGraph.addVertex(T.label, "A", "hubSite", true);
-            } else {
-                a = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
-            }
-            for (int j = 0; j < 10; j++) {
-                Vertex b = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
-                a.addEdge("link", b);
-                for (int k = 0; k < 10; k++) {
-                    Vertex c;
-                    if (k == 5) {
-                        c = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
-                    } else {
-                        c = this.sqlgGraph.addVertex(T.label, "A", "hubSite", false);
-                    }
-                    b.addEdge("link", c);
-
-                    for (int l = 0; l < 10; l++) {
-                        Vertex d = this.sqlgGraph.addVertex(T.label, "A", "hubSite", true);
-                        c.addEdge("link", d);
-                    }
-                }
-            }
-        }
-        this.sqlgGraph.tx().commit();
-
-        System.out.println("===========================");
-
-        StopWatch stopWatch = new StopWatch();
-        for (int i = 0; i < 1000; i++) {
-            stopWatch.start();
-            List<Path> vertices = this.sqlgGraph.traversal()
-                    .V().has("hubSite", true)
-                    .repeat(__.out())
-                    .until(__.or(__.loops().is(P.gt(3)), __.has("hubSite", true)))
-//                    .until(__.has("hubSite", true))
-                    .path()
-                    .toList();
-            Assert.assertEquals(10000, vertices.size());
-            stopWatch.stop();
-            System.out.println(stopWatch.toString());
-            stopWatch.reset();
-        }
     }
 
     @Test
