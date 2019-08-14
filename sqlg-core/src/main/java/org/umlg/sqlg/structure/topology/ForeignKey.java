@@ -39,8 +39,8 @@ public class ForeignKey {
     }
 
     public void add(String label, String identifier, String suffix) {
-        this.compositeKeys.add(label + identifier + suffix);
-        this.concatenatedIdentifiers += label + identifier + suffix;
+        this.compositeKeys.add(label + "." + identifier + suffix);
+        this.concatenatedIdentifiers += label + "." + identifier + suffix;
         Direction dir = suffix.equals(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
         int indexOfDot = label.indexOf(".");
         String foreignKeySchema = label.substring(0, indexOfDot);
@@ -49,15 +49,9 @@ public class ForeignKey {
         if (this.direction == null) {
             //Called for the first add.
             this.direction = dir;
-//            String[] split = key.split("\\.");
-//            String foreignKeySchema = split[0];
-//            String foreignKeyTable = split[1];
             this.schemaTable = SchemaTable.of(foreignKeySchema, foreignKeyTable);
         } else {
             Preconditions.checkState(this.direction == dir);
-//            String[] split = key.split("\\.");
-//            String foreignKeySchema = split[0];
-//            String foreignKeyTable = split[1];
             Preconditions.checkState(this.schemaTable.getSchema().equals(foreignKeySchema));
             Preconditions.checkState(this.schemaTable.getTable().equals(foreignKeyTable));
         }
