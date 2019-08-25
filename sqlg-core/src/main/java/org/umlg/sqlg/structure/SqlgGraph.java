@@ -251,6 +251,8 @@ public class SqlgGraph implements Graph {
                                 new SqlgDropStepStrategy(),
                                 new SqlgRestrictPropertiesStrategy(),
                                 new SqlgAddVertexStartStepStrategy(),
+                                new SqlgUnionStepStrategy(),
+                                new SqlgStartStepStrategy(),
 //                                new SqlgAddEdgeStartStepStrategy(),
                                 TopologyStrategy.build().create())
                         .removeStrategies(

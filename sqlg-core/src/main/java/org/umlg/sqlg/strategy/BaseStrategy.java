@@ -28,11 +28,9 @@ import org.umlg.sqlg.predicate.*;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
-import org.umlg.sqlg.step.SqlgGraphStep;
-import org.umlg.sqlg.step.SqlgPropertyMapStep;
-import org.umlg.sqlg.step.SqlgStep;
-import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgUnionStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -310,20 +308,6 @@ public abstract class BaseStrategy {
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
-
-//        stepIterator.previous();
-//        Step s4;
-//        Step previous = null;
-//        if (stepIterator.hasPrevious()) {
-//            previous = stepIterator.previous();
-//            stepIterator.next();
-//            s4 = stepIterator.next();
-//        } else {
-//            s4 = stepIterator.next();
-//
-//        }
-//        Preconditions.checkState(s4 == step);
-
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
                 step,
@@ -349,10 +333,6 @@ public abstract class BaseStrategy {
         }
         pathCount.increment();
         this.currentTreeNodeNode = treeNodeNode;
-//        if (previous instanceof SelectOneStep) {
-//            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + "x");
-//            TraversalHelper.insertAfterStep(new SelectOneStep<>(this.traversal, Pop.last, "x"), previous, this.traversal);
-//        }
     }
 
     private void handleRepeatStep(RepeatStep<?> repeatStep, MutableInt pathCount) {
@@ -888,9 +868,9 @@ public abstract class BaseStrategy {
         }
     }
 
-    static boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal) {
-        if (traversal.getParent() != null && traversal.getParent() instanceof SqlgLocalStepBarrier) {
-            SqlgLocalStepBarrier sqlgLocalStepBarrier = (SqlgLocalStepBarrier) traversal.getParent();
+    public static boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal) {
+        if (traversal.getParent() != null && (traversal.getParent() instanceof SqlgLocalStepBarrier || traversal.getParent() instanceof SqlgUnionStepBarrier)) {
+            SqlgAbstractStep sqlgLocalStepBarrier = (SqlgAbstractStep) traversal.getParent();
             if (precedesPathOrTreeStep(sqlgLocalStepBarrier.getTraversal())) {
                 return true;
             }
