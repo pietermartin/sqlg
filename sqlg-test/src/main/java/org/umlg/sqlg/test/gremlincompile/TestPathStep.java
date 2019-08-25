@@ -25,6 +25,31 @@ import java.util.Set;
 public class TestPathStep extends BaseTest {
 
     @Test
+    public void testPathFrom() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        a1.addEdge("ab", b1);
+        b1.addEdge("bc", c1);
+        this.sqlgGraph.tx().commit();
+
+        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").out("ab").as("b").out("bc").path().toList();
+        System.out.println(paths);
+
+        paths = this.sqlgGraph.traversal().V().hasLabel("A").out("ab").as("b").out("bc").path().from("b").toList();
+        System.out.println(paths);
+
+        paths = this.sqlgGraph.traversal()
+                .V().hasLabel("A").as("a")
+                .out("ab").select("a").limit(1).as("start")
+                .path().from("start").toList();
+        System.out.println(paths);
+        Assert.assertEquals(1, paths.size());
+        Assert.assertEquals(1, paths.get(0).size());
+
+    }
+
+    @Test
     public void g_V_hasXlabel_personX_asXaX_localXoutXcreatedX_asXbXX_selectXa_bX_byXnameX_by() {
         Graph graph = this.sqlgGraph;
         loadModern(this.sqlgGraph);
