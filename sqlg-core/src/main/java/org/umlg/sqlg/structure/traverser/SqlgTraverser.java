@@ -10,9 +10,7 @@ import java.util.HashSet;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/05/01
  */
-public class SqlgTraverser<T> extends B_LP_NL_O_P_S_SE_SL_Traverser<T> {
-//public class SqlgTraverser<T> extends B_LP_O_P_S_SE_SL_Traverser<T> {
-public class SqlgTraverser<T> extends B_LP_O_P_S_SE_SL_Traverser<T> implements ISqlgTraverser {
+public class SqlgTraverser<T> extends B_LP_NL_O_P_S_SE_SL_Traverser<T> implements ISqlgTraverser {
 
     private long startElementIndex;
     private final boolean requiresSack;
