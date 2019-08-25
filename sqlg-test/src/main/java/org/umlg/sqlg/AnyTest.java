@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptional;
+import org.umlg.sqlg.test.union.TestUnion;
 
 /**
  * Date: 2014/07/16
@@ -10,11 +10,7 @@ import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptional;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLocalVertexStepOptional.class,
-//        TestGremlinCompileWithAs.class,
-//        TestDropStep.class,
-//        TestReducing.class,
-//        TestReducingVertexStep.class
+        TestUnion.class,
 })
 public class AnyTest {
 }

@@ -1,5 +1,12 @@
 ##2.0.2
 
+*Fix bug [#359](https://github.com/pietermartin/sqlg/issues/359). The labels were not being handled properly. 
+`UnionStep` is now optimized by `SqlgUnionStepBarrier` and `Startstep` with `SqlgStartStepBarrier`.
+
+* Added support for `postgresql` array operators via [PR](https://github.com/pietermartin/sqlg/pull/360)
+
+*Upgrade to TinkerPop 3.4.1, support added for docker/travis [#358](https://github.com/pietermartin/sqlg/pull/358)
+
 *Fix bug [#344](https://github.com/pietermartin/sqlg/issues/344). Fix generation of `WHERE` clause. 
 
 *Fix bug [#339](https://github.com/pietermartin/sqlg/issues/339). Fix the in out vertices being incorrectly set on 

@@ -58,7 +58,7 @@ public class Topology {
     /**
      * Used to ensure that only one thread can modify the topology. I.e. execute schema change statements on the db.
      * The primary function of this lock is tho prevent the database from dead locking as conflicting threads modify the db.
-     *
+     * <p>
      * The locking strategy is as follows.
      * Only one thread my modify the db schema at a time.
      * Active write threads blocks other threads from doing schema modifications. I.e. taking the topologySqlWriteLock's lock.
@@ -236,7 +236,7 @@ public class Topology {
     /**
      * vertex's shard_count property.
      */
-    public static final String SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT= "shardCount";
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT = "shardCount";
 
 
     /**
@@ -250,7 +250,7 @@ public class Topology {
     /**
      * Edge's shard_count property.
      */
-    public static final String SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT= "shardCount";
+    public static final String SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT = "shardCount";
 
 
     /**
@@ -1383,7 +1383,7 @@ public class Topology {
                 Preconditions.checkState(logs.size() == 1, "There must be one and only be one log, found %d", logs.size());
                 LocalDateTime timestamp = logs.get(0).value("timestamp");
                 Preconditions.checkState(Duration.between(notifyTimestamp, timestamp).toNanos() < 1000,
-						"notify log's timestamp does not match.");
+                        "notify log's timestamp does not match.");
                 int backEndPid = logs.get(0).value("pid");
                 Preconditions.checkState(backEndPid == pid, "notify pids do not match.");
                 ObjectNode log = logs.get(0).value("log");
@@ -1938,7 +1938,7 @@ public class Topology {
         } else {
             foreignKey = new ForeignKey();
             for (String identifier : vertexLabel.getIdentifiers()) {
-                foreignKey.add(vertexLabel.getFullName() + "." + identifier + OUT_VERTEX_COLUMN_END);
+                foreignKey.add(vertexLabel.getFullName(), identifier, OUT_VERTEX_COLUMN_END);
             }
         }
         for (EdgeLabel lbl : vertexLabel.getOutEdgeLabels().values()) {
@@ -1953,7 +1953,7 @@ public class Topology {
         } else {
             foreignKey = new ForeignKey();
             for (String identifier : vertexLabel.getIdentifiers()) {
-                foreignKey.add(vertexLabel.getFullName() + "." + identifier + IN_VERTEX_COLUMN_END);
+                foreignKey.add(vertexLabel.getFullName(), identifier, IN_VERTEX_COLUMN_END);
             }
         }
         for (EdgeLabel lbl : vertexLabel.getInEdgeLabels().values()) {

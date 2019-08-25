@@ -3,7 +3,9 @@ package org.umlg.sqlg.step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalRing;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -18,20 +20,17 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
 
     protected final String[] propertyKeys;
     protected final PropertyType returnType;
-    protected final boolean includeTokens;
+    protected final int tokens;
     protected Traversal.Admin<Element, ? extends Property> propertyTraversal;
-    private Set<String> appliesToLabels;
+    private TraversalRing<K, E> traversalRing;
 
-    public SqlgPropertyMapStep(final Traversal.Admin traversal, final boolean includeTokens, final PropertyType propertyType, final String... propertyKeys) {
+    public SqlgPropertyMapStep(final Traversal.Admin traversal, final int tokens, final PropertyType propertyType,final TraversalRing<K, E> traversalRing,  final String... propertyKeys) {
         super(traversal);
-        this.includeTokens = includeTokens;
+        this.tokens = tokens;
         this.propertyKeys = propertyKeys;
         this.returnType = propertyType;
         this.propertyTraversal = null;
-    }
-
-    public void setAppliesToLabels(Set<String> appliesToLabels) {
-        this.appliesToLabels = appliesToLabels;
+        this.traversalRing = traversalRing;
     }
 
     @Override
@@ -54,16 +53,26 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
             } else
                 map.put(property.key(), this.returnType == PropertyType.VALUE ? property.value() : property);
         }
-        if (this.returnType == PropertyType.VALUE && this.includeTokens) {
-            // add tokens, as string keys
+        if (this.returnType == PropertyType.VALUE) {
+            if (includeToken(WithOptions.ids)) map.put(T.id, element.id());
             if (element instanceof VertexProperty) {
-                map.put(T.id, element.id());
-                map.put(T.key, ((VertexProperty<?>) element).key());
-                map.put(T.value, ((VertexProperty<?>) element).value());
+                if (includeToken(WithOptions.keys)) {
+                    map.put(T.key, ((VertexProperty<?>) element).key());
+                }
+                if (includeToken(WithOptions.values)) {
+                    map.put(T.value, ((VertexProperty<?>) element).value());
+                }
             } else {
-                map.put(T.id, element.id());
-                map.put(T.label, element.label());
+                if (includeToken(WithOptions.labels)) {
+                    map.put(T.label, element.label());
+                }
             }
+        }
+        if (!traversalRing.isEmpty()) {
+            for (final Object key : map.keySet()) {
+                map.compute(key, (k, v) -> TraversalUtil.applyNullable(v, (Traversal.Admin) this.traversalRing.next()));
+            }
+            this.traversalRing.reset();
         }
         return (Map) map;
     }
@@ -85,10 +94,6 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
         return propertyKeys;
     }
 
-    public boolean isIncludeTokens() {
-        return includeTokens;
-    }
-
     public String toString() {
         return null != this.propertyTraversal ?
                 StringFactory.stepString(this, this.propertyTraversal, this.returnType.name().toLowerCase()) :
@@ -96,8 +101,8 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
     }
 
     @Override
-    public SqlgPropertyMapStep<K,E> clone() {
-        final SqlgPropertyMapStep<K,E> clone = (SqlgPropertyMapStep<K,E>) super.clone();
+    public SqlgPropertyMapStep<K, E> clone() {
+        final SqlgPropertyMapStep<K, E> clone = (SqlgPropertyMapStep<K, E>) super.clone();
         if (null != this.propertyTraversal)
             clone.propertyTraversal = this.propertyTraversal.clone();
         return clone;
@@ -105,7 +110,7 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
 
     @Override
     public int hashCode() {
-        int result = super.hashCode() ^ this.returnType.hashCode() ^ Boolean.hashCode(this.includeTokens);
+        int result = super.hashCode() ^ this.returnType.hashCode() ^ Integer.hashCode(this.tokens);
         if (null == this.propertyTraversal) {
             for (final String propertyKey : this.propertyKeys) {
                 result ^= propertyKey.hashCode();
@@ -126,5 +131,9 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
     @Override
     public Set<TraverserRequirement> getRequirements() {
         return this.getSelfAndChildRequirements(TraverserRequirement.OBJECT);
+    }
+
+    private boolean includeToken(final int token) {
+        return 0 != (this.tokens & token);
     }
 }

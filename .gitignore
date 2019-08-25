@@ -9,6 +9,7 @@ pom.xml.next
 release.properties
 /.idea
 *.iml
+test-case-data
 src/test/db/
 /sqlg-hsqldb-parent/sqlg-hsqldb/src/test/db/
 /sqlg-benchmark-hsqldb/src/test/db/

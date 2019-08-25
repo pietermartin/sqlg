@@ -634,7 +634,7 @@ public class EdgeLabel extends AbstractLabel {
                     ForeignKey foreignKey = new ForeignKey();
                     for (String identifier : vertexLabel.getIdentifiers()) {
                         if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                            foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                            foreignKey.add(vertexLabel.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
                         }
                     }
                     result.add(foreignKey);
@@ -649,7 +649,7 @@ public class EdgeLabel extends AbstractLabel {
                     ForeignKey foreignKey = new ForeignKey();
                     for (String identifier : vertexLabel.getIdentifiers()) {
                         if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                            foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                            foreignKey.add(vertexLabel.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
                         }
 
                     }
@@ -672,7 +672,7 @@ public class EdgeLabel extends AbstractLabel {
                         ForeignKey foreignKey = new ForeignKey();
                         for (String identifier : vertexLabel.getIdentifiers()) {
                             if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                                foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                                foreignKey.add(vertexLabel.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
                             }
                         }
                         result.add(foreignKey);
@@ -687,7 +687,7 @@ public class EdgeLabel extends AbstractLabel {
                         ForeignKey foreignKey = new ForeignKey();
                         for (String identifier : vertexLabel.getIdentifiers()) {
                             if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                                foreignKey.add(vertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                                foreignKey.add(vertexLabel.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
                             }
                         }
                         result.add(foreignKey);

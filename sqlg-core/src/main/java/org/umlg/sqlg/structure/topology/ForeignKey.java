@@ -32,28 +32,26 @@ public class ForeignKey {
         this.compositeKeys.add(key);
         this.concatenatedIdentifiers += key;
         this.direction = key.endsWith(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
-        String[] split = key.split("\\.");
-        String foreignKeySchema = split[0];
-        String foreignKeyTable = split[1];
+        int indexOfDot = key.indexOf(".");
+        String foreignKeySchema = key.substring(0, indexOfDot);
+        String foreignKeyTable = key.substring(indexOfDot + 1);
         this.schemaTable = SchemaTable.of(foreignKeySchema, foreignKeyTable);
     }
 
-    public void add(String key) {
-        this.compositeKeys.add(key);
-        this.concatenatedIdentifiers += key;
-        Direction dir = key.endsWith(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
+    public void add(String label, String identifier, String suffix) {
+        this.compositeKeys.add(label + "." + identifier + suffix);
+        this.concatenatedIdentifiers += label + "." + identifier + suffix;
+        Direction dir = suffix.equals(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
+        int indexOfDot = label.indexOf(".");
+        String foreignKeySchema = label.substring(0, indexOfDot);
+        String foreignKeyTable = label.substring(indexOfDot + 1);
+        this.schemaTable = SchemaTable.of(foreignKeySchema, foreignKeyTable);
         if (this.direction == null) {
             //Called for the first add.
             this.direction = dir;
-            String[] split = key.split("\\.");
-            String foreignKeySchema = split[0];
-            String foreignKeyTable = split[1];
             this.schemaTable = SchemaTable.of(foreignKeySchema, foreignKeyTable);
         } else {
             Preconditions.checkState(this.direction == dir);
-            String[] split = key.split("\\.");
-            String foreignKeySchema = split[0];
-            String foreignKeyTable = split[1];
             Preconditions.checkState(this.schemaTable.getSchema().equals(foreignKeySchema));
             Preconditions.checkState(this.schemaTable.getTable().equals(foreignKeyTable));
         }

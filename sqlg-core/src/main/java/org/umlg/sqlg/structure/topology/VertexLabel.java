@@ -308,7 +308,7 @@ public class VertexLabel extends AbstractLabel {
      * @param edgeLabelName The EdgeLabel's label's name.
      * @param inVertexLabel The edge's in VertexLabel.
      * @param properties    The EdgeLabel's properties.
-     * @param identifiers The EdgeLabel's identifiers.
+     * @param identifiers   The EdgeLabel's identifiers.
      * @return The EdgeLabel
      */
     public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
@@ -402,7 +402,7 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-//    @Override
+    //    @Override
     public void ensurePropertiesExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
@@ -557,7 +557,7 @@ public class VertexLabel extends AbstractLabel {
                 } else {
                     foreignKey = new ForeignKey();
                     for (String identifier : this.getIdentifiers()) {
-                        foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                        foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
                     }
                 }
                 this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
@@ -579,7 +579,7 @@ public class VertexLabel extends AbstractLabel {
                 } else {
                     foreignKey = new ForeignKey();
                     for (String identifier : this.getIdentifiers()) {
-                        foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                        foreignKey.add(this.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
                     }
                 }
                 this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
@@ -822,7 +822,7 @@ public class VertexLabel extends AbstractLabel {
                         for (String identifier : this.getIdentifiers()) {
                             if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
                                 //The distribution column needs to be ignored as its a regular property and not a __I or __O property
-                                foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                                foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
                             }
                         }
                     }
@@ -851,7 +851,7 @@ public class VertexLabel extends AbstractLabel {
                         for (String identifier : this.getIdentifiers()) {
                             if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
                                 //The distribution column needs to be ignored as its a regular property and not a __I or __O property
-                                foreignKey.add(this.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END);
+                                foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
                             }
                         }
                     }
@@ -905,7 +905,7 @@ public class VertexLabel extends AbstractLabel {
                             for (String identifier : this.getIdentifiers()) {
                                 if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
                                     //The distribution column needs to be ignored as its a regular property and not a __I or __O property
-                                    foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                                    foreignKey.add(this.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
                                 }
                             }
                         }
@@ -931,7 +931,7 @@ public class VertexLabel extends AbstractLabel {
                         } else {
                             foreignKey = new ForeignKey();
                             for (String identifier : this.getIdentifiers()) {
-                                foreignKey.add(this.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END);
+                                foreignKey.add(this.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
                             }
                         }
                         this.getSchema().getTopology().removeFromEdgeForeignKeyCache(

@@ -175,6 +175,10 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
         reason = "Takes too long")
 @OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
+        method = "g_VX3X_repeatXbothX_createdXX_untilXloops_is_40XXemit_repeatXin_knowsXX_emit_loopsXisX1Xdedup_values",
+        reason = "Takes too long")
+@OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
@@ -183,6 +187,25 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
+
+
+//IOTest that need to register the SqlgIORegistry
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_write_withXwrite_gryoX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_write_withXwriter_graphsonX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_writeXjsonX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
+        method = "g_io_writeXkryoX",
+        reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
 public class SqlgGraph implements Graph {
 
     public static final String DATA_SOURCE = "sqlg.dataSource";
@@ -228,6 +251,8 @@ public class SqlgGraph implements Graph {
                                 new SqlgDropStepStrategy(),
                                 new SqlgRestrictPropertiesStrategy(),
                                 new SqlgAddVertexStartStepStrategy(),
+                                new SqlgUnionStepStrategy(),
+                                new SqlgStartStepStrategy(),
 //                                new SqlgAddEdgeStartStepStrategy(),
                                 TopologyStrategy.build().create())
                         .removeStrategies(

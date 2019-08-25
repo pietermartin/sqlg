@@ -9,6 +9,8 @@ import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.predicate.ArrayContains;
+import org.umlg.sqlg.predicate.ArrayOverlaps;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -625,6 +627,14 @@ public interface SqlDialect {
      */
     default String getFullTextQueryText(FullText fullText, String column) {
         throw new UnsupportedOperationException("FullText search is not supported on this database");
+    }
+
+    default String getArrayContainsQueryText(String column) {
+        throw new UnsupportedOperationException("Array Contains is not supported on this database");
+    }
+
+    default String getArrayOverlapsQueryText(String column) {
+        throw new UnsupportedOperationException("Array Overlaps is not supported on this database");
     }
 
     default boolean schemaExists(DatabaseMetaData metadata, String schema) throws SQLException {
