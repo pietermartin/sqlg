@@ -2,9 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileArrayContains;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileArrayOverlaps;
-import org.umlg.sqlg.test.union.TestUnion;
+import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
 
 /**
  * Date: 2014/07/16
@@ -12,9 +10,7 @@ import org.umlg.sqlg.test.union.TestUnion;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestUnion.class,
-        TestGremlinCompileArrayContains.class,
-        TestGremlinCompileArrayOverlaps.class
+        TestDropStepBarrier.class,
 })
 public class AnyTest {
 }
