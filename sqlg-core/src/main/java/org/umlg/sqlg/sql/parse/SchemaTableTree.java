@@ -1673,6 +1673,10 @@ public class SchemaTableTree {
             //if user defined identifiers then the regular properties make up the ids.
             if (firstSchemaTableTree.hasIDPrimaryKey) {
                 columnList.add(firstSchemaTable, Topology.ID, firstSchemaTableTree.stepDepth, firstSchemaTableTree.calculatedAliasId());
+            } else {
+                if (!firstSchemaTableTree.hasLabels()) {
+                    firstSchemaTableTree.addLabel(lastSchemaTableTree.getStepDepth() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_TEMP_FAKE_LABEL);
+                }
             }
         }
         //join to the next table/label
