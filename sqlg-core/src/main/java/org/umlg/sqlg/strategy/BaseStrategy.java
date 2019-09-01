@@ -155,7 +155,7 @@ public abstract class BaseStrategy {
                 handleRangeGlobalSteps(stepIterator, pathCount);
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
                 handleOrderGlobalSteps(stepIterator, pathCount);
-                handleRangeGlobalSteps(stepIterator, pathCount);
+                handleRangeGlobalSteps(step, stepIterator, pathCount);
                 //select step can not be followed by a PropertyStep
                 if (step instanceof SelectOneStep) {
                     SelectOneStep selectOneStep = (SelectOneStep) step;
@@ -833,14 +833,26 @@ public abstract class BaseStrategy {
     }
 
     void handleRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
+        handleRangeGlobalSteps(null, iterator, pathCount);
+    }
+
+    void handleRangeGlobalSteps(Step fromStep, ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         //noinspection LoopStatementThatDoesntLoop
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
             if (step instanceof RangeGlobalStep) {
                 //add the label if any
-                for (String label : step.getLabels()) {
-                    this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                if (fromStep instanceof SelectStep || fromStep instanceof SelectOneStep) {
+                    //this is for blah().select("x").limit(1).as("y")
+                    //in this case the "y" label should go to the select step
+                    for (String label : step.getLabels()) {
+                        fromStep.addLabel(label);
+                    }
+                } else {
+                    for (String label : step.getLabels()) {
+                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                    }
                 }
                 //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
                 if (this.traversal.getSteps().contains(step)) {
