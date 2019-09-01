@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
+import org.umlg.sqlg.test.process.dropstep.TestPartitionedDrop;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestDropStepBarrier.class,
+        TestPartitionedDrop.class,
 })
 public class AnyTest {
 }
