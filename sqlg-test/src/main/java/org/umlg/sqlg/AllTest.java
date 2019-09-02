@@ -271,7 +271,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestDataSource.class,
         TestCustomDataSource.class,
         TestReducing.class,
-        TestReducingVertexStep.class
+        TestReducingVertexStep.class,
         TestPartitionedDrop.class
 })
 public class AllTest {
