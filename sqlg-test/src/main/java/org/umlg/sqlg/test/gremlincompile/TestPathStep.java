@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -39,14 +40,43 @@ public class TestPathStep extends BaseTest {
         paths = this.sqlgGraph.traversal().V().hasLabel("A").out("ab").as("b").out("bc").path().from("b").toList();
         System.out.println(paths);
 
-        paths = this.sqlgGraph.traversal()
+        GraphTraversal<Vertex, Path> t = this.sqlgGraph.traversal()
                 .V().hasLabel("A").as("a")
-                .out("ab").select("a").limit(1).as("start")
-                .path().from("start").toList();
+                .out("ab").select("a").as("start")
+                .path();
+        printTraversalForm(t);
+        paths = t.toList();
         System.out.println(paths);
         Assert.assertEquals(1, paths.size());
-        Assert.assertEquals(1, paths.get(0).size());
+        Path path = paths.get(0);
+        Assert.assertEquals(3, path.size());
+        List<Set<String>> labels = path.labels();
+        Assert.assertEquals(3, labels.size());
+        Assert.assertEquals(1, labels.get(0).size());
+        Assert.assertTrue(labels.get(0).contains("a"));
+        Assert.assertEquals(1, labels.get(1).size());
+        Assert.assertTrue(labels.get(1).contains("sqlgPathFakeLabel"));
+        Assert.assertEquals(1, labels.get(2).size());
+        Assert.assertTrue(labels.get(2).contains("start"));
 
+        t = this.sqlgGraph.traversal()
+                .V().hasLabel("A").as("a")
+                .out("ab").select("a").limit(1).as("start")
+                .path();
+        printTraversalForm(t);
+        paths = t.toList();
+        System.out.println(paths);
+        Assert.assertEquals(1, paths.size());
+        path = paths.get(0);
+        Assert.assertEquals(3, path.size());
+        labels = path.labels();
+        Assert.assertEquals(3, labels.size());
+        Assert.assertEquals(1, labels.get(0).size());
+        Assert.assertTrue(labels.get(0).contains("a"));
+        Assert.assertEquals(1, labels.get(1).size());
+        Assert.assertTrue(labels.get(1).contains("sqlgPathFakeLabel"));
+        Assert.assertEquals(1, labels.get(2).size());
+        Assert.assertTrue(labels.get(2).contains("start"));
     }
 
     @Test

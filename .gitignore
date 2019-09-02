@@ -15,6 +15,7 @@ src/test/db/
 /sqlg-benchmark-hsqldb/src/test/db/
 /sqlg-h2-parent/sqlg-h2/src/test/db/
 /sqlg-benchmark-h2/src/test/db/
+.DS_Store
 
 ### Eclipse files
 **/.classpath

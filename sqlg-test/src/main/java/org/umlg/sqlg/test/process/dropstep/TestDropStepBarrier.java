@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationLi
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -63,11 +64,13 @@ public class TestDropStepBarrier extends BaseTest {
                 public void edgeRemoved(final Edge edge) {
                     removedEdges.add(edge);
                 }
+
                 @Override
                 public void edgePropertyRemoved(final Edge element, final Property property) {
                     removedEdgeProperties.add(property);
 
                 }
+
                 @Override
                 public void vertexPropertyRemoved(final VertexProperty property) {
                     removedVertexProperties.add(property);
@@ -503,6 +506,7 @@ public class TestDropStepBarrier extends BaseTest {
 
     @Test
     public void playlistPaths() {
+        Assume.assumeTrue(!isMsSqlServer());
         loadGratefulDead();
         final GraphTraversal<Vertex, Vertex> traversal = getPlaylistPaths(this.sqlgGraph.traversal());
         printTraversalForm(traversal);
@@ -662,6 +666,25 @@ public class TestDropStepBarrier extends BaseTest {
 
     @Test
     public void testDropEdges() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+
+        this.dropTraversal.V().hasLabel("A").drop().iterate();
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next(), 0);
+
+        if (this.mutatingCallback) {
+            Assert.assertEquals(1, this.removedVertices.size());
+            Assert.assertEquals(1, this.removedEdges.size());
+        }
+    }
+
+    @Test
+    public void testDropEdgesUserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<String, PropertyType>() {{
