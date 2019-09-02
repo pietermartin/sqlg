@@ -6,6 +6,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
@@ -22,6 +24,12 @@ import java.util.UUID;
  * Date: 2019/08/26
  */
 public class TestPartitionedDrop extends BaseTest {
+
+    @Before
+    public void before() throws Exception {
+        super.before();
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPartitioning());
+    }
 
     private enum VENDOR_TECHNOLOGY {
         HGSM,
