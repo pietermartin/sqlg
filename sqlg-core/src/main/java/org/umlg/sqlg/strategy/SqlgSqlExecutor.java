@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallb
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgEdge;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -43,24 +42,23 @@ public class SqlgSqlExecutor {
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
         sqlgGraph.getTopology().threadWriteLock();
-        List<Triple<DROP_QUERY, String, SchemaTable>> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
-        for (Triple<DROP_QUERY, String, SchemaTable> sqlPair : sqls) {
+        List<Triple<DROP_QUERY, String, Boolean>> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
+        for (Triple<DROP_QUERY, String, Boolean> sqlPair : sqls) {
             DROP_QUERY dropQuery = sqlPair.getLeft();
             String sql = sqlPair.getMiddle();
+            Boolean addAdditionalPartitionHasContainer = sqlPair.getRight();
             switch (dropQuery) {
                 case ALTER:
-                    executeDropQuery(sqlgGraph, sql, new LinkedList<>());
+                case TRUNCATE:
+                    executeDropQuery(sqlgGraph, sql, new LinkedList<>(), false);
                     break;
                 case EDGE:
                     LinkedList<SchemaTableTree> tmp = new LinkedList<>(distinctQueryStack);
                     tmp.removeLast();
-                    executeDropQuery(sqlgGraph, sql, tmp);
+                    executeDropQuery(sqlgGraph, sql, tmp, false);
                     break;
                 case NORMAL:
-                    executeDropQuery(sqlgGraph, sql, distinctQueryStack);
-                    break;
-                case TRUNCATE:
-                    executeDropQuery(sqlgGraph, sql, new LinkedList<>());
+                    executeDropQuery(sqlgGraph, sql, distinctQueryStack, addAdditionalPartitionHasContainer);
                     break;
                 default:
                     throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery.toString());
@@ -147,7 +145,7 @@ public class SqlgSqlExecutor {
         }
     }
 
-    private static void executeDropQuery(SqlgGraph sqlgGraph, String sql, LinkedList<SchemaTableTree> distinctQueryStack) {
+    private static void executeDropQuery(SqlgGraph sqlgGraph, String sql, LinkedList<SchemaTableTree> distinctQueryStack, boolean includeAdditionalPartitionHasContainer) {
         if (sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().flush();
         }
@@ -162,7 +160,7 @@ public class SqlgSqlExecutor {
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
             sqlgGraph.tx().add(preparedStatement);
             int parameterCount = 1;
-            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount);
+            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount, includeAdditionalPartitionHasContainer);
             if (distinctQueryStack.isEmpty()) {
                 preparedStatement.execute();
             } else {

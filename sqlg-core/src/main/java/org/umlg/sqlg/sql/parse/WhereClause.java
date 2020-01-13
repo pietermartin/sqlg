@@ -39,12 +39,15 @@ public class WhereClause {
         return new WhereClause(p);
     }
 
-    String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer) {
-        String result = "";
-
+    public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer) {
         String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
         prefix += ".";
         prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
+        return toSql(sqlgGraph, schemaTableTree, hasContainer, prefix);
+    }
+
+    public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer, String prefix) {
+        String result = "";
 
         if (p.getValue() instanceof PropertyReference && p.getBiPredicate() instanceof Compare) {
             result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());

@@ -44,10 +44,7 @@ import org.umlg.sqlg.test.localvertexstep.*;
 import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
-import org.umlg.sqlg.test.process.dropstep.TestDropStep;
-import org.umlg.sqlg.test.process.dropstep.TestDropStepBarrier;
-import org.umlg.sqlg.test.process.dropstep.TestDropStepTruncate;
-import org.umlg.sqlg.test.process.dropstep.TestPartitionedDrop;
+import org.umlg.sqlg.test.process.dropstep.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.properties.TestPropertyValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
@@ -268,7 +265,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTraversalAddV.class,
         TestDataSource.class,
         TestCustomDataSource.class,
-        TestPartitionedDrop.class
+        TestPartitionedDrop.class,
+        TestDropStepPartition.class,
+        TestBatchUpdatePartitioning.class
 })
 public class AllTest {
 

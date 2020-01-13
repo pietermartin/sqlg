@@ -300,11 +300,32 @@ public class SqlgUtil {
         return p == Contains.within && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
-    public static void setParametersOnStatement(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> schemaTableTreeStack, PreparedStatement preparedStatement, int parameterIndex) throws SQLException {
+    public static void setParametersOnStatement(
+            SqlgGraph sqlgGraph,
+            LinkedList<SchemaTableTree> schemaTableTreeStack,
+            PreparedStatement preparedStatement,
+            int parameterIndex) throws SQLException {
+
+        setParametersOnStatement(sqlgGraph, schemaTableTreeStack, preparedStatement, parameterIndex, false);
+    }
+
+    public static void setParametersOnStatement(
+            SqlgGraph sqlgGraph,
+            LinkedList<SchemaTableTree> schemaTableTreeStack,
+            PreparedStatement preparedStatement,
+            int parameterIndex,
+            boolean includeAdditionalPartitionHasContainer) throws SQLException {
+
         Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
                 if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinAndOut(sqlgGraph, hasContainer)) {
+                    WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                    whereClause.putKeyValueMap(hasContainer, keyValueMap, schemaTableTree);
+                }
+            }
+            if (includeAdditionalPartitionHasContainer) {
+                for (HasContainer hasContainer : schemaTableTree.getAdditionalPartitionHasContainers()) {
                     WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
                     whereClause.putKeyValueMap(hasContainer, keyValueMap, schemaTableTree);
                 }
@@ -875,7 +896,7 @@ public class SqlgUtil {
                 ResultSet rs = statement.executeQuery("SELECT * FROM INFORMATION_SCHEMA.SYSTEM_USERS where USER_NAME = 'sqlgReadOnly'");
                 if (rs.next()) {
                     try (Statement s = conn.createStatement()) {
-                        s.execute("DROP USER \"sqlgReadOnly\"" );
+                        s.execute("DROP USER \"sqlgReadOnly\"");
                         s.execute("DROP ROLE READ_ONLY");
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -1194,7 +1215,7 @@ public class SqlgUtil {
                         s = resultSet.getString(column.getColumnIndex());
                         result.add(s);
                         break;
-                    case  INTEGER_ORDINAL:
+                    case INTEGER_ORDINAL:
                         Integer i = resultSet.getInt(column.getColumnIndex());
                         result.add(i);
                         break;

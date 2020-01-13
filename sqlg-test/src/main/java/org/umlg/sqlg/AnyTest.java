@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.process.dropstep.TestPartitionedDrop;
+import org.umlg.sqlg.test.properties.TestEscapedValues;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,11 @@ import org.umlg.sqlg.test.process.dropstep.TestPartitionedDrop;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestPartitionedDrop.class,
+        TestEscapedValues.class
+//        TestDropStepPartition.class,
+//        TestDropStep.class,
+//        TestBatchUpdatePartitioning.class
+//        TestBatchNormalUpdate.class
 })
 public class AnyTest {
 }

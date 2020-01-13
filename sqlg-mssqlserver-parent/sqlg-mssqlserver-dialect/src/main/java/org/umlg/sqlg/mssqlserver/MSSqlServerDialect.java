@@ -1176,13 +1176,13 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(
             SqlgGraph sqlgGraph,
             String leafElementsToDelete,
             @Nullable  String edgesToDelete,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
+        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
         SchemaTableTree lastEdge = null;
@@ -1240,7 +1240,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
+                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
                 }
             }
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
@@ -1279,7 +1279,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
+                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
                 }
             }
         }
@@ -1288,11 +1288,11 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         if (queryTraversesEdge) {
             for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
                 String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." +  maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), SchemaTable.of(edgeLabel.getSchema().getName(), edgeLabel.getLabel())));
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
             }
             for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
                 String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), SchemaTable.of(edgeLabel.getSchema().getName(), edgeLabel.getLabel())));
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
             }
         }
         //Delete the leaf vertices, if there are foreign keys then its been deferred.
@@ -1324,7 +1324,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 }
             }
         }
-        sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
+        sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
 
         if (queryTraversesEdge) {
             sb = new StringBuilder();
@@ -1356,17 +1356,17 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 }
             }
 
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
+            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), false));
         }
         //Enable the foreign key constraint
         if (queryTraversesEdge) {
             for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
                 String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." +  maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), null));
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
             }
             for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
                 String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), null));
+                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
             }
         }
         return sqls;
