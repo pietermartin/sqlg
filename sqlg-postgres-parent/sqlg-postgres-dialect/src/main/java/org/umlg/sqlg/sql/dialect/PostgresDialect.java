@@ -6,9 +6,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.text.StringEscapeUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
@@ -23,6 +25,7 @@ import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
@@ -38,7 +41,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
@@ -683,6 +685,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append("null");
                 }
                 break;
+            case VARCHAR_ORDINAL:
             case STRING_ORDINAL:
                 if (value != null) {
                     sql.append("'");
@@ -1248,8 +1251,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             int count = 1;
             //this map is for optimizations reason to not look up the property via all tables within the loop
             Map<String, PropertyType> keyPropertyTypeMap = new HashMap<>();
+            Map<String, PropertyType> keyPropertyTypes = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(forVertices ? VERTEX_PREFIX : EDGE_PREFIX));
             for (String key : keys) {
-                PropertyType propertyType = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(forVertices ? VERTEX_PREFIX : EDGE_PREFIX)).get(key);
+                PropertyType propertyType = keyPropertyTypes.get(key);
                 if (keys.size() == 1 && propertyType.getPostFixes().length > 0) {
                     sql.append("(");
                 }
@@ -1656,7 +1660,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 int count = 0;
                 for (String identifier : outVertexLabel.getIdentifiers()) {
 //                    Object value = outVertex.value(identifier);
-                    Object value = ((RecordId)outVertex.id()).getID().getIdentifiers().get(count++);
+                    Object value = ((RecordId) outVertex.id()).getID().getIdentifiers().get(count++);
                     PropertyType propertyType = outVertexLabel.getProperty(identifier).orElseThrow(
                             () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, outVertexLabel.getFullName()))
                     ).getPropertyType();
@@ -1671,7 +1675,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 int count = 0;
                 for (String identifier : inVertexLabel.getIdentifiers()) {
 //                    Object value = inVertex.value(identifier);
-                    Object value = ((RecordId)inVertex.id()).getID().getIdentifiers().get(count++);
+                    Object value = ((RecordId) inVertex.id()).getID().getIdentifiers().get(count++);
                     PropertyType propertyType = inVertexLabel.getProperty(identifier).orElseThrow(
                             () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, inVertexLabel.getFullName()))
                     ).getPropertyType();
@@ -2038,7 +2042,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             if (c == '\n' || c == '\r' || c == 0 || c == COPY_COMMAND_DELIMITER.charAt(0)) {
                 needEscape = true;
             }
-            if (c == ESCAPE || c == QUOTE) {
+            if (c == ESCAPE || c == QUOTE || c == '{' || c == '}' || c == ' ') {
                 needEscape = true;
                 sb.append(ESCAPE);
             }
@@ -4214,13 +4218,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> drop(
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(
             SqlgGraph sqlgGraph,
             String leafElementsToDelete,
             String edgesToDelete,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqls = new ArrayList<>();
+        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
         SchemaTableTree lastEdge = null;
@@ -4282,7 +4286,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
+                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
                 }
             }
             for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
@@ -4311,14 +4315,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), SchemaTable.of(edgeLabel.getSchema().getName(), Topology.EDGE_PREFIX + edgeLabel.getName())));
+                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
                 }
             }
         }
 
         //Need to defer foreign key constraint checks.
         if (queryTraversesEdge) {
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, "SET CONSTRAINTS ALL DEFERRED", null));
+            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, "SET CONSTRAINTS ALL DEFERRED", false));
         }
         //Delete the leaf vertices, if there are foreign keys then its been deferred.
         StringBuilder sb = new StringBuilder();
@@ -4344,17 +4348,47 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             for (String identifier : last.getIdentifiers()) {
                 sb.append("a.");
-                sb.append(maybeWrapInQoutes( identifier));
+                sb.append(maybeWrapInQoutes(identifier));
                 sb.append(" = todelete.");
                 sb.append(maybeWrapInQoutes(last.lastMappedAliasIdentifier(identifier)));
                 if (count < abstractLabel.getIdentifiers().size()) {
-                    sb.append(" AND\n");
+                    sb.append(" AND\n\t");
                 }
                 count++;
             }
 
         }
-        sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), last.getSchemaTable()));
+        MutableTriple triple = MutableTriple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false);
+        //If the partition key is part of the HasContainer(s) then add it to the 'delete' statement's where clause.
+        if (isVertex && lastVertexLabel.isPartition()) {
+            for (HasContainer hasContainer : last.getHasContainers()) {
+                String partitionExpression = lastVertexLabel.getPartitionExpression();
+                partitionExpression = StringUtils.removeStart(partitionExpression, getColumnEscapeKey());
+                partitionExpression = StringUtils.removeEnd(partitionExpression, getColumnEscapeKey());
+                if (hasContainer.getKey().equals(partitionExpression)) {
+                    WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                    String where = whereClause.toSql(sqlgGraph, last, hasContainer, "a");
+                    sb.append(" AND\n\t").append(where);
+                    last.getAdditionalPartitionHasContainers().add(hasContainer);
+                    triple.setRight(true);
+                }
+            }
+        } else if (!isVertex && lastEdgeLabel.isPartition()) {
+            for (HasContainer hasContainer : last.getHasContainers()) {
+                String partitionExpression = lastEdgeLabel.getPartitionExpression();
+                partitionExpression = StringUtils.removeStart(partitionExpression, getColumnEscapeKey());
+                partitionExpression = StringUtils.removeEnd(partitionExpression, getColumnEscapeKey());
+                if (hasContainer.getKey().equals(partitionExpression)) {
+                    WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                    String where = whereClause.toSql(sqlgGraph, last, hasContainer, "a");
+                    sb.append(" AND\n\t").append(where);
+                    last.getAdditionalPartitionHasContainers().add(hasContainer);
+                    triple.setRight(true);
+                }
+            }
+        }
+        triple.setMiddle(sb.toString());
+        sqls.add(triple);
 
         if (queryTraversesEdge) {
             sb = new StringBuilder();
@@ -4380,11 +4414,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                 }
             }
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), lastEdge.getSchemaTable()));
+            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), false));
         }
         //Enable the foreign key constraint
         if (queryTraversesEdge) {
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, "SET CONSTRAINTS ALL IMMEDIATE", null));
+            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, "SET CONSTRAINTS ALL IMMEDIATE", false));
         }
         return sqls;
     }
@@ -4615,9 +4649,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
         Preconditions.checkState(schemaTable.isWithPrefix(), "SqlDialect.sqlTruncate' schemaTable must start with a prefix %s or %s", Topology.VERTEX_PREFIX, Topology.EDGE_PREFIX);
-        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> result = new ArrayList<>();
+        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> result = new ArrayList<>();
         Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
         Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.getSchema());
         Schema schema = schemaOptional.get();
@@ -4657,7 +4691,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 Triple.of(
                         SqlgSqlExecutor.DROP_QUERY.TRUNCATE,
                         sql.toString(),
-                        schemaTable
+                        false
                 )
         );
         return result;

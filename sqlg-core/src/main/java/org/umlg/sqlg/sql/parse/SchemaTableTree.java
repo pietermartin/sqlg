@@ -54,6 +54,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private final List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers;
+    private List<HasContainer> additionalPartitionHasContainers = new ArrayList<>();
     private List<AndOrHasContainer> andOrHasContainers;
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
@@ -423,7 +424,7 @@ public class SchemaTableTree {
         }
     }
 
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
         Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
         Preconditions.checkState(distinctQueryStack.getLast().drop);
         Preconditions.checkState(!duplicatesInStack(distinctQueryStack));
@@ -802,7 +803,7 @@ public class SchemaTableTree {
                 stt.calculatePropertyRestrictions();
             }
         }
-//      columnList holds the columns per sub query.
+        // columnList holds the columns per sub query.
         ColumnList currentColumnList = new ColumnList(sqlgGraph, dropStep, this.getIdentifiers(), this.getFilteredAllTables());
         this.columnListStack.add(currentColumnList);
         int startIndexColumns = 1;
@@ -1378,12 +1379,12 @@ public class SchemaTableTree {
                     result += " ASC";
                 } else //noinspection deprecation
                     if (elementValueComparator.getValueComparator() == Order.decr) {
-                    result += " DESC";
-                } else if (elementValueComparator.getValueComparator() == Order.desc) {
-                    result += " DESC";
-                } else {
-                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
-                }
+                        result += " DESC";
+                    } else if (elementValueComparator.getValueComparator() == Order.desc) {
+                        result += " DESC";
+                    } else {
+                        throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
+                    }
 
                 //TODO redo this via SqlgOrderGlobalStep
             } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
@@ -1431,12 +1432,12 @@ public class SchemaTableTree {
                     result += " ASC";
                 } else //noinspection deprecation
                     if (comparator.getValue1() == Order.decr) {
-                    result += " DESC";
-                } else if (comparator.getValue1() == Order.desc) {
-                    result += " DESC";
-                } else {
-                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
-                }
+                        result += " DESC";
+                    } else if (comparator.getValue1() == Order.desc) {
+                        result += " DESC";
+                    } else {
+                        throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
+                    }
             } else {
                 Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
@@ -1501,12 +1502,12 @@ public class SchemaTableTree {
                     result += " ASC";
                 } else //noinspection deprecation
                     if (comparator.getValue1() == Order.decr) {
-                    result += " DESC";
-                } else if (comparator.getValue1() == Order.desc) {
-                    result += " DESC";
-                } else {
-                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.toString());
-                }
+                        result += " DESC";
+                    } else if (comparator.getValue1() == Order.desc) {
+                        result += " DESC";
+                    } else {
+                        throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.toString());
+                    }
             }
         }
         return result;
@@ -1852,7 +1853,7 @@ public class SchemaTableTree {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         //first print the identifiers
         ListOrderedSet<String> identifiers = lastSchemaTableTree.getIdentifiers();
-        for (String col: identifiers) {
+        for (String col : identifiers) {
             printColumn(lastSchemaTableTree, cols, propertyTypeMap, col);
         }
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
@@ -2491,6 +2492,10 @@ public class SchemaTableTree {
 
     public List<HasContainer> getHasContainers() {
         return this.hasContainers;
+    }
+
+    public List<HasContainer> getAdditionalPartitionHasContainers() {
+        return additionalPartitionHasContainers;
     }
 
     public List<AndOrHasContainer> getAndOrHasContainers() {

@@ -14,10 +14,7 @@ import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -95,11 +92,13 @@ public class TestPartitionedDrop extends BaseTest {
         );
         this.sqlgGraph.tx().commit();
 
-        for (int i = 0; i < 100; i++) {
-            Vertex hgsm = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name());
-            Vertex humts = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HUMTS.name());
-            Vertex hlte = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HLTE.name());
-            Vertex hcompt = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "d" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HCOMPT.name());
+        List<String> hgsmCmUid = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            Vertex hgsm = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a" + i, "name", "hgsm" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name());
+            hgsmCmUid.add("a" + i);
+            Vertex humts = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b" + i, "name", "humts" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HUMTS.name());
+            Vertex hlte = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c" + i, "name", "hlte" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HLTE.name());
+            Vertex hcompt = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "d" + i, "name", "hcompt" + i, "vendorTechnology", VENDOR_TECHNOLOGY.HCOMPT.name());
 
             if (i % 2 == 0) {
                 Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", hgsm, "uid", UUID.randomUUID().toString());
@@ -116,10 +115,10 @@ public class TestPartitionedDrop extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name()).count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HUMTS.name()).count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HLTE.name()).count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HCOMPT.name()).count().next(), 0);
+        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name()).count().next(), 0);
+        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HUMTS.name()).count().next(), 0);
+        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HLTE.name()).count().next(), 0);
+        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", VENDOR_TECHNOLOGY.HCOMPT.name()).count().next(), 0);
 
         List<Object> ids =  this.sqlgGraph.traversal()
                 .V(northern)
@@ -130,13 +129,23 @@ public class TestPartitionedDrop extends BaseTest {
                 .select("e")
                 .by(T.id)
                 .toList();
-        Assert.assertEquals(50, ids.size());
+        Assert.assertEquals(5, ids.size());
 
-        this.sqlgGraph.traversal().V(northern)
-                .outE("virtualGroup_RealWorkspaceElement")
-                .hasId(P.within(ids))
+        sqlgGraph.traversal().V()
+                .hasLabel("RealWorkspaceElement")
+                .has("vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name())
+                .has("cmUid", P.within(hgsmCmUid))
                 .drop()
                 .iterate();
+
+        this.sqlgGraph.tx().rollback();
+
+
+//        this.sqlgGraph.traversal().V(northern)
+//                .outE("virtualGroup_RealWorkspaceElement")
+//                .hasId(P.within(ids))
+//                .drop()
+//                .iterate();
 
         this.sqlgGraph.tx().commit();
 //
