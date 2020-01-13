@@ -1868,7 +1868,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     length = java.lang.reflect.Array.getLength(value);
                     for (int i = 0; i < length; i++) {
                         String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
-                        sb.append(escapeSpecialCharacters(valueOfArray));
+                        sb.append(escapeSpecialCharactersForArray(valueOfArray));
                         if (i < length - 1) {
                             sb.append(",");
                         }
@@ -2027,6 +2027,26 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 //        return new ByteArrayInputStream(sb.toString().getBytes());
 //    }
 
+    private String escapeSpecialCharactersForArray(String s) {
+        StringBuilder sb = new StringBuilder();
+        boolean needEscape = s.length() == 0; // escape empty strings
+        for (int a = 0; a < s.length(); a++) {
+            char c = s.charAt(a);
+            if (c == '\n' || c == '\r' || c == 0 || c == COPY_COMMAND_DELIMITER.charAt(0)) {
+                needEscape = true;
+            }
+            if (c == ESCAPE || c == QUOTE || c == '{' || c == '}' || c == ' ') {
+                needEscape = true;
+                sb.append(ESCAPE);
+            }
+            sb.append(c);
+        }
+        if (needEscape) {
+            return QUOTE + sb.toString() + QUOTE;
+        }
+        return s;
+    }
+
     /**
      * this follows the PostgreSQL rules at https://www.postgresql.org/docs/current/static/sql-copy.html#AEN77663
      * "If the value contains the delimiter character, the QUOTE character, the NULL string, a carriage return,
@@ -2042,7 +2062,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             if (c == '\n' || c == '\r' || c == 0 || c == COPY_COMMAND_DELIMITER.charAt(0)) {
                 needEscape = true;
             }
-            if (c == ESCAPE || c == QUOTE || c == '{' || c == '}' || c == ' ') {
+            if (c == ESCAPE || c == QUOTE) {
                 needEscape = true;
                 sb.append(ESCAPE);
             }
