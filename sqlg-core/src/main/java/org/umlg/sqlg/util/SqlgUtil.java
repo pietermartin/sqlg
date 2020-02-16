@@ -544,11 +544,11 @@ public class SqlgUtil {
 
     public static SchemaTable parseLabel(final String label) {
         Objects.requireNonNull(label, "label may not be null!");
-        String[] schemaLabel = label.split("\\.");
-        if (schemaLabel.length != 2) {
-            throw new IllegalStateException(String.format("label must be if the format 'schema.table', %s", label));
-        }
-        return SchemaTable.of(schemaLabel[0], schemaLabel[1]);
+        int indexOfPeriod = label.indexOf(".");
+        Preconditions.checkState(indexOfPeriod > -1, String.format("label must have a period to separate the schema from the table. label %s", label));
+        String schema = label.substring(0, indexOfPeriod);
+        String table =  label.substring(indexOfPeriod + 1);
+        return SchemaTable.of(schema, table);
     }
 
     public static SchemaTable parseLabelMaybeNoSchema(SqlgGraph sqlgGraph, final String label) {

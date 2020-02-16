@@ -1,23 +1,66 @@
 package org.umlg.sqlg.test;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.topology.Schema;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/04/30
  */
 public class TestRecordId extends BaseTest {
+
+    @Test
+    public void testRecordIdHasCommas() {
+        Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        schema.ensureVertexLabelExist("aaa.bbb", new LinkedHashMap<String, PropertyType>() {{
+            put("_id", PropertyType.STRING);
+            put("value", PropertyType.STRING);
+        }}, ListOrderedSet.listOrderedSet(Collections.singletonList("_id")));
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "A.aaa.bbb", "_id", "id1", "value", "a");
+        this.sqlgGraph.tx().commit();
+
+        RecordId recordId = RecordId.from(this.sqlgGraph, "A.aaa.bbb:::[id1]");
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A.aaa.bbb").hasId(P.eq(recordId)).count().next(), 0L);
+
+        schema.ensureVertexLabelExist("aaa.ccc", new LinkedHashMap<String, PropertyType>() {{
+            put("_id", PropertyType.STRING);
+            put("value", PropertyType.STRING);
+        }}, ListOrderedSet.listOrderedSet(Collections.singletonList("_id")));
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "A.aaa.ccc", "_id", "id:::what", "value", "a");
+        this.sqlgGraph.tx().commit();
+
+        recordId = RecordId.from(this.sqlgGraph, "A.aaa.ccc:::[id:::what]");
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A.aaa.ccc").hasId(P.eq(recordId)).count().next(), 0L);
+    }
+
+    @Test
+    public void testTableHasPeriod() {
+        this.sqlgGraph.addVertex("A.aaa.bbb");
+        this.sqlgGraph.tx().commit();
+        String id = "A.aaa.bbb" + RecordId.RECORD_ID_DELIMITER + this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();
+        RecordId recordId = RecordId.from(id);
+        Assert.assertEquals(
+                SchemaTable.of("A", "aaa.bbb"),
+                recordId.getSchemaTable()
+        );
+        Assert.assertEquals(
+                this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue(),
+                recordId.sequenceId()
+        );
+    }
 
     @Test
     public void testRecordIdFromElement() {

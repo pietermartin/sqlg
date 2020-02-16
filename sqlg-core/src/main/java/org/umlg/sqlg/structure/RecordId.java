@@ -97,30 +97,21 @@ public class RecordId implements KryoSerializable, Comparable {
             throw SqlgExceptions.invalidId(vertexId.toString());
         }
         String stringId = (String) vertexId;
-        String[] splittedId = stringId.split(RECORD_ID_DELIMITER);
-        if (splittedId.length == 2) {
-            String label = splittedId[0];
-            String id = splittedId[1];
-            if (id.startsWith("[") && id.endsWith("]")) {
-                return recordIdFromIdentifiers(sqlgGraph, label, id);
-            } else {
-                try {
-                    Long labelId = Long.valueOf(id);
-                    return new RecordId(label, labelId);
-                } catch (NumberFormatException e) {
-                    throw SqlgExceptions.invalidId(vertexId.toString());
-                }
-            }
-        } else if (splittedId.length > 2) {
-            String label = splittedId[0];
-            String id = splittedId[1];
-            if (id.startsWith("[") && id.endsWith("]")) {
-                return recordIdFromIdentifiers(sqlgGraph, label, id);
-            } else {
+        int indexOf = stringId.indexOf(RECORD_ID_DELIMITER);
+        if (indexOf == -1) {
+            throw SqlgExceptions.invalidId(vertexId.toString());
+        }
+        String label = stringId.substring(0, indexOf);
+        String id = stringId.substring(indexOf + RECORD_ID_DELIMITER.length());
+        if (id.startsWith("[") && id.endsWith("]")) {
+            return recordIdFromIdentifiers(sqlgGraph, label, id);
+        } else {
+            try {
+                Long labelId = Long.valueOf(id);
+                return new RecordId(label, labelId);
+            } catch (NumberFormatException e) {
                 throw SqlgExceptions.invalidId(vertexId.toString());
             }
-        } else {
-            throw SqlgExceptions.invalidId(vertexId.toString());
         }
     }
 
@@ -387,7 +378,7 @@ public class RecordId implements KryoSerializable, Comparable {
                 return RecordId.from(schemaTable, (Long) data.get("id"));
             } else {
                 @SuppressWarnings("unchecked")
-                List<Comparable> identifiers = (List<Comparable>)data.get("id");
+                List<Comparable> identifiers = (List<Comparable>) data.get("id");
                 return RecordId.from(schemaTable, identifiers);
             }
         }
@@ -422,14 +413,13 @@ public class RecordId implements KryoSerializable, Comparable {
 
         @Override
         public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException {
-            @SuppressWarnings("unchecked")
-            final Map<String, Object> data = deserializationContext.readValue(jsonParser, Map.class);
+            @SuppressWarnings("unchecked") final Map<String, Object> data = deserializationContext.readValue(jsonParser, Map.class);
             SchemaTable schemaTable = (SchemaTable) data.get("schemaTable");
             if (data.get("id") instanceof Long) {
                 return RecordId.from(schemaTable, (Long) data.get("id"));
             } else {
                 @SuppressWarnings("unchecked")
-                List<Comparable> identifiers = new ArrayList<>((List<Comparable>)data.get("id"));
+                List<Comparable> identifiers = new ArrayList<>((List<Comparable>) data.get("id"));
                 return RecordId.from(schemaTable, identifiers);
             }
         }
