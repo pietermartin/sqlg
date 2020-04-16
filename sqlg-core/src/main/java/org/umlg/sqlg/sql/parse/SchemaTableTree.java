@@ -54,6 +54,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private final List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers;
+    private List<HasContainer> additionalPartitionHasContainers = new ArrayList<>();
     private List<AndOrHasContainer> andOrHasContainers;
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
@@ -440,7 +441,7 @@ public class SchemaTableTree {
         }
     }
 
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, SchemaTable>> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
         Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
         Preconditions.checkState(distinctQueryStack.getLast().drop);
         Preconditions.checkState(!duplicatesInStack(distinctQueryStack));
@@ -2585,6 +2586,10 @@ public class SchemaTableTree {
 
     public List<HasContainer> getHasContainers() {
         return this.hasContainers;
+    }
+
+    public List<HasContainer> getAdditionalPartitionHasContainers() {
+        return additionalPartitionHasContainers;
     }
 
     public List<AndOrHasContainer> getAndOrHasContainers() {
