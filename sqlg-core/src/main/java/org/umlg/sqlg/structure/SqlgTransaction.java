@@ -81,11 +81,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!isOpen()) {
             return;
         }
+        Connection connection = this.threadLocalTx.get().getConnection();
         try {
             if (supportsBatchMode() && this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 getBatchManager().flush();
             }
-            Connection connection = this.threadLocalTx.get().getConnection();
             if (this.beforeCommitFunction != null) {
                 this.beforeCommitFunction.doBeforeCommit();
             }
@@ -95,7 +95,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 this.afterCommitFunction.doAfterCommit();
             }
             this.threadLocalPreparedStatementTx.get().close();
-            connection.close();
         } catch (Exception e) {
             this.rollback();
             if (e instanceof RuntimeException) {
@@ -104,6 +103,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 throw new RuntimeException(e);
             }
         } finally {
+            try {
+                connection.close();
+            } catch (SQLException throwables) {
+                logger.error("Failed to close the connection on commit.", throwables);
+            }
             if (this.threadLocalTx.get() != null) {
                 this.threadLocalTx.get().clear();
                 this.threadLocalTx.remove();
@@ -117,6 +121,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!isOpen()) {
             return;
         }
+        Connection connection = threadLocalTx.get().getConnection();
         try {
             if (supportsBatchMode() && this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 try {
@@ -126,7 +131,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     logger.debug("exception closing streams on rollback", e);
                 }
             }
-            Connection connection = threadLocalTx.get().getConnection();
             connection.setAutoCommit(false);
             connection.rollback();
             if (this.afterRollbackFunction != null) {
@@ -137,10 +141,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 elementPropertyRollback.clearProperties();
             }
             this.threadLocalPreparedStatementTx.get().close();
-            connection.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
+            try {
+                connection.close();
+            } catch (SQLException throwables) {
+                logger.error("Failed to close the connection on rollback.", throwables);
+            }
             if (isOpen()) {
                 this.threadLocalTx.get().clear();
                 this.threadLocalTx.remove();
