@@ -1119,6 +1119,16 @@ public class SqlgUtil {
         return target;
     }
 
+    public static <T> T copyObjectArrayOfOffsetDateTimeToLocalDateTime(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
+            }
+            Array.set(target, i, ((OffsetDateTime) value[i]).toLocalDateTime());
+        }
+        return target;
+    }
+
     public static <T> T copyObjectArrayOfTimestampToLocalDateTime(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
@@ -1175,6 +1185,16 @@ public class SqlgUtil {
                 throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, (value[i]).toLocalTime());
+        }
+        return target;
+    }
+
+    public static <T> T copyObjectArrayOfOffsetTimeToLocalTime(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
+            }
+            Array.set(target, i, ((OffsetTime) value[i]).toLocalTime());
         }
         return target;
     }
