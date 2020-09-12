@@ -328,17 +328,17 @@ public class TestSetProperty extends BaseTest {
     @Test
     public void testDateTimeProperties() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        LocalDateTime ldt = LocalDateTime.now();
+        LocalDateTime ldt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         v.property("ldt", ldt);
         v.property("ld", ldt.toLocalDate());
         LocalTime lt = ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
         v.property("lt", lt);
 
-        ZonedDateTime zdt = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("Africa/Johannesburg"));
-        ZonedDateTime zdt1Fixed = ZonedDateTime.of(zdt.toLocalDateTime(), ZoneId.of("Africa/Johannesburg"));
+        ZonedDateTime zdt = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("Africa/Johannesburg")).truncatedTo(ChronoUnit.MILLIS);
+        ZonedDateTime zdt1Fixed = ZonedDateTime.of(zdt.toLocalDateTime(), ZoneId.of("Africa/Johannesburg")).truncatedTo(ChronoUnit.MILLIS);
         v.property("zdt", zdt);
 
-        ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00"));
+        ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00")).truncatedTo(ChronoUnit.MILLIS);
         ZonedDateTime zdt2Fixed = ZonedDateTime.of(zdt2.toLocalDateTime(), ZoneId.of("GMT+02:00"));
         v.property("zdt2", zdt2);
 
@@ -414,15 +414,14 @@ public class TestSetProperty extends BaseTest {
         Vertex vJ = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Edge e1 = vJ.addEdge("knows", v);
 
-        LocalDateTime ldt = LocalDateTime.now();
+        LocalDateTime ldt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         e1.property("ldt", ldt);
         e1.property("ld", ldt.toLocalDate());
         LocalTime lt = ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
         e1.property("lt", lt);
 
-        ZonedDateTime zdt = ZonedDateTime.now();
+        ZonedDateTime zdt = ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         e1.property("zdt", zdt);
-
 
         Period p = Period.ofDays(3);
         e1.property("p", p);
@@ -451,16 +450,16 @@ public class TestSetProperty extends BaseTest {
     public void testDateTimeArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        LocalDateTime ldt = LocalDateTime.now();
+        LocalDateTime ldt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         v.property("ldt", new LocalDateTime[]{ldt});
         v.property("ld", new LocalDate[]{ldt.toLocalDate()});
         LocalTime lt = ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
         v.property("lt", new LocalTime[]{lt});
 
-        ZonedDateTime zdt = ZonedDateTime.now();
+        ZonedDateTime zdt = ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         v.property("zdt", new ZonedDateTime[]{zdt});
 
-        ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00"));
+        ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00")).truncatedTo(ChronoUnit.MILLIS);
         v.property("zdt2", new ZonedDateTime[]{zdt2});
 
         Period p = Period.ofDays(3);

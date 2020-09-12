@@ -1034,13 +1034,13 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
             case LOCALDATETIME_ARRAY_ORDINAL:
                 Object[] timestamps = (Object[]) array.getArray();
-                return SqlgUtil.copyObjectArrayOfTimestampToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
+                return SqlgUtil.copyObjectArrayOfOffsetDateTimeToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
             case LOCALDATE_ARRAY_ORDINAL:
                 Object[] dates = (Object[]) array.getArray();
                 return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
             case LOCALTIME_ARRAY_ORDINAL:
                 Object[] times = (Object[]) array.getArray();
-                return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
+                return SqlgUtil.copyObjectArrayOfOffsetTimeToLocalTime(times, new LocalTime[times.length]);
             case JSON_ARRAY_ORDINAL:
                 String[] jsons = SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
                 JsonNode[] jsonNodes = new JsonNode[jsons.length];

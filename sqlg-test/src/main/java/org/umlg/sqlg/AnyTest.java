@@ -2,12 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchJson;
-import org.umlg.sqlg.test.batch.TestBatchNormalUpdate;
-import org.umlg.sqlg.test.batch.TestBatchUpdatePartitioning;
-import org.umlg.sqlg.test.process.dropstep.TestDropStep;
-import org.umlg.sqlg.test.process.dropstep.TestDropStepPartition;
-import org.umlg.sqlg.test.properties.TestEscapedValues;
+import org.umlg.sqlg.test.localvertexstep.TestLocalStepCompile;
 
 /**
  * Date: 2014/07/16
@@ -15,12 +10,9 @@ import org.umlg.sqlg.test.properties.TestEscapedValues;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchJson.class,
-        TestEscapedValues.class,
-        TestDropStepPartition.class,
-        TestDropStep.class,
-        TestBatchUpdatePartitioning.class,
-        TestBatchNormalUpdate.class
+//        TestLocalVertexStepOptional.class,
+//        TestGremlinCompileChoose.class,
+        TestLocalStepCompile.class
 })
 public class AnyTest {
 }

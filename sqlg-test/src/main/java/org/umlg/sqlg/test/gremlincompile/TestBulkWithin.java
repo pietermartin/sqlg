@@ -16,6 +16,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -408,6 +409,11 @@ public class TestBulkWithin extends BaseTest {
         LocalDateTime localDateTime1 = LocalDateTime.now();
         LocalDateTime localDateTime2 = LocalDateTime.now().minusDays(1);
         LocalDateTime localDateTime3 = LocalDateTime.now().minusDays(2);
+        if (isHsqldb()) {
+            localDateTime1 = localDateTime1.truncatedTo(ChronoUnit.MILLIS);
+            localDateTime2 = localDateTime2.truncatedTo(ChronoUnit.MILLIS);
+            localDateTime3 = localDateTime3.truncatedTo(ChronoUnit.MILLIS);
+        }
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime1);
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime2);
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime3);

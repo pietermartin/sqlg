@@ -10,6 +10,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
@@ -20,6 +21,9 @@ public class TestLocalDate extends BaseTest {
     @Test
     public void testLocalDateTime() {
         LocalDateTime now = LocalDateTime.now();
+        if (isHsqldb()) {
+            now = now.truncatedTo(ChronoUnit.MILLIS);
+        }
         this.sqlgGraph.addVertex(T.label, "A", "dateTime", now);
         this.sqlgGraph.tx().commit();
 
@@ -35,6 +39,9 @@ public class TestLocalDate extends BaseTest {
     @Test
     public void testLocalDateTimeUpdate() {
         LocalDateTime now = LocalDateTime.now();
+        if (isHsqldb()) {
+            now = now.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex v = this.sqlgGraph.addVertex(T.label, "A", "dateTime", now);
         this.sqlgGraph.tx().commit();
         v.property("dateTime", now.plusHours(1));
@@ -42,7 +49,7 @@ public class TestLocalDate extends BaseTest {
 
         //Create a new sqlgGraph
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("dateTime").toList();
+            List<? extends Property<?>> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("dateTime").toList();
             Assert.assertEquals(1, properties.size());
             Assert.assertTrue(properties.get(0).isPresent());
             Assert.assertEquals(now.plusHours(1), properties.get(0).value());
@@ -84,6 +91,9 @@ public class TestLocalDate extends BaseTest {
     public void testZonedDateTime() {
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);
+        if (isHsqldb()) {
+            zonedDateTimeAGT = zonedDateTimeAGT.truncatedTo(ChronoUnit.MILLIS);
+        }
         this.sqlgGraph.addVertex(T.label, "A", "zonedDateTime", zonedDateTimeAGT);
         this.sqlgGraph.tx().commit();
 
@@ -131,15 +141,28 @@ public class TestLocalDate extends BaseTest {
     public void testLocalDateVertex() {
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);
+        if (isHsqldb()) {
+            zonedDateTimeAGT = zonedDateTimeAGT.truncatedTo(ChronoUnit.MILLIS);
+        }
+
         Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "andReBornAgain", zonedDateTimeAGT);
         LocalDate now = LocalDate.now();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "born", now);
         LocalDateTime now1 = LocalDateTime.now();
+        if (isHsqldb()) {
+            now1 = now1.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "bornAgain", now1);
         ZoneId zoneIdHarare = ZoneId.of("Africa/Harare");
         ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(LocalDateTime.now(), zoneIdHarare);
+        if (isHsqldb()) {
+            zonedDateTimeAGTHarare = zonedDateTimeAGTHarare.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "andBornAgain", zonedDateTimeAGTHarare);
         LocalTime now2 = LocalTime.now();
+        if (isHsqldb()) {
+            now2 = now2.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex a5 = this.sqlgGraph.addVertex(T.label, "A", "time", now2);
         this.sqlgGraph.tx().commit();
 
@@ -160,10 +183,20 @@ public class TestLocalDate extends BaseTest {
     public void testLocalDateManyTimes() {
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);
+        if (isHsqldb()) {
+            zonedDateTimeAGT = zonedDateTimeAGT.truncatedTo(ChronoUnit.MILLIS);
+        }
         ZoneId zoneIdHarare = ZoneId.of("Africa/Harare");
         ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(LocalDateTime.now(), zoneIdHarare);
+        if (isHsqldb()) {
+            zonedDateTimeAGTHarare = zonedDateTimeAGTHarare.truncatedTo(ChronoUnit.MILLIS);
+        }
         LocalDate now = LocalDate.now();
         LocalDateTime now1 = LocalDateTime.now();
+        if (isHsqldb()) {
+            now1 = now1.truncatedTo(ChronoUnit.MILLIS);
+        }
+
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A",
                 "created1", now,
                 "created2", now1,
@@ -181,12 +214,21 @@ public class TestLocalDate extends BaseTest {
     public void testLocalDateEdge() {
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now(), zoneIdShanghai);
+        if (isHsqldb()) {
+            zonedDateTimeAGT = zonedDateTimeAGT.truncatedTo(ChronoUnit.MILLIS);
+        }
         ZoneId zoneIdHarare = ZoneId.of("Africa/Harare");
         ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(LocalDateTime.now(), zoneIdHarare);
+        if (isHsqldb()) {
+            zonedDateTimeAGTHarare = zonedDateTimeAGTHarare.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "born", LocalDate.now());
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "born", LocalDate.now());
         LocalDate now = LocalDate.now();
         LocalDateTime now1 = LocalDateTime.now();
+        if (isHsqldb()) {
+            now1 = now1.truncatedTo(ChronoUnit.MILLIS);
+        }
         LocalTime time = LocalTime.now();
         Edge e1 = a1.addEdge("halo", a2,
                 "created1", now,
@@ -230,6 +272,9 @@ public class TestLocalDate extends BaseTest {
     @Test
     public void testLabelledZonedDate() throws InterruptedException {
         ZonedDateTime now = ZonedDateTime.now();
+        if (isHsqldb()) {
+            now = now.truncatedTo(ChronoUnit.MILLIS);
+        }
         Thread.sleep(1000);
         ZonedDateTime now1 = ZonedDateTime.now();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "now", now);
@@ -272,6 +317,9 @@ public class TestLocalDate extends BaseTest {
     @Test
     public void testLabelledZonedDateWithDuplicatedEntitiesInPath() {
         ZonedDateTime now = ZonedDateTime.now();
+        if (isHsqldb()) {
+            now = now.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "now", now);
         Vertex b = this.sqlgGraph.addVertex(T.label, "B", "now", now);
         Vertex c = this.sqlgGraph.addVertex(T.label, "C", "now", now);
@@ -376,9 +424,18 @@ public class TestLocalDate extends BaseTest {
     public void testLoadDateTypes() {
 
         LocalDateTime localDateTime = LocalDateTime.now();
+        if (isHsqldb()) {
+            localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         LocalDate localDate = LocalDate.now();
         LocalTime localTime = LocalTime.now();
+        if (isHsqldb()) {
+            localTime = localTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        if (isHsqldb()) {
+            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         Period period = Period.of(12, 13, 14);
         Duration duration = Duration.ofSeconds(2);
         this.sqlgGraph.addVertex(T.label, "Person",
