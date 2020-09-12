@@ -32,7 +32,7 @@
     </scm>
     <properties>
         <sqlg.version>2.0.2-SNAPSHOT</sqlg.version>
-        <tinkerpop.version>3.4.1</tinkerpop.version>
+        <tinkerpop.version>3.4.8</tinkerpop.version>
         <slf4j.version>1.7.25</slf4j.version>
         <junit.version>4.12</junit.version>
     </properties>
@@ -192,7 +192,6 @@
         <module>sqlg-postgres-parent</module>
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
-        <module>sqlg-cockroachdb-parent</module>
         <module>sqlg-mariadb-parent</module>
         <module>sqlg-mysql-parent</module>
         <module>sqlg-mssqlserver-parent</module>
