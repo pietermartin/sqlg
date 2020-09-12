@@ -1,5 +1,12 @@
 ##2.0.2
 
+*Fix bug [#395](https://github.com/pietermartin/sqlg/issues/395). Added a toggle in the failing tests to truncate
+the time to MILLIS.
+
+* Upgrade HSQLDB to 2.5.1
+
+* Upgrade H2 to 1.4.200
+
 *Fix bug [#359](https://github.com/pietermartin/sqlg/issues/359). The labels were not being handled properly. 
 `UnionStep` is now optimized by `SqlgUnionStepBarrier` and `Startstep` with `SqlgStartStepBarrier`.
 
