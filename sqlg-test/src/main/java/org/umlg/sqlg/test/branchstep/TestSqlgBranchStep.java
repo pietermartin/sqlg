@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.branchstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -57,10 +58,10 @@ public class TestSqlgBranchStep extends BaseTest {
                 .V().hasLabel("A").order().by("order")
                 .local(
                         __.optional(
-                                __.outE("ab").order().by("order", Order.decr).inV()
+                                __.outE("ab").order().by("order", Order.desc).inV()
                                         .local(
                                                 __.optional(
-                                                        __.out("bc").order().by("order", Order.decr)
+                                                        __.out("bc").order().by("order", Order.desc)
                                                 )
                                         )
                         )
@@ -120,6 +121,32 @@ public class TestSqlgBranchStep extends BaseTest {
         Assert.assertEquals(c2, paths.get(17).objects().get(3));
         Assert.assertEquals(a2, paths.get(18).objects().get(0));
         Assert.assertEquals(c1, paths.get(18).objects().get(3));
+    }
+
+    @Test
+    public void testBranchStep() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
+                .V(a1)
+                .branch(__.out().values("name"))
+                .option(P.eq("b2"), __.out());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(0, vertices.size());
+
+        traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
+                .V(a1)
+                .branch(__.out().values("name"))
+                .option(P.eq("b1"), __.out());
+        vertices = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(2, vertices.size());
     }
 
 }

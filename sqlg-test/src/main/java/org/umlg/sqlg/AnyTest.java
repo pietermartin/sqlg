@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.localvertexstep.TestLocalStepCompile;
+import org.umlg.sqlg.test.complex.TestComplex;
 
 /**
  * Date: 2014/07/16
@@ -12,7 +12,9 @@ import org.umlg.sqlg.test.localvertexstep.TestLocalStepCompile;
 @Suite.SuiteClasses({
 //        TestLocalVertexStepOptional.class,
 //        TestGremlinCompileChoose.class,
-        TestLocalStepCompile.class
+//        TestLocalStepCompile.class,
+//        TestHas.class,
+        TestComplex.class
 })
 public class AnyTest {
 }

@@ -108,7 +108,6 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                     }
                     this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                 } else {
-//                    if (!this.sqlgStarts.hasNext()) {
                     if (!this.starts.hasNext()) {
                         throw FastNoSuchElementException.instance();
                     } else {
@@ -164,12 +163,10 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         Traverser.Admin<E> traverser = head;
         List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
         for (Emit<E> emit : emits) {
-            emit.getElement().setInternalStartTraverserIndex(emit.getParentIndex());
             if (!emit.isFake()) {
                 if (emit.isIncomingOnlyLocalOptionalStep()) {
                     //no split it happening for left joined elements
                     ((SqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
-                    traverser.get().setInternalStartTraverserIndex(emit.getParentIndex());
                     this.toEmit = emit;
                     break;
                 }
@@ -342,7 +339,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     }
 
     @Override
-    public boolean isEargerLoad() {
+    public boolean isEagerLoad() {
         return this.eagerLoad;
     }
 

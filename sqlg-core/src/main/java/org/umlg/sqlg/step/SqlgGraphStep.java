@@ -137,7 +137,8 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         this.eagerLoad = eager;
     }
 
-    public boolean isEargerLoad() {
+    @Override
+    public boolean isEagerLoad() {
         return this.eagerLoad;
     }
 

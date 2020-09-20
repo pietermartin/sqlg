@@ -56,15 +56,6 @@ public class TestGremlinCompileChoose extends BaseTest {
         }
     }
 
-    private static <A, B> void checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
-        final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted(Comparator.comparing(a -> a.getKey().toString())).collect(Collectors.toList());
-        final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted(Comparator.comparing(a -> a.getKey().toString())).collect(Collectors.toList());
-        Assert.assertEquals(expectedList.size(), actualList.size());
-        for (int i = 0; i < actualList.size(); i++) {
-            Assert.assertEquals(expectedList.get(i).getKey(), actualList.get(i).getKey());
-            Assert.assertEquals(expectedList.get(i).getValue(), actualList.get(i).getValue());
-        }
-    }
 
     @Test
     public void g_injectX1X_chooseXisX1X__constantX10Xfold__foldX() {
@@ -94,7 +85,8 @@ public class TestGremlinCompileChoose extends BaseTest {
         expected.put("young", 1L);
         expected.put("old", 3L);
         Assert.assertTrue(traversal.hasNext());
-        checkMap(expected, traversal.next());
+        Map<String, Long> first = traversal.next();
+        checkMap(expected, first);
         Assert.assertFalse(traversal.hasNext());
     }
 
@@ -217,4 +209,13 @@ public class TestGremlinCompileChoose extends BaseTest {
         Assert.assertEquals(6, groupCount.size());
     }
 
+    private static <A, B> void checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
+        final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted(Comparator.comparing(a -> a.getKey().toString())).collect(Collectors.toList());
+        final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted(Comparator.comparing(a -> a.getKey().toString())).collect(Collectors.toList());
+        Assert.assertEquals(expectedList.size(), actualList.size());
+        for (int i = 0; i < actualList.size(); i++) {
+            Assert.assertEquals(expectedList.get(i).getKey(), actualList.get(i).getKey());
+            Assert.assertEquals(expectedList.get(i).getValue(), actualList.get(i).getValue());
+        }
+    }
 }
