@@ -4731,7 +4731,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public List<Map<String, String>> getPartitions(Connection connection) {
         List<Map<String, String>> result = new ArrayList<>();
         try (Statement statement = connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("with pg_partitioned_table as (select \n" +
+            String sql = "with pg_partitioned_table as (select \n" +
                     "    p.partrelid,\n" +
                     "    p.partstrat as partitionType,\n" +
                     "    p.partnatts,\n" +
@@ -4760,14 +4760,20 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     "    p.\"partitionExpression2\",\n" +
                     "    pg_get_expr(cl.relpartbound, cl.oid, true) as \"fromToIn\"\n" +
                     "FROM\n" +
-                    "    sqlg_schema.\"" + Topology.VERTEX_PREFIX + "schema\" s join\n" +
+                    "    sqlg_schema.\"" + VERTEX_PREFIX + "schema\" s join\n" +
                     "\tpg_catalog.pg_namespace n on s.name = n.nspname join\n" +
                     "    pg_catalog.pg_class cl on cl.relnamespace = n.oid left join\n" +
                     "    pg_catalog.pg_inherits i on i.inhrelid = cl.oid left join\n" +
-                    "    pg_partitioned_table p on p.partrelid = cl.relfilenode\n" +
+//                    "    pg_partitioned_table p on p.partrelid = cl.relfilenode\n" +
+                    "    pg_partitioned_table p on p.partrelid = cl.oid\n" +
                     "WHERE\n" +
                     "\tcl.relkind <> 'S' AND " +
-                    "(p.\"partitionExpression1\" is not null or p.\"partitionExpression2\" is not null or cl.relpartbound is not null)");
+                    "(" +
+                    "p.\"partitionExpression1\" is not null " +
+                    "or p.\"partitionExpression2\" is not null " +
+                    "or cl.relpartbound is not null" +
+                    ")";
+            ResultSet resultSet = statement.executeQuery(sql);
             while (resultSet.next()) {
                 Map<String, String> row = new HashMap<>();
                 row.put("schema", resultSet.getString("schema"));
