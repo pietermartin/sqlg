@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.complex.TestComplex;
+import org.umlg.sqlg.test.datasource.TestDataSource;
+import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 
 /**
  * Date: 2014/07/16
@@ -10,11 +11,10 @@ import org.umlg.sqlg.test.complex.TestComplex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestLocalVertexStepOptional.class,
-//        TestGremlinCompileChoose.class,
-//        TestLocalStepCompile.class,
-//        TestHas.class,
-        TestComplex.class
+        TestReadOnlyRole.class,
+        TestDataSource.class
+//        TestSharding.class,
+//        TestShardingGremlin.class
 })
 public class AnyTest {
 }
