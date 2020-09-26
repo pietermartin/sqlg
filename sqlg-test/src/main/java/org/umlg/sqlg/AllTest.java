@@ -54,8 +54,6 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
-import org.umlg.sqlg.test.sharding.TestSharding;
-import org.umlg.sqlg.test.sharding.TestShardingGremlin;
 import org.umlg.sqlg.test.topology.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
@@ -255,8 +253,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSimpleJoinGremlin.class,
         TestSimpleVertexEdgeGremlin.class,
         TestMultipleIDQuery.class,
-        TestSharding.class,
-        TestShardingGremlin.class,
+//        TestSharding.class,
+//        TestShardingGremlin.class,
         TestRecordId.class,
         TestPropertyValues.class,
         TestReadOnlyRole.class,
