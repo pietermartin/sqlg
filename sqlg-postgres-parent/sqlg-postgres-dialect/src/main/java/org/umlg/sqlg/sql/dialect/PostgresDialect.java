@@ -2096,7 +2096,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case ZONEDDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
             case LOCALTIME_ORDINAL:
-                return new String[]{"TIME WITH TIME ZONE"};
+                return new String[]{"TIME"};
             case PERIOD_ORDINAL:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
             case DURATION_ORDINAL:
@@ -2136,7 +2136,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALDATE_ARRAY_ORDINAL:
                 return new String[]{"DATE[]"};
             case LOCALTIME_ARRAY_ORDINAL:
-                return new String[]{"TIME WITH TIME ZONE[]"};
+                return new String[]{"TIME[]"};
             case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE[]", "TEXT[]"};
             case DURATION_ARRAY_ORDINAL:
@@ -3872,10 +3872,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @SuppressWarnings({"deprecation", "Duplicates"})
     private static Time shiftDST(LocalTime lt) {
         Time t = Time.valueOf(lt);
-        int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
-        // I know this are deprecated methods, but it's so much clearer than alternatives
-        int m = t.getSeconds();
-        t.setSeconds(m + offset);
+//        int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
+//        // I know this are deprecated methods, but it's so much clearer than alternatives
+//        int m = t.getSeconds();
+//        t.setSeconds(m + offset);
         return t;
     }
 
