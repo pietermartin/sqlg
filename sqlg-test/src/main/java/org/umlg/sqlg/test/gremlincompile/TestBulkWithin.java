@@ -6,6 +6,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalTime;
@@ -16,6 +18,8 @@ import java.util.List;
  * Time: 7:28 PM
  */
 public class TestBulkWithin extends BaseTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestBulkWithin.class.getName());
 
     @BeforeClass
     public static void beforeClass() {
@@ -436,6 +440,9 @@ public class TestBulkWithin extends BaseTest {
         LocalTime localTime1 = LocalTime.now();
         LocalTime localTime2 = LocalTime.now().minusHours(1);
         LocalTime localTime3 = LocalTime.now().minusHours(2);
+        LOGGER.debug(localTime1.toString());
+        LOGGER.debug(localTime2.toString());
+        LOGGER.debug(localTime3.toString());
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime1);
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime2);
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime3);
