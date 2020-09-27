@@ -106,12 +106,12 @@
 
 <!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgGraphPostgresProcessStandardTest.java</include>-->
-<!--                        <include>**/PostgresAllTest.java</include>-->
-                        <include>**/PostgresAnyTest.java</include>
+                        <include>**/PostgresAllTest.java</include>
+<!--                        <include>**/PostgresAnyTest.java</include>-->
 
-<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
-<!--                        <include>**/HsqldbAllTest.java</include>-->
+                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
+                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+                        <include>**/HsqldbAllTest.java</include>
 
 <!--                        <include>**/SqlgMSSqlServerStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgGraphMSSqlServerProcessStandardTest.java</include>-->
