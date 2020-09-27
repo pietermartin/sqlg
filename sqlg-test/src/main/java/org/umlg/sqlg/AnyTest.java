@@ -2,7 +2,6 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.datasource.TestDataSource;
 import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 
 /**
@@ -12,7 +11,7 @@ import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestReadOnlyRole.class,
-        TestDataSource.class
+//        TestDataSource.class
 //        TestSharding.class,
 //        TestShardingGremlin.class
 })
