@@ -424,7 +424,7 @@ public class SqlgUtil {
                     break;
                 case LOCALTIME_ORDINAL:
                     //loses nano seconds
-                    preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
+                    preparedStatement.setTime(parameterStartIndex++, shiftDST((LocalTime) pair.right));
                     break;
                 case PERIOD_ORDINAL:
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
@@ -1258,6 +1258,15 @@ public class SqlgUtil {
             default:
                 throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
         }
+    }
+
+    private static Time shiftDST(LocalTime lt) {
+        Time t = Time.valueOf(lt);
+        int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
+        // I know this are deprecated methods, but it's so much clearer than alternatives
+        int m = t.getSeconds();
+        t.setSeconds(m + offset);
+        return t;
     }
 
 }
