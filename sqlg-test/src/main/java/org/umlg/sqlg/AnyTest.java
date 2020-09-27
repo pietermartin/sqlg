@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.roles.TestReadOnlyRole;
+import org.umlg.sqlg.test.gremlincompile.TestBulkWithin;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,7 @@ import org.umlg.sqlg.test.roles.TestReadOnlyRole;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestReadOnlyRole.class,
-//        TestDataSource.class
-//        TestSharding.class,
-//        TestShardingGremlin.class
+        TestBulkWithin.class,
 })
 public class AnyTest {
 }
