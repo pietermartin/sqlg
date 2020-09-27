@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalTime;
+import java.util.Calendar;
 import java.util.List;
 
 /**
@@ -443,6 +444,7 @@ public class TestBulkWithin extends BaseTest {
         LOGGER.debug(localTime1.toString());
         LOGGER.debug(localTime2.toString());
         LOGGER.debug(localTime3.toString());
+        LOGGER.debug(Calendar.getInstance().getTimeZone().toString());
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime1);
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime2);
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime3);
