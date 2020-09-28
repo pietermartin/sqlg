@@ -2235,7 +2235,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return PropertyType.STRING_ARRAY;
             case "_date":
                 return PropertyType.LOCALDATE_ARRAY;
-            case "_timetz":
+            case "_time":
                 return PropertyType.LOCALTIME_ARRAY;
             case "_timestamptz":
                 //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
