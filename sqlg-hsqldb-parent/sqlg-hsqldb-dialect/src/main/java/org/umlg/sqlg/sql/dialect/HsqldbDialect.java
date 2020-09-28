@@ -196,15 +196,13 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName) {
-        StringBuilder sb = new StringBuilder("SELECT * FROM INFORMATION_SCHEMA.SYSTEM_INDEXINFO WHERE TABLE_SCHEM = '");
-        sb.append(schemaTable.getSchema());
-        sb.append("' AND  TABLE_NAME = '");
-        sb.append(prefix);
-        sb.append(schemaTable.getTable());
-        sb.append("' AND INDEX_NAME = '");
-        sb.append(indexName);
-        sb.append("'");
-        return sb.toString();
+        return "SELECT * FROM INFORMATION_SCHEMA.SYSTEM_INDEXINFO WHERE TABLE_SCHEM = '" + schemaTable.getSchema() +
+                "' AND  TABLE_NAME = '" +
+                prefix +
+                schemaTable.getTable() +
+                "' AND INDEX_NAME = '" +
+                indexName +
+                "'";
     }
 
     @Override
@@ -528,7 +526,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return PropertyType.DOUBLE;
             case Types.VARCHAR:
                 return PropertyType.STRING;
-            case Types.TIMESTAMP_WITH_TIMEZONE:
+            case Types.TIMESTAMP:
                 return PropertyType.LOCALDATETIME;
             case Types.DATE:
                 return PropertyType.LOCALDATE;
