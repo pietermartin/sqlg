@@ -24,7 +24,7 @@ public class TestSetProperty extends BaseTest {
     public void testSetByteProperty() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteValues());
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        marko.property("byte", new Byte((byte) 1));
+        marko.property("byte", Byte.valueOf((byte) 1));
         this.sqlgGraph.tx().commit();
         assertProperty(marko, "byte", (byte) 1);
     }
@@ -202,19 +202,19 @@ public class TestSetProperty extends BaseTest {
     public void testSetObjectProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        v.property("age2", new Short((short) 1));
-        v.property("age3", new Integer(1));
-        v.property("age4", new Long(1L));
-        v.property("age5", new Float(1f));
-        v.property("age6", new Double(1d));
+        v.property("age2", Short.valueOf((short) 1));
+        v.property("age3", Integer.valueOf(1));
+        v.property("age4", Long.valueOf(1L));
+        v.property("age5", Float.valueOf(1f));
+        v.property("age6", Double.valueOf(1d));
         v.property("ok", Boolean.TRUE);
 
         this.sqlgGraph.tx().commit();
-        assertProperty(v, "age2", new Short((short) 1));
-        assertProperty(v, "age3", new Integer(1));
-        assertProperty(v, "age4", new Long(1L));
-        assertProperty(v, "age5", new Float(1f));
-        assertProperty(v, "age6", new Double(1d));
+        assertProperty(v, "age2", Short.valueOf((short) 1));
+        assertProperty(v, "age3", Integer.valueOf(1));
+        assertProperty(v, "age4", Long.valueOf(1L));
+        assertProperty(v, "age5", Float.valueOf(1f));
+        assertProperty(v, "age6", Double.valueOf(1d));
         assertProperty(v, "ok", Boolean.TRUE);
 
     }
@@ -292,36 +292,36 @@ public class TestSetProperty extends BaseTest {
     public void testObjectProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
-                "age2", new Short((short) 1),
-                "age3", new Integer(1),
-                "age4", new Long(1L),
-                "age5", new Float(1f),
-                "age6", new Double(1d),
+                "age2", Short.valueOf((short) 1),
+                "age3", Integer.valueOf(1),
+                "age4", Long.valueOf(1L),
+                "age5", Float.valueOf(1f),
+                "age6", Double.valueOf(1d),
                 "ok", Boolean.TRUE
         );
         this.sqlgGraph.tx().commit();
-        assertProperty(v, "age2", new Short((short) 1));
-        assertProperty(v, "age3", new Integer(1));
-        assertProperty(v, "age4", new Long(1L));
-        assertProperty(v, "age5", new Float(1f));
-        assertProperty(v, "age6", new Double(1d));
+        assertProperty(v, "age2", Short.valueOf((short) 1));
+        assertProperty(v, "age3", Integer.valueOf(1));
+        assertProperty(v, "age4", Long.valueOf(1L));
+        assertProperty(v, "age5", Float.valueOf(1f));
+        assertProperty(v, "age6", Double.valueOf(1d));
         assertProperty(v, "ok", Boolean.TRUE);
     }
 
     @Test
     public void testObjectPropertiesNoFloat() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
-                "age2", new Short((short) 1),
-                "age3", new Integer(1),
-                "age4", new Long(1L),
-                "age6", new Double(1d),
+                "age2", Short.valueOf((short) 1),
+                "age3", Integer.valueOf(1),
+                "age4", Long.valueOf(1L),
+                "age6", Double.valueOf(1d),
                 "ok", Boolean.TRUE
         );
         this.sqlgGraph.tx().commit();
-        assertProperty(v, "age2", new Short((short) 1));
-        assertProperty(v, "age3", new Integer(1));
-        assertProperty(v, "age4", new Long(1L));
-        assertProperty(v, "age6", new Double(1d));
+        assertProperty(v, "age2", Short.valueOf((short) 1));
+        assertProperty(v, "age3", Integer.valueOf(1));
+        assertProperty(v, "age4", Long.valueOf(1L));
+        assertProperty(v, "age6", Double.valueOf(1d));
         assertProperty(v, "ok", Boolean.TRUE);
     }
 
