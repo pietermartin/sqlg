@@ -1,5 +1,8 @@
 ##2.0.2
 
+*Implement enhancement[#296](https://github.com/pietermartin/sqlg/issues/396) Replace `TIME WITH TIME ZONE` with `TIME`.
+This is a breaking change, the databases will have to run the command, `ALTER TABLENAME ALTER COLUMN column_name TYPE TIME;`.
+
 *Fix bug [#395](https://github.com/pietermartin/sqlg/issues/395). Added a toggle in the failing tests to truncate
 the time to MILLIS.
 
