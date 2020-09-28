@@ -408,8 +408,7 @@ public class SqlgUtil {
                         ZonedDateTime zonedDateTime = (ZonedDateTime) pair.right;
                         preparedStatement.setTimestamp(
                                 parameterStartIndex++,
-                                Timestamp.valueOf(zonedDateTime.toLocalDateTime()),
-                                Calendar.getInstance(TimeZone.getTimeZone(zonedDateTime.getZone()))
+                                Timestamp.valueOf(zonedDateTime.toLocalDateTime())
                         );
                     } else {
                         preparedStatement.setTimestamp(
@@ -547,7 +546,7 @@ public class SqlgUtil {
         int indexOfPeriod = label.indexOf(".");
         Preconditions.checkState(indexOfPeriod > -1, String.format("label must have a period to separate the schema from the table. label %s", label));
         String schema = label.substring(0, indexOfPeriod);
-        String table =  label.substring(indexOfPeriod + 1);
+        String table = label.substring(indexOfPeriod + 1);
         return SchemaTable.of(schema, table);
     }
 

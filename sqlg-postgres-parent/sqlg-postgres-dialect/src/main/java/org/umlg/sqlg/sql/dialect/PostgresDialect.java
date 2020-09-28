@@ -172,7 +172,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return "text";
             case LOCALDATETIME_ARRAY_ORDINAL:
             case ZONEDDATETIME_ARRAY_ORDINAL:
-                return "timestamptz";
+                return "timestamp";
             case LOCALDATE_ARRAY_ORDINAL:
                 return "date";
             case LOCALTIME_ARRAY_ORDINAL:
@@ -2083,9 +2083,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALDATE_ORDINAL:
                 return new String[]{"DATE"};
             case LOCALDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE"};
+                return new String[]{"TIMESTAMP"};
             case ZONEDDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
+                return new String[]{"TIMESTAMP", "TEXT"};
             case LOCALTIME_ORDINAL:
                 return new String[]{"TIME"};
             case PERIOD_ORDINAL:
@@ -2123,13 +2123,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case STRING_ARRAY_ORDINAL:
                 return new String[]{"TEXT[]"};
             case LOCALDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE[]"};
+                return new String[]{"TIMESTAMP[]"};
             case LOCALDATE_ARRAY_ORDINAL:
                 return new String[]{"DATE[]"};
             case LOCALTIME_ARRAY_ORDINAL:
                 return new String[]{"TIME[]"};
             case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE[]", "TEXT[]"};
+                return new String[]{"TIMESTAMP[]", "TEXT[]"};
             case DURATION_ARRAY_ORDINAL:
                 return new String[]{"BIGINT[]", "INTEGER[]"};
             case PERIOD_ARRAY_ORDINAL:
@@ -2228,7 +2228,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return PropertyType.LOCALDATE_ARRAY;
             case "_time":
                 return PropertyType.LOCALTIME_ARRAY;
-            case "_timestamptz":
+            case "_timestamp":
                 //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
                 Triple<String, Integer, String> metaData = metaDataIter.next();
                 metaDataIter.previous();
@@ -3109,31 +3109,31 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         List<String> result = new ArrayList<>();
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "graph\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
-                "\"updatedOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"updatedOn\" TIMESTAMP, " +
                 "\"version\" TEXT, " +
                 "\"dbVersion\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "schema\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, \"schemaVertex\" TEXT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT," +
                 "\"shardCount\" INTEGER);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT, " +
                 "\"shardCount\" INTEGER);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"from\" TEXT, " +
                 "\"to\" TEXT, " +
@@ -3142,17 +3142,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"partitionExpression\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"index_type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "globalUniqueIndex\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "CONSTRAINT propertyUniqueConstraint UNIQUE(name));");
 
@@ -3323,7 +3323,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT, \"dbVersion\" TEXT);";
+        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP, \"updatedOn\" TIMESTAMP, \"version\" TEXT, \"dbVersion\" TEXT);";
     }
 
     @Override
@@ -3342,7 +3342,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"shardCount\" INTEGER;",
                 "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
                         "\"ID\" SERIAL PRIMARY KEY, " +
-                        "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                        "\"createdOn\" TIMESTAMP, " +
                         "\"name\" TEXT, " +
                         "\"from\" TEXT, " +
                         "\"to\" TEXT, " +
