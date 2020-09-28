@@ -365,7 +365,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case ZONEDDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE", "LONGVARCHAR"};
             case LOCALTIME_ORDINAL:
-                return new String[]{"TIME WITH TIME ZONE"};
+                return new String[]{"TIME"};
             case PERIOD_ORDINAL:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
             case DURATION_ORDINAL:
@@ -417,7 +417,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALDATE_ARRAY_ORDINAL:
                 return new String[]{"DATE ARRAY DEFAULT ARRAY[]"};
             case LOCALTIME_ARRAY_ORDINAL:
-                return new String[]{"TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
+                return new String[]{"TIME ARRAY DEFAULT ARRAY[]"};
             case ZONEDDATETIME_ARRAY_ORDINAL:
                 return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]", "LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
             case DURATION_ARRAY_ORDINAL:
@@ -558,7 +558,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return PropertyType.DOUBLE_ARRAY;
             case "DATE ARRAY":
                 return PropertyType.LOCALDATE_ARRAY;
-            case "TIME WITH TIME ZONE ARRAY":
+            case "TIME ARRAY":
                 return PropertyType.LOCALTIME_ARRAY;
             case "TIMESTAMP WITH TIME ZONE ARRAY":
                 //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
@@ -1040,7 +1040,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
             case LOCALTIME_ARRAY_ORDINAL:
                 Object[] times = (Object[]) array.getArray();
-                return SqlgUtil.copyObjectArrayOfOffsetTimeToLocalTime(times, new LocalTime[times.length]);
+                return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
             case JSON_ARRAY_ORDINAL:
                 String[] jsons = SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
                 JsonNode[] jsonNodes = new JsonNode[jsons.length];
