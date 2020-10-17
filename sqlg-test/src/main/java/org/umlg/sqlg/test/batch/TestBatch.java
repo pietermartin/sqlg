@@ -17,6 +17,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +47,9 @@ public class TestBatch extends BaseTest {
     public void testBatchNormalModeEdgeMultiColumnProperties() {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime now = ZonedDateTime.now();
+        if (isHsqldb()) {
+            now = now.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "t", now);
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
         a1.addEdge("ab", a2, "t", now);
@@ -63,6 +67,9 @@ public class TestBatch extends BaseTest {
     public void testBatchNormalModeMultiColumnProperties() {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime now = ZonedDateTime.now();
+        if (isHsqldb()) {
+            now = now.truncatedTo(ChronoUnit.MILLIS);
+        }
         this.sqlgGraph.addVertex(T.label, "A", "t", now);
         this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();

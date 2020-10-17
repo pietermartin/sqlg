@@ -6,7 +6,6 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -59,10 +58,8 @@ public class TestEscapedValues extends BaseTest {
 
     @Test
     public void testEscapedValuesSingleQueryBatch2() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
         this.sqlgGraph.tx().streamingBatchModeOn();
-
-        List<String> vals = Arrays.asList(" {-45.53}H - LINK");
         this.sqlgGraph.streamVertex("Escaped", new LinkedHashMap<String, Object>() {{
             put("value", new String[]{"  {-45.53}H - LINK  "});
         }});

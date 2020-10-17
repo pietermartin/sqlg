@@ -14,6 +14,7 @@ import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -22,6 +23,7 @@ import java.util.function.Predicate;
  * Date: 2016/05/04
  * Time: 8:01 PM
  */
+@SuppressWarnings({"rawtypes", "DuplicatedCode"})
 public class TestLocalVertexStepOptional extends BaseTest {
 
     @Test
@@ -52,7 +54,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         assertStep(sqlgVertexStepCompiled, false, false, true, true);
 
         Assert.assertEquals(1, paths.size());
-        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+        List<Predicate<Path>> pathsToAssert = Collections.singletonList(
                 p -> p.size() == 2 && p.get(0).equals(a11) && p.get(1).equals("a11")
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
@@ -64,7 +66,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
 
         paths = this.gt.V(a1).local(__.out().out().values("name")).path().toList();
         Assert.assertEquals(1, paths.size());
-        pathsToAssert = Arrays.asList(
+        pathsToAssert = Collections.singletonList(
                 p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals("c1")
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
@@ -221,15 +223,15 @@ public class TestLocalVertexStepOptional extends BaseTest {
 
     @Test
     public void testUnoptimizableChooseStep() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
-                .V(a1)
+                .V()
                 .local(
                         __.<Vertex, Vertex>choose(
                                 v -> v.label().equals("A"), __.out(), __.in()
@@ -245,7 +247,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         assertStep(sqlgVertexStepCompiled, false, false, false, true);
         sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(1);
         assertStep(sqlgVertexStepCompiled, false, false, false, true);
-        Assert.assertEquals(2, vertices.size());
+        Assert.assertEquals(4, vertices.size());
+        Assert.assertEquals(2, vertices.stream().filter(v -> v.value("name").equals("a1")).count());
+        Assert.assertEquals(1, vertices.stream().filter(v -> v.value("name").equals("b1")).count());
+        Assert.assertEquals(1, vertices.stream().filter(v -> v.value("name").equals("b2")).count());
     }
 
     @Test
@@ -416,7 +421,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
 
         List<Path> paths = this.sqlgGraph.traversal().V(a1).local(__.optional(__.out("ab", "bb")).path()).toList();
         Assert.assertEquals(1, paths.size());
-        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+        List<Predicate<Path>> pathsToAssert = Collections.singletonList(
                 p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
@@ -428,7 +433,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
 
         paths = this.sqlgGraph.traversal().V(a1).local(__.optional(__.out("bb")).path()).toList();
         Assert.assertEquals(1, paths.size());
-        pathsToAssert = Arrays.asList(
+        pathsToAssert = Collections.singletonList(
                 p -> p.size() == 1 && p.get(0).equals(a1)
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
@@ -518,7 +523,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         List<Path> paths = g.traversal().V(vadasVertex).local(__.optional(__.out("knows")).path()).toList();
         Assert.assertEquals(1, paths.size());
 
-        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+        List<Predicate<Path>> pathsToAssert = Collections.singletonList(
                 p -> p.size() == 1 && p.get(0).equals(vadasVertex)
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {

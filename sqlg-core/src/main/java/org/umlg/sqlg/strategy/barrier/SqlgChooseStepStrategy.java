@@ -1,9 +1,12 @@
 package org.umlg.sqlg.strategy.barrier;
 
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimization.MessagePassingReductionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.LambdaFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
@@ -12,8 +15,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.Matc
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.RepeatUnrollStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.javatuples.Pair;
+import org.umlg.sqlg.step.SqlgLambdaFilterStep;
 import org.umlg.sqlg.step.barrier.SqlgBranchStepBarrier;
 import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
+import org.umlg.sqlg.step.barrier.SqlgHasNextStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
@@ -28,6 +34,7 @@ import java.util.stream.Stream;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2014/08/15
  */
+@SuppressWarnings("rawtypes")
 public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     public SqlgChooseStepStrategy() {
@@ -38,7 +45,6 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
-        //noinspection OptionalGetWithoutIsPresent
         if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
@@ -56,8 +62,23 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                 continue;
             }
 
-            if (predicateTraversal.getSteps().get(predicateTraversal.getSteps().size() - 1) instanceof HasNextStep) {
-                predicateTraversal.removeStep(predicateTraversal.getSteps().get(predicateTraversal.getSteps().size() - 1));
+            List<LambdaFilterStep> lambdaFilterSteps = TraversalHelper.getStepsOfAssignableClass(LambdaFilterStep.class, predicateTraversal);
+            for (LambdaFilterStep lambdaFilterStep : lambdaFilterSteps) {
+                SqlgLambdaFilterStep<?> sqlgLambdaFilterStep = new SqlgLambdaFilterStep<>(predicateTraversal, lambdaFilterStep.getPredicate());
+                TraversalHelper.replaceStep(
+                        lambdaFilterStep,
+                        sqlgLambdaFilterStep,
+                        predicateTraversal
+                );
+                Step hasNextStep = predicateTraversal.getSteps().get(predicateTraversal.getSteps().size() - 1);
+                if (hasNextStep instanceof HasNextStep) {
+                    SqlgHasNextStepBarrier<?> sqlgHasNextStepBarrier = new SqlgHasNextStepBarrier<>(predicateTraversal);
+                    TraversalHelper.replaceStep(
+                            hasNextStep,
+                            sqlgHasNextStepBarrier,
+                            predicateTraversal
+                    );
+                }
             }
 
             SqlgBranchStepBarrier sqlgBranchStepBarrier = new SqlgChooseStepBarrier<>(
@@ -68,12 +89,20 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                 sqlgBranchStepBarrier.addLabel(label);
             }
             try {
+                //protected List<Pair<Traversal.Admin, Traversal.Admin<S, E>>> traversalOptions = new ArrayList<>();
                 Field traversalOptionsField = chooseStep.getClass().getSuperclass().getDeclaredField("traversalOptions");
                 traversalOptionsField.setAccessible(true);
-                Map<M, List<Traversal.Admin<S, E>>> traversalOptions = (Map<M, List<Traversal.Admin<S, E>>>) traversalOptionsField.get(chooseStep);
-                for (Map.Entry<M, List<Traversal.Admin<S, E>>> entry : traversalOptions.entrySet()) {
-                    for (Traversal.Admin<S, E> admin : entry.getValue()) {
-                        sqlgBranchStepBarrier.addGlobalChildOption(entry.getKey(), admin);
+                List<Pair<Traversal.Admin, Traversal.Admin<S, E>>> traversalOptions = (List<Pair<Traversal.Admin, Traversal.Admin<S, E>>>)traversalOptionsField.get(chooseStep);
+                for (Pair<Traversal.Admin, Traversal.Admin<S, E>> traversalOptionPair : traversalOptions) {
+                    sqlgBranchStepBarrier.addGlobalChildOption(traversalOptionPair.getValue0(), traversalOptionPair.getValue1());
+                }
+                //protected Map<Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = new HashMap<>();
+                Field traversalPickOptionsField = chooseStep.getClass().getSuperclass().getDeclaredField("traversalPickOptions");
+                traversalPickOptionsField.setAccessible(true);
+                Map<TraversalOptionParent.Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = (Map<TraversalOptionParent.Pick, List<Traversal.Admin<S, E>>>)traversalPickOptionsField.get(chooseStep);
+                for (TraversalOptionParent.Pick pick : traversalPickOptions.keySet()) {
+                    for (Traversal.Admin<S, E> admin : traversalPickOptions.get(pick)) {
+                        sqlgBranchStepBarrier.addGlobalChildOption(pick, admin);
                     }
                 }
             } catch (NoSuchFieldException | IllegalAccessException e) {

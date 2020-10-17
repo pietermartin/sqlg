@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -670,6 +671,15 @@ public class TestGraphStepOrderBy extends BaseTest {
         	 Map<String,Object> m=gt.next();
         	 assertEquals(a,m.get("a"));
          }
+    }
+
+    @Test
+    public void g_withSideEffectXk_nameX_V_order_byXvalueMap_selectXkX_unfoldX_name() {
+        loadModern();
+        Traversal<Vertex, String> traversal =  this.sqlgGraph.traversal()
+                .V().order().by(__.valueMap().select("name").unfold())
+                .values("name");
+        checkOrderedResults(Arrays.asList("josh", "lop", "marko", "peter", "ripple", "vadas"), traversal);
     }
 
 }

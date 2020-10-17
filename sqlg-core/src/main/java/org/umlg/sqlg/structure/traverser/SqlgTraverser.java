@@ -27,7 +27,7 @@ public class SqlgTraverser<T> extends B_LP_NL_O_P_S_SE_SL_Traverser<T> implement
     }
 
     public long getStartElementIndex() {
-        return startElementIndex;
+        return this.startElementIndex;
     }
 
     @Override

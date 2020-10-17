@@ -1,28 +1,36 @@
 package org.umlg.sqlg.step.barrier;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.PredicateTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.NumberHelper;
+import org.javatuples.Pair;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/04/24
  */
+@SuppressWarnings("rawtypes")
 public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S, E> implements TraversalOptionParent<M, S, E> {
 
-    private Traversal.Admin<S, M> branchTraversal;
-    Map<M, List<Traversal.Admin<S, E>>> traversalOptions = new HashMap<>();
+    protected Traversal.Admin<S, M> branchTraversal;
+    protected Map<Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = new HashMap<>();
+    protected List<Pair<Traversal.Admin, Traversal.Admin<S, E>>> traversalOptions = new ArrayList<>();
+
+
     private boolean first = true;
     private final List<Traverser.Admin<E>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<E>> resultIterator;
@@ -37,24 +45,20 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
 
     @Override
     public void addGlobalChildOption(final M pickToken, final Traversal.Admin<S, E> traversalOption) {
-        if (this.traversalOptions.containsKey(pickToken)) {
-            this.traversalOptions.get(pickToken).add(traversalOption);
+
+        if (pickToken instanceof Pick) {
+            if (this.traversalPickOptions.containsKey(pickToken))
+                this.traversalPickOptions.get(pickToken).add(traversalOption);
+            else
+                this.traversalPickOptions.put((Pick) pickToken, new ArrayList<>(Collections.singletonList(traversalOption)));
         } else {
-            //ah well how about this little hack.
-            //BranchStep.PickTokenKey is private so reflecting it here.
-            if (pickToken.getClass().getSimpleName().equals("PickTokenKey")) {
-                try {
-                    Field privateStringField = pickToken.getClass().getDeclaredField("number");
-                    privateStringField.setAccessible(true);
-                    Number n = (Number) privateStringField.get(pickToken);
-                    //noinspection unchecked
-                    this.traversalOptions.put((M) PickTokenKey.make(n), new ArrayList<>(Collections.singletonList(traversalOption)));
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+            final Traversal.Admin pickOptionTraversal;
+            if (pickToken instanceof Traversal) {
+                pickOptionTraversal = ((Traversal) pickToken).asAdmin();
             } else {
-                this.traversalOptions.put(pickToken, new ArrayList<>(Collections.singletonList(traversalOption)));
+                pickOptionTraversal = new PredicateTraversal(pickToken);
             }
+            this.traversalOptions.add(Pair.with(pickOptionTraversal, traversalOption));
         }
         this.integrateChild(traversalOption);
     }
@@ -64,7 +68,6 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
 
         if (this.first) {
 
-            List<Traverser.Admin<S>> successfulStarts = new ArrayList<>();
             Map<Long, Traverser.Admin<S>> cachedStarts = new HashMap<>();
             Map<Traverser.Admin<S>, Object> startBranchTraversalResults = new HashMap<>();
 
@@ -77,109 +80,82 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
                 ((SqlgElement) start.get()).setInternalStartTraverserIndex(startCount);
                 cachedStarts.put(startCount++, start);
             }
-
-            Set<Long> toRemove = new HashSet<>();
             while (true) {
-                if (this.branchTraversal.hasNext()) {
+                //Branch traversal assumes every start only returns exactly one result.
+                //If it returns more then the first value is taken.
+                //This is taken from Tinkerpop's branch traversal's logic.
+                //BranchStep.applyCurrentTraverser
+                //final Object choice = TraversalUtil.apply(start, this.branchTraversal);
+                if (!cachedStarts.isEmpty() && this.branchTraversal.hasNext()) {
                     Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
-                    long startElementIndex = ((SqlgTraverser<M>) branchTraverser).getStartElementIndex();
                     M m = branchTraverser.get();
                     //startElementIndex is 0 for branchTraversals that do not contain a SqlgVertexStep.
-                    //i.e. traversals that do not go to the db.
-                    if (startElementIndex == 0 && m instanceof SqlgElement) {
-                        SqlgElement sqlgElement = (SqlgElement) m;
-                        startElementIndex = sqlgElement.getInternalStartTraverserIndex();
-                    }
-                    if (!(m instanceof SqlgElement)) {
-                        //This assumes that branchTraversals that do not go to the db only return one value per start.
-                        List<Object> branchTraverserPathObjects = branchTraverser.path().objects();
-                        long count = 0;
-                        for (Traverser.Admin<S> cachedStart : cachedStarts.values()) {
-                            count++;
-                            List<Object> cachedStartPathObjects = cachedStart.path().objects();
-                            boolean startsWith = false;
-                            //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
-                            if (!(branchTraverserPathObjects.get(0) instanceof SqlgElement)) {
-                                startsWith = true;
-                            }
-                            if (!startsWith) {
-                                int countX = 0;
-                                for (Object startObject : cachedStartPathObjects) {
-                                    startsWith = branchTraverserPathObjects.get(countX++).equals(startObject);
-                                    if (!startsWith) {
-                                        break;
-                                    }
+                    //This assumes that branchTraversals that do not go to the db only return one value per start.
+                    List<Object> branchTraverserPathObjects = branchTraverser.path().objects();
+                    for (Traverser.Admin<S> cachedStart : cachedStarts.values()) {
+                        startCount = ((SqlgElement) cachedStart.get()).getInternalStartTraverserIndex();
+                        boolean startsWith = false;
+                        //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
+                        //for SqlgHasNextStep the path is lost on 'false'.
+                        if (m instanceof Boolean && (!((Boolean) m)) || !(branchTraverserPathObjects.get(0) instanceof SqlgElement)) {
+                            startsWith = true;
+                        }
+                        if (!startsWith) {
+                            Object cachedStartObject = cachedStart.get();
+                            long internalStartTraversalIndex = ((SqlgElement) cachedStartObject).getInternalStartTraverserIndex();
+                            for (int i = branchTraverserPathObjects.size() - 1; i >= 0; i--) {
+                                Object branchTraversalPathObject = branchTraverserPathObjects.get(i);
+                                if (branchTraversalPathObject instanceof SqlgElement &&
+                                        ((SqlgElement)branchTraversalPathObject).getInternalStartTraverserIndex() == internalStartTraversalIndex &&
+                                        branchTraversalPathObject.equals(cachedStartObject)) {
+                                    startsWith = true;
+                                    break;
                                 }
                             }
-                            if (startsWith) {
-                                successfulStarts.add(cachedStart);
-                                toRemove.add(count);
-                                startBranchTraversalResults.put(cachedStart, branchTraverserPathObjects.get(branchTraverserPathObjects.size() - 1));
-                            }
                         }
-                    } else {
-                        Traverser.Admin<S> start = cachedStarts.remove(startElementIndex);
-                        if (start != null) {
-                            successfulStarts.add(start);
+                        if (startsWith) {
+                            Traverser.Admin<S> start = cachedStarts.remove(startCount);
+                            startBranchTraversalResults.put(start, branchTraverserPathObjects.get(branchTraverserPathObjects.size() - 1));
+                            break;
                         }
                     }
                 } else {
                     break;
                 }
             }
-            //remove all successful starts from the cachedStarts.
-            //i.e. only failed starts remain in the list.
-            for (Long remove : toRemove) {
-                cachedStarts.remove(remove);
+            Preconditions.checkState(cachedStarts.isEmpty());
+            for (Traverser.Admin<S> successfulStart : startBranchTraversalResults.keySet()) {
+                Object branchEndObject = startBranchTraversalResults.get(successfulStart);
+                List<Traversal.Admin<S, E>> branches = pickBranches(branchEndObject);
+                for (Traversal.Admin<S, E> branch : branches) {
+                    branch.addStart(successfulStart);
+                }
             }
 
-            //true false choose step does not have a HasNextStep. Its been removed to keep the path.
-            if (this.traversalOptions.containsKey(Boolean.TRUE) && this.traversalOptions.containsKey(Boolean.FALSE)) {
-                for (Traverser.Admin<S> successfulStart : successfulStarts) {
-                    for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Boolean.TRUE)) {
-                        optionTraversal.addStart(successfulStart);
-                    }
-                }
-                for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Boolean.FALSE)) {
-                    for (Traverser.Admin<S> start : cachedStarts.values()) {
-                        optionTraversal.addStart(start);
-                    }
-                }
-            } else {
-                for (Map.Entry<Traverser.Admin<S>, Object> entry : startBranchTraversalResults.entrySet()) {
-                    Traverser.Admin<S> start = entry.getKey();
-                    Object branchEndObject = PickTokenKey.make(entry.getValue());
-                    if (this.traversalOptions.containsKey(branchEndObject)) {
-                        for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(branchEndObject)) {
-                            optionTraversal.addStart(start);
-                        }
+            for (Pair<Traversal.Admin, Traversal.Admin<S, E>> traversalOptionPair : traversalOptions) {
+                Traversal.Admin<S, E> traversalOption = traversalOptionPair.getValue1();
+                while (true) {
+                    if (traversalOption.hasNext()) {
+                        this.results.add(traversalOption.nextTraverser());
                     } else {
-                        if (this.traversalOptions.containsKey(Pick.none)) {
-                            for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Pick.none)) {
-                                optionTraversal.addStart(start);
-                            }
-                        }
+                        break;
                     }
                 }
-//                List<Traversal.Admin<S, E>> optionTraversals = this.traversalOptions.get(Pick.none);
-//                for (Traversal.Admin<S, E> optionTraversal : optionTraversals) {
-//                    for (Traverser.Admin<S> start : cachedStarts.values()) {
-//                        optionTraversal.addStart(start);
-//                    }
-//                }
             }
-            //Now travers the options. The starts have been set.
-            for (M choice : this.traversalOptions.keySet()) {
-                for (Traversal.Admin<S, E> option : this.traversalOptions.get(choice)) {
+            for (Map.Entry<Pick, List<Traversal.Admin<S, E>>> traversalPickOptionsEntry : traversalPickOptions.entrySet()) {
+                Pick pick = traversalPickOptionsEntry.getKey();
+                List<Traversal.Admin<S, E>> pickTraversals = traversalPickOptionsEntry.getValue();
+                for (Traversal.Admin<S, E> pickTraversal : pickTraversals) {
                     while (true) {
-                        if (option.hasNext()) {
-                            this.results.add(option.nextTraverser());
+                        if (pickTraversal.hasNext()) {
+                            this.results.add(pickTraversal.nextTraverser());
                         } else {
                             break;
                         }
                     }
                 }
             }
+
             //Sort the results, this is to ensure the the incoming start order is not lost.
             this.results.sort((o1, o2) -> {
                 SqlgTraverser x = (SqlgTraverser) o1;
@@ -188,27 +164,43 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             });
             this.resultIterator = this.results.iterator();
         }
+        //noinspection LoopStatementThatDoesntLoop
         while (this.resultIterator.hasNext()) {
             return this.resultIterator.next();
         }
         throw FastNoSuchElementException.instance();
     }
 
+    private List<Traversal.Admin<S, E>> pickBranches(final Object choice) {
+        final List<Traversal.Admin<S, E>> branches = new ArrayList<>();
+        if (choice instanceof Pick) {
+            if (this.traversalPickOptions.containsKey(choice)) {
+                branches.addAll(this.traversalPickOptions.get(choice));
+            }
+        }
+        for (final Pair<Traversal.Admin, Traversal.Admin<S, E>> p : this.traversalOptions) {
+            if (TraversalUtil.test(choice, p.getValue0())) {
+                branches.add(p.getValue1());
+            }
+        }
+        return branches.isEmpty() ? this.traversalPickOptions.get(Pick.none) : branches;
+    }
+
     @Override
     public SqlgBranchStepBarrier<S, E, M> clone() {
         final SqlgBranchStepBarrier<S, E, M> clone = (SqlgBranchStepBarrier<S, E, M>) super.clone();
-        clone.traversalOptions = new HashMap<>(this.traversalOptions.size());
-        for (final Map.Entry<M, List<Traversal.Admin<S, E>>> entry : this.traversalOptions.entrySet()) {
-            final List<Traversal.Admin<S, E>> traversals = entry.getValue();
-            if (traversals.size() > 0) {
-                final List<Traversal.Admin<S, E>> clonedTraversals = clone.traversalOptions.compute(entry.getKey(), (k, v) ->
-                        (v == null) ? new ArrayList<>(traversals.size()) : v);
-                for (final Traversal.Admin<S, E> traversal : traversals) {
-                    clonedTraversals.add(traversal.clone());
-                }
-            }
-        }
-        clone.branchTraversal = this.branchTraversal.clone();
+//        clone.traversalOptions = new HashMap<>(this.traversalOptions.size());
+//        for (final Map.Entry<M, List<Traversal.Admin<S, E>>> entry : this.traversalOptions.entrySet()) {
+//            final List<Traversal.Admin<S, E>> traversals = entry.getValue();
+//            if (traversals.size() > 0) {
+//                final List<Traversal.Admin<S, E>> clonedTraversals = clone.traversalOptions.compute(entry.getKey(), (k, v) ->
+//                        (v == null) ? new ArrayList<>(traversals.size()) : v);
+//                for (final Traversal.Admin<S, E> traversal : traversals) {
+//                    clonedTraversals.add(traversal.clone());
+//                }
+//            }
+//        }
+//        clone.branchTraversal = this.branchTraversal.clone();
         return clone;
     }
 
@@ -216,7 +208,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
     public void setTraversal(final Traversal.Admin<?, ?> parentTraversal) {
         super.setTraversal(parentTraversal);
         this.integrateChild(this.branchTraversal);
-        this.traversalOptions.values().stream().flatMap(List::stream).forEach(this::integrateChild);
+        this.getGlobalChildren().forEach(this::integrateChild);
     }
 
 
@@ -252,9 +244,9 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
     @SuppressWarnings("unchecked")
     @Override
     public List<Traversal.Admin<S, E>> getGlobalChildren() {
-        return Collections.unmodifiableList(this.traversalOptions.values().stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toList()));
+        return Collections.unmodifiableList(Stream.concat(
+                this.traversalPickOptions.values().stream().flatMap(List::stream),
+                this.traversalOptions.stream().map(Pair::getValue1)).collect(Collectors.toList()));
     }
 
     @SuppressWarnings("unchecked")

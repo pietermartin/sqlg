@@ -374,8 +374,7 @@ public class SqlgUtil {
                         ZonedDateTime zonedDateTime = (ZonedDateTime) pair.right;
                         preparedStatement.setTimestamp(
                                 parameterStartIndex++,
-                                Timestamp.valueOf(zonedDateTime.toLocalDateTime()),
-                                Calendar.getInstance(TimeZone.getTimeZone(zonedDateTime.getZone()))
+                                Timestamp.valueOf(zonedDateTime.toLocalDateTime())
                         );
                     } else {
                         preparedStatement.setTimestamp(
@@ -513,7 +512,7 @@ public class SqlgUtil {
         int indexOfPeriod = label.indexOf(".");
         Preconditions.checkState(indexOfPeriod > -1, String.format("label must have a period to separate the schema from the table. label %s", label));
         String schema = label.substring(0, indexOfPeriod);
-        String table =  label.substring(indexOfPeriod + 1);
+        String table = label.substring(indexOfPeriod + 1);
         return SchemaTable.of(schema, table);
     }
 
@@ -1070,7 +1069,7 @@ public class SqlgUtil {
     public static float[] convertFloatArrayToPrimitiveFloat(Float[] floatArray) {
         float[] target = new float[floatArray.length];
         for (int i = 0; i < floatArray.length; i++) {
-            Array.set(target, i, floatArray[i].floatValue());
+            Array.set(target, i, floatArray[i]);
         }
         return target;
     }
@@ -1081,6 +1080,16 @@ public class SqlgUtil {
                 throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, value[i].toLocalDateTime());
+        }
+        return target;
+    }
+
+    public static <T> T copyObjectArrayOfOffsetDateTimeToLocalDateTime(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
+            }
+            Array.set(target, i, ((OffsetDateTime) value[i]).toLocalDateTime());
         }
         return target;
     }
@@ -1145,6 +1154,16 @@ public class SqlgUtil {
         return target;
     }
 
+    public static <T> T copyObjectArrayOfOffsetTimeToLocalTime(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
+            }
+            Array.set(target, i, ((OffsetTime) value[i]).toLocalTime());
+        }
+        return target;
+    }
+
     public static <T> T copyObjectArrayOfTimeToLocalTime(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
@@ -1198,7 +1217,6 @@ public class SqlgUtil {
     public static Object stringValueToType(PropertyType propertyType, String value) {
         switch (propertyType.ordinal()) {
             case STRING_ORDINAL:
-                return value;
             case VARCHAR_ORDINAL:
                 return value;
             default:

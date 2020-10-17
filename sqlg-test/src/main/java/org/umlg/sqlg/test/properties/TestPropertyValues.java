@@ -184,17 +184,6 @@ public class TestPropertyValues extends BaseTest {
         checkOrderedResults(Arrays.asList("peter", "josh", "josh", "josh", "marko"), traversal);
     }
 
-    private static <T> void checkOrderedResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
-        final List<T> results = traversal.toList();
-        Assert.assertFalse(traversal.hasNext());
-        if (expectedResults.size() != results.size()) {
-            Assert.assertEquals("Checking result size", expectedResults.size(), results.size());
-        }
-        for (int i = 0; i < expectedResults.size(); i++) {
-            Assert.assertEquals(expectedResults.get(i), results.get(i));
-        }
-    }
-
     @Test
     public void testValueMapOneObject() {
         loadModern();

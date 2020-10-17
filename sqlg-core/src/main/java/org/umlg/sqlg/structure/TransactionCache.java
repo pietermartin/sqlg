@@ -88,7 +88,9 @@ class TransactionCache {
             this.vertexCache.clear();
         }
         try {
-            this.connection.close();
+            if (!this.connection.isClosed()) {
+                this.connection.close();
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

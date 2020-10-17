@@ -41,7 +41,6 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 this.optionalTraversal.addStart(start);
-                ((SqlgElement) start.get()).setInternalStartTraverserIndex(startCount++);
                 List<Object> startObjects = start.path().objects();
                 StringBuilder recordIdConcatenated = new StringBuilder();
                 for (Object startObject : startObjects) {

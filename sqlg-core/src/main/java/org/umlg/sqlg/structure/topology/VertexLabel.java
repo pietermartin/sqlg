@@ -154,8 +154,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     public Map<String, EdgeLabel> getOutEdgeLabels() {
-        Map<String, EdgeLabel> result = new HashMap<>();
-        result.putAll(this.outEdgeLabels);
+        Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeLabels);
         if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
             for (String e : this.uncommittedRemovedOutEdgeLabels.keySet()) {

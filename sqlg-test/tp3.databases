@@ -1,3 +1,5 @@
+MASTER_EXTERNAL_PORT=9700 COMPOSE_PROJECT_NAME=citus docker-compose up -d
+
 #tp3 databases needed for test suite
 g1
 g2
