@@ -35,7 +35,7 @@ public abstract class SqlgElement implements Element {
     final SqlgGraph sqlgGraph;
     //Multiple threads can access the same element
     Map<String, Object> properties = new ConcurrentHashMap<>();
-    private SqlgElementElementPropertyRollback elementPropertyRollback;
+    private final SqlgElementElementPropertyRollback elementPropertyRollback;
     boolean removed = false;
     //Used in the SqlgBranchStepBarrier to sort the results by the start elements.
     private long internalStartTraverserIndex;
@@ -548,6 +548,17 @@ public abstract class SqlgElement implements Element {
         return SqlgElement.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
+    public boolean loadProperty(
+            ResultSet resultSet,
+            String propertyName,
+            int columnIndex,
+            Map<String, String> columnNameAliasMap,
+            int stepDepth,
+            PropertyType propertyType
+    ) throws SQLException {
+        return loadProperty(resultSet, propertyName, columnIndex, columnNameAliasMap, stepDepth, propertyType, false);
+    }
+
     /**
      * @return true if the property was setted, else false.
      * @throws SQLException
@@ -555,9 +566,11 @@ public abstract class SqlgElement implements Element {
     public boolean loadProperty(
             ResultSet resultSet,
             String propertyName,
-            int columnIndex, Map<String, String> columnNameAliasMap,
+            int columnIndex,
+            Map<String, String> columnNameAliasMap,
             int stepDepth,
-            PropertyType propertyType) throws SQLException {
+            PropertyType propertyType,
+            boolean isAverage) throws SQLException {
 
         if (propertyName.endsWith(Topology.ZONEID) ||
                 propertyName.endsWith(Topology.MONTHS) ||
@@ -619,6 +632,10 @@ public abstract class SqlgElement implements Element {
                 double aDouble = resultSet.getDouble(columnIndex);
                 if (!resultSet.wasNull()) {
                     this.properties.put(propertyName, aDouble);
+                    if (isAverage) {
+                        long weight = resultSet.getLong(columnIndex + 1);
+                        this.properties.put(propertyName, Pair.of(aDouble, weight));
+                    }
                     return true;
                 } else {
                     return false;

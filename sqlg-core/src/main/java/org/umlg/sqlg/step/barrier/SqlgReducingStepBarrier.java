@@ -15,34 +15,25 @@ import java.util.NoSuchElementException;
  * Date: 2019/07/04
  */
 @SuppressWarnings("unchecked")
-public abstract class SqlgReducingStepBarrier<S extends Number> extends SqlgAbstractStep<S, S> {
+public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, E> {
 
     private boolean first = true;
-    private Number result = Double.NaN;
-    private Iterator<Traverser.Admin<S>> resultIterator = null;
+    private E result = null;
+    private Iterator<Traverser.Admin<E>> resultIterator = null;
 
-    SqlgReducingStepBarrier(Traversal.Admin traversal) {
+    SqlgReducingStepBarrier(Traversal.Admin<?, ?> traversal) {
         super(traversal);
     }
 
     @Override
-    protected Traverser.Admin<S> processNextStart() throws NoSuchElementException {
+    protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         if (this.first) {
             this.first = false;
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> s = this.starts.next();
                 this.result = reduce(result, s.get());
-//                if (result == null) {
-//                    result = s.get();
-//                } else {
-//                    if (result.equals(Double.NaN)) {
-//                        result = s.get();
-//                    } else {
-//                        this.result = reduce(result, s.get());
-//                    }
-//                }
             }
-            Traverser.Admin<S> traverser = SqlgTraverserGenerator.instance().generate((S) result, this, 1L, false, false);
+            Traverser.Admin<E> traverser = produceFinalResult(result);
             this.resultIterator = IteratorUtils.asIterator(traverser);
         }
         if (this.resultIterator.hasNext()) {
@@ -53,5 +44,17 @@ public abstract class SqlgReducingStepBarrier<S extends Number> extends SqlgAbst
         }
     }
 
-    protected abstract Number reduce(Number a, Number b);
+    protected Traverser.Admin<E> produceFinalResult(E result) {
+        return SqlgTraverserGenerator.instance().generate(result, this, 1L, false, false);
+    }
+
+    public E reduce(E a, S b) {
+        //noop
+        throw new IllegalStateException("noop");
+    }
+
+//    public MeanGlobalStep.MeanNumber reduce(MeanGlobalStep.MeanNumber meanNumber, Pair<Number, Long> bPair) {
+//        //noop
+//        throw new IllegalStateException("noop");
+//    }
 }

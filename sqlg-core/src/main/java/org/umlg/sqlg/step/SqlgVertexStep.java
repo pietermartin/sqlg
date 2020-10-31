@@ -371,7 +371,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     }
 
     @Override
-    public boolean isEargerLoad() {
+    public boolean isEagerLoad() {
         return this.eagerLoad;
     }
 

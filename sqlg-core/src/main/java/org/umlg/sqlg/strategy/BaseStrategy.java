@@ -278,7 +278,7 @@ public abstract class BaseStrategy {
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
-                SqlgPropertyMapStep<?, ?> sqlgPropertiesStep = new SqlgPropertyMapStep<>(
+                SqlgPropertyMapStep<?, ?> sqlgPropertyMapStep = new SqlgPropertyMapStep<>(
                         traversal,
                         propertyMapStep.getIncludedTokens(),
                         propertyMapStep.getReturnType(),
@@ -286,26 +286,29 @@ public abstract class BaseStrategy {
                         propertyMapStep.getPropertyKeys());
 
                 for (String label : step.getLabels()) {
-                    sqlgPropertiesStep.addLabel(label);
+                    sqlgPropertyMapStep.addLabel(label);
                 }
-//                sqlgPropertiesStep.setAppliesToLabels(this.currentReplacedStep.getLabels());
-                //noinspection unchecked
-                TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, traversal);
+                //noinspection unchecked,rawtypes
+                TraversalHelper.replaceStep((Step) step, sqlgPropertyMapStep, traversal);
             }
         }
         return true;
     }
 
     private boolean handlePropertiesStep(ReplacedStep replacedStep, Step<?, ?> step) {
-        Step<?, ?> dropStep = SqlgTraversalUtil.stepAfter(this.traversal, DropStep.class, step);
+        return handlePropertiesStep(replacedStep, step, this.traversal);
+    }
+
+    private boolean handlePropertiesStep(ReplacedStep replacedStep, Step<?, ?> step, Traversal.Admin<?, ?> t) {
+        Step<?, ?> dropStep = SqlgTraversalUtil.stepAfter(t, DropStep.class, step);
         if (dropStep != null) {
             return false;
         }
-        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(this.traversal, OrderGlobalStep.class, step);
+        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(t, OrderGlobalStep.class, step);
         if (orderGlobalStep != null) {
             return false;
         }
-        Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(this.traversal, step);
+        Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(t, step);
         if (lambdaStep != null) {
             return false;
         }
@@ -317,6 +320,12 @@ public abstract class BaseStrategy {
                 replacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
             }
         }
+        PropertiesStep propertiesStep = (PropertiesStep) step;
+        SqlgPropertiesStep sqlgPropertiesStep = new SqlgPropertiesStep(propertiesStep.getTraversal(), propertiesStep.getReturnType(), propertiesStep.getPropertyKeys());
+        for (String label : step.getLabels()) {
+            sqlgPropertiesStep.addLabel(label);
+        }
+        TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, t);
         return true;
     }
 
@@ -1283,7 +1292,7 @@ public abstract class BaseStrategy {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step<?, ?> maxStep, String aggr) {
+    private boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step maxStep, String aggr) {
         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(aggr, Collections.emptyList()));
         switch (aggr) {
             case sum:
@@ -1348,7 +1357,7 @@ public abstract class BaseStrategy {
                     if (aggregationFunctionProperty == null) {
                         return false;
                     }
-                    handlePropertiesStep(replacedStep, propertiesStep);
+                    handlePropertiesStep(replacedStep, propertiesStep, aggregateOverTraversal);
 
                     if (replacedStep.getRestrictedProperties() == null) {
                         replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));
@@ -1368,7 +1377,7 @@ public abstract class BaseStrategy {
                     } else {
                         throw new IllegalStateException(String.format("Unhandled group by aggregation %s", two.getClass().getSimpleName()));
                     }
-                    SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, aggregationFunctionProperty.get(0), isPropertiesStep);
+                    SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, aggregationFunctionProperty.get(0), isPropertiesStep, two instanceof MeanGlobalStep);
                     //noinspection unchecked
                     TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
                 }

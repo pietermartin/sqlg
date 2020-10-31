@@ -1307,7 +1307,7 @@ public interface SqlDialect {
         return -1;
     }
 
-    default void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column) {
+    default void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             sb.append(column.getAggregateFunction().toUpperCase());
             sb.append("(");
@@ -1318,7 +1318,12 @@ public interface SqlDialect {
         sb.append(".");
         sb.append(maybeWrapInQoutes(column.getColumn()));
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
-            sb.append(")");
+            sb.append(") AS ").append(maybeWrapInQoutes(alias));
+            if (column.getAggregateFunction().equals("avg")) {
+                sb.append(", COUNT(1) AS ").append(maybeWrapInQoutes(alias + "_weight"));
+            }
+        } else {
+            sb.append(" AS ").append(maybeWrapInQoutes(alias));
         }
     }
 }

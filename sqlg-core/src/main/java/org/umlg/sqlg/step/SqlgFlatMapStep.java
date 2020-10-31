@@ -16,7 +16,7 @@ public abstract class SqlgFlatMapStep<S, E> extends SqlgAbstractStep<S, E> {
     private Traverser.Admin<S> head = null;
     private Iterator<E> iterator = EmptyIterator.instance();
 
-    public SqlgFlatMapStep(final Traversal.Admin traversal) {
+    public SqlgFlatMapStep(final Traversal.Admin<?, ?> traversal) {
         super(traversal);
     }
 

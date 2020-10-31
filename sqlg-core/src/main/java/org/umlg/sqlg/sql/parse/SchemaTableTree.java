@@ -54,7 +54,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private final List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers;
-    private List<HasContainer> additionalPartitionHasContainers = new ArrayList<>();
+    private final List<HasContainer> additionalPartitionHasContainers = new ArrayList<>();
     private List<AndOrHasContainer> andOrHasContainers;
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
@@ -1915,13 +1915,13 @@ public class SchemaTableTree {
                         alias,
                         lastSchemaTableTree.aggregateFunction.getLeft()
                 );
+
             } else {
                 cols.add(
                         lastSchemaTableTree.getSchemaTable(),
                         col,
                         lastSchemaTableTree.getStepDepth(),
-                        alias,
-                        null
+                        alias
                 );
             }
         } else {
@@ -1933,13 +1933,22 @@ public class SchemaTableTree {
             // postfix do not use labeled methods
             if (alias == null) {
                 alias = lastSchemaTableTree.calculateAliasPropertyName(postFixedCol);
-                cols.add(
-                        lastSchemaTableTree.getSchemaTable(),
-                        postFixedCol,
-                        lastSchemaTableTree.getStepDepth(),
-                        alias,
-                        lastSchemaTableTree.hasAggregateFunction() ? lastSchemaTableTree.aggregateFunction.getLeft() : null
-                );
+                if (lastSchemaTableTree.hasAggregateFunction()) {
+                    cols.add(
+                            lastSchemaTableTree.getSchemaTable(),
+                            postFixedCol,
+                            lastSchemaTableTree.getStepDepth(),
+                            alias,
+                            lastSchemaTableTree.aggregateFunction.getLeft()
+                    );
+                } else {
+                    cols.add(
+                            lastSchemaTableTree.getSchemaTable(),
+                            postFixedCol,
+                            lastSchemaTableTree.getStepDepth(),
+                            alias
+                    );
+                }
             }
         }
     }
@@ -2712,7 +2721,15 @@ public class SchemaTableTree {
                     if (!column.isID() && !column.isForeignKey()) {
                         boolean settedProperty;
                         if (column.getAggregateFunction() != null && column.getAggregateFunction().equalsIgnoreCase("avg")) {
-                            settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, PropertyType.DOUBLE);
+                            settedProperty = sqlgElement.loadProperty(
+                                    resultSet,
+                                    propertyName,
+                                    column.getColumnIndex() - 1,
+                                    getColumnNameAliasMap(),
+                                    this.stepDepth,
+                                    PropertyType.DOUBLE,
+                                    true);
+
                         } else if (column.getAggregateFunction() != null && column.getAggregateFunction().equalsIgnoreCase("sum")) {
                             PropertyType becomes;
                             if (column.getPropertyType() == PropertyType.INTEGER || column.getPropertyType() == PropertyType.SHORT) {
@@ -2721,6 +2738,8 @@ public class SchemaTableTree {
                                 becomes = column.getPropertyType();
                             }
                             settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, becomes);
+                        } else if (column.getAggregateFunction() != null) {
+                            settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, propertyType);
                         } else {
                             settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, propertyType);
                         }
@@ -2962,7 +2981,7 @@ public class SchemaTableTree {
     }
 
     public Pair<String, List<String>> getAggregateFunction() {
-        return aggregateFunction;
+        return this.aggregateFunction;
     }
 
     public void setAggregateFunction(Pair<String, List<String>> aggregateFunction) {

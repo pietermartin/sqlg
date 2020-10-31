@@ -1021,6 +1021,8 @@ public class Schema implements TopologyInf {
                             break;
                         case MARKER:
                             break;
+                        case "sqlgPathTempFakeLabel":
+                            break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\", \"property\" and \"partition\" are expected as a label. Found %s", label));
                     }
@@ -1132,6 +1134,8 @@ public class Schema implements TopologyInf {
                             edgeIdentifierEdge = outEdgePath.get("edge_identifier");
                             break;
                         case MARKER:
+                            break;
+                        case "sqlgPathTempFakeLabel":
                             break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\", \"outEdgeVertex\" and \"property\" is expected as a label. Found \"%s\"", label));

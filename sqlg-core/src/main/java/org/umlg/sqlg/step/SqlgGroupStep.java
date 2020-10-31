@@ -1,5 +1,6 @@
 package org.umlg.sqlg.step;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -17,16 +18,18 @@ import java.util.*;
  */
 public class SqlgGroupStep<K, V> extends SqlgAbstractStep<SqlgElement, Map<K, V>> {
 
-    private List<String> groupBy;
-    private String aggregateOn;
-    private boolean isPropertiesStep;
+    private final List<String> groupBy;
+    private final String aggregateOn;
+    private final boolean isPropertiesStep;
     private boolean resetted = false;
+    private final boolean isMean;
 
-    public SqlgGroupStep(Traversal.Admin traversal, List<String> groupBy, String aggregateOn, boolean isPropertiesStep) {
+    public SqlgGroupStep(Traversal.Admin traversal, List<String> groupBy, String aggregateOn, boolean isPropertiesStep, boolean isMean) {
         super(traversal);
         this.groupBy = groupBy;
         this.aggregateOn = aggregateOn;
         this.isPropertiesStep = isPropertiesStep;
+        this.isMean = isMean;
     }
 
     @Override
@@ -39,19 +42,26 @@ public class SqlgGroupStep<K, V> extends SqlgAbstractStep<SqlgElement, Map<K, V>
             }
             final Traverser.Admin<SqlgElement> start = this.starts.next();
             SqlgElement sqlgElement = start.get();
+            V value;
+            if (this.isMean) {
+                Pair<Number, Long> avgAndWeight = sqlgElement.value(this.aggregateOn);
+                value = (V) avgAndWeight.getLeft();
+            } else {
+                value = sqlgElement.value(this.aggregateOn);
+            }
             if (this.groupBy.size() == 1) {
                 if (this.groupBy.get(0).equals(T.label.getAccessor())) {
-                    Property property = sqlgElement.property(this.aggregateOn);
+                    Property<?> property = sqlgElement.property(this.aggregateOn);
                     if (property.isPresent()) {
-                        end.put((K) sqlgElement.label(), sqlgElement.value(this.aggregateOn));
+                        end.put((K) sqlgElement.label(), value);
                     } else {
                         end.put((K) sqlgElement.label(), (V) Integer.valueOf(1));
                     }
                 } else {
-                    end.put(sqlgElement.value(this.groupBy.get(0)), sqlgElement.value(this.aggregateOn));
+                    end.put(sqlgElement.value(this.groupBy.get(0)), value);
                 }
             } else if (this.isPropertiesStep) {
-                end.put((K) IteratorUtils.list(sqlgElement.values(this.groupBy.toArray(new String[]{}))), sqlgElement.value(this.aggregateOn));
+                end.put((K) IteratorUtils.list(sqlgElement.values(this.groupBy.toArray(new String[]{}))), value);
             } else {
                 Map<String, List<?>> keyMap = new HashMap<>();
                 for (String s : this.groupBy) {
@@ -59,7 +69,7 @@ public class SqlgGroupStep<K, V> extends SqlgAbstractStep<SqlgElement, Map<K, V>
                     keyValues.add(sqlgElement.value(s));
                     keyMap.put(s, keyValues);
                 }
-                end.put((K) keyMap, sqlgElement.value(this.aggregateOn));
+                end.put((K) keyMap, value);
             }
         }
         if (end.get().isEmpty()) {

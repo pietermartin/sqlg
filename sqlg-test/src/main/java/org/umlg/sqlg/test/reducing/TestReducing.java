@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.reducing;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -11,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgGroupStep;
+import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.step.barrier.SqlgAvgGlobalStep;
 import org.umlg.sqlg.step.barrier.SqlgMaxGlobalStep;
 import org.umlg.sqlg.step.barrier.SqlgMinGlobalStep;
@@ -52,7 +52,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertEquals(3, traversal.next(), 0);
     }
@@ -70,7 +70,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMinGlobalStep);
         Assert.assertEquals(0, traversal.next(), 0);
     }
@@ -87,7 +87,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgSumGlobalStep);
         Assert.assertEquals(6, traversal.next(), 0L);
     }
@@ -103,7 +103,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgAvgGlobalStep);
         Double d = traversal.next();
         Assert.assertEquals(1.5, d, 0D);
@@ -394,7 +394,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Integer max = traversal.next();
@@ -419,7 +419,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Integer max = traversal.next();
@@ -466,7 +466,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
 
         Assert.assertEquals(2, traversal.next(), 0);
@@ -483,7 +483,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMinGlobalStep);
 
         Assert.assertEquals(1, traversal.next(), 0);
@@ -500,7 +500,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgSumGlobalStep);
 
         Assert.assertEquals(3, traversal.next(), 0L);
@@ -521,7 +521,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgAvgGlobalStep);
 
         Assert.assertEquals(1.8, traversal.next(), 0);
@@ -539,7 +539,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Number m = traversal.next();
@@ -556,7 +556,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Number m = traversal.next();
@@ -573,7 +573,7 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertTrue(traversal.hasNext());
         Number m = traversal.next();

@@ -1023,7 +1023,7 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
-    public void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column) {
+    public void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             sb.append(column.getAggregateFunction().toUpperCase());
             sb.append("(CAST(");
@@ -1034,7 +1034,10 @@ public class H2Dialect extends BaseSqlDialect {
         sb.append(".");
         sb.append(maybeWrapInQoutes(column.getColumn()));
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
-            sb.append(" as DOUBLE PRECISION))");
+            sb.append(" as DOUBLE PRECISION)) AS ").append(maybeWrapInQoutes(alias));
+            sb.append(", COUNT(1) AS ").append(maybeWrapInQoutes(alias + "_weight"));
+        } else {
+            sb.append(" AS ").append(maybeWrapInQoutes(alias));
         }
     }
 }

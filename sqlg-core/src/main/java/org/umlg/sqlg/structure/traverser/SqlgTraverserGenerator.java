@@ -27,7 +27,7 @@ public class SqlgTraverserGenerator implements TraverserGenerator {
     private SqlgTraverserGenerator() {
     }
 
-    public <S> Traverser.Admin<S> generate(final S start, final Step<S, ?> startStep, final long initialBulk, boolean endsWithSack, boolean requiresOneBulk) {
+    public <S> Traverser.Admin<S> generate(final S start, final Step startStep, final long initialBulk, boolean endsWithSack, boolean requiresOneBulk) {
         return new SqlgTraverser<>(start, startStep, initialBulk, endsWithSack, requiresOneBulk);
     }
 

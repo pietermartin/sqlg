@@ -186,9 +186,7 @@ public class ColumnList {
             String alias = columnEntry.getValue();
             sb.append(sep);
             sep = ",\n\t";
-            c.toSelectString(sb, partOfDuplicateQuery);
-            sb.append(" AS ");
-            sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
+            c.toSelectString(sb, partOfDuplicateQuery, alias);
             if (this.drop && (this.identifiers.isEmpty() || count++ == this.identifiers.size())) {
                 break;
             }
@@ -274,11 +272,15 @@ public class ColumnList {
     public void indexColumns(int startColumnIndex) {
         int i = startColumnIndex;
         for (Column column : columns.keySet()) {
-            if (!this.containsAggregate) {
-                column.columnIndex = i++;
-            } else if (!column.isID() && !column.isForeignKey) {
+            column.columnIndex = i++;
+            if (column.aggregateFunction != null && column.aggregateFunction.equals("avg")) {
                 column.columnIndex = i++;
             }
+//            if (!this.containsAggregate) {
+//                column.columnIndex = i++;
+//            } else if (!column.isID() && !column.isForeignKey) {
+//                column.columnIndex = i++;
+//            }
         }
     }
 
@@ -303,10 +305,10 @@ public class ColumnList {
      * @author jpmoresmau
      */
     public class Column {
-        private final String schema;
-        private final String table;
+        private String schema;
+        private String table;
         private final String column;
-        private final int stepDepth;
+        private int stepDepth;
         private PropertyType propertyType;
         private final boolean ID;
         private int columnIndex = -1;
@@ -318,7 +320,7 @@ public class ColumnList {
         //Only set for user identifier primary keys
         private String foreignKeyProperty;
 
-        private String aggregateFunction;
+        private final String aggregateFunction;
 
         Column(String schema, String table, String column, PropertyType propertyType, int stepDepth, String aggregateFunction) {
             super();
@@ -433,7 +435,7 @@ public class ColumnList {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            toSelectString(sb, false);
+            toSelectString(sb, false, "");
             return sb.toString();
         }
 
@@ -442,12 +444,14 @@ public class ColumnList {
          *
          * @param sb
          */
-        void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery) {
-            sqlgGraph.getSqlDialect().toSelectString(sb, partOfDuplicateQuery, this);
+        void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, String alias) {
+            sqlgGraph.getSqlDialect().toSelectString(sb, partOfDuplicateQuery, this, alias);
         }
 
         boolean isFor(int stepDepth, SchemaTable schemaTable) {
-            return this.stepDepth == stepDepth && this.schema.equals(schemaTable.getSchema()) && this.table.equals(schemaTable.getTable());
+            return this.stepDepth == stepDepth &&
+                    this.schema != null && this.schema.equals(schemaTable.getSchema()) &&
+                    this.table != null && this.table.equals(schemaTable.getTable());
         }
 
         public boolean isForeignKey(int stepDepth, SchemaTable schemaTable) {
