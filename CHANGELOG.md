@@ -1,3 +1,10 @@
+##2.0.3
+
+* Merge the reducing branch in. Sqlg now optimizes reducing steps.
+  `MaxGlobalStep`, `MinGlobalStep`, `SumGlobalStep`, `MeanGlobalStep` and `GroupStep` are supported.
+
+*Fix bug [#398](https://github.com/pietermartin/sqlg/issues/398). Fixed a bug in the sql generation.
+
 ##2.0.2
 
 *Implement enhancement[#296](https://github.com/pietermartin/sqlg/issues/396) Replace `TIME WITH TIME ZONE` with `TIME`.
