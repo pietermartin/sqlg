@@ -33,10 +33,14 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
                 Traverser.Admin<S> s = this.starts.next();
                 this.result = reduce(result, s.get());
             }
-            Traverser.Admin<E> traverser = produceFinalResult(result);
-            this.resultIterator = IteratorUtils.asIterator(traverser);
+            if (this.result == null) {
+                throw FastNoSuchElementException.instance();
+            } else {
+                Traverser.Admin<E> traverser = produceFinalResult(result);
+                this.resultIterator = IteratorUtils.asIterator(traverser);
+            }
         }
-        if (this.resultIterator.hasNext()) {
+        if (this.resultIterator != null && this.resultIterator.hasNext()) {
             return this.resultIterator.next();
         } else {
             reset();
@@ -49,12 +53,7 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
     }
 
     public E reduce(E a, S b) {
-        //noop
         throw new IllegalStateException("noop");
     }
 
-//    public MeanGlobalStep.MeanNumber reduce(MeanGlobalStep.MeanNumber meanNumber, Pair<Number, Long> bPair) {
-//        //noop
-//        throw new IllegalStateException("noop");
-//    }
 }
