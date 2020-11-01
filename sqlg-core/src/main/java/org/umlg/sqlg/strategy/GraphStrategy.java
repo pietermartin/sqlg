@@ -24,6 +24,7 @@ import java.util.stream.Stream;
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/03/04
  */
+@SuppressWarnings("rawtypes")
 public class GraphStrategy extends BaseStrategy {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphStrategy.class);
@@ -102,7 +103,7 @@ public class GraphStrategy extends BaseStrategy {
         handleHasSteps(stepIterator, pathCount.getValue());
         handleOrderGlobalSteps(stepIterator, pathCount);
         handleRangeGlobalSteps(stepIterator, pathCount);
-        handleConnectiveSteps(stepIterator);
+        handleConnectiveSteps(stepIterator, pathCount);
         this.sqlgStep = constructSqlgStep(step);
         this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         replaceStepInTraversal(step, this.sqlgStep);

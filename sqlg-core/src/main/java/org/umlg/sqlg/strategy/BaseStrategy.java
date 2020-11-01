@@ -54,6 +54,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTrav
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/03/04
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class BaseStrategy {
 
     static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
@@ -273,9 +274,7 @@ public abstract class BaseStrategy {
                     Field f = propertyMapStep.getClass().getDeclaredField("traversalRing");
                     f.setAccessible(true);
                     traversalRing = (TraversalRing)f.get(propertyMapStep);
-                } catch (NoSuchFieldException e) {
-                    throw new RuntimeException(e);
-                } catch (IllegalAccessException e) {
+                } catch (NoSuchFieldException | IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
                 SqlgPropertyMapStep<?, ?> sqlgPropertyMapStep = new SqlgPropertyMapStep<>(
@@ -361,7 +360,7 @@ public abstract class BaseStrategy {
         handleHasSteps(stepIterator, pathCount.getValue());
         handleOrderGlobalSteps(stepIterator, pathCount);
         handleRangeGlobalSteps(stepIterator, pathCount);
-        handleConnectiveSteps(stepIterator);
+        handleConnectiveSteps(stepIterator, pathCount);
         //if called from ChooseStep then the VertexStep is nested inside the ChooseStep and not one of the traversal's direct steps.
         int index = TraversalHelper.stepIndex(step, this.traversal);
         if (index != -1) {
@@ -750,7 +749,7 @@ public abstract class BaseStrategy {
         }
     }
 
-    void handleConnectiveSteps(ListIterator<Step<?, ?>> iterator) {
+    void handleConnectiveSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the hasSteps
         int countToGoPrevious = 0;
         while (iterator.hasNext()) {
@@ -760,6 +759,9 @@ public abstract class BaseStrategy {
                 Optional<AndOrHasContainer> outerAndOrHasContainer = handleConnectiveStepInternal((ConnectiveStep) currentStep);
                 if (outerAndOrHasContainer.isPresent()) {
                     this.currentReplacedStep.addAndOrHasContainer(outerAndOrHasContainer.get());
+                    for (String label : currentStep.getLabels()) {
+                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                    }
                     this.traversal.removeStep(currentStep);
                     iterator.remove();
                     countToGoPrevious--;
@@ -778,6 +780,7 @@ public abstract class BaseStrategy {
     private Optional<AndOrHasContainer> handleConnectiveStepInternal(ConnectiveStep connectiveStep) {
         AndOrHasContainer.TYPE type = AndOrHasContainer.TYPE.from(connectiveStep);
         AndOrHasContainer outerAndOrHasContainer = new AndOrHasContainer(type);
+        outerAndOrHasContainer.setConnectiveStepLabels(connectiveStep.getLabels());
         @SuppressWarnings("unchecked")
         List<Traversal.Admin<?, ?>> localTraversals = connectiveStep.getLocalChildren();
         for (Traversal.Admin<?, ?> localTraversal : localTraversals) {

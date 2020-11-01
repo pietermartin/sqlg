@@ -15,6 +15,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -23,6 +24,7 @@ import java.util.Map;
 public class AndOrHasContainer {
 
 
+    private Set<String> connectiveStepLabels;
 
     //AND and OR means its represents a nested and/or traversal.
     //NONE means it represents an HasContainer.
@@ -50,6 +52,14 @@ public class AndOrHasContainer {
 
     public AndOrHasContainer(TYPE type) {
         this.type = type;
+    }
+
+    public Set<String> getConnectiveStepLabels() {
+        return connectiveStepLabels;
+    }
+
+    public void setConnectiveStepLabels(Set<String> connectiveStepLabels) {
+        this.connectiveStepLabels = connectiveStepLabels;
     }
 
     public void addHasContainer(HasContainer hasContainer) {
