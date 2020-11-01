@@ -118,7 +118,6 @@ public class AndOrHasContainer {
                     if (bool!=null){
                     	result.append(bool);
                     } else {
-                    	
                     	result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h));
                     }
                 }
@@ -133,7 +132,11 @@ public class AndOrHasContainer {
             for (int i = 0; i < depth; i++) {
                 result.append("\t");
             }
-            result.append("(");
+            if (this.hasContainers.isEmpty()) {
+                result.append("(");
+            } else {
+                result.append(" AND (");
+            }
         }
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
             andOrHasContainer.toSql(sqlgGraph, schemaTableTree, result, depth + 1);

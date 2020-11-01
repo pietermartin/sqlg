@@ -1,6 +1,8 @@
 package org.umlg.sqlg.test.filter.connectivestep;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -154,5 +156,30 @@ public class TestAndandOrStep extends BaseTest {
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a2)));
+    }
+
+    @Test
+    public void testHasBeforeOr() {
+        Vertex v1 = this.sqlgGraph.traversal().addV("V").property("start", 0).property("end", 10).next();
+        this.sqlgGraph.traversal().addV("V").property("start", 1).next();
+        this.sqlgGraph.traversal().tx().commit();
+
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("V")
+                .or(
+                        __.has("start", P.lte(-1))
+                                .or(
+                                        __.hasNot("end"),
+                                        __.has("end", P.gte(-1))
+                                ),
+                        __.has("start", P.lte(0))
+                                .or(
+                                        __.hasNot("end"),
+                                        __.has("end", P.gte(0))
+                                )
+                );
+        printTraversalForm(traversal);
+        List<Vertex> result = traversal.toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(v1, result.get(0));
     }
 }
