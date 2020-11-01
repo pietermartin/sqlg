@@ -925,7 +925,9 @@ public class SchemaTableTree {
 
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-            if ((this.sqlgGraph.getSqlDialect().isMssqlServer() || this.parentIdsAndIndexes.size() != 1) && sqlgGraph.getSqlDialect().supportsValuesExpression()) {
+            if ((this.sqlgGraph.getSqlDialect().isMssqlServer() || this.parentIdsAndIndexes.size() != 1) &&
+                    sqlgGraph.getSqlDialect().supportsValuesExpression()) {
+
                 singlePathSql.append(" INNER JOIN\n\t(VALUES");
                 int count = 1;
                 for (Pair<RecordId.ID, Long> parentIdAndIndex : this.parentIdsAndIndexes) {
@@ -1078,13 +1080,30 @@ public class SchemaTableTree {
                 }
             } else {
                 singlePathSql.append("\nWHERE\n\t");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-                singlePathSql.append(".");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-                singlePathSql.append(".");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
-                singlePathSql.append(" = ");
-                singlePathSql.append(this.parentIdsAndIndexes.get(0).getLeft());
+                if (firstSchemaTableTree.hasIDPrimaryKey) {
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                    singlePathSql.append(" = ");
+                    singlePathSql.append(this.parentIdsAndIndexes.get(0).getLeft());
+                } else {
+                    int cnt = 1;
+                    for (String identifier : firstSchemaTableTree.getIdentifiers()) {
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                        singlePathSql.append(".");
+                        singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        singlePathSql.append(" = ");
+                        PropertyType propertyType = this.filteredAllTables.get(firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable()).get(identifier);
+                        singlePathSql.append(sqlgGraph.getSqlDialect().toRDBSStringLiteral(propertyType, this.parentIdsAndIndexes.get(0).getLeft().getIdentifiers().get(cnt - 1)));
+                        if (cnt++ < firstSchemaTableTree.getIdentifiers().size()) {
+                            singlePathSql.append(" AND ");
+                        }
+                    }
+                }
                 mutableWhere.setTrue();
             }
         }
