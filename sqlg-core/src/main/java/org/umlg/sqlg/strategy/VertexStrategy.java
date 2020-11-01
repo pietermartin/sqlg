@@ -6,9 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +17,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -131,7 +130,22 @@ public class VertexStrategy extends BaseStrategy {
 
     @Override
     protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
-        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
+        if (CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass)) {
+            final List<Class> GROUP_STEPS = Arrays.asList(
+                    MaxGlobalStep.class,
+                    MinGlobalStep.class,
+                    SumGlobalStep.class,
+                    MeanGlobalStep.class,
+                    GroupStep.class
+            );
+            if (GROUP_STEPS.contains(stepClass)) {
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
     }
 
     @SuppressWarnings("unchecked")
