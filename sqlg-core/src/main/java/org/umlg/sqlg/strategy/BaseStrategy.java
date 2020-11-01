@@ -1292,7 +1292,7 @@ public abstract class BaseStrategy {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step maxStep, String aggr) {
+    protected boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step maxStep, String aggr) {
         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(aggr, Collections.emptyList()));
         switch (aggr) {
             case sum:
