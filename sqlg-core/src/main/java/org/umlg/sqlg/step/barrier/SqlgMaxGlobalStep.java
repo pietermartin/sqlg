@@ -7,14 +7,15 @@ import org.apache.tinkerpop.gremlin.util.NumberHelper;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2019/07/04
  */
-public class SqlgMaxGlobalStep extends SqlgReducingStepBarrier<Number, Number> {
+@SuppressWarnings("rawtypes")
+public class SqlgMaxGlobalStep extends SqlgReducingStepBarrier<Comparable, Comparable> {
 
     public SqlgMaxGlobalStep(Traversal.Admin<?, ?> traversal) {
         super(traversal);
     }
 
     @Override
-    public Number reduce(Number a, Number b) {
+    public Comparable reduce(Comparable a, Comparable b) {
         if (a == null) {
             return b;
         } else if (b.equals(Double.NaN)) {
