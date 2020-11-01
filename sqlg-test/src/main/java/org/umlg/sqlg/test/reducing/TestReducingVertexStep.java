@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import java.util.Map;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/12/31
  */
+@SuppressWarnings("rawtypes")
 public class TestReducingVertexStep extends BaseTest {
 
     @Test
@@ -128,7 +130,7 @@ public class TestReducingVertexStep extends BaseTest {
                         (Traversal) __.outE().values("weight").sum()
                 );
         printTraversalForm(traversal);
-        checkResults(Arrays.asList(1.9D), traversal);
+        checkResults(Collections.singletonList(1.9D), traversal);
     }
 
     @Test

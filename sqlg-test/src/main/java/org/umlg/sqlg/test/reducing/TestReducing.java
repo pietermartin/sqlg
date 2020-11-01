@@ -22,9 +22,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.*;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.bothE;
-import static org.junit.Assert.assertFalse;
-
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/11/17
@@ -176,11 +173,11 @@ public class TestReducing extends BaseTest {
     public void g_V_hasLabelXsoftwareX_group_byXnameX_byXbothE_weight_meanX() {
         loadModern();
         final Traversal<Vertex, Map<String, Number>> traversal =  this.sqlgGraph.traversal().V().hasLabel("software")
-                .<String, Number>group().by("name").by(bothE().values("weight").mean());
+                .<String, Number>group().by("name").by(__.bothE().values("weight").mean());
         printTraversalForm(traversal);
         Assert.assertTrue(traversal.hasNext());
         final Map<String, Number> map = traversal.next();
-        assertFalse(traversal.hasNext());
+        Assert.assertFalse(traversal.hasNext());
         Assert.assertEquals(2, map.size());
         Assert.assertEquals(1.0, map.get("ripple"));
         Assert.assertEquals(1.0 / 3, map.get("lop"));
