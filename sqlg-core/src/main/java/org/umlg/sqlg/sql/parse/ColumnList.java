@@ -305,10 +305,10 @@ public class ColumnList {
      * @author jpmoresmau
      */
     public class Column {
-        private String schema;
-        private String table;
+        private final String schema;
+        private final String table;
         private final String column;
-        private int stepDepth;
+        private final int stepDepth;
         private PropertyType propertyType;
         private final boolean ID;
         private int columnIndex = -1;
