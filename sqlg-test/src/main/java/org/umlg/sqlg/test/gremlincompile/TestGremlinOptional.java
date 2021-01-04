@@ -17,6 +17,7 @@ import java.util.function.Predicate;
  * Date: 2016/04/14
  * Time: 6:36 PM
  */
+@SuppressWarnings("DuplicatedCode")
 public class TestGremlinOptional extends BaseTest {
 
     @Test
