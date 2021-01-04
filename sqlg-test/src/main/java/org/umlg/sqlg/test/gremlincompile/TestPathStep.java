@@ -26,6 +26,19 @@ import java.util.Set;
 public class TestPathStep extends BaseTest {
 
     @Test
+    public void testBug382() {
+        GraphTraversalSource g = this.sqlgGraph.traversal();
+        g.addV("Test").property("name", "John").next();
+        this.sqlgGraph.tx().commit();
+        List<Path> paths = g.V().hasLabel("Test")
+                .or(__.has("name", "John")).as("t")
+                .path().from("t")
+                .toList();
+        Assert.assertEquals(1, paths.size());
+        System.out.println(paths.get(0));
+    }
+
+    @Test
     public void testPathFrom() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -246,11 +259,11 @@ public class TestPathStep extends BaseTest {
         a3.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>)this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Object>>) this.sqlgGraph.traversal()
                 .V().as("a")
                 .out().as("a")
                 .in().as("a")
-                .select(Pop.all,"a", "a", "a");
+                .select(Pop.all, "a", "a", "a");
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Map<String, Object>> result = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
