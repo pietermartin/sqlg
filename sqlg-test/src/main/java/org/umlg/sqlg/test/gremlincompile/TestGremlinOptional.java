@@ -10,10 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 
 /**
@@ -23,12 +20,51 @@ import java.util.function.Predicate;
 public class TestGremlinOptional extends BaseTest {
 
     @Test
+    public void testOptionalWithSelect() {
+        Vertex car1 = this.sqlgGraph.addVertex(T.label, "Car");
+        Vertex car2 = this.sqlgGraph.addVertex(T.label, "Car");
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person");
+        car1.addEdge("passenger", person);
+        this.sqlgGraph.tx().commit();
+        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("Car").as("cars")
+                .optional(
+                        __.out("passenger").as("passenger")
+                )
+                .path()
+                .toList();
+        Assert.assertEquals(2, paths.size());
+        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+                p -> p.size() == 2 && p.get(0).equals(car1) && p.get(1).equals(person),
+                p -> p.size() == 1 && p.get(0).equals(car2)
+        );
+        for (Predicate<Path> pathPredicate : pathsToAssert) {
+            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
+        }
+        Assert.assertTrue(paths.isEmpty());
+        List<Map<String, Vertex>> result = sqlgGraph.traversal().V().hasLabel("Car").as("cars")
+                .optional(
+                        __.out("passenger").as("passenger")
+                )
+                .<Vertex>select("cars", "passenger")
+                .toList();
+        Assert.assertEquals(1, result.size());
+        Map<String, Vertex> map = result.get(0);
+        Assert.assertEquals(2, map.size());
+        Assert.assertTrue(map.containsKey("cars"));
+        Assert.assertEquals(car1, map.get("cars"));
+        Assert.assertTrue(map.containsKey("passenger"));
+        Assert.assertEquals(person, map.get("passenger"));
+    }
+
+    @Test
     public void testMissingEdgeLabel() {
         GraphTraversalSource g = this.sqlgGraph.traversal();
         Vertex a = g.addV("A").next();
         Vertex b = g.addV("B").next();
         Vertex c = g.addV("C").next();
-        Vertex d = g.addV("D").next();
+        g.addV("D").next();
         a.addEdge("a2b", b);
         a.addEdge("a2c", c);
         this.sqlgGraph.tx().commit();
