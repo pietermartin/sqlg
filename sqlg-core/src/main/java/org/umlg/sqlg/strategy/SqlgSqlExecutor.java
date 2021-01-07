@@ -134,8 +134,8 @@ public class SqlgSqlExecutor {
             SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount);
             // https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
             // this is critical to use a cursor, otherwise we load everything into memory
-            if (sqlgGraph.tx().getFetchSize()!=null){
-            	 preparedStatement.setFetchSize(sqlgGraph.tx().getFetchSize());
+            if (sqlgGraph.tx().getFetchSize() != null) {
+                preparedStatement.setFetchSize(sqlgGraph.tx().getFetchSize());
             }
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();

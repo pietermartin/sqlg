@@ -13,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashSet;
@@ -68,7 +69,7 @@ public class TestPathStep extends BaseTest {
         Assert.assertEquals(1, labels.get(0).size());
         Assert.assertTrue(labels.get(0).contains("a"));
         Assert.assertEquals(1, labels.get(1).size());
-        Assert.assertTrue(labels.get(1).contains("sqlgPathFakeLabel"));
+        Assert.assertTrue(labels.get(1).contains(BaseStrategy.SQLG_PATH_FAKE_LABEL));
         Assert.assertEquals(1, labels.get(2).size());
         Assert.assertTrue(labels.get(2).contains("start"));
 

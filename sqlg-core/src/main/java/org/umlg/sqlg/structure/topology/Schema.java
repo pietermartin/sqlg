@@ -1008,7 +1008,7 @@ public class Schema implements TopologyInf {
                         case "property_partition":
                             vertexPropertyPartitionVertex = vertexPath.get("property_partition");
                             break;
-                        case "sqlgPathFakeLabel":
+                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
                             break;
                         case "subPartition":
                             Preconditions.checkState(vertexPropertyPartitionVertex != null);
@@ -1128,7 +1128,7 @@ public class Schema implements TopologyInf {
                             partitionParentVertex = outEdgePath.get(outEdgePath.size() - 2);
                             partitionParentParentElement = outEdgePath.get(outEdgePath.size() - 3);
                             break;
-                        case "sqlgPathFakeLabel":
+                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
                             break;
                         case "edge_identifier":
                             edgeIdentifierEdge = outEdgePath.get("edge_identifier");
@@ -1304,7 +1304,7 @@ public class Schema implements TopologyInf {
                         case "inSchema":
                             inSchemaVertex = inEdgePath.get("inSchema");
                             break;
-                        case "sqlgPathFakeLabel":
+                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
                             break;
                         case MARKER:
                             break;

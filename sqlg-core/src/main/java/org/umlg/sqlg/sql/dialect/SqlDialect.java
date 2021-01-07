@@ -1307,7 +1307,8 @@ public interface SqlDialect {
         return -1;
     }
 
-    default void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+    default String toSelectString(boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+        StringBuilder sb = new StringBuilder();
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             sb.append(column.getAggregateFunction().toUpperCase());
             sb.append("(");
@@ -1325,5 +1326,6 @@ public interface SqlDialect {
         } else {
             sb.append(" AS ").append(maybeWrapInQoutes(alias));
         }
+        return sb.toString();
     }
 }

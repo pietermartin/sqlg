@@ -26,6 +26,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierS
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.*;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.PropertyType;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
 import org.umlg.sqlg.predicate.Text;
@@ -76,6 +77,7 @@ public abstract class BaseStrategy {
             MinGlobalStep.class,
             SumGlobalStep.class,
             MeanGlobalStep.class,
+//            CountGlobalStep.class,
             GroupStep.class
     );
     public static final String PATH_LABEL_SUFFIX = "P~~~";
@@ -224,6 +226,14 @@ public abstract class BaseStrategy {
                 return handleAggregateGlobalStep(this.currentReplacedStep, step, sum);
             } else if (step instanceof MeanGlobalStep) {
                 return handleAggregateGlobalStep(this.currentReplacedStep, step, "avg");
+            } else if (step instanceof CountGlobalStep) {
+                int stepIndex = TraversalHelper.stepIndex(step, this.traversal);
+                Step previous = this.traversal.getSteps().get(stepIndex  - 1);
+                if (!(previous instanceof SqlgPropertiesStep)) {
+                    return handleAggregateGlobalStep(this.currentReplacedStep, step, count);
+                } else {
+                    return false;
+                }
             } else if (step instanceof GroupStep) {
                 return handleGroupStep(this.currentReplacedStep, step);
             } else {
@@ -273,7 +283,7 @@ public abstract class BaseStrategy {
                 try {
                     Field f = propertyMapStep.getClass().getDeclaredField("traversalRing");
                     f.setAccessible(true);
-                    traversalRing = (TraversalRing)f.get(propertyMapStep);
+                    traversalRing = (TraversalRing) f.get(propertyMapStep);
                 } catch (NoSuchFieldException | IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
@@ -367,7 +377,11 @@ public abstract class BaseStrategy {
             this.traversal.removeStep(step);
         }
         if (!this.currentReplacedStep.hasLabels()) {
+            //CountGlobalStep is special, as the select statement will contain no properties
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
+//                    &&
+//                    !SqlgTraversalUtil.anyStepRecursively(step1 -> step1.getClass().equals(CountGlobalStep.class), this.traversal);
+
             if (precedesPathStep) {
                 this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
@@ -1076,7 +1090,7 @@ public abstract class BaseStrategy {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainerKeyNotIdOrLabel(hasContainer)
-                    && ( hasContainer.getBiPredicate() instanceof ArrayContains
+                    && (hasContainer.getBiPredicate() instanceof ArrayContains
                     || hasContainer.getBiPredicate() instanceof ArrayOverlaps)) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
@@ -1295,24 +1309,39 @@ public abstract class BaseStrategy {
     }
 
     @SuppressWarnings("unchecked")
-    protected boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step maxStep, String aggr) {
+    protected boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step aggregateStep, String aggr) {
         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(aggr, Collections.emptyList()));
         switch (aggr) {
             case sum:
                 SqlgSumGlobalStep sqlgSumGlobalStep = new SqlgSumGlobalStep(this.traversal);
-                TraversalHelper.replaceStep(maxStep, sqlgSumGlobalStep, this.traversal);
+                TraversalHelper.replaceStep(aggregateStep, sqlgSumGlobalStep, this.traversal);
                 break;
             case max:
                 SqlgMaxGlobalStep sqlgMaxGlobalStep = new SqlgMaxGlobalStep(this.traversal);
-                TraversalHelper.replaceStep(maxStep, sqlgMaxGlobalStep, this.traversal);
+                TraversalHelper.replaceStep(aggregateStep, sqlgMaxGlobalStep, this.traversal);
                 break;
             case min:
                 SqlgMinGlobalStep sqlgMinGlobalStep = new SqlgMinGlobalStep(this.traversal);
-                TraversalHelper.replaceStep(maxStep, sqlgMinGlobalStep, this.traversal);
+                TraversalHelper.replaceStep(aggregateStep, sqlgMinGlobalStep, this.traversal);
                 break;
             case "avg":
                 SqlgAvgGlobalStep sqlgAvgGlobalStep = new SqlgAvgGlobalStep(this.traversal);
-                TraversalHelper.replaceStep(maxStep, sqlgAvgGlobalStep, this.traversal);
+                TraversalHelper.replaceStep(aggregateStep, sqlgAvgGlobalStep, this.traversal);
+                break;
+            case count:
+                SqlgCountGlobalStep sqlgCountGlobalStep = new SqlgCountGlobalStep(this.traversal);
+                TraversalHelper.replaceStep(aggregateStep, sqlgCountGlobalStep, this.traversal);
+                int stepIndex = TraversalHelper.stepIndex(sqlgCountGlobalStep, this.traversal);
+                SqlgPropertiesStep sqlgPropertiesStep = new SqlgPropertiesStep(
+                        this.traversal,
+                        PropertyType.VALUE,
+                        count
+                );
+                Set<String> labels = aggregateStep.getLabels();
+                for (String label : labels) {
+                    sqlgCountGlobalStep.addLabel(label);
+                }
+                this.traversal.addStep(stepIndex, sqlgPropertiesStep);
                 break;
             default:
                 throw new IllegalStateException("Unhandled aggregation " + aggr);

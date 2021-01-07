@@ -164,7 +164,7 @@ public class VertexStrategy extends BaseStrategy {
     }
 
     @Override
-    protected boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step maxStep, String aggr) {
+    protected boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step aggregateStep, String aggr) {
         Optional<GroupStep> groupStepOptional = TraversalHelper.getFirstStepOfAssignableClass(GroupStep.class, this.traversal);
         boolean handle = false;
         if (groupStepOptional.isPresent()) {
@@ -173,7 +173,7 @@ public class VertexStrategy extends BaseStrategy {
             handle  = groupStepIndex < currentStepIndex;
         }
         if (handle) {
-            return super.handleAggregateGlobalStep(replacedStep, maxStep, aggr);
+            return super.handleAggregateGlobalStep(replacedStep, aggregateStep, aggr);
         } else {
             return false;
         }

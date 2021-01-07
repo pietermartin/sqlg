@@ -21,8 +21,8 @@ import java.util.*;
 public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implements TraversalParent, Step<S, E> {
 
     private boolean first = true;
-    private List<Traversal.Admin<S, E>> globalTraversals;
-    private List<Traversal.Admin<S, TraversalOptionParent.Pick>> localTraversals;
+    private final List<Traversal.Admin<S, E>> globalTraversals;
+    private final List<Traversal.Admin<S, TraversalOptionParent.Pick>> localTraversals;
     private final List<Traverser.Admin<E>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<E>> resultIterator;
 

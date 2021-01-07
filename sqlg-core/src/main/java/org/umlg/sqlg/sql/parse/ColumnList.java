@@ -3,6 +3,7 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -178,19 +179,31 @@ public class ColumnList {
     }
 
     public String toSelectString(boolean partOfDuplicateQuery) {
-        String sep = "";
         StringBuilder sb = new StringBuilder();
-        int count = 1;
-        for (Map.Entry<Column, String> columnEntry : this.columns.entrySet()) {
-            Column c = columnEntry.getKey();
-            String alias = columnEntry.getValue();
-            sb.append(sep);
-            sep = ",\n\t";
-            c.toSelectString(sb, partOfDuplicateQuery, alias);
-            if (this.drop && (this.identifiers.isEmpty() || count++ == this.identifiers.size())) {
-                break;
+        int countIdentifiers = 1;
+        boolean first = true;
+//        Optional<Column> countColumnOpt = this.columns.keySet().stream().filter(c -> c.aggregateFunction != null && c.aggregateFunction.equals("count")).findAny();
+//        if (countColumnOpt.isPresent()) {
+//            String alias = this.columns.get(countColumnOpt.get());
+//            String part = countColumnOpt.get().toSelectString(partOfDuplicateQuery, alias);
+//            sb.append(part);
+//        } else {
+            for (Map.Entry<Column, String> columnEntry : this.columns.entrySet()) {
+                Column c = columnEntry.getKey();
+                String alias = columnEntry.getValue();
+                String part = c.toSelectString(partOfDuplicateQuery, alias);
+                if (part != null) {
+                    if (!first) {
+                        sb.append(",\n\t");
+                    }
+                    sb.append(part);
+                }
+                first = false;
+                if (this.drop && (this.identifiers.isEmpty() || countIdentifiers++ == this.identifiers.size())) {
+                    break;
+                }
             }
-        }
+//        }
         return sb.toString();
     }
 
@@ -214,8 +227,8 @@ public class ColumnList {
 
     public String toOuterFromString(String prefix, boolean stackContainsAggregate) {
         StringBuilder sb = new StringBuilder();
-        List<String> fromAliases = this.aliases.keySet().stream().filter(
-                (alias) -> !alias.endsWith(Topology.IN_VERTEX_COLUMN_END) && !alias.endsWith(Topology.OUT_VERTEX_COLUMN_END))
+        List<String> fromAliases = this.aliases.keySet().stream()
+                .filter((alias) -> !alias.endsWith(Topology.IN_VERTEX_COLUMN_END) && !alias.endsWith(Topology.OUT_VERTEX_COLUMN_END))
                 .collect(Collectors.toList());
         for (String alias : fromAliases) {
             Column c = this.aliases.get(alias);
@@ -226,9 +239,13 @@ public class ColumnList {
                 sb.append(c.aggregateFunction.toUpperCase());
                 sb.append("(");
             }
-            sb.append(prefix);
-            sb.append(".");
-            sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
+            if (c.aggregateFunction != null && c.aggregateFunction.equals(GraphTraversal.Symbols.count)) {
+                sb.append("1");
+            } else {
+                sb.append(prefix);
+                sb.append(".");
+                sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
+            }
             if (c.aggregateFunction != null) {
                 sb.append(")");
             }
@@ -434,18 +451,22 @@ public class ColumnList {
 
         @Override
         public String toString() {
-            StringBuilder sb = new StringBuilder();
-            toSelectString(sb, false, "");
-            return sb.toString();
+            return toSelectString(false, "");
         }
 
         /**
          * to string using provided builder
-         *
-         * @param sb
          */
-        void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, String alias) {
-            sqlgGraph.getSqlDialect().toSelectString(sb, partOfDuplicateQuery, this, alias);
+        String toSelectString(boolean partOfDuplicateQuery, String alias) {
+            if (this.aggregateFunction != null && this.aggregateFunction.equals(GraphTraversal.Symbols.count)) {
+                if (!partOfDuplicateQuery) {
+                    return "COUNT(1)";
+                } else {
+                    return null;
+                }
+            } else {
+                return ColumnList.this.sqlgGraph.getSqlDialect().toSelectString(partOfDuplicateQuery, this, alias);
+            }
         }
 
         boolean isFor(int stepDepth, SchemaTable schemaTable) {

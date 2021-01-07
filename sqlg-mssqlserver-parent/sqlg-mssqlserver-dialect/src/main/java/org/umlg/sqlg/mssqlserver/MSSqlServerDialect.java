@@ -1738,7 +1738,8 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+    public String toSelectString(boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+        StringBuilder sb = new StringBuilder();
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             sb.append(column.getAggregateFunction().toUpperCase());
             sb.append("(CAST(");
@@ -1754,5 +1755,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         } else {
             sb.append(" AS ").append(maybeWrapInQoutes(alias));
         }
+        return sb.toString();
     }
 }

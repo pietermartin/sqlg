@@ -111,8 +111,8 @@ public class SqlgUtil {
                         subQueryStack,
                         subQueryDepth == subQueryStacks.size(),
                         idColumnCountMap,
-                        forParent,
-                        subQueryStacks.get(subQueryStacks.size() - 1).getLast().hasAggregateFunction()
+                        forParent
+//                        subQueryStacks.get(subQueryStacks.size() - 1).getLast().hasAggregateFunction()
                 );
                 result.addAll(labeledElements);
                 if (subQueryDepth == subQueryStacks.size()) {
@@ -170,8 +170,7 @@ public class SqlgUtil {
             LinkedList<SchemaTableTree> subQueryStack,
             boolean lastQueryStack,
             Map<String, Integer> idColumnCountMap,
-            boolean forParent,
-            boolean hasAggregateFunction
+            boolean forParent
     ) throws SQLException {
 
         List<Emit<E>> result = new ArrayList<>();
@@ -202,8 +201,11 @@ public class SqlgUtil {
                         }
                     }
                 } else {
-                    List<Comparable> identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
-                    resultSetWasNull = resultSet.wasNull();
+                    List<Comparable> identifierObjects = List.of(-1);
+                    if (!schemaTableTree.hasAggregateFunction()) {
+                        identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
+                        resultSetWasNull = resultSet.wasNull();
+                    }
                     if (!resultSetWasNull) {
                         if (schemaTableTree.getSchemaTable().isVertexTable()) {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());

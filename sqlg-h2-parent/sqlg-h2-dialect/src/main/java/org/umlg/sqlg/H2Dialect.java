@@ -1023,7 +1023,8 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
-    public void toSelectString(StringBuilder sb, boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+    public String toSelectString(boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+        StringBuilder sb = new StringBuilder();
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             if (column.getAggregateFunction().equals("avg")) {
                 sb.append(column.getAggregateFunction().toUpperCase());
@@ -1050,5 +1051,6 @@ public class H2Dialect extends BaseSqlDialect {
         } else {
             sb.append(" AS ").append(maybeWrapInQoutes(alias));
         }
+        return sb.toString();
     }
 }

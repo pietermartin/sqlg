@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.match.TestMatch;
+import org.umlg.sqlg.test.reducing.TestReducing;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.match.TestMatch;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestMatch.class
+        TestReducing.class,
+//        TestGremlinCompileV.class
 })
 public class AnyTest {
 }

@@ -9,6 +9,7 @@ import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -19,24 +20,32 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
 
     private boolean first = true;
     private E result = null;
+    private Supplier<E> seedSupplier;
     private Iterator<Traverser.Admin<E>> resultIterator = null;
 
     SqlgReducingStepBarrier(Traversal.Admin<?, ?> traversal) {
         super(traversal);
     }
 
+    public void setSeedSupplier(final Supplier<E> seedSupplier) {
+        this.seedSupplier = seedSupplier;
+    }
+
     @Override
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         if (this.first) {
             this.first = false;
+            if (this.seedSupplier != null) {
+                this.result = this.seedSupplier.get();
+            }
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> s = this.starts.next();
-                this.result = reduce(result, s.get());
+                this.result = reduce(this.result, s.get());
             }
             if (this.result == null) {
                 throw FastNoSuchElementException.instance();
             } else {
-                Traverser.Admin<E> traverser = produceFinalResult(result);
+                Traverser.Admin<E> traverser = produceFinalResult(this.result);
                 this.resultIterator = IteratorUtils.asIterator(traverser);
             }
         }
