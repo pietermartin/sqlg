@@ -77,9 +77,18 @@ public abstract class BaseStrategy {
             MinGlobalStep.class,
             SumGlobalStep.class,
             MeanGlobalStep.class,
-//            CountGlobalStep.class,
+            CountGlobalStep.class,
             GroupStep.class
     );
+
+    static final List<Class> REDUCING_STEPS = Arrays.asList(
+            MaxGlobalStep.class,
+            MinGlobalStep.class,
+            SumGlobalStep.class,
+            MeanGlobalStep.class,
+            CountGlobalStep.class
+    );
+
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
@@ -111,7 +120,6 @@ public abstract class BaseStrategy {
         this.traversal = traversal;
         Optional<Graph> graph = traversal.getGraph();
         Preconditions.checkState(graph.isPresent(), "BUG: SqlgGraph must be present on the traversal.");
-        //noinspection OptionalGetWithoutIsPresent
         this.sqlgGraph = (SqlgGraph) graph.get();
     }
 
@@ -203,13 +211,14 @@ public abstract class BaseStrategy {
             } else if (step instanceof DropStep && (!this.sqlgGraph.getSqlDialect().isMariaDb())) {
                 Traversal.Admin<?, ?> root = TraversalHelper.getRootTraversal(this.traversal);
                 final Optional<EventStrategy> eventStrategyOptional = root.getStrategies().getStrategy(EventStrategy.class);
-                if (eventStrategyOptional.isPresent()) {
-                    //Do nothing, it will go via the SqlgDropStepBarrier.
-                } else {
+                //noinspection StatementWithEmptyBody
+                if (eventStrategyOptional.isEmpty()) {
                     //MariaDB does not support target and source together.
                     //Table 'E_ab' is specified twice, both as a target for 'DELETE' and as a separate source for data
                     //This has been fixed in 10.3.1, waiting for it to land in the repo.
                     handleDropStep();
+                } else {
+                    //Do nothing, it will go via the SqlgDropStepBarrier.
                 }
                 return false;
             } else if (step instanceof DropStep && this.sqlgGraph.getSqlDialect().isMariaDb()) {
@@ -228,7 +237,7 @@ public abstract class BaseStrategy {
                 return handleAggregateGlobalStep(this.currentReplacedStep, step, "avg");
             } else if (step instanceof CountGlobalStep) {
                 int stepIndex = TraversalHelper.stepIndex(step, this.traversal);
-                Step previous = this.traversal.getSteps().get(stepIndex  - 1);
+                Step previous = this.traversal.getSteps().get(stepIndex - 1);
                 if (!(previous instanceof SqlgPropertiesStep)) {
                     return handleAggregateGlobalStep(this.currentReplacedStep, step, count);
                 } else {
@@ -345,20 +354,6 @@ public abstract class BaseStrategy {
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
-
-//        stepIterator.previous();
-//        Step s4;
-//        Step previous = null;
-//        if (stepIterator.hasPrevious()) {
-//            previous = stepIterator.previous();
-//            stepIterator.next();
-//            s4 = stepIterator.next();
-//        } else {
-//            s4 = stepIterator.next();
-//
-//        }
-//        Preconditions.checkState(s4 == step);
-
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
                 step,
@@ -379,9 +374,6 @@ public abstract class BaseStrategy {
         if (!this.currentReplacedStep.hasLabels()) {
             //CountGlobalStep is special, as the select statement will contain no properties
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
-//                    &&
-//                    !SqlgTraversalUtil.anyStepRecursively(step1 -> step1.getClass().equals(CountGlobalStep.class), this.traversal);
-
             if (precedesPathStep) {
                 this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
@@ -1346,6 +1338,9 @@ public abstract class BaseStrategy {
             default:
                 throw new IllegalStateException("Unhandled aggregation " + aggr);
         }
+        //aggregate queries do not have select clauses so we clear all the labels
+        ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
+        replacedStepTree.clearLabels();
         return false;
     }
 

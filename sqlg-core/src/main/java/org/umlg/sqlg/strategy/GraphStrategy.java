@@ -113,8 +113,6 @@ public class GraphStrategy extends BaseStrategy {
         if (!this.currentReplacedStep.hasLabels()) {
             //CountGlobalStep is special, as the select statement will contain no properties
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
-//                    &&
-//                    !SqlgTraversalUtil.anyStepRecursively(step1 -> step1.getClass().equals(CountGlobalStep.class), this.traversal);
             if (precedesPathStep) {
                 this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
