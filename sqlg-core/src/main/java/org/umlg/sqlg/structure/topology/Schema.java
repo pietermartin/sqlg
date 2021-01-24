@@ -164,11 +164,11 @@ public class Schema implements TopologyInf {
         }
 
         Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
-        if (!vertexLabelOptional.isPresent()) {
+        if (vertexLabelOptional.isEmpty()) {
             this.topology.lock();
             vertexLabelOptional = this.getVertexLabel(label);
             //noinspection OptionalIsPresent
-            if (!vertexLabelOptional.isPresent()) {
+            if (vertexLabelOptional.isEmpty()) {
                 return this.createVertexLabel(label, columns, identifiers);
             } else {
                 return vertexLabelOptional.get();
@@ -620,15 +620,11 @@ public class Schema implements TopologyInf {
         if (result == null) {
             result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         }
-//        if (result == null) {
-//            result = this.uncommittedGlobalUniqueIndexes.get()
-//        }
         return Optional.ofNullable(result);
     }
 
     Map<String, EdgeLabel> getEdgeLabels() {
-        Map<String, EdgeLabel> result = new HashMap<>();
-        result.putAll(this.outEdgeLabels);
+        Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeLabels);
         if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
             for (String e : uncommittedRemovedEdgeLabels) {
