@@ -1,2 +1,0 @@
-"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
-"org.sqlg.benchmark.SimpleInsertBenchmark.insert1000VerticesWith10Properties","avgt",1,10,0.035724,0.007659,"s/op"
