@@ -216,12 +216,12 @@ public class SqlgGraph implements Graph {
     private final SqlgDataSource sqlgDataSource;
     private static final Logger logger = LoggerFactory.getLogger(SqlgGraph.class);
     private final SqlgTransaction sqlgTransaction;
-    private Topology topology;
-    private GremlinParser gremlinParser;
-    private SqlDialect sqlDialect;
-    private String jdbcUrl;
+    private final Topology topology;
+    private final GremlinParser gremlinParser;
+    private final SqlDialect sqlDialect;
+    private final String jdbcUrl;
     private final ObjectMapper mapper = new ObjectMapper();
-    private Configuration configuration;
+    private final Configuration configuration;
     private final ISqlGFeatures features = new SqlGFeatures();
 
     /**
@@ -240,13 +240,13 @@ public class SqlgGraph implements Graph {
                                 new SqlgLocalStepStrategy(),
                                 new SqlgWhereStrategy(),
                                 new SqlgRepeatStepStrategy(),
-                                new SqlgOptionalStepStrategy(),
-                                new SqlgChooseStepStrategy(),
+                                new SqlgOptionalStepStrategy<>(),
+                                new SqlgChooseStepStrategy<>(),
                                 new SqlgTraversalFilterStepStrategy<>(),
-                                new SqlgWhereTraversalStepStrategy(),
-                                new SqlgOrStepStepStrategy(),
-                                new SqlgAndStepStepStrategy(),
-                                new SqlgNotStepStepStrategy(),
+                                new SqlgWhereTraversalStepStrategy<>(),
+                                new SqlgOrStepStepStrategy<>(),
+                                new SqlgAndStepStepStrategy<>(),
+                                new SqlgNotStepStepStrategy<>(),
                                 new SqlgHasStepStrategy(),
                                 new SqlgDropStepStrategy(),
                                 new SqlgRestrictPropertiesStrategy(),
@@ -323,7 +323,7 @@ public class SqlgGraph implements Graph {
         this.topology = new Topology(this);
         this.topology.setLOCK_TIMEOUT_MINUTES(configuration.getInt("lock.timeout.minutes", 2));
         this.gremlinParser = new GremlinParser(this);
-        if (!this.sqlDialect.supportsSchemas() && !this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isPresent()) {
+        if (!this.sqlDialect.supportsSchemas() && this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isEmpty()) {
             //This is for mariadb. Need to make sure a db called public exist
             this.getTopology().ensureSchemaExist(this.sqlDialect.getPublicSchema());
         }
@@ -1196,7 +1196,7 @@ public class SqlgGraph implements Graph {
      * @return the build version
      */
     public String getBuildVersion() {
-        return buildVersion;
+        return this.buildVersion;
     }
 
 }
