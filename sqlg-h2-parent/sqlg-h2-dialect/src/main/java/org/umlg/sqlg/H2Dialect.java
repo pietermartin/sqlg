@@ -1053,4 +1053,10 @@ public class H2Dialect extends BaseSqlDialect {
         }
         return sb.toString();
     }
+
+    @Override
+    public boolean isTimestampz(String typeName) {
+        //H2 is not using timestamps with zones
+        return false;
+    }
 }

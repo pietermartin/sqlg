@@ -1328,4 +1328,8 @@ public interface SqlDialect {
         }
         return sb.toString();
     }
+
+    default boolean isTimestampz(String typeName) {
+        return false;
+    }
 }

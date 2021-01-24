@@ -4825,4 +4825,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public boolean isTimestampz(String typeName) {
+        String localTypeName = typeName.toLowerCase();
+        switch (localTypeName) {
+            case "timestamptz":
+            case "_timestamptz":
+            case "timetz":
+            case "_timetz":
+                return true;
+            default:
+                return false;
+        }
+    }
 }
