@@ -23,9 +23,9 @@ import java.util.*;
  * Date: 2014/08/17
  * Time: 2:43 PM
  */
+@SuppressWarnings("DuplicatedCode")
 public class TestIndex extends BaseTest {
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testIndexViaTopology() {
         this.sqlgGraph.traversal().V().hasLabel("Person").values(T.id.getAccessor());
@@ -66,7 +66,6 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().rollback();
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testUniqueIndexViaTopolgy() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
@@ -89,7 +88,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnInteger() {
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
             put("age", PropertyType.INTEGER);
         }});
@@ -119,7 +118,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnVertex2() throws SQLException {
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList<>(vertexLabel.getProperties().values()));
@@ -146,7 +145,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnVertex() throws SQLException {
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name1", PropertyType.STRING);
             put("name2", PropertyType.STRING);
             put("name3", PropertyType.STRING);
@@ -181,7 +180,7 @@ public class TestIndex extends BaseTest {
     public void testIndexOnVertex1() throws SQLException {
         //This is for postgres only
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres"));
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name1", PropertyType.STRING);
             put("name2", PropertyType.STRING);
             put("name3", PropertyType.STRING);
@@ -214,7 +213,7 @@ public class TestIndex extends BaseTest {
         //This is for postgres only
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres"));
 
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name1", PropertyType.STRING);
             put("name2", PropertyType.STRING);
             put("name3", PropertyType.STRING);
@@ -244,20 +243,20 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexExist() {
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         PropertyColumn name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(name));
         this.sqlgGraph.tx().commit();
 
-        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(name));
 
-        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
@@ -266,7 +265,7 @@ public class TestIndex extends BaseTest {
 
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
@@ -275,13 +274,13 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexExistSchema() {
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         PropertyColumn name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(name));
 
-        vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
@@ -289,13 +288,13 @@ public class TestIndex extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(name));
 
-        vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
@@ -304,14 +303,13 @@ public class TestIndex extends BaseTest {
 
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<String, PropertyType>() {{
+        vertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("MySchema").ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
             put("name", PropertyType.STRING);
         }});
         name = vertexLabel.getProperty("name").orElseThrow(IllegalStateException::new);
         vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(name));
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testIndexOnEdge() throws Exception {
         Map<String, PropertyType> columns = new HashMap<>();
@@ -351,7 +349,6 @@ public class TestIndex extends BaseTest {
 
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testIndexOnEdgeAcrossSchemas() {
         Vertex aa1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "aa");
@@ -456,7 +453,7 @@ public class TestIndex extends BaseTest {
 
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("name", PropertyType.STRING);
                     put("surname", PropertyType.STRING);
                 }}
@@ -478,5 +475,55 @@ public class TestIndex extends BaseTest {
         Assert.assertTrue(vertexLabelOptional.isPresent());
         Map<String, Index> indexMap = vertexLabelOptional.get().getIndexes();
         Assert.assertEquals(2, indexMap.size());
+    }
+
+    @Test
+    public void testDropIndex() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "Person",
+                new HashMap<>() {{
+                    put("name", PropertyType.STRING);
+                    put("surname", PropertyType.STRING);
+                }}
+        );
+        PropertyColumn propertyColumn = vertexLabel.getProperty("name").orElseThrow(() -> new RuntimeException("its a bug"));
+        vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(propertyColumn));
+        this.sqlgGraph.tx().commit();
+
+        Optional<VertexLabel> vertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Person");
+        Assert.assertTrue(vertexLabelOptional.isPresent());
+        VertexLabel personVertexLabel = vertexLabelOptional.get();
+        Assert.assertEquals(2, personVertexLabel.getProperties().size());
+        Map<String, Index> indexMap = personVertexLabel.getIndexes();
+        Assert.assertEquals(1, indexMap.size());
+        new ArrayList<>(indexMap.values()).get(0).remove();
+        this.sqlgGraph.tx().commit();
+
+        vertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Person");
+        Assert.assertTrue(vertexLabelOptional.isPresent());
+        personVertexLabel = vertexLabelOptional.get();
+        Assert.assertEquals(2, personVertexLabel.getProperties().size());
+        indexMap = personVertexLabel.getIndexes();
+        Assert.assertTrue(indexMap.isEmpty());
+
+        //Do it again, github issue #400, fails on doing it again.
+        vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "Person",
+                new HashMap<>() {{
+                    put("name", PropertyType.STRING);
+                    put("surname", PropertyType.STRING);
+                }}
+        );
+        propertyColumn = vertexLabel.getProperty("name").orElseThrow(() -> new RuntimeException("its a bug"));
+        vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(propertyColumn));
+        this.sqlgGraph.tx().commit();
+
+        vertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Person");
+        Assert.assertTrue(vertexLabelOptional.isPresent());
+        personVertexLabel = vertexLabelOptional.get();
+        Assert.assertEquals(2, personVertexLabel.getProperties().size());
+        indexMap = personVertexLabel.getIndexes();
+        Assert.assertEquals(1, indexMap.size());
+
     }
 }
