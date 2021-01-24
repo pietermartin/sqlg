@@ -4826,6 +4826,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
+//    ALTER TABLE public."V_A" ALTER COLUMN "dateTime" TYPE timestamp;
+//    ALTER TABLE public."V_A" ALTER COLUMN "dateTimes" TYPE timestamp[];
+//    ALTER TABLE public."V_A" ALTER COLUMN "time" TYPE time;
+//    ALTER TABLE public."V_A" ALTER COLUMN "times" TYPE time[];
     @Override
     public boolean isTimestampz(String typeName) {
         String localTypeName = typeName.toLowerCase();
