@@ -48,9 +48,13 @@ class SqlgStartupManager {
 
     void loadSqlgSchema() {
         try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("SchemaManager.loadSqlgSchema()...");
-            }
+            logger.debug("SchemaManager.loadSqlgSchema()...");
+
+            //We need Connection.TRANSACTION_SERIALIZABLE here as the SqlgGraph can startup while other graphs are
+            //creating schema objects concurrently.
+            Connection connection = this.sqlgGraph.tx().getConnection();
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
             //check if the topology schema exists, if not createVertexLabel it
             boolean existSqlgSchema = existSqlgSchema();
             StopWatch stopWatch = new StopWatch();
@@ -73,10 +77,18 @@ class SqlgStartupManager {
             //committing here will ensure that sqlg creates the tables.
             this.sqlgGraph.tx().commit();
             stopWatch.stop();
+
+            connection = this.sqlgGraph.tx().getConnection();
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
             logger.debug("Time to createVertexLabel sqlg topology: " + stopWatch.toString());
             if (!existSqlgSchema) {
                 addPublicSchema();
                 this.sqlgGraph.tx().commit();
+
+                connection = this.sqlgGraph.tx().getConnection();
+                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
             }
             if (!existSqlgSchema) {
                 //old versions of sqlg needs the topology populated from the information_schema table.

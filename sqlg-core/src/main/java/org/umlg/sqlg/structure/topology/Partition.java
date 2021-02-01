@@ -13,11 +13,14 @@ import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.util.ThreadLocalMap;
+import org.umlg.sqlg.util.ThreadLocalSet;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
@@ -40,9 +43,9 @@ public class Partition implements TopologyInf {
     private final String partitionExpression;
 
     private Partition parentPartition;
-    private final Map<String, Partition> partitions = new HashMap<>();
-    private final Map<String, Partition> uncommittedPartitions = new HashMap<>();
-    private final Set<String> uncommittedRemovedPartitions = new HashSet<>();
+    private final Map<String, Partition> partitions = new ConcurrentHashMap<>();
+    private final Map<String, Partition> uncommittedPartitions = new ThreadLocalMap<>();
+    private final Set<String> uncommittedRemovedPartitions = new ThreadLocalSet<>();
 
     public Partition(
             SqlgGraph sqlgGraph,
@@ -491,7 +494,7 @@ public class Partition implements TopologyInf {
             if (inEdgeRole.getVertexLabel().hasIDPrimaryKey()) {
                 sql.append(sqlDialect.maybeWrapInQoutes(inEdgeRole.getVertexLabel().getSchema().getName() + "." + inEdgeRole.getVertexLabel().getLabel() + Topology.IN_VERTEX_COLUMN_END));
             } else {
-               int i = 1;
+                int i = 1;
                 for (String identifier : inEdgeRole.getVertexLabel().getIdentifiers()) {
                     sql.append(sqlDialect.maybeWrapInQoutes(inEdgeRole.getVertexLabel().getSchema().getName() + "." + inEdgeRole.getVertexLabel().getLabel() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
                     if (i++ < inEdgeRole.getVertexLabel().getIdentifiers().size()) {
@@ -629,7 +632,6 @@ public class Partition implements TopologyInf {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "Partition.afterCommit must hold the write lock");
         for (Iterator<Map.Entry<String, Partition>> it = this.uncommittedPartitions.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Partition> entry = it.next();
             this.partitions.put(entry.getKey(), entry.getValue());
@@ -648,7 +650,6 @@ public class Partition implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "Partition.afterCommit must hold the write lock");
         this.uncommittedRemovedPartitions.clear();
         for (Iterator<Map.Entry<String, Partition>> it = this.partitions.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Partition> entry = it.next();
@@ -969,23 +970,19 @@ public class Partition implements TopologyInf {
 
     public Map<String, Partition> getPartitions() {
         Map<String, Partition> result = new HashMap<>(this.partitions);
-        if (this.getAbstractLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
-            result.putAll(this.uncommittedPartitions);
-            for (String s : this.uncommittedRemovedPartitions) {
-                result.remove(s);
-            }
+        result.putAll(this.uncommittedPartitions);
+        for (String s : this.uncommittedRemovedPartitions) {
+            result.remove(s);
         }
         return result;
     }
 
     public Optional<Partition> getPartition(String name) {
-        if (getAbstractLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedPartitions.contains(name)) {
+        if (this.uncommittedRemovedPartitions.contains(name)) {
             return Optional.empty();
         }
         Partition result = null;
-        if (this.getAbstractLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
-            result = this.uncommittedPartitions.get(name);
-        }
+        result = this.uncommittedPartitions.get(name);
         if (result == null) {
             result = this.partitions.get(name);
         }
@@ -1007,7 +1004,6 @@ public class Partition implements TopologyInf {
     }
 
     Partition addPartition(Vertex partitionVertex) {
-        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread());
         VertexProperty<String> from = partitionVertex.property(SQLG_SCHEMA_PARTITION_FROM);
         VertexProperty<String> to = partitionVertex.property(SQLG_SCHEMA_PARTITION_TO);
         VertexProperty<String> in = partitionVertex.property(SQLG_SCHEMA_PARTITION_IN);

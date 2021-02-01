@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -24,6 +24,7 @@ import static org.junit.Assert.*;
  * Date: 2016/11/23
  * Time: 6:03 PM
  */
+@SuppressWarnings("DuplicatedCode")
 public class TestSchemaEagerCreation extends BaseTest {
 
     @Before
@@ -110,7 +111,6 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertFalse(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_ab").isEmpty());
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testVertexLabelPropertiesViaVertexLabel() {
         Schema schema = this.sqlgGraph.getTopology().getPublicSchema();
@@ -182,7 +182,6 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertEquals(2, edgeLabel.getProperties().size());
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testEdgeLabelAddVertexLabels() {
         Vertex a = this.sqlgGraph.addVertex(T.label, "A");
@@ -193,10 +192,16 @@ public class TestSchemaEagerCreation extends BaseTest {
         Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
         assertTrue(edgeLabelOptional.isPresent());
         EdgeLabel edgeLabel = edgeLabelOptional.get();
+        assertEquals(1, edgeLabel.getOutVertexLabels().size());
+        assertEquals(1, edgeLabel.getInVertexLabels().size());
 
         VertexLabel inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
         edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
+        assertEquals(1, edgeLabel.getOutVertexLabels().size());
+        assertEquals(2, edgeLabel.getInVertexLabels().size());
         this.sqlgGraph.tx().rollback();
+        assertEquals(1, edgeLabel.getOutVertexLabels().size());
+        assertEquals(1, edgeLabel.getInVertexLabels().size());
 
         edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
         assertTrue(edgeLabelOptional.isPresent());
@@ -206,7 +211,11 @@ public class TestSchemaEagerCreation extends BaseTest {
 
         inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
         edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
+        assertEquals(1, edgeLabel.getOutVertexLabels().size());
+        assertEquals(2, edgeLabel.getInVertexLabels().size());
         this.sqlgGraph.tx().commit();
+        assertEquals(1, edgeLabel.getOutVertexLabels().size());
+        assertEquals(2, edgeLabel.getInVertexLabels().size());
 
         assertEquals(1, edgeLabel.getOutVertexLabels().size());
         assertEquals(2, edgeLabel.getInVertexLabels().size());

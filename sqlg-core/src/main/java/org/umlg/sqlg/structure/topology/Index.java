@@ -12,6 +12,7 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.util.ThreadLocalList;
 
 import java.sql.*;
 import java.util.*;
@@ -32,7 +33,7 @@ public class Index implements TopologyInf {
     private IndexType indexType;
     private final List<PropertyColumn> properties = new ArrayList<>();
     private IndexType uncommittedIndexType;
-    private final List<PropertyColumn> uncommittedProperties = new ArrayList<>();
+    private final List<PropertyColumn> uncommittedProperties = new ThreadLocalList<>();
 
     /**
      * create uncommitted index
@@ -150,7 +151,7 @@ public class Index implements TopologyInf {
             sql.append("to_tsvector(");
             String conf = indexType.getProperties().get(IndexType.GIN_CONFIGURATION);
             if (conf != null) {
-                sql.append("'" + conf + "'"); // need single quotes, no double
+                sql.append("'").append(conf).append("'"); // need single quotes, no double
                 sql.append(",");
             }
             int count = 1;
@@ -194,7 +195,7 @@ public class Index implements TopologyInf {
     }
 
     Optional<JsonNode> toNotifyJson() {
-        Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
+        Preconditions.checkState(!this.uncommittedProperties.isEmpty());
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         result.put("name", this.name);
         result.set("indexType", this.uncommittedIndexType.toNotifyJson());
@@ -270,9 +271,7 @@ public class Index implements TopologyInf {
 
     public List<PropertyColumn> getProperties() {
         List<PropertyColumn> props = new ArrayList<>(properties);
-        if (this.getParentLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
-            props.addAll(uncommittedProperties);
-        }
+        props.addAll(uncommittedProperties);
         return Collections.unmodifiableList(props);
     }
 

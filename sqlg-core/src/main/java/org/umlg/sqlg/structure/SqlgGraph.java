@@ -321,7 +321,6 @@ public class SqlgGraph implements Graph {
         this.tx().readWrite();
         //Instantiating Topology will create the 'public' schema if it does not exist.
         this.topology = new Topology(this);
-        this.topology.setLOCK_TIMEOUT_MINUTES(configuration.getInt("lock.timeout.minutes", 2));
         this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportsSchemas() && this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isEmpty()) {
             //This is for mariadb. Need to make sure a db called public exist

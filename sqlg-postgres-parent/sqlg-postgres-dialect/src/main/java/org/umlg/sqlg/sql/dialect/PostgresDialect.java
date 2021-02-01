@@ -85,7 +85,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public String createSchemaStatement(String schemaName) {
         // if ever schema is created outside of sqlg while the graph is already instantiated
-        return "CREATE SCHEMA IF NOT EXISTS " + maybeWrapInQoutes(schemaName);
+        return "CREATE SCHEMA " + maybeWrapInQoutes(schemaName);
     }
 
     @Override
@@ -3713,7 +3713,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
         try {
             Semaphore listeningSemaphore = new Semaphore(1);
-            listener = new TopologyChangeListener(sqlgGraph, listeningSemaphore);
+            this.listener = new TopologyChangeListener(sqlgGraph, listeningSemaphore);
             this.future = scheduledExecutorService.schedule(listener, 500, MILLISECONDS);
             //block here to only return once the listener is listening.
             listeningSemaphore.acquire();
@@ -3776,12 +3776,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      */
     private class TopologyChangeListener implements Runnable {
 
-        private SqlgGraph sqlgGraph;
-        private Semaphore semaphore;
+        private final SqlgGraph sqlgGraph;
+        private final Semaphore semaphore;
         /**
          * should we keep running?
          */
-        private AtomicBoolean run = new AtomicBoolean(true);
+        private final AtomicBoolean run = new AtomicBoolean(true);
 
         TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) {
             this.sqlgGraph = sqlgGraph;

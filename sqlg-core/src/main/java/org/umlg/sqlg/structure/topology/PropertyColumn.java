@@ -2,14 +2,15 @@ package org.umlg.sqlg.structure.topology;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.util.ThreadLocalSet;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Date: 2016/09/04
@@ -21,8 +22,8 @@ public class PropertyColumn implements TopologyInf {
     private final String name;
     private boolean committed = true;
     private final PropertyType propertyType;
-    private final Set<GlobalUniqueIndex> globalUniqueIndices = new HashSet<>();
-    private final Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new HashSet<>();
+    private final Set<GlobalUniqueIndex> globalUniqueIndices = ConcurrentHashMap.newKeySet();
+    private final Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new ThreadLocalSet<>();
 
     PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
         this.abstractLabel = abstractLabel;
@@ -54,9 +55,7 @@ public class PropertyColumn implements TopologyInf {
     public Set<GlobalUniqueIndex> getGlobalUniqueIndices() {
         HashSet<GlobalUniqueIndex> result = new HashSet<>();
         result.addAll(this.globalUniqueIndices);
-        if (this.abstractLabel.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
-            result.addAll(this.uncommittedGlobalUniqueIndices);
-        }
+        result.addAll(this.uncommittedGlobalUniqueIndices);
         return result;
     }
 
@@ -71,7 +70,6 @@ public class PropertyColumn implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "PropertyColumn.afterRollback must hold the write lock");
         this.uncommittedGlobalUniqueIndices.clear();
     }
 

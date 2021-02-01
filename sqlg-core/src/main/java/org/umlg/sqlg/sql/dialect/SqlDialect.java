@@ -787,7 +787,7 @@ public interface SqlDialect {
      * @return true if 'CREATE SCHEMA IF NOT EXISTS' works.
      */
     default boolean supportsSchemaIfNotExists() {
-        return true;
+        return false;
     }
 
     String sqlgCreateTopologyGraph();
