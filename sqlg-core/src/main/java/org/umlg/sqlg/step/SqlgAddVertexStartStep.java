@@ -14,7 +14,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequire
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.umlg.sqlg.structure.SqlgTraverserGenerator;
+import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 import java.util.List;
 import java.util.Set;

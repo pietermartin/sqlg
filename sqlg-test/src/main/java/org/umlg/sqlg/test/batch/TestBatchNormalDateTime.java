@@ -8,6 +8,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -33,6 +34,9 @@ public class TestBatchNormalDateTime extends BaseTest {
     public void testLocalDateTime() throws InterruptedException {
         this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);
         LocalDateTime localDateTime = LocalDateTime.now();
+        if (isHsqldb()) {
+            localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTime", localDateTime);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(localDateTime, this.sqlgGraph.traversal().V(a1).values("localDateTime").next());
@@ -71,9 +75,18 @@ public class TestBatchNormalDateTime extends BaseTest {
     @Test
     public void testZonedDateTime() throws InterruptedException {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        if (isHsqldb()) {
+            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00"));
+        if (isHsqldb()) {
+            zdt2 = zdt2.truncatedTo(ChronoUnit.MILLIS);
+        }
         // ZoneId corrects +02:00 into GTM+02:00
         ZonedDateTime zdt2Fixed = ZonedDateTime.of(zdt2.toLocalDateTime(), ZoneId.of("GMT+02:00"));
+        if (isHsqldb()) {
+            zdt2Fixed = zdt2Fixed.truncatedTo(ChronoUnit.MILLIS);
+        }
         this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTime", zonedDateTime
                 , "zdt2", zdt2
@@ -120,6 +133,9 @@ public class TestBatchNormalDateTime extends BaseTest {
     public void batchLocalDateTime() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime now = LocalDateTime.now();
+        if (isHsqldb()) {
+            now = now.truncatedTo(ChronoUnit.MILLIS);
+        }
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
         }

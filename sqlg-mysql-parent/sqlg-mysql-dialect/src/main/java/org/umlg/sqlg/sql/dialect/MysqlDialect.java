@@ -1038,4 +1038,10 @@ public class MysqlDialect extends BaseSqlDialect {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public boolean isTimestampz(String typeName) {
+        //Mysql is not using timestamps with zones
+        return false;
+    }
 }

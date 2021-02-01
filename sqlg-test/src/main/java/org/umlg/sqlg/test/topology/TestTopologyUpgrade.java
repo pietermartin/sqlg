@@ -20,6 +20,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
@@ -326,6 +327,9 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpgradeTypesWithMoreThanOneColumn() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        if (isHsqldb()) {
+            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         Duration duration = Duration.ofDays(1);
         Period period = Period.of(1, 1, 1);
         this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "zonedDateTime", zonedDateTime);
@@ -380,6 +384,9 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpgradeTypesWithMoreThanOneColumnOnEdge() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        if (isHsqldb()) {
+            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         Duration duration = Duration.ofDays(1);
         Period period = Period.of(1, 1, 1);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1");
@@ -416,7 +423,11 @@ public class TestTopologyUpgrade extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
-        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
+                isHsqldb() ? ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now(),
+                isHsqldb() ? ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(1),
+                isHsqldb() ? ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(2)
+        };
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
         this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "zonedDateTimes", zonedDateTimes);
@@ -472,7 +483,11 @@ public class TestTopologyUpgrade extends BaseTest {
     public void testUpgradeTypesWithMoreThanOneColumnOnEdgeArrays() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
-        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
+                isHsqldb() ? ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now(),
+                isHsqldb() ? ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(1),
+                isHsqldb() ? ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(2)
+        };
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
 
@@ -569,7 +584,13 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpdateLocalDateTimeAndZonedDateTime() {
         LocalDateTime localDateTime = LocalDateTime.now();
+        if (isHsqldb()) {
+            localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        if (isHsqldb()) {
+            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         this.sqlgGraph.addVertex(T.label, "A", "localDateTime", localDateTime, "zonedDateTime", zonedDateTime);
         this.sqlgGraph.tx().commit();
 
@@ -605,9 +626,17 @@ public class TestTopologyUpgrade extends BaseTest {
         double[] doubles2 = new double[]{1D, 2D, 3D};
         String[] strings = new String[]{"a", "b", "c"};
         LocalDate[] localDates = new LocalDate[]{LocalDate.now(), LocalDate.now().minusMonths(2), LocalDate.now().minusMonths(3)};
-        LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now().minusMonths(2), LocalDateTime.now().minusMonths(3)};
+        LocalDateTime[] localDateTimes = new LocalDateTime[]{
+                isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(),
+                isHsqldb() ? LocalDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now().minusMonths(2),
+                isHsqldb() ? LocalDateTime.now().minusMonths(3).truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now().minusMonths(3)
+        };
         LocalTime[] localTimes = new LocalTime[]{LocalTime.now(), LocalTime.now().minusHours(2), LocalTime.now().minusHours(3)};
-        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusHours(2), ZonedDateTime.now().minusHours(3)};
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
+                isHsqldb() ? ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now(),
+                isHsqldb() ? ZonedDateTime.now().minusHours(2).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusHours(2),
+                isHsqldb() ? ZonedDateTime.now().minusHours(3).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusHours(3)
+        };
         this.sqlgGraph.addVertex(T.label, "A",
                 "bytes", bytes, "bytes2", bytes2,
                 "shorts", shorts, "shorts2", shorts2,

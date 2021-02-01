@@ -9,9 +9,12 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,17 @@ import java.util.Map;
  * Date: 2017/09/29
  */
 public class TestTraversalFilterStepBarrier extends BaseTest {
+    
+    @Before
+    public void before() throws Exception {
+        super.before();
+        if (isHsqldb()) {
+            Connection connection = this.sqlgGraph.tx().getConnection();
+            Statement statement = connection.createStatement();
+            statement.execute("SET DATABASE SQL AVG SCALE 2");
+            this.sqlgGraph.tx().commit();
+        }
+    }
 
 //    @Test
 //    public void testSqlgTraversalFilterStepPerformance() {

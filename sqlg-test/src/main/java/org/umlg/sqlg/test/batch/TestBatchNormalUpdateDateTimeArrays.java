@@ -7,6 +7,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,10 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.tx().normalBatchModeOn();
-        LocalDateTime[] localDateTimeArrayAgain = new LocalDateTime[]{LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2)};
+        LocalDateTime[] localDateTimeArrayAgain = new LocalDateTime[]{
+                isHsqldb() ? LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now().plusDays(1),
+                isHsqldb() ? LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now().plusDays(2)
+        };
         a1.property("localDateTimeArray1", localDateTimeArrayAgain);
         a2.property("localDateTimeArray2", localDateTimeArrayAgain);
         a3.property("localDateTimeArray3", localDateTimeArrayAgain);
@@ -167,7 +171,10 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.tx().normalBatchModeOn();
-        ZonedDateTime[] zonedDateTimeArrayAgain = new ZonedDateTime[]{ZonedDateTime.now().plusHours(1), ZonedDateTime.now().plusHours(2)};
+        ZonedDateTime[] zonedDateTimeArrayAgain = new ZonedDateTime[]{
+                isHsqldb() ? ZonedDateTime.now().plusHours(1).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().plusHours(1),
+                isHsqldb() ? ZonedDateTime.now().plusHours(2).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().plusHours(2)
+        };
         a1.property("zonedDateTimeArray1", zonedDateTimeArrayAgain);
         a2.property("zonedDateTimeArray2", zonedDateTimeArrayAgain);
         a3.property("zonedDateTimeArray3", zonedDateTimeArrayAgain);

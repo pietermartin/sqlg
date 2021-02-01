@@ -14,6 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
+import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
@@ -1734,5 +1735,26 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public String toSelectString(boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+        StringBuilder sb = new StringBuilder();
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            sb.append(column.getAggregateFunction().toUpperCase());
+            sb.append("(CAST(");
+        }
+        sb.append(maybeWrapInQoutes(column.getSchema()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getTable()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getColumn()));
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            sb.append(" as DOUBLE PRECISION)) AS ").append(maybeWrapInQoutes(alias));
+            sb.append(", COUNT(1) AS ").append(maybeWrapInQoutes(alias + "_weight"));
+        } else {
+            sb.append(" AS ").append(maybeWrapInQoutes(alias));
+        }
+        return sb.toString();
     }
 }

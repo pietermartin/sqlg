@@ -44,7 +44,7 @@ public class TestGremlinCompileE extends BaseTest {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, a1).outE().count();
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(1, traversal.next().intValue());
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Edge> traversal1 = (DefaultGraphTraversal<Vertex, Edge>) vertexTraversal(sqlgGraph, a1).outE();
         Assert.assertEquals(2, traversal1.getSteps().size());
@@ -69,7 +69,7 @@ public class TestGremlinCompileE extends BaseTest {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, b1).inE().count();
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(1, traversal.next().intValue());
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Edge> traversal1 = (DefaultGraphTraversal<Vertex, Edge>) vertexTraversal(sqlgGraph, b1).inE();
         Assert.assertEquals(2, traversal1.getSteps().size());
@@ -135,12 +135,12 @@ public class TestGremlinCompileE extends BaseTest {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, a1).outE().count();
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(2, traversal.next().intValue());
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Long> traversal1 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, a1).out().outE().count();
         Assert.assertEquals(4, traversal1.getSteps().size());
         Assert.assertEquals(6, traversal1.next().intValue());
-        Assert.assertEquals(2, traversal1.getSteps().size());
+        Assert.assertEquals(3, traversal1.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Edge> traversal2 = (DefaultGraphTraversal<Vertex, Edge>) vertexTraversal(sqlgGraph, a1).out().outE();
         Assert.assertEquals(3, traversal2.getSteps().size());
@@ -176,23 +176,23 @@ public class TestGremlinCompileE extends BaseTest {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, v1).outE().count();
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(8, traversal.next().intValue());
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Long> traversal1 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, v2).outE().count();
         Assert.assertEquals(3, traversal1.getSteps().size());
         Assert.assertEquals(0, traversal1.next().intValue());
-        Assert.assertEquals(2, traversal1.getSteps().size());
+        Assert.assertEquals(3, traversal1.getSteps().size());
 
         v1.edges(Direction.BOTH).forEachRemaining(Edge::remove);
 
         DefaultGraphTraversal<Vertex, Long> traversal2 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, v1).bothE().count();
         Assert.assertEquals(3, traversal2.getSteps().size());
         Assert.assertEquals(0, traversal2.next().intValue());
-        Assert.assertEquals(2, traversal2.getSteps().size());
+        Assert.assertEquals(3, traversal2.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Long> traversal3 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, v2).bothE().count();
         Assert.assertEquals(3, traversal3.getSteps().size());
         Assert.assertEquals(0, traversal3.next().intValue());
-        Assert.assertEquals(2, traversal3.getSteps().size());
+        Assert.assertEquals(3, traversal3.getSteps().size());
     }
 }

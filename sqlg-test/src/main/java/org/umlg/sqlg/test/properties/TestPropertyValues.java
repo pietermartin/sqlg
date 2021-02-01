@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
@@ -15,6 +14,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.test.BaseTest;
@@ -64,7 +64,7 @@ public class TestPropertyValues extends BaseTest {
         Assert.assertTrue(traversal.getSteps().get(2) instanceof IdentityStep);
         Assert.assertTrue(traversal.getSteps().get(3) instanceof SelectStep);
         Assert.assertTrue(traversal.getSteps().get(4) instanceof SelectOneStep);
-        Assert.assertTrue(traversal.getSteps().get(5) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(5) instanceof SqlgPropertiesStep);
         List<String> names = traversal.toList();
         Assert.assertEquals(1, names.size());
         Assert.assertEquals("c1", names.get(0));
@@ -102,7 +102,7 @@ public class TestPropertyValues extends BaseTest {
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof IdentityStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SelectOneStep);
-        Assert.assertTrue(traversal.getSteps().get(3) instanceof PropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(3) instanceof SqlgPropertiesStep);
         List<String> names = traversal.toList();
         Assert.assertEquals(1, names.size());
         Assert.assertEquals("c1", names.get(0));
@@ -182,17 +182,6 @@ public class TestPropertyValues extends BaseTest {
         final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V().both().hasLabel("person").order().by("age", Order.decr).limit(5).values("name");
         printTraversalForm(traversal);
         checkOrderedResults(Arrays.asList("peter", "josh", "josh", "josh", "marko"), traversal);
-    }
-
-    private static <T> void checkOrderedResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
-        final List<T> results = traversal.toList();
-        Assert.assertFalse(traversal.hasNext());
-        if (expectedResults.size() != results.size()) {
-            Assert.assertEquals("Checking result size", expectedResults.size(), results.size());
-        }
-        for (int i = 0; i < expectedResults.size(); i++) {
-            Assert.assertEquals(expectedResults.get(i), results.get(i));
-        }
     }
 
     @Test

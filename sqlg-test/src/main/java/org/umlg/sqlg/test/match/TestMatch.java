@@ -1,14 +1,20 @@
 package org.umlg.sqlg.test.match;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +23,61 @@ import java.util.Map;
  * Time: 10:22 PM
  */
 public class TestMatch extends BaseTest {
+
+    @Test
+    public void testDuplicateQueryJoin() {
+        Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        aSchema.ensureVertexLabelExist("person",
+                new HashMap<String, PropertyType>() {{
+                    put("personid", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Collections.singletonList("personid"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "person", "personid", "1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "person", "personid", "2");
+        v1.addEdge("knows", v2);
+        this.sqlgGraph.tx().commit();
+
+// Evalute the match step using ScriptEngine
+        String query = "g.V().match(__.as('a').out('knows').as('b')).select('a','b')";
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = this.sqlgGraph.traversal().V()
+                .match(
+                        __.as("a").out("knows").as("b")
+                ).select("a", "b");
+        printTraversalForm(traversal);
+        List<Map<String, Vertex>> result = traversal.toList();
+        System.out.println(result);
+    }
+
+    @Test
+    public void testDuplicateQueryJoinMultipleKeys() {
+        Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        aSchema.ensureVertexLabelExist("person",
+                new HashMap<String, PropertyType>() {{
+                    put("personid1", PropertyType.STRING);
+                    put("personid2", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("personid1", "personid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "person", "personid1", "1", "personid2", "1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "person", "personid1", "2", "personid2", "2");
+        v1.addEdge("knows", v2);
+        this.sqlgGraph.tx().commit();
+
+// Evalute the match step using ScriptEngine
+        String query = "g.V().match(__.as('a').out('knows').as('b')).select('a','b')";
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = this.sqlgGraph.traversal().V()
+                .match(
+                        __.as("a").out("knows").as("b")
+                ).select("a", "b");
+        printTraversalForm(traversal);
+        List<Map<String, Vertex>> result = traversal.toList();
+        System.out.println(result);
+    }
 
     @Test
     public void g_V_matchXa__a_out_b__notXa_created_bXX() {

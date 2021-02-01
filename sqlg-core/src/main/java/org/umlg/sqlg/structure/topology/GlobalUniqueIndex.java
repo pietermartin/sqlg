@@ -3,13 +3,14 @@ package org.umlg.sqlg.structure.topology;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.util.ThreadLocalSet;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Date: 2016/12/01
@@ -20,8 +21,8 @@ public class GlobalUniqueIndex implements TopologyInf {
     private final Topology topology;
     private final String name;
     private boolean committed = true;
-    private Set<PropertyColumn> properties = new HashSet<>();
-    private Set<PropertyColumn> uncommittedProperties = new HashSet<>();
+    private Set<PropertyColumn> properties = ConcurrentHashMap.newKeySet();
+    private Set<PropertyColumn> uncommittedProperties = new ThreadLocalSet<>();
     public static final String GLOBAL_UNIQUE_INDEX_VALUE = "value";
     public static final String GLOBAL_UNIQUE_INDEX_RECORD_ID = "recordId";
     public static final String GLOBAL_UNIQUE_INDEX_PROPERTY_NAME = "property";
@@ -133,7 +134,6 @@ public class GlobalUniqueIndex implements TopologyInf {
     }
 
     Optional<JsonNode> toNotifyJson() {
-        Preconditions.checkState(this.topology.isSqlWriteLockHeldByCurrentThread(), "GlobalUniqueIndex toNotifyJson() may only be called is the lock is held.");
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (PropertyColumn property : this.uncommittedProperties) {

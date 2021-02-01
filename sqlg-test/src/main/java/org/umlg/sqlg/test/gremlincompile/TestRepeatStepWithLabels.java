@@ -74,8 +74,7 @@ public class TestRepeatStepWithLabels extends BaseTest {
                 .repeat(out()).times(2).emit().as("b")
                 .<Vertex>select("a", "b");
         Assert.assertEquals(3, traversal.getSteps().size());
-        List<Map<String, Vertex>> labelVertexMaps = traversal
-                .toList();
+        List<Map<String, Vertex>> labelVertexMaps = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
 
         List<Pair<Vertex, Vertex>> testPairs = new ArrayList<>();

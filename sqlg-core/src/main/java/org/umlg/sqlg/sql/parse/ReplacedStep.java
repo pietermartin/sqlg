@@ -63,6 +63,13 @@ public class ReplacedStep<S, E> {
     private boolean drop;
 
     /**
+     * The reducing barrier's aggregate function. i.e. max, min, mean...
+     * The pair's left is the aggregate function and the right is the columns over which to aggregate.
+     */
+    private Pair<String, List<String>> aggregateFunction;
+    private List<String> groupBy;
+
+    /**
      * restrict properties to only a subset if not null
      */
     private Set<String> restrictedProperties = null;
@@ -161,6 +168,8 @@ public class ReplacedStep<S, E> {
     private Set<SchemaTableTree> appendPathForVertexStep(SchemaTableTree schemaTableTree) {
         Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found " + schemaTableTree.getSchemaTable().getTable());
 
+        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema, this.isForGuiSchema);
+
         Set<SchemaTableTree> result = new HashSet<>();
         Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.topology.getTableLabels(schemaTableTree.getSchemaTable());
 
@@ -195,7 +204,9 @@ public class ReplacedStep<S, E> {
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inEdgeLabelToTravers : inEdgeLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                if (passesLabelHasContainers(this.topology.getSqlgGraph(), false, inEdgeLabelToTravers.toString())) {
+                if (passesLabelHasContainers(this.topology.getSqlgGraph(), false, inEdgeLabelToTravers.toString()) &&
+                        passesRestrictedProperties(filteredAllTables.get(inEdgeLabelToTravers.toString()))) {
+
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             inEdgeLabelToTravers,
                             Direction.IN,
@@ -224,7 +235,10 @@ public class ReplacedStep<S, E> {
                         String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
                         String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
-                        if (schemaTables.add(schemaTableTo) && passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
+                        if (schemaTables.add(schemaTableTo) &&
+                                passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString()) &&
+                                passesRestrictedProperties(filteredAllTables.get(schemaTableTo.toString()))) {
+
                             if (first) {
                                 first = false;
                                 schemaTableTreeChild = schemaTableTree.addChild(
@@ -244,7 +258,8 @@ public class ReplacedStep<S, E> {
         for (SchemaTable outEdgeLabelToTravers : outEdgeLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
 
-                if (passesLabelHasContainers(this.topology.getSqlgGraph(), false, outEdgeLabelToTravers.toString())) {
+                if (passesLabelHasContainers(this.topology.getSqlgGraph(), false, outEdgeLabelToTravers.toString()) &&
+                        passesRestrictedProperties(filteredAllTables.get(outEdgeLabelToTravers.toString()))) {
 
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             outEdgeLabelToTravers,
@@ -273,7 +288,9 @@ public class ReplacedStep<S, E> {
                         String foreignKeySchema = foreignKey.getSchemaTable().getSchema();
                         String foreignKeyTable = foreignKey.getSchemaTable().getTable();
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
-                        if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
+                        if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString()) &&
+                                passesRestrictedProperties(filteredAllTables.get(schemaTableTo.toString()))) {
+                            
                             if (first) {
                                 first = false;
                                 schemaTableTreeChild = schemaTableTree.addChild(
@@ -452,8 +469,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         Set<SchemaTableTree> result = new HashSet<>();
         final GraphStep graphStep = (GraphStep) this.step;
-        @SuppressWarnings("unchecked")
-        final boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
+        @SuppressWarnings("unchecked") final boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
         final boolean isEdge = !isVertex;
 
         //RecordIds grouped by SchemaTable
@@ -472,6 +488,8 @@ public class ReplacedStep<S, E> {
             SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(VERTEX_PREFIX);
             if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
                 collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
+            } else {
+                System.out.println("");
             }
         } else {
             for (String table : filteredAllTables.keySet()) {
@@ -536,7 +554,9 @@ public class ReplacedStep<S, E> {
                 this.leftJoin,
                 this.drop,
                 replacedStepDepth,
-                this.labels
+                this.labels,
+                aggregateFunction,
+                groupBy
         );
         schemaTableTree.setRestrictedProperties(getRestrictedProperties());
         result.add(schemaTableTree);
@@ -581,6 +601,19 @@ public class ReplacedStep<S, E> {
                 }
             }
         });
+    }
+
+    private boolean passesRestrictedProperties(Map<String, PropertyType> propertyTypeMap) {
+        if (this.restrictedProperties == null) {
+            return true;
+        }
+        for (String restrictedProperty : this.restrictedProperties) {
+            //or logic, if any property is present its a go
+            if (!Graph.Hidden.isHidden(restrictedProperty) && propertyTypeMap.containsKey(restrictedProperty)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -806,13 +839,13 @@ public class ReplacedStep<S, E> {
         this.drop = true;
     }
 
-	public Set<String> getRestrictedProperties() {
-		return restrictedProperties;
-	}
+    public Set<String> getRestrictedProperties() {
+        return restrictedProperties;
+    }
 
-	public void setRestrictedProperties(Set<String> restrictedColumns) {
-		this.restrictedProperties = restrictedColumns;
-	}
+    public void setRestrictedProperties(Set<String> restrictedColumns) {
+        this.restrictedProperties = restrictedColumns;
+    }
 
     public void markForSqlgSchema() {
         this.isForSqlgSchema = true;
@@ -821,4 +854,25 @@ public class ReplacedStep<S, E> {
     public void markForGuiSchema() {
         this.isForGuiSchema = true;
     }
+
+    public Pair<String, List<String>> getAggregateFunction() {
+        return this.aggregateFunction;
+    }
+
+    public boolean hasAggregateFunction() {
+        return this.aggregateFunction != null;
+    }
+
+    public void setAggregateFunction(Pair<String, List<String>> aggregateFunction) {
+        this.aggregateFunction = aggregateFunction;
+    }
+
+    public List<String> getGroupBy() {
+        return groupBy;
+    }
+
+    public void setGroupBy(List<String> groupBy) {
+        this.groupBy = groupBy;
+    }
+
 }

@@ -47,6 +47,8 @@ import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.process.dropstep.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.properties.TestPropertyValues;
+import org.umlg.sqlg.test.reducing.TestReducing;
+import org.umlg.sqlg.test.reducing.TestReducingVertexStep;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 import org.umlg.sqlg.test.roles.TestReadOnlyRole;
@@ -54,8 +56,6 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
-import org.umlg.sqlg.test.sharding.TestSharding;
-import org.umlg.sqlg.test.sharding.TestShardingGremlin;
 import org.umlg.sqlg.test.topology.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
@@ -255,8 +255,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSimpleJoinGremlin.class,
         TestSimpleVertexEdgeGremlin.class,
         TestMultipleIDQuery.class,
-        TestSharding.class,
-        TestShardingGremlin.class,
+//        TestSharding.class,
+//        TestShardingGremlin.class,
         TestRecordId.class,
         TestPropertyValues.class,
         TestReadOnlyRole.class,
@@ -265,6 +265,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTraversalAddV.class,
         TestDataSource.class,
         TestCustomDataSource.class,
+        TestReducing.class,
+        TestReducingVertexStep.class,
+        TestPartitionedDrop.class,
         TestPartitionedDrop.class,
         TestDropStepPartition.class,
         TestBatchUpdatePartitioning.class

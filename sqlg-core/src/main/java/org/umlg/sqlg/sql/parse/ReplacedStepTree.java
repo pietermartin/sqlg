@@ -11,26 +11,28 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.javatuples.Pair;
 import org.umlg.sqlg.strategy.BaseStrategy;
-import org.umlg.sqlg.util.SqlgUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/03/03
+ * Date: 2017/03/03
  */
-public class ReplacedStepTree {
+public class ReplacedStepTree<S, E> {
 
     private TreeNode currentTreeNodeNode;
     private int depth;
 
-    public ReplacedStepTree(ReplacedStep replacedStep) {
+    public ReplacedStepTree(ReplacedStep<S, E> replacedStep) {
         this.currentTreeNodeNode = new TreeNode(replacedStep);
         this.currentTreeNodeNode.depth = 0;
         this.depth = 0;
     }
 
-    public void addReplacedStep(ReplacedStep replacedStep) {
+    public void addReplacedStep(ReplacedStep<S, E> replacedStep) {
         this.currentTreeNodeNode = this.currentTreeNodeNode.addReplacedStep(replacedStep);
     }
 
@@ -46,6 +48,13 @@ public class ReplacedStepTree {
         return depth;
     }
 
+    public void clearLabels() {
+        List<ReplacedStep<S, E>> replacedSteps = linearPathToLeafNode();
+        for (ReplacedStep<S, E> replacedStep : replacedSteps) {
+            replacedStep.getLabels().clear();
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -57,9 +66,7 @@ public class ReplacedStepTree {
         sb.append(treeNode.toString());
         sb.append("\n");
         for (TreeNode child : treeNode.children) {
-            for (int i = 0; i < depth; i++) {
-                sb.append("\t");
-            }
+            sb.append("\t".repeat(Math.max(0, depth)));
             internalToString(depth + 1, child, sb);
         }
     }
@@ -69,9 +76,9 @@ public class ReplacedStepTree {
         //This represents the regular path where each ReplacedStep goes one step deeper down the graph.
         //First build the SchemaTableTrees for this path.
         //The other nodes in this ReplacedStepTree are nodes that need to join onto the left join nodes coming from optional steps.
-        List<ReplacedStep<?, ?>> replacedSteps = linearPathToLeafNode();
+        List<ReplacedStep<S, E>> replacedSteps = linearPathToLeafNode();
 
-        for (ReplacedStep<?, ?> replacedStep : replacedSteps) {
+        for (ReplacedStep<S, E> replacedStep : replacedSteps) {
             //skip the graph step
             if (replacedStep.getStep() instanceof GraphStep) {
                 continue;
@@ -83,8 +90,8 @@ public class ReplacedStepTree {
         }
     }
 
-    private List<ReplacedStep<?, ?>> linearPathToLeafNode() {
-        List<ReplacedStep<?, ?>> result = new ArrayList<>();
+    private List<ReplacedStep<S, E>> linearPathToLeafNode() {
+        List<ReplacedStep<S, E>> result = new ArrayList<>();
         this.root().internalLinearPathToLeafNode(result);
         return result;
     }
@@ -96,21 +103,21 @@ public class ReplacedStepTree {
     public void maybeAddLabelToLeafNodes() {
         List<TreeNode> leafNodes = this.leafNodes();
         for (TreeNode leafNode : leafNodes) {
-            ReplacedStep<?,?> replacedStep = leafNode.getReplacedStep();
-            if (!replacedStep.isEmit() && !replacedStep.hasLabels()) {
+            ReplacedStep<S, E> replacedStep = leafNode.getReplacedStep();
+            if (!replacedStep.isEmit() && !replacedStep.hasLabels() && !replacedStep.hasAggregateFunction()) {
                 replacedStep.addLabel((leafNode.depth) + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
         }
     }
 
     public boolean hasRange() {
-        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
-        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        List<ReplacedStep<S, E>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<S, E> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
         return replacedStep.hasRange();
     }
 
     public boolean hasOrderBy() {
-        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
+        for (ReplacedStep<S, E> replacedStep : linearPathToLeafNode()) {
             if (replacedStep.getSqlgComparatorHolder().hasComparators()) {
                 return true;
             }
@@ -121,19 +128,18 @@ public class ReplacedStepTree {
     /**
      * This happens when a SqlgVertexStep has a SelectOne step where the label is for an element on the path
      * that is before the current optimized steps.
-     * @return
      */
     public boolean orderByHasSelectOneStepAndForLabelNotInTree() {
-        Set<String> labels = new HashSet<>();
-        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
-            for (String label : labels) {
-                labels.add(SqlgUtil.originalLabel(label));
-            }
+//        Set<String> labels = new HashSet<>();
+        for (ReplacedStep<S, E> replacedStep : linearPathToLeafNode()) {
+//            for (String label : labels) {
+//                labels.add(SqlgUtil.originalLabel(label));
+//            }
             for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
                 Traversal.Admin<?, ?> traversal = objects.getValue0();
                 if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep) {
                     //xxxxx.select("a").order().by(select("a").by("name"), Order.decr)
-                    SelectOneStep selectOneStep = (SelectOneStep) traversal.getSteps().get(0);
+                    SelectOneStep<?, ?> selectOneStep = (SelectOneStep<?, ?>) traversal.getSteps().get(0);
                     Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                     Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                     Preconditions.checkState(
@@ -141,10 +147,10 @@ public class ReplacedStepTree {
                                     selectOneStep.getLocalChildren().get(0) instanceof TokenTraversal
                             ,
                             "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or a TokenTraversal!");
-                    String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
-                    if (!labels.contains(selectKey)) {
-                        return true;
-                    }
+//                    String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
+//                    if (!labels.contains(selectKey)) {
+                    return true;
+//                    }
                 }
             }
         }
@@ -152,9 +158,9 @@ public class ReplacedStepTree {
     }
 
     public boolean orderByIsBeforeLeftJoin() {
-        List<ReplacedStep<?, ?>> steps = linearPathToLeafNode();
+        List<ReplacedStep<S, E>> steps = linearPathToLeafNode();
         boolean foundOrderByStep = false;
-        for (ReplacedStep<?, ?> replacedStep : steps) {
+        for (ReplacedStep<S, E> replacedStep : steps) {
             if (!foundOrderByStep && !replacedStep.getSqlgComparatorHolder().getComparators().isEmpty()) {
                 foundOrderByStep = true;
             }
@@ -167,7 +173,7 @@ public class ReplacedStepTree {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean orderByIsOrder() {
-        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
+        for (ReplacedStep<S, E> replacedStep : linearPathToLeafNode()) {
             for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
                 if (!(objects.getValue1() instanceof Order && objects.getValue1() != Order.shuffle)) {
                     return false;
@@ -178,7 +184,7 @@ public class ReplacedStepTree {
     }
 
     public void applyComparatorsOnDb() {
-        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
+        for (ReplacedStep<S, E> replacedStep : linearPathToLeafNode()) {
             for (Pair<Traversal.Admin<?, ?>, Comparator<?>> comparatorPair : replacedStep.getSqlgComparatorHolder().getComparators()) {
                 replacedStep.getDbComparators().add(comparatorPair);
             }
@@ -186,22 +192,22 @@ public class ReplacedStepTree {
     }
 
     public void doNotApplyRangeOnDb() {
-        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
-        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        List<ReplacedStep<S, E>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<S, E> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
         Preconditions.checkState(replacedStep.hasRange());
         replacedStep.getSqlgRangeHolder().doNotApplyOnDb();
     }
 
     public void doNotApplyInStep() {
-        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
-        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        List<ReplacedStep<S, E>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<S, E> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
         Preconditions.checkState(replacedStep.hasRange());
         replacedStep.getSqlgRangeHolder().doNotApplyInStep();
     }
 
     public void reset() {
-        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
-        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        List<ReplacedStep<S, E>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<S, E> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
         //TODO remove this null check
         if (replacedStep.getSqlgRangeHolder() != null) {
             replacedStep.getSqlgRangeHolder().reset();
@@ -209,24 +215,24 @@ public class ReplacedStepTree {
     }
 
     public class TreeNode {
-        private final ReplacedStep replacedStep;
+        private final ReplacedStep<S, E> replacedStep;
         private TreeNode parent;
         private final List<TreeNode> children = new ArrayList<>();
         private int depth = 0;
 
-        TreeNode(ReplacedStep replacedStep) {
+        TreeNode(ReplacedStep<S, E> replacedStep) {
             this.replacedStep = replacedStep;
         }
 
-        public ReplacedStepTree getReplacedStepTree() {
+        public ReplacedStepTree<S, E> getReplacedStepTree() {
             return ReplacedStepTree.this;
         }
 
-        public ReplacedStep getReplacedStep() {
+        public ReplacedStep<S, E> getReplacedStep() {
             return replacedStep;
         }
 
-        public TreeNode addReplacedStep(ReplacedStep replacedStep) {
+        public TreeNode addReplacedStep(ReplacedStep<S, E> replacedStep) {
             TreeNode treeNode = new TreeNode(replacedStep);
             treeNode.parent = this;
             this.children.add(treeNode);
@@ -252,7 +258,7 @@ public class ReplacedStepTree {
             return this.replacedStep.toString();
         }
 
-        void internalLinearPathToLeafNode(List<ReplacedStep<?, ?>> result) {
+        void internalLinearPathToLeafNode(List<ReplacedStep<S, E>> result) {
             result.add(this.getReplacedStep());
             Preconditions.checkState(this.children.stream().filter(t -> !t.getReplacedStep().isJoinToLeftJoin()).count() <= 1);
             for (TreeNode child : this.children) {

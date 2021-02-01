@@ -5,10 +5,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.javatuples.Pair;
 import org.umlg.sqlg.structure.SqlgElement;
 
@@ -196,6 +198,10 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                     } else if (traversal instanceof TokenTraversal) {
                         TokenTraversal tokenTraversal = (TokenTraversal) traversal;
                         this.comparatorValues.add(Pair.with(tokenTraversal.getToken().apply(sqlgElement), comparator));
+                    } else if (traversal instanceof DefaultGraphTraversal) {
+                        DefaultGraphTraversal defaultGraphTraversal = (DefaultGraphTraversal) traversal;
+                        final Object choice = TraversalUtil.apply(sqlgElement, defaultGraphTraversal);
+                        this.comparatorValues.add(Pair.with(choice, comparator));
                     } else {
                         throw new IllegalStateException("Unhandled traversal " + traversal.getClass().getName());
                     }

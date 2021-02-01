@@ -4,6 +4,7 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.MutationListener;
@@ -21,6 +22,7 @@ import org.junit.runners.Parameterized;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -493,6 +495,49 @@ public class TestDropStep extends BaseTest {
             Assert.assertEquals(1, this.removedEdges.size());
         }
     }
+
+
+    @Test
+    public void testDuplicatePath() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        a1.addEdge("aaa", a2);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").out().toList();
+        Assert.assertEquals(1, vertices.size());
+    }
+
+    @Test
+    public void testAsWithDuplicatePaths() throws InterruptedException {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a2");
+        Edge e1 = a1.addEdge("friend", a2, "weight", 5);
+        this.sqlgGraph.tx().commit();
+
+        testAsWithDuplicatePaths_assert(this.sqlgGraph, a1, e1);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testAsWithDuplicatePaths_assert(this.sqlgGraph1, a1, e1);
+        }
+    }
+
+    private void testAsWithDuplicatePaths_assert(SqlgGraph sqlgGraph, Vertex a1, Edge e1) {
+        DefaultGraphTraversal<Vertex, Map<String, Element>> gt = (DefaultGraphTraversal<Vertex, Map<String, Element>>) sqlgGraph.traversal()
+                .V(a1)
+                .outE().as("e")
+                .inV()
+                .in().as("v")
+                .<Element>select("e", "v");
+        Assert.assertEquals(5, gt.getSteps().size());
+
+        List<Map<String, Element>> result = gt.toList();
+        Assert.assertEquals(2, gt.getSteps().size());
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(e1, result.get(0).get("e"));
+        Assert.assertEquals(a1, result.get(0).get("v"));
+    }
+
 
     @Test
     public void testDropStepRepeat2() {

@@ -6,6 +6,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.CountGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.FoldStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupCountStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -14,6 +18,7 @@ import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,16 +50,19 @@ public class SqlgLocalStepStrategy extends AbstractTraversalStrategy<TraversalSt
             if (localStepOptional.isPresent()) {
                 LocalStep<?, ?> localStep = localStepOptional.get();
 
-                //Any traversal with a reducing barrier step can not be optimized. As of yet...
-                List<? extends Traversal.Admin<?, ?>> localChildren = localStep.getLocalChildren();
-                for (Traversal.Admin<?, ?> localChild : localChildren) {
-                    List<ReducingBarrierStep> reducingBarrierSteps = TraversalHelper.getStepsOfAssignableClassRecursively(ReducingBarrierStep.class, localChild);
-                    if (!reducingBarrierSteps.isEmpty()) {
-                        return;
+                //Traversal with the following reducing barrier step can not be optimized. As of yet...
+                for (Class<? extends ReducingBarrierStep> aClass : Arrays.asList(FoldStep.class, GroupCountStep.class, CountGlobalStep.class, TreeStep.class)) {
+                    List<? extends Traversal.Admin<?, ?>> localChildren = localStep.getLocalChildren();
+                    for (Traversal.Admin<?, ?> localChild : localChildren) {
+                        List<? extends ReducingBarrierStep> foldSteps = TraversalHelper.getStepsOfAssignableClassRecursively(aClass, localChild);
+                        if (!foldSteps.isEmpty()) {
+                            return;
+                        }
                     }
+
                 }
                 //Any traversal with a range can not be optimized. As of yet...
-                localChildren = localStep.getLocalChildren();
+                List<? extends Traversal.Admin<?, ?>> localChildren = localStep.getLocalChildren();
                 for (Traversal.Admin<?, ?> localChild : localChildren) {
                     List<RangeGlobalStep> rangeGlobalSteps = TraversalHelper.getStepsOfAssignableClassRecursively(RangeGlobalStep.class, localChild);
                     if (!rangeGlobalSteps.isEmpty()) {
@@ -98,3 +106,4 @@ public class SqlgLocalStepStrategy extends AbstractTraversalStrategy<TraversalSt
     }
 
 }
+

@@ -28,7 +28,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/11/19
  */
-public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutating<Event> {
+public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutating<Event> {
 
     private CallbackRegistry<Event> callbackRegistry;
     private final SqlgGraph sqlgGraph;
@@ -78,7 +78,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                     if (sqlgElement instanceof SqlgVertex) {
                         Optional<VertexLabel> vertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable());
                         Preconditions.checkState(vertexLabelOptional.isPresent());
-                        SqlgVertex sqlgVertex = (SqlgVertex)sqlgElement;
+                        SqlgVertex sqlgVertex = (SqlgVertex) sqlgElement;
                         boolean added = this.verticesToDelete.put(vertexLabelOptional.get(), id);
                         if (added && eventStrategy != null) {
                             final Event removeEvent = new Event.VertexRemovedEvent(eventStrategy.detach(sqlgVertex));
@@ -91,10 +91,10 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                                 Iterator<Edge> edges = sqlgVertex.edges(Direction.OUT);
                                 while (edges.hasNext()) {
                                     Edge edge = edges.next();
-                                    SchemaTable schemaTableEdge = ((SqlgEdge)edge).getSchemaTablePrefixed().withOutPrefix();
+                                    SchemaTable schemaTableEdge = ((SqlgEdge) edge).getSchemaTablePrefixed().withOutPrefix();
                                     Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(schemaTableEdge.getSchema(), schemaTableEdge.getTable());
                                     Preconditions.checkState(edgeLabelOptional.isPresent());
-                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getID());
+                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId) edge.id()).getID());
                                     if (added) {
                                         final Event removeEvent = new Event.EdgeRemovedEvent(eventStrategy.detach(edge));
                                         this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
@@ -111,10 +111,10 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                                 Iterator<Edge> edges = sqlgVertex.edges(Direction.IN);
                                 while (edges.hasNext()) {
                                     Edge edge = edges.next();
-                                    SchemaTable schemaTableEdge = ((SqlgEdge)edge).getSchemaTablePrefixed().withOutPrefix();
+                                    SchemaTable schemaTableEdge = ((SqlgEdge) edge).getSchemaTablePrefixed().withOutPrefix();
                                     Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getEdgeLabel(schemaTableEdge.getSchema(), schemaTableEdge.getTable());
                                     Preconditions.checkState(edgeLabelOptional.isPresent());
-                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId)edge.id()).getID());
+                                    added = this.edgesToDelete.put(edgeLabelOptional.get(), ((RecordId) edge.id()).getID());
                                     if (added) {
                                         final Event removeEvent = new Event.EdgeRemovedEvent(eventStrategy.detach(edge));
                                         this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
@@ -134,7 +134,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
                         }
                     }
                 } else if (object instanceof SqlgProperty) {
-                    SqlgProperty sqlgProperty = (SqlgProperty)object;
+                    SqlgProperty sqlgProperty = (SqlgProperty) object;
                     if (eventStrategy != null) {
                         final Event removeEvent;
                         if (sqlgProperty.element() instanceof Edge) {
@@ -156,7 +156,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S>  implements Mutati
             VertexLabel vertexLabel = edgeLabelVertexLabelPair.getValue();
             Collection<RecordId.ID> ids = this.foreignKeyOutEdgesToDelete.get(edgeLabelVertexLabelPair);
             String sql = this.sqlgGraph.getSqlDialect().dropWithForeignKey(true, outEdgeLabel, vertexLabel, ids, !this.callbackRegistry.getCallbacks().isEmpty());
-            SqlgSqlExecutor.executeDropEdges(this.sqlgGraph,  outEdgeLabel, sql, this.callbackRegistry.getCallbacks());
+            SqlgSqlExecutor.executeDropEdges(this.sqlgGraph, outEdgeLabel, sql, this.callbackRegistry.getCallbacks());
         }
         for (Pair<EdgeLabel, VertexLabel> edgeLabelVertexLabelPair : this.foreignKeyInEdgesToDelete.keySet()) {
             EdgeLabel inEdgeLabel = edgeLabelVertexLabelPair.getKey();

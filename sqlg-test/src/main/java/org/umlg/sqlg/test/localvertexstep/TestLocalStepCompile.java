@@ -18,6 +18,7 @@ import java.util.*;
  * Date: 2016/05/07
  * Time: 1:46 PM
  */
+@SuppressWarnings("rawtypes")
 public class TestLocalStepCompile extends BaseTest {
 
     @Test

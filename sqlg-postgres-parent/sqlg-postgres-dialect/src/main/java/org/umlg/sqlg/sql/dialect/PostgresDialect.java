@@ -50,7 +50,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  * Date: 2014/07/16
  * Time: 1:42 PM
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "rawtypes"})
 public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     private static final String BATCH_NULL = "";
@@ -85,7 +85,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public String createSchemaStatement(String schemaName) {
         // if ever schema is created outside of sqlg while the graph is already instantiated
-        return "CREATE SCHEMA IF NOT EXISTS " + maybeWrapInQoutes(schemaName);
+        return "CREATE SCHEMA " + maybeWrapInQoutes(schemaName);
     }
 
     @Override
@@ -149,43 +149,34 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public String getArrayDriverType(PropertyType propertyType) {
         switch (propertyType.ordinal()) {
             case BYTE_ARRAY_ORDINAL:
-                return "bytea";
             case byte_ARRAY_ORDINAL:
                 return "bytea";
             case boolean_ARRAY_ORDINAL:
-                return "bool";
             case BOOLEAN_ARRAY_ORDINAL:
                 return "bool";
             case SHORT_ARRAY_ORDINAL:
-                return "smallint";
             case short_ARRAY_ORDINAL:
                 return "smallint";
             case INTEGER_ARRAY_ORDINAL:
-                return "integer";
             case int_ARRAY_ORDINAL:
                 return "integer";
             case LONG_ARRAY_ORDINAL:
-                return "bigint";
             case long_ARRAY_ORDINAL:
                 return "bigint";
             case FLOAT_ARRAY_ORDINAL:
-                return "float";
             case float_ARRAY_ORDINAL:
-                return "float";
-            case DOUBLE_ARRAY_ORDINAL:
-                return "float";
             case double_ARRAY_ORDINAL:
+            case DOUBLE_ARRAY_ORDINAL:
                 return "float";
             case STRING_ARRAY_ORDINAL:
                 return "text";
             case LOCALDATETIME_ARRAY_ORDINAL:
-                return "timestamptz";
+            case ZONEDDATETIME_ARRAY_ORDINAL:
+                return "timestamp";
             case LOCALDATE_ARRAY_ORDINAL:
                 return "date";
             case LOCALTIME_ARRAY_ORDINAL:
-                return "timetz";
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return "timestamptz";
+                return "time";
             case JSON_ARRAY_ORDINAL:
                 return "jsonb";
             default:
@@ -422,7 +413,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
                 sql.append(" (");
 
-                //noinspection LoopStatementThatDoesntLoop
                 for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
                     int count = 1;
 
@@ -716,7 +706,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALTIME_ORDINAL:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(shiftDST((LocalTime) value).toString());
+                    sql.append(Time.valueOf((LocalTime) value).toString());
                     sql.append("'::TIME");
                 } else {
                     sql.append("null");
@@ -1046,7 +1036,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     int countStringArray = 1;
                     for (LocalTime s : localTimeArray) {
                         sql.append("'");
-                        sql.append(shiftDST(s).toLocalTime().toString());
+                        sql.append(Time.valueOf(s).toLocalTime().toString());
                         sql.append("'::TIME");
                         if (countStringArray++ < localTimeArray.length) {
                             sql.append(",");
@@ -1285,9 +1275,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
             AbstractLabel abstractLabel;
             if (forVertices) {
-                abstractLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).get().getVertexLabel(schemaTable.getTable()).get();
+                abstractLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).orElseThrow().getVertexLabel(schemaTable.getTable()).orElseThrow();
             } else {
-                abstractLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).get().getEdgeLabel(schemaTable.getTable()).get();
+                abstractLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).orElseThrow().getEdgeLabel(schemaTable.getTable()).orElseThrow();
             }
 
             for (SqlgElement sqlgElement : vertexPropertyCache.keySet()) {
@@ -1300,7 +1290,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     int countIdentifiers = 0;
                     for (Comparable identifier : ((RecordId) sqlgElement.id()).getID().getIdentifiers()) {
                         String identifierProperty = abstractLabel.getIdentifiers().get(countIdentifiers++);
-                        appendSqlValue(sql, identifier, abstractLabel.getProperty(identifierProperty).get().getPropertyType());
+                        appendSqlValue(sql, identifier, abstractLabel.getProperty(identifierProperty).orElseThrow().getPropertyType());
                         sql.append(",");
                     }
                 }
@@ -1598,6 +1588,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     String key = entry.getKey();
                     Object value = entry.getValue();
                     PropertyType propertyType;
+                    //noinspection StringEquality
                     if (key == Topology.ID) {
                         propertyType = PropertyType.LONG;
                     } else {
@@ -1749,7 +1740,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     result = getBatchNull();
                 } else {
                     LocalTime lt = (LocalTime) value;
-                    result = shiftDST(lt).toString();
+                    result = Time.valueOf(lt).toString();
                 }
                 break;
             case ZONEDDATETIME_ARRAY_ORDINAL:
@@ -1845,7 +1836,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 length = java.lang.reflect.Array.getLength(value);
                 for (int i = 0; i < length; i++) {
                     LocalTime localTime = localTimes[i];
-                    result = shiftDST(localTime).toString();
+                    result = Time.valueOf(localTime).toString();
                     sb.append(result);
                     if (i < length - 1) {
                         sb.append(",");
@@ -1899,7 +1890,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                         List<SqlgVertex> vertices = schemaVertices.getValue();
                         if (!vertices.isEmpty()) {
                             SecureRandom random = new SecureRandom();
-                            byte bytes[] = new byte[6];
+                            byte[] bytes = new byte[6];
                             random.nextBytes(bytes);
                             String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
                             sqlgGraph.getTopology().getPublicSchema().createTempTable(VERTEX_PREFIX + tmpTableIdentified, tmpColumns);
@@ -2092,11 +2083,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALDATE_ORDINAL:
                 return new String[]{"DATE"};
             case LOCALDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE"};
+                return new String[]{"TIMESTAMP"};
             case ZONEDDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
+                return new String[]{"TIMESTAMP", "TEXT"};
             case LOCALTIME_ORDINAL:
-                return new String[]{"TIME WITH TIME ZONE"};
+                return new String[]{"TIME"};
             case PERIOD_ORDINAL:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
             case DURATION_ORDINAL:
@@ -2132,13 +2123,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case STRING_ARRAY_ORDINAL:
                 return new String[]{"TEXT[]"};
             case LOCALDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE[]"};
+                return new String[]{"TIMESTAMP[]"};
             case LOCALDATE_ARRAY_ORDINAL:
                 return new String[]{"DATE[]"};
             case LOCALTIME_ARRAY_ORDINAL:
-                return new String[]{"TIME WITH TIME ZONE[]"};
+                return new String[]{"TIME[]"};
             case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP WITH TIME ZONE[]", "TEXT[]"};
+                return new String[]{"TIMESTAMP[]", "TEXT[]"};
             case DURATION_ARRAY_ORDINAL:
                 return new String[]{"BIGINT[]", "INTEGER[]"};
             case PERIOD_ARRAY_ORDINAL:
@@ -2235,9 +2226,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return PropertyType.STRING_ARRAY;
             case "_date":
                 return PropertyType.LOCALDATE_ARRAY;
-            case "_timetz":
+            case "_time":
                 return PropertyType.LOCALTIME_ARRAY;
-            case "_timestamptz":
+            case "_timestamp":
                 //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
                 Triple<String, Integer, String> metaData = metaDataIter.next();
                 metaDataIter.previous();
@@ -2648,7 +2639,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 int count = 0;
                 for (String s : byteAsString) {
                     Integer byteAsInteger = Integer.parseUnsignedInt(s.replace("\"", ""));
-                    result[count++] = new Byte("");
+                    result[count++] = Byte.parseByte("");
                 }
                 properties.put(columnName, result);
                 break;
@@ -2738,7 +2729,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             sql.append(" (");
             int count = 1;
             for (String key : Arrays.asList("out", "in")) {
-                if (count > 1 && count <= 2) {
+                if (count == 2) {
                     sql.append(", ");
                 }
                 count++;
@@ -2789,7 +2780,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             columns.put("out", outPropertyType);
             columns.put("in", inPropertyType);
             SecureRandom random = new SecureRandom();
-            byte bytes[] = new byte[6];
+            byte[] bytes = new byte[6];
             random.nextBytes(bytes);
             String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
             tmpTableIdentified = Topology.BULK_TEMP_EDGE + tmpTableIdentified;
@@ -2802,7 +2793,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", out.toString());
             Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", in.toString());
 
-            //noinspection OptionalGetWithoutIsPresent
             sqlgGraph.getTopology().ensureEdgeLabelExist(edgeLabel, outVertexLabelOptional.get(), inVertexLabelOptional.get(), edgeColumns);
 
             StringBuilder sql = new StringBuilder("INSERT INTO \n");
@@ -3001,7 +2991,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         sql.append("ALTER SEQUENCE ");
         sql.append(sequence);
         sql.append(" CACHE ");
-        sql.append(String.valueOf(batchSize));
+        sql.append(batchSize);
         if (this.needsSemicolon()) {
             sql.append(";");
         }
@@ -3119,31 +3109,31 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         List<String> result = new ArrayList<>();
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "graph\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
-                "\"updatedOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
+                "\"updatedOn\" TIMESTAMP, " +
                 "\"version\" TEXT, " +
                 "\"dbVersion\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "schema\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "vertex\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, \"schemaVertex\" TEXT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT," +
                 "\"shardCount\" INTEGER);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT, " +
                 "\"shardCount\" INTEGER);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"from\" TEXT, " +
                 "\"to\" TEXT, " +
@@ -3152,17 +3142,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"partitionExpression\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "\"index_type\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "globalUniqueIndex\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                "\"createdOn\" TIMESTAMP, " +
                 "\"name\" TEXT, " +
                 "CONSTRAINT propertyUniqueConstraint UNIQUE(name));");
 
@@ -3333,7 +3323,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String sqlgCreateTopologyGraph() {
-        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"updatedOn\" TIMESTAMP WITH TIME ZONE, \"version\" TEXT, \"dbVersion\" TEXT);";
+        return "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_graph\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP, \"updatedOn\" TIMESTAMP, \"version\" TEXT, \"dbVersion\" TEXT);";
     }
 
     @Override
@@ -3352,7 +3342,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "ALTER TABLE \"sqlg_schema\".\"V_edge\" ADD COLUMN \"shardCount\" INTEGER;",
                 "CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
                         "\"ID\" SERIAL PRIMARY KEY, " +
-                        "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
+                        "\"createdOn\" TIMESTAMP, " +
                         "\"name\" TEXT, " +
                         "\"from\" TEXT, " +
                         "\"to\" TEXT, " +
@@ -3443,7 +3433,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     if (data != null) {
                         int a = 0;
                         for (Object o : data) {
-                            data[a++] = shiftDST(((Time) o).toLocalTime());
+                            data[a++] = Time.valueOf(((Time) o).toLocalTime());
                         }
                     }
                     // fall through
@@ -3723,7 +3713,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
         try {
             Semaphore listeningSemaphore = new Semaphore(1);
-            listener = new TopologyChangeListener(sqlgGraph, listeningSemaphore);
+            this.listener = new TopologyChangeListener(sqlgGraph, listeningSemaphore);
             this.future = scheduledExecutorService.schedule(listener, 500, MILLISECONDS);
             //block here to only return once the listener is listening.
             listeningSemaphore.acquire();
@@ -3786,12 +3776,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      */
     private class TopologyChangeListener implements Runnable {
 
-        private SqlgGraph sqlgGraph;
-        private Semaphore semaphore;
+        private final SqlgGraph sqlgGraph;
+        private final Semaphore semaphore;
         /**
          * should we keep running?
          */
-        private AtomicBoolean run = new AtomicBoolean(true);
+        private final AtomicBoolean run = new AtomicBoolean(true);
 
         TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) {
             this.sqlgGraph = sqlgGraph;
@@ -3821,7 +3811,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     stmt.close();
                     //Does not work while in a transaction.
                     connection.rollback();
-                    PGNotification notifications[] = pgConnection.getNotifications();
+                    PGNotification[] notifications = pgConnection.getNotifications();
                     if (notifications != null) {
                         for (int i = 0; i < notifications.length; i++) {
                             int pid = notifications[i].getPID();
@@ -3846,6 +3836,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             });
                         }
                     }
+                    //noinspection BusyWait
                     Thread.sleep(500);
                 }
                 this.sqlgGraph.tx().rollback();
@@ -3863,21 +3854,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    /**
-     * Postgres gets confused by DST, it sets the timezone badly and then reads the wrong value out, so we convert the value to "winter time"
-     *
-     * @param lt the current time
-     * @return the time in "winter time" if there is DST in effect today
-     */
-    @SuppressWarnings({"deprecation", "Duplicates"})
-    private static Time shiftDST(LocalTime lt) {
-        Time t = Time.valueOf(lt);
-        int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
-        // I know this are deprecated methods, but it's so much clearer than alternatives
-        int m = t.getSeconds();
-        t.setSeconds(m + offset);
-        return t;
-    }
+//    /**
+//     * Postgres gets confused by DST, it sets the timezone badly and then reads the wrong value out, so we convert the value to "winter time"
+//     *
+//     * @param lt the current time
+//     * @return the time in "winter time" if there is DST in effect today
+//     */
+//    @SuppressWarnings({"Duplicates"})
+//    private static Time shiftDST(LocalTime lt) {
+//        Time t = Time.valueOf(lt);
+//        int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
+//        // I know this are deprecated methods, but it's so much clearer than alternatives
+//        int m = t.getSeconds();
+//        t.setSeconds(m + offset);
+//        return t;
+//    }
 
     @Override
     public String getFullTextQueryText(FullText fullText, String column) {
@@ -4064,14 +4055,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return sb.toString();
             case LOCALTIME_ORDINAL:
                 LocalTime lt = (LocalTime) value;
-                return "'" + escapeQuotes(shiftDST(lt)) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+                return "'" + escapeQuotes(Time.valueOf(lt)) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case LOCALTIME_ARRAY_ORDINAL:
                 sb = new StringBuilder();
                 sb.append("'{");
                 int length = java.lang.reflect.Array.getLength(value);
                 for (int i = 0; i < length; i++) {
                     LocalTime valueOfArray = (LocalTime) java.lang.reflect.Array.get(value, i);
-                    sb.append(shiftDST(valueOfArray).toString());
+                    sb.append(Time.valueOf(valueOfArray).toString());
                     if (i < length - 1) {
                         sb.append(",");
                     }
@@ -4378,7 +4369,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
 
         }
-        MutableTriple triple = MutableTriple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false);
+        MutableTriple<SqlgSqlExecutor.DROP_QUERY, String, Boolean> triple = MutableTriple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false);
         //If the partition key is part of the HasContainer(s) then add it to the 'delete' statement's where clause.
         if (isVertex && lastVertexLabel.isPartition()) {
             for (HasContainer hasContainer : last.getHasContainers()) {
@@ -4731,7 +4722,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public List<Map<String, String>> getPartitions(Connection connection) {
         List<Map<String, String>> result = new ArrayList<>();
         try (Statement statement = connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("with pg_partitioned_table as (select \n" +
+            String sql = "with pg_partitioned_table as (select \n" +
                     "    p.partrelid,\n" +
                     "    p.partstrat as partitionType,\n" +
                     "    p.partnatts,\n" +
@@ -4760,14 +4751,20 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     "    p.\"partitionExpression2\",\n" +
                     "    pg_get_expr(cl.relpartbound, cl.oid, true) as \"fromToIn\"\n" +
                     "FROM\n" +
-                    "    sqlg_schema.\"" + Topology.VERTEX_PREFIX + "schema\" s join\n" +
+                    "    sqlg_schema.\"" + VERTEX_PREFIX + "schema\" s join\n" +
                     "\tpg_catalog.pg_namespace n on s.name = n.nspname join\n" +
                     "    pg_catalog.pg_class cl on cl.relnamespace = n.oid left join\n" +
                     "    pg_catalog.pg_inherits i on i.inhrelid = cl.oid left join\n" +
-                    "    pg_partitioned_table p on p.partrelid = cl.relfilenode\n" +
+//                    "    pg_partitioned_table p on p.partrelid = cl.relfilenode\n" +
+                    "    pg_partitioned_table p on p.partrelid = cl.oid\n" +
                     "WHERE\n" +
                     "\tcl.relkind <> 'S' AND " +
-                    "(p.\"partitionExpression1\" is not null or p.\"partitionExpression2\" is not null or cl.relpartbound is not null)");
+                    "(" +
+                    "p.\"partitionExpression1\" is not null " +
+                    "or p.\"partitionExpression2\" is not null " +
+                    "or cl.relpartbound is not null" +
+                    ")";
+            ResultSet resultSet = statement.executeQuery(sql);
             while (resultSet.next()) {
                 Map<String, String> row = new HashMap<>();
                 row.put("schema", resultSet.getString("schema"));
@@ -4826,6 +4823,24 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA gui_schema TO \"sqlgReadOnly\"");
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+//    ALTER TABLE public."V_A" ALTER COLUMN "dateTime" TYPE timestamp;
+//    ALTER TABLE public."V_A" ALTER COLUMN "dateTimes" TYPE timestamp[];
+//    ALTER TABLE public."V_A" ALTER COLUMN "time" TYPE time;
+//    ALTER TABLE public."V_A" ALTER COLUMN "times" TYPE time[];
+    @Override
+    public boolean isTimestampz(String typeName) {
+        String localTypeName = typeName.toLowerCase();
+        switch (localTypeName) {
+            case "timestamptz":
+            case "_timestamptz":
+            case "timetz":
+            case "_timetz":
+                return true;
+            default:
+                return false;
         }
     }
 }

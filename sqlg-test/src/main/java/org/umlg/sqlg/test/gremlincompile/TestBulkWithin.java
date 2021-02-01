@@ -10,22 +10,24 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 /**
  * Date: 2015/10/07
  * Time: 7:28 PM
  */
 public class TestBulkWithin extends BaseTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestBulkWithin.class.getName());
 
     @BeforeClass
     public static void beforeClass() {
@@ -408,6 +410,11 @@ public class TestBulkWithin extends BaseTest {
         LocalDateTime localDateTime1 = LocalDateTime.now();
         LocalDateTime localDateTime2 = LocalDateTime.now().minusDays(1);
         LocalDateTime localDateTime3 = LocalDateTime.now().minusDays(2);
+        if (isHsqldb()) {
+            localDateTime1 = localDateTime1.truncatedTo(ChronoUnit.MILLIS);
+            localDateTime2 = localDateTime2.truncatedTo(ChronoUnit.MILLIS);
+            localDateTime3 = localDateTime3.truncatedTo(ChronoUnit.MILLIS);
+        }
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime1);
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime2);
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime3);
@@ -441,6 +448,10 @@ public class TestBulkWithin extends BaseTest {
         LocalTime localTime1 = LocalTime.now();
         LocalTime localTime2 = LocalTime.now().minusHours(1);
         LocalTime localTime3 = LocalTime.now().minusHours(2);
+        LOGGER.debug(localTime1.toString());
+        LOGGER.debug(localTime2.toString());
+        LOGGER.debug(localTime3.toString());
+        LOGGER.debug(Calendar.getInstance().getTimeZone().toString());
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime1);
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime2);
         this.sqlgGraph.addVertex(T.label, "A", "name", localTime3);
