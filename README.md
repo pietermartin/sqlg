@@ -1,5 +1,5 @@
-<a href="http://66.251.163.194:8111/viewType.html?buildTypeId=Sqlg_Build&guest=1">
-    <img src="http://66.251.163.194:8111/app/rest/builds/buildType:(id:Sqlg_Build)/statusIcon"/>
+<a href="http://sqlg.org:8111/viewType.html?buildTypeId=Sqlg_Build&guest=1">
+    <img src="http://sqlg.org:8111/app/rest/builds/buildType:(id:Sqlg_Build)/statusIcon"/>
 </a>
 
 Sqlg

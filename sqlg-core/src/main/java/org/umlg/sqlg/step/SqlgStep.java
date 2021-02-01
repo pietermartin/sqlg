@@ -16,5 +16,5 @@ public interface SqlgStep extends Step {
 
     void setEagerLoad(boolean eager);
 
-    boolean isEargerLoad();
+    boolean isEagerLoad();
 }

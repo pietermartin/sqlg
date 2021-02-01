@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test;
 
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -10,13 +11,29 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+
+import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 
 /**
  * Date: 2014/07/13
  * Time: 6:36 PM
  */
+@SuppressWarnings({"DuplicatedCode", "unused"})
 public class TestHas extends BaseTest {
+
+    @Test
+    @LoadGraphWith(MODERN)
+    public void g_V_bothE_properties_dedup_hasKeyXweightX_hasValueXltX0d3XX_value() {
+        loadModern();
+        final Traversal<Vertex, Double> traversal = this.sqlgGraph.traversal()
+                .V()
+                .bothE()
+                .properties().dedup().hasKey("weight").hasValue(P.lt(0.3)).value();
+        printTraversalForm(traversal);
+        checkResults(Collections.singletonList(0.2), traversal);
+    }
 
     @Test
     public void g_V_hasXblahX() {

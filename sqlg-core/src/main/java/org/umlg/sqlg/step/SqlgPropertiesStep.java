@@ -1,16 +1,16 @@
 package org.umlg.sqlg.step;
 
-import org.apache.commons.collections.iterators.EmptyIterator;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.PropertyType;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.umlg.sqlg.structure.SqlgElement;
-import org.umlg.sqlg.util.SqlgUtil;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -20,9 +20,8 @@ public class SqlgPropertiesStep<E> extends SqlgFlatMapStep<Element, E> implement
 
     protected final String[] propertyKeys;
     protected final PropertyType returnType;
-    private Set<String> appliesToLabels;
 
-    public SqlgPropertiesStep(final Traversal.Admin traversal, final PropertyType propertyType, final String... propertyKeys) {
+    public SqlgPropertiesStep(final Traversal.Admin<?, ?> traversal, final PropertyType propertyType, final String... propertyKeys) {
         super(traversal);
         this.returnType = propertyType;
         this.propertyKeys = propertyKeys;
@@ -30,31 +29,11 @@ public class SqlgPropertiesStep<E> extends SqlgFlatMapStep<Element, E> implement
 
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Element> traverser) {
-        for (String appliesToLabel : appliesToLabels) {
-            String label = SqlgUtil.originalLabel(appliesToLabel);
-            Object o = traverser.path().get(label);
-            if (o instanceof List) {
-                List<SqlgElement> objects = (List) o;
-                SqlgElement last = objects.get(objects.size() - 1);
-                if (this.returnType.equals(PropertyType.VALUE)) {
-                    return last.values(this.propertyKeys);
-                } else {
-                    return (Iterator)last.properties(this.propertyKeys);
-                }
-            } else {
-                SqlgElement sqlgElement = traverser.path().get(label);
-                if (this.returnType.equals(PropertyType.VALUE)) {
-                    return sqlgElement.values(this.propertyKeys);
-                } else {
-                    return (Iterator) sqlgElement.properties(this.propertyKeys);
-                }
-            }
+        if (this.returnType == PropertyType.VALUE) {
+            return traverser.get().values(this.propertyKeys);
+        } else {
+            return (Iterator) traverser.get().properties(this.propertyKeys);
         }
-        return EmptyIterator.INSTANCE;
-    }
-
-    public void setAppliesToLabels(Set<String> appliesToLabels) {
-        this.appliesToLabels = appliesToLabels;
     }
 
     public PropertyType getReturnType() {
@@ -85,7 +64,7 @@ public class SqlgPropertiesStep<E> extends SqlgFlatMapStep<Element, E> implement
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         closeIterator();
     }
 }

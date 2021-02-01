@@ -937,16 +937,9 @@ public class TopologyManager {
                 traversalSource.V(v.id())
                         .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_INDEX_EDGE : SQLG_SCHEMA_EDGE_INDEX_EDGE)
                         .has(SQLG_SCHEMA_INDEX_NAME, index.getName())
-                        .out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-                        .drop()
-                        .iterate();
-                traversalSource.V(v.id())
-                        .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_INDEX_EDGE : SQLG_SCHEMA_EDGE_INDEX_EDGE)
-                        .has(SQLG_SCHEMA_INDEX_NAME, index.getName())
                         .drop()
                         .iterate();
             }
-
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

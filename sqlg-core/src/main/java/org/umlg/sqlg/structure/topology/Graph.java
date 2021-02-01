@@ -8,8 +8,6 @@ import org.umlg.sqlg.structure.TopologyInf;
  */
 public class Graph implements TopologyInf {
 
-    private String version;
-
     @Override
     public boolean isCommitted() {
         return true;

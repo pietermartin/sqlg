@@ -3,6 +3,8 @@ package org.umlg.sqlg.test.batch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -19,6 +21,8 @@ import java.util.concurrent.TimeUnit;
  * Time: 5:48 AM
  */
 public class TestMultiThreadedBatch extends BaseTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(TestMultiThreadedBatch.class.getName());
 
     @BeforeClass
     public static void beforeClass() {
@@ -46,10 +50,9 @@ public class TestMultiThreadedBatch extends BaseTest {
                 int randomInt = random.nextInt();
                 try {
                     for (int i = 0; i < 1000; i++) {
-                        Vertex v1 = sqlgGraph.addVertex(T.label, "Person" + String.valueOf(randomInt), "name", randomInt);
-                        Vertex v2 = sqlgGraph.addVertex(T.label, "Person" + String.valueOf(randomInt), "name", randomInt);
+                        Vertex v1 = sqlgGraph.addVertex(T.label, "Person" + randomInt, "name", randomInt);
+                        Vertex v2 = sqlgGraph.addVertex(T.label, "Person" + randomInt, "name", randomInt);
                         v1.addEdge(String.valueOf(randomInt), v2, "name", randomInt);
-                        
                     }
                     tables.add(randomInt);
                     sqlgGraph.tx().commit();
@@ -61,7 +64,8 @@ public class TestMultiThreadedBatch extends BaseTest {
             });
         }
         executorService.shutdown();
-        executorService.awaitTermination(60000, TimeUnit.SECONDS);
+        boolean terminated = executorService.awaitTermination(60000, TimeUnit.SECONDS);
+        Assert.assertTrue(terminated);
         Assert.assertEquals(50, tables.size());
         testMultiThreadAddVertex_assert(this.sqlgGraph, tables);
         if (this.sqlgGraph1 != null) {
@@ -69,7 +73,6 @@ public class TestMultiThreadedBatch extends BaseTest {
             testMultiThreadAddVertex_assert(this.sqlgGraph1, tables);
         }
     }
-    
 
     private void testMultiThreadAddVertex_assert(SqlgGraph sqlgGraph, Set<Integer> tables) {
         for (Integer i : tables) {
@@ -81,7 +84,7 @@ public class TestMultiThreadedBatch extends BaseTest {
             }
         }
     }
-    
+
     @Test
     public void testMultiThreadAddVertexSameLabel() throws InterruptedException {
         sqlgGraph.tx().rollback();
@@ -94,27 +97,50 @@ public class TestMultiThreadedBatch extends BaseTest {
                 final Random random = new Random();
                 int randomInt = random.nextInt();
                 while (tables.contains(randomInt)) {
-                	randomInt = random.nextInt();
+                    randomInt = random.nextInt();
                 }
                 try {
-                    for (int i = 0; i < 1000; i++) {
-                    	 
-                        Vertex v1 = sqlgGraph.addVertex(T.label, "House" , "name", randomInt);
-                        Vertex v2 = sqlgGraph.addVertex(T.label, "Street" , "name", randomInt);
-                        v1.addEdge("Overlooks", v2, "name", randomInt);
-                       
+                    for (int k = 0; k < 3; k++) {
+                        boolean failed = false;
+                        for (int i = 0; i < 1000; i++) {
+                            try {
+                                Vertex v1 = sqlgGraph.addVertex(T.label, "House", "name", randomInt);
+                                Vertex v2 = sqlgGraph.addVertex(T.label, "Street", "name", randomInt);
+                                v1.addEdge("Overlooks", v2, "name", randomInt);
+                                tables.add(randomInt);
+                            } catch (Exception e) {
+                                failed = true;
+                                tables.remove(randomInt);
+                                sqlgGraph.tx().rollback();
+                                if ((isPostgres() && e.getCause().getClass().getSimpleName().equals("PSQLException")) ||
+                                        (isHsqldb() && e.getCause().getClass().getSimpleName().equals("SQLSyntaxErrorException")) ||
+                                        (isH2() && e.getCause().getClass().getSimpleName().equals("JdbcSQLSyntaxErrorException"))) {
+
+                                    //swallow
+                                    logger.warn("Rollback transaction due to schema creation failure.", e);
+                                    Thread.sleep(1000);
+                                    break;
+                                } else {
+                                    logger.error(String.format("got exception %s", e.getCause().getClass().getSimpleName()), e);
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        }
+                        if (!failed) {
+                            sqlgGraph.tx().commit();
+                            break;
+                        }
                     }
-                    sqlgGraph.tx().commit();
-                    tables.add(randomInt);
                     sqlgGraph.tx().normalBatchModeOn();
                 } catch (Exception e) {
-                	e.printStackTrace();
+                    e.printStackTrace();
                     Assert.fail(e.getMessage());
                 }
             });
         }
         executorService.shutdown();
-        executorService.awaitTermination(60000, TimeUnit.SECONDS);
+        boolean terminated = executorService.awaitTermination(60000, TimeUnit.SECONDS);
+        Assert.assertTrue(terminated);
         Assert.assertEquals(50, tables.size());
         testMultiThreadAddVertexSameLabel_assert(this.sqlgGraph, tables);
         if (this.sqlgGraph1 != null) {
@@ -124,13 +150,13 @@ public class TestMultiThreadedBatch extends BaseTest {
     }
 
     private void testMultiThreadAddVertexSameLabel_assert(SqlgGraph sqlgGraph, Set<Integer> tables) {
-    	 Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "House" ).isPresent());
-    	 Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "Street" ).isPresent());
-    	 
-    	for (Integer i : tables) {
-            Assert.assertEquals(String.valueOf(i),1000, sqlgGraph.traversal().V().has(T.label, "House").has("name", i).count().next().intValue());
-            Assert.assertEquals(String.valueOf(i),1000, sqlgGraph.traversal().V().has(T.label, "House").has("name", i).out("Overlooks").has("name",i).count().next().intValue());
-        	
-    	}
+        Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "House").isPresent());
+        Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "Street").isPresent());
+
+        for (Integer i : tables) {
+            Assert.assertEquals(String.valueOf(i), 1000, sqlgGraph.traversal().V().has(T.label, "House").has("name", i).count().next().intValue());
+            Assert.assertEquals(String.valueOf(i), 1000, sqlgGraph.traversal().V().has(T.label, "House").has("name", i).out("Overlooks").has("name", i).count().next().intValue());
+
+        }
     }
 }

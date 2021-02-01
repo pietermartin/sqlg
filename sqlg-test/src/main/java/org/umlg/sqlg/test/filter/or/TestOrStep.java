@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.filter.or;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -21,7 +22,67 @@ import java.util.List;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/10/30
  */
+@SuppressWarnings("DuplicatedCode")
 public class TestOrStep extends BaseTest {
+
+
+    @Test
+    public void testSelect() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A").as("a").out("ab").<Vertex>select("a");
+        printTraversalForm(traversal);
+        List<Vertex> result = traversal.toList();
+        Assert.assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testSelectAfterAndOrHasContainer() {
+        this.sqlgGraph.traversal().addV("A").property("startDate", 0).next();
+        this.sqlgGraph.traversal().addV("A").property("startDate", 0).property("endDate", 10L).next();
+        this.sqlgGraph.tx().commit();
+
+//        This works correctly (not and has):
+        GraphTraversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V()
+                .hasLabel("A")
+                .has("startDate", P.lte(9))
+                .or(
+                        __.not(__.has("endDate")),
+                        __.has("endDate", P.gt(9))
+                ).as("svc")
+                .select("svc")
+                .count();
+        printTraversalForm(traversal);
+        Assert.assertEquals(2L, traversal.next(), 0);
+
+//        This works correctly(hasNot):
+        traversal = this.sqlgGraph.traversal().V()
+                .hasLabel("A")
+                .has("startDate", P.lte(9))
+                .or(
+                        __.hasNot("endDate"),
+                        __.has("endDate", P.gt(9))
+                ).as("svc")
+                .count();
+        printTraversalForm(traversal);
+        Assert.assertEquals(2L, traversal.next(), 0);
+
+//        This fails (hasNot with select):
+        traversal = this.sqlgGraph.traversal().V()
+                .hasLabel("A")
+                .has("startDate", P.lte(9))
+                .or(
+                        __.hasNot("endDate"),
+                        __.has("endDate", P.gt(9))
+                ).as("svc")
+                .select("svc")
+                .count();
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.next(), 0);
+    }
 
     @Test
     public void testOrStepOptimizedWith3Ors() {
@@ -45,47 +106,47 @@ public class TestOrStep extends BaseTest {
 
     @Test
     public void testOrChained() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1","p1","v1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2","p1","v1");
-        this.sqlgGraph.addVertex(T.label, "A", "name", "a3","p1","v1");
-        this.sqlgGraph.addVertex(T.label, "A", "name", "a4","p1","v1");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "p1", "v1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "p1", "v1");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "p1", "v1");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "p1", "v1");
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
-                        __.has("name", "a1").has("p1","v1"),
+                        __.has("name", "a1").has("p1", "v1"),
                         __.has("name", "a2"),
-                        __.has("name", "a3").has("p1","v2")
+                        __.has("name", "a3").has("p1", "v2")
                 );
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2));
     }
-    
+
     @Test
     public void testOrMissingProperty() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1","p1","v1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2","p1","v1");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3","p1","v1");
-        this.sqlgGraph.addVertex(T.label, "A", "name", "a4","p1","v1");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "p1", "v1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2", "p1", "v1");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3", "p1", "v1");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a4", "p1", "v1");
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
-                        __.has("name", "a1").has("p1","v1"),
+                        __.has("name", "a1").has("p1", "v1"),
                         __.has("name", "a2"),
-                        __.has("name", "a3").has("p2","v2")
+                        __.has("name", "a3").has("p2", "v2")
                 );
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2));
-        
+
         traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
-                        __.has("name", "a1").has("p1","v1"),
+                        __.has("name", "a1").has("p1", "v1"),
                         __.has("name", "a2"),
                         __.has("name", "a3").has("p2")
                 );
@@ -93,11 +154,11 @@ public class TestOrStep extends BaseTest {
         //Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2));
-        
+
         traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
-                        __.has("name", "a1").has("p1","v1"),
+                        __.has("name", "a1").has("p1", "v1"),
                         __.has("name", "a2"),
                         __.has("name", "a3").hasNot("p2")
                 );
@@ -106,7 +167,7 @@ public class TestOrStep extends BaseTest {
         Assert.assertEquals(3, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2) && vertices.contains(a3));
     }
-    
+
     @Test
     public void testOrStepOptimized() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

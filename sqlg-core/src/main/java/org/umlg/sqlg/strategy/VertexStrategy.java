@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.OptionalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -21,11 +22,13 @@ import org.umlg.sqlg.util.SqlgTraversalUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Optional;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/03/04
  */
+@SuppressWarnings("rawtypes")
 public class VertexStrategy extends BaseStrategy {
 
     private static final Logger logger = LoggerFactory.getLogger(VertexStrategy.class);
@@ -132,6 +135,22 @@ public class VertexStrategy extends BaseStrategy {
     @Override
     protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
         return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
+//        if (CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass)) {
+//            final List<Class> GROUP_STEPS = Arrays.asList(
+//                    MaxGlobalStep.class,
+//                    MinGlobalStep.class,
+//                    SumGlobalStep.class,
+//                    MeanGlobalStep.class,
+//                    GroupStep.class
+//            );
+//            if (GROUP_STEPS.contains(stepClass)) {
+//                return false;
+//            } else {
+//                return true;
+//            }
+//        } else {
+//            return false;
+//        }
     }
 
     @SuppressWarnings("unchecked")
@@ -141,6 +160,22 @@ public class VertexStrategy extends BaseStrategy {
             TraversalHelper.replaceStep(stepToReplace, sqlgStep, this.traversal);
         } else {
             TraversalHelper.insertAfterStep(sqlgStep, stepToReplace.getPreviousStep(), this.traversal);
+        }
+    }
+
+    @Override
+    protected boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step aggregateStep, String aggr) {
+        Optional<GroupStep> groupStepOptional = TraversalHelper.getFirstStepOfAssignableClass(GroupStep.class, this.traversal);
+        boolean handle = false;
+        if (groupStepOptional.isPresent()) {
+            int currentStepIndex = TraversalHelper.stepIndex(replacedStep.getStep(), this.traversal);
+            @SuppressWarnings("unchecked") int groupStepIndex = TraversalHelper.stepIndex(groupStepOptional.get(), this.traversal);
+            handle  = groupStepIndex < currentStepIndex;
+        }
+        if (handle) {
+            return super.handleAggregateGlobalStep(replacedStep, aggregateStep, aggr);
+        } else {
+            return false;
         }
     }
 }

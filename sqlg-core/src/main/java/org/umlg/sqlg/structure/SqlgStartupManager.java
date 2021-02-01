@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.util.VersionUtil;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -47,9 +48,13 @@ class SqlgStartupManager {
 
     void loadSqlgSchema() {
         try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("SchemaManager.loadSqlgSchema()...");
-            }
+            logger.debug("SchemaManager.loadSqlgSchema()...");
+
+            //We need Connection.TRANSACTION_SERIALIZABLE here as the SqlgGraph can startup while other graphs are
+            //creating schema objects concurrently.
+            Connection connection = this.sqlgGraph.tx().getConnection();
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
             //check if the topology schema exists, if not createVertexLabel it
             boolean existSqlgSchema = existSqlgSchema();
             StopWatch stopWatch = new StopWatch();
@@ -72,10 +77,18 @@ class SqlgStartupManager {
             //committing here will ensure that sqlg creates the tables.
             this.sqlgGraph.tx().commit();
             stopWatch.stop();
+
+            connection = this.sqlgGraph.tx().getConnection();
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
             logger.debug("Time to createVertexLabel sqlg topology: " + stopWatch.toString());
             if (!existSqlgSchema) {
                 addPublicSchema();
                 this.sqlgGraph.tx().commit();
+
+                connection = this.sqlgGraph.tx().getConnection();
+                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
             }
             if (!existSqlgSchema) {
                 //old versions of sqlg needs the topology populated from the information_schema table.
@@ -94,7 +107,35 @@ class SqlgStartupManager {
                 //make sure the sqlg_schema.graph exists.
                 String version = getBuildVersion();
                 String oldVersion = createOrUpdateGraph(version);
-                if (oldVersion == null || !oldVersion.equals(version)) {
+                int versionAsInt = Integer.parseInt(oldVersion.replace("-SNAPSHOT", "").replace(".", ""));
+                if (versionAsInt < 203) {
+                    //Need to check if there are any timestampz or timetz columns.
+                    //If so throw an exception as the user needs to alter them to drop the 'z'
+                    Set<Pair<String, String>> badColumns = new HashSet<>();
+                    Connection conn = this.sqlgGraph.tx().getConnection();
+                    Set<Schema> schemas = this.sqlgGraph.getTopology().getSchemas();
+                    for (Schema schema : schemas) {
+                        ResultSet rs = conn.getMetaData().getColumns(null, schema.getName(), null, null);
+                        while (rs.next()) {
+                            String tableName = rs.getString("TABLE_NAME");
+                            String columnName = rs.getString("COLUMN_NAME");
+                            String typeName = rs.getString("TYPE_NAME");
+                            if (this.sqlgGraph.getSqlDialect().isTimestampz(typeName)) {
+                                badColumns.add(Pair.of(tableName, columnName));
+                            }
+                        }
+
+                    }
+                    if (!badColumns.isEmpty()) {
+                        String message = badColumns.stream()
+                                .map(c -> String.format("'%s.%s'", c.getLeft(), c.getRight()))
+                                .reduce((a, b) -> a + ", " + b)
+                                .get();
+                        throw new IllegalStateException("Columns, " + message + ", has date time columns with time zones that needs to be dropped.");
+                    }
+                }
+
+                if (!oldVersion.equals(version)) {
                     updateTopology(oldVersion);
                 }
             }
@@ -105,7 +146,11 @@ class SqlgStartupManager {
             this.sqlgGraph.tx().commit();
         } catch (Exception e) {
             this.sqlgGraph.tx().rollback();
-            throw e;
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException)e;
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 

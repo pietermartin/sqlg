@@ -11,6 +11,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,6 +40,9 @@ public class TestBatchEdgeDateTime extends BaseTest {
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         LocalDateTime localDateTime = LocalDateTime.now();
+        if (isHsqldb()) {
+            localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         Edge e = personA.addEdge("loves", personB, "localDateTime", localDateTime);
         this.sqlgGraph.tx().commit();
         testLocalDate_assert(this.sqlgGraph, localDateTime, e);
@@ -96,6 +100,9 @@ public class TestBatchEdgeDateTime extends BaseTest {
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        if (isHsqldb()) {
+            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
+        }
         Edge e = personA.addEdge("loves", personB, "zonedDateTime", zonedDateTime);
         this.sqlgGraph.tx().commit();
         testZonedDateTime_assert(this.sqlgGraph, zonedDateTime, e);

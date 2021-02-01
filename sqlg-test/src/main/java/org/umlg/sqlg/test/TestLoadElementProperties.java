@@ -8,7 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -45,11 +45,11 @@ public class TestLoadElementProperties extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
+                        new HashMap<>() {{
                             put("uid", PropertyType.varChar(100));
                             put("name", PropertyType.STRING);
                         }},
-                        ListOrderedSet.listOrderedSet(Arrays.asList("uid"))
+                        ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
                 );
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "uid", UUID.randomUUID().toString(), "name", "marko");
         this.sqlgGraph.tx().commit();

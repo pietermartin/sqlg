@@ -3,6 +3,7 @@ package org.umlg.sqlg.step;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
@@ -12,9 +13,12 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.traverser.ISqlgTraverser;
+import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 import java.util.*;
 
@@ -53,16 +57,21 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     private ListIterator<List<Emit<E>>> elementIterator;
 
     private List<Emit<E>> traversers = new ArrayList<>();
-    private ListIterator<Emit<E>> traversersLstIterator;
+    private ListIterator<Emit<E>> traversersListIterator;
 
     private ReplacedStep<?, ?> lastReplacedStep;
     private long rangeCount = 0;
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
+    private boolean hasAggregateFunction;
+
+    private Traverser.Admin<E> currentHead;
+    private boolean isSqlgLocalStepBarrierChild;
 
     public SqlgVertexStep(final Traversal.Admin traversal) {
         super(traversal);
         this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
+        this.isSqlgLocalStepBarrierChild = traversal.getParent() instanceof SqlgLocalStepBarrier;
     }
 
     @Override
@@ -72,8 +81,8 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
             constructQueryPerSchemaTable();
         }
         while (true) {
-            if (this.traversersLstIterator != null && this.traversersLstIterator.hasNext()) {
-                Emit<E> emit = this.traversersLstIterator.next();
+            if (this.traversersListIterator != null && this.traversersListIterator.hasNext()) {
+                Emit<E> emit = this.traversersListIterator.next();
                 this.labels = emit.getLabels();
                 if (applyRange(emit)) {
                     continue;
@@ -83,11 +92,11 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
             if (!this.eagerLoad && (this.elementIterator != null)) {
                 if (this.elementIterator.hasNext()) {
                     this.traversers.clear();
-                    this.traversersLstIterator = internalLoad();
+                    this.traversersListIterator = internalLoad();
                 }
             }
-            if (this.traversersLstIterator != null && this.traversersLstIterator.hasNext()) {
-                Emit<E> emit = this.traversersLstIterator.next();
+            if (this.traversersListIterator != null && this.traversersListIterator.hasNext()) {
+                Emit<E> emit = this.traversersListIterator.next();
                 this.labels = emit.getLabels();
                 if (applyRange(emit)) {
                     continue;
@@ -104,11 +113,10 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                         }
                         eagerLoad();
                         Collections.sort(this.traversers);
-                        this.traversersLstIterator = this.traversers.listIterator();
+                        this.traversersListIterator = this.traversers.listIterator();
                     }
                     this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                 } else {
-//                    if (!this.sqlgStarts.hasNext()) {
                     if (!this.starts.hasNext()) {
                         throw FastNoSuchElementException.instance();
                     } else {
@@ -124,7 +132,8 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         this.heads.clear();
         this.schemaTableParentIds.clear();
         while (this.starts.hasNext()) {
-            @SuppressWarnings("unchecked") Traverser.Admin<E> h = this.starts.next();
+            @SuppressWarnings("unchecked")
+            Traverser.Admin<E> h = this.starts.next();
             E value = h.get();
             SchemaTable schemaTable = value.getSchemaTablePrefixed();
             List<Traverser.Admin<E>> traverserList = this.heads.get(schemaTable);
@@ -156,46 +165,65 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
 
     private ListIterator<Emit<E>> internalLoad() {
         List<Emit<E>> emits = this.elementIterator.next();
-        Emit<E> emitToGetEmit = emits.get(0);
-        Traverser.Admin<E> head = this.startIndexTraverserAdminMap.get(emitToGetEmit.getParentIndex());
-        if (head == null) {
-            throw new IllegalStateException("head not found for " + emits.get(0).toString());
-        }
-        Traverser.Admin<E> traverser = head;
-        List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
-        for (Emit<E> emit : emits) {
-            emit.getElement().setInternalStartTraverserIndex(emit.getParentIndex());
-            if (!emit.isFake()) {
-                if (emit.isIncomingOnlyLocalOptionalStep()) {
-                    //no split it happening for left joined elements
-                    ((SqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
-                    traverser.get().setInternalStartTraverserIndex(emit.getParentIndex());
-                    this.toEmit = emit;
-                    break;
-                }
-                this.toEmit = emit;
-                E e = emit.getElement();
-                this.labels = emit.getLabels();
-                //noinspection unchecked
-                traverser = traverser.split(e, this);
-                if (traverser instanceof SqlgTraverser) {
-                    ((SqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
-                }
-                emitComparators.add(this.toEmit.getSqlgComparatorHolder());
-            } else {
-                this.toEmit = emit;
+        if (this.isSqlgLocalStepBarrierChild || !this.hasAggregateFunction) {
+            Emit<E> emitToGetEmit = emits.get(0);
+            Traverser.Admin<E> head = this.startIndexTraverserAdminMap.get(emitToGetEmit.getParentIndex());
+            if (head == null) {
+                throw new IllegalStateException("head not found for " + emits.get(0).toString());
             }
-        }
-        this.toEmit.setSqlgComparatorHolders(emitComparators);
-        this.toEmit.setTraverser(traverser);
 
-        this.toEmit.evaluateElementValueTraversal(head.path().size(), traverser);
-        this.traversers.add(this.toEmit);
-        if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
-            this.toEmit.setRepeated(true);
+            if (this.currentHead != null && !this.currentHead.equals(head)) {
+                for (Object step : getTraversal().getSteps()) {
+                    if ((step instanceof SqlgGroupStep)) {
+                        ((Step<?, ?>)step).reset();
+                    }
+                }
+            }
+            this.currentHead = head;
+
+            Traverser.Admin<E> traverser = head;
+            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
+            for (Emit<E> emit : emits) {
+                emit.getElement().setInternalStartTraverserIndex(emit.getParentIndex());
+                if (!emit.isFake()) {
+                    if (emit.isIncomingOnlyLocalOptionalStep()) {
+                        //no split it happening for left joined elements
+                        ((ISqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
+                        traverser.get().setInternalStartTraverserIndex(emit.getParentIndex());
+                        this.toEmit = emit;
+                        break;
+                    }
+                    this.toEmit = emit;
+                    E e = emit.getElement();
+                    this.labels = emit.getLabels();
+                    //noinspection unchecked
+                    traverser = traverser.split(e, this);
+                    if (traverser instanceof ISqlgTraverser) {
+                        ((ISqlgTraverser) traverser).setStartElementIndex(emit.getParentIndex());
+                    }
+                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
+                } else {
+                    this.toEmit = emit;
+                }
+            }
+            this.toEmit.setSqlgComparatorHolders(emitComparators);
+            this.toEmit.setTraverser(traverser);
+
+            this.toEmit.evaluateElementValueTraversal(head.path().size(), traverser);
             this.traversers.add(this.toEmit);
+            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
+                this.toEmit.setRepeated(true);
+                this.traversers.add(this.toEmit);
+            }
+            return this.traversers.listIterator();
+        } else {
+            for (Emit<E> emit : emits) {
+                Traverser.Admin<E> traverser = SqlgTraverserGenerator.instance().generate(emit.getElement(), this, 1L, false, false);
+                emit.setTraverser(traverser);
+                this.traversers.add(emit);
+            }
+            return this.traversers.listIterator();
         }
-        return this.traversers.listIterator();
     }
 
     private void constructQueryPerSchemaTable() {
@@ -240,14 +268,12 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
-        this.replacedStepTree.maybeAddLabelToLeafNodes();
         rootSchemaTableTree.setParentIdsAndIndexes(this.schemaTableParentIds.get(schemaTable));
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
         rootSchemaTableTrees.add(rootSchemaTableTree);
         return new SqlgCompiledResultListIterator<>(new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true));
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep replacedStep) {
         replacedStep.setDepth(this.replacedSteps.size());
@@ -290,7 +316,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         this.toEmit = null;
         this.elementIterator = null;
         this.traversers.clear();
-        this.traversersLstIterator = null;
+        this.traversersListIterator = null;
         this.lastReplacedStep = null;
         this.rangeCount = 0;
         this.eagerLoad = false;
@@ -313,7 +339,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 , "The first step must a VertexStep, EdgeVertexStep, EdgeOtherVertexStep or GraphStep, found " + this.replacedSteps.get(1).getStep().getClass().toString());
         SchemaTableTree rootSchemaTableTree = null;
         try {
-            rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedStepTree);
+            rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedStepTree, this.isSqlgLocalStepBarrierChild);
             //Regular
             List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
             //Optional
@@ -323,6 +349,9 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
             List<LinkedList<SchemaTableTree>> leftJoinResultEmit = new ArrayList<>();
             SchemaTableTree.constructDistinctEmitBeforeQueries(rootSchemaTableTree, leftJoinResultEmit);
             this.isForMultipleQueries = (distinctQueries.size() + leftJoinResult.size() + leftJoinResultEmit.size()) > 1;
+            this.hasAggregateFunction = !distinctQueries.isEmpty() && distinctQueries.get(distinctQueries.size() - 1).getLast().hasAggregateFunction();
+            this.hasAggregateFunction = this.hasAggregateFunction || (!leftJoinResult.isEmpty() && leftJoinResult.get(leftJoinResult.size() - 1).getLeft().getLast().hasAggregateFunction());
+            this.hasAggregateFunction = this.hasAggregateFunction || (!leftJoinResultEmit.isEmpty() && leftJoinResultEmit.get(leftJoinResultEmit.size() - 1).getLast().hasAggregateFunction());
             return rootSchemaTableTree;
         } finally {
             if (rootSchemaTableTree != null) {
@@ -342,7 +371,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     }
 
     @Override
-    public boolean isEargerLoad() {
+    public boolean isEagerLoad() {
         return this.eagerLoad;
     }
 

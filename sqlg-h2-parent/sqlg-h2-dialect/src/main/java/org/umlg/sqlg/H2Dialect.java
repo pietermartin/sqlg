@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.h2.jdbc.JdbcArray;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
+import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -1019,5 +1020,43 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public void grantReadOnlyUserPrivilegesToSqlgSchemas(SqlgGraph sqlgGraph) {
         //Do nothing, we are not testing readOnly on H2
+    }
+
+    @Override
+    public String toSelectString(boolean partOfDuplicateQuery, ColumnList.Column column, String alias) {
+        StringBuilder sb = new StringBuilder();
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            if (column.getAggregateFunction().equals("avg")) {
+                sb.append(column.getAggregateFunction().toUpperCase());
+                sb.append("(CAST(");
+            } else {
+                sb.append(column.getAggregateFunction().toUpperCase());
+                sb.append("(");
+            }
+        }
+        sb.append(maybeWrapInQoutes(column.getSchema()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getTable()));
+        sb.append(".");
+        sb.append(maybeWrapInQoutes(column.getColumn()));
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
+            if (column.getAggregateFunction().equals("avg")) {
+                sb.append(" as DOUBLE PRECISION)) AS ").append(maybeWrapInQoutes(alias));
+            } else {
+                sb.append(" ) AS ").append(maybeWrapInQoutes(alias));
+            }
+            if (column.getAggregateFunction().equals("avg")) {
+                sb.append(", COUNT(1) AS ").append(maybeWrapInQoutes(alias + "_weight"));
+            }
+        } else {
+            sb.append(" AS ").append(maybeWrapInQoutes(alias));
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public boolean isTimestampz(String typeName) {
+        //H2 is not using timestamps with zones
+        return false;
     }
 }

@@ -47,57 +47,57 @@ public class WhereClause {
     }
 
     public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer, String prefix) {
-        String result = "";
+        StringBuilder result = new StringBuilder();
 
         if (p.getValue() instanceof PropertyReference && p.getBiPredicate() instanceof Compare) {
-            result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
             String column = prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(((PropertyReference) p.getValue()).getColumnName());
-            result += compareToSql((Compare) p.getBiPredicate(), column);
-            return result;
+            result.append(compareToSql((Compare) p.getBiPredicate(), column));
+            return result.toString();
         } else if (p.getBiPredicate() instanceof Compare) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 if (schemaTableTree.isHasIDPrimaryKey()) {
-                    result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
-                    result += compareToSql((Compare) p.getBiPredicate());
+                    result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                    result.append(compareToSql((Compare) p.getBiPredicate()));
                 } else {
                     int i = 1;
                     for (String identifier : schemaTableTree.getIdentifiers()) {
-                        result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier);
-                        result += compareToSql((Compare) p.getBiPredicate());
+                        result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        result.append(compareToSql((Compare) p.getBiPredicate()));
                         if (i++ < schemaTableTree.getIdentifiers().size()) {
-                            result += " AND ";
+                            result.append(" AND ");
                         }
                     }
                 }
             } else {
-                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-                result += compareToSql((Compare) p.getBiPredicate());
+                result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
+                result.append(compareToSql((Compare) p.getBiPredicate()));
             }
-            return result;
+            return result.toString();
         } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 if (schemaTableTree.isHasIDPrimaryKey()) {
-                    result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
-                    result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
+                    result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                    result.append(containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size()));
                 } else {
                     int i = 1;
                     for (String identifier : schemaTableTree.getIdentifiers()) {
-                        result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier);
-                        result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
+                        result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        result.append(containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size()));
                         if (i++ < schemaTableTree.getIdentifiers().size()) {
-                            result += " OR ";
+                            result.append(" OR ");
                         }
                     }
                 }
             } else {
-                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-                result += containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size());
+                result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
+                result.append(containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size()));
             }
-            return result;
+            return result.toString();
         } else if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
-            result += " tmp" + (schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
-            result += ".without IS NULL";
-            return result;
+            result.append(" tmp").append(schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
+            result.append(".without IS NULL");
+            return result.toString();
         } else if (p instanceof AndP) {
             AndP<?> andP = (AndP<?>) p;
             Preconditions.checkState(andP.getPredicates().size() == 2, "Only handling AndP with 2 predicates!");
@@ -108,10 +108,10 @@ public class WhereClause {
             } else {
                 key = result + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }
-            result += prefix + key + compareToSql((Compare) p1.getBiPredicate());
+            result.append(prefix).append(key).append(compareToSql((Compare) p1.getBiPredicate()));
             P<?> p2 = andP.getPredicates().get(1);
-            result += " and " + prefix + key + compareToSql((Compare) p2.getBiPredicate());
-            return result;
+            result.append(" and ").append(prefix).append(key).append(compareToSql((Compare) p2.getBiPredicate()));
+            return result.toString();
         } else if (p instanceof OrP) {
             OrP<?> orP = (OrP<?>) p;
             Preconditions.checkState(orP.getPredicates().size() == 2, "Only handling OrP with 2 predicates!");
@@ -122,31 +122,31 @@ public class WhereClause {
             } else {
                 key = result + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }
-            result += prefix + key + compareToSql((Compare) p1.getBiPredicate());
+            result.append(prefix).append(key).append(compareToSql((Compare) p1.getBiPredicate()));
             P<?> p2 = orP.getPredicates().get(1);
-            result += " or " + prefix + key + compareToSql((Compare) p2.getBiPredicate());
-            return result;
+            result.append(" or ").append(prefix).append(key).append(compareToSql((Compare) p2.getBiPredicate()));
+            return result.toString();
         } else if (p.getBiPredicate() instanceof Text) {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-            result += textToSql(sqlgGraph.getSqlDialect(), prefix, (Text) p.getBiPredicate());
-            return result;
+            result.append(textToSql(sqlgGraph.getSqlDialect(), prefix, (Text) p.getBiPredicate()));
+            return result.toString();
         } else if (p.getBiPredicate() instanceof FullText) {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             FullText ft = (FullText) p.getBiPredicate();
-            result += sqlgGraph.getSqlDialect().getFullTextQueryText(ft, prefix);
-            return result;
+            result.append(sqlgGraph.getSqlDialect().getFullTextQueryText(ft, prefix));
+            return result.toString();
         } else if (p.getBiPredicate() instanceof Existence) {
-            result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-            result += " " + p.getBiPredicate().toString();
-            return result;
+            result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
+            result.append(" ").append(p.getBiPredicate().toString());
+            return result.toString();
         } else if (p.getBiPredicate() instanceof ArrayContains) {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-            result += sqlgGraph.getSqlDialect().getArrayContainsQueryText(prefix);
-            return result;
+            result.append(sqlgGraph.getSqlDialect().getArrayContainsQueryText(prefix));
+            return result.toString();
         } else if (p.getBiPredicate() instanceof ArrayOverlaps) {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-            result += sqlgGraph.getSqlDialect().getArrayOverlapsQueryText(prefix);
-            return result;
+            result.append(sqlgGraph.getSqlDialect().getArrayOverlapsQueryText(prefix));
+            return result.toString();
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
     }

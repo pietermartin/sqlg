@@ -21,6 +21,7 @@ import java.util.Set;
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2015/12/13
  */
+@SuppressWarnings("rawtypes")
 public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());

@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementExce
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgFilterStep;
-import org.umlg.sqlg.structure.SqlgTraverser;
+import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -11,7 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgElement;
-import org.umlg.sqlg.structure.SqlgTraverser;
+import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 
 import java.util.*;
 
@@ -41,7 +41,6 @@ public class SqlgOptionalStepBarrier<S> extends SqlgAbstractStep<S, S> implement
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 this.optionalTraversal.addStart(start);
-                ((SqlgElement) start.get()).setInternalStartTraverserIndex(startCount++);
                 List<Object> startObjects = start.path().objects();
                 StringBuilder recordIdConcatenated = new StringBuilder();
                 for (Object startObject : startObjects) {

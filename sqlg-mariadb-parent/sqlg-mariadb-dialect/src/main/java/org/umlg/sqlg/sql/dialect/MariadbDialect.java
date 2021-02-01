@@ -1100,4 +1100,10 @@ public class MariadbDialect extends BaseSqlDialect {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public boolean isTimestampz(String typeName) {
+        //Maria db is not using timestamps with zones
+        return false;
+    }
 }
