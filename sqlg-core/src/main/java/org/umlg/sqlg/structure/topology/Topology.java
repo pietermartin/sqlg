@@ -61,7 +61,7 @@ public class Topology {
     private final Map<String, Schema> schemas = new ConcurrentHashMap<>();
     private final Map<String, Schema> globalUniqueIndexSchema = new ConcurrentHashMap<>();
 
-    //    private final Map<String, Schema> uncommittedSchemas = new ConcurrentHashMap<>();
+    private final ThreadLocal<Boolean> schemaChanged = ThreadLocal.withInitial(() -> false);
     private final ThreadLocalMap<String, Schema> uncommittedSchemas = new ThreadLocalMap<>();
     private final Set<String> uncommittedRemovedSchemas = new ConcurrentSkipListSet<>();
     private final Map<String, Schema> metaSchemas;
@@ -527,6 +527,11 @@ public class Topology {
      */
     void lock() {
         this.sqlgGraph.tx().readWrite();
+        this.schemaChanged.set(true);
+    }
+
+    boolean isSchemaChanged() {
+        return this.schemaChanged.get();
     }
 
     /**
@@ -801,7 +806,7 @@ public class Topology {
     }
 
     private void beforeCommit() {
-        if (this.distributed) {
+        if (this.distributed && this.schemaChanged.get()) {
             Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
             if (jsonNodeOptional.isPresent()) {
                 SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
@@ -823,71 +828,77 @@ public class Topology {
     private void afterCommit() {
         try {
             getPublicSchema().removeTemporaryTables();
-            for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Schema> entry = it.next();
-                this.schemas.put(entry.getKey(), entry.getValue());
-                it.remove();
-            }
-            for (Iterator<String> it = this.uncommittedRemovedSchemas.iterator(); it.hasNext(); ) {
-                String sch = it.next();
-                removeSchemaFromCaches(sch);
-                it.remove();
-            }
-            //merge the allTableCache and uncommittedAllTables
-            Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
-            for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
-                String uncommittedSchemaTable = stringMapEntry.getKey();
-                AbstractLabel abstractLabel = stringMapEntry.getValue();
-                // we replace the whole map since getPropertyTypeMap() gives the full map, and we may have removed properties
-                this.allTableCache.put(uncommittedSchemaTable, abstractLabel.getPropertyTypeMap());
-            }
-
-            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
-            for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedSchemaTableForeignKeys.entrySet()) {
-                Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTablePairEntry.getKey());
-                if (foreignKeys != null) {
-                    foreignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
-                    foreignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
-                } else {
-                    this.schemaTableForeignKeyCache.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+            if (isSchemaChanged()) {
+                for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
+                    Map.Entry<String, Schema> entry = it.next();
+                    this.schemas.put(entry.getKey(), entry.getValue());
+                    it.remove();
                 }
-            }
-
-            Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
-            for (Map.Entry<String, Set<ForeignKey>> entry : uncommittedEdgeForeignKeys.entrySet()) {
-                Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
-                if (foreignKeys == null) {
-                    this.edgeForeignKeyCache.put(entry.getKey(), entry.getValue());
-                } else {
-                    foreignKeys.addAll(entry.getValue());
+                for (Iterator<String> it = this.uncommittedRemovedSchemas.iterator(); it.hasNext(); ) {
+                    String sch = it.next();
+                    removeSchemaFromCaches(sch);
+                    it.remove();
                 }
-            }
-            for (Schema schema : this.schemas.values()) {
-                schema.afterCommit();
-            }
-            for (Schema schema : this.globalUniqueIndexSchema.values()) {
-                schema.afterCommit();
+                //merge the allTableCache and uncommittedAllTables
+                Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
+                for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
+                    String uncommittedSchemaTable = stringMapEntry.getKey();
+                    AbstractLabel abstractLabel = stringMapEntry.getValue();
+                    // we replace the whole map since getPropertyTypeMap() gives the full map, and we may have removed properties
+                    this.allTableCache.put(uncommittedSchemaTable, abstractLabel.getPropertyTypeMap());
+                }
+
+                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
+                for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedSchemaTableForeignKeys.entrySet()) {
+                    Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTablePairEntry.getKey());
+                    if (foreignKeys != null) {
+                        foreignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
+                        foreignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
+                    } else {
+                        this.schemaTableForeignKeyCache.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+                    }
+                }
+
+                Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+                for (Map.Entry<String, Set<ForeignKey>> entry : uncommittedEdgeForeignKeys.entrySet()) {
+                    Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
+                    if (foreignKeys == null) {
+                        this.edgeForeignKeyCache.put(entry.getKey(), entry.getValue());
+                    } else {
+                        foreignKeys.addAll(entry.getValue());
+                    }
+                }
+                for (Schema schema : this.schemas.values()) {
+                    schema.afterCommit();
+                }
+                for (Schema schema : this.globalUniqueIndexSchema.values()) {
+                    schema.afterCommit();
+                }
             }
         } finally {
             z_internalSqlWriteUnlock();
+            this.schemaChanged.set(false);
         }
     }
 
     private void afterRollback() {
         getPublicSchema().removeTemporaryTables();
-        for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Schema> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
+        if (isSchemaChanged()) {
+            for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Schema> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
+            this.uncommittedRemovedSchemas.clear();
+            for (Schema schema : this.schemas.values()) {
+                schema.afterRollback();
+            }
+            for (Schema schema : this.globalUniqueIndexSchema.values()) {
+                schema.afterRollback();
+            }
+            z_internalSqlWriteUnlock();
+            this.schemaChanged.set(false);
         }
-        this.uncommittedRemovedSchemas.clear();
-        for (Schema schema : this.schemas.values()) {
-            schema.afterRollback();
-        }
-        for (Schema schema : this.globalUniqueIndexSchema.values()) {
-            schema.afterRollback();
-        }
-        z_internalSqlWriteUnlock();
     }
 
     /**
@@ -1013,6 +1024,23 @@ public class Topology {
         this.edgeForeignKeyCache.putAll(loadAllEdgeForeignKeys());
     }
 
+    //This is for backward compatibility.
+    public Map<String, Set<String>> getAllEdgeForeignKeys() {
+        Map<String, Set<String>> result = new HashMap<>();
+        Map<String, Set<ForeignKey>> allEdgeForeignKeys = getEdgeForeignKeys();
+        for (Map.Entry<String, Set<ForeignKey>> stringSetEntry : allEdgeForeignKeys.entrySet()) {
+
+            String key = stringSetEntry.getKey();
+            Set<ForeignKey> foreignKeys = stringSetEntry.getValue();
+            Set<String> foreignKeySet = new HashSet<>();
+            result.put(key, foreignKeySet);
+            for (ForeignKey foreignKey : foreignKeys) {
+                foreignKeySet.add(foreignKey.getCompositeKeys().get(0));
+            }
+        }
+        return result;
+    }
+
     public void validateTopology() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
@@ -1067,28 +1095,30 @@ public class Topology {
             topologyNode.set("schemas", committedSchemaArrayNode);
         }
         ArrayNode unCommittedSchemaArrayNode = null;
-        for (Schema schema : this.uncommittedSchemas.values()) {
-            if (unCommittedSchemaArrayNode == null) {
-                unCommittedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+        if (isSchemaChanged()) {
+            for (Schema schema : this.uncommittedSchemas.values()) {
+                if (unCommittedSchemaArrayNode == null) {
+                    unCommittedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+                if (jsonNodeOptional.isPresent()) {
+                    unCommittedSchemaArrayNode.add(jsonNodeOptional.get());
+                } else {
+                    ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                    schemaNode.put("name", schema.getName());
+                    unCommittedSchemaArrayNode.add(schemaNode);
+                }
             }
-            Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
-            if (jsonNodeOptional.isPresent()) {
-                unCommittedSchemaArrayNode.add(jsonNodeOptional.get());
-            } else {
-                ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-                schemaNode.put("name", schema.getName());
-                unCommittedSchemaArrayNode.add(schemaNode);
+            ArrayNode removed = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            for (String schema : this.uncommittedRemovedSchemas) {
+                removed.add(schema);
             }
-        }
-        ArrayNode removed = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-        for (String schema : this.uncommittedRemovedSchemas) {
-            removed.add(schema);
-        }
-        if (removed.size() > 0) {
-            if (topologyNode == null) {
-                topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+            if (removed.size() > 0) {
+                if (topologyNode == null) {
+                    topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                topologyNode.set("uncommittedRemovedSchemas", removed);
             }
-            topologyNode.set("uncommittedRemovedSchemas", removed);
         }
         if (unCommittedSchemaArrayNode != null) {
             if (topologyNode == null) {
@@ -1225,11 +1255,12 @@ public class Topology {
     }
 
     public Set<Schema> getSchemas() {
-        Set<Schema> result = new HashSet<>();
-        result.addAll(this.schemas.values());
-        result.addAll(this.uncommittedSchemas.values());
-        if (this.uncommittedRemovedSchemas.size() > 0) {
-            result.removeIf(sch -> this.uncommittedRemovedSchemas.contains(sch.getName()));
+        Set<Schema> result = new HashSet<>(this.schemas.values());
+        if (isSchemaChanged()) {
+            result.addAll(this.uncommittedSchemas.values());
+            if (this.uncommittedRemovedSchemas.size() > 0) {
+                result.removeIf(sch -> this.uncommittedRemovedSchemas.contains(sch.getName()));
+            }
         }
         return Collections.unmodifiableSet(result);
     }
@@ -1248,7 +1279,7 @@ public class Topology {
         if (schema == null) {
             return Optional.empty();
         }
-        if (this.uncommittedRemovedSchemas.contains(schema)) {
+        if (isSchemaChanged() && this.uncommittedRemovedSchemas.contains(schema)) {
             return Optional.empty();
         }
         if (schema.equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA)) {
@@ -1256,7 +1287,9 @@ public class Topology {
         } else {
             Schema result = this.schemas.get(schema);
             if (result == null) {
-                result = this.uncommittedSchemas.get(schema);
+                if (isSchemaChanged()) {
+                    result = this.uncommittedSchemas.get(schema);
+                }
                 if (result == null) {
                     result = this.metaSchemas.get(schema);
                 }
@@ -1287,6 +1320,7 @@ public class Topology {
     }
 
     private Map<String, AbstractLabel> getUncommittedAllTables() {
+        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedAllTables must have schemaChanged = true");
         Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -1300,6 +1334,7 @@ public class Topology {
     }
 
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
+        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedSchemaTableForeignKeys must have schemaChanged = true");
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -1313,6 +1348,7 @@ public class Topology {
     }
 
     private Map<String, Set<ForeignKey>> getUncommittedEdgeForeignKeys() {
+        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedEdgeForeignKeys must have schemaChanged = true");
         Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -1357,30 +1393,35 @@ public class Topology {
             }
             return Collections.unmodifiableMap(result);
         } else {
-            //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
-            Map<String, Map<String, PropertyType>> result;
-            result = new HashMap<>();
-            for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
-                result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
-            }
-            Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
-            for (String table : uncommittedLabels.keySet()) {
-                if (result.containsKey(table)) {
-                    result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
-                } else {
-                    result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
+            if (isSchemaChanged()) {
+                //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
+                Map<String, Map<String, PropertyType>> result;
+                result = new HashMap<>();
+                for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
+                    result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
                 }
-            }
-            for (Schema s : this.schemas.values()) {
-                for (String removed : s.uncommittedRemovedVertexLabels) {
-                    result.remove(removed);
+                Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
+                for (String table : uncommittedLabels.keySet()) {
+                    if (result.containsKey(table)) {
+                        result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
+                    } else {
+                        result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
+                    }
                 }
-                for (String removed : s.uncommittedRemovedEdgeLabels) {
-                    result.remove(removed);
-                }
+                for (Schema s : this.schemas.values()) {
+                    for (String removed : s.uncommittedRemovedVertexLabels) {
+                        result.remove(removed);
+                    }
+                    for (String removed : s.uncommittedRemovedEdgeLabels) {
+                        result.remove(removed);
+                    }
 
+                }
+                return Collections.unmodifiableMap(result);
+
+            } else {
+                return Collections.unmodifiableMap(this.allTableCache);
             }
-            return Collections.unmodifiableMap(result);
         }
     }
 
@@ -1403,20 +1444,25 @@ public class Topology {
     }
 
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
-        for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : this.schemaTableForeignKeyCache.entrySet()) {
-            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = uncommittedSchemaTableForeignKeys.get(schemaTablePairEntry.getKey());
-            if (uncommittedForeignKeys != null) {
-                uncommittedForeignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
-                uncommittedForeignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
-            } else {
-                uncommittedSchemaTableForeignKeys.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+        if (isSchemaChanged()) {
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
+            for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : this.schemaTableForeignKeyCache.entrySet()) {
+                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = uncommittedSchemaTableForeignKeys.get(schemaTablePairEntry.getKey());
+                if (uncommittedForeignKeys != null) {
+                    uncommittedForeignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
+                    uncommittedForeignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
+                } else {
+                    uncommittedSchemaTableForeignKeys.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+                }
             }
+            return Collections.unmodifiableMap(uncommittedSchemaTableForeignKeys);
+        } else {
+            return Collections.unmodifiableMap(this.schemaTableForeignKeyCache);
         }
-        return Collections.unmodifiableMap(uncommittedSchemaTableForeignKeys);
     }
 
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> loadTableLabels() {
+        Preconditions.checkState(isSchemaChanged());
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> map = new HashMap<>();
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
             Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
@@ -1436,22 +1482,27 @@ public class Topology {
     }
 
     public Map<String, Set<ForeignKey>> getEdgeForeignKeys() {
-        Map<String, Set<ForeignKey>> committed = new HashMap<>(this.edgeForeignKeyCache);
-        Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
-        for (Map.Entry<String, Set<ForeignKey>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
-            Set<ForeignKey> committedForeignKeys = committed.get(uncommittedEntry.getKey());
-            if (committedForeignKeys != null) {
-                Set<ForeignKey> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
-                originalPlusUncommittedForeignKeys.addAll(uncommittedEntry.getValue());
-                committed.put(uncommittedEntry.getKey(), originalPlusUncommittedForeignKeys);
-            } else {
-                committed.put(uncommittedEntry.getKey(), uncommittedEntry.getValue());
+        if (isSchemaChanged()) {
+            Map<String, Set<ForeignKey>> committed = new HashMap<>(this.edgeForeignKeyCache);
+            Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+            for (Map.Entry<String, Set<ForeignKey>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
+                Set<ForeignKey> committedForeignKeys = committed.get(uncommittedEntry.getKey());
+                if (committedForeignKeys != null) {
+                    Set<ForeignKey> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
+                    originalPlusUncommittedForeignKeys.addAll(uncommittedEntry.getValue());
+                    committed.put(uncommittedEntry.getKey(), originalPlusUncommittedForeignKeys);
+                } else {
+                    committed.put(uncommittedEntry.getKey(), uncommittedEntry.getValue());
+                }
             }
+            return Collections.unmodifiableMap(committed);
+        } else {
+            return Collections.unmodifiableMap(this.edgeForeignKeyCache);
         }
-        return Collections.unmodifiableMap(committed);
     }
 
     private Map<String, Set<ForeignKey>> loadAllEdgeForeignKeys() {
+        Preconditions.checkState(isSchemaChanged());
         Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Schema schema : this.schemas.values()) {
             result.putAll(schema.getAllEdgeForeignKeys());
@@ -1478,7 +1529,6 @@ public class Topology {
                 this.edgeForeignKeyCache.remove(name);
             }
         }
-
     }
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {

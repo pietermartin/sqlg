@@ -1,3 +1,47 @@
+##2.1.0
+
+* Drop timestamp with time zone
+
+```
+select 
+	'ALTER TABLE "' || e.name || '"."V_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE timestamp' || ';'
+from 
+	sqlg_schema."V_property" a join 
+	sqlg_schema."E_vertex_property" b on a."ID" = b."sqlg_schema.property__I" join
+	sqlg_schema."V_vertex" c on b."sqlg_schema.vertex__O" = c."ID" join
+	sqlg_schema."E_schema_vertex" d on c."ID" = d."sqlg_schema.vertex__I" join
+	sqlg_schema."V_schema" e on d."sqlg_schema.schema__O" = e."ID"
+where 
+	a.type = 'LOCALDATETIME'
+	
+UNION ALL	
+	
+select 
+	'ALTER TABLE "' || e.name || '"."V_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE timestamp' || ';'
+from 
+	sqlg_schema."V_property" a join 
+	sqlg_schema."E_vertex_property" b on a."ID" = b."sqlg_schema.property__I" join
+	sqlg_schema."V_vertex" c on b."sqlg_schema.vertex__O" = c."ID" join
+	sqlg_schema."E_schema_vertex" d on c."ID" = d."sqlg_schema.vertex__I" join
+	sqlg_schema."V_schema" e on d."sqlg_schema.schema__O" = e."ID"
+where 
+	a.type = 'LOCALTIME'
+
+UNION ALL
+	
+select 
+	'ALTER TABLE "' || e.name || '"."V_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE timestamp' || ';'
+from 
+	sqlg_schema."V_property" a join 
+	sqlg_schema."E_vertex_property" b on a."ID" = b."sqlg_schema.property__I" join
+	sqlg_schema."V_vertex" c on b."sqlg_schema.vertex__O" = c."ID" join
+	sqlg_schema."E_schema_vertex" d on c."ID" = d."sqlg_schema.vertex__I" join
+	sqlg_schema."V_schema" e on d."sqlg_schema.schema__O" = e."ID"
+where 
+	a.type = 'ZONEDDATETIME'	
+	
+```
+
 ##2.0.3
 
 * Merge the reducing branch in. Sqlg now optimizes reducing steps.

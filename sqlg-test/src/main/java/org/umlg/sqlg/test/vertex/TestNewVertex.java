@@ -25,6 +25,7 @@ public class TestNewVertex extends BaseTest {
         Assert.assertEquals(v1, this.sqlgGraph.traversal().V(v1.id()).next());
         Assert.assertEquals(v2, this.sqlgGraph.traversal().V(v2.id()).next());
         Assert.assertEquals(e1, this.sqlgGraph.traversal().E(e1.id()).next());
+        this.sqlgGraph.tx().commit();
     }
 
     @Test

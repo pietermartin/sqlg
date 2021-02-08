@@ -414,6 +414,7 @@ public class Schema implements TopologyInf {
             PartitionType partitionType,
             String partitionExpression) {
 
+        Preconditions.checkArgument(this.topology.isSchemaChanged(), "Schema.createPartitionedEdgeLabel must have schemaChanged = true");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createPartitionedEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
 
@@ -468,6 +469,7 @@ public class Schema implements TopologyInf {
             final Map<String, PropertyType> columns,
             final ListOrderedSet<String> identifiers) {
 
+        Preconditions.checkArgument(this.topology.isSchemaChanged(), "Schema.createEdgeLabel must have schemaChanged = true");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
 
@@ -606,11 +608,13 @@ public class Schema implements TopologyInf {
 
     public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", Topology.VERTEX_PREFIX);
-        if (this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)) {
+        if (this.topology.isSchemaChanged() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)) {
             return Optional.empty();
         }
-        VertexLabel result;
-        result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+        VertexLabel result = null;
+        if (this.topology.isSchemaChanged()) {
+            result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+        }
         if (result == null) {
             result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         }
@@ -619,39 +623,45 @@ public class Schema implements TopologyInf {
 
     Map<String, EdgeLabel> getEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeLabels);
-        result.putAll(this.uncommittedOutEdgeLabels);
-        for (String e : uncommittedRemovedEdgeLabels) {
-            result.remove(e);
+        if (this.topology.isSchemaChanged()) {
+            result.putAll(this.uncommittedOutEdgeLabels);
+            for (String e : uncommittedRemovedEdgeLabels) {
+                result.remove(e);
+            }
         }
         return result;
     }
 
     private Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
-        for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-            result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
-        }
-        for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
-            result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
-        }
-        for (String e : uncommittedRemovedEdgeLabels) {
-            result.remove(e);
+        if (this.topology.isSchemaChanged()) {
+            for (VertexLabel vertexLabel : this.vertexLabels.values()) {
+                result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
+            }
+            for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
+                result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
+            }
+            for (String e : uncommittedRemovedEdgeLabels) {
+                result.remove(e);
+            }
         }
         return result;
     }
 
     public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(Topology.EDGE_PREFIX), "edge label may not start with \"%s\"", Topology.EDGE_PREFIX);
-        if (this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)) {
+        if (this.topology.isSchemaChanged() && this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)) {
             return Optional.empty();
         }
         EdgeLabel edgeLabel = this.outEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
         if (edgeLabel != null) {
             return Optional.of(edgeLabel);
         }
-        edgeLabel = this.uncommittedOutEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
-        if (edgeLabel != null) {
-            return Optional.of(edgeLabel);
+        if (this.topology.isSchemaChanged()) {
+            edgeLabel = this.uncommittedOutEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
+            if (edgeLabel != null) {
+                return Optional.of(edgeLabel);
+            }
         }
         return Optional.empty();
     }
@@ -663,10 +673,12 @@ public class Schema implements TopologyInf {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
             result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
         }
-        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-            String vertexQualifiedName = vertexLabelEntry.getKey();
-            VertexLabel vertexLabel = vertexLabelEntry.getValue();
-            result.put(vertexQualifiedName, vertexLabel.getPropertyTypeMap());
+        if (this.topology.isSchemaChanged()) {
+            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+                String vertexQualifiedName = vertexLabelEntry.getKey();
+                VertexLabel vertexLabel = vertexLabelEntry.getValue();
+                result.put(vertexQualifiedName, vertexLabel.getPropertyTypeMap());
+            }
         }
         for (EdgeLabel edgeLabel : this.getEdgeLabels().values()) {
             String edgeQualifiedName = this.name + "." + EDGE_PREFIX + edgeLabel.getLabel();
@@ -677,14 +689,17 @@ public class Schema implements TopologyInf {
 
     public Map<String, VertexLabel> getVertexLabels() {
         Map<String, VertexLabel> result = new HashMap<>(this.vertexLabels);
-        result.putAll(this.uncommittedVertexLabels);
-        for (String e : uncommittedRemovedVertexLabels) {
-            result.remove(e);
+        if (this.topology.isSchemaChanged()) {
+            result.putAll(this.uncommittedVertexLabels);
+            for (String e : uncommittedRemovedVertexLabels) {
+                result.remove(e);
+            }
         }
         return Collections.unmodifiableMap(result);
     }
 
     Map<String, AbstractLabel> getUncommittedLabels() {
+        Preconditions.checkState(this.topology.isSchemaChanged(), "Schema.getUncommittedAllTables must have schemaChanged = true");
         Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -706,6 +721,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
+        Preconditions.checkState(getTopology().isSchemaChanged(), "Schema.getUncommittedSchemaTableForeignKeys must have schemaChanged = true");
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -792,11 +808,13 @@ public class Schema implements TopologyInf {
             result.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
         }
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedResult = new HashMap<>();
-        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-            Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
-            String prefixedVertexName = VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-            SchemaTable schemaTable = SchemaTable.of(this.getName(), prefixedVertexName);
-            uncommittedResult.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
+        if (this.topology.isSchemaChanged()) {
+            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+                Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
+                String prefixedVertexName = VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
+                SchemaTable schemaTable = SchemaTable.of(this.getName(), prefixedVertexName);
+                uncommittedResult.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
+            }
         }
         //need to fromNotifyJson in the uncommitted table labels in.
         for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedResult.entrySet()) {
@@ -850,16 +868,18 @@ public class Schema implements TopologyInf {
     }
 
     public Map<String, GlobalUniqueIndex> getGlobalUniqueIndexes() {
-        Map<String, GlobalUniqueIndex> result = new HashMap<>();
-        result.putAll(this.globalUniqueIndexes);
-        result.putAll(this.uncommittedGlobalUniqueIndexes);
-        for (String s : this.uncommittedRemovedGlobalUniqueIndexes) {
-            result.remove(s);
+        Map<String, GlobalUniqueIndex> result = new HashMap<>(this.globalUniqueIndexes);
+        if (this.topology.isSchemaChanged()) {
+            result.putAll(this.uncommittedGlobalUniqueIndexes);
+            for (String s : this.uncommittedRemovedGlobalUniqueIndexes) {
+                result.remove(s);
+            }
         }
         return Collections.unmodifiableMap(result);
     }
 
     void afterCommit() {
+        Preconditions.checkState(this.topology.isSchemaChanged(), "Schema.afterCommit must have schemaChanged = true");
         for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, VertexLabel> entry = it.next();
             this.vertexLabels.put(entry.getKey(), entry.getValue());
@@ -904,8 +924,8 @@ public class Schema implements TopologyInf {
     }
 
     void afterRollback() {
-        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, VertexLabel> entry = it.next();
+        Preconditions.checkState(this.topology.isSchemaChanged(), "Schema.afterRollback must have schemaChanged = true");
+        for (Map.Entry<String, VertexLabel> entry : this.uncommittedVertexLabels.entrySet()) {
             entry.getValue().afterRollbackForInEdges();
         }
         for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
@@ -1404,7 +1424,7 @@ public class Schema implements TopologyInf {
         boolean foundVertexLabels = false;
         ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
-        if (!this.getUncommittedVertexLabels().isEmpty()) {
+        if (this.topology.isSchemaChanged() && !this.getUncommittedVertexLabels().isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
                 //VertexLabel toNotifyJson always returns something even though its an Optional.
@@ -1416,7 +1436,7 @@ public class Schema implements TopologyInf {
             schemaNode.set("uncommittedVertexLabels", vertexLabelArrayNode);
             foundVertexLabels = true;
         }
-        if (!this.uncommittedRemovedVertexLabels.isEmpty()) {
+        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedVertexLabels.isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String s : this.uncommittedRemovedVertexLabels) {
                 vertexLabelArrayNode.add(s);
@@ -1424,7 +1444,7 @@ public class Schema implements TopologyInf {
             schemaNode.set("uncommittedRemovedVertexLabels", vertexLabelArrayNode);
             foundVertexLabels = true;
         }
-        if (!this.uncommittedRemovedEdgeLabels.isEmpty()) {
+        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedEdgeLabels.isEmpty()) {
             ArrayNode edgeLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String s : this.uncommittedRemovedEdgeLabels) {
                 edgeLabelArrayNode.add(s);
@@ -1432,7 +1452,7 @@ public class Schema implements TopologyInf {
             schemaNode.set("uncommittedRemovedEdgeLabels", edgeLabelArrayNode);
             foundVertexLabels = true;
         }
-        if (!this.uncommittedGlobalUniqueIndexes.isEmpty()) {
+        if (this.topology.isSchemaChanged() && !this.uncommittedGlobalUniqueIndexes.isEmpty()) {
             ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (GlobalUniqueIndex globalUniqueIndex : this.uncommittedGlobalUniqueIndexes.values()) {
 
@@ -1442,7 +1462,7 @@ public class Schema implements TopologyInf {
             }
             schemaNode.set("uncommittedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);
         }
-        if (!this.uncommittedRemovedGlobalUniqueIndexes.isEmpty()) {
+        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedGlobalUniqueIndexes.isEmpty()) {
             ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (String globalUniqueIndex : this.uncommittedRemovedGlobalUniqueIndexes) {
                 unCommittedGlobalUniqueIndexesArrayNode.add(globalUniqueIndex);

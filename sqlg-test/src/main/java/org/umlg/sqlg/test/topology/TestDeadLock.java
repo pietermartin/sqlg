@@ -29,16 +29,30 @@ public class TestDeadLock extends BaseTest {
 
         Thread t1 = new Thread(() -> {
             //Lock table A
-            this.sqlgGraph.addVertex(T.label, "A", "nameA2", "haloA2");
-            b1.property("nameB1", "haloAgainB2");
-            this.sqlgGraph.tx().commit();
+            for (int i = 0; i < 3; i++) {
+                try {
+                    this.sqlgGraph.addVertex(T.label, "A", "nameA2", "haloA2");
+                    b1.property("nameB1", "haloAgainB2");
+                    this.sqlgGraph.tx().commit();
+                    break;
+                } catch (Exception e) {
+                    this.sqlgGraph.tx().rollback();
+                }
+            }
         }, "First writer");
 
         Thread t2 = new Thread(() -> {
             //Lock table B
-            this.sqlgGraph.addVertex(T.label, "B", "nameB2", "haloB2");
-            a1.property("nameA1", "haloAgainA1");
-            this.sqlgGraph.tx().commit();
+            for (int i = 0; i < 3; i++) {
+                try {
+                    this.sqlgGraph.addVertex(T.label, "B", "nameB2", "haloB2");
+                    a1.property("nameA1", "haloAgainA1");
+                    this.sqlgGraph.tx().commit();
+                    break;
+                } catch (Exception e) {
+                    this.sqlgGraph.tx().rollback();
+                }
+            }
         }, "Second writer");
 
         t1.start();
@@ -48,18 +62,9 @@ public class TestDeadLock extends BaseTest {
         t2.join();
 
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-        if (isPostgres()) {
-            //Seems only postgresql has a dead lock
-            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
-        } else {
-            Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
-        }
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").has("nameB1", "haloAgainB2").count().next(), 0);
-        if (isPostgres()) {
-            Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").has("nameA1", "haloAgainA1").count().next(), 0);
-        } else {
-            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("nameA1", "haloAgainA1").count().next(), 0);
-        }
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("nameA1", "haloAgainA1").count().next(), 0);
     }
 
     @Test

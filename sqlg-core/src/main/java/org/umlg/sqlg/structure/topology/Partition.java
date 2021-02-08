@@ -632,6 +632,7 @@ public class Partition implements TopologyInf {
     }
 
     void afterCommit() {
+        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isSchemaChanged(), "Partition.afterCommit must have schemaChanged = true");
         for (Iterator<Map.Entry<String, Partition>> it = this.uncommittedPartitions.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Partition> entry = it.next();
             this.partitions.put(entry.getKey(), entry.getValue());
@@ -650,6 +651,7 @@ public class Partition implements TopologyInf {
     }
 
     void afterRollback() {
+        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isSchemaChanged(), "Partition.afterRollback must have schemaChanged = true");
         this.uncommittedRemovedPartitions.clear();
         for (Iterator<Map.Entry<String, Partition>> it = this.partitions.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Partition> entry = it.next();
@@ -970,19 +972,23 @@ public class Partition implements TopologyInf {
 
     public Map<String, Partition> getPartitions() {
         Map<String, Partition> result = new HashMap<>(this.partitions);
-        result.putAll(this.uncommittedPartitions);
-        for (String s : this.uncommittedRemovedPartitions) {
-            result.remove(s);
+        if (this.getAbstractLabel().getSchema().getTopology().isSchemaChanged()) {
+            result.putAll(this.uncommittedPartitions);
+            for (String s : this.uncommittedRemovedPartitions) {
+                result.remove(s);
+            }
         }
         return result;
     }
 
     public Optional<Partition> getPartition(String name) {
-        if (this.uncommittedRemovedPartitions.contains(name)) {
+        if (getAbstractLabel().getSchema().getTopology().isSchemaChanged() && this.uncommittedRemovedPartitions.contains(name)) {
             return Optional.empty();
         }
         Partition result = null;
-        result = this.uncommittedPartitions.get(name);
+        if (this.getAbstractLabel().getSchema().getTopology().isSchemaChanged()) {
+            result = this.uncommittedPartitions.get(name);
+        }
         if (result == null) {
             result = this.partitions.get(name);
         }
@@ -1004,6 +1010,7 @@ public class Partition implements TopologyInf {
     }
 
     Partition addPartition(Vertex partitionVertex) {
+        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isSchemaChanged());
         VertexProperty<String> from = partitionVertex.property(SQLG_SCHEMA_PARTITION_FROM);
         VertexProperty<String> to = partitionVertex.property(SQLG_SCHEMA_PARTITION_TO);
         VertexProperty<String> in = partitionVertex.property(SQLG_SCHEMA_PARTITION_IN);

@@ -195,7 +195,7 @@ public class Index implements TopologyInf {
     }
 
     Optional<JsonNode> toNotifyJson() {
-        Preconditions.checkState(!this.uncommittedProperties.isEmpty());
+        Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isSchemaChanged() && !this.uncommittedProperties.isEmpty());
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         result.put("name", this.name);
         result.set("indexType", this.uncommittedIndexType.toNotifyJson());
@@ -271,7 +271,9 @@ public class Index implements TopologyInf {
 
     public List<PropertyColumn> getProperties() {
         List<PropertyColumn> props = new ArrayList<>(properties);
-        props.addAll(uncommittedProperties);
+        if (this.getParentLabel().getSchema().getTopology().isSchemaChanged()) {
+            props.addAll(uncommittedProperties);
+        }
         return Collections.unmodifiableList(props);
     }
 

@@ -43,14 +43,14 @@ public class TestTopologyChangeListener extends BaseTest {
         a1.property("surname", "asdasd");
         e1.property("special", "");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "A.B", "name", "asdasd");
-        Edge e2 = a1.addEdge("aa", b1);
+        a1.addEdge("aa", b1);
 
-        Schema schema = this.sqlgGraph.getTopology().getSchema("A").get();
-        VertexLabel aVertexLabel = schema.getVertexLabel("A").get();
-        EdgeLabel edgeLabel = aVertexLabel.getOutEdgeLabel("aa").get();
-        PropertyColumn vertexPropertyColumn = aVertexLabel.getProperty("surname").get();
-        PropertyColumn edgePropertyColumn = edgeLabel.getProperty("special").get();
-        VertexLabel bVertexLabel = schema.getVertexLabel("B").get();
+        Schema schema = this.sqlgGraph.getTopology().getSchema("A").orElseThrow();
+        VertexLabel aVertexLabel = schema.getVertexLabel("A").orElseThrow();
+        EdgeLabel edgeLabel = aVertexLabel.getOutEdgeLabel("aa").orElseThrow();
+        PropertyColumn vertexPropertyColumn = aVertexLabel.getProperty("surname").orElseThrow();
+        PropertyColumn edgePropertyColumn = edgeLabel.getProperty("special").orElseThrow();
+        VertexLabel bVertexLabel = schema.getVertexLabel("B").orElseThrow();
 
         Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(aVertexLabel.getProperties().values()));
 
@@ -126,10 +126,6 @@ public class TestTopologyChangeListener extends BaseTest {
             topologyListenerTriple.add(
                     Triple.of(topologyInf, oldValue, action)
             );
-        }
-
-        public List<Triple<TopologyInf, String, TopologyChangeAction>> getTopologyListenerTriple() {
-            return topologyListenerTriple;
         }
 
         public boolean receivedEvent(TopologyInf topologyInf, TopologyChangeAction action) {

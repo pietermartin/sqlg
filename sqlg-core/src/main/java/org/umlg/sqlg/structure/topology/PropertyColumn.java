@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure.topology;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyInf;
 import org.umlg.sqlg.util.ThreadLocalSet;
@@ -55,11 +56,14 @@ public class PropertyColumn implements TopologyInf {
     public Set<GlobalUniqueIndex> getGlobalUniqueIndices() {
         HashSet<GlobalUniqueIndex> result = new HashSet<>();
         result.addAll(this.globalUniqueIndices);
-        result.addAll(this.uncommittedGlobalUniqueIndices);
+        if (this.abstractLabel.getSchema().getTopology().isSchemaChanged()) {
+            result.addAll(this.uncommittedGlobalUniqueIndices);
+        }
         return result;
     }
 
     void afterCommit() {
+        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isSchemaChanged(), "PropertyColumn.afterCommit must have schemaChanged = true");
         Iterator<GlobalUniqueIndex> globalUniqueIndexIter = this.uncommittedGlobalUniqueIndices.iterator();
         while (globalUniqueIndexIter.hasNext()) {
             GlobalUniqueIndex globalUniqueIndex = globalUniqueIndexIter.next();
@@ -70,6 +74,7 @@ public class PropertyColumn implements TopologyInf {
     }
 
     void afterRollback() {
+        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isSchemaChanged(), "PropertyColumn.afterRollback must have schemaChanged = true");
         this.uncommittedGlobalUniqueIndices.clear();
     }
 

@@ -3,6 +3,7 @@ package org.umlg.sqlg.structure.topology;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyInf;
@@ -134,6 +135,7 @@ public class GlobalUniqueIndex implements TopologyInf {
     }
 
     Optional<JsonNode> toNotifyJson() {
+        Preconditions.checkState(this.topology.isSchemaChanged(), "GlobalUniqueIndex toNotifyJson() may only be called is the schemaChanged = true.");
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (PropertyColumn property : this.uncommittedProperties) {

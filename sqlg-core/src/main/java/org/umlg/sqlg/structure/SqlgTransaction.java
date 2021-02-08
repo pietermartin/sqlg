@@ -30,7 +30,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private BeforeCommit beforeCommitFunction;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
-    private static final Logger logger = LoggerFactory.getLogger(SqlgTransaction.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgTransaction.class);
     private boolean cacheVertices = false;
 
     private final ThreadLocal<TransactionCache> threadLocalTx = ThreadLocal.withInitial(() -> null);
@@ -115,7 +115,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     connection.close();
                 }
             } catch (Exception e) {
-                logger.error("Failed to close the connection on commit.", e);
+                LOGGER.error("Failed to close the connection on commit.", e);
             }
             if (this.threadLocalTx.get() != null) {
                 this.threadLocalTx.get().clear();
@@ -137,7 +137,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     this.threadLocalTx.get().getBatchManager().close();
                 } catch (Exception e) {
                     //swallow
-                    logger.debug("exception closing streams on rollback", e);
+                    LOGGER.debug("exception closing streams on rollback", e);
                 }
             }
             connection = threadLocalTx.get().getConnection();
@@ -159,7 +159,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     connection.close();
                 }
             } catch (Exception e) {
-                logger.error("Failed to close the connection on rollback.", e);
+                LOGGER.error("Failed to close the connection on rollback.", e);
             }
             if (isOpen()) {
                 this.threadLocalTx.get().clear();
@@ -263,7 +263,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!this.isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode to flush");
         }
-        logger.debug("flushing transaction!!!");
+        LOGGER.debug("flushing transaction!!!");
         if (!this.getBatchManager().isBusyFlushing()) {
             this.getBatchManager().flush();
         }

@@ -115,7 +115,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
 
             Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
-            Vertex v11 = sqlgGraph1.traversal().V().has(T.label, "Person").<Vertex>has("name", "a").next();
+            Vertex v11 = sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").next();
             Assert.assertFalse(v11.property("surname").isPresent());
             //the next alter will lock if this transaction is still active
             sqlgGraph1.tx().rollback();
@@ -138,18 +138,44 @@ public class TestLoadSchemaViaNotify extends BaseTest {
         //Create a new sqlgGraph
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             //add a vertex in the old, the new should only see it after a commit
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
-            this.sqlgGraph.tx().commit();
+            Vertex v1 = null;
+            Vertex v2 = null;
+            for (int i = 0; i < 3; i++) {
+                try {
+                    v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+                    v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
+                    this.sqlgGraph.tx().commit();
+                    break;
+                } catch (Exception e) {
+                    //retry
+                    this.sqlgGraph.tx().rollback();
+                }
+            }
             Thread.sleep(1000);
-            Vertex v11 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
+            Vertex v11 = null;
+            Vertex v12 = null;
+            for (int i = 0; i < 3; i++) {
+                try {
+                    v11 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
+                    v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
+                    sqlgGraph1.tx().commit();
+                } catch (Exception e) {
+                    sqlgGraph1.tx().rollback();
+                }
+            }
 
-            Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
-            sqlgGraph1.tx().commit();
+            Assert.assertNotNull(v1);
+            for (int i = 0; i < 3; i++) {
+                try {
+                    v1.addEdge("friend", v2);
+                    this.sqlgGraph.tx().commit();
+                } catch (Exception e) {
+                    this.sqlgGraph.tx().rollback();
+                }
+            }
+            Thread.sleep(1000);
 
-            v1.addEdge("friend", v2);
-            this.sqlgGraph.tx().commit();
-
+            Assert.assertNotNull(v11);
             v11.addEdge("friend", v12);
             sqlgGraph1.tx().commit();
 
@@ -340,96 +366,96 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "halo");
             Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "halo");
             a1.addEdge("ab", b1, "name", "asd");
-            this.sqlgGraph.getTopology().getSchema("A").get().getVertexLabel("A")
-                    .ifPresent(v->v.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(v.getProperty("name").get())));
+            this.sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("A")
+                    .ifPresent(v -> v.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(v.getProperty("name").orElseThrow())));
 
-            Schema aSchema = this.sqlgGraph.getTopology().getSchema("A").get();
+            Schema aSchema = this.sqlgGraph.getTopology().getSchema("A").orElseThrow();
             Assert.assertTrue(aSchema.isUncommitted());
-            VertexLabel vertexLabel = aSchema.getVertexLabel("A").get();
+            VertexLabel vertexLabel = aSchema.getVertexLabel("A").orElseThrow();
             Assert.assertTrue(vertexLabel.isUncommitted());
-            PropertyColumn namePropertyColumn = vertexLabel.getProperty("name").get();
+            PropertyColumn namePropertyColumn = vertexLabel.getProperty("name").orElseThrow();
             Assert.assertTrue(namePropertyColumn.isUncommitted());
             String indexName = this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "A"), Topology.VERTEX_PREFIX, Collections.singletonList("name"));
-            Index index = vertexLabel.getIndex(indexName).get();
+            Index index = vertexLabel.getIndex(indexName).orElseThrow();
             Assert.assertTrue(index.isUncommitted());
 
             this.sqlgGraph.tx().commit();
             //allow time for notification to happen
             Thread.sleep(1_000);
-            aSchema = sqlgGraph1.getTopology().getSchema("A").get();
+            aSchema = sqlgGraph1.getTopology().getSchema("A").orElseThrow();
             Assert.assertTrue(aSchema.isCommitted());
-            vertexLabel = aSchema.getVertexLabel("A").get();
+            vertexLabel = aSchema.getVertexLabel("A").orElseThrow();
             Assert.assertTrue(vertexLabel.isCommitted());
-            namePropertyColumn = vertexLabel.getProperty("name").get();
+            namePropertyColumn = vertexLabel.getProperty("name").orElseThrow();
             Assert.assertTrue(namePropertyColumn.isCommitted());
             indexName = sqlgGraph1.getSqlDialect().indexName(SchemaTable.of("A", "A"), Topology.VERTEX_PREFIX, Collections.singletonList("name"));
-            index = vertexLabel.getIndex(indexName).get();
+            index = vertexLabel.getIndex(indexName).orElseThrow();
             Assert.assertTrue(index.isCommitted());
         }
     }
 
     @Test
     public void testDistributedTopologyListener() throws Exception {
-    	try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-    		List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
-	    	 TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
-	         sqlgGraph1.getTopology().registerListener(topologyListenerTest);
-	         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asda");
-	         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asdasd");
-	         Edge e1 = a1.addEdge("aa", a2);
-	         a1.property("surname", "asdasd");
-	         e1.property("special", "");
-	         Vertex b1 = this.sqlgGraph.addVertex(T.label, "A.B", "name", "asdasd");
-	         Edge e2 = a1.addEdge("aa", b1);
+            TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+            sqlgGraph1.getTopology().registerListener(topologyListenerTest);
+            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asda");
+            Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asdasd");
+            Edge e1 = a1.addEdge("aa", a2);
+            a1.property("surname", "asdasd");
+            e1.property("special", "");
+            Vertex b1 = this.sqlgGraph.addVertex(T.label, "A.B", "name", "asdasd");
+            a1.addEdge("aa", b1);
 
-	         Schema schema = this.sqlgGraph.getTopology().getSchema("A").get();
-	         VertexLabel aVertexLabel = schema.getVertexLabel("A").get();
-	         EdgeLabel edgeLabel = aVertexLabel.getOutEdgeLabel("aa").get();
-	         VertexLabel bVertexLabel = schema.getVertexLabel("B").get();
-	         Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(aVertexLabel.getProperties().values()));
+            Schema schema = this.sqlgGraph.getTopology().getSchema("A").orElseThrow();
+            VertexLabel aVertexLabel = schema.getVertexLabel("A").orElseThrow();
+            EdgeLabel edgeLabel = aVertexLabel.getOutEdgeLabel("aa").orElseThrow();
+            VertexLabel bVertexLabel = schema.getVertexLabel("B").orElseThrow();
+            Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(aVertexLabel.getProperties().values()));
 
-	         //This adds a schema and 2 indexes and the globalUniqueIndex, so 4 elements in all
-	         GlobalUniqueIndex globalUniqueIndex = schema.ensureGlobalUniqueIndexExist(new HashSet<>(aVertexLabel.getProperties().values()));
+            //This adds a schema and 2 indexes and the globalUniqueIndex, so 4 elements in all
+            GlobalUniqueIndex globalUniqueIndex = schema.ensureGlobalUniqueIndexExist(new HashSet<>(aVertexLabel.getProperties().values()));
 
 
-	         this.sqlgGraph.tx().commit();
-	         //allow time for notification to happen
-	         Thread.sleep(1_000);
+            this.sqlgGraph.tx().commit();
+            //allow time for notification to happen
+            Thread.sleep(1_000);
 
-	         // we're not getting property notification since we get vertex label notification, these include all properties committed
-	        Assert.assertEquals(9, topologyListenerTriple.size());
+            // we're not getting property notification since we get vertex label notification, these include all properties committed
+            Assert.assertEquals(9, topologyListenerTriple.size());
 
-	        Assert.assertEquals(schema, topologyListenerTriple.get(0).getLeft());
-	        Assert.assertEquals("", topologyListenerTriple.get(0).getMiddle());
-	        Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(0).getRight());
+            Assert.assertEquals(schema, topologyListenerTriple.get(0).getLeft());
+            Assert.assertEquals("", topologyListenerTriple.get(0).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(0).getRight());
 
-	        Assert.assertEquals(aVertexLabel, topologyListenerTriple.get(1).getLeft());
-	        Assert.assertEquals("", topologyListenerTriple.get(1).getMiddle());
-	        Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(1).getRight());
-	         Map<String,PropertyColumn> props=((VertexLabel)topologyListenerTriple.get(1).getLeft()).getProperties();
-	        Assert.assertTrue(props.containsKey("name"));
-	        Assert.assertTrue(props.containsKey("surname"));
+            Assert.assertEquals(aVertexLabel, topologyListenerTriple.get(1).getLeft());
+            Assert.assertEquals("", topologyListenerTriple.get(1).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(1).getRight());
+            Map<String, PropertyColumn> props = ((VertexLabel) topologyListenerTriple.get(1).getLeft()).getProperties();
+            Assert.assertTrue(props.containsKey("name"));
+            Assert.assertTrue(props.containsKey("surname"));
 
-	        Assert.assertEquals(index, topologyListenerTriple.get(2).getLeft());
-	        Assert.assertEquals("", topologyListenerTriple.get(2).getMiddle());
-	        Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(2).getRight());
+            Assert.assertEquals(index, topologyListenerTriple.get(2).getLeft());
+            Assert.assertEquals("", topologyListenerTriple.get(2).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(2).getRight());
 
-	        Assert.assertEquals(edgeLabel, topologyListenerTriple.get(3).getLeft());
-	         String s=topologyListenerTriple.get(3).getLeft().toString();
-	        Assert.assertTrue(s.contains(edgeLabel.getSchema().getName()));
-	         props=((EdgeLabel)topologyListenerTriple.get(3).getLeft()).getProperties();
-	        Assert.assertTrue(props.containsKey("special"));
-	        Assert.assertEquals("", topologyListenerTriple.get(3).getMiddle());
-	        Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());
+            Assert.assertEquals(edgeLabel, topologyListenerTriple.get(3).getLeft());
+            String s = topologyListenerTriple.get(3).getLeft().toString();
+            Assert.assertTrue(s.contains(edgeLabel.getSchema().getName()));
+            props = ((EdgeLabel) topologyListenerTriple.get(3).getLeft()).getProperties();
+            Assert.assertTrue(props.containsKey("special"));
+            Assert.assertEquals("", topologyListenerTriple.get(3).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());
 
-	        Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());
-	        Assert.assertEquals("", topologyListenerTriple.get(4).getMiddle());
-	        Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
+            Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());
+            Assert.assertEquals("", topologyListenerTriple.get(4).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
 
-	        Assert.assertEquals(globalUniqueIndex, topologyListenerTriple.get(5).getLeft());
-	         Assert.assertEquals("", topologyListenerTriple.get(5).getMiddle());
-	         Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
-    	}
+            Assert.assertEquals(globalUniqueIndex, topologyListenerTriple.get(5).getLeft());
+            Assert.assertEquals("", topologyListenerTriple.get(5).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
+        }
     }
 }
