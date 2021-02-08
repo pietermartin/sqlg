@@ -11,6 +11,7 @@ import org.umlg.sqlg.test.schema.TestMultipleThreadMultipleJvm;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestMultipleThreadMultipleJvm.class
+//        TestTopology.class
 })
 public class AnyTest {
 }

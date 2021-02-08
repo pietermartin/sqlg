@@ -63,7 +63,7 @@ public class PropertyColumn implements TopologyInf {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isSchemaChanged(), "PropertyColumn.afterCommit must have schemaChanged = true");
+        Preconditions.checkState(this.getParentLabel().getTopology().isSchemaChanged(), "PropertyColumn.afterCommit must have schemaChanged = true");
         Iterator<GlobalUniqueIndex> globalUniqueIndexIter = this.uncommittedGlobalUniqueIndices.iterator();
         while (globalUniqueIndexIter.hasNext()) {
             GlobalUniqueIndex globalUniqueIndex = globalUniqueIndexIter.next();
@@ -74,7 +74,7 @@ public class PropertyColumn implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isSchemaChanged(), "PropertyColumn.afterRollback must have schemaChanged = true");
+        Preconditions.checkState(this.getParentLabel().getTopology().isSchemaChanged(), "PropertyColumn.afterRollback must have schemaChanged = true");
         this.uncommittedGlobalUniqueIndices.clear();
     }
 

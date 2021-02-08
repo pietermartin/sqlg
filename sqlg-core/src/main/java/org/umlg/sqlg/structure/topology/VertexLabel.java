@@ -143,6 +143,11 @@ public class VertexLabel extends AbstractLabel {
         return this.schema;
     }
 
+    @Override
+    public Topology getTopology() {
+        return this.schema.getTopology();
+    }
+
     public Map<String, EdgeLabel> getInEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>(this.inEdgeLabels);
         if (this.schema.getTopology().isSchemaChanged()) {
@@ -794,7 +799,7 @@ public class VertexLabel extends AbstractLabel {
                     String edgeLabelName = uncommittedOutEdgeLabel.get("label").asText();
                     Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
                     EdgeLabel edgeLabel;
-                    if (!edgeLabelOptional.isPresent()) {
+                    if (edgeLabelOptional.isEmpty()) {
                         PartitionType partitionType = PartitionType.valueOf(uncommittedOutEdgeLabel.get("partitionType").asText());
                         if (partitionType.isNone()) {
                             edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);

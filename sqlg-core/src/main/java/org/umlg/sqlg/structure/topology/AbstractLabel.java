@@ -142,7 +142,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensureRangePartitionExists(String name, String from, String to) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getSchema().getTopology().lock();
+            getTopology().lock();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createRangePartition(name, from, to));
         } else {
@@ -170,7 +170,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensureRangePartitionExists(String name, String from, String to, PartitionType partitionType, String partitionExpression) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getSchema().getTopology().lock();
+            getTopology().lock();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createRangePartitionWithSubPartition(name, from, to, partitionType, partitionExpression));
         } else {
@@ -192,7 +192,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureRangePartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getSchema().getTopology().lock();
+            getTopology().lock();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createListPartition(name, in));
         } else {
@@ -218,7 +218,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureRangePartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getSchema().getTopology().lock();
+            getTopology().lock();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createListPartitionWithSubPartition(name, in, partitionType, partitionExpression));
         } else {
@@ -249,7 +249,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createRangePartition(this.sqlgGraph, this, name, from, to);
         this.uncommittedPartitions.put(name, partition);
-        this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        getTopology().fire(partition, "", TopologyChangeAction.CREATE);
         return partition;
     }
 
@@ -258,7 +258,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createRangePartitionWithSubPartition(this.sqlgGraph, this, name, from, to, partitionType, partitionExpression);
         this.uncommittedPartitions.put(name, partition);
-        this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        getTopology().fire(partition, "", TopologyChangeAction.CREATE);
         return partition;
     }
 
@@ -267,7 +267,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createListPartition(this.sqlgGraph, this, name, in);
         this.uncommittedPartitions.put(name, partition);
-        this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        getTopology().fire(partition, "", TopologyChangeAction.CREATE);
         return partition;
     }
 
@@ -276,7 +276,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createListPartitionWithSubPartition(this.sqlgGraph, this, name, in, partitionType, partitionExpression);
         this.uncommittedPartitions.put(name, partition);
-        this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        getTopology().fire(partition, "", TopologyChangeAction.CREATE);
         return partition;
     }
 
@@ -293,7 +293,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 }
             }
 
-            this.getSchema().getTopology().lock();
+            getTopology().lock();
             for (Index idx : this.getIndexes().values()) {
                 if (idx.getProperties().equals(properties)) {
                     return idx;
@@ -307,7 +307,7 @@ public abstract class AbstractLabel implements TopologyInf {
 
             Optional<Index> indexOptional = this.getIndex(indexName);
             if (indexOptional.isEmpty()) {
-                this.getSchema().getTopology().lock();
+                this.getTopology().lock();
                 indexOptional = this.getIndex(indexName);
                 if (indexOptional.isEmpty()) {
                     return this.createIndex(indexName, indexType, properties);
@@ -323,7 +323,7 @@ public abstract class AbstractLabel implements TopologyInf {
     private Index createIndex(String indexName, IndexType indexType, List<PropertyColumn> properties) {
         Index index = Index.createIndex(this.sqlgGraph, this, indexName, indexType, properties);
         this.uncommittedIndexes.put(indexName, index);
-        this.getSchema().getTopology().fire(index, "", TopologyChangeAction.CREATE);
+        this.getTopology().fire(index, "", TopologyChangeAction.CREATE);
         return index;
     }
 
@@ -332,6 +332,8 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public abstract Schema getSchema();
+
+    public abstract Topology getTopology();
 
     public String getLabel() {
         return this.label;
@@ -370,7 +372,7 @@ public abstract class AbstractLabel implements TopologyInf {
      * @return The partition as an Optional.
      */
     public Optional<Partition> getPartition(String name) {
-        boolean schemaChanged = getSchema().getTopology().isSchemaChanged();
+        boolean schemaChanged = getTopology().isSchemaChanged();
         if (schemaChanged && this.uncommittedRemovedPartitions.contains(name)) {
             return Optional.empty();
         }
@@ -400,7 +402,7 @@ public abstract class AbstractLabel implements TopologyInf {
 
     public Map<String, Partition> getPartitions() {
         Map<String, Partition> result = new HashMap<>(this.partitions);
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             result.putAll(this.uncommittedPartitions);
             for (String s : this.uncommittedRemovedPartitions) {
                 result.remove(s);
@@ -411,7 +413,7 @@ public abstract class AbstractLabel implements TopologyInf {
 
     public Map<String, PropertyColumn> getProperties() {
         Map<String, PropertyColumn> result = new HashMap<>(this.properties);
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             result.putAll(this.uncommittedProperties);
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
@@ -422,16 +424,15 @@ public abstract class AbstractLabel implements TopologyInf {
 
     public ListOrderedSet<String> getIdentifiers() {
         ListOrderedSet<String> result = ListOrderedSet.listOrderedSet(this.identifiers);
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             result.addAll(this.uncommittedIdentifiers);
         }
         return result;
     }
 
     public Map<String, PropertyColumn> getGlobalUniqueIndexProperties() {
-        Map<String, PropertyColumn> result = new HashMap<>();
-        result.putAll(this.globalUniqueIndexProperties);
-        if (getSchema().getTopology().isSchemaChanged()) {
+        Map<String, PropertyColumn> result = new HashMap<>(this.globalUniqueIndexProperties);
+        if (getTopology().isSchemaChanged()) {
             result.putAll(this.uncommittedGlobalUniqueIndexProperties);
         }
         return result;
@@ -448,7 +449,7 @@ public abstract class AbstractLabel implements TopologyInf {
 
     public Map<String, Index> getIndexes() {
         Map<String, Index> result = new HashMap<>(this.indexes);
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             result.putAll(this.uncommittedIndexes);
             for (String i : this.uncommittedRemovedIndexes) {
                 result.remove(i);
@@ -471,7 +472,7 @@ public abstract class AbstractLabel implements TopologyInf {
         for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
             result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyType());
         }
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
                 result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyType());
             }
@@ -483,7 +484,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     Map<String, PropertyColumn> getUncommittedPropertyTypeMap() {
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             return this.uncommittedProperties;
         } else {
             return Collections.emptyMap();
@@ -491,7 +492,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     Set<String> getUncommittedRemovedProperties() {
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             return this.uncommittedRemovedProperties;
         } else {
             return Collections.emptySet();
@@ -585,13 +586,13 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void addProperty(Vertex propertyVertex) {
-        Preconditions.checkState(this.getSchema().getTopology().isSchemaChanged());
+        Preconditions.checkState(getTopology().isSchemaChanged());
         PropertyColumn property = new PropertyColumn(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
     void addIdentifier(String propertyName, int index) {
-        Preconditions.checkState(this.getSchema().getTopology().isSchemaChanged());
+        Preconditions.checkState(getTopology().isSchemaChanged());
         if (index > this.identifiers.size() - 1) {
             this.identifiers.add(propertyName);
         } else {
@@ -600,17 +601,17 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void addDistributionColocate(Vertex colocate) {
-        Preconditions.checkState(this.getSchema().getTopology().isSchemaChanged());
+        Preconditions.checkState(getTopology().isSchemaChanged());
         this.distributionColocateAbstractLabel = getSchema().getVertexLabel(colocate.value(SQLG_SCHEMA_VERTEX_LABEL_NAME)).orElseThrow(() -> new IllegalStateException("Distribution Co-locate vertex label %s not found", colocate.value(SQLG_SCHEMA_VERTEX_LABEL_NAME)));
     }
 
     void addDistributionProperty(Vertex distributionProperty) {
-        Preconditions.checkState(this.getSchema().getTopology().isSchemaChanged());
+        Preconditions.checkState(this.getTopology().isSchemaChanged());
         this.distributionPropertyColumn = new PropertyColumn(this, distributionProperty.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(distributionProperty.value(SQLG_SCHEMA_PROPERTY_TYPE)));
     }
 
     Partition addPartition(Vertex partitionVertex) {
-        Preconditions.checkState(this.getSchema().getTopology().isSchemaChanged());
+        Preconditions.checkState(this.getTopology().isSchemaChanged());
         VertexProperty<String> from = partitionVertex.property(SQLG_SCHEMA_PARTITION_FROM);
         VertexProperty<String> to = partitionVertex.property(SQLG_SCHEMA_PARTITION_TO);
         VertexProperty<String> in = partitionVertex.property(SQLG_SCHEMA_PARTITION_IN);
@@ -644,7 +645,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getSchema().getTopology().isSchemaChanged(), "AbstractLabel.afterCommit must have schemaChanged ThreadLocal var as true");
+        Preconditions.checkState(this.getTopology().isSchemaChanged(), "AbstractLabel.afterCommit must have schemaChanged ThreadLocal var as true");
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
             this.properties.put(entry.getKey(), entry.getValue());
@@ -707,7 +708,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getSchema().getTopology().isSchemaChanged(), "AbstractLabel.afterRollback must have schemaChanged ThreadLocal var as true");
+        Preconditions.checkState(this.getTopology().isSchemaChanged(), "AbstractLabel.afterRollback must have schemaChanged ThreadLocal var as true");
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
             entry.getValue().afterRollback();
@@ -742,7 +743,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     Optional<JsonNode> toNotifyJson() {
-        if (getSchema().getTopology().isSchemaChanged()) {
+        if (getTopology().isSchemaChanged()) {
             ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
             ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (PropertyColumn property : this.uncommittedProperties.values()) {
@@ -839,7 +840,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 PropertyColumn propertyColumn = PropertyColumn.fromNotifyJson(this, propertyNode);
                 PropertyColumn old = this.properties.put(propertyColumn.getName(), propertyColumn);
                 if (fire && old == null) {
-                    this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
+                    this.getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
                 }
             }
         }
@@ -855,7 +856,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 String pName = propertyNode.asText();
                 PropertyColumn old = this.properties.remove(pName);
                 if (fire && old != null) {
-                    this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
+                    this.getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }
             }
         }
@@ -865,7 +866,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 Partition partitionColumn = Partition.fromUncommittedPartitionNotifyJson(this, partitionNode);
                 Partition old = this.partitions.put(partitionColumn.getName(), partitionColumn);
                 if (fire && old == null) {
-                    this.getSchema().getTopology().fire(partitionColumn, "", TopologyChangeAction.CREATE);
+                    this.getTopology().fire(partitionColumn, "", TopologyChangeAction.CREATE);
                 }
             }
         }
@@ -878,7 +879,7 @@ public abstract class AbstractLabel implements TopologyInf {
                     committedPartition.fromNotifyJson(partitionNode, fire);
                     Partition old = this.partitions.put(committedPartition.getName(), committedPartition);
                     if (fire && old == null) {
-                        this.getSchema().getTopology().fire(committedPartition, "", TopologyChangeAction.CREATE);
+                        this.getTopology().fire(committedPartition, "", TopologyChangeAction.CREATE);
                     }
                 }
             }
@@ -889,7 +890,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 String pName = partitionNode.asText();
                 Partition old = this.partitions.remove(pName);
                 if (fire && old != null) {
-                    this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
+                    this.getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }
             }
         }
@@ -914,7 +915,7 @@ public abstract class AbstractLabel implements TopologyInf {
             for (JsonNode indexNode : indexNodes) {
                 Index index = Index.fromNotifyJson(this, indexNode);
                 this.indexes.put(index.getName(), index);
-                this.getSchema().getTopology().fire(index, "", TopologyChangeAction.CREATE);
+                this.getTopology().fire(index, "", TopologyChangeAction.CREATE);
             }
         }
         ArrayNode removedIndexArrayNode = (ArrayNode) vertexLabelJson.get("uncommittedRemovedIndexes");
@@ -923,7 +924,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 String iName = indexNode.asText();
                 Index old = this.indexes.remove(iName);
                 if (fire && old != null) {
-                    this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
+                    this.getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }
             }
         }
@@ -999,14 +1000,14 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param preserveData should we keep the SQL data
      */
     void removeIndex(Index idx, boolean preserveData) {
-        this.getSchema().getTopology().lock();
+        this.getTopology().lock();
         if (!uncommittedRemovedIndexes.contains(idx.getName())) {
             uncommittedRemovedIndexes.add(idx.getName());
             TopologyManager.removeIndex(this.sqlgGraph, idx);
             if (!preserveData) {
                 idx.delete(sqlgGraph);
             }
-            this.getSchema().getTopology().fire(idx, "", TopologyChangeAction.DELETE);
+            this.getTopology().fire(idx, "", TopologyChangeAction.DELETE);
         }
     }
 
@@ -1021,7 +1022,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public void removePartition(Partition partition, boolean preserveData) {
-        this.getSchema().getTopology().lock();
+        this.getTopology().lock();
 
         for (Partition partition1 : partition.getPartitions().values()) {
             partition1.remove(preserveData);
@@ -1036,7 +1037,7 @@ public abstract class AbstractLabel implements TopologyInf {
             } else {
                 partition.detach();
             }
-            this.getSchema().getTopology().fire(partition, "", TopologyChangeAction.DELETE);
+            this.getTopology().fire(partition, "", TopologyChangeAction.DELETE);
         }
     }
 
@@ -1097,7 +1098,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(getProperty(distributionPropertyColumn.getName()).get().equals(distributionPropertyColumn), "distributionPropertyColumn \"%s\" must be a property of \"%s\"", distributionPropertyColumn.getName(), this.getFullName());
         Preconditions.checkArgument(getIdentifiers().contains(distributionPropertyColumn.getName()), "The distribution column must be part of the primary key");
         if (!this.isDistributed()) {
-            this.getSchema().getTopology().lock();
+            this.getTopology().lock();
             if (!this.isDistributed()) {
                 TopologyManager.distributeAbstractLabel(this.sqlgGraph, this, shardCount, distributionPropertyColumn, colocate);
                 distribute(shardCount, distributionPropertyColumn, colocate);

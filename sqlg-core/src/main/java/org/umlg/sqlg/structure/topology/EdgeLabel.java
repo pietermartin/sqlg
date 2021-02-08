@@ -18,6 +18,7 @@ import org.umlg.sqlg.util.ThreadLocalSet;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
@@ -30,8 +31,8 @@ public class EdgeLabel extends AbstractLabel {
     private static final Logger LOGGER = LoggerFactory.getLogger(EdgeLabel.class);
     //This just won't stick in my brain.
     //hand (out) ----<label>---- finger (in)
-    final Set<VertexLabel> outVertexLabels = new HashSet<>();
-    final Set<VertexLabel> inVertexLabels = new HashSet<>();
+    final Set<VertexLabel> outVertexLabels = ConcurrentHashMap.newKeySet();
+    final Set<VertexLabel> inVertexLabels = ConcurrentHashMap.newKeySet();
     private final Set<VertexLabel> uncommittedOutVertexLabels = new ThreadLocalSet<>();
     private final Set<VertexLabel> uncommittedInVertexLabels = new ThreadLocalSet<>();
     private final Set<VertexLabel> uncommittedRemovedInVertexLabels = new ThreadLocalSet<>();
@@ -174,6 +175,11 @@ public class EdgeLabel extends AbstractLabel {
         } else {
             throw new IllegalStateException("BUG: no outVertexLabels present when getSchema() is called");
         }
+    }
+
+    @Override
+    public Topology getTopology() {
+        return this.topology;
     }
 
     //    @Override

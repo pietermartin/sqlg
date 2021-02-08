@@ -1162,9 +1162,6 @@ public class Topology {
                 Preconditions.checkState(backEndPid == pid, "notify pids do not match.");
                 ObjectNode log = logs.get(0).value("log");
                 fromNotifyJson(log);
-//            } else {
-//                System.out.println("");
-                // why? we get notifications for our own things
             }
         } finally {
             this.sqlgGraph.tx().rollback();
