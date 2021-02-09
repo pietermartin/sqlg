@@ -851,6 +851,10 @@ public class ReplacedStep<S, E> {
         this.isForSqlgSchema = true;
     }
 
+    public boolean isForSqlgSchema() {
+        return isForSqlgSchema;
+    }
+
     public void markForGuiSchema() {
         this.isForGuiSchema = true;
     }

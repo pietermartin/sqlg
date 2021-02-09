@@ -235,6 +235,10 @@ public class ReplacedStepTree<S, E> {
         public TreeNode addReplacedStep(ReplacedStep<S, E> replacedStep) {
             TreeNode treeNode = new TreeNode(replacedStep);
             treeNode.parent = this;
+            //The children inherit the parents 'isForSqlgSchema'
+            if (this.replacedStep.isForSqlgSchema()) {
+                treeNode.replacedStep.markForSqlgSchema();
+            }
             this.children.add(treeNode);
             treeNode.depth = this.depth + 1;
             if (ReplacedStepTree.this.depth < treeNode.depth) {
