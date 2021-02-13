@@ -425,8 +425,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h1>Sqlg Documentation</h1>
 <div class="details">
 <span id="author" class="author">Pieter Martin</span><br>
-<span id="revnumber">version 2.0.0,</span>
-<span id="revdate">August 2018</span>
+<span id="revnumber">version 2.1.0,</span>
+<span id="revdate">Febuary 2021</span>
 <br><span id="revremark"></span>
 </div>
 <div id="toc" class="toc2">
@@ -544,7 +544,7 @@ Currently <a href="http://www.postgresql.org/">Postgresql</a>, <a href="http://h
 <a href="https://www.microsoft.com/en-us/sql-server/sql-server-2017">MSSqlServer</a> are supported.</p>
 </div>
 <div class="paragraph">
-<p>Sqlg has a google group <a href="https://groups.google.com/forum/?hl=en#!forum/sqlg">forum</a></p>
+<p>Sqlg has a github <a href="https://github.com/pietermartin/sqlg/discussions">discussions</a> page.</p>
 </div>
 </div>
 </div>
@@ -554,8 +554,8 @@ Currently <a href="http://www.postgresql.org/">Postgresql</a>, <a href="http://h
 <div class="paragraph">
 <p>Sqlg primary challenge is to reduce latency by combining TinkerPop
 <a href="http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps">steps</a> into as few as possible database calls.
-The fine grained nature of graph traversals makes this crucial else the remote call latency has a severe performance
-impact.</p>
+The fine-grained nature of graph traversals makes this crucial,
+otherwise the database call latency has prohibitively high performance impact.</p>
 </div>
 <div class="paragraph">
 <p>Sqlg supports various bulk modes to reduce latency when modifying the graph.</p>
@@ -586,7 +586,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and Mari
 <h2 id="_tinkerpop_supported_features">3. TinkerPop supported features</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Sqlg version 2.0.0 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.3.3</a>.</p>
+<p>Sqlg version 2.1.0 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.4.10</a>.</p>
 </div>
 <div class="paragraph">
 <p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code> and <code>ProcessStandardSuite</code> test suites.</p>
@@ -748,7 +748,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-postgres&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -758,7 +758,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-hsqldb&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -768,7 +768,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-h2&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -778,7 +778,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-mariadb&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -788,7 +788,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-mysql&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -798,7 +798,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-mssqlserver&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -811,7 +811,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-postgres-dialect&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -821,7 +821,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-hsqldb-dialect&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -831,7 +831,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-h2-dialect&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -841,7 +841,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-mariadb-dialect&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -851,7 +851,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-mysql-dialect&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -861,7 +861,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-mssqlserver-dialect&lt;/artifactId&gt;
-    &lt;version&gt;2.0.0&lt;/version&gt;
+    &lt;version&gt;2.1.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
 </div>
@@ -956,7 +956,8 @@ public void useAsPerNormal() {
 <ol>
 <li>
 <p>It is very important to always commit or rollback the transaction.
-If you do not connections to the database will remain open and eventually the connection pool with run out of connections.</p>
+If you do not, connections to the database will remain open and eventually
+the connection pool with run out of connections.</p>
 </li>
 </ol>
 </div>
@@ -965,7 +966,7 @@ If you do not connections to the database will remain open and eventually the co
 <h3 id="_gremlin_console">5.3. Gremlin Console</h3>
 <div class="paragraph">
 <div class="title">Postgresql</div>
-<p>pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</p>
+<p>pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.4.10-bin/apache-tinkerpop-gremlin-console-3.4.10/bin/$ ./gremlin.sh</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -975,10 +976,10 @@ If you do not connections to the database will remain open and eventually the co
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-gremlin&gt; :install org.umlg sqlg-postgres 2.0.1
-==&gt;Loaded: [org.umlg, sqlg-postgres, 2.0.1] - restart the console to use [sqlg.postgres]
+gremlin&gt; :install org.umlg sqlg-postgres 2.1.0-SNAPSHOT
+==&gt;Loaded: [org.umlg, sqlg-postgres, 2.1.0-SNAPSHOT] - restart the console to use [sqlg.postgres]
 gremlin&gt; :x
-pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</pre>
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.4.10-bin/apache-tinkerpop-gremlin-console-3.4.10/bin/$ ./gremlin.sh</pre>
 </div>
 </div>
 <div class="literalblock">
@@ -1006,62 +1007,8 @@ gremlin&gt; g = graph.traversal()
 gremlin&gt; graph.io(GraphSONIo.build(GraphSONVersion.V3_0)).readGraph("/pathTo/grateful-dead-v3d0.json")
 ==&gt;null
 gremlin&gt; g.V().count()
-==&gt;820
+==&gt;808
 gremlin&gt;</pre>
-</div>
-</div>
-<div class="paragraph">
-<div class="title">Mariadb</div>
-<p>pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: tinkerpop.server
-plugin activated: tinkerpop.utilities
-plugin activated: tinkerpop.tinkergraph
-gremlin&gt; :install org.umlg sqlg-mariadb 2.0.1
-==&gt;Loaded: [org.umlg, sqlg-mariadb, 2.0.1]
-gremlin&gt; :plugin list
-==&gt;tinkerpop.server[active]
-==&gt;tinkerpop.gephi
-==&gt;tinkerpop.utilities[active]
-==&gt;tinkerpop.sugar
-==&gt;tinkerpop.credentials
-==&gt;tinkerpop.tinkergraph[active]
-==&gt;sqlg.mariadb
-gremlin&gt; :x
-pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.3.4/bin$ ./gremlin.sh</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: tinkerpop.server
-plugin activated: tinkerpop.utilities
-plugin activated: tinkerpop.tinkergraph
-gremlin&gt; :plugin use sqlg.mariadb
-==&gt;sqlg.mariadb activated
-gremlin&gt; graph = SqlgGraph.open('/pathTo/sqlg.properties')
-==&gt;sqlggraph[SqlGraph] (jdbc:mariadb://localhost:3306/?useSSL=false) (user = mariadb)
-gremlin&gt; g = graph.traversal()
-==&gt;sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:mariadb://localhost:3306/?useSSL=false) (user = mariadb), standard]
-gremlin&gt; graph.io(GraphSONIo.build(GraphSONVersion.V3_0)).readGraph("/pathTo/grateful-dead-v3d0.json")
-==&gt;null
-gremlin&gt; g.V().count()
-==&gt;815
-gremlin&gt;</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>[NOTE]
-If it is the first time to install sqlg, then you need to restart the gremlin console.
-If not the class-loaders are confused and can not load Sqlg's sqlg.plugin</pre>
 </div>
 </div>
 </div>
@@ -1229,8 +1176,8 @@ If not the class-loaders are confused and can not load Sqlg's sqlg.plugin</pre>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME(3)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME2(3)</p></td>
@@ -1245,16 +1192,16 @@ If not the class-loaders are confused and can not load Sqlg's sqlg.plugin</pre>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE, TEXT</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE, LONGVARCHAR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP, TEXT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP, LONGVARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP, VARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME(3), TINYTEXT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME2(3), VARCHAR(255)</p></td>
@@ -1277,8 +1224,8 @@ If not the class-loaders are confused and can not load Sqlg's sqlg.plugin</pre>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime[]</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE[]</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
@@ -1293,16 +1240,16 @@ If not the class-loaders are confused and can not load Sqlg's sqlg.plugin</pre>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime[]</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIME WITH TIME ZONE[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIME ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime[]</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE[], TEXT[]</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP[], TEXT[]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
@@ -5087,8 +5034,8 @@ public void testPartitioningList() {
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 2.0.0<br>
-Last updated 2019-12-14 22:35:06 SAST
+Version 2.1.0<br>
+Last updated 2021-02-13 11:09:08 SAST
 </div>
 </div>
 <script src="tocbot.js"></script>
