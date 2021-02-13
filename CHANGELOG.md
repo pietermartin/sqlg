@@ -1,6 +1,16 @@
 ##2.1.0
 
-* Drop timestamp with time zone
+* Removed all attempts at preventing database dead locks from happening. Sqlg no longer takes any kind of locks
+when do schema creation scripts.
+  This means that preventing database dead locks is now the responsibility of the client.
+  Sqlg's attempt at managing this was a bad idea from the start. The lock Sqlg took was too coarse and ended
+  up causing lock timeouts. The suggested pattern to use now is to simply retry the transaction x number of times.
+
+* Removed `time zone` from Sqlg's timestamp data types. Sqlg guarantees that all clients regardless of their time zone will see the timestamp as stored in the db. This meant that Sqlg had to undo any manipulation of the timestamp the db might have done. This is because Sqlg used the `timestamp with time zone` data type.
+`2.1.0` removes the time zone part. The sql below will generate the `ALTER TABLE...` statements to change the type of all columns with `time zone`.
+
+ALTER `timestamp with time zone` to `timestamp without time zone` and
+  `time with time zone` to `time without time zone`, 
 
 ```
 select 
@@ -17,7 +27,7 @@ where
 UNION ALL	
 	
 select 
-	'ALTER TABLE "' || e.name || '"."V_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE timestamp' || ';'
+	'ALTER TABLE "' || e.name || '"."V_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE time' || ';'
 from 
 	sqlg_schema."V_property" a join 
 	sqlg_schema."E_vertex_property" b on a."ID" = b."sqlg_schema.property__I" join
@@ -37,6 +47,51 @@ from
 	sqlg_schema."V_vertex" c on b."sqlg_schema.vertex__O" = c."ID" join
 	sqlg_schema."E_schema_vertex" d on c."ID" = d."sqlg_schema.vertex__I" join
 	sqlg_schema."V_schema" e on d."sqlg_schema.schema__O" = e."ID"
+where 
+	a.type = 'ZONEDDATETIME'	
+	
+UNION ALL
+
+select 
+	'ALTER TABLE "' || g.name || '"."E_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE timestamp' || ';'
+from 
+	sqlg_schema."V_property" a join 
+	sqlg_schema."E_edge_property" b on a."ID" = b."sqlg_schema.property__I" join
+	sqlg_schema."V_edge" c on b."sqlg_schema.edge__O" = c."ID" join
+	sqlg_schema."E_out_edges" d on c."ID" = d."sqlg_schema.edge__I" join
+	sqlg_schema."V_vertex" e on d."sqlg_schema.vertex__O" = e."ID" join
+	sqlg_schema."E_schema_vertex" f on e."ID" = f."sqlg_schema.vertex__I" join
+	sqlg_schema."V_schema" g on f."sqlg_schema.schema__O" = g."ID"
+where 
+	a.type = 'LOCALDATETIME'	
+	
+UNION ALL
+
+select 
+	'ALTER TABLE "' || g.name || '"."E_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE time' || ';'
+from 
+	sqlg_schema."V_property" a join 
+	sqlg_schema."E_edge_property" b on a."ID" = b."sqlg_schema.property__I" join
+	sqlg_schema."V_edge" c on b."sqlg_schema.edge__O" = c."ID" join
+	sqlg_schema."E_out_edges" d on c."ID" = d."sqlg_schema.edge__I" join
+	sqlg_schema."V_vertex" e on d."sqlg_schema.vertex__O" = e."ID" join
+	sqlg_schema."E_schema_vertex" f on e."ID" = f."sqlg_schema.vertex__I" join
+	sqlg_schema."V_schema" g on f."sqlg_schema.schema__O" = g."ID"
+where 
+	a.type = 'LOCALTIME'	
+	
+UNION ALL
+
+select 
+	'ALTER TABLE "' || g.name || '"."E_' || c.name || '" ALTER COLUMN "' || a.name || '" TYPE timestamp' || ';'
+from 
+	sqlg_schema."V_property" a join 
+	sqlg_schema."E_edge_property" b on a."ID" = b."sqlg_schema.property__I" join
+	sqlg_schema."V_edge" c on b."sqlg_schema.edge__O" = c."ID" join
+	sqlg_schema."E_out_edges" d on c."ID" = d."sqlg_schema.edge__I" join
+	sqlg_schema."V_vertex" e on d."sqlg_schema.vertex__O" = e."ID" join
+	sqlg_schema."E_schema_vertex" f on e."ID" = f."sqlg_schema.vertex__I" join
+	sqlg_schema."V_schema" g on f."sqlg_schema.schema__O" = g."ID"
 where 
 	a.type = 'ZONEDDATETIME'	
 	
