@@ -1019,7 +1019,9 @@ public class EdgeLabel extends AbstractLabel {
         edgeLabelNode.set("properties", super.toJson());
 
         ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (VertexLabel outVertexLabel : this.outVertexLabels) {
+        SortedSet<VertexLabel> vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
+        vertexLabels.addAll(this.outVertexLabels);
+        for (VertexLabel outVertexLabel : vertexLabels) {
             ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
             outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
             outVertexLabelArrayNode.add(outVertexLabelObjectNode);
@@ -1027,7 +1029,9 @@ public class EdgeLabel extends AbstractLabel {
         edgeLabelNode.set("outVertexLabels", outVertexLabelArrayNode);
 
         ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (VertexLabel inVertexLabel : this.inVertexLabels) {
+        vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
+        vertexLabels.addAll(this.inVertexLabels);
+        for (VertexLabel inVertexLabel : vertexLabels) {
             ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
             inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
             inVertexLabelArrayNode.add(inVertexLabelObjectNode);
@@ -1036,7 +1040,9 @@ public class EdgeLabel extends AbstractLabel {
 
         if (this.topology.isSchemaChanged() && isValid()) {
             outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
+            vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
+            vertexLabels.addAll(this.uncommittedOutVertexLabels);
+            for (VertexLabel outVertexLabel : vertexLabels) {
                 ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
                 outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
                 outVertexLabelArrayNode.add(outVertexLabelObjectNode);
@@ -1044,7 +1050,9 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedOutVertexLabels", outVertexLabelArrayNode);
 
             inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {
+            vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
+            vertexLabels.addAll(this.uncommittedInVertexLabels);
+            for (VertexLabel inVertexLabel : vertexLabels) {
                 ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
                 inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
                 inVertexLabelArrayNode.add(inVertexLabelObjectNode);

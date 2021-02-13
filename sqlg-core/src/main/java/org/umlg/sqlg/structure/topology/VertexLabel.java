@@ -413,7 +413,7 @@ public class VertexLabel extends AbstractLabel {
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
                     this.schema.getTopology().lock();
-                    if (!getProperty(column.getKey()).isPresent()) {
+                    if (getProperty(column.getKey()).isEmpty()) {
                         TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
                         PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
@@ -654,26 +654,34 @@ public class VertexLabel extends AbstractLabel {
         vertexLabelNode.set("properties", super.toJson());
 
         ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
+        List<EdgeLabel> edgeLabels = new ArrayList<>(this.outEdgeLabels.values());
+        edgeLabels.sort(Comparator.comparing(EdgeLabel::getName));
+        for (EdgeLabel edgeLabel : edgeLabels) {
             outEdgeLabelsArrayNode.add(edgeLabel.toJson());
         }
         vertexLabelNode.set("outEdgeLabels", outEdgeLabelsArrayNode);
 
         ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (EdgeLabel edgeLabel : this.inEdgeLabels.values()) {
+        edgeLabels = new ArrayList<>(this.inEdgeLabels.values());
+        edgeLabels.sort(Comparator.comparing(EdgeLabel::getName));
+        for (EdgeLabel edgeLabel : edgeLabels) {
             inEdgeLabelsArrayNode.add(edgeLabel.toJson());
         }
         vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
 
         if (this.schema.getTopology().isSchemaChanged()) {
             outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels.values()) {
+            edgeLabels = new ArrayList<>(this.uncommittedOutEdgeLabels.values());
+            edgeLabels.sort(Comparator.comparing(EdgeLabel::getName));
+            for (EdgeLabel edgeLabel : edgeLabels) {
                 outEdgeLabelsArrayNode.add(edgeLabel.toJson());
             }
             vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
 
             inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels.values()) {
+            edgeLabels = new ArrayList<>(this.uncommittedInEdgeLabels.values());
+            edgeLabels.sort(Comparator.comparing(EdgeLabel::getName));
+            for (EdgeLabel edgeLabel : edgeLabels) {
                 inEdgeLabelsArrayNode.add(edgeLabel.toJson());
             }
             vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
@@ -714,7 +722,6 @@ public class VertexLabel extends AbstractLabel {
             for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels.values()) {
                 Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
                 Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
-                //noinspection OptionalGetWithoutIsPresent
                 outEdgeLabelsArrayNode.add(jsonNodeOptional.get());
             }
             vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
@@ -785,7 +792,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     /**
-     * @param vertexLabelJson
+     * @param vertexLabelJson The VertexLabel's notification json
      * @param fire            should we fire topology events
      */
     void fromNotifyJsonOutEdge(JsonNode vertexLabelJson, boolean fire) {
@@ -891,11 +898,9 @@ public class VertexLabel extends AbstractLabel {
                     String edgeLabelName = uncommittedInEdgeLabel.get("label").asText();
                     Optional<Schema> schemaOptional = getSchema().getTopology().getSchema(schemaName);
                     Preconditions.checkState(schemaOptional.isPresent(), "Schema %s must be present", schemaName);
-                    @SuppressWarnings("OptionalGetWithoutIsPresent")
                     Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(edgeLabelName);
                     //The edgeLabel could have been deleted
                     if (edgeLabelOptional.isPresent()) {
-                        @SuppressWarnings("OptionalGetWithoutIsPresent")
                         EdgeLabel edgeLabel = edgeLabelOptional.get();
                         edgeLabel.addToInVertexLabel(this);
                         this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
@@ -982,15 +987,11 @@ public class VertexLabel extends AbstractLabel {
         if (!this.outEdgeLabels.equals(other.outEdgeLabels)) {
             return false;
         } else {
-            if (this.outEdgeLabels.size() != other.outEdgeLabels.size()) {
-                return false;
-            } else {
-                for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
-                    for (EdgeLabel otherOutEdgeLabel : other.outEdgeLabels.values()) {
-                        if (outEdgeLabel.equals(otherOutEdgeLabel)) {
-                            if (!outEdgeLabel.deepEquals(otherOutEdgeLabel)) {
-                                return false;
-                            }
+            for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
+                for (EdgeLabel otherOutEdgeLabel : other.outEdgeLabels.values()) {
+                    if (outEdgeLabel.equals(otherOutEdgeLabel)) {
+                        if (!outEdgeLabel.deepEquals(otherOutEdgeLabel)) {
+                            return false;
                         }
                     }
                 }

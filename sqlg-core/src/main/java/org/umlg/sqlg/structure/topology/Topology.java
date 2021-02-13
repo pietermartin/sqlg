@@ -1061,7 +1061,9 @@ public class Topology {
     public JsonNode toJson() {
         ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
         ArrayNode schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-        for (Schema schema : this.schemas.values()) {
+        List<Schema> schemas = new ArrayList<>(this.schemas.values());
+        schemas.sort(Comparator.comparing(Schema::getName));
+        for (Schema schema : schemas) {
             schemaArrayNode.add(schema.toJson());
         }
         topologyNode.set("schemas", schemaArrayNode);

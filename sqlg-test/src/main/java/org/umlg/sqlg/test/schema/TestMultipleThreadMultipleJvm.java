@@ -234,9 +234,9 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                             poolPerGraphsExecutorCompletionService.submit(() -> {
                                         //noinspection Duplicates
                                         for (int j = 0; j < 3; j++) {
-                                            VertexLabel outVertexLabel = null;
-                                            VertexLabel inVertexLabel = null;
-                                            EdgeLabel edgeLabel = null;
+                                            VertexLabel outVertexLabel;
+                                            VertexLabel inVertexLabel;
+                                            EdgeLabel edgeLabel;
                                             try {
                                                 outVertexLabel = sqlgGraphAsync.getTopology().ensureVertexLabelExist("schema_" + count, "tableOut_" + count, properties);
                                                 logger.info(String.format("created %s.%s", "schema_" + count, "tableOut_" + count));
@@ -282,6 +282,14 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                 assertEquals(successfulSchemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());
                 assertEquals(successfulSchemas.size() + 1, graph.getTopology().getSchemas().size());
                 if (!this.sqlgGraph.getTopology().toJson().equals(graph.getTopology().toJson())) {
+                    for (Schema schema : this.sqlgGraph.getTopology().getSchemas()) {
+                        Optional<Schema> otherSchema = graph.getTopology().getSchema(schema.getName());
+                        Assert.assertTrue(otherSchema.isPresent());
+                        if (!schema.toJson().equals(otherSchema.get().toJson())) {
+                            logger.debug(schema.toJson().toString());
+                            logger.debug(otherSchema.get().toJson().toString());
+                        }
+                    }
                     Assert.fail("json not the same");
                 }
             }
@@ -403,6 +411,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                                             while (keepReading.get()) {
                                                 sqlgGraphAsync.getTopology().getAllTables();
                                                 sqlgGraphAsync.getTopology().getEdgeForeignKeys();
+                                                //noinspection BusyWait
                                                 Thread.sleep(100);
                                             }
                                         } catch (Exception e) {

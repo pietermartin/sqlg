@@ -1409,11 +1409,13 @@ public class Schema implements TopologyInf {
         }
     }
 
-    JsonNode toJson() {
+    public JsonNode toJson() {
         ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
         ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (VertexLabel vertexLabel : this.getVertexLabels().values()) {
+        List<VertexLabel> vertexLabels = new ArrayList<>(this.getVertexLabels().values());
+        vertexLabels.sort(Comparator.comparing(VertexLabel::getName));
+        for (VertexLabel vertexLabel : vertexLabels) {
             vertexLabelArrayNode.add(vertexLabel.toJson());
         }
         schemaNode.set("vertexLabels", vertexLabelArrayNode);

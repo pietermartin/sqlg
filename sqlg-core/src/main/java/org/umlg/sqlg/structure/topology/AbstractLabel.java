@@ -676,8 +676,7 @@ public abstract class AbstractLabel implements TopologyInf {
             this.indexes.remove(prop);
             it.remove();
         }
-        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, PropertyColumn> entry = it.next();
+        for (Map.Entry<String, PropertyColumn> entry : this.properties.entrySet()) {
             entry.getValue().afterCommit();
         }
         for (Iterator<Map.Entry<String, Partition>> it = this.uncommittedPartitions.entrySet().iterator(); it.hasNext(); ) {
@@ -691,8 +690,7 @@ public abstract class AbstractLabel implements TopologyInf {
             this.partitions.remove(prop);
             it.remove();
         }
-        for (Iterator<Map.Entry<String, Partition>> it = this.partitions.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Partition> entry = it.next();
+        for (Map.Entry<String, Partition> entry : this.partitions.entrySet()) {
             entry.getValue().afterCommit();
         }
         if (this.uncommittedDistributionPropertyColumn != null) {
@@ -736,7 +734,9 @@ public abstract class AbstractLabel implements TopologyInf {
 
     JsonNode toJson() {
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (PropertyColumn property : this.properties.values()) {
+        List<PropertyColumn> propertyColumns = new ArrayList<>(this.properties.values());
+        propertyColumns.sort(Comparator.comparing(PropertyColumn::getName));
+        for (PropertyColumn property : propertyColumns) {
             propertyArrayNode.add(property.toNotifyJson());
         }
         return propertyArrayNode;
