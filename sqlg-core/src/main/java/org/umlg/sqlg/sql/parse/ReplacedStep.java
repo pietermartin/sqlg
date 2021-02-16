@@ -488,8 +488,6 @@ public class ReplacedStep<S, E> {
             SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(VERTEX_PREFIX);
             if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
                 collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
-            } else {
-                System.out.println("");
             }
         } else {
             for (String table : filteredAllTables.keySet()) {
