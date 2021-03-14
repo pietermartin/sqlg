@@ -1401,8 +1401,9 @@ public class Topology {
                 }
                 Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
                 for (String table : uncommittedLabels.keySet()) {
-                    if (result.containsKey(table)) {
-                        result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
+                    Map<String, PropertyType> propertyTypeMap = result.get(table);
+                    if (propertyTypeMap != null) {
+                        propertyTypeMap.putAll(uncommittedLabels.get(table).getPropertyTypeMap());
                     } else {
                         result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
                     }
