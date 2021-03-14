@@ -270,7 +270,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPartitionedDrop.class,
         TestPartitionedDrop.class,
         TestDropStepPartition.class,
-        TestBatchUpdatePartitioning.class
+        TestBatchUpdatePartitioning.class,
+        TestLargeSchemaPerformance.class
 })
 public class AllTest {
 

@@ -21,12 +21,38 @@ public class TestLargeSchemaPerformance extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestLargeSchemaPerformance.class);
 
+//    @Test
+//    public void testSmallQueryLatency() {
+//        LOGGER.info("started testSmallQueryLatency");
+//        for (int i = 1; i <= 1_000_000; i++) {
+//            List<Vertex> vertices = this.sqlgGraph.traversal().V()
+//                    .has("R_5.T_100")
+//                    .has("column10", P.eq("value_10"))
+//                    .limit(1)
+//                    .toList();
+//            Assert.assertEquals(1, vertices.size());
+//            if (i % 10 == 0) {
+//                LOGGER.info(String.format("completed %d queries", i));
+//            }
+//        }
+//    }
+//
+//    @Test
+//    public void testInsertData() {
+//        this.sqlgGraph.tx().streamingBatchModeOn();
+//        LinkedHashMap<String, Object> values = values();
+//        for (int i = 0; i < 1_000_000; i++) {
+//            this.sqlgGraph.streamVertex("R_5.T_100", values);
+//        }
+//        this.sqlgGraph.tx().commit();
+//    }
+
     @Test
-    public void testPerformance() throws InterruptedException {
+    public void testPerformance() {
         //100 schemas
         //500 000 tables
         //100 columns in each table
-        int numberOfSchemas = 2;
+        int numberOfSchemas = 10;
         StopWatch stopWatch = StopWatch.createStarted();
 
         for (int i = 1; i <= numberOfSchemas; i++) {
@@ -59,7 +85,7 @@ public class TestLargeSchemaPerformance extends BaseTest {
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         LOGGER.info(String.format("create table %s", stopWatch.toString()));
-        Assert.assertEquals(3, sqlgGraph.getTopology().getSchemas().size());
+        Assert.assertEquals(numberOfSchemas + 1, sqlgGraph.getTopology().getSchemas().size());
         Assert.assertEquals(1000, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabels().size());
         Assert.assertEquals(1000, sqlgGraph.getTopology().getSchema("R_2").orElseThrow().getVertexLabels().size());
         Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1").orElseThrow().getProperties().size());
@@ -71,6 +97,14 @@ public class TestLargeSchemaPerformance extends BaseTest {
         Map<String, PropertyType> result = new LinkedHashMap<>();
         for (int i = 1; i <= 100; i++) {
             result.put("column" + i, PropertyType.STRING);
+        }
+        return result;
+    }
+
+    private LinkedHashMap<String, Object> values() {
+        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+        for (int i = 1; i <= 100; i++) {
+            result.put("column" + i, "value_" + i);
         }
         return result;
     }
