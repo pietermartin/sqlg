@@ -180,6 +180,7 @@ public class TopologyManager {
             Preconditions.checkState(!tableName.startsWith(VERTEX_PREFIX));
             Vertex schemaVertex = schemas.get(0);
 
+            sqlgGraph.tx().normalBatchModeOn();
             Vertex vertex;
             if (partitionExpression != null) {
                 Preconditions.checkState(partitionType != PartitionType.NONE, "If the partitionExpression is not null then the PartitionType may not be NONE. Found %s", partitionType.name());
@@ -218,6 +219,7 @@ public class TopologyManager {
                 }
 
             }
+            sqlgGraph.tx().flush();
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
