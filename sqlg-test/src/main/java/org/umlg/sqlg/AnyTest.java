@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestLargeSchemaPerformance;
+import org.umlg.sqlg.test.index.TestIndexOnPartition;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.topology.TestLargeSchemaPerformance;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLargeSchemaPerformance.class
+        TestIndexOnPartition.class,
+//        TestPartitioning.class
 })
 public class AnyTest {
 }

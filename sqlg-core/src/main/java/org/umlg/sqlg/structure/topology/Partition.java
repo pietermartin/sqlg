@@ -587,6 +587,16 @@ public class Partition implements TopologyInf {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        if (this.partitionType.isNone()) {
+            for (Index index : getAbstractLabel().getIndexes().values()) {
+                //Append the partition name to the index name.
+                String indexName = index.getName() + "_" + this.getName();
+                if (indexName.length() > this.sqlgGraph.getSqlDialect().getMaximumIndexNameLength()) {
+                    indexName = Index.generateName(this.sqlgGraph.getSqlDialect());
+                }
+                index.createIndex(this.sqlgGraph, SchemaTable.of(getAbstractLabel().getSchema().getName(), this.getName()), indexName);
+            }
+        }
     }
 
     void delete() {
