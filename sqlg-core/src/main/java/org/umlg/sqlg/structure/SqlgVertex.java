@@ -166,7 +166,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
         this.sqlgGraph.getTopology().threadWriteLock();
 
-        //noinspection OptionalGetWithoutIsPresent
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
         if (!edgeLabel.hasIDPrimaryKey()) {
             Preconditions.checkArgument(columns.keySet().containsAll(edgeLabel.getIdentifiers()), "identifiers must be present %s", edgeLabel.getIdentifiers());
@@ -181,7 +180,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return (Map<String, VertexProperty<V>>) propertiesMap;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <V> VertexProperty<V> property(final String key) {
         this.sqlgGraph.tx().readWrite();
@@ -199,7 +197,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <V> VertexProperty<V> property(final String key, final V value) {
         if (this.removed) {
@@ -229,7 +226,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return new SqlgVertexProperty<>(this.sqlgGraph, this, key, value);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Property emptyProperty() {
         return VertexProperty.empty();
@@ -450,7 +446,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
             //Generate the columns to prevent 'ERROR: cached plan must not change result type" error'
             //This happens when the schema changes after the statement is prepared.
-            @SuppressWarnings("OptionalGetWithoutIsPresent")
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema))).getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)));
             StringBuilder sql = new StringBuilder("SELECT\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
