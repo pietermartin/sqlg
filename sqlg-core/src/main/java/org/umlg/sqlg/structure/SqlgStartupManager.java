@@ -124,7 +124,6 @@ class SqlgStartupManager {
                                 badColumns.add(Pair.of(tableName, columnName));
                             }
                         }
-
                     }
                     if (!badColumns.isEmpty()) {
                         String message = badColumns.stream()
