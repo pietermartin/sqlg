@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -21,6 +22,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/03/17
  */
+@SuppressWarnings("unused")
 public class TestUserSuppliedPKTopology extends BaseTest {
 
     @SuppressWarnings("Duplicates")
@@ -40,10 +42,43 @@ public class TestUserSuppliedPKTopology extends BaseTest {
     }
 
     @Test
+    public void testUserSuppliedLongKeys() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.LONG);
+                    put("uid2", PropertyType.LONG);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.INTEGER);
+                    put("uid2", PropertyType.INTEGER);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+        Vertex vLong = this.sqlgGraph.addVertex(T.label, "A", "uid1", 1L, "uid2", 1L);
+        Vertex vInteger = this.sqlgGraph.addVertex(T.label, "B", "uid1", 1, "uid2", 1);
+        RecordId recordIdLong = (RecordId) vLong.id();
+        RecordId recordIdInteger = (RecordId) vInteger.id();
+        this.sqlgGraph.tx().commit();
+
+        RecordId recordIdLong1 = RecordId.from(this.sqlgGraph, recordIdLong.toString());
+        Assert.assertTrue(this.sqlgGraph.traversal().V(recordIdLong1).hasNext());
+        RecordId recordIdInteger1 = RecordId.from(this.sqlgGraph, recordIdInteger.toString());
+        Assert.assertTrue(this.sqlgGraph.traversal().V(recordIdInteger1).hasNext());
+    }
+
+    @Test
     public void testAddEdgeUserSuppliedPK() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -52,7 +87,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -61,7 +96,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -71,7 +106,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -80,7 +115,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -106,7 +141,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
     public void testVertexCompositeIds() throws Exception {
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.varChar(100));
                     put("surname", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
@@ -133,7 +168,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
 
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.varChar(100));
                     put("surname", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
@@ -182,7 +217,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
     public void testEdgeCompositeIds() throws Exception {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.varChar(100));
                     put("surname", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
@@ -191,7 +226,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         );
         VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Address",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("street", PropertyType.varChar(100));
                     put("suburb", PropertyType.varChar(100));
                     put("country", PropertyType.STRING);
@@ -204,7 +239,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "livesAt",
                 personVertexLabel,
                 addressVertexLabel,
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -224,7 +259,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "livesAt",
                 personVertexLabel,
                 addressVertexLabel,
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -273,14 +308,14 @@ public class TestUserSuppliedPKTopology extends BaseTest {
     public void testEdgeNormal() throws Exception {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.STRING);
                     put("surname", PropertyType.STRING);
                     put("country", PropertyType.STRING);
                 }});
         VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Address",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("street", PropertyType.STRING);
                     put("suburb", PropertyType.STRING);
                     put("country", PropertyType.STRING);
@@ -291,7 +326,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "livesAt",
                 personVertexLabel,
                 addressVertexLabel,
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid1", PropertyType.STRING);
                     put("uid2", PropertyType.STRING);
                 }});
@@ -310,7 +345,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "livesAt",
                 personVertexLabel,
                 addressVertexLabel,
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid1", PropertyType.STRING);
                     put("uid2", PropertyType.STRING);
                 }});

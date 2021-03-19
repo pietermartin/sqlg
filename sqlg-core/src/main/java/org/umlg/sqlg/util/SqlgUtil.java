@@ -1221,6 +1221,10 @@ public class SqlgUtil {
             case STRING_ORDINAL:
             case VARCHAR_ORDINAL:
                 return value;
+            case LONG_ORDINAL:
+                return Long.valueOf(value);
+            case INTEGER_ORDINAL:
+                return Integer.valueOf(value);
             default:
                 throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
         }

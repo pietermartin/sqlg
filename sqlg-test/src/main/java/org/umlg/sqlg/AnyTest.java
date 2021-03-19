@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.index.TestIndexOnPartition;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKTopology;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,7 @@ import org.umlg.sqlg.test.index.TestIndexOnPartition;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestIndexOnPartition.class,
-//        TestPartitioning.class
+        TestUserSuppliedPKTopology.class
 })
 public class AnyTest {
 }
