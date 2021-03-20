@@ -485,6 +485,21 @@ public class VertexLabel extends AbstractLabel {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + getLabel()));
         sql.append(" (");
         buildColumns(this.sqlgGraph, new ListOrderedSet<>(), columns, sql);
+
+        //below is needed for #408, to create the primary key.
+        //It however clashes with existing partitioned table definitions.
+//        if (!identifiers.isEmpty()) {
+//            sql.append(", PRIMARY KEY(");
+//            int count = 1;
+//            for (String identifier : identifiers) {
+//                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+//                if (count++ < identifiers.size()) {
+//                    sql.append(", ");
+//                }
+//            }
+//        }
+//        sql.append(")");
+
         //nothing to do with the identifiers as partitioned tables do not have primary keys.
         sql.append(") PARTITION BY ");
         sql.append(this.partitionType.name());
