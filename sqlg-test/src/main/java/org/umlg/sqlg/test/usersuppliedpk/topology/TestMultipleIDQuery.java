@@ -18,12 +18,33 @@ import java.util.*;
  */
 public class TestMultipleIDQuery extends BaseTest {
 
+    //This logic is copied from AbstractLabel.addIdentifier
+    @Test
+    public void testAbstractLabelAddIdentifierLogic() {
+        TreeMap<Integer, String> identifierMap = new TreeMap<>();
+        ListOrderedSet<String> identifiers = new ListOrderedSet<>();
+        addIdentifier(identifierMap, identifiers, "cmUid", 2);
+        addIdentifier(identifierMap, identifiers, "virtualGroupId", 1);
+        addIdentifier(identifierMap, identifiers, "virtualGroupParentId", 0);
+        Assert.assertEquals("virtualGroupParentId", identifiers.get(0));
+        Assert.assertEquals("virtualGroupId", identifiers.get(1));
+        Assert.assertEquals("cmUid", identifiers.get(2));
+    }
+
+    private void addIdentifier(TreeMap<Integer, String> identifierMap, ListOrderedSet<String> identifiers, String propertyName, int index) {
+        identifierMap.put(index, propertyName);
+        identifiers.clear();
+        for (Integer mapIndex: identifierMap.keySet()) {
+            identifiers.add(identifierMap.get(mapIndex));
+        }
+    }
+
     @Test
     public void testMultipleIDs() {
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         aSchema.ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>(){{
+                new HashMap<>(){{
                     put("uid", PropertyType.varChar(100));
                     put("country", PropertyType.varChar(100));
                 }},
@@ -46,7 +67,7 @@ public class TestMultipleIDQuery extends BaseTest {
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         aSchema.ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>(){{
+                new HashMap<>(){{
                     put("uid", PropertyType.STRING);
                     put("country", PropertyType.STRING);
                 }});
@@ -68,7 +89,7 @@ public class TestMultipleIDQuery extends BaseTest {
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         aSchema.ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>(){{
+                new HashMap<>(){{
                     put("uid", PropertyType.STRING);
                     put("country", PropertyType.STRING);
                 }},
@@ -89,14 +110,14 @@ public class TestMultipleIDQuery extends BaseTest {
         @SuppressWarnings("Duplicates")
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("name", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("name", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
@@ -104,7 +125,7 @@ public class TestMultipleIDQuery extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("country", PropertyType.varChar(100));
                 }},

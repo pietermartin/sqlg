@@ -37,6 +37,7 @@ public abstract class AbstractLabel implements TopologyInf {
     final Map<String, PropertyColumn> uncommittedProperties = new ThreadLocalMap<>();
     final Set<String> uncommittedRemovedProperties = new ThreadLocalSet<>();
 
+    private final TreeMap<Integer, String> identifierMap = new TreeMap<>();
     private final ListOrderedSet<String> identifiers = new ListOrderedSet<>();
     private final Set<String> uncommittedIdentifiers = new ThreadLocalListOrderedSet<>();
 
@@ -593,11 +594,15 @@ public abstract class AbstractLabel implements TopologyInf {
 
     void addIdentifier(String propertyName, int index) {
         Preconditions.checkState(getTopology().isSchemaChanged());
-        if (index > this.identifiers.size() - 1) {
-            this.identifiers.add(propertyName);
-        } else {
-            this.identifiers.add(index, propertyName);
+        this.identifierMap.put(index, propertyName);
+        this.identifiers.clear();
+        for (Integer mapIndex: this.identifierMap.keySet()) {
+            this.identifiers.add(this.identifierMap.get(mapIndex));
         }
+    }
+
+    void clearIdentifiersMap() {
+        this.identifierMap.clear();
     }
 
     void addDistributionColocate(Vertex colocate) {

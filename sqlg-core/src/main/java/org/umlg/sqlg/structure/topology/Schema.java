@@ -1186,7 +1186,13 @@ public class Schema implements TopologyInf {
                 this.outEdgeLabels.put(schemaName + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
             }
         }
-
+        //We can clear all AbstractLabel.identifierMap to save some memory
+        for (VertexLabel vertexLabel : this.vertexLabels.values()) {
+            vertexLabel.clearIdentifiersMap();
+        }
+        for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
+            edgeLabel.clearIdentifiersMap();
+        }
     }
 
     /**

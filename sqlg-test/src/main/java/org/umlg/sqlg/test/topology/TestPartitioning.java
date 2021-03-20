@@ -36,6 +36,36 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
+    public void testPartitionWithCompositeKeys() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.INTEGER);
+                    put("uid2", PropertyType.LONG);
+                    put("uid3", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
+                PartitionType.LIST,
+                "\"uid1\""
+        );
+        vertexLabel.ensureListPartitionExists("listPartition1", "'1'");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "A", "uid1", 1, "uid2", 1L, "uid3", "halo1");
+        this.sqlgGraph.addVertex(T.label, "A", "uid1", 1, "uid2", 2L, "uid3", "halo1");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            ListOrderedSet<String> identifiers = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getIdentifiers();
+            Assert.assertEquals("uid1", identifiers.get(0));
+            Assert.assertEquals("uid2", identifiers.get(1));
+            Assert.assertEquals("uid3", identifiers.get(2));
+        }
+    }
+
+
+    @Test
     public void testPartitionEdgeOnMultipleUserDefinedForeignKey() {
         LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
         attributeMap.put("name", PropertyType.STRING);
