@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.topology;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -14,6 +15,10 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -54,8 +59,31 @@ public class TestPartitioning extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A", "uid1", 1, "uid2", 2L, "uid3", "halo1");
         this.sqlgGraph.tx().commit();
 
-        this.sqlgGraph.close();
+        String checkPrimaryKey = "SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type\n" +
+                "FROM   pg_index i\n" +
+                "JOIN   pg_attribute a ON a.attrelid = i.indrelid\n" +
+                "                     AND a.attnum = ANY(i.indkey)\n" +
+                "WHERE  i.indrelid = '\"V_A\"'::regclass\n" +
+                "AND    i.indisprimary;";
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery(checkPrimaryKey);
+            List<Pair<String, String>> keys = new ArrayList<>();
+            while (rs.next()) {
+                String key = rs.getString("attname");
+                String dataType = rs.getString("data_type");
+                keys.add(Pair.of(key, dataType));
+            }
+            //TODO Assertions to add for #408
+//            Assert.assertEquals(3, keys.size());
+//            Assert.assertEquals("uid1", keys.get(0).getLeft());
+//            Assert.assertEquals("uid2", keys.get(1).getLeft());
+//            Assert.assertEquals("uid3", keys.get(2).getLeft());
+        } catch (SQLException throwables) {
+            Assert.fail(throwables.getMessage());
+        }
 
+        this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             ListOrderedSet<String> identifiers = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getIdentifiers();
             Assert.assertEquals("uid1", identifiers.get(0));
@@ -63,7 +91,6 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals("uid3", identifiers.get(2));
         }
     }
-
 
     @Test
     public void testPartitionEdgeOnMultipleUserDefinedForeignKey() {
