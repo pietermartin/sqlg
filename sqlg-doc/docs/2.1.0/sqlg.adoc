@@ -854,9 +854,6 @@ Multiple JVM support has not been implemented for MariaDB and MSSqlServer.
 Postgresql's https://www.postgresql.org/docs/current/static/sql-notify.html[*notify*] mechanism is used to distribute the cached schema
 across multiple JVMs.
 
-Sqlg uses Postgresql's https://www.postgresql.org/docs/current/static/explicit-locking.html[explicit locking] to create a global
-lock to prevent schema creation commands from dead locking the database.
-
 == Gremlin
 
 Sqlg optimizes a gremlin link:{tinkerpop-docs}#traversal[`traversal`]  by analyzing the
@@ -1972,6 +1969,588 @@ SET CONSTRAINTS ALL IMMEDIATE <4>
 <3> Delete the edges.
 <4. Enable the foreign key constraints.
 
+==== Reducing Steps
+
+link:{tinkerpop-docs}#a-note-on-barrier-steps[`Reducing Steps`]
+
+===== Min Step
+
+link:{tinkerpop-docs}#min-step[`Min Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testMin() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").min();
+    Assert.assertEquals(0, traversal.next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-min-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MinGlobalStep]
+----
+
+
+[options="nowrap"]
+[[anchor-after-optimization-min-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgMinGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MIN("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+----
+
+===== Max Step
+
+link:{tinkerpop-docs}#max-step[`Max Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testMax() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0, "x", 1);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").max();
+    printTraversalForm(traversal);
+    Assert.assertEquals(3, traversal.next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MaxGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-max-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgMaxGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MAX("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+----
+
+===== Sum Step
+
+link:{tinkerpop-docs}#sum-step[`Sum Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testSum() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").sum();
+    printTraversalForm(traversal);
+    Assert.assertEquals(6, traversal.next(), 0L);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-sum-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), SumGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-sum-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgSumGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	SUM("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+----
+
+===== Mean Step
+
+link:{tinkerpop-docs}#mean-step[`Mean Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testMean() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+    DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").mean();
+    printTraversalForm(traversal);
+    Double d = traversal.next();
+    Assert.assertEquals(1.5, d, 0D);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-mean-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MeanGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-mean-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgAvgGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	AVG("public"."V_Person"."age") AS "alias1", COUNT(1) AS "alias1_weight"
+FROM
+	"public"."V_Person"
+----
+
+===== Count Step
+
+link:{tinkerpop-docs}#count-step[`Count Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testCount() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.tx().commit();
+    DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V().count();
+    printTraversalForm(traversal);
+    Assert.assertEquals(4, traversal.next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-count-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), CountGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([count],value), SqlgCountGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	COUNT(1)
+FROM
+	"public"."V_A"
+----
+
+===== Group By
+
+link:{tinkerpop-docs}#group-step[`Group Step`]
+
+Sqlg optimizes `group` steps with sql's `group by` clause.
+
+===== Group By and Min Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverOnePropertyMin() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .<String, Integer>group().by("name").by(__.values("age").min());
+    printTraversalForm(traversal);
+    Map<String, Integer> result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(1, result.get("A"), 0);
+    Assert.assertEquals(2, result.get("B"), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-group-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), MinGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."name" AS "alias1",
+	MIN("public"."V_Person"."age") AS "alias2"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"
+----
+
+===== Group By and Max Step
+
+[source,java,options="nowrap"]
+----
+    @Test
+    public void testGroupByLabelMax() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 10);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 20);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "C", "age", 100);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "D", "age", 40);
+
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "A", "age", 10);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "B", "age", 200);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "C", "age", 30);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "D", "age", 40);
+
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().<String, Integer>group().by(T.label).by(__.values("age").max());
+        printTraversalForm(traversal);
+
+        Map<String, Integer> result = traversal.next();
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, result.size());
+        Assert.assertTrue(result.containsKey("Person"));
+        Assert.assertTrue(result.containsKey("Dog"));
+        Assert.assertEquals(100, result.get("Person"), 0);
+        Assert.assertEquals(200, result.get("Dog"), 0);
+    }
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-group-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), GroupStep(label,[PropertiesStep([age],value), MaxGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MAX("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+
+SELECT
+	MAX("public"."V_Dog"."age") AS "alias1"
+FROM
+	"public"."V_Dog"
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverTwoPropertiesWithValues() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "surname", "C", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "surname", "D", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "surname", "C", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "surname", "E", "age", 4);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "C", "surname", "E", "age", 5);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<List<String>, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person")
+            .<List<String>, Integer>group()
+            .by(__.values("name", "surname").fold())
+            .by(__.values("age").max());
+
+    printTraversalForm(traversal);
+
+    Map<List<String>, Integer> result = traversal.next();
+    Assert.assertTrue(result.containsKey(Arrays.asList("A", "C")) || result.containsKey(Arrays.asList("C", "A")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("B", "D")) || result.containsKey(Arrays.asList("D", "B")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("B", "E")) || result.containsKey(Arrays.asList("E", "B")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("C", "E")) || result.containsKey(Arrays.asList("E", "C")));
+    Assert.assertEquals(4, result.size());
+    Assert.assertFalse(traversal.hasNext());
+
+    if (result.containsKey(Arrays.asList("A", "C"))) {
+        Assert.assertEquals(3, result.get(Arrays.asList("A", "C")), 0);
+    } else {
+        Assert.assertEquals(3, result.get(Arrays.asList("C", "A")), 0);
+    }
+    if (result.containsKey(Arrays.asList("B", "D"))) {
+        Assert.assertEquals(2, result.get(Arrays.asList("B", "D")), 0);
+    } else {
+        Assert.assertEquals(2, result.get(Arrays.asList("D", "B")), 0);
+    }
+    if (result.containsKey(Arrays.asList("B", "E"))) {
+        Assert.assertEquals(4, result.get(Arrays.asList("B", "E")), 0);
+    } else {
+        Assert.assertEquals(4, result.get(Arrays.asList("E", "B")), 0);
+    }
+    if (result.containsKey(Arrays.asList("C", "E"))) {
+        Assert.assertEquals(5, result.get(Arrays.asList("C", "E")), 0);
+    } else {
+        Assert.assertEquals(5, result.get(Arrays.asList("E", "C")), 0);
+    }
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-group-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep([PropertiesStep([name, surname],value), FoldStep],[PropertiesStep([age],value), MaxGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."surname" AS "alias1",
+	"public"."V_Person"."name" AS "alias2",
+	MAX("public"."V_Person"."age") AS "alias3"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name",
+	"public"."V_Person"."surname
+----
+
+===== Group By and Sum Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverOnePropertySum() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .<String, Long>group().by("name").by(__.values("age").sum());
+    printTraversalForm(traversal);
+    Map<String, Long> result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(4, result.get("A"), 0L);
+    Assert.assertEquals(6, result.get("B"), 0L);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-group-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), SumGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."name" AS "alias1",
+	SUM("public"."V_Person"."age") AS "alias2"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"
+----
+
+===== Group By and Mean Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverOnePropertyMean() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Double>> traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .<String, Double>group().by("name").by(__.values("age").mean());
+    printTraversalForm(traversal);
+    Map<String, Double> result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(2.0, result.get("A"), 0D);
+    Assert.assertEquals(3.0, result.get("B"), 0D);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-group-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), MeanGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."name" AS "alias1",
+	AVG("public"."V_Person"."age") AS "alias2", COUNT(1) AS "alias2_weight"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"
+----
+
+===== Group By with join
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverOnePropertyWithJoin() {
+    Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
+    Vertex address1 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 2);
+    Vertex address2 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 4);
+    Vertex address3 = this.sqlgGraph.addVertex(T.label, "Address", "name", "C", "year", 6);
+    Vertex address4 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 8);
+    Vertex address5 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 7);
+    Vertex address6 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 6);
+    person.addEdge("livesAt", address1);
+    person.addEdge("livesAt", address2);
+    person.addEdge("livesAt", address3);
+    person.addEdge("livesAt", address4);
+    person.addEdge("livesAt", address5);
+    person.addEdge("livesAt", address6);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .out("livesAt")
+            .<String, Integer>group()
+            .by("name")
+            .by(__.values("year").max());
+
+    printTraversalForm(traversal);
+
+    Map<String, Integer> result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertEquals(3, result.size());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("C"));
+    Assert.assertTrue(result.containsKey("D"));
+    Assert.assertEquals(4, result.get("A"), 0);
+    Assert.assertEquals(6, result.get("C"), 0);
+    Assert.assertEquals(8, result.get("D"), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-group-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), VertexStep(OUT,[livesAt],vertex), GroupStep(value(name),[PropertiesStep([year],value), MaxGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-count-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MAX("public"."V_Address"."year") AS "alias1",
+	"public"."V_Address"."name" AS "alias2"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_livesAt" ON "public"."V_Person"."ID" = "public"."E_livesAt"."public.Person__O" INNER JOIN
+	"public"."V_Address" ON "public"."E_livesAt"."public.Address__I" = "public"."V_Address"."ID"
+GROUP BY
+	"public"."V_Address"."name"
+----
 
 === Optimization (strategy 2)
 
