@@ -201,6 +201,16 @@ public abstract class SqlgElement implements Element {
         return this.internalGetProperties().keySet();
     }
 
+    public <V> V value(final String key) throws NoSuchElementException {
+        Object value = this.properties.get(key);
+        if (value != null) {
+            //noinspection unchecked
+            return (V) value;
+        } else {
+            return this.<V>property(key).orElseThrow(() -> Property.Exceptions.propertyDoesNotExist(this,key));
+        }
+    }
+
     @Override
     public <V> Property<V> property(String key) {
         if (this.removed) {
