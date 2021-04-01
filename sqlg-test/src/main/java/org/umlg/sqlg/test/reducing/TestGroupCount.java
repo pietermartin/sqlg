@@ -1,10 +1,4 @@
-package org.umlg.sqlg.test.aggregate;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Map;
+package org.umlg.sqlg.test.reducing;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Column;
@@ -12,6 +6,10 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)

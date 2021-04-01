@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.ColumnList;
@@ -1313,11 +1314,15 @@ public interface SqlDialect {
             sb.append(column.getAggregateFunction().toUpperCase());
             sb.append("(");
         }
-        sb.append(maybeWrapInQoutes(column.getSchema()));
-        sb.append(".");
-        sb.append(maybeWrapInQoutes(column.getTable()));
-        sb.append(".");
-        sb.append(maybeWrapInQoutes(column.getColumn()));
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null && column.getAggregateFunction().equals(GraphTraversal.Symbols.count)) {
+            sb.append("1");
+        } else {
+            sb.append(maybeWrapInQoutes(column.getSchema()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(column.getTable()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(column.getColumn()));
+        }
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             sb.append(") AS ").append(maybeWrapInQoutes(alias));
             if (column.getAggregateFunction().equals("avg")) {

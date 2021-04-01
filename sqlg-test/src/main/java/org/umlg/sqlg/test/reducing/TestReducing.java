@@ -1,10 +1,12 @@
 package org.umlg.sqlg.test.reducing;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.tinkerpop.gremlin.process.AbstractGremlinProcessTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GroupStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -43,15 +45,153 @@ public class TestReducing extends BaseTest {
     }
 
     @Test
-    public void testMinAgain() {
-        final Traversal<Vertex, Comparable> traversal = this.sqlgGraph.traversal().V().values("foo").inject(9999999999L).min();
+    public void g_V_repeatXbothXfollowedByXX_timesX2X_group_byXsongTypeX_byXcountX() {
+        loadGratefulDead();
+        final Traversal<Vertex, Map<String, Long>> traversal = this.sqlgGraph.traversal().V().repeat(__.both("followedBy")).times(2).<String, Long>group().by("songType").by(__.count());
         printTraversalForm(traversal);
-        Assert.assertTrue(traversal.hasNext());
-        Assert.assertEquals(9999999999L, traversal.next());
+        Map<String, Long> result = traversal.next();
+        AbstractGremlinProcessTest.checkMap(new HashMap<>() {{
+            put("original", 771317l);
+            put("", 160968l);
+            put("cover", 368579l);
+        }}, result);
         Assert.assertFalse(traversal.hasNext());
+        AbstractGremlinProcessTest.checkSideEffects(traversal.asAdmin().getSideEffects());
     }
 
-    @SuppressWarnings("Duplicates")
+    @Test
+    public void testGroupCountNoBySomething() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+        this.sqlgGraph.tx().commit();
+        DefaultTraversal<Vertex, Map<Long, Long>> traversal = (DefaultTraversal<Vertex, Map<Long, Long>>) this.sqlgGraph.traversal().V().<Long>groupCount().by(__.bothE().count());
+        printTraversalForm(traversal);
+        List<Map<Long, Long>> result = traversal.toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(1, result.get(0).size());
+        Assert.assertTrue(result.get(0).values().stream().allMatch(a -> a == 6L));
+    }
+
+    @Test
+    public void testGroupCountNoBy() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+        this.sqlgGraph.tx().commit();
+        DefaultTraversal<Vertex, Map<Object, Long>> traversal = (DefaultTraversal<Vertex, Map<Object, Long>>) sqlgGraph.traversal().V()
+                .groupCount();
+        printTraversalForm(traversal);
+        List<Map<Object, Long>> result = traversal.toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(6, result.get(0).size());
+        Assert.assertTrue(result.get(0).values().stream().allMatch(a -> a == 1L));
+    }
+
+    @Test
+    public void testGroupCount() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
+        this.sqlgGraph.tx().commit();
+        DefaultTraversal<Vertex, Map<Object, Long>> traversal = (DefaultTraversal<Vertex, Map<Object, Long>>) this.sqlgGraph.traversal().V().hasLabel("A").groupCount().by("name");
+        printTraversalForm(traversal);
+        List<Map<Object, Long>> result = traversal.toList();
+        System.out.println(result);
+    }
+
+    @Test
+    public void testGroupCountByLabel() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+        this.sqlgGraph.tx().commit();
+        DefaultTraversal<Vertex, Map<Object, Long>> traversal = (DefaultTraversal<Vertex, Map<Object, Long>>) this.sqlgGraph.traversal().V().groupCount().by(T.label);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_C\"", sql);
+        }
+        List<Map<Object, Long>> result = traversal.toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(3, result.get(0).size());
+        Assert.assertTrue(result.get(0).containsKey("A"));
+        Assert.assertTrue(result.get(0).containsKey("B"));
+        Assert.assertTrue(result.get(0).containsKey("C"));
+        Assert.assertEquals(3L, result.get(0).get("A"), 0);
+        Assert.assertEquals(2L, result.get(0).get("B"), 0);
+        Assert.assertEquals(1L, result.get(0).get("C"), 0);
+    }
+
+    @Test
+    public void testGroupByCountLabel() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+        this.sqlgGraph.tx().commit();
+        DefaultTraversal<Vertex, Map<Object, Long>> traversal = (DefaultTraversal<Vertex, Map<Object, Long>>) this.sqlgGraph.traversal().V()
+                .<Object, Long>group().by(T.label).by(__.count());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_C\"", sql);
+        }
+        List<Map<Object, Long>> result = traversal.toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(3, result.get(0).size());
+        Assert.assertTrue(result.get(0).containsKey("A"));
+        Assert.assertTrue(result.get(0).containsKey("B"));
+        Assert.assertTrue(result.get(0).containsKey("C"));
+        Assert.assertEquals(3L, result.get(0).get("A"), 0);
+        Assert.assertEquals(2L, result.get(0).get("B"), 0);
+        Assert.assertEquals(1L, result.get(0).get("C"), 0);
+    }
+
+    @Test
+    public void testGroupByCount() {
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
+        this.sqlgGraph.tx().commit();
+        DefaultTraversal<Vertex, Map<Object, Long>> traversal = (DefaultTraversal<Vertex, Map<Object, Long>>) this.sqlgGraph.traversal().V().hasLabel("A")
+                .<Object, Long>group().by("name").by(__.count());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\",\n" +
+                    "\t\"public\".\"V_A\".\"name\" AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_A\".\"name\"", sql);
+        }
+        List<Map<Object, Long>> result = traversal.toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.get(0).containsKey("a"));
+        Assert.assertTrue(result.get(0).containsKey("b"));
+        Assert.assertEquals(2L, result.get(0).get("a"), 0);
+        Assert.assertEquals(1L, result.get(0).get("b"), 0);
+    }
+
     @Test
     public void testMax() {
         this.sqlgGraph.addVertex(T.label, "Person", "age", 1, "x", 1);
@@ -61,12 +201,52 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").max();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMAX(\"public\".\"V_Person\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgMaxGlobalStep);
         Assert.assertEquals(3, traversal.next(), 0);
+    }
+
+    @Test
+    public void testGroupOverOnePropertyMax() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) sqlgGraph.traversal()
+                .V().hasLabel("Person")
+                .<String, Integer>group().by("name").by(__.values("age").max());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_Person\".\"name\" AS \"alias1\",\n" +
+                    "\tMAX(\"public\".\"V_Person\".\"age\") AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_Person\".\"name\"", sql);
+        }
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+        Map<String, Integer> result = traversal.next();
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertTrue(result.containsKey("A"));
+        Assert.assertTrue(result.containsKey("B"));
+        Assert.assertEquals(3, result.get("A"), 0);
+        Assert.assertEquals(4, result.get("B"), 0);
     }
 
     @Test
@@ -78,7 +258,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, String> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").max();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMAX(\"public\".\"V_Person\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -96,7 +283,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").min();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMIN(\"public\".\"V_Person\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -113,7 +307,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, String> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").min();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMIN(\"public\".\"V_Person\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -130,7 +331,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").sum();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tSUM(\"public\".\"V_Person\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -146,7 +354,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
         this.sqlgGraph.tx().commit();
         DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").mean();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tAVG(\"public\".\"V_Person\".\"age\") AS \"alias1\", COUNT(1) AS \"alias1_weight\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -195,29 +410,6 @@ public class TestReducing extends BaseTest {
     }
 
     @Test
-    public void testGroupOverOnePropertyMax() {
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
-        this.sqlgGraph.tx().commit();
-
-        DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) sqlgGraph.traversal()
-                .V().hasLabel("Person")
-                .<String, Integer>group().by("name").by(__.values("age").max());
-        printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
-        Map<String, Integer> result = traversal.next();
-        Assert.assertFalse(traversal.hasNext());
-        Assert.assertTrue(result.containsKey("A"));
-        Assert.assertTrue(result.containsKey("B"));
-        Assert.assertEquals(3, result.get("A"), 0);
-        Assert.assertEquals(4, result.get("B"), 0);
-    }
-
-    @Test
     public void testGroupOverOnePropertyMin() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
         this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
@@ -228,7 +420,17 @@ public class TestReducing extends BaseTest {
         DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) sqlgGraph.traversal()
                 .V().hasLabel("Person")
                 .<String, Integer>group().by("name").by(__.values("age").min());
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_Person\".\"name\" AS \"alias1\",\n" +
+                    "\tMIN(\"public\".\"V_Person\".\"age\") AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_Person\".\"name\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -251,7 +453,17 @@ public class TestReducing extends BaseTest {
         DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) sqlgGraph.traversal()
                 .V().hasLabel("Person")
                 .<String, Long>group().by("name").by(__.values("age").sum());
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_Person\".\"name\" AS \"alias1\",\n" +
+                    "\tSUM(\"public\".\"V_Person\".\"age\") AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_Person\".\"name\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -274,7 +486,17 @@ public class TestReducing extends BaseTest {
         DefaultTraversal<Vertex, Map<String, Double>> traversal = (DefaultTraversal) sqlgGraph.traversal()
                 .V().hasLabel("Person")
                 .<String, Double>group().by("name").by(__.values("age").mean());
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_Person\".\"name\" AS \"alias1\",\n" +
+                    "\tAVG(\"public\".\"V_Person\".\"age\") AS \"alias2\", COUNT(1) AS \"alias2_weight\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_Person\".\"name\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -300,7 +522,19 @@ public class TestReducing extends BaseTest {
                 .by(__.values("name", "surname").fold())
                 .by(__.values("age").max());
 
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_Person\".\"surname\" AS \"alias1\",\n" +
+                    "\t\"public\".\"V_Person\".\"name\" AS \"alias2\",\n" +
+                    "\tMAX(\"public\".\"V_Person\".\"age\") AS \"alias3\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_Person\".\"name\",\n" +
+                    "\t\"public\".\"V_Person\".\"surname\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -352,7 +586,19 @@ public class TestReducing extends BaseTest {
                 .by(__.valueMap("name", "surname"))
                 .by(__.values("age").max());
 
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_Person\".\"surname\" AS \"alias1\",\n" +
+                    "\t\"public\".\"V_Person\".\"name\" AS \"alias2\",\n" +
+                    "\tMAX(\"public\".\"V_Person\".\"age\") AS \"alias3\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_Person\".\"name\",\n" +
+                    "\t\"public\".\"V_Person\".\"surname\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -419,7 +665,19 @@ public class TestReducing extends BaseTest {
                 .by("name")
                 .by(__.values("year").max());
 
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMAX(\"public\".\"V_Address\".\"year\") AS \"alias1\",\n" +
+                    "\t\"public\".\"V_Address\".\"name\" AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\" INNER JOIN\n" +
+                    "\t\"public\".\"E_livesAt\" ON \"public\".\"V_Person\".\"ID\" = \"public\".\"E_livesAt\".\"public.Person__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_Address\" ON \"public\".\"E_livesAt\".\"public.Address__I\" = \"public\".\"V_Address\".\"ID\"\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_Address\".\"name\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -436,7 +694,7 @@ public class TestReducing extends BaseTest {
     }
 
     @Test
-    public void testGroupByLabel() {
+    public void testGroupByLabelMax() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 10);
         this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 20);
         this.sqlgGraph.addVertex(T.label, "Person", "name", "C", "age", 100);
@@ -450,7 +708,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().<String, Integer>group().by(T.label).by(__.values("age").max());
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMAX(\"public\".\"V_Dog\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Dog\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -476,7 +741,26 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("aa").values("age").max();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("SELECT\n" +
+                    "\tMAX(a2.\"alias2\") \n" +
+                    "FROM (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    ") a1 INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
+                    "\t\"public\".\"V_A\".\"age\" AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\"\n" +
+                    ") a2 ON a1.\"public.E_aa.public.A__I\" = a2.\"alias1\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -501,7 +785,33 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("aa").out("aa").values("age").max();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("SELECT\n" +
+                    "\tMAX(a3.\"alias3\") \n" +
+                    "FROM (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    ") a1 INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    ") a2 ON a1.\"public.E_aa.public.A__I\" = a2.\"alias1\" INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias2\",\n" +
+                    "\t\"public\".\"V_A\".\"age\" AS \"alias3\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\"\n" +
+                    ") a3 ON a2.\"public.E_aa.public.A__I\" = a3.\"alias2\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -509,6 +819,295 @@ public class TestReducing extends BaseTest {
         Assert.assertTrue(traversal.hasNext());
         Integer max = traversal.next();
         Assert.assertEquals(7, max, 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testDuplicatePathQuery3() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1", "age", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2", "age", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3", "age", 3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1", "age", 1);
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2", "age", 2);
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3", "age", 3);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").values("age").sum();
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+        }
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgSumGlobalStep);
+        Assert.assertTrue(traversal.hasNext());
+        Long max = traversal.next();
+        Assert.assertEquals(12, max, 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testDuplicatePathGroupCountQuery2() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 0);
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 4);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.values("age").count());
+        String sql = getSQL(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof GroupStep);
+        Map<String, Long> result = traversal.next();
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.containsKey("b"));
+        Long l = result.get("b");
+        Assert.assertEquals(7L, l, 0L);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testDuplicatePathGroupCountQuery() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 1);
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.count());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\",\n" +
+                    "\t\"public\".\"V_B\".\"name\" AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_B\".\"name\"", sql);
+        }
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+        Map<String, Long> result = traversal.next();
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.containsKey("b"));
+        Assert.assertEquals(7, result.get("b"), 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testDuplicatePathGroupSumQuery() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 1);
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.values("age").sum());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_B\".\"name\" AS \"alias1\",\n" +
+                    "\tSUM(\"public\".\"V_B\".\"age\") AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_B\".\"name\"", sql);
+        }
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+        Map<String, Long> result = traversal.next();
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.containsKey("b"));
+        Assert.assertEquals(15, result.get("b"), 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testDuplicatePathGroupMaxQuery() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 1);
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 4);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.values("age").max());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_B\".\"name\" AS \"alias1\",\n" +
+                    "\tMAX(\"public\".\"V_B\".\"age\") AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_B\".\"name\"", sql);
+        }
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+        Map<String, Integer> result = traversal.next();
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.containsKey("b"));
+        Assert.assertEquals(4, result.get("b"), 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testDuplicatePathGroupMinQuery() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 0);
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 4);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.values("age").min());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_B\".\"name\" AS \"alias1\",\n" +
+                    "\tMIN(\"public\".\"V_B\".\"age\") AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_B\".\"name\"", sql);
+        }
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+        Map<String, Integer> result = traversal.next();
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.containsKey("b"));
+        Assert.assertEquals(0, result.get("b"), 0);
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    @Test
+    public void testDuplicatePathGroupMeanQuery() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 0);
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 4);
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Double>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.values("age").mean());
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_B\".\"name\" AS \"alias1\",\n" +
+                    "\tAVG(\"public\".\"V_B\".\"age\") AS \"alias2\", COUNT(1) AS \"alias2_weight\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    "GROUP BY\n" +
+                    "\t\"public\".\"V_B\".\"name\"", sql);
+        }
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+        Map<String, Double> result = traversal.next();
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.containsKey("b"));
+        Double d = result.get("b");
+        Assert.assertEquals(2.142857142857143D, d, 0D);
         Assert.assertFalse(traversal.hasNext());
     }
 
@@ -528,7 +1127,29 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out().<String, Integer>group().by("name").by(__.values("age").max());
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("SELECT\n" +
+                    "\ta2.\"alias2\", MAX(a2.\"alias3\") \n" +
+                    "FROM (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    ") a1 INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
+                    "\t\"public\".\"V_A\".\"name\" AS \"alias2\",\n" +
+                    "\t\"public\".\"V_A\".\"age\" AS \"alias3\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\"\n" +
+                    ") a2 ON a1.\"public.E_aa.public.A__I\" = a2.\"alias1\"\n" +
+                    "GROUP BY\n" +
+                    "\ta2.\"alias2\"", sql);
+        }
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
@@ -548,7 +1169,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().values("age").max();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMAX(\"public\".\"V_B\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_B\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -565,7 +1193,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().values("age").min();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMIN(\"public\".\"V_B\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_B\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -582,7 +1217,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().values("age").sum();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tSUM(\"public\".\"V_B\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_B\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -603,7 +1245,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().values("age").mean();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tAVG(\"public\".\"V_B\".\"age\") AS \"alias1\", COUNT(1) AS \"alias1_weight\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_B\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -621,7 +1270,31 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("person").out().out().values("age").max();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("SELECT\n" +
+                    "\tMAX(a3.\"alias3\") \n" +
+                    "FROM (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"E_knows\".\"public.person__I\" AS \"public.E_knows.public.person__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_person\" INNER JOIN\n" +
+                    "\t\"public\".\"E_knows\" ON \"public\".\"V_person\".\"ID\" = \"public\".\"E_knows\".\"public.person__O\"\n" +
+                    ") a1 INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_person\".\"ID\" AS \"alias1\",\n" +
+                    "\t\"public\".\"E_knows\".\"public.person__I\" AS \"public.E_knows.public.person__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_person\" INNER JOIN\n" +
+                    "\t\"public\".\"E_knows\" ON \"public\".\"V_person\".\"ID\" = \"public\".\"E_knows\".\"public.person__O\"\n" +
+                    ") a2 ON a1.\"public.E_knows.public.person__I\" = a2.\"alias1\" INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_person\".\"ID\" AS \"alias2\",\n" +
+                    "\t\"public\".\"V_person\".\"age\" AS \"alias3\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_person\"\n" +
+                    ") a3 ON a2.\"public.E_knows.public.person__I\" = a3.\"alias2\"", sql);
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -778,7 +1451,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A", "name", "a");
         this.sqlgGraph.tx().commit();
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V().count();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\"", sql);
+        }
         Assert.assertEquals(4, traversal.next(), 0);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
@@ -795,7 +1475,16 @@ public class TestReducing extends BaseTest {
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").outE().otherV().toList();
         Assert.assertEquals(1, vertices.size());
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V().hasLabel("A").outE().otherV().count();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"", sql);
+        }
         Assert.assertEquals(1, traversal.next(), 0);
     }
 
@@ -812,15 +1501,42 @@ public class TestReducing extends BaseTest {
         a1.addEdge("ab", b4);
         this.sqlgGraph.tx().commit();
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V().hasLabel("A").out("ab").count();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"", sql);
+        }
         Assert.assertEquals(4, traversal.next(), 0);
         Assert.assertFalse(traversal.hasNext());
         Traversal<Vertex, Integer> maxTraversal  = this.sqlgGraph.traversal().V().outE().otherV().values("age").max();
-        printTraversalForm(maxTraversal);
+        sql = getSQL(maxTraversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tMAX(\"public\".\"V_B\".\"age\") AS \"alias1\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"", sql);
+        }
         Assert.assertEquals(5, maxTraversal.next(), 0);
         Assert.assertFalse(maxTraversal.hasNext());
         traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V().outE().otherV().count();
-        printTraversalForm(traversal);
+        sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_ab\".\"public.A__O\" INNER JOIN\n" +
+                    "\t\"public\".\"V_B\" ON \"public\".\"E_ab\".\"public.B__I\" = \"public\".\"V_B\".\"ID\"", sql);
+        }
         Assert.assertEquals(4, traversal.next(), 0);
         Assert.assertFalse(traversal.hasNext());
     }
@@ -837,7 +1553,14 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
         this.sqlgGraph.tx().commit();
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V().count();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_B\"", sql);
+        }
         Assert.assertEquals(8, traversal.next(), 0);
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
@@ -857,7 +1580,32 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal().V(a1).out().out().count();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("SELECT\n" +
+                    "\tCOUNT(1) \n" +
+                    "FROM (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    ") a1 INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    ") a2 ON a1.\"public.E_aa.public.A__I\" = a2.\"alias1\" INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias2\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\"\n" +
+                    ") a3 ON a2.\"public.E_aa.public.A__I\" = a3.\"alias2\"", sql);
+        }
         Assert.assertEquals(2, traversal.next(), 0);
 
         Assert.assertEquals(3, traversal.getSteps().size());
@@ -904,7 +1652,33 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V(a1).out().out().values("age").max();
-        printTraversalForm(traversal);
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("SELECT\n" +
+                    "\tMAX(a3.\"alias3\") \n" +
+                    "FROM (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    "WHERE\n" +
+                    "\t( \"public\".\"V_A\".\"ID\" = ?)\n" +
+                    ") a1 INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
+                    "\t\"public\".\"E_aa\".\"public.A__I\" AS \"public.E_aa.public.A__I\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\" INNER JOIN\n" +
+                    "\t\"public\".\"E_aa\" ON \"public\".\"V_A\".\"ID\" = \"public\".\"E_aa\".\"public.A__O\"\n" +
+                    ") a2 ON a1.\"public.E_aa.public.A__I\" = a2.\"alias1\" INNER JOIN (\n" +
+                    "SELECT\n" +
+                    "\t\"public\".\"V_A\".\"ID\" AS \"alias2\",\n" +
+                    "\t\"public\".\"V_A\".\"age\" AS \"alias3\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_A\"\n" +
+                    ") a3 ON a2.\"public.E_aa.public.A__I\" = a3.\"alias2\"", sql);
+        }
         Assert.assertEquals(4, traversal.next(), 0);
     }
 
@@ -924,7 +1698,16 @@ public class TestReducing extends BaseTest {
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "uid", UUID.randomUUID().toString());
         john.property("name", "john");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("Person").count().next().intValue());
+        Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().hasLabel("Person").count();
+        String sql = getSQL(traversal);
+        if (isPostgres()) {
+            Assert.assertEquals("\n" +
+                    "SELECT\n" +
+                    "\tCOUNT(1) AS \"count\"\n" +
+                    "FROM\n" +
+                    "\t\"public\".\"V_Person\"", sql);
+        }
+        Assert.assertEquals(2, traversal.next().intValue());
         Assert.assertEquals("marko", this.sqlgGraph.traversal().V(marko).next().value("name"));
         Assert.assertEquals("john", this.sqlgGraph.traversal().V(john).next().value("name"));
     }
@@ -960,4 +1743,14 @@ public class TestReducing extends BaseTest {
         Assert.assertEquals(3, g.V(josh).both().count().next().longValue());
         Assert.assertEquals(2, sg.V(josh).both().count().next().longValue());
     }
+
+    @Test
+    public void testMinAgain() {
+        final Traversal<Vertex, Comparable> traversal = this.sqlgGraph.traversal().V().values("foo").inject(9999999999L).min();
+        printTraversalForm(traversal);
+        Assert.assertTrue(traversal.hasNext());
+        Assert.assertEquals(9999999999L, traversal.next());
+        Assert.assertFalse(traversal.hasNext());
+    }
+
 }

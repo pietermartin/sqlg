@@ -22,8 +22,9 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
     private E result = null;
     private Supplier<E> seedSupplier;
     private Iterator<Traverser.Admin<E>> resultIterator = null;
+    private boolean resetted = false;
 
-    SqlgReducingStepBarrier(Traversal.Admin<?, ?> traversal) {
+    public SqlgReducingStepBarrier(Traversal.Admin<?, ?> traversal) {
         super(traversal);
     }
 
@@ -39,6 +40,11 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
                 this.result = this.seedSupplier.get();
             }
             while (this.starts.hasNext()) {
+                if (this.resetted) {
+                    this.resetted = false;
+                    this.first = true;
+                    break;
+                }
                 Traverser.Admin<S> s = this.starts.next();
                 this.result = reduce(this.result, s.get());
             }
@@ -65,4 +71,8 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
         throw new IllegalStateException("noop");
     }
 
+    @Override
+    public void reset() {
+        this.resetted = true;
+    }
 }

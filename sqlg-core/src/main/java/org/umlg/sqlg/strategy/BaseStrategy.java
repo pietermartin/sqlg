@@ -78,7 +78,8 @@ public abstract class BaseStrategy {
             SumGlobalStep.class,
             MeanGlobalStep.class,
             CountGlobalStep.class,
-            GroupStep.class
+            GroupStep.class,
+            GroupCountStep.class
     );
 
     static final List<Class> REDUCING_STEPS = Arrays.asList(
@@ -245,6 +246,8 @@ public abstract class BaseStrategy {
                 }
             } else if (step instanceof GroupStep) {
                 return handleGroupStep(this.currentReplacedStep, step);
+            } else if (step instanceof GroupCountStep) {
+                return handleGroupCountStep(this.currentReplacedStep, step);
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
             }
@@ -1344,6 +1347,37 @@ public abstract class BaseStrategy {
         return false;
     }
 
+    private boolean handleGroupCountStep(ReplacedStep<?, ?> replacedStep, Step<?, ?> step) {
+        GroupCountStep<?, ?> groupCountStep = (GroupCountStep<?, ?>) step;
+        List<? extends Traversal.Admin<?, ?>> localChildren = groupCountStep.getLocalChildren();
+        if (localChildren.size() == 1) {
+            List<String> groupByKeys = new ArrayList<>();
+            Traversal.Admin<?, ?> groupByCountTraversal = localChildren.get(0);
+            if (groupByCountTraversal instanceof  ElementValueTraversal) {
+                ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal) groupByCountTraversal;
+                groupByKeys.add(elementValueTraversal.getPropertyKey());
+                replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));
+            } else if (groupByCountTraversal instanceof TokenTraversal) {
+                TokenTraversal<?, ?> tokenTraversal = (TokenTraversal) groupByCountTraversal;
+                if (tokenTraversal.getToken() == T.label) {
+                    groupByKeys.add(T.label.getAccessor());
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+            replacedStep.setGroupBy(groupByKeys);
+            replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(count, groupByKeys));
+            SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, GraphTraversal.Symbols.count, false, SqlgGroupStep.REDUCTION.COUNT);
+            //noinspection unchecked
+            TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private boolean handleGroupStep(ReplacedStep<?, ?> replacedStep, Step<?, ?> step) {
         GroupStep<?, ?, ?> groupStep = (GroupStep<?, ?, ?>) step;
         List<Traversal.Admin<?, ?>> localChildren = groupStep.getLocalChildren();
@@ -1375,13 +1409,29 @@ public abstract class BaseStrategy {
                 return false;
             }
             List<Step> valueTraversalSteps = aggregateOverTraversal.getSteps();
-            if (valueTraversalSteps.size() == 2) {
+            if (valueTraversalSteps.size() == 1) {
+                Step one = valueTraversalSteps.get(0);
+                if (one instanceof CountGlobalStep) {
+                    replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(GraphTraversal.Symbols.count, List.of()));
+                    replacedStep.setGroupBy(groupByKeys);
+                    if (!(groupByKeys.size() == 1 && groupByKeys.contains(T.label.getAccessor()))) {
+                        replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));
+                    }
+                    SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, GraphTraversal.Symbols.count, isPropertiesStep, SqlgGroupStep.REDUCTION.COUNT);
+                    //noinspection unchecked
+                    TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
+                }
+            } else if (valueTraversalSteps.size() == 2) {
                 Step one = valueTraversalSteps.get(0);
                 Step two = valueTraversalSteps.get(1);
                 if (one instanceof PropertiesStep && two instanceof ReducingBarrierStep) {
                     PropertiesStep propertiesStep = (PropertiesStep) one;
                     List<String> aggregationFunctionProperty = getRestrictedProperties(propertiesStep);
                     if (aggregationFunctionProperty == null) {
+                        return false;
+                    }
+                    if (two instanceof CountGlobalStep) {
+                        //count should not be used after a property traversal
                         return false;
                     }
                     handlePropertiesStep(replacedStep, propertiesStep, aggregateOverTraversal);
@@ -1393,18 +1443,23 @@ public abstract class BaseStrategy {
                     }
                     replacedStep.setGroupBy(groupByKeys);
 
+                    final SqlgGroupStep.REDUCTION reduction;
                     if (two instanceof MaxGlobalStep) {
                         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(GraphTraversal.Symbols.max, aggregationFunctionProperty));
+                        reduction = SqlgGroupStep.REDUCTION.MAX;
                     } else if (two instanceof MinGlobalStep) {
                         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(GraphTraversal.Symbols.min, aggregationFunctionProperty));
+                        reduction = SqlgGroupStep.REDUCTION.MIN;
                     } else if (two instanceof SumGlobalStep) {
                         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(sum, aggregationFunctionProperty));
+                        reduction = SqlgGroupStep.REDUCTION.SUM;
                     } else if (two instanceof MeanGlobalStep) {
                         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of("avg", aggregationFunctionProperty));
+                        reduction = SqlgGroupStep.REDUCTION.MEAN;
                     } else {
                         throw new IllegalStateException(String.format("Unhandled group by aggregation %s", two.getClass().getSimpleName()));
                     }
-                    SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, aggregationFunctionProperty.get(0), isPropertiesStep, two instanceof MeanGlobalStep);
+                    SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, aggregationFunctionProperty.get(0), isPropertiesStep, reduction);
                     //noinspection unchecked
                     TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
                 }

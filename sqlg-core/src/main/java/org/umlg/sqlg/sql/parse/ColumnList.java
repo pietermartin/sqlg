@@ -458,12 +458,8 @@ public class ColumnList {
          * to string using provided builder
          */
         String toSelectString(boolean partOfDuplicateQuery, String alias) {
-            if (this.aggregateFunction != null && this.aggregateFunction.equals(GraphTraversal.Symbols.count)) {
-                if (!partOfDuplicateQuery) {
-                    return "COUNT(1)";
-                } else {
-                    return null;
-                }
+            if (partOfDuplicateQuery && this.aggregateFunction != null && this.aggregateFunction.equals(GraphTraversal.Symbols.count)) {
+                return null;
             } else {
                 return ColumnList.this.sqlgGraph.getSqlDialect().toSelectString(partOfDuplicateQuery, this, alias);
             }

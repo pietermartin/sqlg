@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test.aggregate;
+package org.umlg.sqlg.test.reducing;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

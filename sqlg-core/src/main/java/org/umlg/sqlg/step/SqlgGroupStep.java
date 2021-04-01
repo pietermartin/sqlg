@@ -3,10 +3,12 @@ package org.umlg.sqlg.step;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.umlg.sqlg.step.barrier.SqlgReducingStepBarrier;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.traverser.SqlgGroupByTraverser;
 
@@ -16,24 +18,107 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/11/24
  */
-public class SqlgGroupStep<K, V> extends SqlgAbstractStep<SqlgElement, Map<K, V>> {
+public class SqlgGroupStep<K, V> extends SqlgReducingStepBarrier<SqlgElement, Map<K, V>> {
 
     private final List<String> groupBy;
     private final String aggregateOn;
     private final boolean isPropertiesStep;
     private boolean resetted = false;
-    private final boolean isMean;
+    private final REDUCTION reduction;
 
-    public SqlgGroupStep(Traversal.Admin traversal, List<String> groupBy, String aggregateOn, boolean isPropertiesStep, boolean isMean) {
+    public enum REDUCTION {
+        MIN,
+        MAX,
+        SUM,
+        MEAN,
+        COUNT
+    }
+
+    public SqlgGroupStep(Traversal.Admin traversal, List<String> groupBy, String aggregateOn, boolean isPropertiesStep, REDUCTION reduction) {
         super(traversal);
         this.groupBy = groupBy;
         this.aggregateOn = aggregateOn;
         this.isPropertiesStep = isPropertiesStep;
-        this.isMean = isMean;
+        this.reduction = reduction;
+        setSeedSupplier(HashMap::new);
     }
 
     @Override
-    protected Traverser.Admin<Map<K, V>> processNextStart() throws NoSuchElementException {
+    protected Traverser.Admin<Map<K, V>> produceFinalResult(Map<K, V> result) {
+        if (this.reduction == REDUCTION.MEAN) {
+            for (K k : result.keySet()) {
+                result.put(k, (V) ((MeanGlobalStep.MeanNumber)result.get(k)).getFinal());
+            }
+        }
+        return new SqlgGroupByTraverser<>(result);
+    }
+
+    @Override
+    public Map<K, V> reduce(Map<K, V> end, SqlgElement sqlgElement) {
+        V value;
+        if (this.reduction == REDUCTION.MEAN) {
+            Pair<Number, Long> avgAndWeight = sqlgElement.value(this.aggregateOn);
+            value = (V) new MeanGlobalStep.MeanNumber(avgAndWeight.getLeft(), avgAndWeight.getRight());
+        } else {
+            value = sqlgElement.value(this.aggregateOn);
+        }
+        if (this.groupBy.size() == 1) {
+            if (this.groupBy.get(0).equals(T.label.getAccessor())) {
+                Property<?> property = sqlgElement.property(this.aggregateOn);
+                if (property.isPresent()) {
+                    end.put((K) sqlgElement.label(), value);
+                } else {
+                    end.put((K) sqlgElement.label(), (V) Integer.valueOf(1));
+                }
+            } else {
+                K key = sqlgElement.value(this.groupBy.get(0));
+                V currentValue = end.get(key);
+                if (currentValue == null) {
+                    end.put(key, value);
+                } else {
+                    switch (this.reduction) {
+                        case MIN:
+                            if ((Integer)value < (Integer)currentValue) {
+                                end.put(key, value);
+                            }
+                            break;
+                        case MAX:
+                            if ((Integer)value > (Integer)currentValue) {
+                                end.put(key, value);
+                            }
+                            break;
+                        case SUM:
+                            Long sum = (Long) currentValue + (Long) value;
+                            end.put(key, (V)sum);
+                            break;
+                        case MEAN:
+                            MeanGlobalStep.MeanNumber current = (MeanGlobalStep.MeanNumber)currentValue;
+                            MeanGlobalStep.MeanNumber v = (MeanGlobalStep.MeanNumber)value;
+                            MeanGlobalStep.MeanNumber mean = current.add(v);
+                            end.put(key, (V)mean);
+                            break;
+                        case COUNT:
+                            sum = (Long) currentValue + (Long) value;
+                            end.put(key, (V)sum);
+                    }
+                }
+            }
+        } else if (this.isPropertiesStep) {
+            end.put((K) IteratorUtils.list(sqlgElement.values(this.groupBy.toArray(new String[]{}))), value);
+        } else {
+            Map<String, List<?>> keyMap = new HashMap<>();
+            for (String s : this.groupBy) {
+                List<?> keyValues = new ArrayList<>();
+                keyValues.add(sqlgElement.value(s));
+                keyMap.put(s, keyValues);
+            }
+            end.put((K) keyMap, value);
+        }
+        return end;
+    }
+
+//    @Override
+    protected Traverser.Admin<Map<K, V>> processNextStartXXX() throws NoSuchElementException {
         SqlgGroupByTraverser<K, V> end = new SqlgGroupByTraverser<>(new HashMap<>());
         while (this.starts.hasNext()) {
             if (this.resetted) {
@@ -43,9 +128,10 @@ public class SqlgGroupStep<K, V> extends SqlgAbstractStep<SqlgElement, Map<K, V>
             final Traverser.Admin<SqlgElement> start = this.starts.next();
             SqlgElement sqlgElement = start.get();
             V value;
-            if (this.isMean) {
+            if (this.reduction == REDUCTION.MEAN) {
                 Pair<Number, Long> avgAndWeight = sqlgElement.value(this.aggregateOn);
-                value = (V) avgAndWeight.getLeft();
+                value = (V) new MeanGlobalStep.MeanNumber(avgAndWeight.getLeft(), avgAndWeight.getRight());
+//                value = (V) avgAndWeight.getLeft();
             } else {
                 value = sqlgElement.value(this.aggregateOn);
             }
@@ -58,7 +144,36 @@ public class SqlgGroupStep<K, V> extends SqlgAbstractStep<SqlgElement, Map<K, V>
                         end.put((K) sqlgElement.label(), (V) Integer.valueOf(1));
                     }
                 } else {
-                    end.put(sqlgElement.value(this.groupBy.get(0)), value);
+                    K key = sqlgElement.value(this.groupBy.get(0));
+                    V currentValue = end.get().get(key);
+                    if (currentValue == null) {
+                        end.put(key, value);
+                    } else {
+                        switch (this.reduction) {
+                            case MIN:
+                                if ((Integer)currentValue < (Integer)value) {
+                                    end.put(key, currentValue);
+                                }
+                                break;
+                            case MAX:
+                                if ((Integer)currentValue > (Integer)value) {
+                                    end.put(key, currentValue);
+                                }
+                                break;
+                            case SUM:
+                                Long sum = (Long) currentValue + (Long) value;
+                                end.put(key, (V)sum);
+                                break;
+                            case MEAN:
+                                MeanGlobalStep.MeanNumber current = (MeanGlobalStep.MeanNumber)currentValue;
+                                MeanGlobalStep.MeanNumber v = (MeanGlobalStep.MeanNumber)value;
+                                MeanGlobalStep.MeanNumber mean = current.add(v);
+                                end.put(key, (V)mean);
+                                break;
+                            case COUNT:
+                                throw new RuntimeException("TODO");
+                        }
+                    }
                 }
             } else if (this.isPropertiesStep) {
                 end.put((K) IteratorUtils.list(sqlgElement.values(this.groupBy.toArray(new String[]{}))), value);
@@ -80,6 +195,7 @@ public class SqlgGroupStep<K, V> extends SqlgAbstractStep<SqlgElement, Map<K, V>
 
     @Override
     public void reset() {
+        super.reset();
         this.resetted = true;
     }
 
