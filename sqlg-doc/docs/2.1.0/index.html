@@ -490,6 +490,21 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_range_step">10.1.11. Range Step</a></li>
 <li><a href="#_limit_step">10.1.12. Limit Step</a></li>
 <li><a href="#_drop_step">10.1.13. Drop Step</a></li>
+<li><a href="#_reducing_steps">10.1.14. Reducing Steps</a>
+<ul class="sectlevel4">
+<li><a href="#_min_step">Min Step</a></li>
+<li><a href="#_max_step">Max Step</a></li>
+<li><a href="#_sum_step">Sum Step</a></li>
+<li><a href="#_mean_step">Mean Step</a></li>
+<li><a href="#_count_step">Count Step</a></li>
+<li><a href="#_group_by">Group By</a></li>
+<li><a href="#_group_by_and_min_step">Group By and Min Step</a></li>
+<li><a href="#_group_by_and_max_step">Group By and Max Step</a></li>
+<li><a href="#_group_by_and_sum_step">Group By and Sum Step</a></li>
+<li><a href="#_group_by_and_mean_step">Group By and Mean Step</a></li>
+<li><a href="#_group_by_with_join">Group By with join</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#_optimization_strategy_2">10.2. Optimization (strategy 2)</a>
@@ -1795,10 +1810,6 @@ Multiple JVM support has not been implemented for MariaDB and MSSqlServer.
 <p>Postgresql&#8217;s <a href="https://www.postgresql.org/docs/current/static/sql-notify.html"><strong>notify</strong></a> mechanism is used to distribute the cached schema
 across multiple JVMs.</p>
 </div>
-<div class="paragraph">
-<p>Sqlg uses Postgresql&#8217;s <a href="https://www.postgresql.org/docs/current/static/explicit-locking.html">explicit locking</a> to create a global
-lock to prevent schema creation commands from dead locking the database.</p>
-</div>
 </div>
 </div>
 <div class="sect1">
@@ -3071,6 +3082,586 @@ SET CONSTRAINTS ALL IMMEDIATE <b class="conum">(4)</b></code></pre>
 &lt;4. Enable the foreign key constraints.</p>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_reducing_steps">10.1.14. Reducing Steps</h4>
+<div class="paragraph">
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#a-note-on-barrier-steps"><code>Reducing Steps</code></a></p>
+</div>
+<div class="sect4">
+<h5 id="_min_step">Min Step</h5>
+<div class="paragraph">
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#min-step"><code>Min Step</code></a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testMin() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Integer&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").min();
+    Assert.assertEquals(0, traversal.next(), 0);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-min-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MinGlobalStep]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-min-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgMinGlobalStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	MIN("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_max_step">Max Step</h5>
+<div class="paragraph">
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#max-step"><code>Max Step</code></a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testMax() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0, "x", 1);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Integer&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").max();
+    printTraversalForm(traversal);
+    Assert.assertEquals(3, traversal.next(), 0);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-max-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MaxGlobalStep]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-max-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgMaxGlobalStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	MAX("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_sum_step">Sum Step</h5>
+<div class="paragraph">
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#sum-step"><code>Sum Step</code></a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testSum() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Long&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").sum();
+    printTraversalForm(traversal);
+    Assert.assertEquals(6, traversal.next(), 0L);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-sum-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), SumGlobalStep]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-sum-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgSumGlobalStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	SUM("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_mean_step">Mean Step</h5>
+<div class="paragraph">
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#mean-step"><code>Mean Step</code></a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testMean() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+    DefaultTraversal&lt;Vertex, Double&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").mean();
+    printTraversalForm(traversal);
+    Double d = traversal.next();
+    Assert.assertEquals(1.5, d, 0D);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-mean-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MeanGlobalStep]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-mean-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgAvgGlobalStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	AVG("public"."V_Person"."age") AS "alias1", COUNT(1) AS "alias1_weight"
+FROM
+	"public"."V_Person"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_count_step">Count Step</h5>
+<div class="paragraph">
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#count-step"><code>Count Step</code></a></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testCount() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+    this.sqlgGraph.tx().commit();
+    DefaultTraversal&lt;Vertex, Long&gt; traversal = (DefaultTraversal&lt;Vertex, Long&gt;) this.sqlgGraph.traversal().V().count();
+    printTraversalForm(traversal);
+    Assert.assertEquals(4, traversal.next(), 0);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-count-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), CountGlobalStep]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-count-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([count],value), SqlgCountGlobalStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	COUNT(1)
+FROM
+	"public"."V_A"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_group_by">Group By</h5>
+<div class="paragraph">
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#group-step"><code>Group Step</code></a></p>
+</div>
+<div class="paragraph">
+<p>Sqlg optimizes <code>group</code> steps with sql&#8217;s <code>group by</code> clause.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_group_by_and_min_step">Group By and Min Step</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testGroupOverOnePropertyMin() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Map&lt;String, Integer&gt;&gt; traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .&lt;String, Integer&gt;group().by("name").by(__.values("age").min());
+    printTraversalForm(traversal);
+    Map&lt;String, Integer&gt; result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(1, result.get("A"), 0);
+    Assert.assertEquals(2, result.get("B"), 0);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), MinGlobalStep])]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-count-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."name" AS "alias1",
+	MIN("public"."V_Person"."age") AS "alias2"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_group_by_and_max_step">Group By and Max Step</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">    @Test
+    public void testGroupByLabelMax() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 10);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 20);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "C", "age", 100);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "D", "age", 40);
+
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "A", "age", 10);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "B", "age", 200);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "C", "age", 30);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "D", "age", 40);
+
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal&lt;Vertex, Map&lt;String, Integer&gt;&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().&lt;String, Integer&gt;group().by(T.label).by(__.values("age").max());
+        printTraversalForm(traversal);
+
+        Map&lt;String, Integer&gt; result = traversal.next();
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, result.size());
+        Assert.assertTrue(result.containsKey("Person"));
+        Assert.assertTrue(result.containsKey("Dog"));
+        Assert.assertEquals(100, result.get("Person"), 0);
+        Assert.assertEquals(200, result.get("Dog"), 0);
+    }</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), GroupStep(label,[PropertiesStep([age],value), MaxGlobalStep]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-count-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	MAX("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+
+SELECT
+	MAX("public"."V_Dog"."age") AS "alias1"
+FROM
+	"public"."V_Dog"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testGroupOverTwoPropertiesWithValues() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "surname", "C", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "surname", "D", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "surname", "C", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "surname", "E", "age", 4);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "C", "surname", "E", "age", 5);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Map&lt;List&lt;String&gt;, Integer&gt;&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person")
+            .&lt;List&lt;String&gt;, Integer&gt;group()
+            .by(__.values("name", "surname").fold())
+            .by(__.values("age").max());
+
+    printTraversalForm(traversal);
+
+    Map&lt;List&lt;String&gt;, Integer&gt; result = traversal.next();
+    Assert.assertTrue(result.containsKey(Arrays.asList("A", "C")) || result.containsKey(Arrays.asList("C", "A")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("B", "D")) || result.containsKey(Arrays.asList("D", "B")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("B", "E")) || result.containsKey(Arrays.asList("E", "B")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("C", "E")) || result.containsKey(Arrays.asList("E", "C")));
+    Assert.assertEquals(4, result.size());
+    Assert.assertFalse(traversal.hasNext());
+
+    if (result.containsKey(Arrays.asList("A", "C"))) {
+        Assert.assertEquals(3, result.get(Arrays.asList("A", "C")), 0);
+    } else {
+        Assert.assertEquals(3, result.get(Arrays.asList("C", "A")), 0);
+    }
+    if (result.containsKey(Arrays.asList("B", "D"))) {
+        Assert.assertEquals(2, result.get(Arrays.asList("B", "D")), 0);
+    } else {
+        Assert.assertEquals(2, result.get(Arrays.asList("D", "B")), 0);
+    }
+    if (result.containsKey(Arrays.asList("B", "E"))) {
+        Assert.assertEquals(4, result.get(Arrays.asList("B", "E")), 0);
+    } else {
+        Assert.assertEquals(4, result.get(Arrays.asList("E", "B")), 0);
+    }
+    if (result.containsKey(Arrays.asList("C", "E"))) {
+        Assert.assertEquals(5, result.get(Arrays.asList("C", "E")), 0);
+    } else {
+        Assert.assertEquals(5, result.get(Arrays.asList("E", "C")), 0);
+    }
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep([PropertiesStep([name, surname],value), FoldStep],[PropertiesStep([age],value), MaxGlobalStep])]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-count-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."surname" AS "alias1",
+	"public"."V_Person"."name" AS "alias2",
+	MAX("public"."V_Person"."age") AS "alias3"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name",
+	"public"."V_Person"."surname</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_group_by_and_sum_step">Group By and Sum Step</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testGroupOverOnePropertySum() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Map&lt;String, Long&gt;&gt; traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .&lt;String, Long&gt;group().by("name").by(__.values("age").sum());
+    printTraversalForm(traversal);
+    Map&lt;String, Long&gt; result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(4, result.get("A"), 0L);
+    Assert.assertEquals(6, result.get("B"), 0L);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), SumGlobalStep])]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-count-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."name" AS "alias1",
+	SUM("public"."V_Person"."age") AS "alias2"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_group_by_and_mean_step">Group By and Mean Step</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testGroupOverOnePropertyMean() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Map&lt;String, Double&gt;&gt; traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .&lt;String, Double&gt;group().by("name").by(__.values("age").mean());
+    printTraversalForm(traversal);
+    Map&lt;String, Double&gt; result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(2.0, result.get("A"), 0D);
+    Assert.assertEquals(3.0, result.get("B"), 0D);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), MeanGlobalStep])]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-count-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Person"."name" AS "alias1",
+	AVG("public"."V_Person"."age") AS "alias2", COUNT(1) AS "alias2_weight"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_group_by_with_join">Group By with join</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testGroupOverOnePropertyWithJoin() {
+    Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
+    Vertex address1 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 2);
+    Vertex address2 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 4);
+    Vertex address3 = this.sqlgGraph.addVertex(T.label, "Address", "name", "C", "year", 6);
+    Vertex address4 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 8);
+    Vertex address5 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 7);
+    Vertex address6 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 6);
+    person.addEdge("livesAt", address1);
+    person.addEdge("livesAt", address2);
+    person.addEdge("livesAt", address3);
+    person.addEdge("livesAt", address4);
+    person.addEdge("livesAt", address5);
+    person.addEdge("livesAt", address6);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Map&lt;String, Integer&gt;&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .out("livesAt")
+            .&lt;String, Integer&gt;group()
+            .by("name")
+            .by(__.values("year").max());
+
+    printTraversalForm(traversal);
+
+    Map&lt;String, Integer&gt; result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertEquals(3, result.size());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("C"));
+    Assert.assertTrue(result.containsKey("D"));
+    Assert.assertEquals(4, result.get("A"), 0);
+    Assert.assertEquals(6, result.get("C"), 0);
+    Assert.assertEquals(8, result.get("D"), 0);
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), VertexStep(OUT,[livesAt],vertex), GroupStep(value(name),[PropertiesStep([year],value), MaxGlobalStep])]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-count-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	MAX("public"."V_Address"."year") AS "alias1",
+	"public"."V_Address"."name" AS "alias2"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_livesAt" ON "public"."V_Person"."ID" = "public"."E_livesAt"."public.Person__O" INNER JOIN
+	"public"."V_Address" ON "public"."E_livesAt"."public.Address__I" = "public"."V_Address"."ID"
+GROUP BY
+	"public"."V_Address"."name"</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -5035,7 +5626,7 @@ public void testPartitioningList() {
 <div id="footer">
 <div id="footer-text">
 Version 2.1.0<br>
-Last updated 2021-02-13 11:09:08 SAST
+Last updated 2021-03-22 11:13:06 SAST
 </div>
 </div>
 <script src="tocbot.js"></script>
