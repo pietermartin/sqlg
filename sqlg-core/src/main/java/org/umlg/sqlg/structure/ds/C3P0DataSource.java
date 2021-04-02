@@ -117,7 +117,7 @@ public final class C3P0DataSource implements SqlgDataSource {
     @Override
     public String getPoolStatsAsJson() {
         try {
-            String json = "[" +
+            return "[" +
                     "{\"jdbcUrl\":\"" + jdbcUrl + "\"," +
                     "\"jndi\": false," +
                     "\"numConnections\":\"" + dss.getNumConnections() + "\"," +
@@ -129,7 +129,6 @@ public final class C3P0DataSource implements SqlgDataSource {
                     "\"numMaxIdleTime\":\"" + dss.getMaxIdleTime() + "\"" +
                     "}" +
                     "]";
-            return json;
         } catch (Exception e) {
             throw new IllegalStateException("Json generation failed", e);
         }
