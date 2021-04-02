@@ -1,8 +1,9 @@
 package org.umlg.sqlg.structure;
 
-import javax.sql.DataSource;
-
+import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+
+import javax.sql.DataSource;
 
 public interface SqlgDataSource {
     DataSource getDatasource();
@@ -21,4 +22,29 @@ public interface SqlgDataSource {
     }
 
     String getPoolStatsAsJson();
+
+    static boolean isPostgres(Configuration configuration) {
+        return configuration.getString("jdbc.url").contains("postgresql");
+    }
+
+    static boolean isMsSqlServer(Configuration configuration) {
+        return configuration.getString("jdbc.url").contains("sqlserver");
+    }
+
+    static boolean isHsqldb(Configuration configuration) {
+        return configuration.getString("jdbc.url").contains("hsqldb");
+    }
+
+    static boolean isH2(Configuration configuration) {
+        return configuration.getString("jdbc.url").contains("h2");
+    }
+
+    static boolean isMariaDb(Configuration configuration) {
+        return configuration.getString("jdbc.url").contains("mariadb");
+    }
+
+    static boolean isMysql(Configuration configuration) {
+        return configuration.getString("jdbc.url").contains("mysql");
+    }
+
 }

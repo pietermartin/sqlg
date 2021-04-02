@@ -30,6 +30,7 @@ import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
+import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -137,27 +138,27 @@ public abstract class BaseTest {
     }
 
     protected static boolean isPostgres() {
-        return configuration.getString("jdbc.url").contains("postgresql");
+        return SqlgDataSource.isPostgres(configuration);
     }
 
     protected static boolean isMsSqlServer() {
-        return configuration.getString("jdbc.url").contains("sqlserver");
+        return SqlgDataSource.isMsSqlServer(configuration);
     }
 
     protected static boolean isHsqldb() {
-        return configuration.getString("jdbc.url").contains("hsqldb");
+        return SqlgDataSource.isHsqldb(configuration);
     }
 
     protected static boolean isH2() {
-        return configuration.getString("jdbc.url").contains("h2");
+        return SqlgDataSource.isH2(configuration);
     }
 
     protected static boolean isMariaDb() {
-        return configuration.getString("jdbc.url").contains("mariadb");
+        return SqlgDataSource.isMariaDb(configuration);
     }
 
     protected static boolean isMysql() {
-        return configuration.getString("jdbc.url").contains("mysql");
+        return SqlgDataSource.isMysql(configuration);
     }
 
     /**

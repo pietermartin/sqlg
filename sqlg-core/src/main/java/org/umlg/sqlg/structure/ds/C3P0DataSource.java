@@ -49,14 +49,21 @@ public final class C3P0DataSource implements SqlgDataSource {
         comboPooledDataSource.setMaxIdleTime(configuration.getInt("maxIdleTime", 3600));
         comboPooledDataSource.setAcquireRetryAttempts(configuration.getInt("jdbc.acquireRetryAttempts", 30));
         comboPooledDataSource.setForceUseNamedDriverClass(true);
+        if (SqlgDataSource.isPostgres(configuration) || SqlgDataSource.isHsqldb(configuration) || SqlgDataSource.isH2(configuration)) {
+            comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("/") + 1));
+        } else if (SqlgDataSource.isMariaDb(configuration)) {
+            comboPooledDataSource.setDataSourceName("mariadb");
+        } else if (SqlgDataSource.isMysql(configuration)) {
+            comboPooledDataSource.setDataSourceName("mysql");
+        } else if (SqlgDataSource.isMsSqlServer(configuration)) {
+            comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("databaseName=") + "databaseName=".length()));
+        }
         if (!StringUtils.isEmpty(username)) {
             comboPooledDataSource.setUser(username);
         }
-
         if (!StringUtils.isEmpty(password)) {
             comboPooledDataSource.setPassword(password);
         }
-
         return new C3P0DataSource(jdbcUrl, comboPooledDataSource, sqlDialect);
     }
 
@@ -110,30 +117,19 @@ public final class C3P0DataSource implements SqlgDataSource {
     @Override
     public String getPoolStatsAsJson() {
         try {
-            StringBuilder json = new StringBuilder();
-            json.append("[");
-            json.append("{\"jdbcUrl\":\"").append(jdbcUrl).append("\",");
-
-            json.append("\"jndi\": false,");
-            json.append("\"numConnections\":\"")
-                    .append(String.valueOf(dss.getNumConnections())).append("\",");
-            json.append("\"numBusyConnections\":\"")
-                    .append(String.valueOf(dss.getNumConnections())).append("\",");
-            json.append("\"numIdleConnections\":\"")
-                    .append(String.valueOf(dss.getNumConnections())).append("\",");
-            json.append("\"numUnclosedOrphanedConnections\":\"")
-                    .append(String.valueOf(dss.getNumConnections())).append("\",");
-            json.append("\"numMinPoolSize\":\"").append(String.valueOf(dss.getMinPoolSize()))
-                    .append("\",");
-            json.append("\"numMaxPoolSize\":\"").append(String.valueOf(dss.getMaxPoolSize()))
-                    .append("\",");
-            json.append("\"numMaxIdleTime\":\"").append(String.valueOf(dss.getMaxIdleTime()))
-                    .append("\"");
-
-            json.append("}");
-
-            json.append("]");
-            return json.toString();
+            String json = "[" +
+                    "{\"jdbcUrl\":\"" + jdbcUrl + "\"," +
+                    "\"jndi\": false," +
+                    "\"numConnections\":\"" + dss.getNumConnections() + "\"," +
+                    "\"numBusyConnections\":\"" + dss.getNumConnections() + "\"," +
+                    "\"numIdleConnections\":\"" + dss.getNumConnections() + "\"," +
+                    "\"numUnclosedOrphanedConnections\":\"" + dss.getNumConnections() + "\"," +
+                    "\"numMinPoolSize\":\"" + dss.getMinPoolSize() + "\"," +
+                    "\"numMaxPoolSize\":\"" + dss.getMaxPoolSize() + "\"," +
+                    "\"numMaxIdleTime\":\"" + dss.getMaxIdleTime() + "\"" +
+                    "}" +
+                    "]";
+            return json;
         } catch (Exception e) {
             throw new IllegalStateException("Json generation failed", e);
         }
@@ -204,5 +200,4 @@ public final class C3P0DataSource implements SqlgDataSource {
      "vetoableChangeListeners"
      }));
      */
-
 }
