@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 1.5.7.1">
+<meta name="generator" content="Asciidoctor 2.0.12">
 <meta name="description" content="Sqlg's documentation">
 <meta name="keywords" content="Sqlg, TinkerPop, Gremlin, Graph, Database">
 <meta name="author" content="Pieter Martin">
@@ -160,7 +160,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #toc ul.sectlevel0>li>a{font-style:italic}
 #toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
 #toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
-#toc li{line-height:1.3334;margin-top:.3334em}
+#toc li{line-height:1.3334;margin-top:.3334em;list-style:none}
 #toc a{text-decoration:none}
 #toc a:active{text-decoration:underline}
 #toctitle{color:#7a2518;font-size:1.2em}
@@ -419,6 +419,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .show-for-print{display:inherit!important}}
 
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/github.min.css">
 </head>
 <body class="book toc2 toc-left">
 <div id="header">
@@ -426,7 +427,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="details">
 <span id="author" class="author">Pieter Martin</span><br>
 <span id="revnumber">version 2.1.0,</span>
-<span id="revdate">Febuary 2021</span>
+<span id="revdate">April 2021</span>
 <br><span id="revremark"></span>
 </div>
 <div id="toc" class="toc2">
@@ -502,7 +503,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_group_by_and_max_step">Group By and Max Step</a></li>
 <li><a href="#_group_by_and_sum_step">Group By and Sum Step</a></li>
 <li><a href="#_group_by_and_mean_step">Group By and Mean Step</a></li>
-<li><a href="#_group_by_with_join">Group By with join</a></li>
+<li><a href="#_group_by_and_count_step">Group By and Count Step</a></li>
 </ul>
 </li>
 </ul>
@@ -539,9 +540,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_streaming_with_lock_batch_mode">11.4. Streaming with lock batch mode</a></li>
 </ul>
 </li>
-<li><a href="#_topology">12. Topology</a>
+<li><a href="#anchor-topology">12. Topology</a>
 <ul class="sectlevel2">
 <li><a href="#_topology_eager_creation">12.1. Topology eager creation</a></li>
+<li><a href="#anchor-user-supplied-identifiers">12.2. User supplied identifiers</a></li>
 </ul>
 </li>
 <li><a href="#_postgresql_partitioning">13. Postgresql Partitioning</a></li>
@@ -737,7 +739,7 @@ Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and Mari
 <div class="title">Note</div>
 </td>
 <td class="content">
-Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is explained below.
+Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is explained <a href="#anchor-user-supplied-identifiers">below</a>.
 </td>
 </tr>
 </table>
@@ -961,7 +963,7 @@ public void useAsPerNormal() {
     Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
     Vertex address = this.sqlgGraph.addVertex(T.label, "Address", "street", "13th");
     person.addEdge("livesAt", address, "since", LocalDate.of(2010, 1, 21));
-    this.sqlgGraph.tx().commit(); <b class="conum">(1)</b>
+    this.sqlgGraph.tx().commit(); # <b class="conum">(1)</b>
     List&lt;Vertex&gt; addresses = this.sqlgGraph.traversal().V().hasLabel("Person").out("livesAt").toList();
     assertEquals(1, addresses.size());
 }</code></pre>
@@ -1395,9 +1397,21 @@ can be used.</p>
 <div class="title">Note</div>
 </td>
 <td class="content">
-    <code>sqlg.properties</code> <code>implement.foreign.keys = false</code><br>
-    Edge foreign keys have a significant impact on performance.<br>
-    Edge foreign keys are enabled by default.
+By default, Sqlg will use an auto increment <code>ID</code> <code>bigint</code> for the primary key. You can however use the <a href="#anchor-topology">topology</a> interface to define which properties to use as the primary key.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<code>sqlg.properties</code> <code>implement.foreign.keys = false</code><br>
+Edge foreign keys have a significant impact on performance.<br>
+Edge foreign keys are enabled by default.
 </td>
 </tr>
 </table>
@@ -1450,14 +1464,14 @@ is the <code>public</code> schema.</p>
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
 public void testElementsInSchema() {
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Manager", "name", "john"); <b class="conum">(1)</b>
-    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.House", "name", "palace1"); <b class="conum">(2)</b>
-    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.Car", "model", "corrola"); <b class="conum">(3)</b>
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Manager", "name", "john"); # <b class="conum">(1)</b>
+    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.House", "name", "palace1"); # <b class="conum">(2)</b>
+    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.Car", "model", "corrola"); # <b class="conum">(3)</b>
     palace1.addEdge("managedBy", john);
     corrola.addEdge("owner", john);
     this.sqlgGraph.tx().commit();
-    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Manager").count().next().intValue()); <b class="conum">(4)</b>
-    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("House").count().next().intValue()); <b class="conum">(5)</b>
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Manager").count().next().intValue()); # <b class="conum">(4)</b>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("House").count().next().intValue()); # <b class="conum">(5)</b>
     assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("continent.House").count().next().intValue()); <b class="conum">(6)</b>
     assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Car").count().next().intValue());
     assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("fleet.Car").count().next().intValue());
@@ -1521,9 +1535,9 @@ public void testEdgeAcrossSchema() {
     a.addEdge("specialEdge", b);
     b.addEdge("specialEdge", c);
     this.sqlgGraph.tx().commit();
-    assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("specialEdge").count().next().intValue()); <b class="conum">(1)</b>
-    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.specialEdge").count().next().intValue()); <b class="conum">(2)</b>
-    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("B.specialEdge").count().next().intValue()); <b class="conum">(3)</b>
+    assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("specialEdge").count().next().intValue()); # <b class="conum">(1)</b>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.specialEdge").count().next().intValue()); # <b class="conum">(2)</b>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("B.specialEdge").count().next().intValue()); # <b class="conum">(3)</b>
 }</code></pre>
 </div>
 </div>
@@ -1561,17 +1575,17 @@ public void testEdgeAcrossSchema() {
 public void testIndex() {
     VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap&lt;String, PropertyType&gt;() {{
         put("name", PropertyType.STRING);
-    }}); <b class="conum">(1)</b>
+    }}); # <b class="conum">(1)</b>
     Optional&lt;PropertyColumn&gt; namePropertyOptional = personVertexLabel.getProperty("name");
     assertTrue(namePropertyOptional.isPresent());
     Index index = personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get())); $ <b class="conum">(2)</b>
-    this.sqlgGraph.tx().commit(); <b class="conum">(3)</b>
+    this.sqlgGraph.tx().commit(); # <b class="conum">(3)</b>
 
     this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
     List&lt;Vertex&gt; johns = this.sqlgGraph.traversal().V()
             .hasLabel("Person")
             .has("name", "John")
-            .toList(); <b class="conum">(4)</b>
+            .toList(); # <b class="conum">(4)</b>
 
     /* This will execute the following sql.
     SELECT
@@ -1581,7 +1595,7 @@ public void testIndex() {
         "public"."V_Person"
     WHERE
         ( "public"."V_Person"."name" = ?)
-    */ <b class="conum">(5)</b>
+    */ # <b class="conum">(5)</b>
 
     assertEquals(1, johns.size());
 }</code></pre>
@@ -1622,8 +1636,8 @@ public void testCompositeIndex() {
     VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap&lt;String, PropertyType&gt;() {{
         put("firstName", PropertyType.STRING);
         put("lastName", PropertyType.STRING);
-    }}); <b class="conum">(1)</b>
-    personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList&lt;&gt;(personVertexLabel.getProperties().values())); <b class="conum">(2)</b>
+    }}); # <b class="conum">(1)</b>
+    personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList&lt;&gt;(personVertexLabel.getProperties().values())); # <b class="conum">(2)</b>
     this.sqlgGraph.tx().commit();
     this.sqlgGraph.addVertex(T.label, "Person", "firstName", "John", "lastName", "Smith");
     List&lt;Vertex&gt; johnSmiths = this.sqlgGraph.traversal().V()
@@ -1719,21 +1733,21 @@ These tables are kept in the <code>gui_schema</code></p>
 public void testPersonAndDogDoNotHaveTheSameName() {
     Map&lt;String, PropertyType&gt; properties = new HashMap&lt;String, PropertyType&gt;() {{
         put("name", PropertyType.STRING);
-    }}; <b class="conum">(1)</b>
-    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties); <b class="conum">(2)</b>
-    VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Dog", properties); <b class="conum">(3)</b>
-    PropertyColumn personName = personVertexLabel.getProperty("name").get(); <b class="conum">(4)</b>
-    PropertyColumn dogName = dogVertexLabel.getProperty("name").get(); <b class="conum">(5)</b>
+    }}; # <b class="conum">(1)</b>
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties); # <b class="conum">(2)</b>
+    VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Dog", properties); # <b class="conum">(3)</b>
+    PropertyColumn personName = personVertexLabel.getProperty("name").get(); # <b class="conum">(4)</b>
+    PropertyColumn dogName = dogVertexLabel.getProperty("name").get(); # <b class="conum">(5)</b>
     this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet&lt;PropertyColumn&gt;() {{
         add(personName);
         add(dogName);
-    }}); <b class="conum">(6)</b>
+    }}); # <b class="conum">(6)</b>
     this.sqlgGraph.tx().commit();
 
-    this.sqlgGraph.addVertex(T.label, "Person", "name", "Tyson"); <b class="conum">(7)</b>
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "Tyson"); # <b class="conum">(7)</b>
     try {
         //This will fail
-        this.sqlgGraph.addVertex(T.label, "Dog", "name", "Tyson"); <b class="conum">(8)</b>
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "Tyson"); # <b class="conum">(8)</b>
         fail("Duplicate key violation suppose to prevent this from executing");
     } catch (RuntimeException e) {
         //swallow
@@ -1906,6 +1920,9 @@ Turn sql logging on by setting <code>log4j.logger.org.umlg.sqlg=debug</code>
 </li>
 <li>
 <p><a href="#_drop_step">Drop Step</a></p>
+</li>
+<li>
+<p><a href="#_reducing_steps">Reducing Steps</a></p>
 </li>
 </ul>
 </div>
@@ -3079,7 +3096,7 @@ SET CONSTRAINTS ALL IMMEDIATE <b class="conum">(4)</b></code></pre>
 </li>
 <li>
 <p>Delete the edges.
-&lt;4. Enable the foreign key constraints.</p>
+&lt;4&gt;. Enable the foreign key constraints.</p>
 </li>
 </ol>
 </div>
@@ -3305,10 +3322,7 @@ FROM
 <div class="sect4">
 <h5 id="_group_by">Group By</h5>
 <div class="paragraph">
-<p><a href="http://tinkerpop.apache.org/docs/current/reference/#group-step"><code>Group Step</code></a></p>
-</div>
-<div class="paragraph">
-<p>Sqlg optimizes <code>group</code> steps with sql&#8217;s <code>group by</code> clause.</p>
+<p><a href="http://tinkerpop.apache.org/docs/current/reference/#group-step"><code>Group Step</code></a>'s are optimized with sql&#8217;s <code>group by</code> clause.</p>
 </div>
 </div>
 <div class="sect4">
@@ -3336,13 +3350,13 @@ public void testGroupOverOnePropertyMin() {
 }</code></pre>
 </div>
 </div>
-<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div id="anchor-before-optimization-groupbymin-step" class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
 <pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), MinGlobalStep])]</pre>
 </div>
 </div>
-<div id="anchor-after-optimization-count-step" class="listingblock">
+<div id="anchor-after-optimization-groupbymin-step" class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
@@ -3392,13 +3406,13 @@ GROUP BY
     }</code></pre>
 </div>
 </div>
-<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div id="anchor-before-optimization-groupbymax-step" class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
 <pre class="nowrap">[GraphStep(vertex,[]), GroupStep(label,[PropertiesStep([age],value), MaxGlobalStep]</pre>
 </div>
 </div>
-<div id="anchor-after-optimization-count-step" class="listingblock">
+<div id="anchor-after-optimization-groupbymax-step" class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
@@ -3467,13 +3481,13 @@ public void testGroupOverTwoPropertiesWithValues() {
 }</code></pre>
 </div>
 </div>
-<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div id="anchor-before-optimization-groupbymax2-step" class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
 <pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep([PropertiesStep([name, surname],value), FoldStep],[PropertiesStep([age],value), MaxGlobalStep])]</pre>
 </div>
 </div>
-<div id="anchor-after-optimization-count-step" class="listingblock">
+<div id="anchor-after-optimization-groupbymax2-step" class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
@@ -3490,7 +3504,7 @@ FROM
 	"public"."V_Person"
 GROUP BY
 	"public"."V_Person"."name",
-	"public"."V_Person"."surname</code></pre>
+	"public"."V_Person"."surname"</code></pre>
 </div>
 </div>
 </div>
@@ -3519,13 +3533,13 @@ public void testGroupOverOnePropertySum() {
 }</code></pre>
 </div>
 </div>
-<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div id="anchor-before-optimization-groupbysum-step" class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
 <pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), SumGlobalStep])]</pre>
 </div>
 </div>
-<div id="anchor-after-optimization-count-step" class="listingblock">
+<div id="anchor-after-optimization-groupbysum-step" class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
@@ -3569,13 +3583,13 @@ public void testGroupOverOnePropertyMean() {
 }</code></pre>
 </div>
 </div>
-<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div id="anchor-before-optimization-groupbymean-step" class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
 <pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), MeanGlobalStep])]</pre>
 </div>
 </div>
-<div id="anchor-after-optimization-count-step" class="listingblock">
+<div id="anchor-after-optimization-groupbymean-step" class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
@@ -3595,54 +3609,33 @@ GROUP BY
 </div>
 </div>
 <div class="sect4">
-<h5 id="_group_by_with_join">Group By with join</h5>
+<h5 id="_group_by_and_count_step">Group By and Count Step</h5>
 <div class="listingblock">
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void testGroupOverOnePropertyWithJoin() {
-    Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
-    Vertex address1 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 2);
-    Vertex address2 = this.sqlgGraph.addVertex(T.label, "Address", "name", "A", "year", 4);
-    Vertex address3 = this.sqlgGraph.addVertex(T.label, "Address", "name", "C", "year", 6);
-    Vertex address4 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 8);
-    Vertex address5 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 7);
-    Vertex address6 = this.sqlgGraph.addVertex(T.label, "Address", "name", "D", "year", 6);
-    person.addEdge("livesAt", address1);
-    person.addEdge("livesAt", address2);
-    person.addEdge("livesAt", address3);
-    person.addEdge("livesAt", address4);
-    person.addEdge("livesAt", address5);
-    person.addEdge("livesAt", address6);
+public void testGroupByCount() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
     this.sqlgGraph.tx().commit();
-
-    DefaultTraversal&lt;Vertex, Map&lt;String, Integer&gt;&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal()
-            .V().hasLabel("Person")
-            .out("livesAt")
-            .&lt;String, Integer&gt;group()
-            .by("name")
-            .by(__.values("year").max());
-
-    printTraversalForm(traversal);
-
-    Map&lt;String, Integer&gt; result = traversal.next();
-    Assert.assertFalse(traversal.hasNext());
-    Assert.assertEquals(3, result.size());
-    Assert.assertTrue(result.containsKey("A"));
-    Assert.assertTrue(result.containsKey("C"));
-    Assert.assertTrue(result.containsKey("D"));
-    Assert.assertEquals(4, result.get("A"), 0);
-    Assert.assertEquals(6, result.get("C"), 0);
-    Assert.assertEquals(8, result.get("D"), 0);
+    DefaultTraversal&lt;Vertex, Map&lt;Object, Long&gt;&gt; traversal = (DefaultTraversal&lt;Vertex, Map&lt;Object, Long&gt;&gt;) this.sqlgGraph.traversal().V().hasLabel("A")
+            .&lt;Object, Long&gt;group().by("name").by(__.count());
+    List&lt;Map&lt;Object, Long&gt;&gt; result = traversal.toList();
+    Assert.assertEquals(1, result.size());
+    Assert.assertTrue(result.get(0).containsKey("a"));
+    Assert.assertTrue(result.get(0).containsKey("b"));
+    Assert.assertEquals(2L, result.get(0).get("a"), 0);
+    Assert.assertEquals(1L, result.get(0).get("b"), 0);
 }</code></pre>
 </div>
 </div>
-<div id="anchor-before-optimization-group-max-step" class="listingblock">
+<div id="anchor-before-optimization-groupbycount-step" class="listingblock">
 <div class="title">Before optimization</div>
 <div class="content">
-<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), VertexStep(OUT,[livesAt],vertex), GroupStep(value(name),[PropertiesStep([year],value), MaxGlobalStep])]</pre>
+<pre class="nowrap">[GraphStep(vertex,[]), HasStep([~label.eq(A)]), GroupStep(value(name),[CountGlobalStep])]</pre>
 </div>
 </div>
-<div id="anchor-after-optimization-count-step" class="listingblock">
+<div id="anchor-after-optimization-groupbycount-step" class="listingblock">
 <div class="title">After optimization</div>
 <div class="content">
 <pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
@@ -3652,14 +3645,85 @@ public void testGroupOverOnePropertyWithJoin() {
 <div class="title">sql</div>
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
-	MAX("public"."V_Address"."year") AS "alias1",
-	"public"."V_Address"."name" AS "alias2"
+	COUNT(1) AS "count",
+	"public"."V_A"."name" AS "alias1"
 FROM
-	"public"."V_Person" INNER JOIN
-	"public"."E_livesAt" ON "public"."V_Person"."ID" = "public"."E_livesAt"."public.Person__O" INNER JOIN
-	"public"."V_Address" ON "public"."E_livesAt"."public.Address__I" = "public"."V_Address"."ID"
+	"public"."V_A"
 GROUP BY
-	"public"."V_Address"."name"</code></pre>
+	"public"."V_A"."name"</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testDuplicatePathGroupCountQuery() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+    Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 1);
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    a1.addEdge("ab", b3);
+    a1.addEdge("ab", b4);
+    a1.addEdge("ac", c1);
+    a1.addEdge("ac", c2);
+    a1.addEdge("ac", c3);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal&lt;Vertex, Map&lt;String, Long&gt;&gt; traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.count());
+    Assert.assertEquals(2, traversal.getSteps().size());
+    Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+    Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+    Map&lt;String, Long&gt; result = traversal.next();
+    Assert.assertEquals(1, result.size());
+    Assert.assertTrue(result.containsKey("b"));
+    Assert.assertEquals(7, result.get("b"), 0);
+    Assert.assertFalse(traversal.hasNext());
+}</code></pre>
+</div>
+</div>
+<div id="anchor-before-optimization-groupbycount2-step" class="listingblock">
+<div class="title">Before optimization</div>
+<div class="content">
+<pre class="nowrap">[GraphStep(vertex,[v[public.A:::1]]), VertexStep(OUT,[ab, ac],vertex), GroupStep(value(name),[CountGlobalStep])]</pre>
+</div>
+</div>
+<div id="anchor-after-optimization-groupbycount2-step" class="listingblock">
+<div class="title">After optimization</div>
+<div class="content">
+<pre class="nowrap">[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	COUNT(1) AS "count",
+	"public"."V_C"."name" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ac" ON "public"."V_A"."ID" = "public"."E_ac"."public.A__O" INNER JOIN
+	"public"."V_C" ON "public"."E_ac"."public.C__I" = "public"."V_C"."ID"
+WHERE
+	( "public"."V_A"."ID" = ?)
+GROUP BY
+	"public"."V_C"."name";
+
+SELECT
+	COUNT(1) AS "count",
+	"public"."V_B"."name" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+WHERE
+	( "public"."V_A"."ID" = ?)
+GROUP BY
+	"public"."V_B"."name";</code></pre>
 </div>
 </div>
 </div>
@@ -4848,7 +4912,7 @@ Batch mode is activated on the transaction object itself. After every <code>comm
 </ul>
 </div>
 <div class="paragraph">
-<p>The Postgresql 'https://www.postgresql.org/docs/current/static/sql-copy.html[copy]' command is used to bulk insert data.</p>
+<p>The Postgresql '<a href="https://www.postgresql.org/docs/current/static/sql-copy.html">copy</a>' command is used to bulk insert data.</p>
 </div>
 <div class="sect2">
 <h3 id="_normal_batch_mode">11.1. Normal batch mode</h3>
@@ -4906,8 +4970,8 @@ public void showNormalBatchMode() {
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
         Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
         person.addEdge("drives", car);
-        if (i % 100_000 == 0) { <b class="conum">(1)</b>
-            this.sqlgGraph.tx().flush(); <b class="conum">(1)</b>
+        if (i % 100_000 == 0) { # <b class="conum">(1)</b>
+            this.sqlgGraph.tx().flush(); # <b class="conum">(1)</b>
         }
     }
     this.sqlgGraph.tx().commit();
@@ -4982,7 +5046,7 @@ public void showStreamingBatchMode() {
     for (int i = 1; i &lt;= 10_000_000; i++) {
         this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
     }
-    this.sqlgGraph.tx().flush(); <b class="conum">(1)</b>
+    this.sqlgGraph.tx().flush(); # <b class="conum">(1)</b>
     for (int i = 1; i &lt;= 10_000_000; i++) {
         this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
     }
@@ -5172,7 +5236,7 @@ public void showStreamingWithLockBulkEdgeCreation() {
 </div>
 </div>
 <div class="sect1">
-<h2 id="_topology">12. Topology</h2>
+<h2 id="anchor-topology">12. Topology</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Sqlg stores the graph&#8217;s topology information in the graph itself as a graph.
@@ -5223,7 +5287,7 @@ public void showTopologyTraversals() {
     }
     System.out.println("//All vertex labels");
     sqlgGraph.topology().V()
-            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) <b class="conum">(2)</b>
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <b class="conum">(2)</b>
             .forEachRemaining(
                     v -&gt; System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME))
             );
@@ -5231,7 +5295,7 @@ public void showTopologyTraversals() {
     System.out.println("//All edge labels");
     sqlgGraph.topology().V()
             .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
-            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) <b class="conum">(3)</b>
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) # <b class="conum">(3)</b>
             .forEachRemaining(
                     v -&gt; System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME))
             );
@@ -5239,8 +5303,8 @@ public void showTopologyTraversals() {
     System.out.println("//'person' properties");
     sqlgGraph.topology().V()
             .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
-            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "person") <b class="conum">(4)</b>
-            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE) <b class="conum">(5)</b>
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "person") # <b class="conum">(4)</b>
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE) # <b class="conum">(5)</b>
             .forEachRemaining(
                     v -&gt; {
                         System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
@@ -5262,10 +5326,10 @@ public void showTopologyTraversals() {
 
     System.out.println("//'created' properties");
     sqlgGraph.topology().V()
-            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) <b class="conum">(6)</b>
-            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) <b class="conum">(7)</b>
-            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "created") <b class="conum">(8)</b>
-            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE) <b class="conum">(9)</b>
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <b class="conum">(6)</b>
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) # <b class="conum">(7)</b>
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "created") # <b class="conum">(8)</b>
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE) # <b class="conum">(9)</b>
             .forEachRemaining(
                     v -&gt; {
                         System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
@@ -5370,22 +5434,22 @@ On any topology object one can call <code>isCommitted</code> or <code>isUncommit
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
 public void createModernTopology() {
-    Topology topology = this.sqlgGraph.getTopology(); <b class="conum">(1)</b>
+    Topology topology = this.sqlgGraph.getTopology(); # <b class="conum">(1)</b>
     VertexLabel personVertexLabel = topology.ensureVertexLabelExist("public", "person", new HashMap&lt;String, PropertyType&gt;() {{
         put("name", PropertyType.STRING);
         put("age", PropertyType.INTEGER);
-    }}); <b class="conum">(2)</b>
+    }}); # <b class="conum">(2)</b>
     VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist("public", "software", new HashMap&lt;String, PropertyType&gt;() {{
         put("name", PropertyType.STRING);
         put("lang", PropertyType.STRING);
     }});
     EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist("created", softwareVertexLabel, new HashMap&lt;String, PropertyType&gt;() {{
         put("weight", PropertyType.DOUBLE);
-    }}); <b class="conum">(3)</b>
+    }}); # <b class="conum">(3)</b>
     EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap&lt;String, PropertyType&gt;() {{
         put("weight", PropertyType.DOUBLE);
     }});
-    this.sqlgGraph.tx().commit(); <b class="conum">(4)</b>
+    this.sqlgGraph.tx().commit(); # <b class="conum">(4)</b>
 }</code></pre>
 </div>
 </div>
@@ -5409,11 +5473,11 @@ public void createModernTopology() {
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
 public void generalTopologyCreationWithSchema() {
-    Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("Humans"); <b class="conum">(1)</b>
+    Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("Humans"); # <b class="conum">(1)</b>
     VertexLabel personVertexLabel = schema.ensureVertexLabelExist("Person", new HashMap&lt;String, PropertyType&gt;() {{
         put("name", PropertyType.STRING);
         put("date", PropertyType.LOCALDATE);
-    }}); <b class="conum">(2)</b>
+    }}); # <b class="conum">(2)</b>
     this.sqlgGraph.tx().commit();
 }</code></pre>
 </div>
@@ -5436,19 +5500,19 @@ public void generalTopologyCreationWithSchema() {
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
 public void queryCache() {
     loadModern();
-    Optional&lt;Schema&gt; publicSchema = this.sqlgGraph.getTopology().getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()); <b class="conum">(1)</b>
+    Optional&lt;Schema&gt; publicSchema = this.sqlgGraph.getTopology().getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()); # <b class="conum">(1)</b>
     assertTrue(publicSchema.isPresent());
-    Schema publicSchemaViaShortCut = this.sqlgGraph.getTopology().getPublicSchema(); <b class="conum">(2)</b>
-    Optional&lt;VertexLabel&gt; personVertexLabel = publicSchema.get().getVertexLabel("person"); <b class="conum">(3)</b>
+    Schema publicSchemaViaShortCut = this.sqlgGraph.getTopology().getPublicSchema(); # <b class="conum">(2)</b>
+    Optional&lt;VertexLabel&gt; personVertexLabel = publicSchema.get().getVertexLabel("person"); # <b class="conum">(3)</b>
     assertTrue(personVertexLabel.isPresent());
-    Optional&lt;EdgeLabel&gt; createEdgeLabel = personVertexLabel.get().getOutEdgeLabel("created"); <b class="conum">(4)</b>
+    Optional&lt;EdgeLabel&gt; createEdgeLabel = personVertexLabel.get().getOutEdgeLabel("created"); # <b class="conum">(4)</b>
     assertTrue(createEdgeLabel.isPresent());
-    Optional&lt;EdgeLabel&gt; knowsEdgeLabel = personVertexLabel.get().getOutEdgeLabel("knows"); <b class="conum">(5)</b>
+    Optional&lt;EdgeLabel&gt; knowsEdgeLabel = personVertexLabel.get().getOutEdgeLabel("knows"); # <b class="conum">(5)</b>
     assertTrue(knowsEdgeLabel.isPresent());
 
-    Optional&lt;PropertyColumn&gt; namePropertyColumn = personVertexLabel.get().getProperty("name"); <b class="conum">(6)</b>
+    Optional&lt;PropertyColumn&gt; namePropertyColumn = personVertexLabel.get().getProperty("name"); # <b class="conum">(6)</b>
     assertTrue(namePropertyColumn.isPresent());
-    assertEquals(PropertyType.STRING, namePropertyColumn.get().getPropertyType()); <b class="conum">(7)</b>
+    assertEquals(PropertyType.STRING, namePropertyColumn.get().getPropertyType()); # <b class="conum">(7)</b>
     Optional&lt;PropertyColumn&gt; agePropertyColumn = personVertexLabel.get().getProperty("age");
     assertTrue(agePropertyColumn.isPresent());
     assertEquals(PropertyType.INTEGER, agePropertyColumn.get().getPropertyType());
@@ -5484,6 +5548,122 @@ public void queryCache() {
 </ol>
 </div>
 </div>
+<div class="sect2">
+<h3 id="anchor-user-supplied-identifiers">12.2. User supplied identifiers</h3>
+<div class="paragraph">
+<p>You can define your own identifiers for a VertexLabel or EdgeLabel. This will result in Sqlg generating primary keys on the specified identifiers instead of using an auto generated sequence.</p>
+</div>
+<div class="listingblock">
+<div class="title">eg.</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testUserSuppliedIds() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+            "Person",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyType.STRING);
+                put("surname", PropertyType.STRING);
+                put("nickname", PropertyType.STRING);
+            }},
+            ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname")) # <b class="conum">(1)</b>
+    );
+    personVertexLabel.ensureEdgeLabelExist(
+            "marriedTo",
+            personVertexLabel,
+            new LinkedHashMap&lt;&gt;() {{
+                put("place", PropertyType.STRING);
+                put("when", PropertyType.LOCALDATETIME);
+            }},
+            ListOrderedSet.listOrderedSet(List.of("place", "when")) # <b class="conum">(2)</b>
+    );
+    this.sqlgGraph.tx().commit();
+
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "surname", "Longfellow", "nickname", "Longboy");
+    Vertex sue = this.sqlgGraph.addVertex(T.label, "Person", "name", "Sue", "surname", "Pretty");
+    john.addEdge("marriedTo", sue, "place", "Timbuck2", "when", LocalDateTime.now());
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; marriedTo = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("name", "John")
+            .out("marriedTo")
+            .toList();
+    Assert.assertEquals(1, marriedTo.size());
+    Assert.assertEquals(sue, marriedTo.get(0));
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Specify the <code>name</code> and <code>surname</code> properties as the primary key for the <code>Person</code> vertex label.</p>
+</li>
+<li>
+<p>Specify the  <code>place</code> and <code>when</code> properties as the primary key for the <code>marriedTo</code> edge label.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This will generate a table with <code>name</code> and <code>surname</code>, and <code>place</code> and <code>when</code> as composite primary keys.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">CREATE TABLE public."V_Person"
+(
+    name text COLLATE pg_catalog."default" NOT NULL,
+    surname text COLLATE pg_catalog."default" NOT NULL,
+    nickname text COLLATE pg_catalog."default",
+    CONSTRAINT "V_Person_pkey" PRIMARY KEY (name, surname)
+);
+
+CREATE TABLE public."E_marriedTo"
+(
+    place text COLLATE pg_catalog."default" NOT NULL,
+    "when" timestamp without time zone NOT NULL,
+    "public.Person.name__I" text COLLATE pg_catalog."default",
+    "public.Person.surname__I" text COLLATE pg_catalog."default",
+    "public.Person.name__O" text COLLATE pg_catalog."default",
+    "public.Person.surname__O" text COLLATE pg_catalog."default",
+    CONSTRAINT "E_marriedTo_pkey" PRIMARY KEY (place, "when"),
+    CONSTRAINT "E_marriedTo_public.Person.name__I_public.Person.surname__I_fkey" FOREIGN KEY ("public.Person.name__I", "public.Person.surname__I")
+        REFERENCES public."V_Person" (name, surname) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        DEFERRABLE,
+    CONSTRAINT "E_marriedTo_public.Person.name__O_public.Person.surname__O_fkey" FOREIGN KEY ("public.Person.name__O", "public.Person.surname__O")
+        REFERENCES public."V_Person" (name, surname) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        DEFERRABLE
+)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The gremlin query will execute the following sql,</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	a2."alias1", a2."alias2", a2."alias3"
+FROM (
+SELECT
+	"public"."E_marriedTo"."public.Person.name__I" AS "public.E_marriedTo.public.Person.name__I",
+	"public"."E_marriedTo"."public.Person.surname__I" AS "public.E_marriedTo.public.Person.surname__I"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_marriedTo" ON "public"."V_Person"."name" = "public"."E_marriedTo"."public.Person.name__O" AND "public"."V_Person"."surname" = "public"."E_marriedTo"."public.Person.surname__O"
+WHERE
+	( "public"."V_Person"."name" = ?)
+) a1 INNER JOIN (
+SELECT
+	"public"."V_Person"."name" AS "alias1",
+	"public"."V_Person"."surname" AS "alias2",
+	"public"."V_Person"."nickname" AS "alias3"
+FROM
+	"public"."V_Person"
+) a2 ON a1."public.E_marriedTo.public.Person.name__I" = a2."alias1" AND a1."public.E_marriedTo.public.Person.surname__I" = a2."alias2"</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -5497,7 +5677,7 @@ Sqlg currently supports <code>RANGE</code> and <code>LIST</code> partitions.</p>
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
 public void testPartitioningRange() {
-    Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema(); <b class="conum">(1)</b>
+    Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema(); # <b class="conum">(1)</b>
     VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
             "Measurement",
             new LinkedHashMap&lt;String, PropertyType&gt;() {{
@@ -5505,10 +5685,10 @@ public void testPartitioningRange() {
                 put("temp", PropertyType.INTEGER);
             }},
             ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
-            PartitionType.RANGE, <b class="conum">(2)</b>
-            "date"); <b class="conum">(3)</b>
-    partitionedVertexLabel.ensureRangePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'"); <b class="conum">(4)</b>
-    partitionedVertexLabel.ensureRangePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'"); <b class="conum">(5)</b>
+            PartitionType.RANGE, #<b class="conum">(2)</b>
+            "date"); # <b class="conum">(3)</b>
+    partitionedVertexLabel.ensureRangePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'"); # <b class="conum">(4)</b>
+    partitionedVertexLabel.ensureRangePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'"); # <b class="conum">(5)</b>
     this.sqlgGraph.tx().commit();
 
     LocalDate localDate1 = LocalDate.of(2016, 7, 1);
@@ -5521,15 +5701,15 @@ public void testPartitioningRange() {
     Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate1).count().next(), 0);
     Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate2).count().next(), 0);
 
-    Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Measurement").get().getPartition("measurement1").get(); <b class="conum">(6)</b>
-    partition.remove(); <b class="conum">(7)</b>
+    Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Measurement").get().getPartition("measurement1").get(); # <b class="conum">(6)</b>
+    partition.remove(); # <b class="conum">(7)</b>
     this.sqlgGraph.tx().commit();
 
     Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").count().next(), 0);
     Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate1).count().next(), 0);
     Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate2).count().next(), 0);
 
-    Assert.assertEquals(1, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0); <b class="conum">(8)</b>
+    Assert.assertEquals(1, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0); # <b class="conum">(8)</b>
 }</code></pre>
 </div>
 </div>
@@ -5574,9 +5754,9 @@ public void testPartitioningList() {
                 put("population", PropertyType.LONG);
             }},
             ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
-            PartitionType.LIST, <b class="conum">(1)</b>
-            "left(lower(name), 1)"); <b class="conum">(2)</b>
-    partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'a'"); <b class="conum">(3)</b>
+            PartitionType.LIST, # <b class="conum">(1)</b>
+            "left(lower(name), 1)"); # <b class="conum">(2)</b>
+    partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'a'"); # <b class="conum">(3)</b>
     partitionedVertexLabel.ensureListPartitionExists("Cities_b", "'b'");
     partitionedVertexLabel.ensureListPartitionExists("Cities_c", "'c'");
     partitionedVertexLabel.ensureListPartitionExists("Cities_d", "'d'");
@@ -5626,11 +5806,18 @@ public void testPartitioningList() {
 <div id="footer">
 <div id="footer-text">
 Version 2.1.0<br>
-Last updated 2021-03-22 11:13:06 SAST
+Last updated 2021-04-03 09:56:13 +0200
 </div>
 </div>
-<script src="tocbot.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.1.1/tocbot.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
+<script>
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+</script>
+<script src="tocbot.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css">
 <script>
     var oldtoc = document.getElementById('toctitle').nextElementSibling;
     var newtoc = document.createElement('div');
@@ -5661,8 +5848,5 @@ Last updated 2021-03-22 11:13:06 SAST
     handleTocOnResize();
 </script>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-<script>hljs.initHighlighting()</script>
 </body>
 </html>

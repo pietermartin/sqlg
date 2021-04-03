@@ -2,8 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.reducing.TestReducing;
-import org.umlg.sqlg.test.reducing.TestReducingVertexStep;
+import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKTopology;
 
 /**
  * Date: 2014/07/16
@@ -11,8 +10,7 @@ import org.umlg.sqlg.test.reducing.TestReducingVertexStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestReducing.class,
-        TestReducingVertexStep.class
+        TestUserSuppliedPKTopology.class
 })
 public class AnyTest {
 }

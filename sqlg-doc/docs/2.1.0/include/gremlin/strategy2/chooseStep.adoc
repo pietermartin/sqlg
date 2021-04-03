@@ -1,0 +1,54 @@
+==== Choose Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testStrategy2ChooseStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "a3");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "a4");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, String> traversal = this.sqlgGraph.traversal()
+            .V()
+            .hasLabel("A")
+            .choose(
+                    v -> v.label().equals("A"),
+                    __.out(),
+                    __.in()
+            ).values("name");
+    printTraversalForm(traversal);
+
+    List<String> names = traversal.toList();
+    for (String name : names) {
+        System.out.println(name);
+    }
+}
+----
+
+[options="nowrap"]
+.Before optimization
+----
+
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-choose-step-strategy2,after optimization]]
+.After optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), ChooseStep([LambdaFilterStep(lambda), HasNextStep],{false=[[VertexStep(IN,vertex), EndStep]], true=[[VertexStep(OUT,vertex), EndStep]]}), PropertiesStep([name],value)]
+----
+
+[source,sql,options="nowrap"]
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel], SqlgChooseStepBarrier([LambdaFilterStep(lambda)],{false=[[SqlgVertexStep, EndStep]], true=[[SqlgVertexStep@[~gremlin.incidentToAdjacent], EndStep]]}), PropertiesStep([name],value)]
+----
+
+.output
+----
+a4
+a3
+----

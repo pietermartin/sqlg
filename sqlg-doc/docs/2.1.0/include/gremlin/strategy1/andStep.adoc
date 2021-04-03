@@ -1,0 +1,82 @@
+==== And Step
+
+link:{tinkerpop-docs}#and-step[`And Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showAndStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1", "surname", "x", "address", "y");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2", "surname", "x", "address", "y");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3", "surname", "x", "address", "y");
+    Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4", "surname", "x", "address", "y");
+    Vertex c5 = this.sqlgGraph.addVertex(T.label, "C", "name", "c5", "surname", "x", "address", "y");
+    Vertex c6 = this.sqlgGraph.addVertex(T.label, "C", "name", "c6", "surname", "x", "address", "y");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b2.addEdge("bc", c2);
+    b2.addEdge("bc", c3);
+    b2.addEdge("bc", c4);
+    b2.addEdge("bc", c5);
+    b2.addEdge("bc", c6);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("A")
+            .out()
+            .out()
+            .and(
+                    __.has("name", "c1"),
+                    __.has("surname", "x"),
+                    __.has("address", "y")
+            );
+
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> c = traversal.toList();
+    assertEquals(1, c.size());
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-and-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex), AndStep([[HasStep([name.eq(c1)])], [HasStep([surname.eq(x)])], [HasStep([address.eq(y)])]])]
+----
+
+[[anchor-after-optimization-and-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
+----
+
+This example is similar to the <<Graph Step>> example except for an additional `And Step` which in turn contains three `Has Step` s.
+It shows the two `Vertex Step` s the `And Step` and the `Has Step` s being folded into the `SqlgGraphStep`.
+
+The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."address" AS "alias2",
+	"public"."V_C"."surname" AS "alias3",
+	"public"."V_C"."name" AS "alias4"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
+WHERE
+(("public"."V_C"."name" = ?) AND ("public"."V_C"."surname" = ?) AND ("public"."V_C"."address" = ?)
+) <1>
+----
+
+<1> The `And Step` realizes itself as a sql `where` clause.

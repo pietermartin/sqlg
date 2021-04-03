@@ -16,6 +16,7 @@ import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -39,6 +40,41 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         } catch (ConfigurationException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Test
+    public void testUserSuppliedIds() {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "Person",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyType.STRING);
+                    put("surname", PropertyType.STRING);
+                    put("nickname", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
+        );
+        personVertexLabel.ensureEdgeLabelExist(
+                "marriedTo",
+                personVertexLabel,
+                new LinkedHashMap<>() {{
+                    put("place", PropertyType.STRING);
+                    put("when", PropertyType.LOCALDATETIME);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("place", "when"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "surname", "Longfellow", "nickname", "Longboy");
+        Vertex sue = this.sqlgGraph.addVertex(T.label, "Person", "name", "Sue", "surname", "Pretty");
+        john.addEdge("marriedTo", sue, "place", "Timbuck2", "when", LocalDateTime.now());
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> marriedTo = this.sqlgGraph.traversal().V().hasLabel("Person")
+                .has("name", "John")
+                .out("marriedTo")
+                .toList();
+        Assert.assertEquals(1, marriedTo.size());
+        Assert.assertEquals(sue, marriedTo.get(0));
     }
 
     @Test

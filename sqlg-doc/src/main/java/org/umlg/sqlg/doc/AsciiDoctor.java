@@ -62,8 +62,8 @@ public class AsciiDoctor {
 
         @Override
         public String process(Document document) {
-            return "<script src=\"tocbot.js\"></script>\n" +
-                    "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.1.1/tocbot.css\">\n" +
+            return "<script src=\"tocbot.min.js\"></script>\n" +
+                    "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.11.1/tocbot.css\">\n" +
                     "<script>\n" +
                     "    var oldtoc = document.getElementById('toctitle').nextElementSibling;\n" +
                     "    var newtoc = document.createElement('div');\n" +

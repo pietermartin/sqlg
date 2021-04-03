@@ -1,0 +1,177 @@
+==== Repeat Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testStrategy2RepeatStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
+    Vertex b5 = this.sqlgGraph.addVertex(T.label, "B", "name", "b5");
+    Vertex b6 = this.sqlgGraph.addVertex(T.label, "B", "name", "b6");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4");
+    Vertex x = this.sqlgGraph.addVertex(T.label, "X", "name", "hallo");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    a1.addEdge("ab", b3);
+    a2.addEdge("ab", b4);
+    a2.addEdge("ab", b5);
+    a2.addEdge("ab", b6);
+
+    b1.addEdge("bx", x);
+
+    b4.addEdge("bc", c1);
+    b4.addEdge("bc", c2);
+    b4.addEdge("bc", c3);
+
+    c1.addEdge("cx", x);
+
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, String> t = this.sqlgGraph.traversal()
+            .V().hasLabel("A")
+            .repeat(__.out())
+            .until(__.out().has("name", "hallo"))
+            .values("name");
+    printTraversalForm(t);
+
+    List<String> names = t.toList();
+    for (String name: names) {
+        System.out.println(name);
+    }
+}
+----
+
+[options="nowrap"]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), RepeatStep([VertexStep(OUT,vertex), RepeatEndStep],until([VertexStep(OUT,vertex), HasStep([name.eq(hallo)])]),emit(false)), PropertiesStep([name],value)]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-repeat-step-strategy1,after optimization]]
+.After optimization
+----
+post-strategy:[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel], SqlgRepeatStepBarrier([SqlgVertexStep@[sqlgPathFakeLabel], SqlgRepeatEndStepBarrier],until([SqlgVertexStep@[sqlgPathFakeLabel]]),emit(false)), PropertiesStep([name],value)]
+----
+
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A" <1>
+
+SELECT
+	"index" as "index",
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	(VALUES(1, 1),(2, 2)) AS tmp ("tmpId", "index") ON "public"."V_A"."ID" = tmp."tmpId"
+ORDER BY
+	"index" <2>
+
+SELECT
+	"index" as "index",
+	"public"."V_X"."ID" AS "alias1",
+	"public"."V_X"."name" AS "alias2"
+FROM
+	"public"."V_B" INNER JOIN
+	"public"."E_bx" ON "public"."V_B"."ID" = "public"."E_bx"."public.B__O" INNER JOIN
+	"public"."V_X" ON "public"."E_bx"."public.X__I" = "public"."V_X"."ID" INNER JOIN
+	(VALUES(3, 1),(2, 2),(1, 3),(6, 4),(5, 5),(4, 6)) AS tmp ("tmpId", "index") ON "public"."V_B"."ID" = tmp."tmpId"
+WHERE
+	( "public"."V_X"."name" = ?)
+ORDER BY
+	"index" <3>
+
+SELECT
+	"index" as "index",
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
+FROM
+	"public"."V_B" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" INNER JOIN
+	(VALUES(3, 1),(2, 2),(1, 3),(6, 4),(5, 5),(4, 6)) AS tmp ("tmpId", "index") ON "public"."V_B"."ID" = tmp."tmpId"
+WHERE
+	( "public"."V_C"."name" = ?)
+ORDER BY
+	"index" <4>
+
+SELECT
+	"index" as "index",
+	"public"."V_X"."ID" AS "alias1",
+	"public"."V_X"."name" AS "alias2"
+FROM
+	"public"."V_B" INNER JOIN
+	"public"."E_bx" ON "public"."V_B"."ID" = "public"."E_bx"."public.B__O" INNER JOIN
+	"public"."V_X" ON "public"."E_bx"."public.X__I" = "public"."V_X"."ID" INNER JOIN
+	(VALUES(3, 3),(2, 4),(6, 5),(5, 6),(4, 7)) AS tmp ("tmpId", "index") ON "public"."V_B"."ID" = tmp."tmpId"
+ORDER BY
+	"index" <5>
+
+SELECT
+	"index" as "index",
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
+FROM
+	"public"."V_B" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" INNER JOIN
+	(VALUES(3, 3),(2, 4),(6, 5),(5, 6),(4, 7)) AS tmp ("tmpId", "index") ON "public"."V_B"."ID" = tmp."tmpId"
+ORDER BY
+	"index" <6>
+
+SELECT
+	"index" as "index",
+	"public"."V_X"."ID" AS "alias1",
+	"public"."V_X"."name" AS "alias2"
+FROM
+	"public"."V_C" INNER JOIN
+	"public"."E_cx" ON "public"."V_C"."ID" = "public"."E_cx"."public.C__O" INNER JOIN
+	"public"."V_X" ON "public"."E_cx"."public.X__I" = "public"."V_X"."ID" INNER JOIN
+	(VALUES(3, 7),(2, 8),(1, 9)) AS tmp ("tmpId", "index") ON "public"."V_C"."ID" = tmp."tmpId"
+WHERE
+	( "public"."V_X"."name" = ?)
+ORDER BY
+	"index" <7>
+
+SELECT
+	"index" as "index",
+	"public"."V_X"."ID" AS "alias1",
+	"public"."V_X"."name" AS "alias2"
+FROM
+	"public"."V_C" INNER JOIN
+	"public"."E_cx" ON "public"."V_C"."ID" = "public"."E_cx"."public.C__O" INNER JOIN
+	"public"."V_X" ON "public"."E_cx"."public.X__I" = "public"."V_X"."ID" INNER JOIN
+	(VALUES(3, 8),(2, 9)) AS tmp ("tmpId", "index") ON "public"."V_C"."ID" = tmp."tmpId"
+ORDER BY
+	"index" <8>
+----
+
+<1> Get all the `A` s.
+<2> Get all the `B` s for the incoming `A` s. This represent the first `out` iteration of the `repeat`.
+<3> The `until` traversal executed for all the incoming `B` s going out to `X`.
+<4> The `until` traversal executed for all the incoming `B` s going out to `C`.
+<5> Get all the `X` for the incoming `B` s. This is the second `out` iteration of the `repeat`.
+<6> Get all the `C` for the incoming `B` s. This is the second `out` iteration of the `repeat`.
+<7> The `until` traversal executed for all the incoming `C` s going out to `X`.
+<8> Get all the `X` for the incoming `C` s. This is the third `out` iteration of the `repeat`.
+
+.output
+----
+b1
+c1
+----
