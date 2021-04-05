@@ -1325,7 +1325,7 @@ public interface SqlDialect {
         }
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             sb.append(") AS ").append(maybeWrapInQoutes(alias));
-            if (column.getAggregateFunction().equals("avg")) {
+            if (column.getAggregateFunction().equalsIgnoreCase("avg")) {
                 sb.append(", COUNT(1) AS ").append(maybeWrapInQoutes(alias + "_weight"));
             }
         } else {

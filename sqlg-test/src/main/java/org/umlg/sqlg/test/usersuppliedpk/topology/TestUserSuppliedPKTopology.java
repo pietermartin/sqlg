@@ -3,11 +3,14 @@ package org.umlg.sqlg.test.usersuppliedpk.topology;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -411,5 +414,46 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         this.sqlgGraph = SqlgGraph.open(configuration);
         livesAt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "livesAt");
         Assert.assertTrue(livesAt.isPresent());
+    }
+
+    @Test
+    public void testDuplicatePath() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid", PropertyType.STRING);
+                    put("name", PropertyType.STRING);
+                    put("age", PropertyType.INTEGER);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid"))
+        );
+        vertexLabel.ensureEdgeLabelExist(
+                "aa",
+                vertexLabel,
+                new LinkedHashMap<>() {{
+                    put("uid", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid")));
+        this.sqlgGraph.tx().commit();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a1", "age", 1);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a2", "age", 5);
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a3", "age", 7);
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "name", "a4", "age", 5);
+        a1.addEdge("aa", a2, "uid", UUID.randomUUID().toString());
+        a1.addEdge("aa", a3, "uid", UUID.randomUUID().toString());
+        a1.addEdge("aa", a4, "uid", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("aa").values("age");
+        String sql = getSQL(traversal);
+        List<Integer> results = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
+        Assert.assertEquals(3, results.size(), 0);
+        Assert.assertTrue(results.remove(Integer.valueOf(5)));
+        Assert.assertTrue(results.remove(Integer.valueOf(7)));
+        Assert.assertTrue(results.remove(Integer.valueOf(5)));
+
     }
 }

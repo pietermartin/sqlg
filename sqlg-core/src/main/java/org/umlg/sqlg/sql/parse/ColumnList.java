@@ -45,7 +45,7 @@ public class ColumnList {
      */
     private final Map<String, Map<String, PropertyType>> filteredAllTables;
 
-    private ListOrderedSet<String> identifiers;
+    private final ListOrderedSet<String> identifiers;
 
     /**
      * Indicates if any of the Column's have an aggregateFunction
@@ -84,8 +84,8 @@ public class ColumnList {
         return c;
     }
 
-    public void add(SchemaTable st, String column, int stepDepth, String alias, String aggregateFunction) {
-        internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, aggregateFunction);
+    public Column add(SchemaTable st, String column, int stepDepth, String alias, String aggregateFunction) {
+        return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, aggregateFunction);
     }
 
     /**
@@ -96,8 +96,8 @@ public class ColumnList {
      * @param stepDepth
      * @param alias
      */
-    public void add(SchemaTable st, String column, int stepDepth, String alias) {
-        internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, null);
+    public Column add(SchemaTable st, String column, int stepDepth, String alias) {
+        return internalAdd(st.getSchema(), st.getTable(), column, stepDepth, alias, null);
     }
 
     /**
@@ -149,9 +149,9 @@ public class ColumnList {
      * @param column
      * @return
      */
-    private String getAlias(String schema, String table, String column, int stepDepth) {
+    private String getAlias(String schema, String table, String column, int stepDepth, String aggregateFunction) {
         //PropertyType is not part of equals or hashCode so not needed for the lookup.
-        Column c = new Column(schema, table, column, null, stepDepth, null);
+        Column c = new Column(schema, table, column, null, stepDepth, aggregateFunction);
         return columns.get(c);
     }
 
@@ -163,7 +163,7 @@ public class ColumnList {
      * @return
      */
     public String getAlias(SchemaTableTree stt, String column) {
-        return getAlias(stt.getSchemaTable(), column, stt.getStepDepth());
+        return getAlias(stt.getSchemaTable(), column, stt.getStepDepth(), stt.getAggregateFunction() == null ? null : stt.getAggregateFunction().getLeft());
     }
 
     /**
@@ -174,36 +174,29 @@ public class ColumnList {
      * @param stepDepth
      * @return
      */
-    public String getAlias(SchemaTable st, String column, int stepDepth) {
-        return getAlias(st.getSchema(), st.getTable(), column, stepDepth);
+    public String getAlias(SchemaTable st, String column, int stepDepth, String aggregateFunction) {
+        return getAlias(st.getSchema(), st.getTable(), column, stepDepth, aggregateFunction);
     }
 
     public String toSelectString(boolean partOfDuplicateQuery) {
         StringBuilder sb = new StringBuilder();
         int countIdentifiers = 1;
         boolean first = true;
-//        Optional<Column> countColumnOpt = this.columns.keySet().stream().filter(c -> c.aggregateFunction != null && c.aggregateFunction.equals("count")).findAny();
-//        if (countColumnOpt.isPresent()) {
-//            String alias = this.columns.get(countColumnOpt.get());
-//            String part = countColumnOpt.get().toSelectString(partOfDuplicateQuery, alias);
-//            sb.append(part);
-//        } else {
-            for (Map.Entry<Column, String> columnEntry : this.columns.entrySet()) {
-                Column c = columnEntry.getKey();
-                String alias = columnEntry.getValue();
-                String part = c.toSelectString(partOfDuplicateQuery, alias);
-                if (part != null) {
-                    if (!first) {
-                        sb.append(",\n\t");
-                    }
-                    sb.append(part);
+        for (Map.Entry<Column, String> columnEntry : this.columns.entrySet()) {
+            Column c = columnEntry.getKey();
+            String alias = columnEntry.getValue();
+            String part = c.toSelectString(partOfDuplicateQuery, alias);
+            if (part != null) {
+                if (!first) {
+                    sb.append(",\n\t");
                 }
-                first = false;
-                if (this.drop && (this.identifiers.isEmpty() || countIdentifiers++ == this.identifiers.size())) {
-                    break;
-                }
+                sb.append(part);
             }
-//        }
+            first = false;
+            if (this.drop && (this.identifiers.isEmpty() || countIdentifiers++ == this.identifiers.size())) {
+                break;
+            }
+        }
         return sb.toString();
     }
 
@@ -225,6 +218,28 @@ public class ColumnList {
         }
     }
 
+    public void removeColumns(SchemaTableTree schemaTableTree) {
+        Set<Column> toRemove = new HashSet<>();
+        for (Column column : this.columns.keySet()) {
+            if (column.aggregateFunction == null && !(schemaTableTree.getGroupBy() != null && schemaTableTree.getGroupBy().contains(column.column))) {
+                toRemove.add(column);
+            }
+        }
+        for (Column column : toRemove) {
+            this.columns.remove(column);
+        }
+        Set<String> toRemoveAliases = new HashSet<>();
+        for (String alias : this.aliases.keySet()) {
+            Column column = this.aliases.get(alias);
+            if (toRemove.contains(column)) {
+                toRemoveAliases.add(alias);
+            }
+        }
+        for (String toRemoveAlias : toRemoveAliases) {
+            this.aliases.remove(toRemoveAlias);
+        }
+    }
+
     public String toOuterFromString(String prefix, boolean stackContainsAggregate) {
         StringBuilder sb = new StringBuilder();
         List<String> fromAliases = this.aliases.keySet().stream()
@@ -240,14 +255,16 @@ public class ColumnList {
                 sb.append("(");
             }
             if (c.aggregateFunction != null && c.aggregateFunction.equals(GraphTraversal.Symbols.count)) {
-                sb.append("1");
+                sb.append("1)");
             } else {
                 sb.append(prefix);
                 sb.append(".");
                 sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
-            }
-            if (c.aggregateFunction != null) {
-                sb.append(")");
+                if (c.aggregateFunction != null && c.aggregateFunction.equalsIgnoreCase("avg")) {
+                    sb.append("), COUNT(1) AS ").append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias + "_weight"));
+                } else if (c.aggregateFunction != null) {
+                    sb.append(")");
+                }
             }
             sb.append(", ");
         }
@@ -301,17 +318,22 @@ public class ColumnList {
         }
     }
 
-    public int indexColumnsExcludeForeignKey(int startColumnIndex, boolean stackContainsAggregate) {
+    public int reindexColumnsExcludeForeignKey(int startColumnIndex, boolean stackContainsAggregate) {
         int i = startColumnIndex;
         for (String alias : this.aliases.keySet()) {
             Column column = this.aliases.get(alias);
-            if (stackContainsAggregate && (column.isID() || column.isForeignKey()) ||
+            if (stackContainsAggregate && (
+                    column.isID() ||
+                    column.isForeignKey()) ||
                     alias.endsWith(Topology.IN_VERTEX_COLUMN_END) ||
                     alias.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
 
                 continue;
             }
             column.columnIndex = i++;
+            if (stackContainsAggregate && column.aggregateFunction != null && column.aggregateFunction.equalsIgnoreCase("avg")) {
+                column.columnIndex = i++;
+            }
         }
         return i;
     }
@@ -326,18 +348,16 @@ public class ColumnList {
         private final String table;
         private final String column;
         private final int stepDepth;
-        private PropertyType propertyType;
         private final boolean ID;
+        private final String aggregateFunction;
+        private PropertyType propertyType;
         private int columnIndex = -1;
-
         //Foreign key properties
         private boolean isForeignKey;
         private Direction foreignKeyDirection;
         private SchemaTable foreignSchemaTable;
         //Only set for user identifier primary keys
         private String foreignKeyProperty;
-
-        private final String aggregateFunction;
 
         Column(String schema, String table, String column, PropertyType propertyType, int stepDepth, String aggregateFunction) {
             super();

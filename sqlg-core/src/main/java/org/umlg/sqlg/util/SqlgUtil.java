@@ -202,7 +202,9 @@ public class SqlgUtil {
                     }
                 } else {
                     List<Comparable> identifierObjects = List.of(-1);
-                    if (!schemaTableTree.hasAggregateFunction()) {
+                    //the idColumnCountMap can be empty on aggregation queries where the identifier fields are removed
+                    // when building the outer select statement
+                    if (!schemaTableTree.hasAggregateFunction() && !idColumnCountMap.isEmpty()) {
                         identifierObjects = schemaTableTree.loadIdentifierObjects(idColumnCountMap, resultSet);
                         resultSetWasNull = resultSet.wasNull();
                     }
