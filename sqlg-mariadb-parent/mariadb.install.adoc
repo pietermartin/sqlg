@@ -4,3 +4,9 @@ CREATE USER 'mariadb'@'%' IDENTIFIED BY 'mariadb';
 GRANT ALL PRIVILEGES ON *.* TO 'mariadb'@'%' IDENTIFIED BY 'mariadb' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 ```
+
+The server might have create an anonymous user on localhost, delete it...
+
+```
+DELETE FROM mysql.user where User = ''and Host = 'localhost';
+```
