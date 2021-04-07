@@ -1742,7 +1742,7 @@ public class TestReducing extends BaseTest {
                         "Person",
                         new HashMap<>() {{
                             put("uid", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                            put("name", PropertyType.varChar(100));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
                 );
