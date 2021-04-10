@@ -18,8 +18,8 @@ public class SqlgMinGlobalStep extends SqlgReducingStepBarrier<Comparable, Compa
     public Comparable reduce(Comparable a, Comparable b) {
         if (a == null) {
             return b;
-        } else if (b.equals(Double.NaN)) {
-            return b;
+//        } else if (b.equals(Double.NaN)) {
+//            return b;
         } else {
             return NumberHelper.min(a, b);
         }

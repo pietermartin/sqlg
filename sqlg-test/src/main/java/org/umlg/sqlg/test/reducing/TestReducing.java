@@ -26,6 +26,8 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.*;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
+
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/11/17
@@ -42,6 +44,16 @@ public class TestReducing extends BaseTest {
             statement.execute("SET DATABASE SQL AVG SCALE 2");
             this.sqlgGraph.tx().commit();
         }
+    }
+
+    @Test
+    public void testRepeatAndMin() {
+        loadModern();
+        final Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().repeat(both()).times(5).values("age").min();
+        printTraversalForm(traversal);
+//        List<Integer> result = traversal.toList();
+//        System.out.println(result);
+        checkResults(Arrays.asList(27), traversal);
     }
 
     @Test
