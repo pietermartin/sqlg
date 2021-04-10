@@ -34,7 +34,8 @@ public class TestReadOnlyRole extends BaseTest {
     @Before
     public void before() throws Exception {
         //H2 is locking on opening readOnly connection.
-        Assume.assumeFalse(isH2());
+        //TODO remove hsqldb depending on https://github.com/pietermartin/sqlg/issues/411
+        Assume.assumeFalse(isH2() || isHsqldb());
         super.before();
     }
 
