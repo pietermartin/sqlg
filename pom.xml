@@ -104,21 +104,20 @@
 <!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
 <!--                        <include>**/H2AllTest.java</include>-->
 
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgPostgresProcessStandardTest.java</include>
-                        <include>**/PostgresAllTest.java</include>
-<!--                        <include>**/PostgresAnyTest.java</include>-->
+<!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
+<!--                        <include>**/PostgresAllTest.java</include>-->
 
-                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
-                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
-                        <include>**/HsqldbAllTest.java</include>
+<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
+<!--                        <include>**/HsqldbAllTest.java</include>-->
 
 <!--                        <include>**/SqlgMSSqlServerStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgGraphMSSqlServerProcessStandardTest.java</include>-->
 <!--                        <include>**/MSSqlServerAllTest.java</include>-->
 
-<!--                        <include>**/MariadbAllTest.java</include>-->
-                        <!--<include>**/MysqlAllTest.java</include>-->
+<!--                        <include>**/SqlgMariaDBProcessStandardTest.java</include>-->
+                        <include>**/MariadbAllTest.java</include>
                     </includes>
                 </configuration>
             </plugin>
