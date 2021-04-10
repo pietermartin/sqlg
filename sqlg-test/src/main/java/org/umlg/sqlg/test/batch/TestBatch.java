@@ -47,7 +47,7 @@ public class TestBatch extends BaseTest {
     public void testBatchNormalModeEdgeMultiColumnProperties() {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime now = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             now = now.truncatedTo(ChronoUnit.MILLIS);
         }
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "t", now);
@@ -67,7 +67,7 @@ public class TestBatch extends BaseTest {
     public void testBatchNormalModeMultiColumnProperties() {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime now = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             now = now.truncatedTo(ChronoUnit.MILLIS);
         }
         this.sqlgGraph.addVertex(T.label, "A", "t", now);

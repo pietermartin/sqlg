@@ -327,7 +327,7 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpgradeTypesWithMoreThanOneColumn() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() ||isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         Duration duration = Duration.ofDays(1);
@@ -384,7 +384,7 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpgradeTypesWithMoreThanOneColumnOnEdge() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         Duration duration = Duration.ofDays(1);
@@ -584,11 +584,11 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpdateLocalDateTimeAndZonedDateTime() {
         LocalDateTime localDateTime = LocalDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         this.sqlgGraph.addVertex(T.label, "A", "localDateTime", localDateTime, "zonedDateTime", zonedDateTime);

@@ -28,8 +28,8 @@ public class TestMatch extends BaseTest {
     public void testDuplicateQueryJoin() {
         Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();
         aSchema.ensureVertexLabelExist("person",
-                new HashMap<String, PropertyType>() {{
-                    put("personid", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("personid", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("personid"))
         );
@@ -55,9 +55,9 @@ public class TestMatch extends BaseTest {
     public void testDuplicateQueryJoinMultipleKeys() {
         Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();
         aSchema.ensureVertexLabelExist("person",
-                new HashMap<String, PropertyType>() {{
-                    put("personid1", PropertyType.STRING);
-                    put("personid2", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("personid1", PropertyType.varChar(100));
+                    put("personid2", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("personid1", "personid2"))
         );

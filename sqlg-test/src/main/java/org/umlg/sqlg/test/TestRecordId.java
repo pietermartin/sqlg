@@ -21,9 +21,9 @@ public class TestRecordId extends BaseTest {
     @Test
     public void testRecordIdHasCommas() {
         Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
-        schema.ensureVertexLabelExist("aaa.bbb", new LinkedHashMap<String, PropertyType>() {{
-            put("_id", PropertyType.STRING);
-            put("value", PropertyType.STRING);
+        schema.ensureVertexLabelExist("aaa.bbb", new LinkedHashMap<>() {{
+            put("_id", PropertyType.varChar(100));
+            put("value", PropertyType.varChar(100));
         }}, ListOrderedSet.listOrderedSet(Collections.singletonList("_id")));
         this.sqlgGraph.tx().commit();
 
@@ -33,9 +33,9 @@ public class TestRecordId extends BaseTest {
         RecordId recordId = RecordId.from(this.sqlgGraph, "A.aaa.bbb:::[id1]");
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A.aaa.bbb").hasId(P.eq(recordId)).count().next(), 0L);
 
-        schema.ensureVertexLabelExist("aaa.ccc", new LinkedHashMap<String, PropertyType>() {{
-            put("_id", PropertyType.STRING);
-            put("value", PropertyType.STRING);
+        schema.ensureVertexLabelExist("aaa.ccc", new LinkedHashMap<>() {{
+            put("_id", PropertyType.varChar(100));
+            put("value", PropertyType.varChar(100));
         }}, ListOrderedSet.listOrderedSet(Collections.singletonList("_id")));
         this.sqlgGraph.tx().commit();
 

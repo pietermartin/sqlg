@@ -34,7 +34,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
     public void testLocalDateTimeUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime localDateTime = LocalDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTime1", localDateTime);
@@ -44,7 +44,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
 
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime localDateTimeAgain = LocalDateTime.now().plusDays(1);
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             localDateTimeAgain = localDateTimeAgain.truncatedTo(ChronoUnit.MILLIS);
         }
 
@@ -162,7 +162,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
     public void testZonedDateTimeUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTime1", zonedDateTime);
@@ -172,7 +172,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
 
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime zonedDateTimeAgain = ZonedDateTime.now().plusHours(1);
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTimeAgain = zonedDateTimeAgain.truncatedTo(ChronoUnit.MILLIS);
         }
         a1.property("zonedDateTime1", zonedDateTimeAgain);
@@ -288,7 +288,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
     public void batchUpdateLocalDateTime() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime now = LocalDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             now = now.truncatedTo(ChronoUnit.MILLIS);
         }
         for (int i = 0; i < 10; i++) {
@@ -300,7 +300,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         Assert.assertEquals(now, vertices.get(0).value("createOn"));
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime nowAgain = LocalDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             nowAgain = nowAgain.truncatedTo(ChronoUnit.MILLIS);
         }
         for (Vertex vertex : vertices) {
@@ -325,7 +325,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
     public void batchUpdateLocalDateTimeEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime now = LocalDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             now = now.truncatedTo(ChronoUnit.MILLIS);
         }
         for (int i = 0; i < 10; i++) {
@@ -339,7 +339,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         Assert.assertEquals(now, edges.get(0).value("createOn"));
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime nowAgain = LocalDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             nowAgain = nowAgain.truncatedTo(ChronoUnit.MILLIS);
         }
         for (Edge edge : edges) {
@@ -621,7 +621,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
     public void batchUpdateZonedDateTime() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         for (int i = 0; i < 10; i++) {
@@ -633,7 +633,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         Assert.assertEquals(zonedDateTime, vertices.get(0).value("createOn"));
         this.sqlgGraph.tx().normalBatchModeOn();
         zonedDateTime = ZonedDateTime.now().minusDays(1);
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         for (Vertex vertex : vertices) {
@@ -658,7 +658,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
     public void batchUpdateZonedDateTimeEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         for (int i = 0; i < 10; i++) {
@@ -672,7 +672,7 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         Assert.assertEquals(zonedDateTime, edges.get(0).value("createOn"));
         this.sqlgGraph.tx().normalBatchModeOn();
         zonedDateTime = ZonedDateTime.now().minusDays(1);
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         for (Edge edge : edges) {

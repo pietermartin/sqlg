@@ -40,7 +40,7 @@ public class TestBatchEdgeDateTime extends BaseTest {
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         LocalDateTime localDateTime = LocalDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         Edge e = personA.addEdge("loves", personB, "localDateTime", localDateTime);
@@ -100,7 +100,7 @@ public class TestBatchEdgeDateTime extends BaseTest {
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         }
         Edge e = personA.addEdge("loves", personB, "zonedDateTime", zonedDateTime);

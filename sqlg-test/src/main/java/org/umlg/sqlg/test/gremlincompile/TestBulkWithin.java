@@ -410,7 +410,7 @@ public class TestBulkWithin extends BaseTest {
         LocalDateTime localDateTime1 = LocalDateTime.now();
         LocalDateTime localDateTime2 = LocalDateTime.now().minusDays(1);
         LocalDateTime localDateTime3 = LocalDateTime.now().minusDays(2);
-        if (isHsqldb()) {
+        if (isHsqldb() || isMariaDb()) {
             localDateTime1 = localDateTime1.truncatedTo(ChronoUnit.MILLIS);
             localDateTime2 = localDateTime2.truncatedTo(ChronoUnit.MILLIS);
             localDateTime3 = localDateTime3.truncatedTo(ChronoUnit.MILLIS);

@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.mod;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.topology.Topology;
@@ -11,8 +12,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Date: 2014/07/12
@@ -38,7 +37,7 @@ public class TestVertexCreation extends BaseTest {
                 while (rs.next()) {
                     countRows++;
                 }
-                assertEquals(1, countRows);
+                Assert.assertEquals(1, countRows);
                 rs.close();
             }
         }
@@ -95,14 +94,14 @@ public class TestVertexCreation extends BaseTest {
                     name = rs.getString("name");
                     countRows++;
                 }
-                assertEquals(2, countRows);
-                assertEquals(boolean1, true);
-                assertEquals(short1, (short) 1);
-                assertEquals(integer1, 1);
-                assertEquals(long1, 1L);
-                assertEquals(float1, 1F, 0);
-                assertEquals(double1, 1D, 0);
-                assertEquals("marko", name);
+                Assert.assertEquals(2, countRows);
+                Assert.assertEquals(boolean1, true);
+                Assert.assertEquals(short1, (short) 1);
+                Assert.assertEquals(integer1, 1);
+                Assert.assertEquals(long1, 1L);
+                Assert.assertEquals(float1, 1F, 0);
+                Assert.assertEquals(double1, 1D, 0);
+                Assert.assertEquals("marko", name);
                 rs.close();
             }
         }
@@ -112,13 +111,13 @@ public class TestVertexCreation extends BaseTest {
     public void testAndColumns() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name1", "marko");
         this.sqlgGraph.tx().commit();
-        assertEquals(1, this.sqlgGraph.traversal().V().count().next(), 0);
-        assertEquals(v1, this.sqlgGraph.traversal().V(v1.id()).next());
-        assertEquals(1, vertexTraversal(this.sqlgGraph, v1).properties().count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(v1, this.sqlgGraph.traversal().V(v1.id()).next());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).properties().count().next(), 0);
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name2", "john");
-        assertEquals(2, this.sqlgGraph.traversal().V().count().next(), 0);
-        assertEquals(v2, this.sqlgGraph.traversal().V(v2.id()).next());
-        assertEquals(1, vertexTraversal(this.sqlgGraph, v2).properties().count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(v2, this.sqlgGraph.traversal().V(v2.id()).next());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v2).properties().count().next(), 0);
     }
 
 }
