@@ -81,7 +81,7 @@ class SqlgStartupManager {
             connection = this.sqlgGraph.tx().getConnection();
             connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
-            logger.debug("Time to createVertexLabel sqlg topology: " + stopWatch.toString());
+            logger.debug(String.format("Time to createVertexLabel sqlg topology: %s", stopWatch));
             if (!existSqlgSchema) {
                 addPublicSchema();
                 this.sqlgGraph.tx().commit();
