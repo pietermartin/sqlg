@@ -111,7 +111,7 @@ public abstract class BaseTest {
             assertEquals(this.sqlgGraph.getBuildVersion(), this.sqlgGraph1.getBuildVersion());
         }
         stopWatch.stop();
-        logger.info("Startup time for test = " + stopWatch.toString());
+        logger.info("Startup time for test = " + stopWatch);
     }
 
     private void grantReadOnlyUserPrivileges() {
