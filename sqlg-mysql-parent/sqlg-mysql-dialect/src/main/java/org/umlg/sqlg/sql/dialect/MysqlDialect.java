@@ -7,7 +7,9 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.AbstractLabel;
 import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -15,6 +17,8 @@ import java.time.*;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.PropertyType.*;
+import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -1043,5 +1047,21 @@ public class MysqlDialect extends BaseSqlDialect {
     public boolean isTimestampz(String typeName) {
         //Mysql is not using timestamps with zones
         return false;
+    }
+
+    @Override
+    public String dropIndex(SqlgGraph sqlgGraph, AbstractLabel parentLabel, String name) {
+        StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
+        SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+        sql.append(sqlDialect.maybeWrapInQoutes(name));
+        sql.append(" ON ");
+        sql.append(sqlDialect.maybeWrapInQoutes(parentLabel.getSchema().getName()));
+        sql.append(".");
+        String prefix = parentLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
+        sql.append(sqlDialect.maybeWrapInQoutes(prefix + parentLabel.getName()));
+        if (sqlDialect.needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
     }
 }

@@ -637,6 +637,10 @@ public interface SqlDialect {
     }
 
     default boolean schemaExists(DatabaseMetaData metadata, String schema) throws SQLException {
+//        ResultSet schemas = metadata.getSchemas();
+//        while (schemas.next()) {
+//            System.out.println(schemas.getString(1));
+//        }
         ResultSet schemaRs = metadata.getSchemas(null, schema);
         return schemaRs.next();
     }
@@ -1337,4 +1341,17 @@ public interface SqlDialect {
     default boolean isTimestampz(String typeName) {
         return false;
     }
+
+    default String dropIndex(SqlgGraph sqlgGraph, AbstractLabel parentLabel, String name) {
+        StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
+        SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+        sql.append(sqlDialect.maybeWrapInQoutes(parentLabel.getSchema().getName()));
+        sql.append(".");
+        sql.append(sqlDialect.maybeWrapInQoutes(name));
+        if (sqlDialect.needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
+    }
+
 }

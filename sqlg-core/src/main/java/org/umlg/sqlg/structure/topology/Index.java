@@ -283,20 +283,13 @@ public class Index implements TopologyInf {
      * @param sqlgGraph
      */
     void delete(SqlgGraph sqlgGraph) {
-        StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
-        SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
-        sql.append(sqlDialect.maybeWrapInQoutes(getParentLabel().getSchema().getName()));
-        sql.append(".");
-        sql.append(sqlDialect.maybeWrapInQoutes(getName()));
-        if (sqlDialect.needsSemicolon()) {
-            sql.append(";");
-        }
+        String sql = sqlgGraph.getSqlDialect().dropIndex(sqlgGraph, getParentLabel(), getName());
         if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+            logger.debug(sql);
         }
         Connection conn = sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
+            stmt.execute(sql);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
