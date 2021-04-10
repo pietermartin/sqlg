@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.topology;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ public class TestLargeSchemaPerformance extends BaseTest {
 
     @Test
     public void testPerformance() {
+        Assume.assumeFalse(isMariaDb());
         //100 schemas
         //500 000 tables
         //100 columns in each table
