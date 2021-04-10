@@ -76,9 +76,9 @@ public class TestMultiThreadedBatch extends BaseTest {
 
     private void testMultiThreadAddVertex_assert(SqlgGraph sqlgGraph, Set<Integer> tables) {
         for (Integer i : tables) {
-            Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + String.valueOf(i)).isPresent());
-            Assert.assertEquals(2000, sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
-            List<Vertex> persons = sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).toList();
+            Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + i).isPresent());
+            Assert.assertEquals(2000, sqlgGraph.traversal().V().has(T.label, "Person" + i).has("name", i).count().next().intValue());
+            List<Vertex> persons = sqlgGraph.traversal().V().has(T.label, "Person" + i).toList();
             for (Vertex v : persons) {
                 Assert.assertEquals(i, v.value("name"));
             }
@@ -114,6 +114,8 @@ public class TestMultiThreadedBatch extends BaseTest {
                                 sqlgGraph.tx().rollback();
                                 if ((isPostgres() && e.getCause().getClass().getSimpleName().equals("PSQLException")) ||
                                         (isHsqldb() && e.getCause().getClass().getSimpleName().equals("SQLSyntaxErrorException")) ||
+                                        (isMariaDb() && e.getCause().getClass().getSimpleName().equals("SQLSyntaxErrorException")) ||
+                                        (isMysql() && e.getCause().getClass().getSimpleName().equals("SQLSyntaxErrorException")) ||
                                         (isH2() && e.getCause().getClass().getSimpleName().equals("JdbcSQLSyntaxErrorException"))) {
 
                                     //swallow
