@@ -1354,4 +1354,11 @@ public interface SqlDialect {
         return sql.toString();
     }
 
+    /**
+     * This is only needed for Hsqldb where we are unable to check for the existence of Sqlg's schemas
+     * @return
+     */
+    default boolean canUserCreateSchemas(SqlgGraph sqlgGraph) {
+        return true;
+    }
 }

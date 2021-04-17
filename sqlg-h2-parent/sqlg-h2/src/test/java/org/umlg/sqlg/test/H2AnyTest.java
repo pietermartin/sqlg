@@ -21,6 +21,7 @@ public class H2AnyTest extends AnyTest {
             if (directory.exists()) {
                 FileUtils.cleanDirectory(directory);
             } else {
+                //noinspection ResultOfMethodCallIgnored
                 directory.mkdir();
             }
         } catch (IOException e) {

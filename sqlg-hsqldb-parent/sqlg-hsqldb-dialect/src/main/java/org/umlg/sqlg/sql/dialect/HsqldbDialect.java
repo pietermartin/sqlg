@@ -1300,4 +1300,17 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return false;
         }
     }
+
+    @Override
+    public boolean canUserCreateSchemas(SqlgGraph sqlgGraph) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        String testSchema = "TESTTHISANDTHAT";
+        try (Statement s = connection.createStatement()) {
+            s.execute(createSchemaStatement(testSchema));
+            s.execute("DROP SCHEMA " + maybeWrapInQoutes(testSchema));
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 }

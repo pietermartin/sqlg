@@ -337,6 +337,7 @@ public class Topology {
     public Topology(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
+        boolean canUserCreateSchemas = sqlgGraph.getSqlDialect().canUserCreateSchemas(sqlgGraph);
 
         //Pre-create the meta topology.
         Schema sqlgSchema = Schema.instantiateSqlgSchema(this);
@@ -438,7 +439,12 @@ public class Topology {
         sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_LOG, columns);
 
         //add the public schema
-        this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(sqlgGraph, this, sqlgGraph.getSqlDialect().getPublicSchema()));
+        if (canUserCreateSchemas) {
+            this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(sqlgGraph, this, sqlgGraph.getSqlDialect().getPublicSchema()));
+        } else {
+            Schema schema = Schema.instantiateSchema(this, sqlgGraph.getSqlDialect().getPublicSchema());
+            this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), schema);
+        }
 
         //add the global unique index schema
         this.globalUniqueIndexSchema.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));

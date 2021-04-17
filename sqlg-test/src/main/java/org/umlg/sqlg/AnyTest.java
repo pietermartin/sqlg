@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.reducing.TestReducingUserSuppliedIds;
+import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 
 /**
  * Date: 2014/07/16
@@ -11,8 +11,9 @@ import org.umlg.sqlg.test.reducing.TestReducingUserSuppliedIds;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestReducing.class,
-        TestReducingUserSuppliedIds.class
+//        TestReducingUserSuppliedIds.class
 //        TestUserSuppliedPKTopology.class
+        TestReadOnlyRole.class
 })
 public class AnyTest {
 }

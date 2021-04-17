@@ -49,6 +49,7 @@ class SqlgStartupManager {
     void loadSqlgSchema() {
         try {
             logger.debug("SchemaManager.loadSqlgSchema()...");
+            boolean canUserCreateSchemas = this.sqlgGraph.getSqlDialect().canUserCreateSchemas(this.sqlgGraph);
 
             //We need Connection.TRANSACTION_SERIALIZABLE here as the SqlgGraph can startup while other graphs are
             //creating schema objects concurrently.
@@ -59,19 +60,19 @@ class SqlgStartupManager {
             boolean existSqlgSchema = existSqlgSchema();
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
-            if (!existSqlgSchema) {
+            if (canUserCreateSchemas && !existSqlgSchema) {
                 //This exist separately because Hsqldb and H2 do not support "if exist" in the schema creation sql.
                 createSqlgSchema();
             }
-            if (!existGuiSchema()) {
+            if (canUserCreateSchemas && !existGuiSchema()) {
                 createGuiSchema();
             }
-            if (!existSqlgSchema) {
+            if (canUserCreateSchemas && !existSqlgSchema) {
                 createSqlgSchemaTablesAndIndexes();
             }
             //The default schema is generally called 'public' and is created upfront by the db.
             //But what if its been deleted, so check.
-            if (!existDefaultSchema()) {
+            if (canUserCreateSchemas && !existDefaultSchema()) {
                 createDefaultSchema();
             }
             //committing here will ensure that sqlg creates the tables.
@@ -82,7 +83,7 @@ class SqlgStartupManager {
             connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             logger.debug(String.format("Time to createVertexLabel sqlg topology: %s", stopWatch));
-            if (!existSqlgSchema) {
+            if (canUserCreateSchemas && !existSqlgSchema) {
                 addPublicSchema();
                 this.sqlgGraph.tx().commit();
 
@@ -90,7 +91,7 @@ class SqlgStartupManager {
                 connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             }
-            if (!existSqlgSchema) {
+            if (canUserCreateSchemas && !existSqlgSchema) {
                 //old versions of sqlg needs the topology populated from the information_schema table.
                 logger.debug("Upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
                 StopWatch stopWatch2 = new StopWatch();
