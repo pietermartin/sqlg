@@ -1,0 +1,28 @@
+{
+  "name": "sqlg-ui",
+  "version": "1.0.0",
+  "description": "A admin ui for Sqlg",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "webpack --watch",
+    "build": "webpack"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jquery": "^3.6.0",
+    "mithril": "^2.0.4",
+    "split-pane": "^0.5.1"
+  },
+  "devDependencies": {
+    "css-loader": "^5.2.2",
+    "html-webpack-plugin": "^5.3.1",
+    "mergerino": "^0.4.0",
+    "sass": "^1.32.10",
+    "sass-loader": "^11.0.1",
+    "style-loader": "^2.0.0",
+    "webpack": "^5.33.2",
+    "webpack-cli": "^4.6.0"
+  }
+}

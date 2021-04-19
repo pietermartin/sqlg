@@ -196,6 +196,7 @@
         <module>sqlg-mysql-parent</module>
         <module>sqlg-mssqlserver-parent</module>
         <module>sqlg-doc</module>
+        <module>sqlg-ui</module>
     </modules>
     <dependencyManagement>
         <dependencies>

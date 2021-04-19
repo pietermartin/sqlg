@@ -23,3 +23,7 @@ src/test/db/
 **/.settings
 /.metadata
 /.recommenders
+/sqlg-ui/src/main/web/node_modules/
+/sqlg-ui/src/main/web/dist/app.js
+/sqlg-ui/src/main/web/dist/index.html
+/sqlg-ui/src/main/web/package-lock.json
