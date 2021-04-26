@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.roles.TestReadOnlyRole;
+import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 
 /**
  * Date: 2014/07/16
@@ -13,7 +13,7 @@ import org.umlg.sqlg.test.roles.TestReadOnlyRole;
 //        TestReducing.class,
 //        TestReducingUserSuppliedIds.class
 //        TestUserSuppliedPKTopology.class
-        TestReadOnlyRole.class
+        TestUnoptimizedRepeatStep.class
 })
 public class AnyTest {
 }

@@ -9,10 +9,7 @@ html, body {
         box-sizing: border-box;
         width: 100%;
         height: 100%;
-        padding: 5px;
-        background: silver;
 
-        .fixed-left {
             #left-component {
                 width: 20em;
             }
@@ -28,9 +25,8 @@ html, body {
             }
 
             .split-pane-divider {
-                background: #aaa;
+                background: blue;
             }
-        }
 
     }
 

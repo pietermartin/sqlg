@@ -4,7 +4,9 @@ let webpack = require('webpack');
 
 module.exports = {
     mode: 'development',
-    entry: './src/index.js',
+    entry: {
+        app: './sqlg/v1/index.js'
+    },
     devtool: 'inline-source-map',
     plugins: [
         new HtmlWebpackPlugin({
@@ -22,6 +24,13 @@ module.exports = {
     },
     module: {
         rules: [
+            {
+                test: /(\.png|\.gif|\.ttf|\.eot|\.woff|\.svg|\.jpg|\.jpe?g)/,
+                // use: [{loader: "file-loader", options: {publicPath: 'assets'}}]
+                use: [
+                    {loader: "file-loader", options: {outputPath: 'assets'}}
+                ]
+            },
             {test: /\.css$/, use: ['style-loader', 'css-loader']},
             {
                 test: /\.s[ac]ss$/i,

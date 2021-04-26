@@ -11,9 +11,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "file-loader": "^6.2.0",
     "jquery": "^3.6.0",
+    "meiosis-setup": "*",
     "mithril": "^2.0.4",
-    "split-pane": "^0.5.1"
+    "split-pane": "^0.5.1",
+    "tippy.js": "^6.3.1",
+    "underscore": "^1.13.1"
   },
   "devDependencies": {
     "css-loader": "^5.2.2",
