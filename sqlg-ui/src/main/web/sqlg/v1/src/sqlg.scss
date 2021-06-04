@@ -1,0 +1,13 @@
+@import "~bootstrap/scss/bootstrap";
+@import "components/tree/slick-lazy-tree";
+@import "../../../node_modules/@fortawesome/fontawesome-free/css/all.css";
+@import "../../../node_modules/tippy.js/themes/light.css";
+@import "../../../node_modules/tippy.js/themes/light-border.css";
+
+html {
+    height: 100%;
+
+    body {
+        height: 100%;
+    }
+}

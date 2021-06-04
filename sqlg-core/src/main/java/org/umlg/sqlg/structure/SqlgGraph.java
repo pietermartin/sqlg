@@ -33,6 +33,8 @@ import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -228,6 +230,7 @@ public class SqlgGraph implements Graph {
      * the build version of sqlg
      */
     private String buildVersion;
+    private boolean sqlgUiIsUp = false;
 
     //This has some static suckness
     static {
@@ -268,8 +271,8 @@ public class SqlgGraph implements Graph {
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
-    }  
-    
+    }
+
     public static <G extends Graph> G open(final Configuration configuration) {
         SqlgDataSource dataSource = SqlgDataSourceFactory.create(configuration);
         try {
@@ -291,7 +294,20 @@ public class SqlgGraph implements Graph {
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
         sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
-        return (G)sqlgGraph;
+        //are we going to expose a ui
+        try {
+            Class<?> clazz = Class.forName("org.umlg.sqlg.ui.SqlgUI");
+            try {
+                Method method = clazz.getMethod("get", SqlgGraph.class);
+                method.invoke(null, sqlgGraph); // static method doesn't have an instance
+                sqlgGraph.sqlgUiIsUp = true;
+            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (ClassNotFoundException ignore) {
+            //swallow
+        }
+        return (G) sqlgGraph;
     }
 
     private SqlgGraph(final Configuration configuration, SqlgDataSource dataSource) {
@@ -568,6 +584,17 @@ public class SqlgGraph implements Graph {
         logger.debug(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
         if (this.tx().isOpen())
             this.tx().close();
+        try {
+            Class<?> clazz = Class.forName("org.umlg.sqlg.ui.SqlgUI");
+            try {
+                Method method = clazz.getMethod("stop");
+                method.invoke(null, null); // static method doesn't have an instance
+            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (ClassNotFoundException ignore) {
+            //swallow
+        }
         this.topology.close();
         this.sqlgDataSource.close();
     }

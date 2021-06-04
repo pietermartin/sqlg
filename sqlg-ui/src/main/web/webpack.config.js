@@ -1,24 +1,20 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 let webpack = require('webpack');
 
 module.exports = {
     mode: 'development',
     entry: {
-        app: './sqlg/v1/index.js'
+        app: './sqlg/v1/src/index.js'
     },
     devtool: 'inline-source-map',
     plugins: [
-        new HtmlWebpackPlugin({
-            title: 'Sqlg UI',
-        }),
         new webpack.ProvidePlugin({
-            jquery: 'jquery',
-            jQuery: 'jquery'
+            "$": "jquery",
+            "jQuery": "jquery"
         })
     ],
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'dist/sqlg/v1'),
         filename: 'app.js',
         clean: true,
     },
@@ -26,7 +22,6 @@ module.exports = {
         rules: [
             {
                 test: /(\.png|\.gif|\.ttf|\.eot|\.woff|\.svg|\.jpg|\.jpe?g)/,
-                // use: [{loader: "file-loader", options: {publicPath: 'assets'}}]
                 use: [
                     {loader: "file-loader", options: {outputPath: 'assets'}}
                 ]
@@ -43,6 +38,10 @@ module.exports = {
                     "sass-loader",
                 ],
             },
+            {
+                test: /jqx-all\.js$/,
+                use: ['script-loader']
+            }
         ],
     }
 };
