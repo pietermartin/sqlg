@@ -440,13 +440,15 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     public void loadInVertex(ResultSet resultSet, List<ColumnList.Column> inForeignKeyColumns) {
         List<Comparable> identifiers = SqlgUtil.getValue(resultSet, inForeignKeyColumns);
-        ColumnList.Column column = inForeignKeyColumns.get(0);
-        this.inVertex = SqlgVertex.of(
-                this.sqlgGraph,
-                identifiers,
-                column.getForeignSchemaTable().getSchema(),
-                column.getForeignSchemaTable().getTable()
-        );
+        if (!identifiers.isEmpty()) {
+            ColumnList.Column column = inForeignKeyColumns.get(0);
+            this.inVertex = SqlgVertex.of(
+                    this.sqlgGraph,
+                    identifiers,
+                    column.getForeignSchemaTable().getSchema(),
+                    column.getForeignSchemaTable().getTable()
+            );
+        }
     }
 
     public void loadOutVertex(ResultSet resultSet, SchemaTable outVertexSchemaTable, int columnIdx) throws SQLException {
@@ -458,13 +460,15 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     public void loadOutVertex(ResultSet resultSet, List<ColumnList.Column> outForeignKeyColumns) {
         List<Comparable> identifiers = SqlgUtil.getValue(resultSet, outForeignKeyColumns);
-        ColumnList.Column column = outForeignKeyColumns.get(0);
-        this.outVertex = SqlgVertex.of(
-                this.sqlgGraph,
-                identifiers,
-                column.getForeignSchemaTable().getSchema(),
-                column.getForeignSchemaTable().getTable()
-        );
+        if (!identifiers.isEmpty()) {
+            ColumnList.Column column = outForeignKeyColumns.get(0);
+            this.outVertex = SqlgVertex.of(
+                    this.sqlgGraph,
+                    identifiers,
+                    column.getForeignSchemaTable().getSchema(),
+                    column.getForeignSchemaTable().getTable()
+            );
+        }
     }
 
     private void loadResultSet(ResultSet resultSet, List<VertexLabel> inForeignKeys, List<VertexLabel> outForeignKeys) throws SQLException {

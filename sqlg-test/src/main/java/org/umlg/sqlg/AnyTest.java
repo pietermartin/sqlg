@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.roles.TestReadOnlyRole;
+import org.umlg.sqlg.test.vertex.TestVertexCache;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,7 @@ import org.umlg.sqlg.test.roles.TestReadOnlyRole;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestReducing.class,
-//        TestReducingUserSuppliedIds.class
-//        TestUserSuppliedPKTopology.class
-        TestReadOnlyRole.class
+        TestVertexCache.class
 })
 public class AnyTest {
 }
