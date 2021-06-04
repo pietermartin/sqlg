@@ -1,0 +1,815 @@
+/* slickgrid-custom.css*/
+.slick-header.ui-state-default {
+    border-top: none;
+}
+
+.slick-header-columns.ui-state-default {
+    background: url('./../../../src/assets/slickgrid/images/header-columns-bg.gif') repeat-x center bottom;
+    border-bottom: 1px solid silver;
+}
+
+.slick-header-column.ui-state-default {
+    background: url('./../../../src/assets/slickgrid/images/header-columns-bg.gif') repeat-x center bottom;
+    border-right: 1px solid silver;
+}
+
+.slick-headerrow-columns .ui-state-default {
+    border-right-style: dotted;
+    border-right-size: 1px;
+    border-left: none;
+    border-top: none;
+    border-bottom: none;
+}
+
+.slick-headerrow-column .ui-state-default {
+    background: #fafafa;
+    border-bottom: 0;
+    height: 100%;
+}
+
+.input-group-text.active-filter {
+    color: red;
+}
+
+.editor-selectCell {
+    width: 100%;
+}
+.editor-selectCell.active-filter {
+    color: red;
+}
+.gridPane {
+    width: 100%;
+    font-size: 12px;
+}
+
+/* Overrider jquery-ui */
+.gridPane.ui-widget {
+    font-size: 12px;
+}
+
+.slick-cell.editable {
+    margin: 0;
+    padding: 0;
+}
+
+input.editor-text {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.slick-cell .collapse:not(.show) {
+    display: inline-block !IMPORTANT;
+}
+
+.slick-row.etl-element {
+    background: #f5f5f5;
+}
+
+.slick-select .slick-cell h6 {
+    color: black;
+}
+
+.slick-cell.active {
+    border-color: silver;
+    border-style: solid;
+}
+
+/*.slick-cell.selected {*/
+/*    background-color: rgba(102, 182, 255, 0.7) !important;*/
+/*    color: #fff;*/
+/*}*/
+
+.slick-cell .editing.checkbox-editing {
+    height: 100%;
+    background-color: white;
+    color: black;
+    text-align: center;
+}
+
+
+
+/* Component Based Css */
+/*.slick-row.active .slick-cell {*/
+/*    background-color: #66B6FF;*/
+/*    !* border: none; *!*/
+/*    color: #fff;*/
+/*}*/
+
+/*http://www.cssscript.com/demo/pretty-checkbox-radio-inputs-with-bootstrap-and-awesome-bootstrap-checkbox-css/*/
+.checkbox {
+    padding-left: 8px;
+}
+
+.checkbox label {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    padding-left: 5px;
+    cursor: pointer;
+}
+
+.checkbox label::before {
+    content: "";
+    display: inline-block;
+    position: absolute;
+    width: 17px;
+    height: 17px;
+    left: 0;
+    margin-left: -20px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background-color: #fff;
+    -webkit-transition: border 0.15s ease-in-out, color 0.15s ease-in-out;
+    -o-transition: border 0.15s ease-in-out, color 0.15s ease-in-out;
+    transition: border 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.checkbox label::after {
+    display: inline-block;
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 0;
+    top: 0;
+    margin-left: -20px;
+    padding-left: 3px;
+    padding-top: 0px;
+    font-size: 11px;
+    color: #555555;
+}
+
+.checkbox input[type="checkbox"] {
+    cursor: pointer;
+    opacity: 0;
+    z-index: 1;
+}
+
+.checkbox input[type="checkbox"]:focus + label::before {
+    outline: none;
+}
+
+.checkbox input[type="checkbox"]:checked + label::after {
+    font-family: 'FontAwesome';
+    content: "\f00c";
+}
+
+.checkbox input[type="checkbox"]:disabled + label {
+    opacity: 0.65;
+}
+
+.checkbox input[type="checkbox"]:disabled + label::before {
+    background-color: #eeeeee;
+    cursor: not-allowed;
+}
+
+.checkbox.checkbox-circle label::before {
+    border-radius: 50%;
+}
+
+.checkbox.checkbox-inline {
+    margin-top: 0;
+}
+
+.checkbox-primary input[type="checkbox"]:checked + label::before {
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+
+.checkbox-primary input[type="checkbox"]:checked + label::after {
+    color: #fff;
+}
+
+.checkbox-danger input[type="checkbox"]:checked + label::before {
+    background-color: #d9534f;
+    border-color: #d9534f;
+}
+
+.checkbox-danger input[type="checkbox"]:checked + label::after {
+    color: #fff;
+}
+
+.checkbox-info input[type="checkbox"]:checked + label::before {
+    background-color: #66B6FF;
+    border-color: #66B6FF;
+}
+
+.checkbox-info input[type="checkbox"]:checked + label::after {
+    color: #fff;
+}
+
+.checkbox-warning input[type="checkbox"]:checked + label::before {
+    background-color: #f0ad4e;
+    border-color: #f0ad4e;
+}
+
+.checkbox-warning input[type="checkbox"]:checked + label::after {
+    color: #fff;
+}
+
+.checkbox-success input[type="checkbox"]:checked + label::before {
+    background-color: #5cb85c;
+    border-color: #5cb85c;
+}
+
+.checkbox-success input[type="checkbox"]:checked + label::after {
+    color: #fff;
+}
+
+.radio {
+    padding-left: 20px;
+}
+
+.radio label {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    padding-left: 5px;
+}
+
+.radio label::before {
+    content: "";
+    display: inline-block;
+    position: absolute;
+    width: 17px;
+    height: 17px;
+    left: 0;
+    margin-left: -20px;
+    border: 1px solid #cccccc;
+    border-radius: 50%;
+    background-color: #fff;
+    -webkit-transition: border 0.15s ease-in-out;
+    -o-transition: border 0.15s ease-in-out;
+    transition: border 0.15s ease-in-out;
+}
+
+.radio label::after {
+    display: inline-block;
+    position: absolute;
+    content: " ";
+    width: 11px;
+    height: 11px;
+    left: 3px;
+    top: 3px;
+    margin-left: -20px;
+    border-radius: 50%;
+    background-color: #555555;
+    -webkit-transform: scale(0, 0);
+    -ms-transform: scale(0, 0);
+    -o-transform: scale(0, 0);
+    transform: scale(0, 0);
+    -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.8, -0.33, 0.2, 1.33);
+    -moz-transition: -moz-transform 0.3s cubic-bezier(0.8, -0.33, 0.2, 1.33);
+    -o-transition: -o-transform 0.3s cubic-bezier(0.8, -0.33, 0.2, 1.33);
+    transition: transform 0.3s cubic-bezier(0.8, -0.33, 0.2, 1.33);
+}
+
+.radio input[type="radio"] {
+    opacity: 0;
+    z-index: 1;
+}
+
+.radio input[type="radio"]:focus + label::before {
+    outline: none;
+}
+
+.radio input[type="radio"]:checked + label::after {
+    -webkit-transform: scale(1, 1);
+    -ms-transform: scale(1, 1);
+    -o-transform: scale(1, 1);
+    transform: scale(1, 1);
+}
+
+.radio input[type="radio"]:disabled + label {
+    opacity: 0.65;
+}
+
+.radio input[type="radio"]:disabled + label::before {
+    cursor: not-allowed;
+}
+
+.radio.radio-inline {
+    margin-top: 0;
+}
+
+.radio-primary input[type="radio"] + label::after {
+    background-color: #337ab7;
+}
+
+.radio-primary input[type="radio"]:checked + label::before {
+    border-color: #337ab7;
+}
+
+.radio-primary input[type="radio"]:checked + label::after {
+    background-color: #337ab7;
+}
+
+.radio-danger input[type="radio"] + label::after {
+    background-color: #d9534f;
+}
+
+.radio-danger input[type="radio"]:checked + label::before {
+    border-color: #d9534f;
+}
+
+.radio-danger input[type="radio"]:checked + label::after {
+    background-color: #d9534f;
+}
+
+.radio-info input[type="radio"] + label::after {
+    background-color: #66B6FF;
+}
+
+.radio-info input[type="radio"]:checked + label::before {
+    border-color: #66B6FF;
+}
+
+.radio-info input[type="radio"]:checked + label::after {
+    background-color: #66B6FF;
+}
+
+.radio-warning input[type="radio"] + label::after {
+    background-color: #f0ad4e;
+}
+
+.radio-warning input[type="radio"]:checked + label::before {
+    border-color: #f0ad4e;
+}
+
+.radio-warning input[type="radio"]:checked + label::after {
+    background-color: #f0ad4e;
+}
+
+.radio-success input[type="radio"] + label::after {
+    background-color: #5cb85c;
+}
+
+.radio-success input[type="radio"]:checked + label::before {
+    border-color: #5cb85c;
+}
+
+.radio-success input[type="radio"]:checked + label::after {
+    background-color: #5cb85c;
+}
+
+input[type="checkbox"].styled:checked + label:after {
+    font-family: 'FontAwesome';
+    content: "\f00c";
+}
+
+input[type="checkbox"] .styled:checked + label::before {
+    color: #fff;
+}
+
+input[type="checkbox"] .styled:checked + label::after {
+    color: #fff;
+}
+
+/* Overrides */
+
+/* allow cool radiocheckboxes to look good in an input-group-addon */
+.input-group-addon .checkbox label {
+    padding: 0 !important;
+}
+
+.input-group-addon .checkbox {
+    margin: 0 !important;
+}
+
+.input-group-addon .checkbox input {
+    height: 16px !important;
+    width: 16px !important;
+}
+
+.input-group.input-group-button .btn {
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+}
+
+.input-group.input-group-button .input-group-addon {
+    border-bottom-left-radius: 2px;
+    border-top-left-radius: 2px;
+}
+
+.input-group-button .input-group-addon {
+    padding: 4px 4px 0 7px;
+}
+
+.input-group-button .checkbox-primary input[type="checkbox"]:checked + label::after {
+    padding-top: 3px;
+    padding-right: 3px;
+}
+
+label {
+    display: inline-block;
+}
+
+/* For Parameter manager */
+.slick-headerrow.ui-state-default {
+    background: transparent;
+    border: none;
+}
+
+.slick-cell input[type=checkbox]:not(.slick-tree-checkbox) {
+    display: inline-block;
+    vertical-align: inherit;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.slick-cell .slick-checkmark {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+.slick-headerrow-column:before {
+    position: absolute;
+    margin-top: 8px;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    margin-left: 6px;
+    color: #CCC;
+}
+
+.slick-headerrow-column {
+    background: #f5f5f5;
+    text-overflow: clip;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.slick-headerrow-column input {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    opacity: 1;
+    transition: background 1s;
+}
+
+.slick-headerrow-column input:focus {
+    border-width: 0;
+    background: #FFF;
+}
+
+#gridPane input[type=checkbox] {
+    display: none;
+}
+
+/* Regular checkbox */
+#gridPane .slick-cell-checkboxsel input[type=checkbox]:checked + label:before {
+    opacity: 1;
+    background: #5cb85c;
+    color: #fff;
+}
+
+#gridPane .slick-cell-checkboxsel input[type=checkbox] + label:before {
+    cursor: pointer;
+    font-family: 'Font Awesome 5 Free';
+    color: transparent;
+    font-weight: bold;
+    content: "\F00C";
+    font-size: 11px;
+    padding: 3px;
+    border: 1px solid silver;
+    border-radius: 5px;
+}
+
+#gridPane #filter-checkbox-selectall-container input[type=checkbox]:checked + label:before {
+    opacity: 1;
+    background: #5cb85c;
+    color: #fff;
+}
+
+#gridPane #filter-checkbox-selectall-container input[type=checkbox] + label:before {
+    cursor: pointer;
+    font-family: 'Font Awesome 5 Free';
+    color: transparent;
+    font-weight: bold;
+    content: "\F00C";
+    font-size: 11px;
+    padding: 3px;
+    border: 1px solid silver;
+    border-radius: 5px;
+}
+
+/* Delete checkbox */
+
+#gridPane .slick-cell-checkboxsel-del.selected input[type=checkbox] + label:before {
+    opacity: 1;
+    color: #FF5964;
+}
+
+#gridPane .slick-cell-checkboxsel-del input[type=checkbox] + label:before {
+    cursor: pointer;
+    font-family: 'Font Awesome 5 Free';
+    color: #555;
+    font-weight: bold;
+    content: "\F1F8";
+    font-size: 13px;
+    padding: 3px;
+}
+
+.slick-headerrow-columns input {
+    height: 22px;
+}
+
+
+.slickGroup {
+    display: table-cell;
+    position: relative;
+    left: -300px;
+    background: #F5F5F5;
+    max-width: 320px;
+    font-size: 14px;
+    z-index: 999;
+    border-radius: 16px;
+    box-shadow: 4px 4px 32px 0 rgba(0, 0, 0, 0.4);
+    cursor: default;
+    opacity: 0;
+    transition: box-shadow 1s, opacity 1s, left 0.5s
+}
+
+.slickGroup:hover {
+    box-shadow: 4px 4px 32px 0 rgba(0, 0, 0, 0.8);
+}
+
+.slickGroup [type=checkbox] {
+    display: block;
+    float: left;
+    margin: 3px 4px 0 0
+}
+
+.slickGroup em {
+    display: flex;
+    position: relative;
+    padding: 0 20px 0 0;
+    white-space: nowrap;
+    font-style: normal;
+    transition: opacity 1s
+}
+
+.slickGroupHead {
+    display: block;
+    position: relative;
+    width: 100%;
+    background: #337AB7;
+    color: #FFF;
+    border-radius: 16px 16px 0 0;
+    padding: 6px 48px 6px 16px;
+    border-style: solid;
+    border-width: 0 0 1px 0;
+    border-color: #BBB;
+    cursor: move
+}
+
+.slickGroupClose {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: #FFF;
+    font-size: 14pt;
+    cursor: pointer;
+    opacity: 0.2;
+    transition: all 1s
+}
+
+.slickGroupClose:hover {
+    opacity: 0.8
+}
+
+.slickGroupBody {
+    margin: 8px 16px 9px 16px;
+    max-height: 320px;
+    overflow-X: hidden;
+    overflow-Y: auto
+}
+
+.slickGroupBody em {
+    opacity: 0.5
+}
+
+.slickGroupBody em:hover {
+    opacity: 0.6
+}
+
+.slickGroupBody [data-on='1'] {
+    font-weight: bold;
+    opacity: 1
+}
+
+.slickGroupBody [data-on='1']:hover {
+    opacity: 1
+}
+
+.slickGroupBody [data-on='1']:hover .slickGroupUp {
+    opacity: 0.5
+}
+
+.slickGroupUp {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    color: #000;
+    opacity: 0;
+    cursor: pointer;
+    transition: all 1s
+}
+
+.slickGroupFoot {
+    display: block;
+    position: relative;
+    width: 100%;
+    background: #EEE;
+    border-radius: 0 0 16px 16px;
+    padding: 6px 48px 6px 16px;
+    border-style: solid;
+    border-width: 1px 0 0 0;
+    border-color: #BBB
+}
+
+.slickGroupFoot em {
+    font-style: italic;
+    color: #666
+}
+
+.slick-group .cell-selection {
+    text-align: left;
+    font-size: 13px;
+    padding: 2px 0 2px 12px;
+    background: #808080;
+    color: #FFF;
+    text-shadow: rgba(0, 0, 0, 0.3) 1px 1px 2px;
+}
+
+.slick-group .cell-selection i {
+    font-weight: normal;
+    display: inline-block;
+    margin: 0 0 0 8px;
+    color: #EEE
+}
+
+.slick-group .cell-selection span {
+    margin-right: 12px
+}
+
+.slick-group .slick-cell {
+    /*background: #808080;*/
+    background: lightgrey;
+    /*color: #fff;*/
+}
+
+/* add padding  */
+
+/*.odd.slick-row-deleted {*/
+/*    background-color: #FDEEF4;*/
+/*}*/
+
+/*.even.slick-row-deleted {*/
+/*    background-color: #FDEEF4 !important;*/
+/*}*/
+
+/*.slick-row-deleted {*/
+/*    background-color: #FDEEF4;*/
+/*}*/
+
+/*.slick-row-deleted .slick-cell.selected {*/
+/*    background-color: #FDEEF4 !important;*/
+/*    color: black;*/
+/*}*/
+
+/*.slick-row-deleted .slick-cell .fa-trash-alt {*/
+/*    color: red;*/
+/*}*/
+
+/*.slick-row-deleted .slick-cell.selected .fa-trash-alt {*/
+/*    color: red;*/
+/*}*/
+
+/*.slick-row-deleted.fa-trash-alt {*/
+/*    color: red;*/
+/*}*/
+
+.slick-cell.selected .fa-trash-alt {
+    color: black;
+}
+
+
+/*.odd.slick-row-selected {*/
+/*    background-color: #93FFE8;*/
+/*}*/
+
+/*.even.slick-row-selected {*/
+/*    background-color: #93FFE8 !important;*/
+/*}*/
+
+/*.slick-row-selected {*/
+/*    background-color: #93FFE8;*/
+/*    color: black;*/
+/*}*/
+
+.odd.slick-row-new {
+    background-color: #C3FDB8;
+}
+
+.even.slick-row-new {
+    background-color: #C3FDB8 !important;
+}
+
+.slick-row-new {
+    background-color: #C3FDB8;
+}
+
+.slick-row-new .slick-cell.selected {
+    background-color: #C3FDB8 !important;
+    color: black;
+}
+
+span.slick-column-name {
+    font-weight: bold;
+}
+
+.slick-headerrow-columns .input-group-text {
+    line-height: 1;
+    padding: 2px;
+}
+
+.slick-headerrow-columns .input-group input {
+    font-size: 12px;
+}
+
+.slick-headerrow-columns .input-group i {
+    font-size: 8px;
+    margin: auto;
+}
+
+.slick-group-toggle {
+    cursor: pointer;
+    font-size: 8px;
+}
+
+#Overlay.overlay-true {
+    width: 100%;
+    position: absolute;
+    height: 100%;
+    z-index: 999;
+}
+
+#Overlay.overlay-true .fas {
+    font-weight: 900;
+    font-size: 5em;
+    color: rgb(14, 129, 230);
+    top: 45%;
+    position: relative;
+    left: 45%;
+}
+
+#Overlay.overlay-false {
+    display: none;
+}
+
+.Overlay.overlay-true {
+    width: 100%;
+    position: absolute;
+    height: 100%;
+    z-index: 999;
+}
+
+.Overlay.overlay-true .fas {
+    font-weight: 900;
+    font-size: 5em;
+    color: rgb(14, 129, 230);
+    top: 45%;
+    position: relative;
+    left: 45%;
+}
+
+.Overlay.overlay-false {
+    display: none;
+}
+
+.emptyGrid {
+    position: absolute;
+    z-index: 1;
+}
+
+.emptyGrid span {
+    color: #8a8a8a;
+    font-size: 25px;
+    font-weight: 900;
+    width: 100%;
+    position: absolute;
+    z-index: 999;
+    padding: 20px;
+    top: 50%;
+    text-align: center;
+}
+
+.cm-slick-custom-button.fas {
+    font-size: 10px;
+    padding-left: 3px;
+}

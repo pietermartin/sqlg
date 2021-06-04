@@ -1,0 +1,569 @@
+:root {
+    --slick-header-column-height: 16px;
+}
+
+.gridContainer {
+    height: 100%;
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-rows: 30px auto 35px;
+    position: relative;
+
+    &.hideGroupHeader {
+        grid-template-columns: auto;
+        grid-template-rows: 0 auto 35px;
+
+        &.hideFooter {
+            grid-template-columns: auto;
+            grid-template-rows: 0 auto 0;
+
+        }
+    }
+
+    &.hideFooter {
+        grid-template-columns: auto;
+        grid-template-rows: auto 35px;
+    }
+}
+
+
+.slick-header-columns {
+    background-image: unset !important;
+    border-bottom: unset !important;
+
+    .slick-header-column {
+        height: var(--slick-header-column-height) !important;
+        background-image: unset !important;
+        border-right-style: unset !important;
+
+        .slick-column-name {
+            //vertical-align: -webkit-baseline-middle;
+            vertical-align: middle;
+        }
+
+        &.slick-header-column-active {
+            background-color: rgb(246, 246, 246);
+            //background-color: rgb(192, 192, 192);
+        }
+
+        .slick-resizable-handle {
+            &:after {
+                content: ""; /* This is necessary for the pseudo element to work. */
+                position: absolute;
+                //left: calc(99.1%);
+                left: 3px;
+                top: 25%;
+                height: 50%;
+                border-right: 1px dotted rgb(192, 192, 192); /* This creates the border. Replace black with whatever color you want. */
+            }
+        }
+
+        .slick-header-button {
+            &.fal {
+                &.fa-bars {
+                    display: none;
+                    //display: block;
+                    position: absolute;
+                    margin: unset;
+                    font-size: 12px;
+                    top: calc(50% - 6px);
+                    left: calc(100% - 20px);
+                }
+            }
+        }
+
+        &:hover {
+            .fal {
+                &.fa-bars {
+                    display: block;
+                }
+            }
+        }
+
+        .slick-header-group-column-active {
+            display: block !important;
+        }
+    }
+}
+
+.slick-headerrow {
+    .filterAddon {
+        cursor: pointer;
+    }
+}
+
+
+.slick-grid-loader {
+
+    position: absolute;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .slick-grid-spinner {
+        position: absolute;
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 10rem;
+        color: $info;
+
+        .downloading {
+            color: $success;
+        }
+    }
+
+}
+
+
+.slick-grid-tools {
+
+    &.slick-grid-header-panel {
+        display: grid;
+        grid-template-columns: auto 1.5rem 1.5rem 1.5rem 1.5rem 0.25rem minmax(10%, 20%);
+        grid-template-rows: 28px; //28 + 1 (top border) + 1 (bottom border)
+        grid-column-gap: 0.25rem;
+        background-color: rgb(246, 246, 246);
+        border-top-width: 1px;
+        border-top-style: solid;
+        border-top-color: rgb(192, 192, 192);
+        border-bottom-width: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: rgb(192, 192, 192);
+
+        .slick-filtered-column {
+            display: flex;
+            align-self: center;
+
+            .slick-filtered-column-names {
+                align-self: center;
+                padding-left: 0.25rem;
+                font-size: 12px;
+
+                span {
+                    margin: 0.1rem;
+                    line-height: 1.2;
+
+                    i {
+                        margin-left: 0.1rem;
+                        cursor: pointer;
+
+                        &:hover {
+                            color: $danger;
+                        }
+                    }
+                }
+            }
+        }
+
+        .slick-header-separator {
+            align-self: center;
+
+            &:before {
+                content: ""; /* This is necessary for the pseudo element to work. */
+                position: relative;
+                left: -0.25rem;
+                top: 25%;
+                height: 50%;
+                border-right: 1px dotted rgb(192, 192, 192); /* This creates the border. Replace black with whatever color you want. */
+                padding-right: 0.25rem;
+            }
+        }
+
+        .slick-grid-header-dropbox {
+            padding: 0.25rem;
+            height: 100%;
+            display: flex;
+            font-size: 12px;
+
+            .slick-grid-dropped-grouping {
+                margin-right: 0.25rem;
+                background-color: $gray-400;
+                font-size: 13px;
+
+                i {
+                    &:hover {
+                        color: $danger;
+                        cursor: pointer;
+                    }
+                }
+            }
+
+            &:before {
+                content: ""; /* This is necessary for the pseudo element to work. */
+                position: relative;
+                left: -0.25rem;
+                top: 25%;
+                height: 50%;
+                border-right: 1px dotted rgb(192, 192, 192); /* This creates the border. Replace black with whatever color you want. */
+                padding-right: 0.25rem;
+            }
+
+            .slick-placeholder {
+                align-self: center;
+            }
+        }
+
+        .slick-grid-header-filter-column-input {
+
+            align-self: center;
+            padding-right: 0.25rem;
+
+            input {
+                font-size: 12px;
+                height: 22px;
+                background-color: $cm_light-blue;
+                border-right: none;
+            }
+
+            .input-group-append {
+                height: 22px;
+
+                .input-group-text {
+                    border-left: none;
+                    background-color: $cm_light-blue;
+
+                    i {
+                        cursor: pointer;
+                    }
+
+                }
+            }
+
+        }
+
+        .slick-grid-header-group-filter-input {
+
+            padding: 4px;
+
+            input {
+                font-size: 12px;
+                height: 22px;
+                background-color: $cm_light-blue;
+                border-right: none;
+            }
+
+            .input-group-append {
+                height: 22px;
+
+                .input-group-text {
+                    border-left: none;
+                    background-color: $cm_light-blue;
+
+                    i {
+                        cursor: pointer;
+                    }
+
+                }
+            }
+
+        }
+
+        .slick-grid-header-group-filter-selected-columns {
+            max-height: 10rem;
+            position: relative;
+            overflow: auto;
+        }
+
+        .slick-grid-header-group-filter-columns {
+            max-height: 10rem;
+            position: relative;
+            overflow: auto;
+        }
+
+        .slick-grid-header-icon {
+
+            align-self: center;
+            justify-self: center;
+
+            i {
+                font-size: 14px;
+
+
+                &.fas, &.far, &.fal {
+                    &:hover {
+                        cursor: pointer;
+                    }
+
+                }
+
+            }
+
+            .dropdown {
+                .dropdown-menu {
+                    max-height: 20rem;
+                    overflow-y: auto;
+
+                    .custom-checkbox {
+                        display: grid;
+                        grid-template-columns: 7rem 1.25rem auto;
+                        grid-template-rows: auto;
+                        justify-items: flex-start;
+                        grid-column-gap: 0.25rem;
+
+                        input, label {
+                            margin-top: auto;
+                            margin-bottom: auto;
+                        }
+
+                    }
+
+                    .custom-dropdown-section {
+                        display: grid;
+                        grid-template-columns: 1.25rem auto;
+                        grid-template-rows: auto;
+                        justify-items: flex-start;
+                        grid-column-gap: 0.25rem;
+
+                        label {
+                            margin: 0;
+                        }
+
+                        span, i {
+                            margin-top: auto;
+                            margin-bottom: auto;
+                        }
+
+                    }
+
+                    .custom-dropdown-section-selected {
+                        display: grid;
+                        grid-template-columns: auto 1.25rem 1.25rem 1.25rem;
+                        grid-template-rows: auto;
+                        justify-items: flex-start;
+                        grid-column-gap: 0.25rem;
+
+                        label {
+                            margin: 0;
+                        }
+
+                        .fa-arrow-square-up, .fa-arrow-square-down {
+                            visibility: hidden;
+                        }
+
+                        &:hover {
+                            .fa-arrow-square-up, .fa-arrow-square-down {
+                                visibility: initial;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+
+    .slick-grid-footer-icon {
+
+        i {
+            &.fas {
+                padding: 8px;
+                color: black;
+
+                &:hover:not(.text-muted) {
+                    border-radius: 5px;
+                    background: #555;
+                    color: #fff;
+                    cursor: pointer;
+                }
+
+                &.text-muted:hover {
+                    cursor: not-allowed;
+                }
+
+            }
+
+        }
+    }
+
+    .slick-grid-legend-red-border {
+        border: 1px solid rgb(255, 0, 0);
+    }
+
+}
+
+.groupSelectAll, .groupSelectToggle {
+    font-size: xx-small;
+}
+
+.gridPane {
+
+    .slick-pane {
+
+        .slick-header-left {
+            border-right-style: none;
+        }
+
+        &.slick-pane-header {
+            .slick-preheader-panel {
+
+                .slick-header-columns {
+                    background-image: unset;
+                    border: unset;
+
+                    .slick-header-column {
+                        //this overrides the variable setting (--slick-header-column-height)
+                        height: 35px !important;
+                        background-image: unset;
+                        border: unset;
+                        padding: unset;
+
+                        .input-group {
+                            padding: 5px;
+
+                            input {
+                                height: 25px;
+                                font-size: 12px;
+                            }
+
+                            .input-group-append {
+                                height: 25px;
+                                font-size: 12px;
+
+                                .input-group-text {
+                                    padding: 0;
+                                }
+                            }
+
+                        }
+
+                        i {
+
+                            margin-top: 1px;
+
+                            &.fas {
+                                font-size: 16px;
+                                padding: 8px;
+                                color: black;
+
+                                &:hover:not(.text-muted) {
+                                    border-radius: 5px;
+                                    background: #555;
+                                    color: #fff;
+                                    cursor: pointer;
+                                }
+
+                                &.text-muted:hover {
+                                    cursor: not-allowed;
+                                }
+
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+
+        .slick-row {
+
+            &.slick-row-selected {
+                background-color: #93FFE8;
+                color: black;
+
+                .slick-cell {
+                    background-color: #93FFE8;
+                    &.selected {
+                        background: linear-gradient(#93FFE8, $slick-selection);
+                        color: black;
+                    }
+
+                    &.selected {
+                        &.row_selected {
+                            background-color: transparent !important;
+                            background: linear-gradient(#93FFE8, $slick-selection);
+                            color: black;
+                        }
+                    }
+
+                    &.row_selected {
+                        background-color: transparent !important;
+                        background: linear-gradient(#93FFE8, $slick-selection);
+                        color: black;
+                    }
+
+                }
+            }
+
+            &.slick-row-deleted {
+                background-color: rgba(255, 3, 0, 0.28);
+
+                .slick-cell {
+                    background-color: rgba(255, 3, 0, 0.28);
+                    &.selected {
+                        background: linear-gradient(rgba(255, 3, 0, 0.28), $slick-selection);
+                        color: black;
+                    }
+
+                    &.selected {
+                        &.row_selected {
+                            background-color: transparent !important;
+                            background: linear-gradient(rgba(255, 3, 0, 0.28), $slick-row-selected);
+                            color: black;
+                        }
+                    }
+
+                    &.row_selected {
+                        background-color: transparent !important;
+                        background: linear-gradient(rgba(255, 3, 0, 0.28), $slick-row-selected);
+                        color: black;
+                    }
+
+                    .fa-trash-alt {
+                        color: red;
+                    }
+                }
+            }
+
+            .slick-cell {
+
+                &.selected {
+                    background-color: $slick-selection !important;
+                    color: #fff;
+                }
+
+                &.selected {
+                    &.row_selected {
+                        background-color: $slick-row-selected-and-selection !important;
+                        color: #fff;
+                    }
+                }
+
+                &.row_selected {
+                    background-color: $slick-row-selected !important;
+                    color: #fff;
+                }
+
+                .fas {
+                    font-size: 15px;
+
+                    &.fa-caret-right, &.fa-caret-down {
+                        width: 12px;
+                        margin-right: 3px;
+
+                        &:hover {
+                            cursor: pointer;
+                            text-shadow: 0 0 10px $success;
+                        }
+                    }
+
+                    &.fa-key {
+                        font-size: 12px;
+                        margin-left: -3px;
+                        margin-right: 3px;
+                    }
+                }
+
+                .far {
+                    font-size: 12px;
+
+                    &.fa-leaf {
+                        width: 14px;
+                        margin-right: 3px;
+                    }
+                }
+            }
+        }
+    }
+}

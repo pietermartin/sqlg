@@ -1,0 +1,207 @@
+/** m.slick.select.scss **/
+.slick-select-outer {
+    position: relative;
+    margin-top: auto;
+    margin-bottom: auto;
+
+    .form-control {
+        height: 100%;
+        padding: 0;
+    }
+
+    .form-control.disabled {
+        cursor: not-allowed;
+        background-color: $gray-200;
+    }
+
+    .slick-cell.active {
+        border: none;
+    }
+
+    .form-control .badge {
+        margin-right: 0.25rem;
+    }
+
+    i.fa-times {
+        cursor: pointer;
+    }
+
+    i {
+        font-style: inherit;
+    }
+
+
+    i.placeholder {
+        font-size: 0.75rem;
+        padding-left: 0.4em;
+    }
+
+    .select-inner-text {
+        position: relative;
+        /*copying from bootstrap*/
+        padding: 0.25rem;
+
+
+        .badge {
+            font-size: 90%;
+        }
+
+        .badge.badge-secondary {
+            font-size: 75%;
+            padding-right: 2px;
+        }
+
+        .fas {
+            &.fa-caret-down, &.fa-caret-up {
+                position: absolute;
+                top: 50%;
+                right: 0.25rem;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .slick-select-place-holder {
+            &.badge {
+                &.badge-primary {
+                    background-color: transparent;
+                    color: $text-muted;
+                    font-style: normal;
+                    font-weight: 400;
+                    font-size: 0.75rem;
+                }
+            }
+
+            span {
+                &.badge {
+                    &.badge-secondary {
+                        background-color: transparent;
+                        color: transparent;
+                    }
+                }
+            }
+        }
+
+    }
+
+    .slick-select {
+        z-index: 2;
+        background-color: #FFF;
+        padding: 0;
+        border-bottom: 1px solid #CED4DA;
+        border-left: 1px solid #CED4DA;
+        border-right: 1px solid #CED4DA;
+
+        .slick-pane {
+            &.slick-pane-header {
+                &.slick-pane-left {
+                    height: 1px;
+                }
+            }
+        }
+
+        /* this is to override bootstrap form validation classes that affect slick select's filter input*/
+        .form-control {
+            &.no-validate {
+                &:valid {
+                    border-color: #ced4da;
+                    padding-right: .75rem;
+                    background: white;
+                }
+
+                /* this is to override bootstrap form validation classes that affect slick select's filter input*/
+                &:focus {
+                    border-color: #ced4da;
+                    box-shadow: none;
+                }
+            }
+
+        }
+
+
+        .slick-row {
+            background-color: #FFF;
+            border: none;
+
+            &:hover {
+                background-color: #007BFF;
+
+                &.slick-row-disabled {
+                    background-color: $gray-200;
+                    color: $text-muted;
+                }
+            }
+
+            &:hover {
+                background-color: #007BFF;
+
+                &.slick-row-disabled {
+                    background-color: $gray-200;
+                    color: $text-muted;
+                }
+            }
+
+            &.slick-row-disabled {
+                background-color: $gray-200;
+                color: $text-muted;
+            }
+
+            .slick-cell {
+                border: none;
+
+                &.selected {
+                    background-color: $slick-row-selected !important;
+                    color: #fff;
+
+                    &:hover {
+                        background-color: $slick-row-selected-hover !important;
+                    }
+                }
+            }
+        }
+
+
+        .slick-headerrow-columns {
+
+            .ui-state-default {
+                border-right-style: none;
+            }
+
+            .input-group-text {
+                height: 28px;
+                line-height: 1;
+                padding: 2px;
+            }
+
+            .input-group {
+                margin-top: 2px;
+
+                input {
+                    height: 28px;
+                    padding-left: 5px;
+                    line-height: 1;
+
+                    &:focus {
+                        border-width: 1px !important;
+                    }
+                }
+
+                i {
+                    font-size: 1rem;
+                }
+            }
+        }
+
+        .bg-input-group {
+            height: 100%;
+        }
+
+        .bg-input-group .input-group-text {
+            padding: 4px;
+        }
+
+    }
+}
+
+
+
+

@@ -1,0 +1,604 @@
+.slickgrid-container {
+  overflow: hidden;
+  outline: 0;
+  position: relative;
+  box-sizing: content-box;
+}
+.slickgrid-container .slick-group-header-columns {
+  position: relative;
+  white-space: nowrap;
+  cursor: default;
+  overflow: hidden;
+}
+.slickgrid-container .slick-group-header {
+  width: 100%;
+  overflow: hidden;
+  border-left: 0px;
+}
+.slickgrid-container .slick-group-header-column.ui-state-default {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  -o-text-overflow: ellipsis;
+  text-overflow: ellipsis;
+  height: 16px;
+  line-height: 16px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid #D6D7D6;
+  order-left: 0px;
+  border-top: 0px;
+  border-bottom: 0px;
+  float: left;
+}
+.slickgrid-container .slick-viewport,
+.slickgrid-container .slick-top-panel-scroller,
+.slickgrid-container .slick-header,
+.slickgrid-container .slick-headerrow,
+.slickgrid-container .slick-footerrow {
+  position: relative;
+  width: 100%;
+  border: 1px solid #D6D7D6;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-right-width: 0;
+  border-bottom-width: 0;
+  margin: 0;
+  outline: 0;
+}
+.slickgrid-container .slick-viewport {
+  overflow: auto;
+}
+.slickgrid-container .slick-viewport.slickgrid-container .slick-viewport::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+.slickgrid-container .slick-viewport.slickgrid-container .slick-viewport::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  border: 2px solid white;
+  /* should match background, can't be transparent */
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.slickgrid-container .slick-header,
+.slickgrid-container .slick-headerrow,
+.slickgrid-container .slick-footerrow {
+  overflow: hidden;
+}
+.slickgrid-container .slick-headerrow {
+  border-top-color: transparent;
+  border-top-width: 0;
+}
+.slickgrid-container .slick-top-panel,
+.slickgrid-container .slick-header-columns,
+.slickgrid-container .slick-headerrow-columns,
+.slickgrid-container .slick-footerrow-columns {
+  position: relative;
+  white-space: nowrap;
+  cursor: default;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+}
+.slickgrid-container .slick-cell,
+.slickgrid-container .slick-header-column,
+.slickgrid-container .slick-headerrow-column,
+.slickgrid-container .slick-footerrow-column {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: 1px solid #D6D7D6;
+  border-top-color: transparent;
+  border-left-color: transparent;
+  border-top-width: 0;
+  border-left-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  z-index: 1;
+  white-space: nowrap;
+  cursor: default;
+}
+.slickgrid-container .slick-cell.slick-header-is-leaf,
+.slickgrid-container .slick-header-column.slick-header-is-leaf,
+.slickgrid-container .slick-headerrow-column.slick-header-is-leaf,
+.slickgrid-container .slick-footerrow-column.slick-header-is-leaf {
+  border-bottom-color: transparent;
+  border-bottom-width: 0;
+}
+.slickgrid-container .slick-header-column.ui-state-default {
+  position: relative;
+  display: inline-block;
+  box-sizing: content-box !important;
+  overflow: hidden;
+  -o-text-overflow: ellipsis;
+  text-overflow: ellipsis;
+  height: 16px;
+  line-height: 16px;
+  margin: 0;
+  padding: 4px;
+  border-right: 1px solid #D6D7D6;
+  border-left: 0px !important;
+  border-top: 0px !important;
+  border-bottom: 0px !important;
+  float: left;
+}
+.slickgrid-container .slick-cell {
+  box-sizing: border-box;
+  border-style: solid;
+  padding: 1px 2px 1px 2px;
+}
+.slickgrid-container .slick-header-column {
+  padding: 4px 4px 4px 4px;
+}
+.slickgrid-container .grid-canvas {
+  position: relative;
+  outline: 0;
+}
+.slickgrid-container .slick-row {
+  position: absolute;
+  border: 0;
+  width: 100%;
+}
+.slickgrid-container .slick-header-column-sorted {
+  font-style: italic;
+}
+.slickgrid-container .slick-sort-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 5px;
+  margin-left: 4px;
+  margin-top: 6px;
+  position: absolute;
+  left: 0;
+}
+.slickgrid-container .slick-sort-indicator-desc {
+  background: url('./../../../src/assets/slickgrid/images/sort-desc.png');
+}
+.slickgrid-container .slick-sort-indicator-asc {
+  background: url('./../../../src/assets/slickgrid/images/sort-asc.png');
+}
+.slickgrid-container .slick-header-sortable .slick-column-name {
+  margin-left: 10px;
+}
+.slickgrid-container .slick-header.ui-state-default {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.slickgrid-container .slick-column-name {
+  text-overflow: ellipsis;
+}
+.slickgrid-container .slick-resizable-handle {
+  position: absolute;
+  font-size: 0.1px;
+  display: block;
+  cursor: col-resize;
+  width: 4px;
+  right: 0;
+  top: 0;
+  height: 100%;
+}
+.slickgrid-container .slick-resizable-handle-hover {
+  background-color: #ccc;
+}
+.slickgrid-container .slick-sortable-placeholder {
+  background: silver;
+}
+.slickgrid-container .slick-group-toggle {
+  display: inline-block;
+}
+.slickgrid-container .slick-cell.highlighted {
+  background: lightskyblue;
+  background: rgba(0, 0, 255, 0.2);
+  transition: all 0.5s;
+}
+.slickgrid-container .slick-cell.flashing {
+  border: 1px solid red !important;
+}
+.slickgrid-container .slick-cell.editable {
+  z-index: 11;
+  overflow: visible;
+  background: white;
+  border-color: black;
+  border-style: solid;
+}
+.slickgrid-container .slick-cell:focus {
+  outline: none;
+}
+.slickgrid-container .slick-reorder-proxy {
+  display: inline-block;
+  background: blue;
+  opacity: 0.15;
+  cursor: move;
+}
+.slickgrid-container .slick-reorder-guide {
+  display: inline-block;
+  height: 2px;
+  background: blue;
+  opacity: 0.7;
+}
+.slickgrid-container .slick-selection {
+  z-index: 10;
+  position: absolute;
+  border: 2px dashed black;
+}
+.slickgrid-container .slick-pane {
+  position: absolute;
+  outline: 0;
+  overflow: hidden;
+  width: 100%;
+}
+.flatpickr-wrapper {
+  z-index: 10000;
+}
+.interact-placeholder {
+  background: red !important;
+  display: inline-block;
+  float: left;
+  transform: translate(0px, -100%);
+}
+.interact-drop-active {
+  box-shadow: inset 0 0 8px rgba(7, 67, 128, 0.5);
+}
+.interact-can-drop {
+  opacity: .9;
+}
+.scrollbar-fix::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+/*
+ * IMPORTANT:
+ * In order to preserve the uniform grid appearance, all cell styles need to have padding, margin and border sizes.
+ * No built-in (selected, editable, highlight, flashing, invalid, loading, :focus) or user-specified CSS
+ * classes should alter those!
+ */
+.slickgrid-container .slick-header-columns,
+.slickgrid-container .slick-header-column {
+  background: #F7F7F6;
+}
+.slickgrid-container .slick-header-columns {
+  border-bottom: 1px solid #D6D7D6;
+}
+.slickgrid-container .slick-header-column {
+  border-right: 1px solid #D6D7D6;
+  border-bottom: 1px solid #D6D7D6;
+}
+.slickgrid-container .slick-header-column:hover {
+  background: #f2f2f1;
+}
+.slickgrid-container .slick-header-column-active {
+  background: #ebebe9 !important;
+}
+.slickgrid-container .slick-headerrow {
+  background: #F7F7F6;
+}
+.slickgrid-container .slick-headerrow-column {
+  background: #fafafa;
+  border-bottom: 0;
+}
+.slickgrid-container .grid-canvas {
+  background: white;
+}
+.slickgrid-container .slick-row {
+  background: white;
+  border: 0;
+  line-height: 20px;
+}
+.slickgrid-container .slick-row .slick-cell {
+  background: white;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 4px;
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+.slickgrid-container .slick-row .slick-cell.invalid {
+  border-color: red;
+  -moz-animation-duration: 0.2s;
+  -webkit-animation-duration: 0.2s;
+  -moz-animation-name: slickgrid-invalid-hilite;
+  -webkit-animation-name: slickgrid-invalid-hilite;
+}
+.slickgrid-container .slick-row .slick-cell.selected {
+  background-color: #f2f2f2;
+}
+.slickgrid-container .slick-row .slick-cell.active {
+  border-color: rgba(0, 0, 0, 0.3);
+  border-style: solid;
+  border-width: 1px;
+  padding-top: 2px;
+  padding-left: 3px;
+}
+.slickgrid-container .slick-row .slick-cell.active input.editor-text {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  margin: 0;
+  background: transparent;
+  padding: 2px 3px 2px 3px;
+  transform: translate(-3px, -2px);
+}
+.slickgrid-container .slick-row.odd .slick-cell {
+  background: #fafafa;
+}
+.slickgrid-container .slick-row.odd .slick-cell.selected {
+  background-color: #f2f2f2;
+}
+.slickgrid-container .slick-row.active-row .slick-cell {
+  background-color: #e2fffd;
+}
+.slickgrid-container .slick-row.active-row .slick-cell.selected {
+  background-color: #f2f2f2;
+}
+.slickgrid-container .slick-row.active-row.odd .slick-cell {
+  background-color: #e2fffd;
+}
+.slickgrid-container .slick-row.active-row.odd .slick-cell.selected {
+  background-color: green;
+}
+.slickgrid-container .slick-row.loading {
+  opacity: 0.5;
+}
+.slickgrid-container .slick-group {
+  border-bottom: 2px solid silver;
+}
+.slickgrid-container .slick-group-toggle {
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+}
+.slickgrid-container .slick-group-toggle.expanded {
+  background: url('./../../../src/assets/slickgrid/images/collapse.gif') no-repeat center center;
+}
+.slickgrid-container .slick-group-toggle.collapsed {
+  background: url('./../../../src/assets/slickgrid/images/expand.gif') no-repeat center center;
+}
+.slickgrid-container .slick-group-totals {
+  color: gray;
+  background: white;
+}
+.slickgrid-container .slick-sortable-placeholder {
+  background: silver !important;
+}
+@-moz-keyframes slickgrid-invalid-hilite {
+  from {
+    box-shadow: 0 0 6px red;
+  }
+  to {
+    box-shadow: none;
+  }
+}
+@-webkit-keyframes slickgrid-invalid-hilite {
+  from {
+    box-shadow: 0 0 6px red;
+  }
+  to {
+    box-shadow: none;
+  }
+}
+.slickgrid-container .slick-header-menubutton {
+  background-position: center center;
+  background-repeat: no-repeat;
+  border-left: thin ridge silver;
+  cursor: pointer;
+  display: inline-block;
+  position: absolute;
+}
+.slickgrid-container .slick-header-menu {
+  background: none repeat scroll 0 0 white;
+  border: 1px solid #BFBDBD;
+  min-width: 175px;
+  padding: 4px;
+  z-index: 100000;
+  cursor: default;
+  display: inline-block;
+  margin: 0;
+  position: absolute;
+}
+.slickgrid-container .slick-header-menu button {
+  border: 1px solid #BFBDBD;
+  background-color: white;
+  width: 45px;
+  padding: 4px;
+  margin: 4px 4px 4px 0;
+}
+.slickgrid-container .slick-header-menu .filter {
+  border: 1px solid #BFBDBD;
+  font-size: 8pt;
+  height: 400px;
+  margin-top: 6px;
+  overflow: scroll;
+  padding: 4px;
+  white-space: nowrap;
+  width: 200px;
+}
+.slickgrid-container .slick-header-menu .textfilter > label {
+  display: inline-block;
+  margin-left: 5px;
+  margin-right: 10px;
+}
+.slickgrid-container .slick-header-menu .textfilter > input[type=text] {
+  width: 70%;
+}
+.slickgrid-container label {
+  display: block;
+  margin-bottom: 5px;
+}
+.slickgrid-container .slick-header-menuitem {
+  border: 1px solid transparent;
+  padding: 2px 4px;
+  cursor: pointer;
+  list-style: none outside none;
+  margin: 0;
+}
+.slickgrid-container .slick-header-menuicon {
+  background-position: center center;
+  background-repeat: no-repeat;
+  display: inline-block;
+  height: 16px;
+  margin-right: 4px;
+  vertical-align: middle;
+  width: 16px;
+}
+.slickgrid-container .slick-header-menucontent {
+  display: inline-block;
+  vertical-align: middle;
+}
+.slickgrid-container .slick-header-menuitem:hover {
+  border-color: #BFBDBD;
+}
+.slickgrid-container .header-overlay,
+.slickgrid-container .cell-overlay,
+.slickgrid-container .selection-cell-overlay {
+  display: block;
+  position: absolute;
+  z-index: 999;
+}
+.slickgrid-container .slick-cell > .editor-select {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: auto;
+  top: 0;
+  bottom: 0;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+.slickgrid-container .slick-range-decorator {
+  z-index: 100;
+  pointer-events: none;
+  background: transparent;
+  border: none;
+  outline: black;
+}
+div.slick-large-editor-text {
+  z-index: 10000;
+  position: absolute;
+  background: #ffffff;
+  padding: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 1px 1px 2px 1px rgba(0, 0, 0, 0.3);
+}
+div.slick-large-editor-text textarea {
+  backround: transparent;
+  width: 250px;
+  height: 80px;
+  border: 0;
+  outline: 0;
+}
+div.slick-large-editor-text div {
+  text-align: right;
+}
+div.slick-large-editor-text div button {
+  background-color: #e6e6e6;
+  border: 1px solid #D6D7D6;
+  cursor: pointer;
+  justify-content: center;
+  padding-left: 0.75em;
+  padding-right: 0.75em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.has-buttons .slick-column-name,
+.slick-sort-indicator {
+  /**
+   * This makes all "float:right" elements after it that spill over to the next line
+   * display way below the lower boundary of the column thus hiding them.
+   */
+  display: inline-block;
+  float: left;
+  margin-bottom: 100px;
+}
+
+.slick-header-button {
+  display: inline-block;
+  float: right;
+  vertical-align: top;
+  margin: 1px;
+  /**
+  * This makes all "float:right" elements after it that spill over to the next line
+  * display way below the lower boundary of the column thus hiding them.
+  */
+  margin-bottom: 100px;
+  height: 15px;
+  width: 15px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  cursor: pointer;
+}
+
+.slick-header-button-hidden {
+  width: 0;
+
+  -webkit-transition: 0.2s width;
+  -ms-transition: 0.2s width;
+  transition: 0.2s width;
+}
+
+.slick-header-column:hover > .slick-header-button {
+  width: 15px;
+}
+
+/* Menu button */
+.slick-header-menubutton {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-image: url('./../../../src/assets/slickgrid/images/down.gif');
+  cursor: pointer;
+
+  display: none;
+  border-left: thin ridge silver;
+}
+
+.slick-header-column:hover > .slick-header-menubutton,
+.slick-header-column-active .slick-header-menubutton {
+  display: inline-block;
+}
+
+/* Menu */
+.slick-header-menu {
+  position: absolute;
+  display: inline-block;
+  margin: 0;
+  padding: 2px;
+  cursor: default;
+}
+
+
+/* Menu items */
+.slick-header-menuitem {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.slick-header-menuicon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+
+.slick-header-menucontent {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+
+/* Disabled */
+.slick-header-menuitem-disabled {
+  color: silver;
+}

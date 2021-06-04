@@ -1,0 +1,14 @@
+.toast {
+    min-width: 15rem;
+    /*this is twice the bootstrap default of 350px*/
+    max-width: 700px !important;
+}
+.cm-toast {
+    position: absolute;
+    min-width: 15rem;
+    top: 2px;
+    right: 2px;
+    i {
+        font-size: 1rem;
+    }
+}

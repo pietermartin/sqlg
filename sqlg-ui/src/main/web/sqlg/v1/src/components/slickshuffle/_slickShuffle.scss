@@ -1,0 +1,14 @@
+.slickShuffle {
+    display: grid;
+    grid-template-columns: 47% 6% 47%;
+    height: 100%;
+    border: 1px solid $border-color;
+
+    .shuffleButtons {
+        display: grid;
+        grid-template-rows: 5rem auto auto 5rem;
+        place-items: center;
+        height: 100%
+    }
+    
+}

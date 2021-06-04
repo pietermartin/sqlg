@@ -1,0 +1,78 @@
+:root {
+    --countdown-seconds: 10s;
+    --circle-stroke: black;
+}
+
+#countdown {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 999;
+    text-align: center;
+}
+
+#countdown .countdown-inner {
+    position: relative;
+    height: 300px;
+    width: 300px;
+    margin: auto;
+    top: 25%;
+}
+
+#countdown.show-countdown {
+    background-color: whitesmoke;
+    display: block;
+}
+
+#countdown.hide-countdown {
+    display: none;
+}
+
+.slick-grid-countdown-number {
+    color: black;
+    display: inline-block;
+    line-height: 300px;
+}
+.slick-grid-countdown-number i.fas {
+    font-size: 9rem;
+    font-weight: 100;
+}
+.slick-grid-countdown-number .report-spinner-duration {
+    height: 30px;
+}
+
+.slick-grid-countdown-number .report-spinner-downloadsize {
+    font-size: small;
+}
+
+#countdown svg {
+    position: absolute;
+    margin: auto;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 300px;
+    transform: rotateY(-180deg) rotateZ(-90deg);
+}
+
+#countdown svg circle {
+    stroke-dasharray: 628px;
+    stroke-dashoffset: 0px;
+    stroke-linecap: round;
+    stroke-width: 10px;
+    stroke: var(--circle-stroke);
+    fill: none;
+    animation: countdown var(--countdown-seconds) linear infinite forwards;
+    /*animation: countdown 10s linear infinite forwards;*/
+}
+
+@keyframes countdown {
+    from {
+        stroke-dashoffset: 0px;
+    }
+    to {
+        stroke-dashoffset: 628px;
+    }
+}

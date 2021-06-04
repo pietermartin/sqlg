@@ -1,0 +1,38 @@
+.SlickDropdownFilter {
+    position: fixed;
+    margin-top: 14px;
+
+    #SlickDropdownFilterContainer {
+        display: grid;
+        grid-template-columns: auto;
+        grid-template-rows: 3rem auto;
+        max-height: 20rem;
+        //overflow-y: auto;
+        margin: 0.25rem;
+
+        .slick-grid-filter-close-icon {
+            font-size: 0.875rem;
+            color: #6c757d;
+            white-space: nowrap;
+            padding: 0px 5px;
+            cursor: pointer;
+        }
+        .filter-button-panel {
+            display: flex;
+            justify-content: space-between;
+            .import-filter-icon-button {
+                cursor: default;
+                &:hover {
+                    background-color: $info;
+                    border-color: $info;
+                }
+            }
+        }
+
+        .dropdown-item:active {
+            color: unset;
+            text-decoration: unset;
+            background-color: unset;
+        }
+    }
+}

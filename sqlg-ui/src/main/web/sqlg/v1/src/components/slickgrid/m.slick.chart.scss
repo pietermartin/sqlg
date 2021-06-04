@@ -1,0 +1,36 @@
+.slick-grid-chart-root {
+    height: 100%;
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-rows: 5rem auto;
+
+    .slick-grid-chart-header {
+        display: grid;
+        grid-template-columns: auto;
+        grid-template-rows: auto;
+
+        .slick-grid-chart-config {
+
+            //#searchAndEditChartButton {
+            //    width: 80%
+            //}
+
+        }
+    }
+
+    .slick-grid-chart-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+
+        .slick-grid-chart {
+            height: 100%;
+
+            .slick-grid-chart-container {
+                height: 100%;
+            }
+        }
+
+    }
+
+}

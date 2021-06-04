@@ -1,0 +1,68 @@
+.slick-columnpicker {
+  border: 1px solid #718BB7;
+  background: #f0f0f0;
+  padding: 6px;
+  -moz-box-shadow: 2px 2px 2px silver;
+  -webkit-box-shadow: 2px 2px 2px silver;
+  box-shadow: 2px 2px 2px silver;
+  min-width: 150px;
+  cursor: default;
+  position:absolute;
+  z-index:20;
+  /* overflow:inherit; */
+  overflow: auto;
+  resize: both;  
+}
+
+.slick-columnpicker-header {
+  margin-bottom: 10px;
+  border-bottom: solid 1px #d6d6d6;  
+}
+
+.slick-columnpicker-header > .close {
+  float: right;
+}
+
+.slick-columnpicker-header .title {
+  font-size: 16px;
+  width: 60%;  
+}
+
+.slick-columnpicker-list {
+  overflow: auto;
+  height: calc(100% - 80px);
+}
+
+.slick-columnpicker li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+
+.slick-columnpicker input {
+  margin: 4px;
+}
+
+.slick-columnpicker li a {
+  display: block;
+  padding: 4px;
+  font-weight: bold;
+}
+
+.slick-columnpicker li a:hover {
+  background: white;
+}
+
+.slick-columnpicker-list label {
+  margin: 0px;
+}
+
+.slick-columnpicker-all-control-container {
+  display: block;
+}
+
+/* Excluded item from Column Picker will be hidden */
+.slick-columnpicker-list li.hidden {
+  display: none;
+}
