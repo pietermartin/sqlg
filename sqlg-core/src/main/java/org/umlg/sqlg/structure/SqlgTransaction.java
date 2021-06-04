@@ -31,7 +31,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlgTransaction.class);
-    private boolean cacheVertices = false;
+    private final boolean cacheVertices;
 
     private final ThreadLocal<TransactionCache> threadLocalTx = ThreadLocal.withInitial(() -> null);
 
