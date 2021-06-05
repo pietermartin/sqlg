@@ -16,7 +16,7 @@ class TransactionCache {
     private final Connection connection;
     private final Map<ElementPropertyRollback, Object> elementPropertyRollbackFunctions = new WeakHashMap<>();
     private BatchManager batchManager;
-    private boolean cacheVertices = false;
+    private final boolean cacheVertices;
     private final Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
     private boolean writeTransaction;
 

@@ -1198,15 +1198,21 @@ public class SqlgUtil {
                 switch (propertyType.ordinal()) {
                     case STRING_ORDINAL:
                         String s = resultSet.getString(column.getColumnIndex());
-                        result.add(s);
+                        if (!resultSet.wasNull()) {
+                            result.add(s);
+                        }
                         break;
                     case VARCHAR_ORDINAL:
                         s = resultSet.getString(column.getColumnIndex());
-                        result.add(s);
+                        if (!resultSet.wasNull()) {
+                            result.add(s);
+                        }
                         break;
                     case INTEGER_ORDINAL:
                         Integer i = resultSet.getInt(column.getColumnIndex());
-                        result.add(i);
+                        if (!resultSet.wasNull()) {
+                            result.add(i);
+                        }
                         break;
                     default:
                         throw new IllegalStateException(String.format("PropertyType %s is not implemented.", propertyType.name()));
