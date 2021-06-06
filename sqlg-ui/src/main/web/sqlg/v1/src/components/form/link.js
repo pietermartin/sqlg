@@ -54,7 +54,7 @@ function Link() {
             return m(m.route.Link,
                 attrs, vnode.attrs.text ? [
                         m('i', {class: "fas " + (vnode.attrs.icon ? vnode.attrs.icon : '')}),
-                        " " + vnode.attrs.text
+                        "   " + vnode.attrs.text
                     ] :
                     m('i', {class: "fas " + (vnode.attrs.icon ? vnode.attrs.icon : '')})
             );

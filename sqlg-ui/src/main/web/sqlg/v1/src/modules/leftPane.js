@@ -1,11 +1,17 @@
 import m from "mithril";
-import SchemaTree from "./schema/schemaTree";
+import "./_leftPane.scss";
+import TopologyTree from "./topology/topologyTree";
+import GraphHeader from "./topology/graphHeader";
 
 function LeftPane(ignore) {
 
     return {
-        view: () => {
-            return m(SchemaTree)
+        view: ({attrs: {state, actions}}) => {
+            return m("div.left-pane", [
+                    m(GraphHeader),
+                    m(TopologyTree, {state: state, actions})
+                ]
+            );
         }
     }
 

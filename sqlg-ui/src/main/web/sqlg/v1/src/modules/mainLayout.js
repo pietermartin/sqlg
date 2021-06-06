@@ -1,33 +1,27 @@
 import m from "mithril";
 import "./mainLayout.scss";
-import "kendo-ui-core/js/kendo.splitter"
+import "../components/jquery-splitter/jquery.splitter"
+import "../components/jquery-splitter/jquery.splitter.css"
 
 function MainLayout(ignore) {
 
-    let splitter;
-
     return {
-        oncreate: function (vnode) {
-            splitter = $("#main").kendoSplitter({
-                orientation: "horizontal",
-                resize: vnode.attrs.resize ? vnode.attrs.resize : '',
-                panes: [
-                    {
-                        resizable: true,
-                        collapsible: true,
-                        size: vnode.attrs.width
-                    },
-                    {
-                        resizable: true,
-                        collapsible: false
-                    }
-                ]
-            }).data("kendoSplitter");
+        oncreate: ({attrs: {width}}) => {
+            let main = $('#main');
+            let splitter = main.split({
+                orientation: 'vertical',
+                limit: 10,
+                position: width,
+                onDrag: function(event) {
+                    console.log(splitter.position());
+                }
+            });
+            main.data("splitter", splitter);
         },
-        view: function (vnode) {
-            return m("div#main", {class: vnode.attrs.mainBodyClass}, [
-                m("div", {id: "left-pane"}, vnode.attrs.leftPane),
-                m("div", {id: "right-pane"}, vnode.attrs.rightPane)
+        view: (vnode) => {
+            return m("div#main", [
+                m("div#left-pane", vnode.attrs.leftPane),
+                m("div#right-pane", vnode.attrs.rightPane)
             ]);
         }
     }

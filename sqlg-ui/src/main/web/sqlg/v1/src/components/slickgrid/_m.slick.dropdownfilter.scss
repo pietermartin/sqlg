@@ -1,27 +1,27 @@
-.SlickDropdownFilter {
-    position: fixed;
-    margin-top: 14px;
+.slick-dropdown-filter {
+    display: none;
+    z-index: 9999;
+    border-radius: 0.25rem;
+    padding: 0.5rem 0;
 
-    #SlickDropdownFilterContainer {
+    &[data-show] {
+        display: block;
+    }
+
+    .slick-dropdown-filter-container {
         display: grid;
         grid-template-columns: auto;
-        grid-template-rows: 3rem auto;
+        grid-template-rows: auto;
         max-height: 20rem;
-        //overflow-y: auto;
         margin: 0.25rem;
 
-        .slick-grid-filter-close-icon {
-            font-size: 0.875rem;
-            color: #6c757d;
-            white-space: nowrap;
-            padding: 0px 5px;
-            cursor: pointer;
-        }
         .filter-button-panel {
             display: flex;
             justify-content: space-between;
+
             .import-filter-icon-button {
                 cursor: default;
+
                 &:hover {
                     background-color: $info;
                     border-color: $info;
@@ -29,10 +29,88 @@
             }
         }
 
-        .dropdown-item:active {
-            color: unset;
-            text-decoration: unset;
-            background-color: unset;
+        .dropdown-item {
+            &:active, &:hover {
+                color: unset;
+                text-decoration: unset;
+                background-color: unset;
+            }
+
+            .dropdown-filter-switch {
+                display: grid;
+                grid-template-columns: 2rem 2rem;
+                grid-template-rows: auto;
+
+                label, span {
+                    margin: auto;
+                }
+            }
+
+            .input-group {
+                .input-group-prepend {
+                    label {
+                        border-top-left-radius: 0.2rem;
+                        border-bottom-left-radius: 0.2rem;
+                    }
+                }
+
+                .input-group-append {
+                    button {
+                        &.dropdown-toggle-split {
+                            border-top-right-radius: 0.2rem;
+                            border-bottom-right-radius: 0.2rem;
+                        }
+                        &.dropdown-toggle-button {
+                            cursor: default;
+                        }
+                    }
+                }
+            }
+
+            &.dropdown-filter-buttons {
+                display: grid;
+                grid-template-columns: 4rem auto 6rem;
+                grid-template-rows: auto;
+                grid-column-gap: 0.25rem;
+            }
         }
     }
+
+    #arrow {
+        background-color: $light;
+
+        &:before {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: inherit;
+        }
+
+        visibility: hidden;
+    }
+
+    #arrow {
+        &:before {
+            visibility: visible;
+            content: '';
+            transform: rotate(45deg);
+        }
+    }
+
+    &[data-popper-placement^='top'] > #arrow {
+        bottom: -4px;
+    }
+
+    &[data-popper-placement^='bottom'] > #arrow {
+        top: -4px;
+    }
+
+    &[data-popper-placement^='left'] > #arrow {
+        right: -4px;
+    }
+
+    &[data-popper-placement^='right'] > #arrow {
+        left: -4px;
+    }
+
 }

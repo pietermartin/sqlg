@@ -28,9 +28,9 @@ function Switch(ignore) {
             if (!vnode.attrs.id) {
                 throw Error("switchId must be defined for the Switch control.");
             }
-            if (vnode.attrs.refresh) {
+            // if (vnode.attrs.refresh) {
                 checked = vnode.attrs.checked;
-            }
+            // }
             let enabled = vnode.attrs.enabled === undefined || vnode.attrs.enabled;
 
             let spanAttributes = {id: vnode.attrs.id + "-span"};

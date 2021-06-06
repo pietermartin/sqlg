@@ -218,7 +218,7 @@ Currently the `optional`, `choose`, `repeat` and `local` steps have this optimiz
 and a `V_log` table which hold the changes made. The changes are in turn sent to other Graphs and JVMs using Postgresql's `notify` mechanism.
 * Added `TopologyListener` as a mechanism to observe changes to the topology.
 * Added support for global  unique indexes. This means that a unique index can be placed on multiple properties from any Vertex or Edge.
-* Rewrite of the topology/schema management. `SchemaManager` is replaced with `Topology`.
+* Rewrite of the topology/schema management. `TopologyManager` is replaced with `Topology`.
 There are now classes representing the topology. `Topology`, `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index` and `GlobalUniqueIndex`
 * Strengthened the reloading of the topology from the information_schema tables.
 This highlighted some limitations. It is not possible to tell a primitive array from a object array. 
@@ -265,7 +265,7 @@ As such all arrays are  loaded as object arrays. i.e. `int[]{1,2,3}` will become
 * Refactor `RepeatStep` optimization to follow the same sql pattern as the `OptionalStep` optimization.
 * Optimized the `OptionalStep`.
 * Optimize `hasId(...)`
-* Sqlg stores the schema in the graph. It is accessible via the `TopologyStrategy`. eg. `TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES)`
+* Sqlg stores the schema in the graph. It is accessible via the `TopologyStrategy`. eg. `TopologyStrategy.build().selectFrom(TopologyManager.SQLG_SCHEMA_SCHEMA_TABLES)`
 * Remove `SqlgTransaction.batchCommit()` as is no longer useful as the embedded topology change forced sqlg to auto flush the batch before any query.
 * Add support for `java.time.ZonedDateTime`, `java.time.Duration` and `java.time.Period`
 * Add support for array types in batch mode. `String[], int[], double[], long[], float[], short[], byte[]`

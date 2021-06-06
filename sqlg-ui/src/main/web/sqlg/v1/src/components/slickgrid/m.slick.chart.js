@@ -1192,7 +1192,6 @@ function SlickChart(ignore) {
                                                     key: "searchAndEditChartParameterGroupSwitchKey",
                                                     class: "float-right",
                                                     enabled: true,
-                                                    refresh: true,
                                                     checked: groupParameters,
                                                     toggle: function () {
                                                         groupParameters = !groupParameters;

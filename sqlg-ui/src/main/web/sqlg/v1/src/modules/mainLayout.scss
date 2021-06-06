@@ -1,2 +1,15 @@
+#main {
+    height: calc(100%);
 
+    #left-pane {
+        height: calc(100%);
+        .left-pane-tree {
+            height: calc(100%);
+        }
+    }
+
+    #right-pane {
+        height: calc(100%);
+    }
+}
 

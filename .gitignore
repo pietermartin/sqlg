@@ -27,3 +27,5 @@ src/test/db/
 /sqlg-ui/src/main/web/dist/app.js
 /sqlg-ui/src/main/web/dist/index.html
 /sqlg-ui/src/main/web/package-lock.json
+/sqlg-ui/src/main/web/dist/sqlg/v1/assets/
+/package-lock.json

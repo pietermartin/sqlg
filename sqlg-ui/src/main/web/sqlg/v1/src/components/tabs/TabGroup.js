@@ -1,6 +1,7 @@
 import m from 'mithril';
 import $ from "jquery";
 import _ from "underscore";
+import Icon from "../form/icon";
 
 function TabGroup(initialVnode) {
 
@@ -122,20 +123,30 @@ function TabGroup(initialVnode) {
                     tab.loading ? m("i.fas fa-circle.tab-busy-loading") : '',
                     !tab.loading ? m("i.fas tab-busy-loading") : '',
                     tab.label,
-                    vnode.attrs.closeTab ? m('i', {
-                        class: "fas fa-times",
-                        onclick: function (e) {
-                            vnode.attrs.closeTab(tab);
-                            e.redraw = false;
-                            e.stopPropagation();
-                        },
-                    }) : '',
-                    active === i && vnode.attrs.refreshTab ? m('i', {
-                        class: "fas fa-sync",
-                        onclick: function (e) {
-                            vnode.attrs.refreshTab(tab);
-                        },
-                    }) : '',
+                    vnode.attrs.closeTab ?
+                        m(Icon, {
+                            id: "closeTabId",
+                            class: "fad fa-times",
+                            "data-tippy-content": "Close",
+                            "data-tippy-placement": "top",
+                            onclick: (e) => {
+                                vnode.attrs.closeTab(tab);
+                                e.redraw = false;
+                                e.stopPropagation();
+                            }
+                        })
+                        : '',
+                    active === i && vnode.attrs.refreshTab ?
+                        m(Icon, {
+                            id: "refreshTabId",
+                            class: "fad fa-sync",
+                            "data-tippy-content": "Refresh",
+                            "data-tippy-placement": "top",
+                            onclick: function (e) {
+                                vnode.attrs.refreshTab(tab);
+                            },
+                        })
+                        : '',
                 ]),
                 vnode.attrs.contextMenu && contextMenuTab.label === tab.label ?
                     vnode.attrs.contextMenu(showContextMenu, style, tab, function () {

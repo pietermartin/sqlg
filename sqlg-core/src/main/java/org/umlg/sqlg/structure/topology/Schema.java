@@ -621,7 +621,7 @@ public class Schema implements TopologyInf {
         return Optional.ofNullable(result);
     }
 
-    Map<String, EdgeLabel> getEdgeLabels() {
+    public Map<String, EdgeLabel> getEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeLabels);
         if (this.topology.isSchemaChanged()) {
             result.putAll(this.uncommittedOutEdgeLabels);
@@ -629,7 +629,7 @@ public class Schema implements TopologyInf {
                 result.remove(e);
             }
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     private Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {

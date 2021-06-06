@@ -3,131 +3,177 @@ package org.umlg.sqlg.ui;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.topology.VertexLabel;
-import org.umlg.sqlg.ui.util.ISlickLazyTree;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.ui.util.ObjectMapperFactory;
 import org.umlg.sqlg.ui.util.SlickLazyTree;
 import org.umlg.sqlg.ui.util.SlickLazyTreeContainer;
 import spark.Request;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
+import java.util.Optional;
 
 public class SchemaResource {
 
-    public static ArrayNode retrieveSchemas(Request req) {
-        Pair<ListOrderedSet<SlickLazyTree>, ListOrderedSet<SlickLazyTree>> rootNodes = retrieveRootNodes();
+    public static ObjectNode retrieveGraph() {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+        Configuration configuration = sqlgGraph.configuration();
+        String jdbc = configuration.getString("jdbc.url");
+        String username = configuration.getString("jdbc.username");
+        return objectMapper.createObjectNode()
+                .put("jdbcUrl", jdbc)
+                .put("username", username);
+    }
+
+    public static ArrayNode retrieveSchemas() {
+        Pair<ListOrderedSet<SlickLazyTree>, ListOrderedSet<SlickLazyTree>> rootNodes = SchemaTreeBuilder.retrieveRootNodes();
         ListOrderedSet<SlickLazyTree> roots = rootNodes.getRight();
         ListOrderedSet<SlickLazyTree> initialEntries = rootNodes.getLeft();
         SlickLazyTreeContainer treeContainer = new SlickLazyTreeContainer(roots);
         @SuppressWarnings("UnnecessaryLocalVariable")
-        ArrayNode result = treeContainer.complete(new SchemaTreeSlickLazyTreeHelper(initialEntries));
+        ArrayNode result = treeContainer.complete(new SchemaTreeBuilder.SchemaTreeSlickLazyTreeHelper(initialEntries));
         return result;
     }
 
-    private static Pair<ListOrderedSet<SlickLazyTree>, ListOrderedSet<SlickLazyTree>> retrieveRootNodes() {
-        ListOrderedSet<SlickLazyTree> roots = new ListOrderedSet<>();
-        ListOrderedSet<SlickLazyTree> allEntries = new ListOrderedSet<>();
-        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
-
+    public static ObjectNode retrieveSchemaDetails(Request req) {
         SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
-        Set<Schema> schemas = sqlgGraph.getTopology().getSchemas();
+        String schemaName = req.params("schemaName");
+        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaName);
+        if (schemaOptional.isPresent()) {
+            Schema schema = schemaOptional.get();
+            List<Vertex> schemaVertices = sqlgGraph.topology().V()
+                    .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                    .has(Topology.SQLG_SCHEMA_SCHEMA_NAME, schema.getName())
+                    .toList();
+            Preconditions.checkState(schemaVertices.size() == 1);
+            Vertex schemaVertex = schemaVertices.get(0);
+            ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+            ObjectNode result = objectMapper.createObjectNode();
+            ObjectNode schemaObjectNode = objectMapper.createObjectNode();
+            result.set("schema", schemaObjectNode);
+            schemaObjectNode.put("label", "Schema")
+                    .put("name", schema.getName())
+                    .put("ID", schemaVertex.id().toString())
+                    .put("createdOn", schemaVertex.value("createdOn").toString());
+            return result;
+        } else {
+            throw new IllegalStateException(String.format("Unknown schema '%s'", schemaName));
+        }
+    }
 
-        for (Schema schema : schemas) {
-            ObjectNode schemaRow = createSchemaTreeItem(objectMapper, schema);
-            SlickLazyTree vendorTechnologyGroupSlickLazyTree = SlickLazyTree.from(schemaRow);
-            roots.add(vendorTechnologyGroupSlickLazyTree);
-            allEntries.add(vendorTechnologyGroupSlickLazyTree);
-            ArrayNode networkNodeChildrenArrayNode = (ArrayNode) schemaRow.get("children");
-
-            Collection<VertexLabel> vertexLabels = schema.getVertexLabels().values();
-            for (VertexLabel vertexLabel: vertexLabels) {
-                ObjectNode vertexLabelRow = createVertexLabelTreeItem(objectMapper, schema, vertexLabel);
-                networkNodeChildrenArrayNode.add(vertexLabelRow.get("id"));
-                SlickLazyTree networkNodeSlickLazyTree = SlickLazyTree.from(vertexLabelRow);
-                allEntries.add(networkNodeSlickLazyTree);
-                networkNodeSlickLazyTree.setParent(vendorTechnologyGroupSlickLazyTree);
-                networkNodeSlickLazyTree.setChildrenIsLoaded(true);
-                vendorTechnologyGroupSlickLazyTree.addChild(networkNodeSlickLazyTree);
+    public static ObjectNode retrieveVertexEdgeLabelDetails(Request req) {
+        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String vertexOrEdge = req.params("vertexOrEdge");
+        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaName);
+        if (schemaOptional.isPresent()) {
+            Schema schema = schemaOptional.get();
+            List<Vertex> schemaVertices = sqlgGraph.topology().V()
+                    .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                    .has(Topology.SQLG_SCHEMA_SCHEMA_NAME, schema.getName())
+                    .toList();
+            Preconditions.checkState(schemaVertices.size() == 1);
+            Vertex schemaVertex = schemaVertices.get(0);
+            ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+            ObjectNode result = objectMapper.createObjectNode();
+            ObjectNode vertexLabelObjectNode = objectMapper.createObjectNode();
+            result.set("vertexLabel", vertexLabelObjectNode);
+            ObjectNode identifierData = objectMapper.createObjectNode();
+            ArrayNode identifiers = objectMapper.createArrayNode();
+            identifierData.set("identifiers", identifiers);
+            vertexLabelObjectNode.set("identifierData", identifierData);
+            ArrayNode propertyColumnsArrayNode = objectMapper.createArrayNode();
+            vertexLabelObjectNode.set("propertyColumns", propertyColumnsArrayNode);
+            ArrayNode indexArrayNode = objectMapper.createArrayNode();
+            vertexLabelObjectNode.set("indexes", indexArrayNode);
+            if (vertexOrEdge.equals("vertex")) {
+                Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(abstractLabel);
+                if (vertexLabelOptional.isPresent()) {
+                    VertexLabel vertexLabel = vertexLabelOptional.get();
+                    vertexLabelObjectNode.put("label", "VertexLabel")
+                            .put("name", vertexLabel.getName())
+                            .put("ID", "TODO")
+                            .put("createdOn", "TODO");
+                    if (vertexLabel.hasIDPrimaryKey()) {
+                        identifierData.put("userDefinedIdentifiers", false);
+                    } else {
+                        identifierData.put("userDefinedIdentifiers", true);
+                        for (String identifier : vertexLabel.getIdentifiers()) {
+                            identifiers.add(identifier);
+                        }
+                    }
+                    for (PropertyColumn propertyColumn : vertexLabel.getProperties().values()) {
+                        ObjectNode propertyColumnObjectNode = objectMapper.createObjectNode();
+                        propertyColumnsArrayNode.add(propertyColumnObjectNode);
+                        propertyColumnObjectNode.put("name", propertyColumn.getName());
+                        propertyColumnObjectNode.put("type", propertyColumn.getPropertyType().name());
+                    }
+                    for (Index index: vertexLabel.getIndexes().values()) {
+                        ObjectNode indexObjectNode = objectMapper.createObjectNode();
+                        indexArrayNode.add(indexObjectNode);
+                        indexObjectNode.put("name", index.getName());
+                        indexObjectNode.put("type", index.getIndexType().getName());
+                        ArrayNode indexPropertiesArrayNode = objectMapper.createArrayNode();
+                        indexObjectNode.set("properties", indexPropertiesArrayNode);
+                        for (PropertyColumn indexProperty : index.getProperties()) {
+                            ObjectNode indexPropertyObjectNode = objectMapper.createObjectNode();
+                            indexPropertiesArrayNode.add(indexPropertyObjectNode);
+                            indexPropertyObjectNode.put("name", indexProperty.getName());
+                        }
+                    }
+                } else {
+                    throw new IllegalStateException(String.format("Unknown vertex label '%s'", abstractLabel));
+                }
+            } else {
+                Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(abstractLabel);
+                if (edgeLabelOptional.isPresent()) {
+                    EdgeLabel edgeLabel = edgeLabelOptional.get();
+                    vertexLabelObjectNode.put("label", "EdgeLabel")
+                            .put("name", edgeLabel.getName())
+                            .put("ID", schemaVertex.id().toString())
+                            .put("createdOn", schemaVertex.value("createdOn").toString());
+                    if (edgeLabel.hasIDPrimaryKey()) {
+                        identifierData.put("userDefinedIdentifiers", false);
+                    } else {
+                        identifierData.put("userDefinedIdentifiers", true);
+                        for (String identifier : edgeLabel.getIdentifiers()) {
+                            identifiers.add(identifier);
+                        }
+                    }
+                    for (PropertyColumn propertyColumn : edgeLabel.getProperties().values()) {
+                        ObjectNode propertyColumnObjectNode = objectMapper.createObjectNode();
+                        propertyColumnsArrayNode.add(propertyColumnObjectNode);
+                        propertyColumnObjectNode.put("name", propertyColumn.getName());
+                        propertyColumnObjectNode.put("type", propertyColumn.getPropertyType().name());
+                    }
+                    for (Index index: edgeLabel.getIndexes().values()) {
+                        ObjectNode indexObjectNode = objectMapper.createObjectNode();
+                        indexArrayNode.add(indexObjectNode);
+                        indexObjectNode.put("name", index.getName());
+                        indexObjectNode.put("type", index.getIndexType().getName());
+                        ArrayNode indexPropertiesArrayNode = objectMapper.createArrayNode();
+                        indexObjectNode.set("properties", indexPropertiesArrayNode);
+                        for (PropertyColumn indexProperty : index.getProperties()) {
+                            ObjectNode indexPropertyObjectNode = objectMapper.createObjectNode();
+                            indexPropertiesArrayNode.add(indexPropertyObjectNode);
+                            indexPropertyObjectNode.put("name", indexProperty.getName());
+                        }
+                    }
+                } else {
+                    throw new IllegalStateException(String.format("Unknown vertex label '%s'", abstractLabel));
+                }
             }
-        }
-
-        return Pair.of(allEntries, roots);
-    }
-
-    private static ObjectNode createSchemaTreeItem(ObjectMapper objectMapper, Schema schema) {
-        ObjectNode vendorTechnologyGroupRow = objectMapper.createObjectNode();
-        vendorTechnologyGroupRow.put("id", schema.getName());
-        vendorTechnologyGroupRow.put("title", schema.getName());
-        vendorTechnologyGroupRow.put("icon", "fas fa-tag");
-        vendorTechnologyGroupRow.put("value", schema.getName());
-        vendorTechnologyGroupRow.put("indent", 0);
-        vendorTechnologyGroupRow.put("_collapsed", true);
-        vendorTechnologyGroupRow.put("isLeaf", false);
-        vendorTechnologyGroupRow.putNull("parent");
-        vendorTechnologyGroupRow.set("parents", objectMapper.createArrayNode());
-        vendorTechnologyGroupRow.set("children", objectMapper.createArrayNode());
-        vendorTechnologyGroupRow.put("checkBox", false);
-        vendorTechnologyGroupRow.put("selected", false);
-        vendorTechnologyGroupRow.put("partakesInSelectionFilter", false);
-        vendorTechnologyGroupRow.put("selectAllChildrenCheckBox", false);
-        vendorTechnologyGroupRow.put("_fetched", true);
-        vendorTechnologyGroupRow.put("type", Schema.class.getSimpleName());
-        return vendorTechnologyGroupRow;
-    }
-
-    private static ObjectNode createVertexLabelTreeItem(ObjectMapper objectMapper, Schema schema, VertexLabel vertexLabel) {
-        ObjectNode networkNodeRow = objectMapper.createObjectNode();
-        networkNodeRow.put("id", schema.getName() + "_" + vertexLabel.getName());
-        networkNodeRow.put("title", vertexLabel.getName());
-        networkNodeRow.put("icon", "database");
-        networkNodeRow.put("value", vertexLabel.getName());
-        networkNodeRow.put("indent", 2);
-        networkNodeRow.put("_collapsed", true);
-        networkNodeRow.put("isLeaf", true);
-        networkNodeRow.put("parent", schema.getName());
-        ArrayNode parents = objectMapper.createArrayNode();
-        parents.add(schema.getName());
-        networkNodeRow.set("parents", parents);
-        networkNodeRow.set("children", objectMapper.createArrayNode());
-        networkNodeRow.put("checkBox", false);
-        networkNodeRow.put("selected", false);
-        networkNodeRow.put("partakesInSelectionFilter", false);
-        networkNodeRow.put("selectAllChildrenCheckBox", false);
-        networkNodeRow.put("_fetched", true);
-        networkNodeRow.put("type", "NetworkNode");
-        return networkNodeRow;
-    }
-
-    public static class SchemaTreeSlickLazyTreeHelper implements ISlickLazyTree {
-
-        private Map<String, SlickLazyTree> initialEntryMap = new HashMap<>();
-
-        public SchemaTreeSlickLazyTreeHelper(ListOrderedSet<SlickLazyTree> initialEntries) {
-            for (SlickLazyTree initialEntry : initialEntries) {
-                this.initialEntryMap.put(initialEntry.getId(), initialEntry);
-            }
-        }
-
-        @Override
-        public SlickLazyTree parent(SlickLazyTree entry) {
-            return null;
-        }
-
-        @Override
-        public ListOrderedSet<SlickLazyTree> children(SlickLazyTree parent) {
-            return null;
-        }
-
-        @Override
-        public void refresh(SlickLazyTree slickLazyTree) {
-
+            return result;
+        } else {
+            throw new IllegalStateException(String.format("Unknown schema '%s'", schemaName));
         }
     }
+
 }

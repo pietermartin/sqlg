@@ -46,7 +46,7 @@ import _ from "underscore";
 import Icon from "../form/icon";
 //Slickgrid Custom components
 import SlickDropdownFilter from './m.slick.dropdownfilter';
-
+import {createPopper} from '@popperjs/core';
 
 function SlickGrid2() {
 
@@ -100,11 +100,12 @@ function SlickGrid2() {
 
     let dropBoxAppendId = "ColumnGroupDropBox";
 
+    let fireFilterFromDropdownInputEvent;
     let selectedDropdownSlickFilterColName = undefined;
-    let selectedDropdownSlickFilterType = undefined;
+    let selectedCmColumn = undefined;
     let selectedDropdownSlickFilterString = undefined;
-    let selectedDropdownSlickFilterParent = undefined;
     let selectedDropdownSlickFilterActive = false;
+    let popperInstances = [];
 
     let reOrderGroups = function (groupId, direction) {
         let oldIndex = groupedByColumns.findIndex((column, index) => {
@@ -536,7 +537,6 @@ function SlickGrid2() {
         } else {
             let columnFilter = columnFilters[args.column.id];
             if (args.column['cm_column']) {
-
                 let cmColumn = args.column['cm_column'];
                 if (cmColumn.type === "BOOLEAN") {
                     let selectList;
@@ -588,17 +588,28 @@ function SlickGrid2() {
                     jquerySelect.appendTo(args.node);
                 } else if (isNumber(cmColumn.type)) {
                     let input = $(`<div class='input-group'>
-                        <input type="text" data-input-column="input_column_${columnName}" class="form-control no-validate" placeholder="Filter" value="${columnFilter !== undefined ? columnFilter : ''}">
+                        <input type="text" class="form-control no-validate" placeholder="Filter" value="${columnFilter !== undefined ? columnFilter : ''}">
                         <span class="input-group-append">
                             <span class="input-group-text${(columnFilter !== undefined && columnFilter !== '') ? ' active-filter' : ''} filterAddon">
-                                <i class='fas fa-filter' data-filter-column="${columnName}" data-column-type="${cmColumn.type}" data-column-filter-active="" data-column-filter-string=""></i>
+                                <i class='fas fa-filter'></i>
                             </span>
                         </div>
                     </div>`);
                     if (columnFilter) {
                         let val = columnFilter;
                         cmColumn.comparatorValid = true;
-                        if (val.includes(",")) {
+                        if (val.startsWith("([")) {
+                            let c = getSelectedGridColumn(args.column.id);
+                            let cmColumn = c['cm_column'];
+                            columnFilters[args.column.id] = val;
+                            cmColumn.comparatorValid = true;
+                            try {
+                                cmColumn.comparator = new Function('x', 'return ' + val);
+                            } catch (e) {
+                                cmColumn.comparatorValid = false;
+                                return true;
+                            }
+                        } else if (val.includes(",")) {
                             let arr = val.split(',');
                             let filteredArr = arr.filter(function (el) {
                                 return el != null && el !== "";
@@ -629,6 +640,7 @@ function SlickGrid2() {
                             }
                         }
                     }
+                    prepareFilterDropDown(input, columnName, cmColumn);
                     input.find("input").on('input', function () {
                         let i = $(this);
                         let val = i.val();
@@ -643,7 +655,18 @@ function SlickGrid2() {
                         columnFilters[args.column.id] = val;
                         cmColumn.comparatorValid = true;
 
-                        if (val.includes(",")) {
+                        if (val.startsWith("([")) {
+                            let c = getSelectedGridColumn(args.column.id);
+                            let cmColumn = c['cm_column'];
+                            columnFilters[args.column.id] = val;
+                            cmColumn.comparatorValid = true;
+                            try {
+                                cmColumn.comparator = new Function('x', 'return ' + val);
+                            } catch (e) {
+                                cmColumn.comparatorValid = false;
+                                return true;
+                            }
+                        } else if (val.includes(",")) {
                             let arr = val.split(',');
                             let filteredArr = arr.filter(function (el) {
                                 return el != null && el !== "";
@@ -685,10 +708,10 @@ function SlickGrid2() {
                         input = columnHeaderCache["cmColumnTextHeader"];
                         if (columnHeaderCache["cmColumnTextHeader"] === undefined) {
                             input = $(`<div class='input-group'>
-                                         <input type="text" data-input-column="input_column_${columnName}" class="form-control no-validate " placeholder="Filter" value="">
+                                         <input type="text" class="form-control no-validate " placeholder="Filter" value="">
                                            <span class="input-group-append">
                                              <span class="input-group-text filterAddon">
-                                               <i class='fas fa-filter' data-filter-column="${columnName}" data-column-type="${cmColumn.type}" data-column-filter-active="" data-column-filter-string=""></i>
+                                               <i class='fas fa-filter'></i>
                                              </span>
                                           </span>
                                         </div>`);
@@ -697,23 +720,19 @@ function SlickGrid2() {
                             input = columnHeaderCache["cmColumnTextHeader"].clone();
                             let inputInput = input.find("input:text");
                             inputInput.val('');
-                            inputInput.attr('data-input-column', `input_column_${columnName}`);
-                            inputInput.siblings().children('.input-group-text').children().attr('data-filter-column', columnName);
-                            inputInput.siblings().children('.input-group-text').children().attr('data-column-type', cmColumn.type);
-                            inputInput.siblings().children('.input-group-text').children().attr('data-column-filter-active', '');
-                            inputInput.siblings().children('.input-group-text').children().attr('data-column-filter-string', '');
                             inputInput.siblings().children('.input-group-text').removeClass("active-filter");
                         }
                     } else {
                         input = $(`<div class='input-group'>
-                                     <input type="text" data-input-column="input_column_${columnName}" class="form-control no-validate " placeholder="Filter" value="${columnFilter}">
+                                     <input type="text" class="form-control no-validate " placeholder="Filter" value="${columnFilter}">
                                      <span class="input-group-append">
                                        <span class="input-group-text${(columnFilter !== '') ? ' active-filter' : ''} filterAddon">
-                                         <i class='fas fa-filter' data-filter-column="${columnName}" data-column-type="${cmColumn.type}" data-column-filter-active="" data-column-filter-string=""></i>
+                                         <i class='fas fa-filter'></i>
                                        </span>
                                      </span>
                                    </div>`);
                     }
+                    prepareFilterDropDown(input, columnName, cmColumn);
                     input.find("input").on('input', function () {
                         let i = $(this);
                         let val = i.val();
@@ -723,7 +742,18 @@ function SlickGrid2() {
                             i.siblings().children('.input-group-text').removeClass("active-filter");
                         }
                         i.siblings().children('.input-group-text').children('.fa-filter').attr('data-column-filter-string', val);
-                        if (val.includes(",")) {
+                        if (val.startsWith("([")) {
+                            let c = getSelectedGridColumn(args.column.id);
+                            let cmColumn = c['cm_column'];
+                            columnFilters[args.column.id] = val;
+                            cmColumn.comparatorValid = true;
+                            try {
+                                cmColumn.comparator = new Function('x', 'return ' + val);
+                            } catch (e) {
+                                cmColumn.comparatorValid = false;
+                                return true;
+                            }
+                        } else if (val.includes(",")) {
                             let arr = val.split(',');
                             let filteredArr = arr.filter(function (el) {
                                 return el != null && el !== "";
@@ -798,10 +828,10 @@ function SlickGrid2() {
                         input = columnHeaderCache["cmColumnTextHeader"];
                         if (columnHeaderCache["cmColumnTextHeader"] === undefined) {
                             input = $(`<div class='input-group'>
-                                         <input type="text" data-input-column="input_column_${columnName}" class="form-control no-validate " placeholder="Filter" value="">
+                                         <input type="text" class="form-control no-validate " placeholder="Filter" value="">
                                            <span class="input-group-append">
                                              <span class="input-group-text filterAddon">
-                                               <i class='fas fa-filter' data-filter-column="${columnName}" data-column-type="${cmColumn.type}" data-column-filter-active="" data-column-filter-string=""></i>
+                                               <i class='fas fa-filter'></i>
                                              </span>
                                           </span>
                                         </div>`);
@@ -810,25 +840,19 @@ function SlickGrid2() {
                             input = columnHeaderCache["cmColumnTextHeader"].clone();
                             let inputInput = input.find("input:text");
                             inputInput.val('');
-                            inputInput.attr('data-input-column', `input_column_${columnName}`);
-                            inputInput.siblings().children('.input-group-text').children().attr('data-filter-column', columnName);
-                            inputInput.siblings().children('.input-group-text').children().attr('data-column-type', cmColumn.type);
-                            inputInput.siblings().children('.input-group-text').children().attr('data-column-filter-active', '');
-                            inputInput.siblings().children('.input-group-text').children().attr('data-column-filter-string', '');
                             inputInput.siblings().children('.input-group-text').removeClass("active-filter");
                         }
                     } else {
                         input = $(`<div class='input-group' data-filter-column="${columnName}">
-                                     <input type="text" data-input-column="input_column_${columnName}" class="form-control no-validate " placeholder="Filter" value="${columnFilter}">
+                                     <input type="text" class="form-control no-validate " placeholder="Filter" value="${columnFilter}">
                                      <span class="input-group-append">
                                        <span class="input-group-text${(columnFilter !== '') ? ' active-filter' : ''} filterAddon">
-                                         <i class='fas fa-filter' data-filter-column="${columnName}" data-column-type="${cmColumn.type}" data-column-filter-active="" data-column-filter-string=""></i>
+                                         <i class='fas fa-filter'></i>
                                        </span>
                                      </span>
                                    </div>`);
-                        // globalColumnFiltered = true;
-                        // toggleFiltersActive();
                     }
+                    prepareFilterDropDown(input, columnName, cmColumn);
                     input.find("input").on('input', function () {
                         let i = $(this);
                         let val = i.val();
@@ -838,7 +862,7 @@ function SlickGrid2() {
                             i.siblings().children('.input-group-text').removeClass("active-filter");
                         }
                         i.siblings().children('.input-group-text').children('.fa-filter').attr('data-column-filter-string', val);
-                        if (val.includes("startsWith") || val.includes("endsWith") || val.includes("includes")) {
+                        if (val.startsWith("([")) {
                             let c = getSelectedGridColumn(args.column.id);
                             let cmColumn = c['cm_column'];
                             columnFilters[args.column.id] = val;
@@ -849,13 +873,24 @@ function SlickGrid2() {
                                 cmColumn.comparatorValid = false;
                                 return true;
                             }
-                        } else if (val.startsWith("return [")) {
+                        } else if (val.includes("startsWith") || val.includes("endsWith") || val.includes("includes")) {
                             let c = getSelectedGridColumn(args.column.id);
                             let cmColumn = c['cm_column'];
                             columnFilters[args.column.id] = val;
                             cmColumn.comparatorValid = true;
                             try {
-                                cmColumn.comparator = new Function('x', val);
+                                cmColumn.comparator = new Function('x', 'return ' + val);
+                            } catch (e) {
+                                cmColumn.comparatorValid = false;
+                                return true;
+                            }
+                        } else if (val.includes("x ") || val.includes("x ") || val.includes("x.")) {
+                            let c = getSelectedGridColumn(args.column.id);
+                            let cmColumn = c['cm_column'];
+                            columnFilters[args.column.id] = val;
+                            cmColumn.comparatorValid = true;
+                            try {
+                                cmColumn.comparator = new Function('x', 'return ' + val);
                             } catch (e) {
                                 cmColumn.comparatorValid = false;
                                 return true;
@@ -1037,35 +1072,6 @@ function SlickGrid2() {
         }
     };
 
-    let fireFilterFromDropdownInputEvent = function (filterString, selectedColumn) {
-        let gridElement = document.getElementById(gridId);
-        let inp = gridElement.querySelector(`[data-input-column=input_column_${selectedColumn}]`);
-        let event = new Event('input');
-        inp.value = filterString;
-        inp.dispatchEvent(event);
-        m.redraw();
-    };
-
-    let setDropdownFilterActive = function (column, state) {
-        let arrayElements = [];
-        if (column === "__RESET_ALL__") {
-            arrayElements = $(`#${gridId}`).children().children().find(`[data-filter-column]`);
-            arrayElements.each(function () {
-                $(this).attr('data-column-filter-Active', 'false');
-            });
-            selectedDropdownSlickFilterActive = false;
-            return;
-        }
-
-        let element = $(grid.getHeaderRow()).children().children().find(`[data-filter-column='${column}']`);
-        if (state) {
-            element.attr('data-column-filter-Active', 'true');
-            selectedDropdownSlickFilterActive = true;
-        } else {
-            element.attr('data-column-filter-Active', 'false');
-            selectedDropdownSlickFilterActive = false;
-        }
-    };
 
     /**
      * add a css class to turn the deletion icon red
@@ -1092,6 +1098,59 @@ function SlickGrid2() {
             return ret;
         };
     };
+
+    let prepareFilterDropDown = function (input, columnName, cmColumn) {
+        let span = input.find("span").get(0);
+        let dropDown = $(`#SlickDropdownFilter_${gridId}`).get(0);
+        let popperInstance = createPopper(span, dropDown, {
+            placement: "bottom",
+            modifiers: [
+                {
+                    name: 'flip',
+                    enabled: false,
+                },
+                {
+                    name: 'offset',
+                    options: {
+                        offset: [0, 8],
+                    },
+                },
+                {
+                    name: 'focus',
+                    enabled: true,
+                    phase: 'afterWrite',
+                    fn({state}) {
+                        if (state.elements.popper.getAttribute("data-show") !== null) {
+                            $(state.elements.popper).find("input")[1].focus();
+                        }
+                    }
+                }
+            ]
+        });
+        popperInstances.push(popperInstance);
+        span.addEventListener("click", function (e) {
+            let inputBox = input.find("input");
+            let val = inputBox.val();
+            selectedDropdownSlickFilterColName = columnName;
+            selectedCmColumn = cmColumn;
+            selectedDropdownSlickFilterString = val;
+            selectedDropdownSlickFilterActive = true;
+            fireFilterFromDropdownInputEvent = function (value) {
+                inputBox.val(value);
+                inputBox.trigger("input");
+                selectedDropdownSlickFilterActive = false;
+            }
+            dropDown.setAttribute('data-show', '');
+            popperInstance.update();
+            // //update popper only after a redraw so the dom is properly created for it to calculate its position
+            // setTimeout(() => {
+            //     popperInstance.update();
+            // }, 0);
+            m.redraw();
+            e.preventDefault();
+            e.stopPropagation();
+        });
+    }
 
     let initializeGrid = function (vnode) {
 
@@ -1354,25 +1413,6 @@ function SlickGrid2() {
             grid.render();
         });
 
-        //Manage the Mithril dropdown from grid event
-        $(grid.getHeaderRow()).on("click", ".filterAddon", function (e) {
-            let offset = $(this).children('.fa-filter').offset();
-            $(`#SlickDropdownFilter_${gridId}`).hide();
-            if (selectedDropdownSlickFilterColName !== undefined) {
-                setDropdownFilterActive('__RESET_ALL__');
-            }
-            selectedDropdownSlickFilterColName = this.firstElementChild.getAttribute('data-filter-column');
-            selectedDropdownSlickFilterType = this.firstElementChild.getAttribute('data-column-type');
-            selectedDropdownSlickFilterString = this.firstElementChild.getAttribute('data-column-filter-string');
-            selectedDropdownSlickFilterParent = $(this);
-            setDropdownFilterActive(selectedDropdownSlickFilterColName, true);
-            $(`#SlickDropdownFilter_${gridId}`).css({top: offset.top, left: offset.left - 280});
-            $(`#SlickDropdownFilter_${gridId}`).show();
-            e.preventDefault();
-            e.stopPropagation();
-            m.redraw();
-        });
-
         $(grid.getHeaderRow()).on("click", ".fa-trash-alt", function (e) {
             globalDeletionState = !globalDeletionState;
             if (Slick.GlobalEditorLock.commitCurrentEdit()) {
@@ -1511,11 +1551,6 @@ function SlickGrid2() {
             }
         });
         grid.onClick.subscribe(function (e, args) {
-            if (selectedDropdownSlickFilterColName) {
-                setDropdownFilterActive('__RESET_ALL__');
-                $(`#SlickDropdownFilter_${gridId}`).hide();
-                selectedDropdownSlickFilterColName = undefined;
-            }
             if (Slick.GlobalEditorLock.commitCurrentEdit()) {
                 let item = dataView.getItem(args.row);
                 if ($(e.target).hasClass("toggle")) {
@@ -1561,7 +1596,6 @@ function SlickGrid2() {
                         }
                         grid.invalidateRow(row);
                         grid.render();
-                        // grid.getData().deleteItem(item.id);
                         e.stopImmediatePropagation();
                     } else if (column.id === 'multiSelectCheckBox') {
                         let row = args.row;
@@ -1902,6 +1936,9 @@ function SlickGrid2() {
                         c["header"]["buttons"] = []
                     }
                 });
+            }
+            for (let i = 0; i < popperInstances.length; i++) {
+                popperInstances[i].destroy();
             }
         },
         view: function (vnode) {
@@ -2465,11 +2502,9 @@ function SlickGrid2() {
                     id: gridId,
                     key: "slickGridDropdown",
                     colFilterString: selectedDropdownSlickFilterString,
-                    colSetFilterActive: setDropdownFilterActive,
-                    colGetFilterActive: selectedDropdownSlickFilterActive,
+                    popped: selectedDropdownSlickFilterActive,
                     colName: selectedDropdownSlickFilterColName,
-                    colType: selectedDropdownSlickFilterType,
-                    jqueryCol: selectedDropdownSlickFilterParent,
+                    selectedCmColumn: selectedCmColumn,
                     fireFilterEvent: fireFilterFromDropdownInputEvent
                 }),
                 vnode.attrs.data !== '' ? m('div.slick-grid-tools.d-flex.align-items-center', {

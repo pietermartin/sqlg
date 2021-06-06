@@ -29,8 +29,13 @@ import "../../assets/slickgrid/plugins/slick.rowdetailview";
 import "../../assets/slickgrid/plugins/slick.rowmovemanager";
 import "../../assets/slickgrid/plugins/slick.rowselectionmodel";
 import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
 import Input from "../form/input";
 import Button from "../form/button";
+import "../slickgrid/slickgrid-custom.css"
+import "../../assets/slickgrid/slick.grid.css"
+import "../../assets/slickgrid/slick-default-theme.css"
+
 
 function SlickLazyTree(ignore) {
 
@@ -114,12 +119,12 @@ function SlickLazyTree(ignore) {
         let retval;
         let currentItem = dataView.getItems()[idx];
         if (dataContext._collapsed) {
-            retval = `${spacer}<i class='${currentItem.isLeaf ? "far fa-leaf" : "fas fa-caret-right toggle expand"}' aria-hidden='true'></i>`
+            retval = `${spacer}<i class='${currentItem.isLeaf ? "fas fa-leaf" : "fas fa-caret-right toggle expand"}' aria-hidden='true'></i>`
         } else {
             if (currentItem.spinner === true) {
-                retval = `${spacer}<i class='${currentItem.isLeaf ? "far fa-leaf" : "fas fa-spinner fa-spin toggle collapse"}' aria-hidden='true'></i>`;
+                retval = `${spacer}<i class='${currentItem.isLeaf ? "fas fa-leaf" : "fas fa-spinner fa-spin toggle collapse"}' aria-hidden='true'></i>`;
             } else {
-                retval = `${spacer}<i class='${currentItem.isLeaf ? "far fa-leaf" : "fas fa-caret-down toggle collapse"}' aria-hidden='true'></i>`;
+                retval = `${spacer}<i class='${currentItem.isLeaf ? "fas fa-leaf" : "fas fa-caret-down toggle collapse"}' aria-hidden='true'></i>`;
             }
         }
         if (currentItem.checkBox) {
@@ -212,7 +217,12 @@ function SlickLazyTree(ignore) {
      * object gridOptions
      */
     let calculateGridNewDimensions = function (gridId) {
-        let newWidth = $("#" + gridId).offsetParent().offsetParent().width();
+        // let oneParent = $("#" + gridId).offsetParent();
+        // console.log("oneParent = " + oneParent.get(0).id);
+        // let twoParent = oneParent.offsetParent();
+        // console.log("twoParent = " + twoParent.get(0).id);
+        // let newWidth = $("#" + gridId).offsetParent().offsetParent().width();
+        let newWidth = $("#" + gridId).offsetParent().width();
         // let h = $("#" + gridId).offsetParent().height();
         // console.log(h);
         // we want to keep a minimum datagrid size, apply these minimum if required
@@ -232,7 +242,7 @@ function SlickLazyTree(ignore) {
             // apply these new height/width to the datagrid
             let $grid = $('#' + gridId);
             $grid.height('100%');
-            console.log('setting width ' + newSizes.width);
+            // console.log('setting width ' + newSizes.width);
             $grid.width(newSizes.width);
 
             let cols = grid.getColumns();
@@ -246,7 +256,7 @@ function SlickLazyTree(ignore) {
         }
     };
 
-    let attachAutoResizeDataGrid = function (grid, gridId, gridContainerId) {
+    let attachAutoResizeDataGrid = function (grid, gridId) {
         let gridDomElm = $('#' + gridId);
         if (!gridDomElm || typeof gridDomElm.offset() === "undefined") {
             // if we can't find the grid to resize, return without attaching anything
@@ -262,16 +272,15 @@ function SlickLazyTree(ignore) {
         // });
         // in a SPA (Single Page App) environment you SHOULD also call the destroyAutoResize()
         // let w = $(kendoSplitterDiv);
-        let splitters = $(".k-splitter");
-        for (let i = 0; i < splitters.length; i++) {
-            let splitter = splitters[i];
-            let kendoSplitter = $(splitter).data("kendoSplitter");
-            if (kendoSplitter) {
-                kendoSplitter.bind("resize", function () {
+        let splitter = $("#main").data("splitter");
+        if (splitter) {
+            splitter.option("onDrag", _.debounce(function () {
+                let $grid = $('#' + gridId);
+                $grid.width(0);
+                setTimeout(function() {
                     resizeToFitBrowserWindow(grid, gridId);
-                    resizeToFitBrowserWindow(grid, gridId);
-                });
-            }
+                }, 0);
+            }), 1000);
         }
     };
 
@@ -347,7 +356,7 @@ function SlickLazyTree(ignore) {
 
         grid = new Slick.Grid(gridDiv, dataView, columns, options);
         grid.setSelectionModel(new Slick.CellSelectionModel({selectActiveRow: true}));
-        attachAutoResizeDataGrid(grid, gridDiv.id, "gridContainer");
+        attachAutoResizeDataGrid(grid, gridDiv.id);
         dataView.syncGridSelection(grid, true, true);
 
         let copyManager = new Slick.CellExternalCopyManager();
@@ -466,7 +475,7 @@ function SlickLazyTree(ignore) {
         }
         initializeSelectedItem();
 
-        //remove the column's header
+        // remove the column's header
         $('#' + gridDiv.id + " .slick-header-columns").css("height", "0px");
         grid.resizeCanvas();
         return grid;

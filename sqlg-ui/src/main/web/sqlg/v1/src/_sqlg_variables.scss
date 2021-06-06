@@ -1,0 +1,32 @@
+$body-bg: #fafcff;
+//$body-bg: #F2F3F7; //intellij cyan background
+
+$cm-selected-blue: #66B6FF;
+$cm-light-blue: #F1F7FF;
+
+/**
+$slick-row-selected is SlickGrid's row selected color and
+SlickSelect's selected item(s) color
+ */
+$slick-row-selected: $cm-selected-blue !default;
+$slick-row-selected-hover: #66ABFFC1 !default;
+/**
+$slick-selection is for SlickGrid's CellSelectionModel.
+It is the color for the range of selected cells
+ */
+//$slick-selection: rgba(102, 182, 255, 0.7) !default;
+$slick-selection: rgba(102, 201, 255, 0.82) !default;
+/**
+$slick-row-selected-and-selection is for SlickGrid when the row and the CellSelectionModel's range overlap
+ */
+$slick-row-selected-and-selection: $slick-selection;
+
+
+.bg-cm-selected-blue {
+    background-color: $cm-selected-blue;
+}
+
+.bg-cm-light-blue {
+    background-color: $cm-light-blue;
+}
+

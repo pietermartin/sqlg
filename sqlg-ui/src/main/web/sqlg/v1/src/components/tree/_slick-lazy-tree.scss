@@ -6,6 +6,23 @@
     grid-template-columns: auto;
     grid-template-rows: calc(2rem + 1px) auto;
 
+    #Overlay {
+        &.overlay-true {
+            &.fas {
+                font-weight: 900;
+                font-size: 5em;
+                color: rgb(14, 129, 230);
+                top: 45%;
+                position: relative;
+                left: 45%;
+            }
+        }
+
+        &.overlay-false {
+            display: none;
+        }
+    }
+
     .slick-lazy-tree {
         position: relative;
 
