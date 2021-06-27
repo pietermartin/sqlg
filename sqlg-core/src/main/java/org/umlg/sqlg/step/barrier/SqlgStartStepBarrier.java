@@ -91,7 +91,6 @@ public class SqlgStartStepBarrier<S> extends SqlgAbstractStep<S, S> implements T
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        return result;
+        return super.hashCode();
     }
 }
