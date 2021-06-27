@@ -270,14 +270,14 @@ function SlickLazyTree(ignore) {
         // 	self.resizeToFitBrowserWindow(grid, gridId, gridContainerId);
         // 	self.resizeToFitBrowserWindow(grid, gridId, gridContainerId);
         // });
-        // in a SPA (Single Page App) environment you SHOULD also call the destroyAutoResize()
+        // in a SPA (Single Page Sqlg) environment you SHOULD also call the destroyAutoResize()
         // let w = $(kendoSplitterDiv);
         let splitter = $("#main").data("splitter");
         if (splitter) {
             splitter.option("onDrag", _.debounce(function () {
                 let $grid = $('#' + gridId);
                 $grid.width(0);
-                setTimeout(function() {
+                setTimeout(function () {
                     resizeToFitBrowserWindow(grid, gridId);
                 }, 0);
             }), 1000);
@@ -611,19 +611,80 @@ function SlickLazyTree(ignore) {
                             runFilters = window.setTimeout(filterAndUpdate, 500);
                         }
                     }),
-                    m("div.input-group-append", [
+                    m(Button, {
+                        id: vnode.attrs.id + "_ClearFilter",
+                        class: "btn-light border",
+                        icon: "fa-times",
+                        "data-tippy-content": "Clear filter",
+                        "data-tippy-placement": "top",
+                        enabled: columnFilter && columnFilter !== "",
+                        onclick: function (e) {
+                            columnFilter = "";
+                            dataView.setRefreshHints({
+                                isFilterNarrowing: false,
+                                isFilterExpanding: true
+                            });
+                            dataView.setFilterArgs({
+                                showAll: false,
+                                fromTree: false,
+                                showSelectedOnly: showSelected
+                            });
+                            dataView.refresh();
+                            runFilters = window.setTimeout(filterAndUpdate, 0);
+                            e.stopImmediatePropagation();
+                        }
+                    }),
+                    m(Button, {
+                        id: vnode.attrs.id + "_CollapseTree",
+                        class: "btn-light border",
+                        icon: "fa-compress-alt",
+                        "data-tippy-content": "Collapse tree",
+                        "data-tippy-placement": "top",
+                        onclick: function (e) {
+                            dataView.setFilterArgs({fromTree: false});
+                            dataView.setRefreshHints({
+                                isFilterNarrowing: false,
+                                isFilterExpanding: false,
+                                collapseAll: true
+                            });
+                            dataView.beginUpdate();
+                            dataView.collapseAll();
+                            dataView.endUpdate();
+                            e.stopImmediatePropagation();
+                        }
+                    }),
+                    vnode.attrs.deselectAll ?
                         m(Button, {
-                            id: vnode.attrs.id + "_ClearFilter",
-                            class: "btn-light border",
-                            icon: "fa-times",
-                            "data-tippy-content": "Clear filter",
+                            id: vnode.attrs.id + "_DeselectAll",
+                            class: "btn-light border border-left-0 rounded-0",
+                            icon: "fa-times-circle",
+                            "data-tippy-content": "Deselect all",
                             "data-tippy-placement": "top",
-                            enabled: columnFilter && columnFilter !== "",
+                            enabled: selectedItems && !_.isEmpty(selectedItems),
                             onclick: function (e) {
-                                columnFilter = "";
+                                dataView.beginUpdate();
+                                dataView.deselectAll(function (item) {
+                                    delete selectedItems[item.id];
+                                    if (deselectedItemCallBack) {
+                                        deselectedItemCallBack(item, grid);
+                                    }
+                                });
+                                dataView.endUpdate();
+                                e.stopImmediatePropagation();
+                            }
+                        }) : m("div"),
+                    vnode.attrs.showSelected ?
+                        m(Button, {
+                            id: vnode.attrs.id + "_ShowSelected",
+                            class: (showSelected ? "btn-success" : "btn-light") + " border border-left-0 rounded-0",
+                            icon: (!showSelected ? "fa-check-square" : "fa-minus-square"),
+                            "data-tippy-content": "Show selected",
+                            "data-tippy-placement": "top",
+                            onclick: function (e) {
+                                showSelected = !showSelected;
                                 dataView.setRefreshHints({
                                     isFilterNarrowing: false,
-                                    isFilterExpanding: true
+                                    isFilterExpanding: false
                                 });
                                 dataView.setFilterArgs({
                                     showAll: false,
@@ -631,86 +692,23 @@ function SlickLazyTree(ignore) {
                                     showSelectedOnly: showSelected
                                 });
                                 dataView.refresh();
-                                runFilters = window.setTimeout(filterAndUpdate, 0);
                                 e.stopImmediatePropagation();
                             }
-                        }),
+                        }) : m("div"),
+                    !!refresh ?
                         m(Button, {
-                            id: vnode.attrs.id + "_CollapseTree",
-                            class: "btn-light border",
-                            icon: "fa-compress-alt",
-                            "data-tippy-content": "Collapse tree",
+                            id: vnode.attrs.id + "_Refresh",
+                            class: (refreshActive ? "btn-success" : "btn-light") + " border border-left-0 rounded-0",
+                            icon: refreshActive ? "fa-sync" : "fa-sync",
+                            enabled: true,
+                            "data-tippy-content": "Refresh",
                             "data-tippy-placement": "top",
                             onclick: function (e) {
-                                dataView.setFilterArgs({fromTree: false});
-                                dataView.setRefreshHints({
-                                    isFilterNarrowing: false,
-                                    isFilterExpanding: false,
-                                    collapseAll: true
-                                });
-                                dataView.beginUpdate();
-                                dataView.collapseAll();
-                                dataView.endUpdate();
+                                vnode.attrs.refresh();
                                 e.stopImmediatePropagation();
+                                e.redraw = false;
                             }
-                        }),
-                        vnode.attrs.deselectAll ?
-                            m(Button, {
-                                id: vnode.attrs.id + "_DeselectAll",
-                                class: "btn-light border border-left-0 rounded-0",
-                                icon: "fa-times-circle",
-                                "data-tippy-content": "Deselect all",
-                                "data-tippy-placement": "top",
-                                enabled: selectedItems && !_.isEmpty(selectedItems),
-                                onclick: function (e) {
-                                    dataView.beginUpdate();
-                                    dataView.deselectAll(function (item) {
-                                        delete selectedItems[item.id];
-                                        if (deselectedItemCallBack) {
-                                            deselectedItemCallBack(item, grid);
-                                        }
-                                    });
-                                    dataView.endUpdate();
-                                    e.stopImmediatePropagation();
-                                }
-                            }) : m("div"),
-                        vnode.attrs.showSelected ?
-                            m(Button, {
-                                id: vnode.attrs.id + "_ShowSelected",
-                                class: (showSelected ? "btn-success" : "btn-light") + " border border-left-0 rounded-0",
-                                icon: (!showSelected ? "fa-check-square" : "fa-minus-square"),
-                                "data-tippy-content": "Show selected",
-                                "data-tippy-placement": "top",
-                                onclick: function (e) {
-                                    showSelected = !showSelected;
-                                    dataView.setRefreshHints({
-                                        isFilterNarrowing: false,
-                                        isFilterExpanding: false
-                                    });
-                                    dataView.setFilterArgs({
-                                        showAll: false,
-                                        fromTree: false,
-                                        showSelectedOnly: showSelected
-                                    });
-                                    dataView.refresh();
-                                    e.stopImmediatePropagation();
-                                }
-                            }) : m("div"),
-                        !!refresh ?
-                            m(Button, {
-                                id: vnode.attrs.id + "_Refresh",
-                                class: (refreshActive ? "btn-success" : "btn-light") + " border border-left-0 rounded-0",
-                                icon: refreshActive ? "fa-sync" : "fa-sync",
-                                enabled: true,
-                                "data-tippy-content": "Refresh",
-                                "data-tippy-placement": "top",
-                                onclick: function (e) {
-                                    vnode.attrs.refresh();
-                                    e.stopImmediatePropagation();
-                                    e.redraw = false;
-                                }
-                            }) : m("div")
-                    ])
+                        }) : m("div")
                 ]),
                 m("div.slick-lazy-tree", {id: vnode.attrs.id}, [
                     m("div", {

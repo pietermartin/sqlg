@@ -4,11 +4,8 @@ import TopologyManager from "./TopologyManager";
 
 function TopologyTree(ignore) {
 
-    let componentState;
-    let componentActions;
     let tree;
     let contextMenuItem;
-    let options;
     let defaultOptions = {
         id: "sqlgSchemaTreeId",
         showSpinner: true,
@@ -62,34 +59,25 @@ function TopologyTree(ignore) {
             let menu = $('#context-menu');
             menu.css({"display": "inline-block"})
             menu.offset({top: y, left: x});
-        },
-        selectedItemCallBack: function(item) {
-            componentActions.retrieveSchemaDetails(item);
-            m.redraw();
         }
     };
 
     return {
-        oninit: ({attrs: {state, actions}}) => {
-            componentState = state;
-            componentActions = actions;
-            options = $.extend(true, {}, defaultOptions);
-            TopologyManager.retrieveSchema(function (tree) {
-                options.showSpinner = false;
-                options.refreshData = true;
-                options.data.dataNormal = tree;
-            }, function (e) {
-                console.error(e);
-                // CmMithrilGlobal.toasts.push({
-                //     type: "failure",
-                //     message: e.message,
-                //     header: SCREEN_NAME,
-                //     autoHide: false
-                // });
-            });
+        oninit: ({attrs: {actions}}) => {
+            defaultOptions.selectedItemCallBack = actions.retrieveSchemaDetails;
         },
-        view: ({attrs: {state, actions}}) => {
-            return m(SlickLazyTree, options)
+        onupdate: ({attrs: {actions}}) => {
+            actions.setTreeRefresh(false);
+        },
+        view: ({attrs: {state}}) => {
+            let {treeData} = state;
+            defaultOptions.data.dataNormal = treeData.data;
+            defaultOptions.refreshData = treeData.refreshData;
+            defaultOptions.showSpinner = treeData.spin;
+            defaultOptions.selectedItem = treeData.selectedTreeItem;
+            defaultOptions.refresh = treeData;
+            defaultOptions.refreshActive = treeData.refreshActive;
+            return m(SlickLazyTree, defaultOptions)
         }
     }
 

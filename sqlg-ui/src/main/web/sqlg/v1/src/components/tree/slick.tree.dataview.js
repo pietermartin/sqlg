@@ -1392,18 +1392,22 @@
             var onSelectedRowIdsChanged = new Slick.Event();
 
             function setSelectedRangeIds(rangeIds) {
-                selectedRangeIds = rangeIds;
+                if (rangeIds.length > 0) {
+                    selectedRangeIds = rangeIds;
 
-                let rangeId = selectedRangeIds[0];
-                let rowRangeByRow = self.mapIdsToRows([rangeId.fromRowId])[0];
-                let hash = {};
-                if (!hash[rowRangeByRow]) {  // prevent duplicates
-                    hash[rowRangeByRow] = {};
+                    let rangeId = selectedRangeIds[0];
+                    let rowRangeByRow = self.mapIdsToRows([rangeId.fromRowId])[0];
+                    let hash = {};
+                    if (!hash[rowRangeByRow]) {  // prevent duplicates
+                        hash[rowRangeByRow] = {};
+                    }
+                    for (let k = 0; k < grid.getColumns().length; k++) {
+                        hash[rowRangeByRow][grid.getColumns()[k].id] = "row_selected";
+                    }
+                    grid.setCellCssStyles("row_selected", hash);
+                } else {
+                    grid.setCellCssStyles("row_selected", {});
                 }
-                for (let k = 0; k < grid.getColumns().length; k++) {
-                    hash[rowRangeByRow][grid.getColumns()[k].id] = "row_selected";
-                }
-                grid.setCellCssStyles("row_selected", hash);
             }
 
             function setSelectedRowIds(rowIds) {
@@ -1481,7 +1485,12 @@
                     for (let i = 0; i < currentSelectedRanges.length; i++) {
                         let range = currentSelectedRanges[i];
                         let rangeByRowIds = self.mapRowsToIds([range.fromRow, range.toRow]);
-                        rangeIds.push({fromRowId: rangeByRowIds[0], fromCell: range.fromCell, toRowId: rangeByRowIds[1], toCell: range.toCell});
+                        rangeIds.push({
+                            fromRowId: rangeByRowIds[0],
+                            fromCell: range.fromCell,
+                            toRowId: rangeByRowIds[1],
+                            toCell: range.toCell
+                        });
                     }
                     setSelectedRangeIds(rangeIds);
                 } else {
@@ -1503,8 +1512,13 @@
 
             this.onRowCountChanged.subscribe(update);
 
-            return {onSelectedRowIdsChanged: onSelectedRowIdsChanged, setSelectedRowIds: setSelectedRowIds, getSelectedRowIds: getSelectedRowIds};
+            return {
+                onSelectedRowIdsChanged: onSelectedRowIdsChanged,
+                setSelectedRowIds: setSelectedRowIds,
+                getSelectedRowIds: getSelectedRowIds
+            };
         }
+
         // function syncGridSelection(grid, preserveHidden, preserveHiddenOnSelectionChange) {
         //     var self = this;
         //     var inHandler;

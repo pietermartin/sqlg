@@ -18,7 +18,7 @@ import java.util.*;
 
 public class SchemaTreeBuilder {
 
-    static Pair<ListOrderedSet<SlickLazyTree>, ListOrderedSet<SlickLazyTree>> retrieveRootNodes() {
+    static Pair<ListOrderedSet<SlickLazyTree>, ListOrderedSet<SlickLazyTree>> retrieveRootNodes(String selectedItemId) {
         ListOrderedSet<SlickLazyTree> roots = new ListOrderedSet<>();
         ListOrderedSet<SlickLazyTree> allEntries = new ListOrderedSet<>();
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
@@ -41,7 +41,11 @@ public class SchemaTreeBuilder {
             metaSchemaSlickLazyTree.addChild(schemaSlickLazyTree);
             allEntries.add(schemaSlickLazyTree);
             ArrayNode metaVertexEdgeChildrenArrayNode = (ArrayNode) schemaRow.get("children");
-
+            if (selectedItemId.equals(schemaRow.get("id").asText())) {
+                metaSchemaRow.put("_collapsed", false);
+                schemaRow.put("_collapsed", true);
+                schemaRow.put("selected", true);
+            }
             List<String> metaVertexEdges = List.of("vertex", "edge");
             for (String metaVertexEdge : metaVertexEdges) {
                 ObjectNode metaVertexEdgeRow = createMetaVertexEdgeTreeItem(objectMapper, metaSchemaId, schema, metaVertexEdge);
@@ -52,6 +56,12 @@ public class SchemaTreeBuilder {
                 schemaSlickLazyTree.addChild(metaVertexEdgeSlickLazyTree);
                 allEntries.add(schemaSlickLazyTree);
                 ArrayNode vertexEdgeChildrenArrayNode = (ArrayNode) metaVertexEdgeRow.get("children");
+                if (selectedItemId.equals(metaVertexEdgeRow.get("id").asText())) {
+                    metaSchemaRow.put("_collapsed", false);
+                    schemaRow.put("_collapsed", false);
+                    metaVertexEdgeRow.put("_collapsed", true);
+                    metaVertexEdgeRow.put("selected", true);
+                }
                 if (metaVertexEdge.equals("vertex")) {
                     Collection<VertexLabel> vertexLabels = schema.getVertexLabels().values();
                     for (VertexLabel vertexLabel : vertexLabels) {
@@ -63,6 +73,13 @@ public class SchemaTreeBuilder {
                         vertexLabelSlickLazyTree.setChildrenIsLoaded(true);
                         metaVertexEdgeSlickLazyTree.addChild(vertexLabelSlickLazyTree);
                         ArrayNode propertyColumnChildrenArrayNode = (ArrayNode) vertexLabelRow.get("children");
+                        if (selectedItemId.equals(vertexLabelRow.get("id").asText())) {
+                            metaSchemaRow.put("_collapsed", false);
+                            schemaRow.put("_collapsed", false);
+                            metaVertexEdgeRow.put("_collapsed", false);
+                            vertexLabelRow.put("_collapsed", true);
+                            vertexLabelRow.put("selected", true);
+                        }
                     }
                 } else {
                     Collection<EdgeLabel> edgeLabels = schema.getEdgeLabels().values();
@@ -75,8 +92,14 @@ public class SchemaTreeBuilder {
                         edgeLabelSlickLazyTree.setChildrenIsLoaded(true);
                         metaVertexEdgeSlickLazyTree.addChild(edgeLabelSlickLazyTree);
                         ArrayNode propertyColumnChildrenArrayNode = (ArrayNode) edgeLabelRow.get("children");
+                        if (selectedItemId.equals(edgeLabelRow.get("id").asText())) {
+                            metaSchemaRow.put("_collapsed", false);
+                            schemaRow.put("_collapsed", false);
+                            metaVertexEdgeRow.put("_collapsed", false);
+                            edgeLabelRow.put("_collapsed", true);
+                            edgeLabelRow.put("selected", true);
+                        }
                     }
-
                 }
             }
 

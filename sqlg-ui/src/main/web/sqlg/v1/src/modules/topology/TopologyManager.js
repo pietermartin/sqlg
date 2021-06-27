@@ -13,10 +13,11 @@ const TopologyManager = {
             callBackError(e);
         })
     },
-    retrieveSchema: (callBack, callBackError) => {
+    retrieveSchema: (selectedItemId, callBack, callBackError) => {
         m.request({
             method: "GET",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema"
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema",
+            params: {selectedItemId: selectedItemId},
         }).then(function (data) {
             callBack(data);
         }).catch(function (e) {

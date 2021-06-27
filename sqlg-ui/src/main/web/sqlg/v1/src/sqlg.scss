@@ -5,6 +5,8 @@
 @import "components/slickgrid/m.slick.dropdownfilter";
 @import "components/slickshuffle/slickShuffle";
 @import "components/tree/slick-lazy-tree";
+@import "sqlg/v1/src/modules/layout/mainLayout";
+@import "sqlg/v1/src/modules/layout/leftPane";
 @import "modules/topology/topologyDetails";
 @import "../../../node_modules/@fortawesome/fontawesome-free/css/all.css";
 
@@ -16,5 +18,6 @@ html {
         height: 100%;
         min-height: 100%;
         line-height: 1;
+        background-color: $body-bg;
     }
 }

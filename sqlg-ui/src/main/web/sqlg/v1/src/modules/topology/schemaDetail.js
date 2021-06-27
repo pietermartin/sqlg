@@ -1,15 +1,18 @@
 import m from "mithril";
-import "./_topologyDetails.scss";
 
 function SchemaDetail(ignore) {
 
     return {
         view: ({attrs: {state, actions}}) => {
             return m("div.schema-details",
-                m("div.schema-details-sqlg-schema.container",
-                    m("div.row",
+                m("div.schema-details-sqlg-schema.container-fluid",
+                    m("div.row.bg-info",
                         m("div.col-sm",
-                            m("h2", state.topologyDetails.schema.label))
+                            m("h3", state.topologyDetails.schema.label)
+                        ),
+                        m("div.col-sm",
+                            m("div", state.topologyDetails.schema.name)
+                        )
                     ),
                     m("div.row", [
                             m("div.col-sm",

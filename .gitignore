@@ -24,7 +24,7 @@ src/test/db/
 /.metadata
 /.recommenders
 /sqlg-ui/src/main/web/node_modules/
-/sqlg-ui/src/main/web/dist/app.js
+/sqlg-ui/src/main/web/dist/sqlg.js
 /sqlg-ui/src/main/web/dist/index.html
 /sqlg-ui/src/main/web/package-lock.json
 /sqlg-ui/src/main/web/dist/sqlg/v1/assets/

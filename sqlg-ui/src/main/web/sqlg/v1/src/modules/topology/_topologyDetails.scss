@@ -1,13 +1,14 @@
 .schema-details {
-
-    .schema-details-sqlg-schema {
+    .container-fluid {
         .row {
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            h4 {
-                background-color: $white;
+            &.sqlg-schema-header {
+                border-top: 1px solid $gray-300;
+            }
+            &.sqlg-schema-details {
+                &.property-columns {
+                    height: 20rem;
+                }
             }
         }
-
     }
 }
