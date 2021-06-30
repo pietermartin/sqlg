@@ -7,13 +7,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.lambda.PredicateTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.NumberHelper;
 import org.javatuples.Pair;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.traverser.SqlgTraverser;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -77,7 +77,9 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 this.branchTraversal.addStart(start);
-                ((SqlgElement) start.get()).setInternalStartTraverserIndex(startCount);
+                if (start.get() instanceof SqlgElement) {
+                    ((SqlgElement) start.get()).setInternalStartTraverserIndex(startCount);
+                }
                 cachedStarts.put(startCount++, start);
             }
             while (true) {
@@ -92,8 +94,12 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
                     //startElementIndex is 0 for branchTraversals that do not contain a SqlgVertexStep.
                     //This assumes that branchTraversals that do not go to the db only return one value per start.
                     List<Object> branchTraverserPathObjects = branchTraverser.path().objects();
-                    for (Traverser.Admin<S> cachedStart : cachedStarts.values()) {
-                        startCount = ((SqlgElement) cachedStart.get()).getInternalStartTraverserIndex();
+                    for (Map.Entry<Long, Traverser.Admin<S>> cachedStartEntry : cachedStarts.entrySet()) {
+                        startCount = cachedStartEntry.getKey();
+                        Traverser.Admin<S> cachedStart = cachedStartEntry.getValue();
+                        if (cachedStart.get() instanceof SqlgElement) {
+                            startCount = ((SqlgElement) cachedStart.get()).getInternalStartTraverserIndex();
+                        }
                         boolean startsWith = false;
                         //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
                         //for SqlgHasNextStep the path is lost on 'false'.
@@ -106,7 +112,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
                             for (int i = branchTraverserPathObjects.size() - 1; i >= 0; i--) {
                                 Object branchTraversalPathObject = branchTraverserPathObjects.get(i);
                                 if (branchTraversalPathObject instanceof SqlgElement &&
-                                        ((SqlgElement)branchTraversalPathObject).getInternalStartTraverserIndex() == internalStartTraversalIndex &&
+                                        ((SqlgElement) branchTraversalPathObject).getInternalStartTraverserIndex() == internalStartTraversalIndex &&
                                         branchTraversalPathObject.equals(cachedStartObject)) {
                                     startsWith = true;
                                     break;
@@ -135,7 +141,9 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             for (Pair<Traversal.Admin, Traversal.Admin<S, E>> traversalOptionPair : traversalOptions) {
                 Traversal.Admin<S, E> traversalOption = traversalOptionPair.getValue1();
                 while (true) {
-                    if (traversalOption.hasNext()) {
+                    //TinkerPop 3.5.0 fixes TestInject
+//                    if (traversalOption.getStartStep().hasStarts() && traversalOption.hasNext()) {
+                    if (traversalOption.getStartStep().hasNext() && traversalOption.hasNext()) {
                         this.results.add(traversalOption.nextTraverser());
                     } else {
                         break;
@@ -158,9 +166,13 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
 
             //Sort the results, this is to ensure the the incoming start order is not lost.
             this.results.sort((o1, o2) -> {
-                SqlgTraverser x = (SqlgTraverser) o1;
-                SqlgTraverser y = (SqlgTraverser) o2;
-                return Long.compare(x.getStartElementIndex(), y.getStartElementIndex());
+                if (o1 instanceof SqlgTraverser && o2 instanceof SqlgTraverser) {
+                    SqlgTraverser x = (SqlgTraverser) o1;
+                    SqlgTraverser y = (SqlgTraverser) o2;
+                    return Long.compare(x.getStartElementIndex(), y.getStartElementIndex());
+                } else {
+                    return 0;
+                }
             });
             this.resultIterator = this.results.iterator();
         }
@@ -179,7 +191,10 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             }
         }
         for (final Pair<Traversal.Admin, Traversal.Admin<S, E>> p : this.traversalOptions) {
-            if (TraversalUtil.test(choice, p.getValue0())) {
+//            if (TraversalUtil.test(choice, p.getValue0())) {
+//                branches.add(p.getValue1());
+//            }
+            if (SqlgTraversalUtil.test(choice, p.getValue0())) {
                 branches.add(p.getValue1());
             }
         }

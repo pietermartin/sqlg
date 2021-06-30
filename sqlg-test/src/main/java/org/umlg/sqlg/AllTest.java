@@ -3,9 +3,6 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
-import org.umlg.sqlg.test.reducing.TestAggregate;
-import org.umlg.sqlg.test.reducing.TestGroupCount;
-import org.umlg.sqlg.test.reducing.TestMax;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.complex.TestComplex;
@@ -30,6 +27,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.index.TestIndexOnPartition;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
+import org.umlg.sqlg.test.inject.TestInject;
 import org.umlg.sqlg.test.io.TestIo;
 import org.umlg.sqlg.test.io.TestIoEdge;
 import org.umlg.sqlg.test.json.TestJson;
@@ -47,8 +45,7 @@ import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.process.dropstep.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.properties.TestPropertyValues;
-import org.umlg.sqlg.test.reducing.TestReducing;
-import org.umlg.sqlg.test.reducing.TestReducingVertexStep;
+import org.umlg.sqlg.test.reducing.*;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
 import org.umlg.sqlg.test.roles.TestReadOnlyRole;
@@ -271,7 +268,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPartitionedDrop.class,
         TestDropStepPartition.class,
         TestBatchUpdatePartitioning.class,
-        TestLargeSchemaPerformance.class
+        TestLargeSchemaPerformance.class,
+        TestInject.class
 })
 public class AllTest {
 

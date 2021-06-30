@@ -1,9 +1,8 @@
-package org.umlg.sqlg.step.barrier;
+package org.umlg.sqlg.step;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 import java.util.NoSuchElementException;
@@ -12,12 +11,12 @@ import java.util.NoSuchElementException;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2020/09/13
  */
-public class SqlgHasNextStepBarrier<S> extends SqlgAbstractStep<S, Boolean> {
+public class SqlgHasNextStep<S> extends SqlgAbstractStep<S, Boolean> {
 
 //    private long startCount;
 //    private long count = 0;
 
-    public SqlgHasNextStepBarrier(final Traversal.Admin traversal) {
+    public SqlgHasNextStep(final Traversal.Admin traversal) {
         super(traversal);
     }
 

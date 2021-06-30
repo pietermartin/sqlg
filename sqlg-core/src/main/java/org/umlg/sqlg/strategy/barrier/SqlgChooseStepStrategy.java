@@ -19,7 +19,7 @@ import org.javatuples.Pair;
 import org.umlg.sqlg.step.SqlgLambdaFilterStep;
 import org.umlg.sqlg.step.barrier.SqlgBranchStepBarrier;
 import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
-import org.umlg.sqlg.step.barrier.SqlgHasNextStepBarrier;
+import org.umlg.sqlg.step.SqlgHasNextStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
@@ -72,10 +72,10 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                 );
                 Step hasNextStep = predicateTraversal.getSteps().get(predicateTraversal.getSteps().size() - 1);
                 if (hasNextStep instanceof HasNextStep) {
-                    SqlgHasNextStepBarrier<?> sqlgHasNextStepBarrier = new SqlgHasNextStepBarrier<>(predicateTraversal);
+                    SqlgHasNextStep<?> sqlgHasNextStep = new SqlgHasNextStep<>(predicateTraversal);
                     TraversalHelper.replaceStep(
                             hasNextStep,
-                            sqlgHasNextStepBarrier,
+                            sqlgHasNextStep,
                             predicateTraversal
                     );
                 }
