@@ -161,6 +161,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 E e = emit.getElement();
                 this.labels = emit.getLabels();
                 if (!isStart && previousHead != null && traverser == null) {
+                    first = false;
                     traverser = previousHead.split(e, this);
                 } else if (first) {
                     first = false;
