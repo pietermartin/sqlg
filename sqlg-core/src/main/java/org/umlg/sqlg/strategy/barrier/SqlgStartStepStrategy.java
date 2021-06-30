@@ -42,7 +42,7 @@ public class SqlgStartStepStrategy extends AbstractTraversalStrategy<TraversalSt
                 StartStep<?> startStep = startStepOptional.get();
 
 
-                SqlgStartStepBarrier<?> sqlgStartStepBarrier = new SqlgStartStepBarrier<>(traversal, startStep);
+                SqlgStartStepBarrier<?> sqlgStartStepBarrier = new SqlgStartStepBarrier<>(traversal, startStep.clone());
                 for (String label : startStep.getLabels()) {
                     sqlgStartStepBarrier.addLabel(label);
                 }

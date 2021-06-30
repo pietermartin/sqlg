@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.Attachable;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgAbstractStep;
+import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 import java.util.*;
 
@@ -24,6 +25,10 @@ public class SqlgStartStepBarrier<S> extends SqlgAbstractStep<S, S> implements T
     private boolean first = true;
     private final List<Traverser.Admin<S>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<S>> resultIterator;
+
+    public SqlgStartStepBarrier(final Traversal.Admin traversal) {
+        super(traversal);
+    }
 
     public SqlgStartStepBarrier(final Traversal.Admin traversal, StartStep<S> startStep) {
         super(traversal);
@@ -43,18 +48,23 @@ public class SqlgStartStepBarrier<S> extends SqlgAbstractStep<S, S> implements T
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
-        Set<TraverserRequirement> requirements = new HashSet<>();
-        return requirements;
+        return new HashSet<>();
     }
 
     @Override
     protected Traverser.Admin<S> processNextStart() throws NoSuchElementException {
         if (this.first) {
             if (null != this.start) {
-                if (this.start instanceof Iterator)
-                    this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
-                else
+                if (this.start instanceof Iterator) {
+                    Iterator<Traverser.Admin<S>> traversers = SqlgTraverserGenerator.instance().generateIterator(
+                            (Iterator<S>)this.start,
+                            this,
+                            1L, false, false);
+                    this.starts.add(traversers);
+//                    this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
+                } else {
                     this.starts.add(this.getTraversal().getTraverserGenerator().generate((S) this.start, this, 1l));
+                }
             }
             this.first = false;
         }
@@ -91,7 +101,6 @@ public class SqlgStartStepBarrier<S> extends SqlgAbstractStep<S, S> implements T
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        return result;
+        return super.hashCode();
     }
 }

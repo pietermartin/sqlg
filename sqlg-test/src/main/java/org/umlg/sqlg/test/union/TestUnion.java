@@ -15,14 +15,48 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
-
 /**
  * Date: 2016/05/30
  * Time: 9:01 PM
  */
 @SuppressWarnings("unchecked")
 public class TestUnion extends BaseTest {
+
+    /**
+     * https://github.com/pietermartin/sqlg/issues/416
+     */
+    @Test
+    public void testAliasesWithinUnion() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "A");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "B");
+
+        a.addEdge("edge", b);
+
+        // First, confirm that a simple traversal using an alias works properly.  This works as
+        // expected (the failure is below with the union where the exact traversal is used inside the union).
+        List<Vertex> noUnionItems = this.sqlgGraph.traversal()
+                .V()
+                .hasLabel("A")
+                .as("alias1")
+                .out()
+                .<Vertex>select("alias1")
+                .toList();
+
+        Assert.assertEquals(1, noUnionItems.size());
+        Assert.assertEquals(a, noUnionItems.get(0));
+
+        // This one doesn't work even though the exact same traversal is used inside the union.  Debugging
+        // the code shows that it cannot find the "alias1" label in the SelectOneStep (in the map method).
+        List<Vertex> unionItems = this.sqlgGraph.traversal()
+                .inject("ignore")       // Normally an inject would be used here, but see #415
+                .<Vertex>union(
+                        __.V().hasLabel("A").as("alias1").out().select("alias1")
+                )
+                .toList();
+
+        // This fails because unionItems contains 0 results.
+        Assert.assertEquals(1, unionItems.size());
+    }
 
     @Test
     public void testdkarthikeyan88_bug359() {
@@ -90,9 +124,9 @@ public class TestUnion extends BaseTest {
                 .out("has_Service").has("name", "Test Service")
                 .out("has_Database").has("name", "Test DB")
                 .union(
-                        out("has_Schema").has("name", P.eq("Test Schema1")).out("has_Table").has("name", P.without("Table2")),
-                        out("has_Schema").has("name", P.eq("Test Schema1")).out("has_Table").has("name", P.within("Table1")),
-                        out("has_Schema").has("name", P.eq("Test Schema2")).out("has_Table").has("name", P.neq("Table4")))
+                        __.out("has_Schema").has("name", P.eq("Test Schema1")).out("has_Table").has("name", P.without("Table2")),
+                        __.out("has_Schema").has("name", P.eq("Test Schema1")).out("has_Table").has("name", P.within("Table1")),
+                        __.out("has_Schema").has("name", P.eq("Test Schema2")).out("has_Table").has("name", P.neq("Table4")))
                 .out("has_Column")
                 .range(0, 100).tree();
 

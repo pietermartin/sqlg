@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.Is;
 import org.junit.Assert;
 import org.junit.Test;
@@ -68,7 +69,7 @@ public class TestGremlinCompileChoose extends BaseTest {
                 );
         printTraversalForm(traversal);
         Assert.assertEquals(Collections.singletonList(10), traversal.next());
-        Assert.assertThat(traversal.hasNext(), Is.is(false));
+        MatcherAssert.assertThat(traversal.hasNext(), Is.is(false));
     }
 
     @Test

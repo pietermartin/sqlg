@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -29,6 +30,20 @@ public class SqlgTraverserGenerator implements TraverserGenerator {
 
     public <S> Traverser.Admin<S> generate(final S start, final Step startStep, final long initialBulk, boolean endsWithSack, boolean requiresOneBulk) {
         return new SqlgTraverser<>(start, startStep, initialBulk, endsWithSack, requiresOneBulk);
+    }
+
+    public <S> Iterator<Traverser.Admin<S>> generateIterator(final Iterator<S> starts, final Step<S, ?> startStep, final long initialBulk, boolean endsWithSack, boolean requiresOneBulk) {
+        return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                return starts.hasNext();
+            }
+
+            @Override
+            public Traverser.Admin<S> next() {
+                return generate(starts.next(), startStep, initialBulk, endsWithSack, requiresOneBulk);
+            }
+        };
     }
 
     @Override

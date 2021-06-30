@@ -49,7 +49,7 @@ public class TestVertexCache extends BaseTest {
         Topology topology = this.sqlgGraph.getTopology();
 
         Map<String, PropertyType> vertexProperties = new HashMap<>();
-        vertexProperties.put("id", PropertyType.STRING);
+        vertexProperties.put("id", PropertyType.varChar(10));
         vertexProperties.put("name", PropertyType.STRING);
 
         ListOrderedSet<String> identifiers = ListOrderedSet.listOrderedSet(Collections.singletonList("id"));
@@ -59,7 +59,7 @@ public class TestVertexCache extends BaseTest {
         VertexLabel vertexLabelC = topology.ensureVertexLabelExist("C", vertexProperties, identifiers);
 
         Map<String, PropertyType> edgeProperties = new HashMap<>();
-        edgeProperties.put("id", PropertyType.STRING);
+        edgeProperties.put("id", PropertyType.varChar(10));
         edgeProperties.put("how", PropertyType.STRING);
 
         topology.ensureEdgeLabelExist("related", vertexLabelA, vertexLabelB, edgeProperties);

@@ -8,11 +8,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.LambdaFilterSt
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaCollectingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaFlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.LambdaMapStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.LambdaSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SackValueStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.util.CloseableIterator;
+import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -105,6 +106,20 @@ public class SqlgTraversalUtil {
     }
 
     public static boolean mayOptimize(final Traversal.Admin<?, ?> traversal) {
-        return !TraversalHelper.hasStepOfAssignableClass(InjectStep.class, traversal);
+        return true;
+//        return !TraversalHelper.hasStepOfAssignableClass(InjectStep.class, traversal);
+    }
+
+    public static final <S, E> boolean test(final S start, final Traversal.Admin<S, E> traversal) {
+        traversal.reset();
+        Traverser.Admin<S> admin = SqlgTraverserGenerator.instance().generate(
+                start,
+                traversal.getStartStep(),
+                1L, false, false);
+        traversal.addStart(admin);
+        boolean result = traversal.hasNext(); // filter
+        //Close the traversal to release any underlying resources.
+        CloseableIterator.closeIterator(traversal);
+        return result;
     }
 }
