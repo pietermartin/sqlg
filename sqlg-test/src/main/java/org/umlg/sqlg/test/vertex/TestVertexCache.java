@@ -59,7 +59,9 @@ public class TestVertexCache extends BaseTest {
         VertexLabel vertexLabelC = topology.ensureVertexLabelExist("C", vertexProperties, identifiers);
 
         Map<String, PropertyType> edgeProperties = new HashMap<>();
-        edgeProperties.put("id", PropertyType.varChar(10));
+        //MariaDb does seem to consider 'ID" and 'id' as the same in 'CREATE' statement.
+        //Change it to _id
+        edgeProperties.put("_id", PropertyType.varChar(10));
         edgeProperties.put("how", PropertyType.STRING);
 
         topology.ensureEdgeLabelExist("related", vertexLabelA, vertexLabelB, edgeProperties);

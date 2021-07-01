@@ -841,6 +841,9 @@ public class Schema implements TopologyInf {
         return result;
     }
 
+    /**
+     * @deprecated No longer supporting this feature.
+     */
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(this.topology, properties);
         Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);

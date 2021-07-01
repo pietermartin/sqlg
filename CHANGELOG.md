@@ -1,3 +1,11 @@
+##2.1.1
+
+*Fix bug [#416](https://github.com/pietermartin/sqlg/issues/416). Fixed bug with first iteration state
+
+*Fix bug [#415](https://github.com/pietermartin/sqlg/issues/415). Optimize InjectStep and create `SqlTraverser` in `SqlgStartStepBarrier`
+
+*Deprecate global unique identifiers
+
 ##2.1.0
 
 * Removed all attempts at preventing database dead locks from happening. Sqlg no longer takes any kind of locks

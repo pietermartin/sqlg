@@ -61,9 +61,14 @@ public class SqlgStartStepBarrier<S> extends SqlgAbstractStep<S, S> implements T
                             this,
                             1L, false, false);
                     this.starts.add(traversers);
-//                    this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
                 } else {
-                    this.starts.add(this.getTraversal().getTraverserGenerator().generate((S) this.start, this, 1l));
+                    //TODO, this never gets called, investigate
+//                    this.starts.add(this.getTraversal().getTraverserGenerator().generate((S) this.start, this, 1l));
+                    Traverser.Admin<S> traverser = SqlgTraverserGenerator.instance().generate(
+                            (S)this.start,
+                            this,
+                            1L, false, false);
+                    this.starts.add(traverser);
                 }
             }
             this.first = false;
