@@ -805,6 +805,9 @@ public class Topology {
     }
 
 
+    /**
+     * @deprecated No longer supporting this feature.
+     */
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
         Schema globalUniqueIndexSchema = getGlobalUniqueIndexSchema();

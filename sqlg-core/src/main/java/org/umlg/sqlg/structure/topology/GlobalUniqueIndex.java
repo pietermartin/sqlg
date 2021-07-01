@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Date: 2016/12/01
  * Time: 10:10 PM
+ * @deprecated No longer supporting this feature.
  */
 public class GlobalUniqueIndex implements TopologyInf {
 
