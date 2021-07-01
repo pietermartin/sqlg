@@ -166,13 +166,9 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
 
             //Sort the results, this is to ensure the the incoming start order is not lost.
             this.results.sort((o1, o2) -> {
-                if (o1 instanceof SqlgTraverser && o2 instanceof SqlgTraverser) {
-                    SqlgTraverser x = (SqlgTraverser) o1;
-                    SqlgTraverser y = (SqlgTraverser) o2;
-                    return Long.compare(x.getStartElementIndex(), y.getStartElementIndex());
-                } else {
-                    return 0;
-                }
+                SqlgTraverser x = (SqlgTraverser) o1;
+                SqlgTraverser y = (SqlgTraverser) o2;
+                return Long.compare(x.getStartElementIndex(), y.getStartElementIndex());
             });
             this.resultIterator = this.results.iterator();
         }
