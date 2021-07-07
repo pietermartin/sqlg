@@ -14,8 +14,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
-
 /**
  * Date: 2014/07/13
  * Time: 6:36 PM
@@ -24,7 +22,7 @@ import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 public class TestHas extends BaseTest {
 
     @Test
-    @LoadGraphWith(MODERN)
+    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     public void g_V_bothE_properties_dedup_hasKeyXweightX_hasValueXltX0d3XX_value() {
         loadModern();
         final Traversal<Vertex, Double> traversal = this.sqlgGraph.traversal()
@@ -216,6 +214,18 @@ public class TestHas extends BaseTest {
         Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "friend").has("weight", "5").count().next(), 0);
         Assert.assertFalse(this.sqlgGraph.traversal().V().has(T.label, "xxx").hasNext());
         Assert.assertFalse(this.sqlgGraph.traversal().V().has(T.label, "public.xxx").hasNext());
+    }
+
+    @Test
+    public void testHasOnEmptyProperty() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "something");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().has(T.label, "Person").has("name").toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().has(T.label, "Person").has("name").has("name", P.neq("")).toList();
+        Assert.assertEquals(1, vertices.size());
     }
 
 }
