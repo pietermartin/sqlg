@@ -21,6 +21,35 @@ import java.util.function.Predicate;
 public class TestGremlinOptional extends BaseTest {
 
     @Test
+    public void testAnotherOptionalWithSelect() {
+        Vertex activityInstance = this.sqlgGraph.addVertex(T.label, "ActivityInstance");
+        Vertex activityRecord1 = this.sqlgGraph.addVertex(T.label, "ActivityRecord");
+        Vertex activityRecord2 = this.sqlgGraph.addVertex(T.label, "ActivityRecord");
+        Vertex userRecord = this.sqlgGraph.addVertex(T.label, "User");
+        activityInstance.addEdge("a_b", activityRecord1);
+        activityInstance.addEdge("a_b", activityRecord2);
+        userRecord.addEdge("b_c", activityRecord1);
+        this.sqlgGraph.tx().commit();
+
+        List<Path> paths = this.sqlgGraph.traversal().V().hasId(activityInstance.id())
+                .out("a_b")
+                .optional(
+                        __.in("b_c")
+                )
+                .path()
+                .toList();
+        Assert.assertEquals(2, paths.size());
+        for (Path path : paths) {
+            Vertex activityInstanceVertex = path.get(0);
+            Vertex activityRecordVertex = path.get(1);
+            if (path.size() == 3) {
+                Vertex userVertex = path.get(2);
+                System.out.println(userVertex);
+            }
+        }
+    }
+
+    @Test
     public void testOptionalWithSelect() {
         Vertex car1 = this.sqlgGraph.addVertex(T.label, "Car");
         Vertex car2 = this.sqlgGraph.addVertex(T.label, "Car");
