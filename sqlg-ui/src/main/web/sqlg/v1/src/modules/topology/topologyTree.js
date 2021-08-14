@@ -64,7 +64,10 @@ function TopologyTree(ignore) {
 
     return {
         oninit: ({attrs: {actions}}) => {
-            defaultOptions.selectedItemCallBack = actions.retrieveSchemaDetails;
+            defaultOptions.selectedItemCallBack = (item) => {
+                actions.retrieveSchemaDetails(item);
+                m.redraw();
+            }
         },
         onupdate: ({attrs: {actions}}) => {
             actions.setTreeRefresh(false);

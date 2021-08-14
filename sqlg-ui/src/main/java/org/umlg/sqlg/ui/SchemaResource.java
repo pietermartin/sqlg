@@ -88,30 +88,45 @@ public class SchemaResource {
             ObjectNode result = objectMapper.createObjectNode();
             ObjectNode abstractLabelObjectNode = objectMapper.createObjectNode();
             result.set("abstractLabel", abstractLabelObjectNode);
+
             ObjectNode identifierData = objectMapper.createObjectNode();
             ArrayNode identifiers = objectMapper.createArrayNode();
             identifierData.set("identifiers", identifiers);
             abstractLabelObjectNode.set("identifierData", identifierData);
 
-            ObjectNode propertyGridData = objectMapper.createObjectNode();
-            abstractLabelObjectNode.set("propertyColumns", propertyGridData);
-            ArrayNode columns = objectMapper.createArrayNode();
+            ObjectNode propertyColumnsGridData = objectMapper.createObjectNode();
+            abstractLabelObjectNode.set("propertyColumns", propertyColumnsGridData);
+            ArrayNode propertyColumnsColumns = objectMapper.createArrayNode();
             ArrayNode propertyColumnGridData = objectMapper.createArrayNode();
-            propertyGridData.set("columns", columns);
-            propertyGridData.set("data", propertyColumnGridData);
-            columns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+            propertyColumnsGridData.set("columns", propertyColumnsColumns);
+            propertyColumnsGridData.set("data", propertyColumnGridData);
+            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
                     .setMinWidth(220)
                     .build().toJson(objectMapper));
-            columns.add(new SlickGridColumn.SlickGridColumnBuilder("type", "type", PropertyType.STRING)
+            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("type", "sqlg type", PropertyType.STRING)
                     .setMinWidth(220)
                     .build().toJson(objectMapper));
-            columns.add(new SlickGridColumn.SlickGridColumnBuilder("sqlType", "sqlType", PropertyType.STRING)
+            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("sqlType", "sql type", PropertyType.STRING)
                     .setMinWidth(220)
                     .build().toJson(objectMapper));
 
 
-            ArrayNode indexArrayNode = objectMapper.createArrayNode();
-            abstractLabelObjectNode.set("indexes", indexArrayNode);
+            ObjectNode indexesGridData = objectMapper.createObjectNode();
+            abstractLabelObjectNode.set("indexes", indexesGridData);
+            ArrayNode indexColumns = objectMapper.createArrayNode();
+            ArrayNode indexGridData = objectMapper.createArrayNode();
+            indexesGridData.set("columns", indexColumns);
+            indexesGridData.set("data", indexGridData);
+
+            indexColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            indexColumns.add(new SlickGridColumn.SlickGridColumnBuilder("type", "type", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            indexColumns.add(new SlickGridColumn.SlickGridColumnBuilder("properties", "properties", PropertyType.STRING)
+                    .build().toJson(objectMapper));
+
             if (vertexOrEdge.equals("vertex")) {
                 Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(abstractLabel);
                 if (vertexLabelOptional.isPresent()) {
@@ -129,7 +144,6 @@ public class SchemaResource {
                             identifiers.add(identifier);
                         }
                     }
-
                     for (PropertyColumn propertyColumn : vertexLabel.getProperties().values()) {
                         ObjectNode propertyColumnObjectNode = objectMapper.createObjectNode();
                         propertyColumnObjectNode.put("id", schemaName + "_" + vertexLabel.getName() + "_" + propertyColumn.getName());
@@ -145,16 +159,11 @@ public class SchemaResource {
                     }
                     for (Index index : vertexLabel.getIndexes().values()) {
                         ObjectNode indexObjectNode = objectMapper.createObjectNode();
-                        indexArrayNode.add(indexObjectNode);
+                        indexGridData.add(indexObjectNode);
+                        indexObjectNode.put("id", schemaName + "_" + vertexLabel.getName() + "_" + index.getName());
                         indexObjectNode.put("name", index.getName());
                         indexObjectNode.put("type", index.getIndexType().getName());
-                        ArrayNode indexPropertiesArrayNode = objectMapper.createArrayNode();
-                        indexObjectNode.set("properties", indexPropertiesArrayNode);
-                        for (PropertyColumn indexProperty : index.getProperties()) {
-                            ObjectNode indexPropertyObjectNode = objectMapper.createObjectNode();
-                            indexPropertiesArrayNode.add(indexPropertyObjectNode);
-                            indexPropertyObjectNode.put("name", indexProperty.getName());
-                        }
+                        indexObjectNode.put("properties", index.getProperties().stream().map(PropertyColumn::getName).reduce((a, b) -> a + "," + b).orElseThrow());
                     }
                 } else {
                     throw new IllegalStateException(String.format("Unknown vertex label '%s'", abstractLabel));
@@ -177,6 +186,7 @@ public class SchemaResource {
                     }
                     for (PropertyColumn propertyColumn : edgeLabel.getProperties().values()) {
                         ObjectNode propertyColumnObjectNode = objectMapper.createObjectNode();
+                        propertyColumnObjectNode.put("id", schemaName + "_" + edgeLabel.getName() + "_" + propertyColumn.getName());
                         propertyColumnObjectNode.put("name", propertyColumn.getName());
                         propertyColumnObjectNode.put("type", propertyColumn.getPropertyType().name());
                         ArrayNode sqlTypeArrayNode = objectMapper.createArrayNode();
@@ -189,16 +199,11 @@ public class SchemaResource {
                     }
                     for (Index index : edgeLabel.getIndexes().values()) {
                         ObjectNode indexObjectNode = objectMapper.createObjectNode();
-                        indexArrayNode.add(indexObjectNode);
+                        indexGridData.add(indexObjectNode);
+                        indexObjectNode.put("id", schemaName + "_" + edgeLabel.getName() + "_" + index.getName());
                         indexObjectNode.put("name", index.getName());
                         indexObjectNode.put("type", index.getIndexType().getName());
-                        ArrayNode indexPropertiesArrayNode = objectMapper.createArrayNode();
-                        indexObjectNode.set("properties", indexPropertiesArrayNode);
-                        for (PropertyColumn indexProperty : index.getProperties()) {
-                            ObjectNode indexPropertyObjectNode = objectMapper.createObjectNode();
-                            indexPropertiesArrayNode.add(indexPropertyObjectNode);
-                            indexPropertyObjectNode.put("name", indexProperty.getName());
-                        }
+                        indexObjectNode.put("properties", index.getProperties().stream().map(PropertyColumn::getName).reduce((a, b) -> a + "," + b).orElseThrow());
                     }
                 } else {
                     throw new IllegalStateException(String.format("Unknown vertex label '%s'", abstractLabel));

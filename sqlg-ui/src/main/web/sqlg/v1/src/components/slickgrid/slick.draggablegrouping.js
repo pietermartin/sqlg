@@ -274,7 +274,7 @@
         function addColumnGroupBy(column) {
             column["header"]["buttons"].forEach(function (b) {
                 if (b.command === "groupby-column") {
-                    b.cssClass = "fal fa-bars slick-header-group-column-active text-primary";
+                    b.cssClass = "fas fa-bars slick-header-group-column-active text-primary";
                 }
             });
             _grid.updateColumnHeader(column.field);
@@ -307,7 +307,7 @@
             columnsGroupBy.forEach(function (col) {
                 col["header"]["buttons"].forEach(function (b) {
                     if (b.command === "groupby-column") {
-                        b.cssClass = "fal fa-bars";
+                        b.cssClass = "fas fa-bars";
                         _grid.updateColumnHeader(col.field);
                     }
                 });
@@ -330,7 +330,7 @@
                 if (columnsGroupBy[i].id === id) {
                     columnsGroupBy[i]["header"]["buttons"].forEach(function (b) {
                         if (b.command === "groupby-column") {
-                            b.cssClass = "fal fa-bars";
+                            b.cssClass = "fas fa-bars";
                         }
                     });
                     _grid.updateColumnHeader(columnsGroupBy[i].field);

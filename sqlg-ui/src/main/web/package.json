@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.3",
+    "@popperjs/core": "^2.9.2",
     "autoprefixer": "^10.2.6",
     "bootstrap": "^5.0.1",
     "file-loader": "^6.2.0",

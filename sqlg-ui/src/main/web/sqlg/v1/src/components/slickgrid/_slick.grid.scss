@@ -59,7 +59,7 @@
         }
 
         .slick-header-button {
-            &.fal {
+            &.fas {
                 &.fa-bars {
                     display: none;
                     //display: block;
@@ -73,7 +73,7 @@
         }
 
         &:hover {
-            .fal {
+            .fas {
                 &.fa-bars {
                     display: block;
                 }
@@ -216,8 +216,9 @@
                 border-right: none;
             }
 
-            .input-group-append {
+            span {
                 height: 22px;
+                font-size: 12px;
 
                 .input-group-text {
                     border-left: none;
@@ -243,7 +244,7 @@
                 border-right: none;
             }
 
-            .input-group-append {
+            span {
                 height: 22px;
 
                 .input-group-text {
@@ -464,6 +465,7 @@
 
                 .slick-cell {
                     background-color: #93FFE8;
+
                     &.selected {
                         background: linear-gradient(#93FFE8, $slick-selection);
                         color: black;
@@ -491,6 +493,7 @@
 
                 .slick-cell {
                     background-color: rgba(255, 3, 0, 0.28);
+
                     &.selected {
                         background: linear-gradient(rgba(255, 3, 0, 0.28), $slick-selection);
                         color: black;

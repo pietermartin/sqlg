@@ -38,6 +38,8 @@ import Formatters from "../slickgrid/formatters";
 import "./slick.css";
 import "../../assets/slickgrid/slick.grid.css";
 import "../../assets/slickgrid/slick-default-theme.css";
+import "../../assets/slickgrid/css/smoothness/jquery-ui.css";
+// import "../../assets/slickgrid/css/smoothness/jquery-ui-1.11.3.custom.css";
 import "../../assets/slickgrid/controls/slick.columnpicker.alt.css";
 import "./slickgrid-custom.css";
 
@@ -529,7 +531,7 @@ function SlickGrid2() {
             input.appendTo(wrapped);
             wrapped.appendTo(args.node);
         } else if (args.column.id === 'multiSelectCheckBox') {
-            let input = $("<i class='far fa-square'></i>");
+            let input = $("<i class='fas fa-square'></i>");
             globalSelectionNode = input;
             let wrapped = $("<div style='text-align: center'>");
             input.appendTo(wrapped);
@@ -589,11 +591,9 @@ function SlickGrid2() {
                 } else if (isNumber(cmColumn.type)) {
                     let input = $(`<div class='input-group'>
                         <input type="text" class="form-control no-validate" placeholder="Filter" value="${columnFilter !== undefined ? columnFilter : ''}">
-                        <span class="input-group-append">
                             <span class="input-group-text${(columnFilter !== undefined && columnFilter !== '') ? ' active-filter' : ''} filterAddon">
                                 <i class='fas fa-filter'></i>
                             </span>
-                        </div>
                     </div>`);
                     if (columnFilter) {
                         let val = columnFilter;
@@ -709,10 +709,8 @@ function SlickGrid2() {
                         if (columnHeaderCache["cmColumnTextHeader"] === undefined) {
                             input = $(`<div class='input-group'>
                                          <input type="text" class="form-control no-validate " placeholder="Filter" value="">
-                                           <span class="input-group-append">
                                              <span class="input-group-text filterAddon">
                                                <i class='fas fa-filter'></i>
-                                             </span>
                                           </span>
                                         </div>`);
                             columnHeaderCache["cmColumnTextHeader"] = input;
@@ -725,11 +723,9 @@ function SlickGrid2() {
                     } else {
                         input = $(`<div class='input-group'>
                                      <input type="text" class="form-control no-validate " placeholder="Filter" value="${columnFilter}">
-                                     <span class="input-group-append">
                                        <span class="input-group-text${(columnFilter !== '') ? ' active-filter' : ''} filterAddon">
                                          <i class='fas fa-filter'></i>
                                        </span>
-                                     </span>
                                    </div>`);
                     }
                     prepareFilterDropDown(input, columnName, cmColumn);
@@ -829,11 +825,9 @@ function SlickGrid2() {
                         if (columnHeaderCache["cmColumnTextHeader"] === undefined) {
                             input = $(`<div class='input-group'>
                                          <input type="text" class="form-control no-validate " placeholder="Filter" value="">
-                                           <span class="input-group-append">
                                              <span class="input-group-text filterAddon">
                                                <i class='fas fa-filter'></i>
                                              </span>
-                                          </span>
                                         </div>`);
                             columnHeaderCache["cmColumnTextHeader"] = input;
                         } else {
@@ -845,11 +839,9 @@ function SlickGrid2() {
                     } else {
                         input = $(`<div class='input-group' data-filter-column="${columnName}">
                                      <input type="text" class="form-control no-validate " placeholder="Filter" value="${columnFilter}">
-                                     <span class="input-group-append">
                                        <span class="input-group-text${(columnFilter !== '') ? ' active-filter' : ''} filterAddon">
                                          <i class='fas fa-filter'></i>
                                        </span>
-                                     </span>
                                    </div>`);
                     }
                     prepareFilterDropDown(input, columnName, cmColumn);
@@ -1059,13 +1051,13 @@ function SlickGrid2() {
             column["header"] = {
                 buttons: [
                     {
-                        cssClass: "fal fa-bars",
+                        cssClass: "fas fa-bars",
                         command: "groupby-column"
                     }]
             };
         } else {
             column["header"]["buttons"].push({
-                cssClass: "fal fa-bars",
+                cssClass: "fas fa-bars",
                 command: "groupby-column"
             });
 
@@ -2034,7 +2026,7 @@ function SlickGrid2() {
             let footerComponents = [];
             let groupHeaderComponents = [
                 m("div.slick-filtered-column", [
-                        m("span.slick-grid-header-icon.pl-1",
+                        m("span.slick-grid-header-icon.ps-1",
                             m(Icon, {
                                 id: gridId + "-column-filter-clear-icon",
                                 class: `fas fa-filter`,
@@ -2066,10 +2058,10 @@ function SlickGrid2() {
                     m("div.dropdown", [
                         m(Icon, {
                             id: gridId + "-group-columns",
-                            class: `far fa-layer-group dropdown-toggle ${groupedByColumns.length > 0 ? "text-primary" : ''}`,
+                            class: `fas fa-layer-group dropdown-toggle ${groupedByColumns.length > 0 ? "text-primary" : ''}`,
                             "data-tippy-content": "Choose columns to group",
                             "data-tippy-placement": "top",
-                            attrs: {"data-toggle": "dropdown"},
+                            attrs: {"data-bs-toggle": "dropdown"},
                             "aria-haspopup": "true",
                             "aria-expanded": "false"
                         }),
@@ -2084,7 +2076,7 @@ function SlickGrid2() {
                                         m("div.custom-dropdown-section-selected", [
                                             m("label", {for: gridId + col.id}, col.name),
                                             m(Icon, {
-                                                class: "far fa-times group-column-deselect",
+                                                class: "fas fa-times group-column-deselect",
                                                 "data-tippy-content": "Clear Item",
                                                 "data-tippy-placement": "top",
                                                 onclick: function (e) {
@@ -2104,7 +2096,7 @@ function SlickGrid2() {
                                                 }
                                             }),
                                             m(Icon, {
-                                                class: "far fa-arrow-square-up group-column-order",
+                                                class: "fas fa-arrow-square-up group-column-order",
                                                 "data-tippy-content": "Re-order",
                                                 "data-tippy-placement": "top",
                                                 onclick: function (e) {
@@ -2116,7 +2108,7 @@ function SlickGrid2() {
                                                 }
                                             }),
                                             m(Icon, {
-                                                class: "far fa-arrow-square-down group-column-order",
+                                                class: "fas fa-arrow-square-down group-column-order",
                                                 "data-tippy-content": "Re-order",
                                                 "data-tippy-placement": "top",
                                                 onclick: function (e) {
@@ -2151,8 +2143,7 @@ function SlickGrid2() {
                                                     }
                                                 }
                                             }),
-                                            m("div.input-group-append",
-                                                m("span.input-group-text", m("i.fa.fa-times", {
+                                            m("span.input-group-text", m("i.fa.fa-times", {
                                                     class: columnsGroupFilterName !== "" ? "text-danger" : "",
                                                     onclick: function (e) {
                                                         columnsGroupFilterName = "";
@@ -2160,7 +2151,7 @@ function SlickGrid2() {
                                                         e.preventDefault();
                                                         e.stopPropagation();
                                                     }
-                                                }))
+                                                })
                                             )
                                         ]
                                     )
@@ -2190,7 +2181,7 @@ function SlickGrid2() {
                 m("span.slick-grid-header-icon",
                     m(Icon, {
                         id: gridId + "-group-toggle",
-                        class: `fal ${groupsExpanded ? 'fa-expand-arrows-alt' : 'fa-compress-arrows-alt'}`,
+                        class: `fas ${groupsExpanded ? 'fa-expand-arrows-alt' : 'fa-compress-arrows-alt'}`,
                         "data-tippy-content": "Toggle collapse/expand",
                         "data-tippy-placement": "top",
                         onclick: function () {
@@ -2207,7 +2198,7 @@ function SlickGrid2() {
                 m("span.slick-grid-header-icon",
                     m(Icon, {
                         id: gridId + "-group-clear",
-                        class: `far fa-times`,
+                        class: `fas fa-times`,
                         "data-tippy-content": "Clear groupings",
                         "data-tippy-placement": "top",
                         onclick: function () {
@@ -2229,7 +2220,7 @@ function SlickGrid2() {
                     m("div.dropdown", [
                         m(Icon, {
                             id: gridId + "-group-reduction",
-                            class: `far fa-sigma ${groupedByColumns.length > 0 ? 'dropdown-toggle' : 'text-muted'}`,
+                            class: `fas fa-signature ${groupedByColumns.length > 0 ? 'dropdown-toggle' : 'text-muted'}`,
                             "data-tippy-content": "Choose aggregation",
                             "data-tippy-placement": "top",
                             attrs: {"data-toggle": "dropdown"},
@@ -2295,15 +2286,13 @@ function SlickGrid2() {
                                         filterColumns()
                                     }
                                 }),
-                                m("div.input-group-append",
-                                    m("span.input-group-text", m("i.fa.fa-times", {
-                                        class: columnsFilter !== "" ? "text-danger" : "",
-                                        onclick: function () {
-                                            columnsFilter = "";
-                                            filterColumns()
-                                        }
-                                    }))
-                                )
+                                m("span.input-group-text", m("i.fa.fa-times", {
+                                    class: columnsFilter !== "" ? "text-danger" : "",
+                                    onclick: function () {
+                                        columnsFilter = "";
+                                        filterColumns()
+                                    }
+                                }))
                             ]
                         )
                     ]

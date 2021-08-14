@@ -4,6 +4,9 @@ import SlickGrid2 from "../../components/slickgrid/m.slick.grid";
 function AbstractLabelDetail(ignore) {
 
     return {
+        onupdate: ({attrs: {state, actions}}) => {
+            actions.setPropertiesGridRefresh(false);
+        },
         view: ({attrs: {state, actions}}) => {
             return m("div.schema-details",
                 m("div.container-fluid",
@@ -78,45 +81,19 @@ function AbstractLabelDetail(ignore) {
                         })
                     ),
                     m("div.row.sqlg-schema-header",
-                        m("div.col-sm.sqlg-schema-header-column",
+                        m("div.col-sm.mt-3.sqlg-schema-header-column",
                             m("h4", "Indexes")
                         )
                     ),
-                    m("div.row.sqlg-schema-details",
-                        m("div.col-sm-4",
-                            m("div.fw-bold", "name")
-                        ),
-                        m("div.col-sm-8",
-                            m("div.fw-bold", "type")
-                        )
-                    ),
-                    state.topologyDetails.abstractLabel.indexes.map(index => {
-                        let rows = [];
-                        rows.push(
-                            m("div.row.sqlg-schema-details", [
-                                m("div.col-sm-4",
-                                    m("div", index.name)
-                                ),
-                                m("div.col-sm-8",
-                                    m("div", index.type)
-                                ),
-                            ])
-                        );
-                        for (let i = 0; i < index.properties.length; i++) {
-                            let p = index.properties[i];
-                            rows.push(
-                                m("div.row.sqlg-schema-details",
-                                    m("div.col-sm-4",
-                                        m("div", i === 0 ? "Properties" : "")
-                                    ),
-                                    m("div.col-sm-8",
-                                        m("div", p.name)
-                                    )
-                                )
-                            );
-                        }
-                        return rows;
-                    })
+                    m("div.row.sqlg-schema-details.indexes",
+                        m(SlickGrid2, {
+                            id: 'indexesGrid',
+                            refreshData: state.topologyDetails.abstractLabel.indexes.refresh,
+                            rebuildGrid: false,
+                            showSpinner: state.topologyDetails.abstractLabel.indexes.spin,
+                            data: state.topologyDetails.abstractLabel.indexes.data,
+                        })
+                    )
                 )
             );
         }

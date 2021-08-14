@@ -6,6 +6,7 @@ import RightPane from "./layout/rightPane";
 import SqlgModel from "./sqlgModel";
 import {Route} from "./sqlgRoutes";
 import TopologyManager from "./topology/TopologyManager";
+import { Tooltip, Toast, Popover } from 'bootstrap';
 
 function Sqlg(ignore) {
 
