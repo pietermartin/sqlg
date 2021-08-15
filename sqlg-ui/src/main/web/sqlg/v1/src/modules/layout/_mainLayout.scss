@@ -1,15 +1,24 @@
-#main {
-    height: calc(100%);
+#main-body {
 
-    #left-pane {
-        height: calc(100%);
-        .left-pane-tree {
-            height: calc(100%);
-        }
-    }
+    height: 100%;
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-rows: 3rem auto;
 
     #right-pane {
-        height: calc(100%);
+        display: grid;
+        grid-template-columns: auto;
+        grid-template-rows: 3rem auto;
+
+        #main {
+            height: 100%;
+            overflow-y: auto;
+
+            .tab-pane {
+                height: 100%;
+            }
+        }
+
     }
 }
 

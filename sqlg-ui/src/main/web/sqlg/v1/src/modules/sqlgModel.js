@@ -6,6 +6,12 @@ import MeiosisRouting from "meiosis-routing";
 import merge from 'mergerino';
 import TopologyManager from "./topology/TopologyManager";
 
+export const ELEMENT_TYPE = Object.freeze({
+    SCHEMA: "Schema",
+    VERTEX_LABEL: "VertexLabel",
+    EDGE_LABEL: "EdgeLabel"
+});
+
 function SqlgModel() {
 
     let SCREEN_NAME = "Sqlg";
@@ -74,15 +80,41 @@ function SqlgModel() {
                             checkedItems: [],
                             refresh: false,
                             rebuild: false,
-                            spin: false
+                            spin: false,
+                            collapsed: true
                         },
                         indexes: {
                             data: {columns: [], data: []},
                             checkedItems: [],
                             refresh: false,
                             rebuild: false,
-                            spin: false
-                        }
+                            spin: false,
+                            collapsed: true
+                        },
+                        inEdgeLabels: {
+                            data: {columns: [], data: []},
+                            checkedItems: [],
+                            refresh: false,
+                            rebuild: false,
+                            spin: false,
+                            collapsed: true
+                        },
+                        outEdgeLabels: {
+                            data: {columns: [], data: []},
+                            checkedItems: [],
+                            refresh: false,
+                            rebuild: false,
+                            spin: false,
+                            collapsed: true
+                        },
+                        partitions: {
+                            data: {columns: [], data: []},
+                            checkedItems: [],
+                            refresh: false,
+                            rebuild: false,
+                            spin: false,
+                            collapsed: true
+                        },
                     }
                 }
             }),
@@ -166,6 +198,18 @@ function SqlgModel() {
                                 indexes.spin = (item.indent === 3);
                                 indexes.refresh = true;
                                 return indexes;
+                            },
+                            inEdgeLabels: (inEdgeLabels) => {
+                                inEdgeLabels.data.data.splice(0, inEdgeLabels.data.data.length);
+                                inEdgeLabels.spin = (item.indent === 3);
+                                inEdgeLabels.refresh = true;
+                                return inEdgeLabels;
+                            },
+                            outEdgeLabels: (outEdgeLabels) => {
+                                outEdgeLabels.data.data.splice(0, outEdgeLabels.data.data.length);
+                                outEdgeLabels.spin = (item.indent === 3);
+                                outEdgeLabels.refresh = true;
+                                return outEdgeLabels;
                             }
                         }
                     }
@@ -173,9 +217,15 @@ function SqlgModel() {
                     if (item.indent === 3) {
                         TopologyManager.retrieveSchemaDetails(item, details => {
                             if (details.schema !== undefined) {
-                                details.type = "Schema";
+                                details.type = ELEMENT_TYPE.SCHEMA;
                             } else if (details.abstractLabel !== undefined) {
-                                details.type = "AbstractLabel";
+                                if (details.abstractLabel.label === ELEMENT_TYPE.VERTEX_LABEL) {
+                                    details.type = ELEMENT_TYPE.VERTEX_LABEL;
+                                } else if (details.abstractLabel.label === ELEMENT_TYPE.EDGE_LABEL) {
+                                    details.type = ELEMENT_TYPE.EDGE_LABEL;
+                                } else {
+                                    throw new Error("Unknown type returned from the server. " + details.type);
+                                }
                             } else {
                                 throw new Error("Unknown type returned from the server. " + details.type);
                             }
@@ -211,6 +261,39 @@ function SqlgModel() {
                                     },
                                 }
                             });
+                            if (details.abstractLabel.label === 'VertexLabel') {
+                                update({
+                                    topologyDetails: {
+                                        abstractLabel: {
+                                            inEdgeLabels: (inEdgeLabels) => {
+                                                inEdgeLabels.rebuild = inEdgeLabels.data.columns !== details.abstractLabel.inEdgeLabels.columns;
+                                                inEdgeLabels.data.columns = details.abstractLabel.inEdgeLabels.columns;
+                                                inEdgeLabels.data.data.splice(0, inEdgeLabels.data.data.length);
+                                                for (let i = 0; i < details.abstractLabel.inEdgeLabels.data.length; i++) {
+                                                    inEdgeLabels.data.data.push(details.abstractLabel.inEdgeLabels.data[i]);
+                                                }
+                                                inEdgeLabels.spin = false;
+                                                inEdgeLabels.refresh = true;
+                                                return inEdgeLabels;
+                                            },
+                                            outEdgeLabels: (outEdgeLabels) => {
+                                                outEdgeLabels.rebuild = outEdgeLabels.data.columns !== details.abstractLabel.outEdgeLabels.columns;
+                                                outEdgeLabels.data.columns = details.abstractLabel.outEdgeLabels.columns;
+                                                outEdgeLabels.data.data.splice(0, outEdgeLabels.data.data.length);
+                                                for (let i = 0; i < details.abstractLabel.outEdgeLabels.data.length; i++) {
+                                                    outEdgeLabels.data.data.push(details.abstractLabel.outEdgeLabels.data[i]);
+                                                }
+                                                outEdgeLabels.spin = false;
+                                                outEdgeLabels.refresh = true;
+                                                return outEdgeLabels;
+                                            }
+                                        },
+                                    }
+                                });
+
+                            } else {
+
+                            }
                         }, e => {
                             console.log(e);
                         });
@@ -224,12 +307,133 @@ function SqlgModel() {
                     }
                 });
             },
-            setPropertiesGridRefresh: refresh => {
+            setPropertiesGridRefresh: () => {
                 update({
-                    topologyDetails:  {
+                    topologyDetails: {
                         abstractLabel: {
                             propertyColumns: {
-                                refresh: refresh
+                                refresh: true,
+                                rebuild: false
+                            }
+                        }
+                    }
+                });
+            },
+            setPropertiesGridExpand: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            propertyColumns: {
+                                refresh: true,
+                                rebuild: true,
+                                collapsed: false
+                            }
+                        }
+                    }
+                });
+            },
+            setPropertiesGridCollapse: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            propertyColumns: {
+                                collapsed: true
+                            }
+                        }
+                    }
+                });
+            },
+            setIndexesGridExpand: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            indexes: {
+                                refresh: true,
+                                rebuild: true,
+                                collapsed: false
+                            }
+                        }
+                    }
+                });
+            },
+            setIndexesGridCollapse: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            indexes: {
+                                collapsed: true
+                            }
+                        }
+                    }
+                });
+            },
+            setInEdgeLabelsGridExpand: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            inEdgeLabels: {
+                                refresh: true,
+                                rebuild: true,
+                                collapsed: false
+                            }
+                        }
+                    }
+                });
+            },
+            setInEdgeLabelsGridCollapse: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            inEdgeLabels: {
+                                collapsed: true
+                            }
+                        }
+                    }
+                });
+            },
+            setOutEdgeLabelsGridExpand: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            outEdgeLabels: {
+                                refresh: true,
+                                rebuild: true,
+                                collapsed: false
+                            }
+                        }
+                    }
+                });
+            },
+            setOutEdgeLabelsGridCollapse: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            outEdgeLabels: {
+                                collapsed: true
+                            }
+                        }
+                    }
+                });
+            },
+            setPartitionsGridExpand: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            partitions: {
+                                refresh: true,
+                                rebuild: true,
+                                collapsed: false
+                            }
+                        }
+                    }
+                });
+            },
+            setPartitionsGridCollapse: () => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            partitions: {
+                                collapsed: true
                             }
                         }
                     }

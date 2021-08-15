@@ -128,6 +128,33 @@ public class SchemaResource {
                     .build().toJson(objectMapper));
 
             if (vertexOrEdge.equals("vertex")) {
+
+                ObjectNode inEdgeLabelGrid = objectMapper.createObjectNode();
+                abstractLabelObjectNode.set("inEdgeLabels", inEdgeLabelGrid);
+                ArrayNode inEdgeLabelColumns = objectMapper.createArrayNode();
+                ArrayNode inEdgeLabelGridData = objectMapper.createArrayNode();
+                inEdgeLabelGrid.set("columns", inEdgeLabelColumns);
+                inEdgeLabelGrid.set("data", inEdgeLabelGridData);
+                inEdgeLabelColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+                        .setMinWidth(80)
+                        .build().toJson(objectMapper));
+                inEdgeLabelColumns.add(new SlickGridColumn.SlickGridColumnBuilder("schema", "schema", PropertyType.STRING)
+                        .setMinWidth(80)
+                        .build().toJson(objectMapper));
+
+                ObjectNode outEdgeLabelGrid = objectMapper.createObjectNode();
+                abstractLabelObjectNode.set("outEdgeLabels", outEdgeLabelGrid);
+                ArrayNode outEdgeLabelColumns = objectMapper.createArrayNode();
+                ArrayNode outEdgeLabelGridData = objectMapper.createArrayNode();
+                outEdgeLabelGrid.set("columns", outEdgeLabelColumns);
+                outEdgeLabelGrid.set("data", outEdgeLabelGridData);
+                outEdgeLabelColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+                        .setMinWidth(80)
+                        .build().toJson(objectMapper));
+                outEdgeLabelColumns.add(new SlickGridColumn.SlickGridColumnBuilder("schema", "schema", PropertyType.STRING)
+                        .setMinWidth(80)
+                        .build().toJson(objectMapper));
+
                 Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(abstractLabel);
                 if (vertexLabelOptional.isPresent()) {
                     VertexLabel vertexLabel = vertexLabelOptional.get();
@@ -165,6 +192,26 @@ public class SchemaResource {
                         indexObjectNode.put("type", index.getIndexType().getName());
                         indexObjectNode.put("properties", index.getProperties().stream().map(PropertyColumn::getName).reduce((a, b) -> a + "," + b).orElseThrow());
                     }
+                    for (String inEdgeLabelKey : vertexLabel.getInEdgeLabels().keySet()) {
+                        EdgeLabel inEdgeLabel = vertexLabel.getInEdgeLabels().get(inEdgeLabelKey);
+                        String edgeSchemaName = inEdgeLabel.getSchema().getName();
+                        String edgeLabelName = inEdgeLabel.getLabel();
+                        ObjectNode inEdgeObjectNode = objectMapper.createObjectNode();
+                        inEdgeObjectNode.put("id", inEdgeLabel.getFullName());
+                        inEdgeObjectNode.put("name", edgeLabelName);
+                        inEdgeObjectNode.put("schema", edgeSchemaName);
+                        inEdgeLabelGridData.add(inEdgeObjectNode);
+                    }
+                    for (String outEdgeLabelKey : vertexLabel.getOutEdgeLabels().keySet()) {
+                        EdgeLabel outEdgeLabel = vertexLabel.getOutEdgeLabels().get(outEdgeLabelKey);
+                        String edgeSchemaName = outEdgeLabel.getSchema().getName();
+                        String edgeLabelName = outEdgeLabel.getLabel();
+                        ObjectNode outEdgeObjectNode = objectMapper.createObjectNode();
+                        outEdgeObjectNode.put("id", outEdgeLabel.getFullName());
+                        outEdgeObjectNode.put("name", edgeLabelName);
+                        outEdgeObjectNode.put("schema", edgeSchemaName);
+                        outEdgeLabelGridData.add(outEdgeObjectNode);
+                    }
                 } else {
                     throw new IllegalStateException(String.format("Unknown vertex label '%s'", abstractLabel));
                 }
@@ -178,6 +225,7 @@ public class SchemaResource {
                             .put("createdOn", schemaVertex.value("createdOn").toString());
                     if (edgeLabel.hasIDPrimaryKey()) {
                         identifierData.put("userDefinedIdentifiers", false);
+                        identifiers.add("ID");
                     } else {
                         identifierData.put("userDefinedIdentifiers", true);
                         for (String identifier : edgeLabel.getIdentifiers()) {

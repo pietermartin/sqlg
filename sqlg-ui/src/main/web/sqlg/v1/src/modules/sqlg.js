@@ -1,12 +1,8 @@
 import m from "mithril";
 import MeiosisRouting from "meiosis-routing";
 import MainLayout from "./layout/mainLayout";
-import LeftPane from "./layout/leftPane";
-import RightPane from "./layout/rightPane";
 import SqlgModel from "./sqlgModel";
 import {Route} from "./sqlgRoutes";
-import TopologyManager from "./topology/TopologyManager";
-import { Tooltip, Toast, Popover } from 'bootstrap';
 
 function Sqlg(ignore) {
 
@@ -46,9 +42,7 @@ function Sqlg(ignore) {
                 }, 0);
             }
             return m(MainLayout, {
-                width: '25%',
-                leftPane: m(LeftPane, {state: state, actions}),
-                rightPane: m(RightPane, {state: state, actions})
+                width: "25%", state: state, actions: actions
             });
         }
     }

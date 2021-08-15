@@ -6,14 +6,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.IndexType;
+import org.umlg.sqlg.structure.topology.PartitionType;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class SqlgUITest extends BaseTest {
 
@@ -34,9 +33,20 @@ public class SqlgUITest extends BaseTest {
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2", "name3"))
         );
-        Optional<PropertyColumn> name1PropertyColumnOpt =  vertexLabel.getProperty("name1");
+        Optional<PropertyColumn> name1PropertyColumnOpt = vertexLabel.getProperty("name1");
         vertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(name1PropertyColumnOpt.get()));
         this.sqlgGraph.tx().commit();
+
+
+        this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "P1",
+                new HashMap<>() {{
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("name")),
+                PartitionType.LIST,
+                "name");
+
         System.out.println("asd");
         long l = 1000 * 60 * 60 * 5;
         Thread.sleep(l);

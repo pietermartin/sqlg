@@ -1,7 +1,9 @@
 import m from "mithril";
 import SchemaDetail from "../topology/schemaDetail";
+import LeftRight from "./leftRight";
+import LeftPane from "./leftPane";
 import AbstractLabelDetail from "../topology/abstractLabelDetails";
-import {Tab} from 'bootstrap'
+import {Tab} from "bootstrap";
 
 function RightPane(ignore) {
 
@@ -9,7 +11,7 @@ function RightPane(ignore) {
 
     return {
         oncreate: ({attrs: {state, actions}}) => {
-            let triggerTabList = [].slice.call(document.querySelectorAll('#rightPaneTab button[data-bs-toggle="tab"]'))
+            let triggerTabList = [].slice.call(document.querySelectorAll('#nav-bar-ul button[data-bs-toggle="tab"]'))
             triggerTabList.forEach(function (triggerEl) {
                 triggerEl.addEventListener('shown.bs.tab', function (event) {
                     activeTab = event.target.id;
@@ -29,7 +31,7 @@ function RightPane(ignore) {
             } else if (state.topologyDetails.type === 'AbstractLabel') {
                 topology = m(AbstractLabelDetail, {state: state, actions});
             } else {
-                topology = m("div");
+                topology = m("div")
             }
             if (activeTab !== undefined && activeTab !== state.selectedTab) {
                 let triggerEl = document.querySelector('#' + state.selectedTab)
@@ -37,9 +39,9 @@ function RightPane(ignore) {
                 tab.show();
             }
             return [
-                m("nav.navbar.navbar-dark.bg-dark", [
+                m("nav.navbar.navbar-dark.bg-info", [
                         m("div.container-fluid", [
-                            m("ul#rightPaneTab.nav.nav-pills.ms-2", {role: "tablist"}, [
+                            m("ul#nav-bar-ul.nav.nav-pills.ms-2", {role: "tablist"}, [
                                 m("li.nav-item", {role: "presentation"},
                                     m("button.nav-link", {
                                         id: "db",
@@ -74,16 +76,11 @@ function RightPane(ignore) {
                                     }, "query")
                                 )
                             ]),
-                            m("div.d-flex.flex-wrap", [
-                                m("span.navbar-text.me-2.text-info", "username:"),
-                                m("span.navbar-text.me-2.text-primary", state.username),
-                                m("span.navbar-text.me-2.text-info", "url:"),
-                                m("span.navbar-text.text-primary", state.jdbcUrl)
-                            ])
+                            m("a.navbar-brand.position-absolute.start-50.text-center", state.topologyDetails.abstractLabel.label),
                         ])
                     ]
                 ),
-                m("div#dbTabContextId.tab-content", [
+                m("div#main.tab-content", [
                     m("div.tab-pane.fade", {
                         id: "dbPanel",
                         role: "tabpanel",
