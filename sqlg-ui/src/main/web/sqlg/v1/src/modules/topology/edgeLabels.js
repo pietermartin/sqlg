@@ -9,6 +9,9 @@ function EdgeLabels(ignore) {
         oninit: ({attrs: {actions}}) => {
             $.Topic('/sqlg-ui/refreshEdgeLabels').subscribe((message) => {
                 actions.retrieveEdgeLabels(message['schemaName']);
+                if (message.message !== undefined) {
+                    actions.message({message: message.message});
+                }
                 m.redraw();
             });
         },

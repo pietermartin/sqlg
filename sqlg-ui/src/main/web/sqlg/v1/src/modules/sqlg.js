@@ -42,7 +42,7 @@ function Sqlg(ignore) {
                 }, 0);
             }
             return m(MainLayout, {
-                width: "25%", state: state, actions: actions
+                state: state, actions: actions
             });
         }
     }

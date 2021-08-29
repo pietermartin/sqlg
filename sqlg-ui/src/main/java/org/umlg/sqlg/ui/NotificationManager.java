@@ -30,21 +30,23 @@ public class NotificationManager {
         this.sessions.remove(session);
     }
 
-    public void sendRefreshVertexLabels(String schemaName) {
+    public void sendRefreshVertexLabels(String schemaName, String message) {
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("type", MessageType.UI.name());
         objectNode.put("subType", "refreshVertexLabels");
         objectNode.put("schemaName", schemaName);
+        objectNode.put("message", message);
         send(objectNode.toString());
     }
 
-    public void sendRefreshEdgeLabels(String schemaName) {
+    public void sendRefreshEdgeLabels(String schemaName, String message) {
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("type", MessageType.UI.name());
         objectNode.put("subType", "refreshEdgeLabels");
         objectNode.put("schemaName", schemaName);
+        objectNode.put("message", message);
         send(objectNode.toString());
     }
 
@@ -65,7 +67,7 @@ public class NotificationManager {
         send(objectNode.toString());
     }
 
-    public void sendRefreshAbstractLabel(String schema, String abstractLabel, String vertexOrEdge) {
+    public void sendRefreshAbstractLabel(String schema, String abstractLabel, String vertexOrEdge, String message) {
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
         ObjectNode objectNode = objectMapper.createObjectNode();
         objectNode.put("type", MessageType.UI.name());
@@ -73,6 +75,7 @@ public class NotificationManager {
         objectNode.put("abstractLabel", abstractLabel);
         objectNode.put("vertexOrEdge", vertexOrEdge);
         objectNode.put("subType", "abstractLabel");
+        objectNode.put("message", message);
         send(objectNode.toString());
     }
 

@@ -5,6 +5,7 @@ import stream from "mithril/stream";
 import MeiosisRouting from "meiosis-routing";
 import merge from 'mergerino';
 import TopologyManager from "./topology/TopologyManager";
+import Utils from "../utils/utils";
 
 export const ELEMENT_TYPE = Object.freeze({
     SCHEMAS: "Schemas",
@@ -64,6 +65,7 @@ function SqlgModel() {
         initial: Object.assign(
             navTo([Route.Sqlg({treeId: "", view: "topology"})]),
             {
+                toasts: [],
                 messages: [],
                 jdbcUrl: "",
                 username: "",
@@ -170,6 +172,15 @@ function SqlgModel() {
         Actions: update => ({
             navigateTo: route => {
                 update(navTo(route))
+            },
+            message: (message) => {
+                update({
+                    toasts: (toasts) => {
+                        toasts.push({id:Utils.uniqueId(), message: message.message})
+                        return toasts;
+                    }
+                });
+
             },
             toggleFooterNotification: () => {
                 let state = states();
@@ -323,8 +334,8 @@ function SqlgModel() {
                                 }
                             }
                         });
-                    }, () => {
-
+                    }, (e) => {
+                        actions.message("Failed to delete properties." + e.message);
                     });
             },
             deleteIndexes: () => {

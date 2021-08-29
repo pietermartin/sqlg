@@ -10,6 +10,9 @@ function AbstractLabelDetail(ignore) {
         oninit: ({attrs: {actions}}) => {
             $.Topic('/sqlg-ui/abstractLabel').subscribe((message) => {
                 actions.retrieveAbstractLabelDetails(message.schema, message.abstractLabel, message.vertexOrEdge);
+                if (message.message !== undefined) {
+                    actions.message({message: message.message});
+                }
                 m.redraw();
             });
         },

@@ -9,6 +9,9 @@ function VertexLabels(ignore) {
         oninit: ({attrs: {actions}}) => {
             $.Topic('/sqlg-ui/refreshVertexLabels').subscribe((message) => {
                 actions.retrieveVertexLabels(message['schemaName']);
+                if (message.message !== undefined) {
+                    actions.message({message: message.message});
+                }
                 m.redraw();
             });
         },

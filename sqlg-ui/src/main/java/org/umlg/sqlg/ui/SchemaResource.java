@@ -547,7 +547,7 @@ public class SchemaResource {
                             }
                         }
                         sqlgGraph.tx().commit();
-                        NotificationManager.INSTANCE.sendRefreshVertexLabels(pair.getLeft());
+                        NotificationManager.INSTANCE.sendRefreshVertexLabels(pair.getLeft(), "Deleted vertex labels");
                         NotificationManager.INSTANCE.sendNotification(String.format("Done deleting vertexLabels, [%s]", vertexLabelConcatenatedMessage));
                     });
         } catch (IOException e) {
@@ -584,7 +584,7 @@ public class SchemaResource {
                             }
                         }
                         sqlgGraph.tx().commit();
-                        NotificationManager.INSTANCE.sendRefreshEdgeLabels(pair.getLeft());
+                        NotificationManager.INSTANCE.sendRefreshEdgeLabels(pair.getLeft(), "Deleted edge labels");
                         NotificationManager.INSTANCE.sendNotification(String.format("Done deleting edgeLabels, [%s]", edgeLabelConcatenatedMessage));
                     });
         } catch (IOException e) {
@@ -711,14 +711,22 @@ public class SchemaResource {
                                 }
                             }
                             sqlgGraph.tx().commit();
-                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(propertyHolder.schemaName, propertyHolder.abstractLabel, propertyHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    propertyHolder.schemaName,
+                                    propertyHolder.abstractLabel,
+                                    propertyHolder.vertexOrEdge,
+                                    "Delete properties succesfully");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
                                             "Done deleting properties, [%s]",
                                             propertyHolder.propertiesToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
                         } catch (Exception e) {
                             LOGGER.error("Failed to delete properties!", e);
-                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(propertyHolder.schemaName, propertyHolder.abstractLabel, propertyHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    propertyHolder.schemaName,
+                                    propertyHolder.abstractLabel,
+                                    propertyHolder.vertexOrEdge,
+                                    "Failed to delete properties");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
                                             "Failed deleting properties, [%s], %s",
@@ -788,14 +796,22 @@ public class SchemaResource {
                                 }
                             }
                             sqlgGraph.tx().commit();
-                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(indexesHolder.schemaName, indexesHolder.abstractLabel, indexesHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    indexesHolder.schemaName,
+                                    indexesHolder.abstractLabel,
+                                    indexesHolder.vertexOrEdge,
+                                    "Deleted indexes successfully.");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
                                             "Done deleting indexes, [%s]",
                                             indexesHolder.indexesToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
                         } catch (Exception e) {
                             LOGGER.error("Failed to delete indexes!", e);
-                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(indexesHolder.schemaName, indexesHolder.abstractLabel, indexesHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    indexesHolder.schemaName,
+                                    indexesHolder.abstractLabel,
+                                    indexesHolder.vertexOrEdge,
+                                    "Failed to delete indexes");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
                                             "Failed deleting indexes, [%s], %s",
@@ -864,14 +880,22 @@ public class SchemaResource {
                                 }
                             }
                             sqlgGraph.tx().commit();
-                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(partitionsHolder.schemaName, partitionsHolder.abstractLabel, partitionsHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    partitionsHolder.schemaName,
+                                    partitionsHolder.abstractLabel,
+                                    partitionsHolder.vertexOrEdge,
+                                    "Delete partitions successfully");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
                                             "Done deleting partitions, [%s]",
                                             partitionsHolder.partitionsToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
                         } catch (Exception e) {
                             LOGGER.error("Failed to delete partitions!", e);
-                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(partitionsHolder.schemaName, partitionsHolder.abstractLabel, partitionsHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    partitionsHolder.schemaName,
+                                    partitionsHolder.abstractLabel,
+                                    partitionsHolder.vertexOrEdge,
+                                    "Failed to delete partitions");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
                                             "Failed deleting partitions, [%s], %s",
