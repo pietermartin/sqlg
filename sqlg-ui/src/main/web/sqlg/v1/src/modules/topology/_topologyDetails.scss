@@ -1,9 +1,21 @@
+.schemas {
+    height: 100%;
+    padding-top: 0.5rem;
+    display: grid;
+    grid-template-rows: 1fr 3rem;
+    grid-template-columns: auto;
+}
+
+.abstract-labels {
+    height: 100%;
+    padding-top: 0.5rem;
+    display: grid;
+    grid-template-rows: 1fr 3rem;
+    grid-template-columns: auto;
+}
+
 .schema-details {
     height: 100%;
-    //display: grid;
-    //grid-template-columns: auto;
-    ////grid-template-rows: 4rem 4rem 4rem max-content 4rem 20rem 4rem 20rem 4rem 20rem 4rem 20rem;
-    //grid-template-rows: 4rem 4rem 4rem max-content 4rem minmax(0, 20rem) 4rem minmax(0, 20rem);
     display: flex;
     flex-direction: column;
 

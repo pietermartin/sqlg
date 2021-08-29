@@ -1,5 +1,7 @@
 package org.umlg.sqlg.ui;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -8,19 +10,22 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
-import org.umlg.sqlg.ui.util.ObjectMapperFactory;
-import org.umlg.sqlg.ui.util.SlickGridColumn;
-import org.umlg.sqlg.ui.util.SlickLazyTree;
-import org.umlg.sqlg.ui.util.SlickLazyTreeContainer;
+import org.umlg.sqlg.ui.util.*;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import spark.Request;
 
-import java.util.List;
-import java.util.Optional;
+import java.io.IOException;
+import java.util.*;
 
 public class SchemaResource {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SchemaResource.class);
 
     public static ObjectNode retrieveGraph() {
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
@@ -33,7 +38,7 @@ public class SchemaResource {
                 .put("username", username);
     }
 
-    public static ArrayNode retrieveSchemas(Request request) {
+    public static ArrayNode retrieveTopologyTree(Request request) {
         String selectedItemId = request.queryParams("selectedItemId");
         Pair<ListOrderedSet<SlickLazyTree>, ListOrderedSet<SlickLazyTree>> rootNodes = SchemaTreeBuilder.retrieveRootNodes(selectedItemId);
         ListOrderedSet<SlickLazyTree> roots = rootNodes.getRight();
@@ -42,6 +47,75 @@ public class SchemaResource {
         @SuppressWarnings("UnnecessaryLocalVariable")
         ArrayNode result = treeContainer.complete(new SchemaTreeBuilder.SchemaTreeSlickLazyTreeHelper(initialEntries));
         return result;
+    }
+
+    public static ObjectNode retrieveSchemas(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        ObjectNode schemasGridData = objectMapper.createObjectNode();
+        ArrayNode schemaColumnsColumns = objectMapper.createArrayNode();
+        ArrayNode schemaColumnGridData = objectMapper.createArrayNode();
+        schemasGridData.set("columns", schemaColumnsColumns);
+        schemasGridData.set("data", schemaColumnGridData);
+        schemaColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+                .setMinWidth(220)
+                .build().toJson(objectMapper));
+        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+        Set<Schema> schemas = sqlgGraph.getTopology().getSchemas();
+        for (Schema schema : schemas) {
+            ObjectNode schemaData = objectMapper.createObjectNode();
+            schemaData.put("id", schema.getName());
+            schemaData.put("name", schema.getName());
+            schemaColumnGridData.add(schemaData);
+        }
+        return schemasGridData;
+    }
+
+    public static ObjectNode retrieveVertexLabels(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        ObjectNode vertexLabelsData = objectMapper.createObjectNode();
+        ArrayNode vertexLabelColumnsColumns = objectMapper.createArrayNode();
+        ArrayNode vertexLabelGridData = objectMapper.createArrayNode();
+        vertexLabelsData.set("columns", vertexLabelColumnsColumns);
+        vertexLabelsData.set("data", vertexLabelGridData);
+        vertexLabelColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+                .setMinWidth(220)
+                .build().toJson(objectMapper));
+        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaName);
+        if (schemaOptional.isPresent()) {
+            for (VertexLabel vertexLabel : schemaOptional.get().getVertexLabels().values()) {
+                ObjectNode vertexLabelData = objectMapper.createObjectNode();
+                vertexLabelData.put("id", vertexLabel.getName());
+                vertexLabelData.put("name", vertexLabel.getName());
+                vertexLabelGridData.add(vertexLabelData);
+            }
+        }
+        return vertexLabelsData;
+    }
+
+    public static ObjectNode retrieveEdgeLabels(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        ObjectNode edgeLabelsData = objectMapper.createObjectNode();
+        ArrayNode edgeLabelColumnsColumns = objectMapper.createArrayNode();
+        ArrayNode edgeLabelGridData = objectMapper.createArrayNode();
+        edgeLabelsData.set("columns", edgeLabelColumnsColumns);
+        edgeLabelsData.set("data", edgeLabelGridData);
+        edgeLabelColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+                .setMinWidth(220)
+                .build().toJson(objectMapper));
+        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaName);
+        if (schemaOptional.isPresent()) {
+            for (EdgeLabel edgeLabel : schemaOptional.get().getEdgeLabels().values()) {
+                ObjectNode vertexLabelData = objectMapper.createObjectNode();
+                vertexLabelData.put("id", edgeLabel.getName());
+                vertexLabelData.put("name", edgeLabel.getName());
+                edgeLabelGridData.add(vertexLabelData);
+            }
+        }
+        return edgeLabelsData;
     }
 
     public static ObjectNode retrieveSchemaDetails(Request req) {
@@ -60,9 +134,8 @@ public class SchemaResource {
             ObjectNode result = objectMapper.createObjectNode();
             ObjectNode schemaObjectNode = objectMapper.createObjectNode();
             result.set("schema", schemaObjectNode);
-            schemaObjectNode.put("label", "Schema")
-                    .put("name", schema.getName())
-                    .put("ID", schemaVertex.id().toString())
+            schemaObjectNode
+                    .put("schemaName", schema.getName())
                     .put("createdOn", schemaVertex.value("createdOn").toString());
             return result;
         } else {
@@ -86,8 +159,11 @@ public class SchemaResource {
             Vertex schemaVertex = schemaVertices.get(0);
             ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
             ObjectNode result = objectMapper.createObjectNode();
+
             ObjectNode abstractLabelObjectNode = objectMapper.createObjectNode();
             result.set("abstractLabel", abstractLabelObjectNode);
+
+            abstractLabelObjectNode.put("schemaName", schema.getName());
 
             ObjectNode identifierData = objectMapper.createObjectNode();
             ArrayNode identifiers = objectMapper.createArrayNode();
@@ -125,6 +201,37 @@ public class SchemaResource {
                     .setMinWidth(80)
                     .build().toJson(objectMapper));
             indexColumns.add(new SlickGridColumn.SlickGridColumnBuilder("properties", "properties", PropertyType.STRING)
+                    .build().toJson(objectMapper));
+
+            ObjectNode partitionsGrid = objectMapper.createObjectNode();
+            abstractLabelObjectNode.set("partitions", partitionsGrid);
+            ArrayNode partitionColumns = objectMapper.createArrayNode();
+            ArrayNode partitionGridData = objectMapper.createArrayNode();
+            partitionsGrid.set("columns", partitionColumns);
+            partitionsGrid.set("data", partitionGridData);
+
+            ObjectNode options = objectMapper.createObjectNode();
+            partitionsGrid.set("options", options);
+            options.put("isTree", true);
+            options.put("deletionCheckBox", true);
+
+            partitionColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            partitionColumns.add(new SlickGridColumn.SlickGridColumnBuilder("from", "from", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            partitionColumns.add(new SlickGridColumn.SlickGridColumnBuilder("to", "to", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            partitionColumns.add(new SlickGridColumn.SlickGridColumnBuilder("in", "in", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            partitionColumns.add(new SlickGridColumn.SlickGridColumnBuilder("type", "type", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            partitionColumns.add(new SlickGridColumn.SlickGridColumnBuilder("expression", "expression", PropertyType.STRING)
+                    .setMinWidth(80)
                     .build().toJson(objectMapper));
 
             if (vertexOrEdge.equals("vertex")) {
@@ -171,6 +278,7 @@ public class SchemaResource {
                             identifiers.add(identifier);
                         }
                     }
+                    //Properties
                     for (PropertyColumn propertyColumn : vertexLabel.getProperties().values()) {
                         ObjectNode propertyColumnObjectNode = objectMapper.createObjectNode();
                         propertyColumnObjectNode.put("id", schemaName + "_" + vertexLabel.getName() + "_" + propertyColumn.getName());
@@ -184,6 +292,7 @@ public class SchemaResource {
                         propertyColumnObjectNode.set("sqlType", sqlTypeArrayNode);
                         propertyColumnGridData.add(propertyColumnObjectNode);
                     }
+                    //Indexes
                     for (Index index : vertexLabel.getIndexes().values()) {
                         ObjectNode indexObjectNode = objectMapper.createObjectNode();
                         indexGridData.add(indexObjectNode);
@@ -192,6 +301,7 @@ public class SchemaResource {
                         indexObjectNode.put("type", index.getIndexType().getName());
                         indexObjectNode.put("properties", index.getProperties().stream().map(PropertyColumn::getName).reduce((a, b) -> a + "," + b).orElseThrow());
                     }
+                    //In edge labels
                     for (String inEdgeLabelKey : vertexLabel.getInEdgeLabels().keySet()) {
                         EdgeLabel inEdgeLabel = vertexLabel.getInEdgeLabels().get(inEdgeLabelKey);
                         String edgeSchemaName = inEdgeLabel.getSchema().getName();
@@ -202,6 +312,7 @@ public class SchemaResource {
                         inEdgeObjectNode.put("schema", edgeSchemaName);
                         inEdgeLabelGridData.add(inEdgeObjectNode);
                     }
+                    //Out edge labels
                     for (String outEdgeLabelKey : vertexLabel.getOutEdgeLabels().keySet()) {
                         EdgeLabel outEdgeLabel = vertexLabel.getOutEdgeLabels().get(outEdgeLabelKey);
                         String edgeSchemaName = outEdgeLabel.getSchema().getName();
@@ -212,6 +323,26 @@ public class SchemaResource {
                         outEdgeObjectNode.put("schema", edgeSchemaName);
                         outEdgeLabelGridData.add(outEdgeObjectNode);
                     }
+
+                    //Partitions
+                    abstractLabelObjectNode.put("partitionType", vertexLabel.getPartitionType().name());
+                    abstractLabelObjectNode.put("partitionExpression", vertexLabel.getPartitionExpression());
+                    ListOrderedSet<SlickLazyTree> roots = new ListOrderedSet<>();
+                    ListOrderedSet<SlickLazyTree> allEntries = new ListOrderedSet<>();
+                    Stack<String> parents = new Stack<>();
+                    for (Partition partition : vertexLabel.getPartitions().values()) {
+                        preparePartition(
+                                objectMapper,
+                                roots,
+                                allEntries,
+                                null,
+                                parents,
+                                partition
+                        );
+                    }
+                    SlickLazyTreeContainer treeContainer = new SlickLazyTreeContainer(roots);
+                    partitionGridData = treeContainer.complete(new PartitionSlickLazyTreeHelper(allEntries));
+                    partitionsGrid.set("data", partitionGridData);
                 } else {
                     throw new IllegalStateException(String.format("Unknown vertex label '%s'", abstractLabel));
                 }
@@ -253,6 +384,26 @@ public class SchemaResource {
                         indexObjectNode.put("type", index.getIndexType().getName());
                         indexObjectNode.put("properties", index.getProperties().stream().map(PropertyColumn::getName).reduce((a, b) -> a + "," + b).orElseThrow());
                     }
+
+                    //Partitions
+                    abstractLabelObjectNode.put("partitionType", edgeLabel.getPartitionType().name());
+                    abstractLabelObjectNode.put("partitionExpression", edgeLabel.getPartitionExpression());
+                    ListOrderedSet<SlickLazyTree> roots = new ListOrderedSet<>();
+                    ListOrderedSet<SlickLazyTree> allEntries = new ListOrderedSet<>();
+                    Stack<String> parents = new Stack<>();
+                    for (Partition partition : edgeLabel.getPartitions().values()) {
+                        preparePartition(
+                                objectMapper,
+                                roots,
+                                allEntries,
+                                null,
+                                parents,
+                                partition
+                        );
+                    }
+                    SlickLazyTreeContainer treeContainer = new SlickLazyTreeContainer(roots);
+                    partitionGridData = treeContainer.complete(new PartitionSlickLazyTreeHelper(allEntries));
+                    partitionsGrid.set("data", partitionGridData);
                 } else {
                     throw new IllegalStateException(String.format("Unknown vertex label '%s'", abstractLabel));
                 }
@@ -263,4 +414,594 @@ public class SchemaResource {
         }
     }
 
+    private static void preparePartition(
+            ObjectMapper mapper,
+            ListOrderedSet<SlickLazyTree> roots,
+            ListOrderedSet<SlickLazyTree> allEntries,
+            SlickLazyTree parentSlickLazyTree,
+            Stack<String> parents,
+            Partition partition) {
+
+        ObjectNode partitionObjectNode = mapper.createObjectNode();
+        partitionObjectNode.put("id", partition.getName());
+        partitionObjectNode.put("name", partition.getName());
+        partitionObjectNode.put("from", partition.getFrom());
+        partitionObjectNode.put("to", partition.getTo());
+        partitionObjectNode.put("in", partition.getIn());
+        partitionObjectNode.put("type", partition.getPartitionType().name());
+        partitionObjectNode.put("expression", partition.getPartitionExpression());
+
+        partitionObjectNode.put("level", parents.size());
+        partitionObjectNode.put("_collapsed", true);
+        partitionObjectNode.put("isLeaf", partition.getPartitions().isEmpty());
+        if (parentSlickLazyTree == null) {
+            partitionObjectNode.putNull("parent");
+            partitionObjectNode.set("parents", mapper.createArrayNode());
+        } else {
+            partitionObjectNode.put("parent", parentSlickLazyTree.getId());
+            ArrayNode parentsArray = mapper.createArrayNode();
+            for (String parent : parents) {
+                parentsArray.add(parent);
+            }
+            partitionObjectNode.set("parents", parentsArray);
+        }
+        partitionObjectNode.set("children", mapper.createArrayNode());
+
+        SlickLazyTree partitionSlickLazyTree = SlickLazyTree.from(partitionObjectNode);
+        partitionSlickLazyTree.setChildrenIsLoaded(true);
+        allEntries.add(partitionSlickLazyTree);
+
+        if (parentSlickLazyTree == null) {
+            roots.add(partitionSlickLazyTree);
+        } else {
+            partitionSlickLazyTree.setParent(parentSlickLazyTree);
+            parentSlickLazyTree.addChild(partitionSlickLazyTree);
+        }
+
+        for (Partition partitionChild : partition.getPartitions().values()) {
+            parents.add(partitionSlickLazyTree.getId());
+            preparePartition(mapper, roots, allEntries, partitionSlickLazyTree, parents, partitionChild);
+            parents.pop();
+        }
+    }
+
+    public static class PartitionSlickLazyTreeHelper implements ISlickLazyTree {
+
+        public PartitionSlickLazyTreeHelper(ListOrderedSet<SlickLazyTree> ignore) {
+        }
+
+        @Override
+        public SlickLazyTree parent(SlickLazyTree entry) {
+            return null;
+        }
+
+        @Override
+        public ListOrderedSet<SlickLazyTree> children(SlickLazyTree parent) {
+            return null;
+        }
+
+        @Override
+        public void refresh(SlickLazyTree slickLazyTree) {
+
+        }
+    }
+
+    public static ObjectNode deleteSchemas(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String body = req.body();
+        try {
+            Set<String> schemasToRemove = new HashSet<>();
+            ArrayNode schemas = (ArrayNode) objectMapper.readTree(body);
+            SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+            for (JsonNode schemaName : schemas) {
+                String schemaNameText = schemaName.asText();
+                Preconditions.checkState(!schemaNameText.equals(sqlgGraph.getSqlDialect().getPublicSchema()), "The public ('%s') schema may not be deleted.", schemaName);
+                schemasToRemove.add(schemaNameText);
+            }
+            Mono.just(schemasToRemove).subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((s) -> {
+                        String schemaNames = s.stream().map(a -> "'" + a + "'").reduce((a, b) -> a + "," + b).orElse("");
+                        for (String schemaName : s) {
+                            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaName);
+                            if (schemaOptional.isPresent()) {
+                                Schema schema = schemaOptional.get();
+                                schema.remove();
+                            }
+                        }
+                        NotificationManager.INSTANCE.sendNotification(String.format("Start deleting schemas, [%s]", schemaNames));
+                        sqlgGraph.tx().commit();
+//                        NotificationManager.INSTANCE.sendRefreshTree("metaSchema");
+                        NotificationManager.INSTANCE.sendNotification(String.format("Done deleting schemas, [%s]", schemaNames));
+                    });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return objectMapper.createObjectNode();
+    }
+
+    public static ObjectNode deleteVertexLabels(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String body = req.body();
+        try {
+            Set<String> vertexLabelsToRemove = new HashSet<>();
+            ArrayNode vertexLabelArrayNode = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode vertexLabelNameJsonNode : vertexLabelArrayNode) {
+                String vertexLabelName = vertexLabelNameJsonNode.asText();
+                vertexLabelsToRemove.add(vertexLabelName);
+            }
+            Mono.just(Pair.of(schemaName, vertexLabelsToRemove)).subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((pair) -> {
+                        Set<String> vertexLabelNames = pair.getRight();
+                        String vertexLabelConcatenatedMessage = vertexLabelNames.stream().map(a -> "'" + a + "'").reduce((a, b) -> a + "," + b).orElse("");
+                        NotificationManager.INSTANCE.sendNotification(String.format("Start deleting vertexLabels, [%s]", vertexLabelConcatenatedMessage));
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(pair.getLeft());
+                        if (schemaOptional.isPresent()) {
+                            for (String vertexLabelName : vertexLabelNames) {
+                                Optional<VertexLabel> vertexLabelOptional = schemaOptional.get().getVertexLabel(vertexLabelName);
+                                if (vertexLabelOptional.isPresent()) {
+                                    VertexLabel vertexLabel = vertexLabelOptional.get();
+                                    vertexLabel.remove();
+                                }
+                            }
+                        }
+                        sqlgGraph.tx().commit();
+                        NotificationManager.INSTANCE.sendRefreshVertexLabels(pair.getLeft());
+                        NotificationManager.INSTANCE.sendNotification(String.format("Done deleting vertexLabels, [%s]", vertexLabelConcatenatedMessage));
+                    });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return objectMapper.createObjectNode();
+    }
+
+    public static ObjectNode deleteEdgeLabels(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String body = req.body();
+        try {
+            Set<String> edgeLabelsToRemove = new HashSet<>();
+            ArrayNode edgeLabelArrayNode = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode edgeLabelNameJsonNode : edgeLabelArrayNode) {
+                String edgeLabelName = edgeLabelNameJsonNode.asText();
+                edgeLabelsToRemove.add(edgeLabelName);
+            }
+            Mono.just(Pair.of(schemaName, edgeLabelsToRemove)).subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((pair) -> {
+                        Set<String> edgeLabelNames = pair.getRight();
+                        String edgeLabelConcatenatedMessage = edgeLabelNames.stream().map(a -> "'" + a + "'").reduce((a, b) -> a + "," + b).orElse("");
+                        NotificationManager.INSTANCE.sendNotification(String.format("Start deleting edgeLabels, [%s]", edgeLabelConcatenatedMessage));
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(pair.getLeft());
+                        if (schemaOptional.isPresent()) {
+                            for (String edgeLabelName : edgeLabelNames) {
+                                Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(edgeLabelName);
+                                if (edgeLabelOptional.isPresent()) {
+                                    EdgeLabel edgeLabel = edgeLabelOptional.get();
+                                    edgeLabel.remove();
+                                }
+                            }
+                        }
+                        sqlgGraph.tx().commit();
+                        NotificationManager.INSTANCE.sendRefreshEdgeLabels(pair.getLeft());
+                        NotificationManager.INSTANCE.sendNotification(String.format("Done deleting edgeLabels, [%s]", edgeLabelConcatenatedMessage));
+                    });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return objectMapper.createObjectNode();
+    }
+
+    public static ObjectNode deleteSchema(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+        Preconditions.checkState(!schemaName.equals(sqlgGraph.getSqlDialect().getPublicSchema()), "The public ('%s') schema may not be deleted.", schemaName);
+        Mono.just(schemaName)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe((s) -> {
+                    NotificationManager.INSTANCE.sendNotification(String.format("Start deleting schema, '%s'", s));
+                    Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(s);
+                    if (schemaOptional.isPresent()) {
+                        Schema schema = schemaOptional.get();
+                        schema.remove();
+                    }
+                    sqlgGraph.tx().commit();
+                    NotificationManager.INSTANCE.sendRefreshTree("metaSchema");
+                    NotificationManager.INSTANCE.sendNotification(String.format("Done deleting schema, '%s'", s));
+                });
+        return objectMapper.createObjectNode();
+    }
+
+    public static ObjectNode deleteAbstractLabel(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String vertexOrEdge = req.params("vertexOrEdge");
+        Mono.just(new AbstractLabelHolder(schemaName, abstractLabel, vertexOrEdge))
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe((abstractLabelHolder) -> {
+                    NotificationManager.INSTANCE.sendNotification(
+                            String.format(
+                                    "Start deleting %s, [%s]",
+                                    abstractLabelHolder.vertexOrEdge.equals("vertex") ? "VertexLabel" : "EdgeLabel",
+                                    abstractLabelHolder.abstractLabel));
+                    SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                    Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(abstractLabelHolder.schemaName);
+                    if (schemaOptional.isPresent()) {
+                        Schema schema = schemaOptional.get();
+                        if (abstractLabelHolder.vertexOrEdge.equals("vertex")) {
+                            Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(abstractLabelHolder.abstractLabel);
+                            if (vertexLabelOptional.isPresent()) {
+                                VertexLabel vertexLabel = vertexLabelOptional.get();
+                                vertexLabel.remove();
+                            }
+                        } else {
+                            Preconditions.checkState(abstractLabelHolder.vertexOrEdge.equals("edge"), "Expected 'edge'");
+                            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(abstractLabelHolder.abstractLabel);
+                            if (edgeLabelOptional.isPresent()) {
+                                EdgeLabel edgeLabel = edgeLabelOptional.get();
+                                edgeLabel.remove();
+                            }
+                        }
+                    }
+                    sqlgGraph.tx().commit();
+                    NotificationManager.INSTANCE.sendRefreshTree(String.format("metaSchema_%s_%s", abstractLabelHolder.schemaName, abstractLabelHolder.vertexOrEdge));
+                    NotificationManager.INSTANCE.sendNotification(
+                            String.format(
+                                    "Done deleting %s, [%s]",
+                                    abstractLabelHolder.vertexOrEdge.equals("vertex") ? "VertexLabel" : "EdgeLabel",
+                                    abstractLabelHolder.abstractLabel));
+                });
+        return objectMapper.createObjectNode();
+    }
+
+    public static ObjectNode deleteProperties(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String vertexOrEdge = req.params("vertexOrEdge");
+        String body = req.body();
+        try {
+            Set<String> propertiesToRemove = new HashSet<>();
+            ArrayNode properties = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode property : properties) {
+                propertiesToRemove.add(property.asText());
+            }
+            Mono.just(new PropertyHolder(schemaName, abstractLabel, vertexOrEdge, propertiesToRemove))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((propertyHolder -> {
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        try {
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Start deleting properties, [%s]",
+                                            propertyHolder.propertiesToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(propertyHolder.schemaName);
+                            if (schemaOptional.isPresent()) {
+                                Schema schema = schemaOptional.get();
+                                AbstractLabel _abstractLabel;
+                                switch (propertyHolder.vertexOrEdge) {
+                                    case "vertex":
+                                        Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(propertyHolder.abstractLabel);
+                                        if (vertexLabelOptional.isPresent()) {
+                                            _abstractLabel = vertexLabelOptional.get();
+                                        } else {
+                                            throw new IllegalStateException(String.format("VertexLabel '%s' not found.", propertyHolder.abstractLabel));
+                                        }
+                                        break;
+                                    case "edge":
+                                        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(propertyHolder.abstractLabel);
+                                        if (edgeLabelOptional.isPresent()) {
+                                            _abstractLabel = edgeLabelOptional.get();
+                                        } else {
+                                            throw new IllegalStateException(String.format("EdgeLabel '%s' not found.", propertyHolder.abstractLabel));
+                                        }
+                                        break;
+                                    default:
+                                        throw new IllegalStateException("Unknown type, expected 'vertex' or 'edge', got " + propertyHolder.vertexOrEdge);
+                                }
+                                for (String property : propertyHolder.propertiesToRemove) {
+                                    Optional<PropertyColumn> propertyColumnOptional = _abstractLabel.getProperty(property);
+                                    //noinspection OptionalIsPresent
+                                    if (propertyColumnOptional.isPresent()) {
+                                        propertyColumnOptional.get().remove();
+                                    }
+                                }
+                            }
+                            sqlgGraph.tx().commit();
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(propertyHolder.schemaName, propertyHolder.abstractLabel, propertyHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Done deleting properties, [%s]",
+                                            propertyHolder.propertiesToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to delete properties!", e);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(propertyHolder.schemaName, propertyHolder.abstractLabel, propertyHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Failed deleting properties, [%s], %s",
+                                            propertyHolder.propertiesToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage()));
+
+                        } finally {
+                            sqlgGraph.tx().rollback();
+                        }
+                    }));
+            return objectMapper.createObjectNode();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ObjectNode deleteIndexes(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String vertexOrEdge = req.params("vertexOrEdge");
+        String body = req.body();
+        try {
+            Set<String> indexesToRemove = new HashSet<>();
+            ArrayNode indexesArrayNode = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode indexJsonNode : indexesArrayNode) {
+                indexesToRemove.add(indexJsonNode.asText());
+            }
+            Mono.just(new IndexesHolder(schemaName, abstractLabel, vertexOrEdge, indexesToRemove))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((indexesHolder -> {
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        try {
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Start deleting indexes, [%s]",
+                                            indexesHolder.indexesToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(indexesHolder.schemaName);
+                            if (schemaOptional.isPresent()) {
+                                Schema schema = schemaOptional.get();
+                                AbstractLabel _abstractLabel;
+                                switch (indexesHolder.vertexOrEdge) {
+                                    case "vertex":
+                                        Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(indexesHolder.abstractLabel);
+                                        if (vertexLabelOptional.isPresent()) {
+                                            _abstractLabel = vertexLabelOptional.get();
+                                        } else {
+                                            throw new IllegalStateException(String.format("VertexLabel '%s' not found.", indexesHolder.abstractLabel));
+                                        }
+                                        break;
+                                    case "edge":
+                                        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(indexesHolder.abstractLabel);
+                                        if (edgeLabelOptional.isPresent()) {
+                                            _abstractLabel = edgeLabelOptional.get();
+                                        } else {
+                                            throw new IllegalStateException(String.format("EdgeLabel '%s' not found.", indexesHolder.abstractLabel));
+                                        }
+                                        break;
+                                    default:
+                                        throw new IllegalStateException("Unknown type, expected 'vertex' or 'edge', got " + indexesHolder.vertexOrEdge);
+                                }
+                                for (String index : indexesHolder.indexesToRemove) {
+                                    Optional<Index> indexOptional = _abstractLabel.getIndex(index);
+                                    //noinspection OptionalIsPresent
+                                    if (indexOptional.isPresent()) {
+                                        indexOptional.get().remove();
+                                    }
+                                }
+                            }
+                            sqlgGraph.tx().commit();
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(indexesHolder.schemaName, indexesHolder.abstractLabel, indexesHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Done deleting indexes, [%s]",
+                                            indexesHolder.indexesToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to delete indexes!", e);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(indexesHolder.schemaName, indexesHolder.abstractLabel, indexesHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Failed deleting indexes, [%s], %s",
+                                            indexesHolder.indexesToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage()));
+                        } finally {
+                            sqlgGraph.tx().rollback();
+                        }
+                    }));
+            return objectMapper.createObjectNode();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ObjectNode deletePartitions(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String vertexOrEdge = req.params("vertexOrEdge");
+        String body = req.body();
+        try {
+            Set<String> partitionsToRemove = new HashSet<>();
+            ArrayNode partitionsArrayNode = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode partitionJsonNode : partitionsArrayNode) {
+                partitionsToRemove.add(partitionJsonNode.asText());
+            }
+            Mono.just(new PartitionsHolder(schemaName, abstractLabel, vertexOrEdge, partitionsToRemove))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((partitionsHolder -> {
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        try {
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Start deleting partitions, [%s]",
+                                            partitionsHolder.partitionsToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(partitionsHolder.schemaName);
+                            if (schemaOptional.isPresent()) {
+                                Schema schema = schemaOptional.get();
+                                AbstractLabel _abstractLabel;
+                                switch (partitionsHolder.vertexOrEdge) {
+                                    case "vertex":
+                                        Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(partitionsHolder.abstractLabel);
+                                        if (vertexLabelOptional.isPresent()) {
+                                            _abstractLabel = vertexLabelOptional.get();
+                                        } else {
+                                            throw new IllegalStateException(String.format("VertexLabel '%s' not found.", partitionsHolder.abstractLabel));
+                                        }
+                                        break;
+                                    case "edge":
+                                        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(partitionsHolder.abstractLabel);
+                                        if (edgeLabelOptional.isPresent()) {
+                                            _abstractLabel = edgeLabelOptional.get();
+                                        } else {
+                                            throw new IllegalStateException(String.format("EdgeLabel '%s' not found.", partitionsHolder.abstractLabel));
+                                        }
+                                        break;
+                                    default:
+                                        throw new IllegalStateException("Unknown type, expected 'vertex' or 'edge', got " + partitionsHolder.vertexOrEdge);
+                                }
+                                for (String partition : partitionsHolder.partitionsToRemove) {
+                                    Optional<Partition> partitionOptional = _abstractLabel.getPartition(partition);
+                                    //noinspection OptionalIsPresent
+                                    if (partitionOptional.isPresent()) {
+                                        partitionOptional.get().remove();
+                                    }
+                                }
+                            }
+                            sqlgGraph.tx().commit();
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(partitionsHolder.schemaName, partitionsHolder.abstractLabel, partitionsHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Done deleting partitions, [%s]",
+                                            partitionsHolder.partitionsToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to delete partitions!", e);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(partitionsHolder.schemaName, partitionsHolder.abstractLabel, partitionsHolder.vertexOrEdge);
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Failed deleting partitions, [%s], %s",
+                                            partitionsHolder.partitionsToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage()));
+                        } finally {
+                            sqlgGraph.tx().rollback();
+                        }
+                    }));
+            return objectMapper.createObjectNode();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static class AbstractLabelHolder {
+        String schemaName;
+        String abstractLabel;
+        String vertexOrEdge;
+
+        private AbstractLabelHolder(String schemaName, String abstractLabel, String vertexOrEdge) {
+            this.schemaName = schemaName;
+            this.abstractLabel = abstractLabel;
+            this.vertexOrEdge = vertexOrEdge;
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.schemaName + this.abstractLabel + this.vertexOrEdge).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof AbstractLabelHolder)) {
+                return false;
+            }
+            AbstractLabelHolder other = (AbstractLabelHolder) o;
+            return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) && this.vertexOrEdge.equals(other.vertexOrEdge);
+        }
+    }
+
+    private static class PropertyHolder {
+        String schemaName;
+        String abstractLabel;
+        String vertexOrEdge;
+        Set<String> propertiesToRemove;
+        String propertiesConcatenated;
+
+        private PropertyHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<String> propertiesToRemove) {
+            this.schemaName = schemaName;
+            this.abstractLabel = abstractLabel;
+            this.vertexOrEdge = vertexOrEdge;
+            this.propertiesToRemove = propertiesToRemove;
+            this.propertiesConcatenated = propertiesToRemove.stream().reduce((a, b) -> a + b).orElse("");
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.schemaName + this.abstractLabel + this.vertexOrEdge + this.propertiesConcatenated).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof PropertyHolder)) {
+                return false;
+            }
+            PropertyHolder other = (PropertyHolder) o;
+            return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) &&
+                    this.vertexOrEdge.equals(other.vertexOrEdge) && this.propertiesConcatenated.equals(other.propertiesConcatenated);
+        }
+    }
+
+    private static class IndexesHolder {
+        String schemaName;
+        String abstractLabel;
+        String vertexOrEdge;
+        Set<String> indexesToRemove;
+        String indexesConcatenated;
+
+        private IndexesHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<String> indexesToRemove) {
+            this.schemaName = schemaName;
+            this.abstractLabel = abstractLabel;
+            this.vertexOrEdge = vertexOrEdge;
+            this.indexesToRemove = indexesToRemove;
+            this.indexesConcatenated = indexesToRemove.stream().reduce((a, b) -> a + b).orElse("");
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.schemaName + this.abstractLabel + this.vertexOrEdge + this.indexesConcatenated).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof IndexesHolder)) {
+                return false;
+            }
+            IndexesHolder other = (IndexesHolder) o;
+            return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) &&
+                    this.vertexOrEdge.equals(other.vertexOrEdge) && this.indexesConcatenated.equals(other.indexesConcatenated);
+        }
+    }
+
+    private static class PartitionsHolder {
+        String schemaName;
+        String abstractLabel;
+        String vertexOrEdge;
+        Set<String> partitionsToRemove;
+        String partitionsConcatenated;
+
+        private PartitionsHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<String> partitionsToRemove) {
+            this.schemaName = schemaName;
+            this.abstractLabel = abstractLabel;
+            this.vertexOrEdge = vertexOrEdge;
+            this.partitionsToRemove = partitionsToRemove;
+            this.partitionsConcatenated = partitionsToRemove.stream().reduce((a, b) -> a + b).orElse("");
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.schemaName + this.abstractLabel + this.vertexOrEdge + this.partitionsConcatenated).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof PartitionsHolder)) {
+                return false;
+            }
+            PartitionsHolder other = (PartitionsHolder) o;
+            return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) &&
+                    this.vertexOrEdge.equals(other.vertexOrEdge) && this.partitionsConcatenated.equals(other.partitionsConcatenated);
+        }
+    }
 }

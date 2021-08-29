@@ -6,7 +6,7 @@ module.exports = {
     entry: {
         app: './sqlg/v1/src/index.js'
     },
-    devtool: 'inline-source-map',
+    devtool: 'eval-source-map',
     plugins: [
         new webpack.ProvidePlugin({
             "$": "jquery",

@@ -13,13 +13,13 @@ function Switch(ignore) {
                 checked = vnode.attrs.checked;
             }
         },
-        oncreate: function(vnode) {
+        oncreate: function (vnode) {
             let toggle = $('#' + vnode.attrs.id + "-span" + '[data-tippy-content]');
             if (toggle.length > 0) {
                 tooltip = tippy(toggle[0]);
             }
         },
-        onremove: function(vnode) {
+        onremove: function (vnode) {
             if (tooltip !== undefined && tooltip !== null) {
                 tooltip.destroy();
             }
@@ -29,7 +29,7 @@ function Switch(ignore) {
                 throw Error("switchId must be defined for the Switch control.");
             }
             // if (vnode.attrs.refresh) {
-                checked = vnode.attrs.checked;
+            checked = vnode.attrs.checked;
             // }
             let enabled = vnode.attrs.enabled === undefined || vnode.attrs.enabled;
 
@@ -46,26 +46,24 @@ function Switch(ignore) {
             if (vnode.attrs['data-tippy-flip']) {
                 spanAttributes['data-tippy-flip'] = vnode.attrs['data-tippy-flip'];
             }
-            return m("span", spanAttributes, [
-                m(".custom-control.custom-switch", {class: vnode.attrs.class}, [
-                    m("input.custom-control-input[id='" + vnode.attrs.id + "'][type='checkbox']", {
-                        checked: checked,
-                        tabindex: enabled ? 0 : -1,
-                        onclick: function (e) {
-                            if (enabled) {
-                                checked = !checked;
-                                vnode.attrs.toggle(checked, e);
-                            } else {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.redraw = false;
-                            }
+            return m("div.form-check.form-switch", spanAttributes, [
+                m("input.form-check-input[id='" + vnode.attrs.id + "'][type='checkbox']", {
+                    checked: checked,
+                    tabindex: enabled ? 0 : -1,
+                    onclick: function (e) {
+                        if (enabled) {
+                            checked = !checked;
+                            vnode.attrs.toggle(checked, e);
+                        } else {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.redraw = false;
                         }
-                    }),
-                    m("label.custom-control-label[for='" + vnode.attrs.id + "']", {
-                        class: enabled ? 'enabled' : 'disabled',
-                    }, vnode.attrs.switchText)
-                ]),
+                    }
+                }),
+                m("label.align-text-bottom.form-check-label[for='" + vnode.attrs.id + "']", {
+                    class: enabled ? 'enabled' : 'disabled',
+                }, vnode.attrs.switchText)
             ])
         }
     }

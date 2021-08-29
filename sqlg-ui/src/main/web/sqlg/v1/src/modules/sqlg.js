@@ -21,7 +21,7 @@ function Sqlg(ignore) {
             let {treeId, view} = params;
             actions.navigateTo(Route.Sqlg({treeId: treeId, view: view !== undefined ? view : states().selectedTab}));
             actions.retrieveGraphData();
-            actions.retrieveSchema(params.treeId);
+            actions.retrieveTopologyTree(params.treeId);
         },
         onremove: () => {
             $.Topic('/sqlg-ui').unsubscribe(onmatch);

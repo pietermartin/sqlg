@@ -11,6 +11,7 @@ public class SqlgUI {
     public static void get(SqlgGraph sqlgGraph) {
         if (INSTANCE == null) {
             SparkResources.resources();
+            Spark.awaitInitialization();
             INSTANCE = new SqlgUI(sqlgGraph);
         }
     }

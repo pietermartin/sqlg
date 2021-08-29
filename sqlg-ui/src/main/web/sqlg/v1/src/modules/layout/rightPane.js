@@ -4,6 +4,12 @@ import LeftRight from "./leftRight";
 import LeftPane from "./leftPane";
 import AbstractLabelDetail from "../topology/abstractLabelDetails";
 import {Tab} from "bootstrap";
+import Switch from "../../components/switch/switch";
+import Label from "../../components/form/label";
+import {ELEMENT_TYPE} from "../sqlgModel";
+import Schemas from "../topology/schemas";
+import VertexLabels from "../topology/vertexLabels";
+import EdgeLabels from "../topology/edgeLabels";
 
 function RightPane(ignore) {
 
@@ -26,9 +32,17 @@ function RightPane(ignore) {
         },
         view: ({attrs: {state, actions}}) => {
             let topology;
-            if (state.topologyDetails.type === 'Schema') {
+            if (state.topologyDetails.elementType === ELEMENT_TYPE.SCHEMAS) {
+                topology = m(Schemas, {state: state, actions});
+            } else if (state.topologyDetails.elementType === ELEMENT_TYPE.SCHEMA) {
                 topology = m(SchemaDetail, {state: state, actions});
-            } else if (state.topologyDetails.type === 'AbstractLabel') {
+            } else if (state.topologyDetails.elementType === ELEMENT_TYPE.VERTEX_LABELS) {
+                topology = m(VertexLabels, {state: state, actions});
+            } else if (state.topologyDetails.elementType === ELEMENT_TYPE.EDGE_LABELS) {
+                topology = m(EdgeLabels, {state: state, actions});
+            } else if (state.topologyDetails.elementType === ELEMENT_TYPE.VERTEX_LABEL ||
+                state.topologyDetails.elementType === ELEMENT_TYPE.EDGE_LABEL) {
+
                 topology = m(AbstractLabelDetail, {state: state, actions});
             } else {
                 topology = m("div")
@@ -39,7 +53,7 @@ function RightPane(ignore) {
                 tab.show();
             }
             return [
-                m("nav.navbar.navbar-dark.bg-info", [
+                m("nav.navbar.navbar-dark.bg-info.pe-2", [
                         m("div.container-fluid", [
                             m("ul#nav-bar-ul.nav.nav-pills.ms-2", {role: "tablist"}, [
                                 m("li.nav-item", {role: "presentation"},
@@ -77,10 +91,21 @@ function RightPane(ignore) {
                                 )
                             ]),
                             m("a.navbar-brand.position-absolute.start-50.text-center", state.topologyDetails.abstractLabel.label),
+                            m(Switch, {
+                                id: "editSwitch",
+                                enabled: true,
+                                checked: state.editable,
+                                "data-tippy-content": "Edit",
+                                "data-tippy-placement": "top",
+                                "switchText": "Edit",
+                                toggle: (toggleState, ignore) => {
+                                    actions.editable(toggleState);
+                                }
+                            })
                         ])
                     ]
                 ),
-                m("div#main.tab-content", [
+                m("div#right-main.tab-content", [
                     m("div.tab-pane.fade", {
                         id: "dbPanel",
                         role: "tabpanel",

@@ -2,13 +2,20 @@ import m from "mithril";
 import SlickGrid2 from "../../components/slickgrid/m.slick.grid";
 import Button from "../../components/form/button";
 import {ELEMENT_TYPE} from "../sqlgModel";
+import ButtonPanel from "../../components/buttonPanel/buttonPanel";
 
 function AbstractLabelDetail(ignore) {
 
     return {
+        oninit: ({attrs: {actions}}) => {
+            $.Topic('/sqlg-ui/abstractLabel').subscribe((message) => {
+                actions.retrieveAbstractLabelDetails(message.schema, message.abstractLabel, message.vertexOrEdge);
+                m.redraw();
+            });
+        },
         oncreate: ({attrs: {state, actions}}) => {
             let properties = document.getElementById('propertiesCollapse')
-            properties.addEventListener('show.bs.collapse', function () {
+            properties.addEventListener('shown.bs.collapse', function () {
                 actions.setPropertiesGridExpand();
                 m.redraw();
             });
@@ -17,7 +24,7 @@ function AbstractLabelDetail(ignore) {
                 m.redraw();
             });
             let indexes = document.getElementById('indexesCollapse')
-            indexes.addEventListener('show.bs.collapse', function () {
+            indexes.addEventListener('shown.bs.collapse', function () {
                 actions.setIndexesGridExpand();
                 m.redraw();
             });
@@ -27,7 +34,7 @@ function AbstractLabelDetail(ignore) {
             });
             if (state.topologyDetails.abstractLabel.label === ELEMENT_TYPE.VERTEX_LABEL) {
                 let inEdgeLabels = document.getElementById('inEdgeLabelCollapse')
-                inEdgeLabels.addEventListener('show.bs.collapse', function () {
+                inEdgeLabels.addEventListener('shown.bs.collapse', function () {
                     actions.setInEdgeLabelsGridExpand();
                     m.redraw();
                 });
@@ -36,7 +43,7 @@ function AbstractLabelDetail(ignore) {
                     m.redraw();
                 });
                 let outEdgeLabels = document.getElementById('outEdgeLabelCollapse')
-                outEdgeLabels.addEventListener('show.bs.collapse', function () {
+                outEdgeLabels.addEventListener('shown.bs.collapse', function () {
                     actions.setOutEdgeLabelsGridExpand();
                     m.redraw();
                 });
@@ -46,7 +53,7 @@ function AbstractLabelDetail(ignore) {
                 });
             }
             let partitions = document.getElementById('partitionsCollapse')
-            partitions.addEventListener('show.bs.collapse', function () {
+            partitions.addEventListener('shown.bs.collapse', function () {
                 actions.setPartitionsGridExpand();
                 m.redraw();
             });
@@ -59,7 +66,21 @@ function AbstractLabelDetail(ignore) {
             actions.setPropertiesGridRefresh();
         },
         view: ({attrs: {state, actions}}) => {
+            state.topologyDetails.abstractLabel.partitions.data.options['deletionCheckBox'] = state.editable;
             return m("div.schema-details",
+                m("div.row.g-0.mt-1.mb-1.ms-1.me-1", [
+                    m("label.col-form-label.col-form-label-sm.col-sm-2", {
+                        for: "abstractLabelSchemaName"
+                    }, "schema"),
+                    m("div.col-sm-10", [
+                        m("input.form-control.form-control-sm", {
+                            id: "abstractLabelSchemaName",
+                            readonly: "",
+                            type: "text",
+                            value: state.topologyDetails.abstractLabel.schemaName
+                        })
+                    ])
+                ]),
                 m("div.row.g-0.mt-1.mb-1.ms-1.me-1", [
                     m("label.col-form-label.col-form-label-sm.col-sm-2", {
                         for: "abstractLabelName"
@@ -71,9 +92,18 @@ function AbstractLabelDetail(ignore) {
                             type: "text",
                             value: state.topologyDetails.abstractLabel.name
                         })
-
-                    ])
+                    ]),
                 ]),
+                state.editable ?
+                    m("div.ms-1.mt-3.mb-3",
+                        m(Button, {
+                            class: "bg-danger",
+                            icon: "fas fa-minus-circle",
+                            text: "Delete",
+                            onclick: actions.deleteAbstractLabel
+                        })
+                    ) :
+                    m("div"),
                 m("div.schema-header",
                     m("div.col-sm.ms-1.mt-3",
                         m("h4", "Identifiers")
@@ -131,7 +161,23 @@ function AbstractLabelDetail(ignore) {
                         rebuildGrid: state.topologyDetails.abstractLabel.propertyColumns.rebuild,
                         showSpinner: state.topologyDetails.abstractLabel.propertyColumns.spin,
                         data: state.topologyDetails.abstractLabel.propertyColumns.data,
-                    })
+                        deletedItems: state.topologyDetails.abstractLabel.propertyColumns.deletedItems,
+                        options: {
+                            deletionCheckBox: state.editable
+                        },
+                        deletedItemsCallBack: function (data) {
+                            m.redraw();
+                        }
+                    }),
+                    state.editable ? m(ButtonPanel, {justify: "left"}, [
+                        m(Button, {
+                            class: "bg-danger",
+                            icon: "fas fa-minus-circle",
+                            text: "Delete",
+                            enabled: state.topologyDetails.abstractLabel.propertyColumns.deletedItems.length > 0,
+                            onclick: actions.deleteProperties
+                        })
+                    ]) : m("div")
                 ),
                 m("div.schema-header",
                     m("div.ms-1.mt-1.mb-1",
@@ -153,7 +199,23 @@ function AbstractLabelDetail(ignore) {
                         rebuildGrid: state.topologyDetails.abstractLabel.indexes.rebuild,
                         showSpinner: state.topologyDetails.abstractLabel.indexes.spin,
                         data: state.topologyDetails.abstractLabel.indexes.data,
-                    })
+                        deletedItems: state.topologyDetails.abstractLabel.indexes.deletedItems,
+                        options: {
+                            deletionCheckBox: state.editable
+                        },
+                        deletedItemsCallBack: function (data) {
+                            m.redraw();
+                        }
+                    }),
+                    state.editable ? m(ButtonPanel, {justify: "left"}, [
+                        m(Button, {
+                            class: "bg-danger",
+                            icon: "fas fa-minus-circle",
+                            text: "Delete",
+                            enabled: state.topologyDetails.abstractLabel.indexes.deletedItems.length > 0,
+                            onclick: actions.deleteIndexes
+                        })
+                    ]) : m("div")
                 ),
                 (state.topologyDetails.abstractLabel.label === ELEMENT_TYPE.VERTEX_LABEL ? [
                         m("div.schema-header",
@@ -203,6 +265,35 @@ function AbstractLabelDetail(ignore) {
                     ] :
                     m("div")),
                 m("div.schema-header",
+                    m("h4.ms-1.mt-1.mb-1", "Partition"),
+                    m("div.row.g-0.mt-1.mb-1.ms-1.me-1", [
+                            m("label.col-form-label.col-form-label-sm.col-sm-2", {
+                                for: "partitionType"
+                            }, "type"),
+                            m("div.col-sm-10",
+                                m("input.form-control.form-control-sm", {
+                                    id: "partitionType",
+                                    readonly: "",
+                                    type: "text",
+                                    value: state.topologyDetails.abstractLabel.partitionType
+                                })
+                            )
+                        ]
+                    ),
+                    m("div.row.g-0.mt-1.mb-1.ms-1.me-1", [
+                            m("label.col-form-label.col-form-label-sm.col-sm-2", {
+                                for: "partitionExpression"
+                            }, "expression"),
+                            m("div.col-sm-10",
+                                m("input.form-control.form-control-sm", {
+                                    id: "partitionExpression",
+                                    readonly: "",
+                                    type: "text",
+                                    value: state.topologyDetails.abstractLabel.partitionExpression
+                                })
+                            )
+                        ]
+                    ),
                     m("div.ms-1.mt-1.mb-1",
                         m(Button, {
                             class: "bg-info",
@@ -218,11 +309,25 @@ function AbstractLabelDetail(ignore) {
                 m("div#partitionsCollapse.collapse.schema-details-grid.ms-1.me-1",
                     m(SlickGrid2, {
                         id: 'partitionsGrid',
-                        refreshData: state.topologyDetails.abstractLabel.outEdgeLabels.refresh,
-                        rebuildGrid: state.topologyDetails.abstractLabel.outEdgeLabels.rebuild,
-                        showSpinner: state.topologyDetails.abstractLabel.outEdgeLabels.spin,
-                        data: state.topologyDetails.abstractLabel.outEdgeLabels.data,
-                    })
+                        refreshData: state.topologyDetails.abstractLabel.partitions.refresh,
+                        rebuildGrid: state.topologyDetails.abstractLabel.partitions.rebuild,
+                        showSpinner: state.topologyDetails.abstractLabel.partitions.spin,
+                        data: state.topologyDetails.abstractLabel.partitions.data,
+                        options: state.topologyDetails.abstractLabel.partitions.data.options,
+                        deletedItems: state.topologyDetails.abstractLabel.partitions.deletedItems,
+                        deletedItemsCallBack: function (data) {
+                            m.redraw();
+                        }
+                    }),
+                    state.editable ? m(ButtonPanel, {justify: "left"}, [
+                        m(Button, {
+                            class: "bg-danger",
+                            icon: "fas fa-minus-circle",
+                            text: "Delete",
+                            enabled: state.topologyDetails.abstractLabel.partitions.deletedItems.length > 0,
+                            onclick: actions.deletePartitions
+                        })
+                    ]) : m("div")
                 )
             );
         }

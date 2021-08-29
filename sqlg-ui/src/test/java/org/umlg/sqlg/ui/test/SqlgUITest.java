@@ -5,10 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.topology.IndexType;
-import org.umlg.sqlg.structure.topology.PartitionType;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalDateTime;
@@ -24,7 +21,7 @@ public class SqlgUITest extends BaseTest {
         john.addEdge("livesAt", nowhere, "createdOn", LocalDateTime.now());
         aVertex.addEdge("diesAt", nowhere, "createdOn", LocalDateTime.now());
 
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Test", new LinkedHashMap<>() {{
+        VertexLabel test1VertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Test1", new LinkedHashMap<>() {{
                     put("name1", PropertyType.STRING);
                     put("name2", PropertyType.STRING);
                     put("name3", PropertyType.STRING);
@@ -33,21 +30,67 @@ public class SqlgUITest extends BaseTest {
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2", "name3"))
         );
-        Optional<PropertyColumn> name1PropertyColumnOpt = vertexLabel.getProperty("name1");
-        vertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(name1PropertyColumnOpt.get()));
+        Optional<PropertyColumn> name1PropertyColumnOpt = test1VertexLabel.getProperty("name1");
+        test1VertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(name1PropertyColumnOpt.get()));
+
+        VertexLabel test2VertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Test2", new LinkedHashMap<>() {{
+                    put("name1", PropertyType.STRING);
+                    put("name2", PropertyType.STRING);
+                    put("name3", PropertyType.STRING);
+                    put("surname", PropertyType.STRING);
+                    put("age", PropertyType.LONG);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("name1", "name2", "name3"))
+        );
+        name1PropertyColumnOpt = test2VertexLabel.getProperty("name1");
+        Optional<PropertyColumn> name2PropertyColumnOpt = test2VertexLabel.getProperty("name2");
+        test1VertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(name1PropertyColumnOpt.get(), name2PropertyColumnOpt.get()));
+
+        EdgeLabel loveEdgeLabel = test1VertexLabel.ensureEdgeLabelExist("loves", test2VertexLabel, new HashMap<>(){{
+            put("p1", PropertyType.STRING);
+            put("p2", PropertyType.STRING);
+        }});
+        Optional<PropertyColumn> p1PropertyColumn = loveEdgeLabel.getProperty("p1");
+        Optional<PropertyColumn> p2PropertyColumn = loveEdgeLabel.getProperty("p2");
+        loveEdgeLabel.ensureIndexExists(IndexType.UNIQUE, List.of(p1PropertyColumn.get(), p2PropertyColumn.get()));
+        
         this.sqlgGraph.tx().commit();
 
-
-        this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
-                "P1",
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
+                "A",
                 new HashMap<>() {{
-                    put("name", PropertyType.STRING);
+                    put("uid", PropertyType.STRING);
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Set.of("name")),
+                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
-                "name");
+                "int1");
+        Partition p1 = a.ensureListPartitionWithSubPartitionExists("int1", "1,2,3,4,5", PartitionType.LIST, "int2");
+        Partition p2 = a.ensureListPartitionWithSubPartitionExists("int2", "6,7,8,9,10", PartitionType.LIST, "int2");
 
-        System.out.println("asd");
+        Partition p1_1 = p1.ensureListPartitionWithSubPartitionExists("int11", "1,2,3,4,5", PartitionType.LIST, "int3");
+        Partition p1_2 = p1.ensureListPartitionWithSubPartitionExists("int12", "6,7,8,9,10", PartitionType.LIST, "int3");
+        Partition p2_1 = p2.ensureListPartitionWithSubPartitionExists("int21", "1,2,3,4,5", PartitionType.LIST, "int3");
+        Partition p2_2 = p2.ensureListPartitionWithSubPartitionExists("int22", "6,7,8,9,10", PartitionType.LIST, "int3");
+
+        p1_1.ensureListPartitionExists("int111", "1,2,3,4,5");
+        p1_1.ensureListPartitionExists("int112", "6,7,8,9,10");
+        p1_2.ensureListPartitionExists("int121", "1,2,3,4,5");
+        p1_2.ensureListPartitionExists("int122", "6,7,8,9,10");
+        p2_1.ensureListPartitionExists("int211", "1,2,3,4,5");
+        p2_1.ensureListPartitionExists("int212", "6,7,8,9,10");
+        p2_2.ensureListPartitionExists("int221", "1,2,3,4,5");
+        p2_2.ensureListPartitionExists("int222", "6,7,8,9,10");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "int1", 1, "int2", 1, "int3", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "uid", UUID.randomUUID().toString(), "int1", 5, "int2", 5, "int3", 5);
+
+        this.sqlgGraph.tx().commit();
+        System.out.println("running...");
         long l = 1000 * 60 * 60 * 5;
         Thread.sleep(l);
     }

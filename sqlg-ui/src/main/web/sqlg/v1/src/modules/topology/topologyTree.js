@@ -64,9 +64,34 @@ function TopologyTree(ignore) {
 
     return {
         oninit: ({attrs: {actions}}) => {
-            defaultOptions.selectedItemCallBack = (item) => {
-                actions.retrieveSchemaDetails(item);
+            $.Topic('/sqlg-ui/refreshTree').subscribe((message) => {
+                actions.retrieveTopologyTree(message["selectedTreeId"]);
                 m.redraw();
+            });
+            defaultOptions.selectedItemCallBack = (item) => {
+                if (item !== undefined && item !== null) {
+                    if (item.indent === 0) {
+                        //schemas
+                        actions.retrieveSchemasFromTree(item);
+                    } else  if (item.indent === 1) {
+                        //schema
+                        actions.retrieveSchemaDetailsFromTree(item);
+                    } else  if (item.indent === 2) {
+                        if (item.value === 'vertex') {
+                            //vertex labels
+                            actions.retrieveVertexLabelsFromTree(item);
+                        } else if (item.value === 'edge') {
+                            //edge labels
+                            actions.retrieveEdgeLabelsFromTree(item);
+                        } else {
+                            throw Error("Unknown item value. Expected 'vertex' or 'edge, instead got " + item.value);
+                        }
+                    } else if (item.indent === 3) {
+                        //vertex or edge labels
+                        actions.retrieveAbstractLabelDetailsFromTree(item);
+                    }
+                    m.redraw();
+                }
             }
         },
         onupdate: ({attrs: {actions}}) => {

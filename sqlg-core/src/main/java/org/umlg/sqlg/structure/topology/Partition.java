@@ -378,7 +378,7 @@ public class Partition implements TopologyInf {
             PartitionType partitionType,
             String partitionExpression) {
 
-        Preconditions.checkArgument(!parentPartition.getAbstractLabel().getSchema().isSqlgSchema(), "createRangeSubPartitionWithPartition may not be called for \"%s\"", Topology.SQLG_SCHEMA);
+        Preconditions.checkArgument(!parentPartition.getAbstractLabel().getSchema().isSqlgSchema(), "createListSubPartitionWithPartition may not be called for \"%s\"", Topology.SQLG_SCHEMA);
         Partition partition = new Partition(sqlgGraph, parentPartition, name, in, partitionType, partitionExpression);
         partition.createListPartitionOnDb();
         TopologyManager.addSubPartition(sqlgGraph, partition);

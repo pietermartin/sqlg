@@ -1742,9 +1742,9 @@ public class Schema implements TopologyInf {
 
     @Override
     public void remove(boolean preserveData) {
-        /*if (this.getName().equals(sqlgGraph.getSqlDialect().getPublicSchema()) && !preserveData){
-            throw new IllegalArgumentException("Public schema cannot be deleted");
-    	}*/
+        if (this.getName().equals(sqlgGraph.getSqlDialect().getPublicSchema()) && !preserveData){
+            throw new IllegalArgumentException(String.format("Public schema ('%s') cannot be deleted", sqlgGraph.getSqlDialect().getPublicSchema()));
+    	}
         getTopology().removeSchema(this, preserveData);
     }
 

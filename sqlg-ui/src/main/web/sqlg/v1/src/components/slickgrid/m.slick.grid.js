@@ -1557,7 +1557,7 @@ function SlickGrid2() {
                         //check if the item is a new item, if so just remove it
                         let wasNew = false;
 
-                        if (grid.getData().getNewItemsIdx()[item.id] !== undefined) {
+                        if (grid.getData().getNewItemsIdx !== undefined && grid.getData().getNewItemsIdx()[item.id] !== undefined) {
                             grid.getData().deleteItem(item.id);
                             let indexToDelete = newItems.indexOf(item);
                             newItems.splice(indexToDelete, 1);
@@ -2459,7 +2459,7 @@ function SlickGrid2() {
                         style: {height: "100%", "z-index": 1}
                     }, [
                         m("div.slick-grid-spinner", [
-                            m("i.fal", {class: isDownloading ? "downloading fa-spinner fa-spin" : "fa-spinner fa-spin"}),
+                            m("i.fas", {class: isDownloading ? "downloading fa-spinner fa-spin" : "fa-spinner fa-spin"}),
                         ]),
                         m("div.text-muted.slick-grid-download-size", m("p", vnode.attrs.downloadSize !== 0 ? vnode.attrs.downloadSize : ""))
                     ]) :

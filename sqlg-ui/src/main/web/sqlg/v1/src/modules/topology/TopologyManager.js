@@ -3,6 +3,121 @@ import SqlgGlobal from "../SqlgGlobal";
 
 const TopologyManager = {
 
+    deleteSchema: (schemaName, abstractLabelName, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName",
+            params: {
+                schemaName: schemaName
+            }
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deleteAbstractLabel: (schemaName, abstractLabelName, vertexOrEdge, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge",
+            params: {
+                schemaName: schemaName,
+                abstractLabel: abstractLabelName,
+                vertexOrEdge: vertexOrEdge
+            }
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deleteSchemas: (schemas, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema",
+            body: schemas
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deleteVertexLabels: (schemaName, vertexLabels, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/vertexLabels",
+            params: {
+                schemaName: schemaName
+            },
+            body: vertexLabels
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deleteEdgeLabels: (schemaName, edgeLabels, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/edgeLabels",
+            params: {
+                schemaName: schemaName
+            },
+            body: edgeLabels
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deleteProperties: (schemaName, abstractLabelName, vertexOrEdge, properties, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge/properties",
+            params: {
+                schemaName: schemaName,
+                abstractLabel: abstractLabelName,
+                vertexOrEdge: vertexOrEdge,
+            },
+            body: properties
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deleteIndexes: (schemaName, abstractLabelName, vertexOrEdge, indexes, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge/indexes",
+            params: {
+                schemaName: schemaName,
+                abstractLabel: abstractLabelName,
+                vertexOrEdge: vertexOrEdge,
+            },
+            body: indexes
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deletePartitions: (schemaName, abstractLabelName, vertexOrEdge, partitions, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge/partitions",
+            params: {
+                schemaName: schemaName,
+                abstractLabel: abstractLabelName,
+                vertexOrEdge: vertexOrEdge,
+            },
+            body: partitions
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
     retrieveGraphData: (callBack, callBackError) => {
         m.request({
             method: "GET",
@@ -13,10 +128,10 @@ const TopologyManager = {
             callBackError(e);
         })
     },
-    retrieveSchema: (selectedItemId, callBack, callBackError) => {
+    retrieveTopologyTree: (selectedItemId, callBack, callBackError) => {
         m.request({
             method: "GET",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "topologyTree",
             params: {selectedItemId: selectedItemId},
         }).then(function (data) {
             callBack(data);
@@ -24,21 +139,69 @@ const TopologyManager = {
             callBackError(e);
         })
     },
-    retrieveSchemaDetails: (item, callBack, callBackError) => {
+    retrieveVertexLabels: (schemaName, callBack, callBackError) => {
+        let url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "schemas/:schemaName/vertexLabels";
+        m.request({
+            method: "GET",
+            url: url,
+            params: {
+                schemaName: schemaName
+            }
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    retrieveEdgeLabels: (schemaName, callBack, callBackError) => {
+        let url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "schemas/:schemaName/edgeLabels";
+        m.request({
+            method: "GET",
+            url: url,
+            params: {
+                schemaName: schemaName
+            }
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    retrieveAbstractLabelDetails: (schemaName, abstractLabel, vertexOrEdge, callBack, callBackError) => {
         let url;
-        let params = {};
-        switch (item.indent) {
-            case 1:
-                url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName";
-                params.schemaName = item.schemaName;
-                break;
-            case 3:
-                url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge";
-                params.schemaName = item.schemaName;
-                params.abstractLabel = item.abstractLabel;
-                params.vertexOrEdge = item.vertexOrEdge;
-                break;
-        }
+        let params = {
+            schemaName: schemaName,
+            abstractLabel: abstractLabel,
+            vertexOrEdge: vertexOrEdge
+        };
+        url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge";
+        m.request({
+            method: "GET",
+            url: url,
+            params: params
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    retrieveSchemas: (callBack, callBackError) => {
+        let url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "schemas";
+        m.request({
+            method: "GET",
+            url: url
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    retrieveSchemaDetails: (schemaName, callBack, callBackError) => {
+        let url;
+        let params = {
+            schemaName: schemaName
+        };
+        url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName";
         m.request({
             method: "GET",
             url: url,

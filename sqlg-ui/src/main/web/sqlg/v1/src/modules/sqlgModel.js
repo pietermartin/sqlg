@@ -7,9 +7,18 @@ import merge from 'mergerino';
 import TopologyManager from "./topology/TopologyManager";
 
 export const ELEMENT_TYPE = Object.freeze({
+    SCHEMAS: "Schemas",
     SCHEMA: "Schema",
+    VERTEX_LABELS: "VertexLabels",
     VERTEX_LABEL: "VertexLabel",
+    EDGE_LABELS: "EdgeLabels",
     EDGE_LABEL: "EdgeLabel"
+});
+
+export const PARTITION_TYPE = Object.freeze({
+    NONE: "NONE",
+    LIST: "LIST",
+    RANGE: "RANGE"
 });
 
 function SqlgModel() {
@@ -59,6 +68,9 @@ function SqlgModel() {
                 jdbcUrl: "",
                 username: "",
                 selectedTab: "topology",
+                editable: false,
+                footerNotificationExpanded: false,
+                notifications: [],
                 treeData: {
                     data: [],
                     refreshData: false,
@@ -67,21 +79,54 @@ function SqlgModel() {
                     refreshActive: false
                 },
                 topologyDetails: {
-                    type: "",
+                    elementType: undefined,
                     schema: {
-                        label: "",
                         name: "",
-                        ID: "",
                         createdOn: "",
                     },
+                    schemas: {
+                        data: {columns: [], data: []},
+                        checkedItems: [],
+                        refresh: false,
+                        rebuild: false,
+                        spin: false,
+                        collapsed: true,
+                        deletedItems: []
+                    },
+                    vertexLabels: {
+                        data: {columns: [], data: []},
+                        checkedItems: [],
+                        refresh: false,
+                        rebuild: false,
+                        spin: false,
+                        collapsed: true,
+                        deletedItems: []
+                    },
+                    edgeLabels: {
+                        data: {columns: [], data: []},
+                        checkedItems: [],
+                        refresh: false,
+                        rebuild: false,
+                        spin: false,
+                        collapsed: true,
+                        deletedItems: []
+                    },
                     abstractLabel: {
+                        schemaName: "",
+                        label: "",//This is 'VertexLabel' or 'EdgeLabel'
+                        name: "",
+                        identifierData: {
+                            userDefinedIdentifiers: false,
+                            identifiers: []
+                        },
                         propertyColumns: {
                             data: {columns: [], data: []},
                             checkedItems: [],
                             refresh: false,
                             rebuild: false,
                             spin: false,
-                            collapsed: true
+                            collapsed: true,
+                            deletedItems: []
                         },
                         indexes: {
                             data: {columns: [], data: []},
@@ -89,7 +134,8 @@ function SqlgModel() {
                             refresh: false,
                             rebuild: false,
                             spin: false,
-                            collapsed: true
+                            collapsed: true,
+                            deletedItems: []
                         },
                         inEdgeLabels: {
                             data: {columns: [], data: []},
@@ -107,13 +153,16 @@ function SqlgModel() {
                             spin: false,
                             collapsed: true
                         },
+                        partitionType: PARTITION_TYPE.NONE,
+                        partitionExpression: "",
                         partitions: {
-                            data: {columns: [], data: []},
+                            data: {columns: [], data: [], options: {}},
                             checkedItems: [],
                             refresh: false,
                             rebuild: false,
                             spin: false,
-                            collapsed: true
+                            collapsed: true,
+                            deletedItems: []
                         },
                     }
                 }
@@ -121,6 +170,210 @@ function SqlgModel() {
         Actions: update => ({
             navigateTo: route => {
                 update(navTo(route))
+            },
+            toggleFooterNotification: () => {
+                let state = states();
+                document.querySelector('#main').style['grid-template-rows'] = `1fr 5px ${state.footerNotificationExpanded ? '20px' : '300px'}`;
+                update({
+                    footerNotificationExpanded: !state.footerNotificationExpanded
+                });
+            },
+            addNotification: (notification) => {
+                update({
+                    notifications: (notifications) => {
+                        let maxNotifications = 4;
+                        if (notifications.length < maxNotifications) {
+                            notifications.unshift(notification);
+                        } else {
+                            notifications.splice(maxNotifications - 1, 1);
+                            notifications.unshift(notification);
+                        }
+                        return notifications;
+                    }
+                });
+            },
+            editable: (edit) => {
+                update({
+                    editable: edit,
+                    topologyDetails: {
+                        abstractLabel: {
+                            propertyColumns: {
+                                data: {
+                                    columns: (columns) => {
+                                        if (edit === false) {
+                                            let index = -1;
+                                            for (let i = 0; i < columns.length; i++) {
+                                                let c = columns[i];
+                                                if (c.id === 'deletion') {
+                                                    index = i;
+                                                }
+                                            }
+                                            if (index > -1) {
+                                                columns.splice(index, 1);
+                                            }
+                                        }
+                                        return columns;
+                                    }
+                                },
+                                refresh: true,
+                                rebuild: true
+                            }
+                        }
+                    }
+                });
+            },
+            deleteSchema: () => {
+                let state = states();
+                TopologyManager.deleteSchema(
+                    state.topologyDetails.schema.name,
+                    () => {
+
+                    }, () => {
+
+                    });
+            },
+            deleteAbstractLabel: () => {
+                let state = states();
+                TopologyManager.deleteAbstractLabel(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.abstractLabel.label === 'VertexLabel' ? 'vertex' : 'edge',
+                    () => {
+
+                    }, () => {
+
+                    });
+            },
+            deleteSchemas: () => {
+                let state = states();
+                TopologyManager.deleteSchemas(
+                    state.topologyDetails.schemas.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                schemas: {
+                                    deletedItems: (deletedItems) => {
+                                        deletedItems.splice(0, deletedItems.length);
+                                        return deletedItems;
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
+            },
+            deleteVertexLabels: () => {
+                let state = states();
+                TopologyManager.deleteVertexLabels(
+                    state.topologyDetails.schema.name,
+                    state.topologyDetails.vertexLabels.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                vertexLabels: {
+                                    deletedItems: (deletedItems) => {
+                                        deletedItems.splice(0, deletedItems.length);
+                                        return deletedItems;
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
+            },
+            deleteEdgeLabels: () => {
+                let state = states();
+                TopologyManager.deleteEdgeLabels(
+                    state.topologyDetails.schema.name,
+                    state.topologyDetails.edgeLabels.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                edgeLabels: {
+                                    deletedItems: (deletedItems) => {
+                                        deletedItems.splice(0, deletedItems.length);
+                                        return deletedItems;
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
+            },
+            deleteProperties: () => {
+                let state = states();
+                TopologyManager.deleteProperties(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.elementType === ELEMENT_TYPE.VERTEX_LABEL ? "vertex" : "edge",
+                    state.topologyDetails.abstractLabel.propertyColumns.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                abstractLabel: {
+                                    propertyColumns: {
+                                        deletedItems: (deletedItems) => {
+                                            deletedItems.splice(0, deletedItems.length);
+                                            return deletedItems;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
+            },
+            deleteIndexes: () => {
+                let state = states();
+                TopologyManager.deleteIndexes(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.elementType === ELEMENT_TYPE.VERTEX_LABEL ? "vertex" : "edge",
+                    state.topologyDetails.abstractLabel.indexes.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                abstractLabel: {
+                                    indexes: {
+                                        deletedItems: (deletedItems) => {
+                                            deletedItems.splice(0, deletedItems.length);
+                                            return deletedItems;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
+            },
+            deletePartitions: () => {
+                let state = states();
+                TopologyManager.deletePartitions(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.elementType === ELEMENT_TYPE.VERTEX_LABEL ? "vertex" : "edge",
+                    state.topologyDetails.abstractLabel.partitions.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                abstractLabel: {
+                                    partitions: {
+                                        deletedItems: (deletedItems) => {
+                                            deletedItems.splice(0, deletedItems.length);
+                                            return deletedItems;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
             },
             retrieveGraphData: () => {
                 TopologyManager.retrieveGraphData((data) => {
@@ -140,13 +393,13 @@ function SqlgModel() {
                     });
                 })
             },
-            retrieveSchema: (selectedItemId) => {
+            retrieveTopologyTree: (selectedItemId) => {
                 update({
                     treeData: {
                         spin: true
                     },
                 });
-                TopologyManager.retrieveSchema(selectedItemId, function (result) {
+                TopologyManager.retrieveTopologyTree(selectedItemId, function (result) {
                     let selectedItem;
                     for (let i = 0; i < result.length; i++) {
                         if (result[i].id === selectedItemId) {
@@ -175,8 +428,11 @@ function SqlgModel() {
                     });
                 });
             },
-            retrieveSchemaDetails: (item) => {
+            retrieveSchemasFromTree: (item) => {
                 if (item !== null) {
+                    if (item.indent !== 0) {
+                        throw Error("Expected indent === 0");
+                    }
                     let state = states();
                     let toUpdate = navTo([Route.Sqlg({
                         treeId: item.id,
@@ -186,119 +442,370 @@ function SqlgModel() {
                         selectedTreeItem: item
                     }
                     toUpdate.topologyDetails = {
+                        elementType: ELEMENT_TYPE.SCHEMAS
+                    };
+                    update(toUpdate);
+                    actions.retrieveSchemas();
+                }
+            },
+            retrieveSchemas: () => {
+                let toUpdate = {
+                    topologyDetails: {
+                        elementType: ELEMENT_TYPE.SCHEMAS,
+                        schemas: (schemas) => {
+                            schemas.data.data.splice(0, schemas.data.data.length);
+                            schemas.spin = true;
+                            schemas.refresh = true;
+                            return schemas;
+                        }
+                    }
+                };
+                update(toUpdate);
+                TopologyManager.retrieveSchemas(details => {
+                    update({
+                        topologyDetails: {
+                            elementType: ELEMENT_TYPE.SCHEMAS,
+                            schemas: (schemas) => {
+                                schemas.rebuild = schemas.data.columns !== details.data.columns;
+                                schemas.data.columns = details.columns;
+                                schemas.data.data.splice(0, schemas.data.data.length);
+                                for (let i = 0; i < details.data.length; i++) {
+                                    schemas.data.data.push(details.data[i]);
+                                }
+                                schemas.spin = false;
+                                schemas.refresh = true;
+                                return schemas;
+                            }
+                        }
+                    })
+                }, (e) => {
+
+                });
+            },
+            retrieveSchemaDetailsFromTree: (item) => {
+                if (item !== null) {
+                    if (item.indent !== 1) {
+                        throw Error("Expected indent === 1");
+                    }
+                    let state = states();
+                    let toUpdate = navTo([Route.Sqlg({
+                        treeId: item.id,
+                        view: state.selectedTab
+                    })]);
+                    toUpdate.treeData = {
+                        selectedTreeItem: item
+                    }
+                    toUpdate.topologyDetails = {
+                        elementType: ELEMENT_TYPE.SCHEMA
+                    }
+                    update(toUpdate);
+                    actions.retrieveSchemaDetails(item.schemaName);
+                }
+            },
+            retrieveSchemaDetails: (schemaName) => {
+                let toUpdate = {
+                    topologyDetails: {
+                        elementType: ELEMENT_TYPE.SCHEMA,
+                        schema: {
+                            name: "",
+                            createdOn: "",
+                        }
+                    }
+                };
+                update(toUpdate);
+                TopologyManager.retrieveSchemaDetails(schemaName, details => {
+                    update({
+                        topologyDetails: {
+                            elementType: ELEMENT_TYPE.SCHEMA,
+                            schema: {
+                                name: details.schema.schemaName,
+                                createdOn: details.schema.createdOn
+                            }
+                        }
+                    })
+                });
+            },
+            retrieveVertexLabelsFromTree: (item) => {
+                if (item !== null) {
+                    if (item.indent !== 2) {
+                        throw Error("Expected indent === 2");
+                    }
+                    let state = states();
+                    let toUpdate = navTo([Route.Sqlg({
+                        treeId: item.id,
+                        view: state.selectedTab
+                    })]);
+                    toUpdate.treeData = {
+                        selectedTreeItem: item
+                    }
+                    toUpdate.topologyDetails = {
+                        elementType: ELEMENT_TYPE.VERTEX_LABELS
+                    };
+                    update(toUpdate);
+                    actions.retrieveVertexLabels(item.parents[1]);
+                }
+            },
+            retrieveVertexLabels: (schemaName) => {
+                let toUpdate = {
+                    topologyDetails: {
+                        elementType: ELEMENT_TYPE.VERTEX_LABELS,
+                        schema: {
+                            name: schemaName
+                        },
+                        vertexLabels: (vertexLabels) => {
+                            vertexLabels.data.data.splice(0, vertexLabels.data.data.length);
+                            vertexLabels.spin = true;
+                            vertexLabels.refresh = true;
+                            return vertexLabels;
+                        }
+                    }
+                };
+                update(toUpdate);
+                TopologyManager.retrieveVertexLabels(schemaName, details => {
+                    update({
+                        topologyDetails: {
+                            elementType: ELEMENT_TYPE.VERTEX_LABELS,
+                            schema: {
+                                name: schemaName
+                            },
+                            vertexLabels: (vertexLabels) => {
+                                vertexLabels.rebuild = vertexLabels.data.columns !== details.data.columns;
+                                vertexLabels.data.columns = details.columns;
+                                vertexLabels.data.data.splice(0, vertexLabels.data.data.length);
+                                for (let i = 0; i < details.data.length; i++) {
+                                    vertexLabels.data.data.push(details.data[i]);
+                                }
+                                vertexLabels.spin = false;
+                                vertexLabels.refresh = true;
+                                return vertexLabels;
+                            }
+                        }
+                    })
+                }, (e) => {
+
+                });
+            },
+            retrieveEdgeLabelsFromTree: (item) => {
+                if (item !== null) {
+                    if (item.indent !== 2) {
+                        throw Error("Expected indent === 2");
+                    }
+                    let state = states();
+                    let toUpdate = navTo([Route.Sqlg({
+                        treeId: item.id,
+                        view: state.selectedTab
+                    })]);
+                    toUpdate.treeData = {
+                        selectedTreeItem: item
+                    }
+                    toUpdate.topologyDetails = {
+                        elementType: ELEMENT_TYPE.EDGE_LABELS
+                    };
+                    update(toUpdate);
+                    actions.retrieveEdgeLabels(item.parents[1]);
+                }
+            },
+            retrieveEdgeLabels: (schemaName) => {
+                let toUpdate = {
+                    topologyDetails: {
+                        elementType: ELEMENT_TYPE.EDGE_LABELS,
+                        edgeLabels: (edgeLabels) => {
+                            edgeLabels.data.data.splice(0, edgeLabels.data.data.length);
+                            edgeLabels.spin = true;
+                            edgeLabels.refresh = true;
+                            return edgeLabels;
+                        }
+                    }
+                };
+                update(toUpdate);
+                TopologyManager.retrieveEdgeLabels(schemaName, details => {
+                    update({
+                        topologyDetails: {
+                            elementType: ELEMENT_TYPE.EDGE_LABELS,
+                            edgeLabels: (edgeLabels) => {
+                                edgeLabels.rebuild = edgeLabels.data.columns !== details.data.columns;
+                                edgeLabels.data.columns = details.columns;
+                                edgeLabels.data.data.splice(0, edgeLabels.data.data.length);
+                                for (let i = 0; i < details.data.length; i++) {
+                                    edgeLabels.data.data.push(details.data[i]);
+                                }
+                                edgeLabels.spin = false;
+                                edgeLabels.refresh = true;
+                                return edgeLabels;
+                            }
+                        }
+                    })
+                }, (e) => {
+
+                });
+            },
+            retrieveAbstractLabelDetailsFromTree: (item) => {
+                if (item !== null) {
+                    if (item.indent !== 3) {
+                        throw Error("Expected indent === 3");
+                    }
+                    let state = states();
+                    let toUpdate = navTo([Route.Sqlg({
+                        treeId: item.id,
+                        view: state.selectedTab
+                    })]);
+                    toUpdate.treeData = {
+                        selectedTreeItem: item
+                    }
+                    update(toUpdate);
+                    actions.retrieveAbstractLabelDetails(item.schemaName, item.abstractLabel, item.vertexOrEdge);
+                }
+            },
+            retrieveAbstractLabelDetails: (schemaName, abstractLabel, vertexOrEdge) => {
+                let toUpdate = {
+                    topologyDetails: {
+                        elementType: vertexOrEdge === 'vertex' ? ELEMENT_TYPE.VERTEX_LABEL : ELEMENT_TYPE.EDGE_LABEL,
                         abstractLabel: {
+                            schemaName: "",
+                            label: "",
+                            name: "",
+                            identifierData: (identifierData) => {
+                                identifierData.identifiers.splice(0, identifierData.identifiers.length);
+                                return identifierData;
+                            },
                             propertyColumns: (propertyColumns) => {
                                 propertyColumns.data.data.splice(0, propertyColumns.data.data.length);
-                                propertyColumns.spin = (item.indent === 3);
+                                propertyColumns.spin = true;
                                 propertyColumns.refresh = true;
                                 return propertyColumns;
                             },
                             indexes: (indexes) => {
                                 indexes.data.data.splice(0, indexes.data.data.length);
-                                indexes.spin = (item.indent === 3);
+                                indexes.spin = true;
                                 indexes.refresh = true;
                                 return indexes;
                             },
                             inEdgeLabels: (inEdgeLabels) => {
                                 inEdgeLabels.data.data.splice(0, inEdgeLabels.data.data.length);
-                                inEdgeLabels.spin = (item.indent === 3);
+                                inEdgeLabels.spin = true;
                                 inEdgeLabels.refresh = true;
                                 return inEdgeLabels;
                             },
                             outEdgeLabels: (outEdgeLabels) => {
                                 outEdgeLabels.data.data.splice(0, outEdgeLabels.data.data.length);
-                                outEdgeLabels.spin = (item.indent === 3);
+                                outEdgeLabels.spin = true;
                                 outEdgeLabels.refresh = true;
                                 return outEdgeLabels;
+                            },
+                            partitionType: PARTITION_TYPE.NONE,
+                            partitionExpression: "",
+                            partitions: (partitions) => {
+                                partitions.data.data.splice(0, partitions.data.data.length);
+                                partitions.spin = true;
+                                partitions.refresh = true;
+                                partitions.options = undefined;
+                                return partitions;
                             }
                         }
                     }
-                    update(toUpdate);
-                    if (item.indent === 3) {
-                        TopologyManager.retrieveSchemaDetails(item, details => {
-                            if (details.schema !== undefined) {
-                                details.type = ELEMENT_TYPE.SCHEMA;
-                            } else if (details.abstractLabel !== undefined) {
-                                if (details.abstractLabel.label === ELEMENT_TYPE.VERTEX_LABEL) {
-                                    details.type = ELEMENT_TYPE.VERTEX_LABEL;
-                                } else if (details.abstractLabel.label === ELEMENT_TYPE.EDGE_LABEL) {
-                                    details.type = ELEMENT_TYPE.EDGE_LABEL;
-                                } else {
-                                    throw new Error("Unknown type returned from the server. " + details.type);
-                                }
-                            } else {
-                                throw new Error("Unknown type returned from the server. " + details.type);
+                };
+                update(toUpdate);
+                TopologyManager.retrieveAbstractLabelDetails(
+                    schemaName,
+                    abstractLabel,
+                    vertexOrEdge,
+                    details => {
+                        if (details.abstractLabel.label !== ELEMENT_TYPE.VERTEX_LABEL &&
+                            details.abstractLabel.label !== ELEMENT_TYPE.EDGE_LABEL
+                        ) {
+                            throw new Error("Unknown type returned from the server. " + details.type);
+                        }
+                        update({
+                            topologyDetails: {
+                                elementType: details.abstractLabel.label,
+                                schema: undefined,
+                                abstractLabel: {
+                                    schemaName: details.abstractLabel.schemaName,
+                                    label: details.abstractLabel.label,
+                                    name: details.abstractLabel.name,
+                                    identifierData: (identifierData) => {
+                                        identifierData.userDefinedIdentifiers = details.abstractLabel.identifierData.userDefinedIdentifiers;
+                                        identifierData.identifiers.splice(0, identifierData.identifiers.length);
+                                        for (let i = 0; i < details.abstractLabel.identifierData.identifiers.length; i++) {
+                                            identifierData.identifiers.push(details.abstractLabel.identifierData.identifiers[i]);
+                                        }
+                                        return identifierData;
+                                    },
+                                    propertyColumns: (propertyColumns) => {
+                                        propertyColumns.rebuild = propertyColumns.data.columns !== details.abstractLabel.propertyColumns.columns;
+                                        propertyColumns.data.columns = details.abstractLabel.propertyColumns.columns;
+                                        propertyColumns.data.data.splice(0, propertyColumns.data.data.length);
+                                        for (let i = 0; i < details.abstractLabel.propertyColumns.data.length; i++) {
+                                            propertyColumns.data.data.push(details.abstractLabel.propertyColumns.data[i]);
+                                        }
+                                        propertyColumns.spin = false;
+                                        propertyColumns.refresh = true;
+                                        return propertyColumns;
+                                    },
+                                    indexes: (indexes) => {
+                                        indexes.rebuild = indexes.data.columns !== details.abstractLabel.indexes.columns;
+                                        indexes.data.columns = details.abstractLabel.indexes.columns;
+                                        indexes.data.data.splice(0, indexes.data.data.length);
+                                        for (let i = 0; i < details.abstractLabel.indexes.data.length; i++) {
+                                            indexes.data.data.push(details.abstractLabel.indexes.data[i]);
+                                        }
+                                        indexes.spin = false;
+                                        indexes.refresh = true;
+                                        return indexes;
+                                    },
+                                    partitionType: details.abstractLabel.partitionType,
+                                    partitionExpression: details.abstractLabel.partitionExpression,
+                                    partitions: (partitions) => {
+                                        partitions.rebuild = partitions.data.columns !== details.abstractLabel.partitions.columns;
+                                        partitions.data.columns = details.abstractLabel.partitions.columns;
+                                        partitions.data.options = details.abstractLabel.partitions.options;
+                                        partitions.data.data.splice(0, partitions.data.data.length);
+                                        for (let i = 0; i < details.abstractLabel.partitions.data.length; i++) {
+                                            partitions.data.data.push(details.abstractLabel.partitions.data[i]);
+                                        }
+                                        partitions.spin = false;
+                                        partitions.refresh = true;
+                                        return partitions;
+                                    }
+                                },
                             }
+                        });
+                        if (details.abstractLabel.label === 'VertexLabel') {
                             update({
                                 topologyDetails: {
-                                    type: "AbstractLabel",
                                     abstractLabel: {
-                                        label: details.abstractLabel.label,
-                                        name: details.abstractLabel.name,
-                                        identifierData: details.abstractLabel.identifierData,
-                                        propertyColumns: (propertyColumns) => {
-                                            propertyColumns.rebuild = propertyColumns.data.columns !== details.abstractLabel.propertyColumns.columns;
-                                            propertyColumns.data.columns = details.abstractLabel.propertyColumns.columns;
-                                            propertyColumns.data.data.splice(0, propertyColumns.data.data.length);
-                                            for (let i = 0; i < details.abstractLabel.propertyColumns.data.length; i++) {
-                                                propertyColumns.data.data.push(details.abstractLabel.propertyColumns.data[i]);
+                                        inEdgeLabels: (inEdgeLabels) => {
+                                            inEdgeLabels.rebuild = inEdgeLabels.data.columns !== details.abstractLabel.inEdgeLabels.columns;
+                                            inEdgeLabels.data.columns = details.abstractLabel.inEdgeLabels.columns;
+                                            inEdgeLabels.data.data.splice(0, inEdgeLabels.data.data.length);
+                                            for (let i = 0; i < details.abstractLabel.inEdgeLabels.data.length; i++) {
+                                                inEdgeLabels.data.data.push(details.abstractLabel.inEdgeLabels.data[i]);
                                             }
-                                            propertyColumns.spin = false;
-                                            propertyColumns.refresh = true;
-                                            return propertyColumns;
+                                            inEdgeLabels.spin = false;
+                                            inEdgeLabels.refresh = true;
+                                            return inEdgeLabels;
                                         },
-                                        indexes: (indexes) => {
-                                            indexes.rebuild = indexes.data.columns !== details.abstractLabel.indexes.columns;
-                                            indexes.data.columns = details.abstractLabel.indexes.columns;
-                                            indexes.data.data.splice(0, indexes.data.data.length);
-                                            for (let i = 0; i < details.abstractLabel.indexes.data.length; i++) {
-                                                indexes.data.data.push(details.abstractLabel.indexes.data[i]);
+                                        outEdgeLabels: (outEdgeLabels) => {
+                                            outEdgeLabels.rebuild = outEdgeLabels.data.columns !== details.abstractLabel.outEdgeLabels.columns;
+                                            outEdgeLabels.data.columns = details.abstractLabel.outEdgeLabels.columns;
+                                            outEdgeLabels.data.data.splice(0, outEdgeLabels.data.data.length);
+                                            for (let i = 0; i < details.abstractLabel.outEdgeLabels.data.length; i++) {
+                                                outEdgeLabels.data.data.push(details.abstractLabel.outEdgeLabels.data[i]);
                                             }
-                                            indexes.spin = false;
-                                            indexes.refresh = true;
-                                            return indexes;
+                                            outEdgeLabels.spin = false;
+                                            outEdgeLabels.refresh = true;
+                                            return outEdgeLabels;
                                         }
                                     },
                                 }
                             });
-                            if (details.abstractLabel.label === 'VertexLabel') {
-                                update({
-                                    topologyDetails: {
-                                        abstractLabel: {
-                                            inEdgeLabels: (inEdgeLabels) => {
-                                                inEdgeLabels.rebuild = inEdgeLabels.data.columns !== details.abstractLabel.inEdgeLabels.columns;
-                                                inEdgeLabels.data.columns = details.abstractLabel.inEdgeLabels.columns;
-                                                inEdgeLabels.data.data.splice(0, inEdgeLabels.data.data.length);
-                                                for (let i = 0; i < details.abstractLabel.inEdgeLabels.data.length; i++) {
-                                                    inEdgeLabels.data.data.push(details.abstractLabel.inEdgeLabels.data[i]);
-                                                }
-                                                inEdgeLabels.spin = false;
-                                                inEdgeLabels.refresh = true;
-                                                return inEdgeLabels;
-                                            },
-                                            outEdgeLabels: (outEdgeLabels) => {
-                                                outEdgeLabels.rebuild = outEdgeLabels.data.columns !== details.abstractLabel.outEdgeLabels.columns;
-                                                outEdgeLabels.data.columns = details.abstractLabel.outEdgeLabels.columns;
-                                                outEdgeLabels.data.data.splice(0, outEdgeLabels.data.data.length);
-                                                for (let i = 0; i < details.abstractLabel.outEdgeLabels.data.length; i++) {
-                                                    outEdgeLabels.data.data.push(details.abstractLabel.outEdgeLabels.data[i]);
-                                                }
-                                                outEdgeLabels.spin = false;
-                                                outEdgeLabels.refresh = true;
-                                                return outEdgeLabels;
-                                            }
-                                        },
-                                    }
-                                });
 
-                            } else {
+                        } else {
 
-                            }
-                        }, e => {
-                            console.log(e);
-                        });
-                    }
-                }
+                        }
+                    }, e => {
+                        console.log(e);
+                    });
             },
             setTreeRefresh: refresh => {
                 update({

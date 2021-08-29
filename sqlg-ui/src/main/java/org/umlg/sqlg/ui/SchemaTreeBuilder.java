@@ -102,31 +102,7 @@ public class SchemaTreeBuilder {
                     }
                 }
             }
-
-//            Collection<VertexLabel> vertexLabels = schema.getVertexLabels().values();
-//            for (VertexLabel vertexLabel: vertexLabels) {
-//                ObjectNode vertexLabelRow = createVertexLabelTreeItem(objectMapper, schema, vertexLabel);
-//                vertexLabelChildrenArrayNode.add(vertexLabelRow.get("id"));
-//                SlickLazyTree vertexLabelSlickLazyTree = SlickLazyTree.from(vertexLabelRow);
-//                allEntries.add(vertexLabelSlickLazyTree);
-//                vertexLabelSlickLazyTree.setParent(schemaSlickLazyTree);
-//                vertexLabelSlickLazyTree.setChildrenIsLoaded(true);
-//                schemaSlickLazyTree.addChild(vertexLabelSlickLazyTree);
-//                ArrayNode propertyColumnChildrenArrayNode = (ArrayNode) vertexLabelRow.get("children");
-//
-//                Collection<PropertyColumn> propertyColumns = vertexLabel.getProperties().values();
-//                for (PropertyColumn propertyColumn : propertyColumns) {
-//                    ObjectNode propertyColumnRow = createPropertyColumnTreeItem(objectMapper, schema, vertexLabel, propertyColumn);
-//                    propertyColumnChildrenArrayNode.add(propertyColumnRow.get("id"));
-//                    SlickLazyTree propertyColumnSlickLazyTree = SlickLazyTree.from(propertyColumnRow);
-//                    allEntries.add(propertyColumnSlickLazyTree);
-//                    propertyColumnSlickLazyTree.setParent(schemaSlickLazyTree);
-//                    propertyColumnSlickLazyTree.setChildrenIsLoaded(true);
-//                    vertexLabelSlickLazyTree.addChild(propertyColumnSlickLazyTree);
-//                }
-//            }
         }
-
         return Pair.of(allEntries, roots);
     }
 
@@ -210,7 +186,7 @@ public class SchemaTreeBuilder {
         vertexLabelRow.put("vertexOrEdge", "vertex");
         vertexLabelRow.put("indent", 3);
         vertexLabelRow.put("_collapsed", true);
-        vertexLabelRow.put("isLeaf", false);
+        vertexLabelRow.put("isLeaf", true);
         vertexLabelRow.put("parent", metaSchemaId + "_" + schema.getName() + "_" + metaVertexEdge);
         ArrayNode parents = objectMapper.createArrayNode();
         parents.add(metaSchemaId);
@@ -238,7 +214,7 @@ public class SchemaTreeBuilder {
         edgeLabelRow.put("vertexOrEdge", "edge");
         edgeLabelRow.put("indent", 3);
         edgeLabelRow.put("_collapsed", true);
-        edgeLabelRow.put("isLeaf", false);
+        edgeLabelRow.put("isLeaf", true);
         edgeLabelRow.put("parent", metaSchemaId + "_" + schema.getName() + "_" + metaVertexEdge);
         ArrayNode parents = objectMapper.createArrayNode();
         parents.add(metaSchemaId);
