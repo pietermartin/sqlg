@@ -1056,6 +1056,14 @@ public class VertexLabel extends AbstractLabel {
         this.getSchema().getTopology().lock();
         if (!uncommittedRemovedProperties.contains(propertyColumn.getName())) {
             uncommittedRemovedProperties.add(propertyColumn.getName());
+            for (Index index : getIndexes().values()) {
+                for (PropertyColumn property : index.getProperties()) {
+                    if (property.getName().equals(propertyColumn.getName())) {
+                        index.remove(preserveData);
+                        break;
+                    }
+                }
+            }
             TopologyManager.removeVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());
             if (!preserveData) {
                 removeColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());

@@ -7,10 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -50,7 +47,7 @@ public class TestTopologyDelete extends BaseTest {
         String[] schemas = new String[]{null, "MySchema"};
         boolean[] preserve = new boolean[]{true, false};
         boolean[] rollback = new boolean[]{true, false};
-//        String[] schemas = new String[]{null};
+//        String[] schemas = new String[]{"MySchema"};
 //        boolean[] preserve = new boolean[]{true};
 //        boolean[] rollback = new boolean[]{true};
         for (String s : schemas) {
@@ -284,6 +281,78 @@ public class TestTopologyDelete extends BaseTest {
 
                 Thread.sleep(1_000);
                 checkPropertyExistenceAfterDeletion(sqlgGraph1, schema);
+                assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
+                assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
+            }
+        }
+    }
+
+    @Test
+    public void testDeleteVertexPropertyWithIndex() throws Exception {
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            String fullLabel = getLabel(schema, "A");
+            Schema _schema;
+            if (!schema.equals(sqlgGraph1.getTopology().getPublicSchema().getName())) {
+                _schema = sqlgGraph.getTopology().ensureSchemaExist(schema);
+            } else {
+                _schema = sqlgGraph.getTopology().getPublicSchema();
+            }
+            VertexLabel vertexLabel = _schema.ensureVertexLabelExist("A", new HashMap<>() {{
+                put("name", PropertyType.STRING);
+                put("p1", PropertyType.STRING);
+                put("p2", PropertyType.STRING);
+            }});
+            Optional<PropertyColumn> propertyColumnOptional = vertexLabel.getProperty("p1");
+            Assert.assertTrue(propertyColumnOptional.isPresent());
+            Index i1 = vertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(propertyColumnOptional.get()));
+
+            Vertex a1 = this.sqlgGraph.addVertex(T.label, fullLabel, "name", "A", "p1", "val1", "p2", "val2");
+
+            assertTrue(a1.property("p1").isPresent());
+            assertTrue(a1.property("p2").isPresent());
+            checkPropertyExistenceBeforeDeletion(schema, i1);
+            this.sqlgGraph.tx().commit();
+
+            Object aid = a1.id();
+
+            checkPropertyExistenceBeforeDeletion(schema, i1);
+            a1 = this.sqlgGraph.traversal().V(aid).next();
+            assertTrue(a1.property("p1").isPresent());
+            assertTrue(a1.property("p2").isPresent());
+
+            TopologyListenerTest tlt = new TopologyListenerTest();
+            this.sqlgGraph.getTopology().registerListener(tlt);
+
+            VertexLabel lbl = this.sqlgGraph.getTopology().getVertexLabel(schema, "A").orElseThrow(IllegalStateException::new);
+            PropertyColumn p1 = lbl.getProperty("p1").orElseThrow(IllegalStateException::new);
+            p1.remove(false);
+            PropertyColumn p2 = lbl.getProperty("p2").orElseThrow(IllegalStateException::new);
+            p2.remove(true);
+
+            assertTrue(tlt.receivedEvent(p1, TopologyChangeAction.DELETE));
+            assertTrue(tlt.receivedEvent(p2, TopologyChangeAction.DELETE));
+
+            checkPropertyExistenceAfterDeletion(this.sqlgGraph, schema, i1);
+            /* doesn't work because the topology allTableCache is only updated after commit
+            a1=this.sqlgGraph.traversal().V(aid).next();
+			assertFalse(a1.property("p1").isPresent());
+			assertFalse(a1.property("p2").isPresent());
+			*/
+            if (rollback) {
+                this.sqlgGraph.tx().rollback();
+                checkPropertyExistenceBeforeDeletion(schema, i1);
+            } else {
+                TopologyListenerTest tlt1 = new TopologyListenerTest();
+                sqlgGraph1.getTopology().registerListener(tlt1);
+                this.sqlgGraph.tx().commit();
+                checkPropertyExistenceAfterDeletion(this.sqlgGraph, schema, i1);
+
+                a1 = this.sqlgGraph.traversal().V(aid).next();
+                assertFalse(a1.property("p1").isPresent());
+                assertFalse(a1.property("p2").isPresent());
+
+                Thread.sleep(1_000);
+                checkPropertyExistenceAfterDeletion(sqlgGraph1, schema, i1);
                 assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
                 assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
             }
@@ -1306,6 +1375,10 @@ public class TestTopologyDelete extends BaseTest {
     }
 
     private void checkPropertyExistenceBeforeDeletion(String schema) throws Exception {
+        checkPropertyExistenceBeforeDeletion(schema, null);
+    }
+
+    private void checkPropertyExistenceBeforeDeletion(String schema, Index index) throws Exception {
         Optional<VertexLabel> olbl = this.sqlgGraph.getTopology().getVertexLabel(schema, "A");
         assertNotNull(olbl);
         assertTrue(olbl.isPresent());
@@ -1315,6 +1388,13 @@ public class TestTopologyDelete extends BaseTest {
         assertEquals(1L, this.sqlgGraph.topology().V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, schema)
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
                 .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).has(SQLG_SCHEMA_PROPERTY_NAME, "p1").count().next().longValue());
+
+        if (index != null) {
+            assertEquals(1L, this.sqlgGraph.topology().V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
+                    .out(SQLG_SCHEMA_VERTEX_INDEX_EDGE).has(SQLG_SCHEMA_INDEX_NAME, index.getName()).count().next().longValue());
+            assertTrue(indexExistsInSQL(schema, VERTEX_PREFIX + "A", index.getName()));
+        }
 
         assertEquals(1L, this.sqlgGraph.topology().V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, schema)
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
@@ -1326,6 +1406,10 @@ public class TestTopologyDelete extends BaseTest {
     }
 
     private void checkPropertyExistenceAfterDeletion(SqlgGraph g, String schema) throws Exception {
+        checkPropertyExistenceAfterDeletion(g, schema, null);
+    }
+
+    private void checkPropertyExistenceAfterDeletion(SqlgGraph g, String schema, Index index) throws Exception {
         Optional<VertexLabel> olbl = g.getTopology().getVertexLabel(schema, "A");
         assertNotNull(olbl);
         assertTrue(olbl.isPresent());
@@ -1336,6 +1420,13 @@ public class TestTopologyDelete extends BaseTest {
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
                 .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).has(SQLG_SCHEMA_PROPERTY_NAME, "p1").count().next().longValue());
 
+        if (index != null) {
+            assertEquals(0L, g.topology().V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
+                    .out(SQLG_SCHEMA_VERTEX_INDEX_EDGE).has(SQLG_SCHEMA_INDEX_NAME, index.getName()).count().next().longValue());
+            assertFalse(indexExistsInSQL(schema, VERTEX_PREFIX + "A", index.getName()));
+        }
+
         assertEquals(0L, g.topology().V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, schema)
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
                 .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).has(SQLG_SCHEMA_PROPERTY_NAME, "p2").count().next().longValue());
@@ -1344,4 +1435,6 @@ public class TestTopologyDelete extends BaseTest {
         assertTrue(columnExistsInSQL(schema, VERTEX_PREFIX + "A", "p2"));
 
     }
+
+
 }
