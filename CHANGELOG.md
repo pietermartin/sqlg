@@ -1,5 +1,7 @@
 ##2.1.1
 
+*Fix bug [#417](https://github.com/pietermartin/sqlg/issues/417). Fix issue with dangling Index meta data on property deletions
+
 *Fix bug [#416](https://github.com/pietermartin/sqlg/issues/416). Fixed bug with first iteration state
 
 *Fix bug [#415](https://github.com/pietermartin/sqlg/issues/415). Optimize InjectStep and create `SqlTraverser` in `SqlgStartStepBarrier`
