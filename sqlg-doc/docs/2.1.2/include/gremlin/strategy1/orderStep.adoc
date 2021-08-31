@@ -1,0 +1,66 @@
+==== Order Step
+
+link:{tinkerpop-docs}#order-step[`Order Step`]
+
+Sqlg optimizes the OrderGlobalStep if the data that the order applies to can be retrieved in one sql statement.
+If not then order the ordering occurs in java via the OrderGlobalStep as per normal.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testOrderBy() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "a");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "b");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A")
+            .order().by("name", Order.incr).by("surname", Order.decr);
+    printTraversalForm(traversal);
+
+    List<Vertex> vertices = traversal.toList();
+    for (Vertex v : vertices) {
+        System.out.println(v.value("name") + " " + v.value("surname"));
+    }
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-order-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), OrderGlobalStep([[value(name), incr], [value(surname), decr]])]
+----
+
+[[anchor-after-optimization-order-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathOrderRangeLabel]]
+----
+
+.output
+----
+a c
+a b
+a a
+b c
+b b
+b a
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."surname" AS "alias2",
+	"public"."V_A"."name" AS "alias3"
+FROM
+	"public"."V_A"
+ORDER BY
+	 "alias3" ASC,
+	 "alias2" DESC
+----

@@ -1,0 +1,257 @@
+== Batch Mode
+
+Sqlg supports 3 distinct batch modes. Normal, streaming and streaming with lock. Batch modes are only implemented on Postgresql.
+Batch mode is activated on the transaction object itself. After every `commit` the batchMode needs to be reactivated.
+
+Sqlg introduces an extra method on the transaction, `flush()`.
+
+* In normal batch mode `flush()` will send all the data to Postgresql, assign id(s) and clear the cache.
+* In streaming mode `flush()` will close the OutputStream that the data has been written to.
+* In streaming mode with lock `flush()` will close the OutputStream that the data has been written to and assign id(s).
+
+The Postgresql 'https://www.postgresql.org/docs/current/static/sql-copy.html[copy]' command is used to bulk insert data.
+
+=== Normal batch mode
+
+In normal batch mode the standard TinkerPop modification api can be used. Normal batch mode caches all modifications in memory
+and on `commit()` or `flush()` sends the modifications to the server.
+
+Because all modifications are held in memory it is important to call `commit()` or `flush()` to prevent an `OutOfMemoryError`.
+
+In batch mode vertices and edges returned from `Graph.addVertex` and `vertex.addEdge` respectively do *not* yet have their id(s) assigned to them.
+This is because the new vertices and edges are cached in memory and are only sent to Postgresql on `commit()` or `flush()`.
+After `commit()` or `flush()` the new vertices and edges have their id(s) assigned.
+
+The transaction must be manually placed in normal batch mode. i.e. `SqlgGraph.tx().normalBatchModeOn()` must occur before any batch processing.
+After every `commit()` the transaction reverts to a regular transaction and must be placed in normal batch mode again
+for batch processing to continue.
+
+Vertices and edges can be created and updated and removed as per normal making normal batch mode easy to use.
+
+[NOTE]
+Sqlg does not query the cache. If a gremlin query is executed while in batch mode the batch is first flushed.
+Take care not to query the graph while in batch mode as flushing often will defeat the purpose of batching in the first place.
+
+[source,java,options="nowrap"]
+.custom api
+----
+sqlgGraph.tx().normalBatchModeOn();
+sqlgGraph.tx().flush();
+----
+
+Create 10 000 000 Persons each with a car. 20 000 000 vertices and 10 000 000 edges in total.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showNormalBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    this.sqlgGraph.tx().normalBatchModeOn();
+    for (int i = 1; i <= 10_000_000; i++) {
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
+        Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
+        person.addEdge("drives", car);
+        if (i % 100_000 == 0) { # <1>
+            this.sqlgGraph.tx().flush(); # <1>
+        }
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+<1> To preserve memory `commit` or `flush` every so often.
+
+.output without edge foreign keys
+----
+Time taken: 0:05:48.889
+----
+
+.output with edge foreign keys
+----
+Time taken: 0:02:33.313
+----
+
+.memory
+image:sqlg/normalBatchModeMemory.png[image of tinkerpop-classic]
+
+=== Streaming batch mode
+
+Streaming batch writes any new vertex or edge immediately to Postgresql via its `stdin` api. I.e. the data is written
+directly to a Postgresql jdbc driver OutputStream.
+
+Streaming batch mode does *not* use the `Graph.addVertex` method. Instead `SqlgGraph.streamVertex` is defined.
+
+The transaction must be placed in streaming batch mode manually before any streaming batch modification can happen. `SqlgGraph.tx().streamingBatchModeOn()`
+After every `commit()` the transaction reverts to normal mode and must be placed into streaming batch mode again
+for streaming batch mode to continue.
+
+The benefit of streaming mode is that the memory consumption is very low as nothing is cached. It is also somewhat faster than
+the normal batch mode (+/- 25% faster).
+
+However the caveat is that, per transaction/thread only one label/table can be written between consecutive calls to `SqlgTransaction.flush()`.
+Further it is not possible to assign an id to the vertex or element. As such the `SqlgGraph.streamVertex` method returns void.
+
+[source,java,options="nowrap"]
+.custom api
+----
+sqlgGraph.tx().streamingBatchModeOn();
+----
+
+Create 10 000 000 Persons and 10 000 000 cars.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showStreamingBatchMode() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    //enable streaming mode
+    this.sqlgGraph.tx().streamingBatchModeOn();
+    for (int i = 1; i <= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+    }
+    this.sqlgGraph.tx().flush(); # <1>
+    for (int i = 1; i <= 10_000_000; i++) {
+        this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+<1> flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
+
+.output
+----
+Time taken: 0:00:42.014
+----
+
+.memory
+image:sqlg/streamingBatchModeMemory.png[image of tinkerpop-classic]
+
+=== Bulk edge creation
+
+To create an edge via the normal api a handle to the `Vertex` is needed.
+This is not always the case. In particula if the `SqlgGraph.streamVertex` api is used no handle to the `Vertex` is returned.
+
+For this scenario there is a bulk edge creation method.
+
+[source,java,options="nowrap"]
+----
+public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+----
+
+* `outLabel` and `inLabel` specifies the out and in vertex labels that the edges will be between.
+* `edgeLabel` is the label of the edges to be created.
+* `idFields` specifies the fields that uniquely identify the out and in vertex.
+* `uids` are the actual unique identifies for each out/in vertex pairing.
+
+Sqlg will then first copy the `uids` into a temporary table. Then it joins the temporary table on the out and in vertex tables
+to retrieve the in and out ids.
+These ids are then inserted into the edge table.
+All this happens on Postgresql, having minimal processing and memory impact on the java process.
+
+The unique identifiers still have to be kept in memory, but its is not necessary to have the actual out and in vertices in memory.
+
+[NOTE]
+The unique identifiers do not need to be the vertices's id. It can be any property as long as it is unique.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i <= 10; i++) {
+        List<Pair<String, String>> identifiers = new ArrayList<>();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int j = 1; j <= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + count, "personUid", String.valueOf(count));
+        }
+        this.sqlgGraph.tx().flush();
+        for (int j = 1; j <= 1_000_000; j++) {
+            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + count, "carUid", String.valueOf(count));
+            identifiers.add(Pair.of(String.valueOf(count), String.valueOf(count++)));
+        }
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.bulkAddEdges("Person", "Car", "drives", Pair.of("personUid", "carUid"), identifiers);
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println("Time taken: " + stopWatch.toString());
+}
+----
+
+.output (with edge foreign keys)
+----
+Time taken: 0:10:03.397
+----
+
+.output (without edge foreign keys)
+----
+Time taken: 0:03:45.951
+----
+
+.memory
+image:sqlg/bulkAddEdgesMemory.png[image of tinkerpop-classic]
+
+=== Streaming with lock batch mode
+
+Streaming with lock batch mode is similar to streaming batch mode. The difference being that the label/table being written to is
+locked. Locking the table ensures that no concurrent changes will occur on the table. This allows Sqlg to query the id sequence and
+assigned ids to the elements.
+
+This means that the normal `Vertex vertex = graph.addVertex(...)` method can be used. This is useful if a pointer to the new vertices are needed.
+
+The transaction must be placed into streaming with lock batch mode manually before any streaming with lock batch modification can happen.
+`SqlgGraph.tx().streamingWithLockBatchModeOn()` After every `commit()` the transaction reverts to normal mode and must
+be placed into streaming batch mode again for streaming batch mode to continue.
+
+[source,java,options="nowrap"]
+.custom api
+----
+sqlgGraph.tx().streamingWithLockBatchModeOn();
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showStreamingWithLockBulkEdgeCreation() {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+    int count = 0;
+    for (int i = 1; i <= 10; i++) {
+        List<Vertex> persons = new ArrayList<>();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
+        for (int j = 1; j <= 1_000_000; j++) {
+            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + count);
+            persons.add(person);
+        }
+        this.sqlgGraph.tx().flush();
+        List<Vertex> cars = new ArrayList<>();
+        for (int j = 1; j <= 1_000_000; j++) {
+            Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + count++);
+            cars.add(car);
+        }
+        this.sqlgGraph.tx().flush();
+        Iterator<Vertex> carIter = cars.iterator();
+        for (Vertex person : persons) {
+            person.addEdge("drives", carIter.next());
+        }
+        this.sqlgGraph.tx().commit();
+    }
+    stopWatch.stop();
+    System.out.println(stopWatch.toString());
+}
+----
+
+.output without edge foreign keys
+----
+Time taken: 0:02:42.363
+----
+
+.memory
+image:sqlg/streamingBatchModeWithLockMemory.png[image of tinkerpop-classic]
