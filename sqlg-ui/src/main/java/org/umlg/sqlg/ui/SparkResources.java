@@ -17,6 +17,8 @@ public class SparkResources {
         delete("/sqlg/data/v1/schema/:schemaName/:abstractLabel/:vertexOrEdge", (req, res) -> SchemaResource.deleteAbstractLabel(req));
         delete("/sqlg/data/v1/schema/:schemaName/:abstractLabel/:vertexOrEdge/properties", (req, res) -> SchemaResource.deleteProperties(req));
         delete("/sqlg/data/v1/schema/:schemaName/:abstractLabel/:vertexOrEdge/indexes", (req, res) -> SchemaResource.deleteIndexes(req));
+        delete("/sqlg/data/v1/schema/:schemaName/:abstractLabel/vertex/inEdgeLabels", (req, res) -> SchemaResource.deleteInEdgeLabels(req));
+        delete("/sqlg/data/v1/schema/:schemaName/:abstractLabel/vertex/outEdgeLabels", (req, res) -> SchemaResource.deleteOutEdgeLabels(req));
         delete("/sqlg/data/v1/schema/:schemaName/:abstractLabel/:vertexOrEdge/partitions", (req, res) -> SchemaResource.deletePartitions(req));
         delete("/sqlg/data/v1/schema", (req, res) -> SchemaResource.deleteSchemas(req));
         delete("/sqlg/data/v1/schema/:schemaName/vertexLabels", (req, res) -> SchemaResource.deleteVertexLabels(req));

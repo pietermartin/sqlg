@@ -221,52 +221,85 @@ function AbstractLabelDetail(ignore) {
                     ]) : m("div")
                 ),
                 (state.topologyDetails.abstractLabel.label === ELEMENT_TYPE.VERTEX_LABEL ? [
-                        m("div.schema-header",
-                            m("div.ms-1.mt-1.mb-1",
-                                m(Button, {
-                                    class: "bg-info",
-                                    icon: "fas " + (state.topologyDetails.abstractLabel.inEdgeLabels.collapsed ? "fa-angle-right" : "fa-angle-down"),
-                                    text: "In edge labels",
-                                    attrs: {
-                                        "data-bs-toggle": "collapse",
-                                        "data-bs-target": "#inEdgeLabelCollapse"
+                            m("div.schema-header",
+                                m("div.ms-1.mt-1.mb-1",
+                                    m(Button, {
+                                        class: "bg-info",
+                                        icon: "fas " + (state.topologyDetails.abstractLabel.inEdgeLabels.collapsed ? "fa-angle-right" : "fa-angle-down"),
+                                        text: "In edge labels",
+                                        attrs: {
+                                            "data-bs-toggle": "collapse",
+                                            "data-bs-target": "#inEdgeLabelCollapse"
+                                        }
+                                    })
+                                )
+                            ),
+                            m("div#inEdgeLabelCollapse.collapse.schema-details-grid.ms-1.me-1",
+                                m(SlickGrid2, {
+                                    id: 'inEdgeLabelsGrid',
+                                    refreshData: state.topologyDetails.abstractLabel.inEdgeLabels.refresh,
+                                    rebuildGrid: state.topologyDetails.abstractLabel.inEdgeLabels.rebuild,
+                                    showSpinner: state.topologyDetails.abstractLabel.inEdgeLabels.spin,
+                                    data: state.topologyDetails.abstractLabel.inEdgeLabels.data,
+                                    deletedItems: state.topologyDetails.abstractLabel.inEdgeLabels.deletedItems,
+                                    options: {
+                                        deletionCheckBox: state.editable
+                                    },
+                                    deletedItemsCallBack: function (data) {
+                                        m.redraw();
                                     }
-                                })
-                            )
-                        ),
-                        m("div#inEdgeLabelCollapse.collapse.schema-details-grid.ms-1.me-1",
-                            m(SlickGrid2, {
-                                id: 'inEdgeLabelsGrid',
-                                refreshData: state.topologyDetails.abstractLabel.inEdgeLabels.refresh,
-                                rebuildGrid: state.topologyDetails.abstractLabel.inEdgeLabels.rebuild,
-                                showSpinner: state.topologyDetails.abstractLabel.inEdgeLabels.spin,
-                                data: state.topologyDetails.abstractLabel.inEdgeLabels.data,
-                            })
-                        ),
-                        m("div.schema-header",
-                            m("div.ms-1.mt-1.mb-1",
-                                m(Button, {
-                                    class: "bg-info",
-                                    icon: "fas " + (state.topologyDetails.abstractLabel.outEdgeLabels.collapsed ? "fa-angle-right" : "fa-angle-down"),
-                                    text: "Out edge labels",
-                                    attrs: {
-                                        "data-bs-toggle": "collapse",
-                                        "data-bs-target": "#outEdgeLabelCollapse"
+                                }),
+                                state.editable ? m(ButtonPanel, {justify: "left"}, [
+                                    m(Button, {
+                                        class: "bg-danger",
+                                        icon: "fas fa-minus-circle",
+                                        text: "Delete",
+                                        enabled: state.topologyDetails.abstractLabel.inEdgeLabels.deletedItems.length > 0,
+                                        onclick: actions.deleteInEdgeLabels
+                                    })
+                                ]) : m("div")
+                            ),
+                            m("div.schema-header",
+                                m("div.ms-1.mt-1.mb-1",
+                                    m(Button, {
+                                        class: "bg-info",
+                                        icon: "fas " + (state.topologyDetails.abstractLabel.outEdgeLabels.collapsed ? "fa-angle-right" : "fa-angle-down"),
+                                        text: "Out edge labels",
+                                        attrs: {
+                                            "data-bs-toggle": "collapse",
+                                            "data-bs-target": "#outEdgeLabelCollapse"
+                                        }
+                                    })
+                                )
+                            ),
+                            m("div#outEdgeLabelCollapse.collapse.schema-details-grid.ms-1.me-1",
+                                m(SlickGrid2, {
+                                    id: 'outEdgeLabelsGrid',
+                                    refreshData: state.topologyDetails.abstractLabel.outEdgeLabels.refresh,
+                                    rebuildGrid: state.topologyDetails.abstractLabel.outEdgeLabels.rebuild,
+                                    showSpinner: state.topologyDetails.abstractLabel.outEdgeLabels.spin,
+                                    data: state.topologyDetails.abstractLabel.outEdgeLabels.data,
+                                    deletedItems: state.topologyDetails.abstractLabel.outEdgeLabels.deletedItems,
+                                    options: {
+                                        deletionCheckBox: state.editable
+                                    },
+                                    deletedItemsCallBack: function (data) {
+                                        m.redraw();
                                     }
-                                })
-                            )
-                        ),
-                        m("div#outEdgeLabelCollapse.collapse.schema-details-grid.ms-1.me-1",
-                            m(SlickGrid2, {
-                                id: 'outEdgeLabelsGrid',
-                                refreshData: state.topologyDetails.abstractLabel.outEdgeLabels.refresh,
-                                rebuildGrid: state.topologyDetails.abstractLabel.outEdgeLabels.rebuild,
-                                showSpinner: state.topologyDetails.abstractLabel.outEdgeLabels.spin,
-                                data: state.topologyDetails.abstractLabel.outEdgeLabels.data,
-                            })
-                        ),
-                    ] :
-                    m("div")),
+                                }),
+                                state.editable ? m(ButtonPanel, {justify: "left"}, [
+                                    m(Button, {
+                                        class: "bg-danger",
+                                        icon: "fas fa-minus-circle",
+                                        text: "Delete",
+                                        enabled: state.topologyDetails.abstractLabel.outEdgeLabels.deletedItems.length > 0,
+                                        onclick: actions.deleteOutEdgeLabels
+                                    })
+                                ]) : m("div")
+                            ),
+                        ] :
+                        m("div")
+                ),
                 m("div.schema-header",
                     m("h4.ms-1.mt-1.mb-1", "Partition"),
                     m("div.row.g-0.mt-1.mb-1.ms-1.me-1", [

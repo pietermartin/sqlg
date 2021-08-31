@@ -115,7 +115,7 @@ function SqlgModel() {
                     },
                     abstractLabel: {
                         schemaName: "",
-                        label: "",//This is 'VertexLabel' or 'EdgeLabel'
+                        label: "VertexLabel",//This is 'VertexLabel' or 'EdgeLabel'
                         name: "",
                         identifierData: {
                             userDefinedIdentifiers: false,
@@ -145,7 +145,8 @@ function SqlgModel() {
                             refresh: false,
                             rebuild: false,
                             spin: false,
-                            collapsed: true
+                            collapsed: true,
+                            deletedItems: []
                         },
                         outEdgeLabels: {
                             data: {columns: [], data: []},
@@ -153,7 +154,8 @@ function SqlgModel() {
                             refresh: false,
                             rebuild: false,
                             spin: false,
-                            collapsed: true
+                            collapsed: true,
+                            deletedItems: []
                         },
                         partitionType: PARTITION_TYPE.NONE,
                         partitionExpression: "",
@@ -350,6 +352,52 @@ function SqlgModel() {
                             topologyDetails: {
                                 abstractLabel: {
                                     indexes: {
+                                        deletedItems: (deletedItems) => {
+                                            deletedItems.splice(0, deletedItems.length);
+                                            return deletedItems;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
+            },
+            deleteInEdgeLabels: () => {
+                let state = states();
+                TopologyManager.deleteInEdgeLabels(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.abstractLabel.inEdgeLabels.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                abstractLabel: {
+                                    inEdgeLabels: {
+                                        deletedItems: (deletedItems) => {
+                                            deletedItems.splice(0, deletedItems.length);
+                                            return deletedItems;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }, () => {
+
+                    });
+            },
+            deleteOutEdgeLabels: () => {
+                let state = states();
+                TopologyManager.deleteOutEdgeLabels(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.abstractLabel.outEdgeLabels.deletedItems.map(i => i.name),
+                    () => {
+                        update({
+                            topologyDetails: {
+                                abstractLabel: {
+                                    inEdgeLabels: {
                                         deletedItems: (deletedItems) => {
                                             deletedItems.splice(0, deletedItems.length);
                                             return deletedItems;
@@ -672,9 +720,9 @@ function SqlgModel() {
                     topologyDetails: {
                         elementType: vertexOrEdge === 'vertex' ? ELEMENT_TYPE.VERTEX_LABEL : ELEMENT_TYPE.EDGE_LABEL,
                         abstractLabel: {
-                            schemaName: "",
-                            label: "",
-                            name: "",
+                            // schemaName: "",
+                            // label: "",
+                            // name: "",
                             identifierData: (identifierData) => {
                                 identifierData.identifiers.splice(0, identifierData.identifiers.length);
                                 return identifierData;

@@ -102,6 +102,36 @@ const TopologyManager = {
             callBackError(e);
         })
     },
+    deleteInEdgeLabels: (schemaName, abstractLabelName, inEdgeLabels, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/vertex/inEdgeLabels",
+            params: {
+                schemaName: schemaName,
+                abstractLabel: abstractLabelName
+            },
+            body: inEdgeLabels
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    deleteOutEdgeLabels: (schemaName, abstractLabelName, outEdgeLabels, callBack, callBackError) => {
+        m.request({
+            method: "DELETE",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/vertex/outEdgeLabels",
+            params: {
+                schemaName: schemaName,
+                abstractLabel: abstractLabelName
+            },
+            body: outEdgeLabels
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
     deletePartitions: (schemaName, abstractLabelName, vertexOrEdge, partitions, callBack, callBackError) => {
         m.request({
             method: "DELETE",

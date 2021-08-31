@@ -742,6 +742,146 @@ public class SchemaResource {
         }
     }
 
+    public static ObjectNode deleteInEdgeLabels(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String body = req.body();
+        try {
+            Set<String> inEdgeLabelsToRemove = new HashSet<>();
+            ArrayNode inEdgeLabelsArrayNode = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode inEdgeLabelsJsonNode : inEdgeLabelsArrayNode) {
+                inEdgeLabelsToRemove.add(inEdgeLabelsJsonNode.asText());
+            }
+            Mono.just(new EdgeLabelHolder(schemaName, abstractLabel, inEdgeLabelsToRemove))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((inEdgeLabelHolder -> {
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        try {
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Start deleting inEdgeLabels, [%s]",
+                                            inEdgeLabelHolder.edgeLabelsToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(inEdgeLabelHolder.schemaName);
+                            if (schemaOptional.isPresent()) {
+                                Schema schema = schemaOptional.get();
+                                VertexLabel vertexLabel;
+                                Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(inEdgeLabelHolder.abstractLabel);
+                                if (vertexLabelOptional.isPresent()) {
+                                    vertexLabel = vertexLabelOptional.get();
+                                } else {
+                                    throw new IllegalStateException(String.format("VertexLabel '%s' not found.", inEdgeLabelHolder.abstractLabel));
+                                }
+                                for (String inEdgeLabel : inEdgeLabelHolder.edgeLabelsToRemove) {
+                                    for (EdgeRole edgeRole : vertexLabel.getInEdgeRoles().values()) {
+                                        if (edgeRole.getEdgeLabel().getName().equals(inEdgeLabel)) {
+                                            edgeRole.remove();
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            sqlgGraph.tx().commit();
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    inEdgeLabelHolder.schemaName,
+                                    inEdgeLabelHolder.abstractLabel,
+                                    "vertex",
+                                    "Deleted inEdgeLabels successfully.");
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Done deleting inEdgeLabels, [%s]",
+                                            inEdgeLabelHolder.edgeLabelsToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to delete inEdgeLabels!", e);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    inEdgeLabelHolder.schemaName,
+                                    inEdgeLabelHolder.abstractLabel,
+                                    "vertex",
+                                    "Failed to delete inEdgeLabels");
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Failed deleting inEdgeLabels, [%s], %s",
+                                            inEdgeLabelHolder.edgeLabelsToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage()));
+                        } finally {
+                            sqlgGraph.tx().rollback();
+                        }
+                    }));
+            return objectMapper.createObjectNode();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ObjectNode deleteOutEdgeLabels(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String body = req.body();
+        try {
+            Set<String> outEdgeLabelsToRemove = new HashSet<>();
+            ArrayNode outEdgeLabelsArrayNode = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode outEdgeLabelsJsonNode : outEdgeLabelsArrayNode) {
+                outEdgeLabelsToRemove.add(outEdgeLabelsJsonNode.asText());
+            }
+            Mono.just(new EdgeLabelHolder(schemaName, abstractLabel, outEdgeLabelsToRemove))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((edgeLabelHolder -> {
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        try {
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Start deleting inEdgeLabels, [%s]",
+                                            edgeLabelHolder.edgeLabelsToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(edgeLabelHolder.schemaName);
+                            if (schemaOptional.isPresent()) {
+                                Schema schema = schemaOptional.get();
+                                VertexLabel vertexLabel;
+                                Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(edgeLabelHolder.abstractLabel);
+                                if (vertexLabelOptional.isPresent()) {
+                                    vertexLabel = vertexLabelOptional.get();
+                                } else {
+                                    throw new IllegalStateException(String.format("VertexLabel '%s' not found.", edgeLabelHolder.abstractLabel));
+                                }
+                                for (String outEdgeLabel : edgeLabelHolder.edgeLabelsToRemove) {
+                                    for (EdgeRole edgeRole : vertexLabel.getOutEdgeRoles().values()) {
+                                        if (edgeRole.getEdgeLabel().getName().equals(outEdgeLabel)) {
+                                            edgeRole.remove();
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            sqlgGraph.tx().commit();
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    edgeLabelHolder.schemaName,
+                                    edgeLabelHolder.abstractLabel,
+                                    "vertex",
+                                    "Deleted inEdgeLabels successfully.");
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Done deleting inEdgeLabels, [%s]",
+                                            edgeLabelHolder.edgeLabelsToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to delete inEdgeLabels!", e);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    edgeLabelHolder.schemaName,
+                                    edgeLabelHolder.abstractLabel,
+                                    "vertex",
+                                    "Failed to delete inEdgeLabels");
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Failed deleting inEdgeLabels, [%s], %s",
+                                            edgeLabelHolder.edgeLabelsToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage()));
+                        } finally {
+                            sqlgGraph.tx().rollback();
+                        }
+                    }));
+            return objectMapper.createObjectNode();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static ObjectNode deleteIndexes(Request req) {
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
         String schemaName = req.params("schemaName");
@@ -995,6 +1135,35 @@ public class SchemaResource {
             IndexesHolder other = (IndexesHolder) o;
             return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) &&
                     this.vertexOrEdge.equals(other.vertexOrEdge) && this.indexesConcatenated.equals(other.indexesConcatenated);
+        }
+    }
+
+    private static class EdgeLabelHolder {
+        String schemaName;
+        String abstractLabel;
+        Set<String> edgeLabelsToRemove;
+        String edgeLabelsConcatenated;
+
+        private EdgeLabelHolder(String schemaName, String abstractLabel, Set<String> edgeLabelsToRemove) {
+            this.schemaName = schemaName;
+            this.abstractLabel = abstractLabel;
+            this.edgeLabelsToRemove = edgeLabelsToRemove;
+            this.edgeLabelsConcatenated = edgeLabelsToRemove.stream().reduce((a, b) -> a + b).orElse("");
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.schemaName + this.abstractLabel + this.edgeLabelsConcatenated).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof IndexesHolder)) {
+                return false;
+            }
+            EdgeLabelHolder other = (EdgeLabelHolder) o;
+            return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) &&
+                    this.edgeLabelsConcatenated.equals(other.edgeLabelsConcatenated);
         }
     }
 

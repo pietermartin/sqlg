@@ -204,7 +204,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     /**
-     * Out EdgeLabels are always in the same schema as the this VertexLabel' schema.
+     * Out EdgeLabels are always in the same schema as the 'this' VertexLabel' schema.
      * So the edgeLabelName must not contain the schema prefix
      *
      * @param edgeLabelName The edge label's name
@@ -217,7 +217,6 @@ public class VertexLabel extends AbstractLabel {
         }
         return Optional.empty();
     }
-
 
     /**
      * A getter for a map of all uncommitted {@link EdgeLabel}s. This may include {@link EdgeLabel}s that are already
