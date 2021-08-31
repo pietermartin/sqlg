@@ -1,0 +1,61 @@
+==== Limit Step
+
+link:{tinkerpop-docs}#limit-step[`Limit Step`]
+
+Sqlg optimizes `.limit(x)`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testLimitOnVertexLabels() {
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    Traversal<Vertex, String> traversal = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .limit(3)
+            .values("name");
+    printTraversalForm(traversal);
+
+    List<String> names = traversal.toList();
+    for (String name : names) {
+        System.out.println(name);
+    }
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-limit-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), OrderGlobalStep([[value(name), incr]]), RangeGlobalStep(0,3), PropertiesStep([name],value)]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-limit-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathOrderRangeLabel], PropertiesStep([name],value)]
+----
+
+.output
+----
+person0
+person1
+person10
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC
+LIMIT 3 OFFSET 0
+----

@@ -1,0 +1,42 @@
+===== Max Step
+
+link:{tinkerpop-docs}#max-step[`Max Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testMax() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3, "x", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0, "x", 1);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").max();
+    printTraversalForm(traversal);
+    Assert.assertEquals(3, traversal.next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-max-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MaxGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-max-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgMaxGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MAX("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+----
