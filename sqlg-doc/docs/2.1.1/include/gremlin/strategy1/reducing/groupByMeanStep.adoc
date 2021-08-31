@@ -1,0 +1,50 @@
+===== Group By and Mean Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverOnePropertyMean() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 4);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Double>> traversal = (DefaultTraversal) sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .<String, Double>group().by("name").by(__.values("age").mean());
+    printTraversalForm(traversal);
+    Map<String, Double> result = traversal.next();
+    Assert.assertFalse(traversal.hasNext());
+    Assert.assertTrue(result.containsKey("A"));
+    Assert.assertTrue(result.containsKey("B"));
+    Assert.assertEquals(2.0, result.get("A"), 0D);
+    Assert.assertEquals(3.0, result.get("B"), 0D);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-groupbymean-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep(value(name),[PropertiesStep([age],value), MeanGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-groupbymean-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."name" AS "alias1",
+	AVG("public"."V_Person"."age") AS "alias2", COUNT(1) AS "alias2_weight"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name"
+----

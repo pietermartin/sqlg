@@ -1,0 +1,121 @@
+===== Group By and Count Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupByCount() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "A", "name", "b", "age", 3);
+    this.sqlgGraph.tx().commit();
+    DefaultTraversal<Vertex, Map<Object, Long>> traversal = (DefaultTraversal<Vertex, Map<Object, Long>>) this.sqlgGraph.traversal().V().hasLabel("A")
+            .<Object, Long>group().by("name").by(__.count());
+    List<Map<Object, Long>> result = traversal.toList();
+    Assert.assertEquals(1, result.size());
+    Assert.assertTrue(result.get(0).containsKey("a"));
+    Assert.assertTrue(result.get(0).containsKey("b"));
+    Assert.assertEquals(2L, result.get(0).get("a"), 0);
+    Assert.assertEquals(1L, result.get(0).get("b"), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-groupbycount-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), GroupStep(value(name),[CountGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-groupbycount-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	COUNT(1) AS "count",
+	"public"."V_A"."name" AS "alias1"
+FROM
+	"public"."V_A"
+GROUP BY
+	"public"."V_A"."name"
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testDuplicatePathGroupCountQuery() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 1);
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2);
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+    Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 3);
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 1);
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 2);
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "b", "age", 3);
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    a1.addEdge("ab", b3);
+    a1.addEdge("ab", b4);
+    a1.addEdge("ac", c1);
+    a1.addEdge("ac", c2);
+    a1.addEdge("ac", c3);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.count());
+    Assert.assertEquals(2, traversal.getSteps().size());
+    Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+    Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgGroupStep);
+    Map<String, Long> result = traversal.next();
+    Assert.assertEquals(1, result.size());
+    Assert.assertTrue(result.containsKey("b"));
+    Assert.assertEquals(7, result.get("b"), 0);
+    Assert.assertFalse(traversal.hasNext());
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-groupbycount2-step]]
+.Before optimization
+----
+[GraphStep(vertex,[v[public.A:::1]]), VertexStep(OUT,[ab, ac],vertex), GroupStep(value(name),[CountGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-groupbycount2-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	COUNT(1) AS "count",
+	"public"."V_C"."name" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ac" ON "public"."V_A"."ID" = "public"."E_ac"."public.A__O" INNER JOIN
+	"public"."V_C" ON "public"."E_ac"."public.C__I" = "public"."V_C"."ID"
+WHERE
+	( "public"."V_A"."ID" = ?)
+GROUP BY
+	"public"."V_C"."name";
+
+SELECT
+	COUNT(1) AS "count",
+	"public"."V_B"."name" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+WHERE
+	( "public"."V_A"."ID" = ?)
+GROUP BY
+	"public"."V_B"."name";
+----

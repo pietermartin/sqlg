@@ -1,0 +1,172 @@
+==== Drop Step
+
+link:{tinkerpop-docs}#drop-step[`Drop Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testsDropStepTrivial() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A").drop();
+    printTraversalForm(traversal);
+
+    traversal.iterate();
+    this.sqlgGraph.tx().commit();
+
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-drop-step-trivial]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), DropStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-drop-step-trivial]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[]), SqlgDropStepBarrier]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+TRUNCATE ONLY "public"."V_A" <1>
+----
+
+<1> As vertex label 'A' has no in or out edges nor are there any predicates the `TRUNCATE` command is used.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testsDropStepWithHas() {
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("A")
+            .has("name", P.within("a1", "a2"))
+            .drop();
+    printTraversalForm(traversal);
+
+    traversal.iterate();
+    this.sqlgGraph.tx().commit();
+
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-drop-step-with-has]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A), name.within([a1, a2])]), DropStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-drop-step-with-has]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[]), SqlgDropStepBarrier]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+WITH todelete AS (
+SELECT
+	"public"."V_A"."ID" AS "alias1"
+FROM
+	"public"."V_A"
+WHERE
+	( "public"."V_A"."name" in (?, ?))
+)
+DELETE FROM "public"."V_A" a USING todelete
+WHERE a."ID" = todelete."alias1" <1>
+----
+
+<1> `DELETE` with a where clause.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testDropStepWithEdges() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    a1.addEdge("ab", b3);
+    this.sqlgGraph.tx().commit();
+
+    Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A").out().drop();
+    printTraversalForm(traversal);
+
+    traversal.iterate();
+    this.sqlgGraph.tx().commit();
+
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-drop-step-with-edges]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), DropStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-drop-step-with-edges]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[]), SqlgDropStepBarrier]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SET CONSTRAINTS ALL DEFERRED <1>
+
+WITH todelete AS (
+SELECT
+	"public"."V_B"."ID" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+)
+DELETE FROM "public"."V_B" a USING todelete
+WHERE a."ID" = todelete."alias1" <2>
+
+WITH todelete AS (
+SELECT
+	"public"."E_ab"."ID" AS "alias1"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" LEFT JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID"
+WHERE
+	("public"."V_B"."ID" IS NULL) AND
+	("public"."E_ab"."public.B__I" IS NOT NULL)
+)
+DELETE FROM "public"."E_ab" a USING todelete
+WHERE a."ID" = todelete."alias1" <3>
+
+SET CONSTRAINTS ALL IMMEDIATE <4>
+----
+
+<1> On postgresql we defer (disable) the foreign key constraints.
+<2> Delete the 'B' vertices first. As the edge constraints are disabled this is possible.
+<3> Delete the edges.
+<4>. Enable the foreign key constraints.

@@ -1,0 +1,42 @@
+===== Min Step
+
+link:{tinkerpop-docs}#min-step[`Min Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testMin() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").min();
+    Assert.assertEquals(0, traversal.next(), 0);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-min-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MinGlobalStep]
+----
+
+
+[options="nowrap"]
+[[anchor-after-optimization-min-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgMinGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MIN("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+----

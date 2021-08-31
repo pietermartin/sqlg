@@ -1,0 +1,42 @@
+===== Mean Step
+
+link:{tinkerpop-docs}#mean-step[`Mean Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testMean() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+    DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").mean();
+    printTraversalForm(traversal);
+    Double d = traversal.next();
+    Assert.assertEquals(1.5, d, 0D);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-mean-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), MeanGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-mean-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgAvgGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	AVG("public"."V_Person"."age") AS "alias1", COUNT(1) AS "alias1_weight"
+FROM
+	"public"."V_Person"
+----
