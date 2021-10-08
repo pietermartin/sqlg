@@ -19,6 +19,12 @@ public class NotificationManager {
         UI
     }
 
+    public enum Severity {
+        INFO,
+        SUCCESS,
+        FAILURE
+    }
+
     private NotificationManager() {
     }
 
@@ -76,6 +82,7 @@ public class NotificationManager {
         objectNode.put("vertexOrEdge", vertexOrEdge);
         objectNode.put("subType", "abstractLabel");
         objectNode.put("message", message);
+        objectNode.put("severity", "success");
         send(objectNode.toString());
     }
 

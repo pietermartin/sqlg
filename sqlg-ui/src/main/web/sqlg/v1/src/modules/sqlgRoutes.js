@@ -6,6 +6,7 @@ const {createMithrilRouter} = MeiosisRouting.routerHelper;
 
 export const Route = createRouteSegments([
     "Sqlg",
+    "SqlgLogin"
 ]);
 
 export const navTo = route => {
@@ -14,6 +15,7 @@ export const navTo = route => {
 
 const routeConfig = {
     Sqlg: "/sqlg-ui?treeId&view",
+    SqlgLogin: "/sqlg-ui/login",
 };
 export const router = createMithrilRouter({
     m,

@@ -3,15 +3,24 @@ package org.umlg.sqlg.ui.test;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
+import org.umlg.sqlg.ui.SqlgUI;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class SqlgUITest extends BaseTest {
+
+    @Before
+    public void before() throws Exception {
+        super.before();
+        SqlgUI.initialize();
+        SqlgUI.set(this.sqlgGraph);
+    }
 
     @Test
     public void test() throws InterruptedException {
@@ -46,14 +55,14 @@ public class SqlgUITest extends BaseTest {
         Optional<PropertyColumn> name2PropertyColumnOpt = test2VertexLabel.getProperty("name2");
         test1VertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(name1PropertyColumnOpt.get(), name2PropertyColumnOpt.get()));
 
-        EdgeLabel loveEdgeLabel = test1VertexLabel.ensureEdgeLabelExist("loves", test2VertexLabel, new HashMap<>(){{
+        EdgeLabel loveEdgeLabel = test1VertexLabel.ensureEdgeLabelExist("loves", test2VertexLabel, new HashMap<>() {{
             put("p1", PropertyType.STRING);
             put("p2", PropertyType.STRING);
         }});
         Optional<PropertyColumn> p1PropertyColumn = loveEdgeLabel.getProperty("p1");
         Optional<PropertyColumn> p2PropertyColumn = loveEdgeLabel.getProperty("p2");
         loveEdgeLabel.ensureIndexExists(IndexType.UNIQUE, List.of(p1PropertyColumn.get(), p2PropertyColumn.get()));
-        
+
         this.sqlgGraph.tx().commit();
 
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();

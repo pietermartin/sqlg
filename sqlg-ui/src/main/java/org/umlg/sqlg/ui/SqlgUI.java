@@ -5,15 +5,23 @@ import spark.Spark;
 
 public class SqlgUI {
 
-    private final SqlgGraph sqlgGraph;
+    private SqlgGraph sqlgGraph;
     public static SqlgUI INSTANCE = null;
 
-    public static void get(SqlgGraph sqlgGraph) {
+    public static void initialize() {
         if (INSTANCE == null) {
+            SparkResources.staticResources();
+            SparkResources.websocket();
             SparkResources.resources();
             Spark.awaitInitialization();
-            INSTANCE = new SqlgUI(sqlgGraph);
         }
+    }
+
+    public static void set(SqlgGraph sqlgGraph) {
+        if (INSTANCE == null) {
+            INSTANCE = new SqlgUI();
+        }
+        INSTANCE.setSqlgGraph(sqlgGraph);
     }
 
     public static void stop() {
@@ -21,11 +29,15 @@ public class SqlgUI {
         Spark.stop();
     }
 
-    private SqlgUI(SqlgGraph sqlgGraph) {
-        this.sqlgGraph = sqlgGraph;
+    private SqlgUI() {
     }
 
     public SqlgGraph getSqlgGraph() {
         return sqlgGraph;
     }
+
+    private void setSqlgGraph(SqlgGraph sqlgGraph) {
+        this.sqlgGraph = sqlgGraph;
+    }
+
 }

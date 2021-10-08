@@ -8,8 +8,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyType;
@@ -19,6 +21,7 @@ import org.umlg.sqlg.ui.util.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import spark.Request;
+import spark.Response;
 
 import java.io.IOException;
 import java.util.*;
@@ -26,6 +29,34 @@ import java.util.*;
 public class SchemaResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaResource.class);
+
+    public static ObjectNode login(Request req, Response res) {
+        ObjectMapper mapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+        String body = req.body();
+        ObjectNode requestBody;
+        try {
+            requestBody = (ObjectNode) mapper.readTree(body);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String username = requestBody.get("username").asText();
+        String password = requestBody.get("password").asText();
+
+        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+        String passwordInPropertyFile = sqlgGraph.configuration().getString("sqlg.ui.username." + username);
+        if (!StringUtils.isEmpty(passwordInPropertyFile) && passwordInPropertyFile.equals(password)) {
+            String token = AuthUtil.generateToken(username);
+            res.cookie("/", AuthUtil.SQLG_TOKEN, token, SqlgUI.INSTANCE.getSqlgGraph().configuration().getInt("sqlg.ui.cookie.expiry", 3600), true, false);
+            response.put("username", username);
+        } else {
+            res.status(HttpStatus.UNAUTHORIZED_401);
+            response.put("status", "error");
+            response.put("message", "authentication failed");
+            res.removeCookie("/", AuthUtil.SQLG_TOKEN);
+        }
+        return response;
+    }
 
     public static ObjectNode retrieveGraph() {
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
@@ -715,22 +746,22 @@ public class SchemaResource {
                                     propertyHolder.schemaName,
                                     propertyHolder.abstractLabel,
                                     propertyHolder.vertexOrEdge,
-                                    "Delete properties succesfully");
+                                    "Deleted properties successfully");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
                                             "Done deleting properties, [%s]",
                                             propertyHolder.propertiesToRemove.stream().reduce((a, b) -> a + "," + b).orElse("")));
                         } catch (Exception e) {
                             LOGGER.error("Failed to delete properties!", e);
+                            String m = String.format(
+                                    "Failed deleting properties, [%s], %s",
+                                    propertyHolder.propertiesToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage());
                             NotificationManager.INSTANCE.sendRefreshAbstractLabel(
                                     propertyHolder.schemaName,
                                     propertyHolder.abstractLabel,
                                     propertyHolder.vertexOrEdge,
-                                    "Failed to delete properties");
-                            NotificationManager.INSTANCE.sendNotification(
-                                    String.format(
-                                            "Failed deleting properties, [%s], %s",
-                                            propertyHolder.propertiesToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage()));
+                                    m);
+                            NotificationManager.INSTANCE.sendNotification(m);
 
                         } finally {
                             sqlgGraph.tx().rollback();

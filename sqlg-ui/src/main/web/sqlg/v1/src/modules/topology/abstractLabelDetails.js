@@ -11,7 +11,7 @@ function AbstractLabelDetail(ignore) {
             $.Topic('/sqlg-ui/abstractLabel').subscribe((message) => {
                 actions.retrieveAbstractLabelDetails(message.schema, message.abstractLabel, message.vertexOrEdge);
                 if (message.message !== undefined) {
-                    actions.message({message: message.message});
+                    actions.message({message: message.message, type: message.severity});
                 }
                 m.redraw();
             });

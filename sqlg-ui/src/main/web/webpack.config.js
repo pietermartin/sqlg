@@ -1,5 +1,6 @@
 const path = require('path');
 let webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     mode: 'development',
@@ -12,10 +13,11 @@ module.exports = {
             "$": "jquery",
             "jQuery": "jquery",
             Popper: ['popper.js', 'default']
-        })
+        }),
+        new HtmlWebpackPlugin()
     ],
     output: {
-        path: path.resolve(__dirname, 'dist/sqlg/v1'),
+        path: path.resolve(__dirname, 'dist/dist/sqlg/v1'),
         filename: 'sqlg.js',
         clean: true,
     },

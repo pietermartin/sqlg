@@ -65,8 +65,9 @@ function SqlgModel() {
         initial: Object.assign(
             navTo([Route.Sqlg({treeId: "", view: "topology"})]),
             {
+                loggedInUsername: undefined,
+                loggedInPassword: undefined,
                 toasts: [],
-                messages: [],
                 jdbcUrl: "",
                 username: "",
                 selectedTab: "topology",
@@ -175,14 +176,178 @@ function SqlgModel() {
             navigateTo: route => {
                 update(navTo(route))
             },
+            reset: () => {
+              update({
+                  loggedInUsername: undefined,
+                  loggedInPassword: undefined,
+                  toasts: [],
+                  jdbcUrl: "",
+                  username: "",
+                  selectedTab: "topology",
+                  editable: false,
+                  footerNotificationExpanded: false,
+                  notifications: [],
+                  treeData: {
+                      data: [],
+                      refreshData: false,
+                      spin: false,
+                      selectedTreeItem: undefined,
+                      refreshActive: false
+                  },
+                  topologyDetails: {
+                      elementType: undefined,
+                      schema: {
+                          name: "",
+                          createdOn: "",
+                      },
+                      schemas: {
+                          data: {columns: [], data: []},
+                          checkedItems: [],
+                          refresh: false,
+                          rebuild: false,
+                          spin: false,
+                          collapsed: true,
+                          deletedItems: []
+                      },
+                      vertexLabels: {
+                          data: {columns: [], data: []},
+                          checkedItems: [],
+                          refresh: false,
+                          rebuild: false,
+                          spin: false,
+                          collapsed: true,
+                          deletedItems: []
+                      },
+                      edgeLabels: {
+                          data: {columns: [], data: []},
+                          checkedItems: [],
+                          refresh: false,
+                          rebuild: false,
+                          spin: false,
+                          collapsed: true,
+                          deletedItems: []
+                      },
+                      abstractLabel: {
+                          schemaName: "",
+                          label: "VertexLabel",//This is 'VertexLabel' or 'EdgeLabel'
+                          name: "",
+                          identifierData: {
+                              userDefinedIdentifiers: false,
+                              identifiers: []
+                          },
+                          propertyColumns: {
+                              data: {columns: [], data: []},
+                              checkedItems: [],
+                              refresh: false,
+                              rebuild: false,
+                              spin: false,
+                              collapsed: true,
+                              deletedItems: []
+                          },
+                          indexes: {
+                              data: {columns: [], data: []},
+                              checkedItems: [],
+                              refresh: false,
+                              rebuild: false,
+                              spin: false,
+                              collapsed: true,
+                              deletedItems: []
+                          },
+                          inEdgeLabels: {
+                              data: {columns: [], data: []},
+                              checkedItems: [],
+                              refresh: false,
+                              rebuild: false,
+                              spin: false,
+                              collapsed: true,
+                              deletedItems: []
+                          },
+                          outEdgeLabels: {
+                              data: {columns: [], data: []},
+                              checkedItems: [],
+                              refresh: false,
+                              rebuild: false,
+                              spin: false,
+                              collapsed: true,
+                              deletedItems: []
+                          },
+                          partitionType: PARTITION_TYPE.NONE,
+                          partitionExpression: "",
+                          partitions: {
+                              data: {columns: [], data: [], options: {}},
+                              checkedItems: [],
+                              refresh: false,
+                              rebuild: false,
+                              spin: false,
+                              collapsed: true,
+                              deletedItems: []
+                          },
+                      }
+                  }
+              });
+            },
             message: (message) => {
                 update({
                     toasts: (toasts) => {
-                        toasts.push({id:Utils.uniqueId(), message: message.message})
+                        toasts.push({id: Utils.uniqueId(), message: message.message, type: message.type})
+                        return toasts;
+                    }
+                });
+            },
+            removeMessage: (item) => {
+                update({
+                    toasts: (toasts) => {
+                        let indexToRemove = -1;
+                        for (let i = 0; i < toasts.length; i++) {
+                            if (toasts[i].id === item.id) {
+                                indexToRemove = i;
+                                break;
+                            }
+                        }
+                        if (indexToRemove !== -1) {
+                            toasts.splice(indexToRemove, 1);
+                        }
                         return toasts;
                     }
                 });
 
+            },
+            loggedInUsername: (e) => {
+                update({loggedInUsername: e.currentTarget.value});
+            },
+            loggedInPassword: (e) => {
+                update({loggedInPassword: e.currentTarget.value});
+            },
+            login: () => {
+                let state = states();
+                TopologyManager.login(state.loggedInUsername, state.loggedInPassword, () => {
+                    actions.retrieveGraphData();
+                    actions.retrieveTopologyTree("");
+                    update({
+                        toasts: (toasts) => {
+                            toasts.push({
+                                id: Utils.uniqueId(),
+                                message: "Welcome",
+                                type: 'success'
+                            })
+                            return toasts;
+                        }
+                    });
+                }, (e) => {
+                    update({
+                        toasts: (toasts) => {
+                            toasts.push({
+                                id: Utils.uniqueId(),
+                                message: e.response.message,
+                                autohide: false,
+                                type: 'failure'
+                            })
+                            return toasts;
+                        }
+                    });
+                });
+                update({loggedInPassword: undefined});
+                actions.navigateTo(Route.Sqlg({treeId: "", view: "topology"}))
             },
             toggleFooterNotification: () => {
                 let state = states();
@@ -290,10 +455,24 @@ function SqlgModel() {
                                         return deletedItems;
                                     }
                                 }
+                            },
+                            toasts: (toasts) => {
+                                toasts.push({id: Utils.uniqueId(), message: "Submitted vertex label deletion"})
+                                return toasts;
                             }
                         });
-                    }, () => {
-
+                    }, (e) => {
+                        update({
+                            toasts: (toasts) => {
+                                toasts.push({
+                                    id: Utils.uniqueId(),
+                                    message: e.message,
+                                    autohide: false,
+                                    type: 'failure'
+                                })
+                                return toasts;
+                            }
+                        });
                     });
             },
             deleteEdgeLabels: () => {
@@ -324,6 +503,7 @@ function SqlgModel() {
                     state.topologyDetails.elementType === ELEMENT_TYPE.VERTEX_LABEL ? "vertex" : "edge",
                     state.topologyDetails.abstractLabel.propertyColumns.deletedItems.map(i => i.name),
                     () => {
+                        actions.message({message: "Submitted", type: "info"});
                         update({
                             topologyDetails: {
                                 abstractLabel: {
@@ -337,7 +517,7 @@ function SqlgModel() {
                             }
                         });
                     }, (e) => {
-                        actions.message("Failed to delete properties." + e.message);
+                        actions.message({message: "Failed to submit properties deletion.", type: "failure"});
                     });
             },
             deleteIndexes: () => {
@@ -442,12 +622,9 @@ function SqlgModel() {
                     });
                 }, (e) => {
                     update({
-                        messages: () => {
-                            return [{
-                                type: "failure",
-                                message: e.message,
-                                autohide: false
-                            }]
+                        toasts: (toasts) => {
+                            toasts.push({id: Utils.uniqueId(), message: e.message, autohide: false})
+                            return toasts;
                         }
                     });
                 })
@@ -477,12 +654,9 @@ function SqlgModel() {
                     });
                 }, function (e) {
                     update({
-                        messages: () => {
-                            return [{
-                                type: "failure",
-                                message: e.message,
-                                autohide: false
-                            }]
+                        toasts: (toasts) => {
+                            toasts.push({id: Utils.uniqueId(), message: e.message, autohide: false})
+                            return toasts;
                         }
                     });
                 });

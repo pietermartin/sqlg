@@ -23,7 +23,7 @@ public class SqlgWebsocket {
 
     @OnWebSocketMessage
     public void message(Session session, String message) throws IOException {
-        System.out.println("Got: " + message);   // Print message
+//        System.out.println("Got: " + message);   // Print message
     }
 
 }

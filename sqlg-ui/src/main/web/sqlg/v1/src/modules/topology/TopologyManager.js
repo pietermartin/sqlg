@@ -3,6 +3,21 @@ import SqlgGlobal from "../SqlgGlobal";
 
 const TopologyManager = {
 
+    login: (username, password, callBack, callBackError) => {
+        m.request({
+            method: "POST",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "login",
+            body : {
+                username: username,
+                password: password
+            }
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+
+    },
     deleteSchema: (schemaName, abstractLabelName, callBack, callBackError) => {
         m.request({
             method: "DELETE",

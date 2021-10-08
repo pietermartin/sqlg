@@ -230,7 +230,6 @@ public class SqlgGraph implements Graph {
      * the build version of sqlg
      */
     private String buildVersion;
-    private boolean sqlgUiIsUp = false;
 
     //This has some static suckness
     static {
@@ -296,19 +295,6 @@ public class SqlgGraph implements Graph {
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSqlgSchema();
         sqlgGraph.buildVersion = sqlgStartupManager.getBuildVersion();
-        //are we going to expose a ui
-        try {
-            Class<?> clazz = Class.forName("org.umlg.sqlg.ui.SqlgUI");
-            try {
-                Method method = clazz.getMethod("get", SqlgGraph.class);
-                method.invoke(null, sqlgGraph); // static method doesn't have an instance
-                sqlgGraph.sqlgUiIsUp = true;
-            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (ClassNotFoundException ignore) {
-            //swallow
-        }
         return (G) sqlgGraph;
     }
 

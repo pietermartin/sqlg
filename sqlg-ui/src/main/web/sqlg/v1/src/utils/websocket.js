@@ -48,16 +48,20 @@ const Websocket = {
 
     testJetty: function () {
         function jettyPing() {
-            // if (document.cookie.indexOf(CmMithrilGlobal.CMTOKEN_COOKIE) === -1) {
-            //     CmMithrilGlobal.removeAuthenticationCookies();
-            //     Websocket.sessionExpireToast();
-            //     m.route.set("/authentication/loginForm", {redirect: m.route.get()});
-            // } else {
+            if (document.cookie.indexOf("SqlgToken") !== -1) {
                 Websocket.jettyWebsocket.send(JSON.stringify({
                     server: Websocket.DOWNSTREAM_WEBSOCKET.CMJETTY,
                     type: Websocket.MESSAGE_TYPE.PING,
                     message: "ping cmjetty from the browser"
                 }));
+            } else {
+                console.log("redirect");
+            }
+            // if (document.cookie.indexOf(CmMithrilGlobal.CMTOKEN_COOKIE) === -1) {
+            //     CmMithrilGlobal.removeAuthenticationCookies();
+            //     Websocket.sessionExpireToast();
+            //     m.route.set("/authentication/loginForm", {redirect: m.route.get()});
+            // } else {
             // }
         }
 
@@ -81,9 +85,8 @@ const Websocket = {
 
     connect: function () {
         //const options = { debug: true };
-        //Websocket.jettyWebsocket = new ReconnectingWebSocket(`wss://${document.domain}:${document.location.port}/cm/websocket`, [], options);
-        //Websocket.jettyWebsocket = new ReconnectingWebSocket(`wss://${document.domain}:${document.location.port}/sqlg/data/v1/websocket`);
-        Websocket.jettyWebsocket = new ReconnectingWebSocket(`ws://${document.domain}:${document.location.port}/sqlg/data/v1/websocket`);
+        let protocol = document.location.protocol === 'http:' ? "ws" : "wss";
+        Websocket.jettyWebsocket = new ReconnectingWebSocket(`${protocol}://${document.domain}:${document.location.port}/sqlg/data/v1/websocket`);
         Websocket.jettyWebsocket.addEventListener('open', () => {
             Websocket.isOpen = true;
             Websocket.testJetty();

@@ -1,6 +1,5 @@
 import m from "mithril";
 import SlickLazyTree from "../../components/tree/m.slick.lazytree";
-import TopologyManager from "./TopologyManager";
 
 function TopologyTree(ignore) {
 

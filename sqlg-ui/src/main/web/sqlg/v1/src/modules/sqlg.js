@@ -3,11 +3,16 @@ import MeiosisRouting from "meiosis-routing";
 import MainLayout from "./layout/mainLayout";
 import SqlgModel from "./sqlgModel";
 import {Route} from "./sqlgRoutes";
+import LoginForm from "./auth/loginForm";
 
 function Sqlg(ignore) {
 
     let states, actions;
     const {Routing} = MeiosisRouting.state;
+
+    let signedIn = () => {
+        return document.cookie.indexOf("SqlgToken") !== -1;
+    };
 
     let onmatch = (message) => {
         actions.navigateTo(Route.Sqlg(message.args));
@@ -19,31 +24,32 @@ function Sqlg(ignore) {
             ({states, actions} = SqlgModel());
             let params = m.route.param();
             let {treeId, view} = params;
-            actions.navigateTo(Route.Sqlg({treeId: treeId, view: view !== undefined ? view : states().selectedTab}));
-            actions.retrieveGraphData();
-            actions.retrieveTopologyTree(params.treeId);
+            if (signedIn()) {
+                actions.navigateTo(Route.Sqlg({treeId: treeId, view: view !== undefined ? view : states().selectedTab}));
+            } else {
+                actions.navigateTo(Route.SqlgLogin({}));
+            }
+        },
+        oncreate: () => {
+            let state = states();
+            let params = m.route.param();
+            let {treeId, view} = params;
+            if (signedIn()) {
+                actions.retrieveGraphData();
+                actions.retrieveTopologyTree(treeId);
+            }
         },
         onremove: () => {
             $.Topic('/sqlg-ui').unsubscribe(onmatch);
         },
         view: () => {
             let state = states();
-            if (state.messages.length > 0) {
-                setTimeout(() => {
-                    for (const message of state.messages) {
-                        // CmMithrilGlobal.toasts.push({
-                        //     type: message.type,
-                        //     message: message.message,
-                        //     header: SCREEN_NAME,
-                        //     autohide: message.autohide !== undefined ? message.autohide : true
-                        // });
-                    }
-                    m.redraw();
-                }, 0);
+            if (!signedIn()) {
+                actions.navigateTo(Route.SqlgLogin({}));
+                return m(LoginForm, {state: state, actions: actions})
+            } else {
+                return m(MainLayout, {state: state, actions: actions});
             }
-            return m(MainLayout, {
-                state: state, actions: actions
-            });
         }
     }
 
