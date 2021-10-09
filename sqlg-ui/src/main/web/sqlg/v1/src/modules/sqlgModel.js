@@ -324,6 +324,7 @@ function SqlgModel() {
                     actions.retrieveGraphData();
                     actions.retrieveTopologyTree("");
                     update({
+                        loggedInPassword: undefined,
                         toasts: (toasts) => {
                             toasts.push({
                                 id: Utils.uniqueId(),
@@ -333,6 +334,7 @@ function SqlgModel() {
                             return toasts;
                         }
                     });
+                    actions.navigateTo(Route.Sqlg({treeId: "", view: "topology"}))
                 }, (e) => {
                     update({
                         toasts: (toasts) => {
@@ -346,8 +348,6 @@ function SqlgModel() {
                         }
                     });
                 });
-                update({loggedInPassword: undefined});
-                actions.navigateTo(Route.Sqlg({treeId: "", view: "topology"}))
             },
             toggleFooterNotification: () => {
                 let state = states();

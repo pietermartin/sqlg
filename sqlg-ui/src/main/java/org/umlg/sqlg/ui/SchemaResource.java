@@ -40,12 +40,21 @@ public class SchemaResource {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        String username = requestBody.get("username").asText();
-        String password = requestBody.get("password").asText();
+        String username = null;
+        String password = null;
+        if (requestBody.hasNonNull("username")) {
+            username = requestBody.get("username").asText();
+        }
+        if (requestBody.hasNonNull("password")) {
+            password = requestBody.get("password").asText();
+        }
 
         SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
         String passwordInPropertyFile = sqlgGraph.configuration().getString("sqlg.ui.username." + username);
-        if (!StringUtils.isEmpty(passwordInPropertyFile) && passwordInPropertyFile.equals(password)) {
+        if (username != null &&
+                !StringUtils.isEmpty(passwordInPropertyFile) &&
+                passwordInPropertyFile.equals(password)) {
+
             String token = AuthUtil.generateToken(username);
             res.cookie("/", AuthUtil.SQLG_TOKEN, token, SqlgUI.INSTANCE.getSqlgGraph().configuration().getInt("sqlg.ui.cookie.expiry", 3600), true, false);
             response.put("username", username);
