@@ -1,0 +1,42 @@
+===== Sum Step
+
+link:{tinkerpop-docs}#sum-step[`Sum Step`]
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testSum() {
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").sum();
+    printTraversalForm(traversal);
+    Assert.assertEquals(6, traversal.next(), 0L);
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-sum-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), PropertiesStep([age],value), SumGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-sum-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgPropertiesStep([age],value), SqlgSumGlobalStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	SUM("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+----

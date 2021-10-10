@@ -1,0 +1,56 @@
+== TinkerPop supported features
+
+Sqlg version 2.1.2 runs on https://tinkerpop.apache.org[TinkerPop 3.4.10].
+
+Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test suites.
+
+.Graph Features *not* implemented.
+
+- Computer
+- ThreadedTransactions
+- Variables
+
+.Vertex Features *not* implemented.
+
+- MultiProperties
+- MetaProperties
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
+
+.Edge Features **not** implemented.
+
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
+
+.Vertex property features *not* implemented.
+
+- AddProperty
+- RemoveProperty
+- UserSuppliedIds
+- NumericIds
+- StringIds
+- UuidIds
+- CustomIds
+- AnyIds
+- MapValues
+- MixedListValues
+- SerializableValues
+- UniformListValues
+
+.Edge property feature *not* implemented.
+
+- MapValues
+- MixedListValues
+- SerializableValues
+- UniformListValues
+
+[NOTE]
+Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is explained <<anchor-user-supplied-identifiers, below>>.

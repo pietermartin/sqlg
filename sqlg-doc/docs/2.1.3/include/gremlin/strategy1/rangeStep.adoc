@@ -1,0 +1,61 @@
+==== Range Step
+
+link:{tinkerpop-docs}#range-step[`Range Step`]
+
+Sqlg optimizes the `RangeGlobalStep`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testRangeOnVertexLabels() {
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i);
+    }
+    this.sqlgGraph.tx().commit();
+    Traversal<Vertex, String> traversal = this.sqlgGraph.traversal()
+            .V().hasLabel("Person")
+            .order().by("name")
+            .range(1, 4)
+            .values("name");
+    printTraversalForm(traversal);
+
+    List<String> names = traversal.toList();
+    for (String name : names) {
+        System.out.println(name);
+    }
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-range-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), OrderGlobalStep([[value(name), incr]]), RangeGlobalStep(1,4), PropertiesStep([name],value)]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-range-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathOrderRangeLabel], PropertiesStep([name],value)]
+----
+
+.output
+----
+person1
+person10
+person11
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."ID" AS "alias1",
+	"public"."V_Person"."name" AS "alias2"
+FROM
+	"public"."V_Person"
+ORDER BY
+	 "alias2" ASC
+LIMIT 3 OFFSET 1
+----
