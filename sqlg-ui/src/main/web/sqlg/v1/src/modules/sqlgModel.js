@@ -67,6 +67,7 @@ function SqlgModel() {
             {
                 loggedInUsername: undefined,
                 loggedInPassword: undefined,
+                userAllowedToEdit: undefined,
                 toasts: [],
                 jdbcUrl: "",
                 username: "",
@@ -176,115 +177,133 @@ function SqlgModel() {
             navigateTo: route => {
                 update(navTo(route))
             },
+            checkUserAllowedToEdit: () => {
+                TopologyManager.checkUserAllowedToEdit((response) => {
+                    update({userAllowedToEdit: response.userAllowedToEdit});
+                }, (e) => {
+                    update({
+                        toasts: (toasts) => {
+                            toasts.push({
+                                id: Utils.uniqueId(),
+                                message: e.response.message,
+                                autohide: false,
+                                type: 'failure'
+                            })
+                            return toasts;
+                        }
+                    });
+                })
+            },
             reset: () => {
-              update({
-                  loggedInUsername: undefined,
-                  loggedInPassword: undefined,
-                  toasts: [],
-                  jdbcUrl: "",
-                  username: "",
-                  selectedTab: "topology",
-                  editable: false,
-                  footerNotificationExpanded: false,
-                  notifications: [],
-                  treeData: {
-                      data: [],
-                      refreshData: false,
-                      spin: false,
-                      selectedTreeItem: undefined,
-                      refreshActive: false
-                  },
-                  topologyDetails: {
-                      elementType: undefined,
-                      schema: {
-                          name: "",
-                          createdOn: "",
-                      },
-                      schemas: {
-                          data: {columns: [], data: []},
-                          checkedItems: [],
-                          refresh: false,
-                          rebuild: false,
-                          spin: false,
-                          collapsed: true,
-                          deletedItems: []
-                      },
-                      vertexLabels: {
-                          data: {columns: [], data: []},
-                          checkedItems: [],
-                          refresh: false,
-                          rebuild: false,
-                          spin: false,
-                          collapsed: true,
-                          deletedItems: []
-                      },
-                      edgeLabels: {
-                          data: {columns: [], data: []},
-                          checkedItems: [],
-                          refresh: false,
-                          rebuild: false,
-                          spin: false,
-                          collapsed: true,
-                          deletedItems: []
-                      },
-                      abstractLabel: {
-                          schemaName: "",
-                          label: "VertexLabel",//This is 'VertexLabel' or 'EdgeLabel'
-                          name: "",
-                          identifierData: {
-                              userDefinedIdentifiers: false,
-                              identifiers: []
-                          },
-                          propertyColumns: {
-                              data: {columns: [], data: []},
-                              checkedItems: [],
-                              refresh: false,
-                              rebuild: false,
-                              spin: false,
-                              collapsed: true,
-                              deletedItems: []
-                          },
-                          indexes: {
-                              data: {columns: [], data: []},
-                              checkedItems: [],
-                              refresh: false,
-                              rebuild: false,
-                              spin: false,
-                              collapsed: true,
-                              deletedItems: []
-                          },
-                          inEdgeLabels: {
-                              data: {columns: [], data: []},
-                              checkedItems: [],
-                              refresh: false,
-                              rebuild: false,
-                              spin: false,
-                              collapsed: true,
-                              deletedItems: []
-                          },
-                          outEdgeLabels: {
-                              data: {columns: [], data: []},
-                              checkedItems: [],
-                              refresh: false,
-                              rebuild: false,
-                              spin: false,
-                              collapsed: true,
-                              deletedItems: []
-                          },
-                          partitionType: PARTITION_TYPE.NONE,
-                          partitionExpression: "",
-                          partitions: {
-                              data: {columns: [], data: [], options: {}},
-                              checkedItems: [],
-                              refresh: false,
-                              rebuild: false,
-                              spin: false,
-                              collapsed: true,
-                              deletedItems: []
-                          },
-                      }
-                  }
-              });
+                update({
+                    loggedInUsername: undefined,
+                    loggedInPassword: undefined,
+                    userAllowedToEdit: undefined,
+                    toasts: [],
+                    jdbcUrl: "",
+                    username: "",
+                    selectedTab: "topology",
+                    editable: false,
+                    footerNotificationExpanded: false,
+                    notifications: [],
+                    treeData: {
+                        data: [],
+                        refreshData: false,
+                        spin: false,
+                        selectedTreeItem: undefined,
+                        refreshActive: false
+                    },
+                    topologyDetails: {
+                        elementType: undefined,
+                        schema: {
+                            name: "",
+                            createdOn: "",
+                        },
+                        schemas: {
+                            data: {columns: [], data: []},
+                            checkedItems: [],
+                            refresh: false,
+                            rebuild: false,
+                            spin: false,
+                            collapsed: true,
+                            deletedItems: []
+                        },
+                        vertexLabels: {
+                            data: {columns: [], data: []},
+                            checkedItems: [],
+                            refresh: false,
+                            rebuild: false,
+                            spin: false,
+                            collapsed: true,
+                            deletedItems: []
+                        },
+                        edgeLabels: {
+                            data: {columns: [], data: []},
+                            checkedItems: [],
+                            refresh: false,
+                            rebuild: false,
+                            spin: false,
+                            collapsed: true,
+                            deletedItems: []
+                        },
+                        abstractLabel: {
+                            schemaName: "",
+                            label: "VertexLabel",//This is 'VertexLabel' or 'EdgeLabel'
+                            name: "",
+                            identifierData: {
+                                userDefinedIdentifiers: false,
+                                identifiers: []
+                            },
+                            propertyColumns: {
+                                data: {columns: [], data: []},
+                                checkedItems: [],
+                                refresh: false,
+                                rebuild: false,
+                                spin: false,
+                                collapsed: true,
+                                deletedItems: []
+                            },
+                            indexes: {
+                                data: {columns: [], data: []},
+                                checkedItems: [],
+                                refresh: false,
+                                rebuild: false,
+                                spin: false,
+                                collapsed: true,
+                                deletedItems: []
+                            },
+                            inEdgeLabels: {
+                                data: {columns: [], data: []},
+                                checkedItems: [],
+                                refresh: false,
+                                rebuild: false,
+                                spin: false,
+                                collapsed: true,
+                                deletedItems: []
+                            },
+                            outEdgeLabels: {
+                                data: {columns: [], data: []},
+                                checkedItems: [],
+                                refresh: false,
+                                rebuild: false,
+                                spin: false,
+                                collapsed: true,
+                                deletedItems: []
+                            },
+                            partitionType: PARTITION_TYPE.NONE,
+                            partitionExpression: "",
+                            partitions: {
+                                data: {columns: [], data: [], options: {}},
+                                checkedItems: [],
+                                refresh: false,
+                                rebuild: false,
+                                spin: false,
+                                collapsed: true,
+                                deletedItems: []
+                            },
+                        }
+                    }
+                });
             },
             message: (message) => {
                 update({
@@ -320,11 +339,12 @@ function SqlgModel() {
             },
             login: () => {
                 let state = states();
-                TopologyManager.login(state.loggedInUsername, state.loggedInPassword, () => {
+                TopologyManager.login(state.loggedInUsername, state.loggedInPassword, (response) => {
                     actions.retrieveGraphData();
                     actions.retrieveTopologyTree("");
                     update({
                         loggedInPassword: undefined,
+                        userAllowedToEdit: response.editable === true,
                         toasts: (toasts) => {
                             toasts.push({
                                 id: Utils.uniqueId(),

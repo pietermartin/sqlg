@@ -1,5 +1,6 @@
 package org.umlg.sqlg.ui;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,6 +31,16 @@ public class SchemaResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaResource.class);
 
+    public static ObjectNode userAllowedToEdit(Request req, Response res) {
+        ObjectMapper mapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String token = req.cookie(AuthUtil.SQLG_TOKEN);
+        DecodedJWT jwt = AuthUtil.validToken(token);
+        Preconditions.checkState(jwt != null);
+        String username = jwt.getClaim("username").asString();
+        String edit = "sqlg.ui.username." + username + ".edit";
+        return mapper.createObjectNode().put("userAllowedToEdit", SqlgUI.INSTANCE.getSqlgGraph().configuration().getBoolean(edit, false));
+    }
+
     public static ObjectNode login(Request req, Response res) {
         ObjectMapper mapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
         ObjectNode response = mapper.createObjectNode();
@@ -57,7 +68,7 @@ public class SchemaResource {
 
             String token = AuthUtil.generateToken(username);
             res.cookie("/", AuthUtil.SQLG_TOKEN, token, SqlgUI.INSTANCE.getSqlgGraph().configuration().getInt("sqlg.ui.cookie.expiry", 3600), true, false);
-            response.put("username", username);
+            response.put("editable", sqlgGraph.configuration().getBoolean("sqlg.ui.username." + username + ".edit", false));
         } else {
             res.status(HttpStatus.UNAUTHORIZED_401);
             response.put("status", "error");

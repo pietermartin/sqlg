@@ -31,9 +31,8 @@ function Sqlg(ignore) {
             }
         },
         oncreate: () => {
-            let state = states();
             let params = m.route.param();
-            let {treeId, view} = params;
+            let {treeId} = params;
             if (signedIn()) {
                 actions.retrieveGraphData();
                 actions.retrieveTopologyTree(treeId);
@@ -48,6 +47,9 @@ function Sqlg(ignore) {
                 actions.navigateTo(Route.SqlgLogin({}));
                 return m(LoginForm, {state: state, actions: actions})
             } else {
+                if (state.userAllowedToEdit === undefined) {
+                    actions.checkUserAllowedToEdit();
+                }
                 return m(MainLayout, {state: state, actions: actions});
             }
         }

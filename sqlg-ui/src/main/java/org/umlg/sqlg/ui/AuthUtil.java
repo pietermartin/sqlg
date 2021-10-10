@@ -23,13 +23,11 @@ public class AuthUtil {
     }
 
 
-    public static boolean validToken(String token) {
+    public static DecodedJWT validToken(String token) {
         try {
-            @SuppressWarnings("unused")
-            DecodedJWT jwt = JWT_VERIFIER.verify(token);
-            return true;
+            return  JWT_VERIFIER.verify(token);
         } catch (JWTVerificationException exception) {
-            return false;
+            return null;
         }
     }
 }

@@ -90,7 +90,7 @@ function RightPane(ignore) {
                             m("a.navbar-brand.position-absolute.start-50.text-center", state.topologyDetails.abstractLabel.label),
                             m(Switch, {
                                 id: "editSwitch",
-                                enabled: true,
+                                enabled: state.userAllowedToEdit,
                                 checked: state.editable,
                                 "data-tippy-content": "Edit",
                                 "data-tippy-placement": "top",

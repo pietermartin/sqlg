@@ -16,12 +16,22 @@ const TopologyManager = {
         }).catch(function (e) {
             callBackError(e);
         })
+    },
+    checkUserAllowedToEdit: (callBack, callBackError) => {
+        m.request({
+            method: "GET",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "/userAllowedToEdit"
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
 
     },
     deleteSchema: (schemaName, abstractLabelName, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName",
             params: {
                 schemaName: schemaName
             }
@@ -34,7 +44,7 @@ const TopologyManager = {
     deleteAbstractLabel: (schemaName, abstractLabelName, vertexOrEdge, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName/:abstractLabel/:vertexOrEdge",
             params: {
                 schemaName: schemaName,
                 abstractLabel: abstractLabelName,
@@ -49,7 +59,7 @@ const TopologyManager = {
     deleteSchemas: (schemas, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema",
             body: schemas
         }).then(function (data) {
             callBack(data);
@@ -60,7 +70,7 @@ const TopologyManager = {
     deleteVertexLabels: (schemaName, vertexLabels, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/vertexLabels",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName/vertexLabels",
             params: {
                 schemaName: schemaName
             },
@@ -74,7 +84,7 @@ const TopologyManager = {
     deleteEdgeLabels: (schemaName, edgeLabels, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/edgeLabels",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName/edgeLabels",
             params: {
                 schemaName: schemaName
             },
@@ -88,7 +98,7 @@ const TopologyManager = {
     deleteProperties: (schemaName, abstractLabelName, vertexOrEdge, properties, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge/properties",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName/:abstractLabel/:vertexOrEdge/properties",
             params: {
                 schemaName: schemaName,
                 abstractLabel: abstractLabelName,
@@ -104,7 +114,7 @@ const TopologyManager = {
     deleteIndexes: (schemaName, abstractLabelName, vertexOrEdge, indexes, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/:vertexOrEdge/indexes",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName/:abstractLabel/:vertexOrEdge/indexes",
             params: {
                 schemaName: schemaName,
                 abstractLabel: abstractLabelName,
@@ -120,7 +130,7 @@ const TopologyManager = {
     deleteInEdgeLabels: (schemaName, abstractLabelName, inEdgeLabels, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/vertex/inEdgeLabels",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName/:abstractLabel/vertex/inEdgeLabels",
             params: {
                 schemaName: schemaName,
                 abstractLabel: abstractLabelName
@@ -135,7 +145,7 @@ const TopologyManager = {
     deleteOutEdgeLabels: (schemaName, abstractLabelName, outEdgeLabels, callBack, callBackError) => {
         m.request({
             method: "DELETE",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "schema/:schemaName/:abstractLabel/vertex/outEdgeLabels",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "delete/schema/:schemaName/:abstractLabel/vertex/outEdgeLabels",
             params: {
                 schemaName: schemaName,
                 abstractLabel: abstractLabelName
