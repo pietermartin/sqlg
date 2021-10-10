@@ -14,7 +14,7 @@ module.exports = {
             "jQuery": "jquery",
             Popper: ['popper.js', 'default']
         }),
-        new HtmlWebpackPlugin()
+        new HtmlWebpackPlugin({favicon: "sqlg/v1/src/favicon/favicon-16x16.png"})
     ],
     output: {
         path: path.resolve(__dirname, 'dist/dist/sqlg/v1'),

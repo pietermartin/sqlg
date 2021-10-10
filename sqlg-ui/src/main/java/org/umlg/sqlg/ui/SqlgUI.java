@@ -8,13 +8,21 @@ public class SqlgUI {
     private SqlgGraph sqlgGraph;
     public static SqlgUI INSTANCE = null;
 
-    public static void initialize() {
+    public static void initialize(int port) {
         if (INSTANCE == null) {
             SparkResources.staticResources();
+            if (port != -1) {
+                Spark.port(port);
+            }
             SparkResources.websocket();
             SparkResources.resources();
             Spark.awaitInitialization();
         }
+
+    }
+
+    public static void initialize() {
+        initialize(-1);
     }
 
     public static void set(SqlgGraph sqlgGraph) {

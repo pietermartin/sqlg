@@ -18,7 +18,7 @@ function LoginForm(ignore) {
                     m("legend.mb-3", "Sign in to Sqlg's ui"),
                     m("div.mb-3", [
                         m("label.form-label", {for: "usernameInput"}, "username"),
-                        m("input#usernameInput.form-control", {type: "username", oninput: actions.loggedInUsername, autocomplete: "username"})
+                        m("input#usernameInput.form-control", {type: "text", oninput: actions.loggedInUsername, autocomplete: "username"})
 
                     ]),
                     m("div.mb-3", [
