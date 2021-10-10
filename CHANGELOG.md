@@ -1,3 +1,7 @@
+##2.1.3
+
+* Added a ui to visualize and delete schema elements.
+
 ##2.1.1
 
 *Fix bug [#417](https://github.com/pietermartin/sqlg/issues/417). Fix issue with dangling Index meta data on property deletions
