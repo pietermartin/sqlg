@@ -19,6 +19,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/01/21
  */
+@SuppressWarnings("unused")
 public class TestPartitionMultipleGraphs extends BaseTest {
 
     private final List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
@@ -55,7 +56,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
             Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
             VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist(
                     "Measurement",
-                    new HashMap<String, PropertyType>() {{
+                    new HashMap<>() {{
                         put("uid", PropertyType.STRING);
                         put("date", PropertyType.LOCALDATE);
                         put("temp", PropertyType.INTEGER);
@@ -93,7 +94,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
             Assert.assertEquals(1, measurement.getPartitions().size(), 0);
             Thread.sleep(2000);
 
-            Assert.assertEquals(1, sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("Measurement").get().getPartitions().size(), 0);
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("Measurement").orElseThrow().getPartitions().size(), 0);
 
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -112,7 +113,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
             EdgeLabel livesAt = person.ensurePartitionedEdgeLabelExist(
                     "livesAt",
                     address,
-                    new HashMap<String, PropertyType>() {{
+                    new HashMap<>() {{
                         put("uid", PropertyType.STRING);
                         put("date", PropertyType.LOCALDATE);
                     }},
@@ -148,7 +149,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
 
             Thread.sleep(2000);
             publicSchema = sqlgGraph1.getTopology().getPublicSchema();
-            Assert.assertEquals(1, publicSchema.getEdgeLabel("livesAt").get().getPartitions().size(), 0);
+            Assert.assertEquals(1, publicSchema.getEdgeLabel("livesAt").orElseThrow().getPartitions().size(), 0);
 
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -162,7 +163,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel a = aSchema.ensurePartitionedVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>(){{
+                new HashMap<>(){{
                     put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
@@ -180,7 +181,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
         this.sqlgGraph.tx().commit();
         Thread.sleep(1000);
 
-        a = this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get();
+        a = this.sqlgGraph1.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").orElseThrow();
         Optional<Partition> p = a.getPartition("int4");
         Assert.assertTrue(p.isPresent());
         Assert.assertNull(p.get().getFrom());
@@ -201,7 +202,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertTrue(tlt.receivedEvent(p1, TopologyChangeAction.DELETE));
         Thread.sleep(1000);
-        a = this.sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get();
+        a = this.sqlgGraph1.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").orElseThrow();
         p = a.getPartition("int4");
         Assert.assertFalse(p.isPresent());
         p = a.getPartition("int3");
