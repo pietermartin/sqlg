@@ -60,7 +60,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
                         put("date", PropertyType.LOCALDATE);
                         put("temp", PropertyType.INTEGER);
                     }},
-                    ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                    ListOrderedSet.listOrderedSet(List.of("uid", "date")),
                     PartitionType.RANGE,
                     "date");
             Partition p1 = measurement.ensureRangePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
@@ -116,7 +116,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
                         put("uid", PropertyType.STRING);
                         put("date", PropertyType.LOCALDATE);
                     }},
-                    ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                    ListOrderedSet.listOrderedSet(List.of("uid", "date")),
                     PartitionType.RANGE,
                     "date");
             Partition p1 = livesAt.ensureRangePartitionExists("m1", "'2016-07-01'", "'2016-08-01'");
@@ -169,7 +169,7 @@ public class TestPartitionMultipleGraphs extends BaseTest {
                     put("int3", PropertyType.INTEGER);
                     put("int4", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3", "int4")),
                 PartitionType.LIST,
                 "int1"
         );

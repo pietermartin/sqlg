@@ -132,7 +132,7 @@ public class RecordId implements KryoSerializable, Comparable {
         } else {
             abstractLabel = vertexLabel.get();
         }
-        Preconditions.checkArgument(abstractLabel.getIdentifiers().size() == identifiers.length, "%d identifiers expected in the RecordId. Found %d. given id = %s", abstractLabel.getIdentifiers().size(), identifiers.length, label + id);
+        Preconditions.checkArgument(abstractLabel.getIdentifiers().size() == identifiers.length, "%s identifiers expected in the RecordId. Found %s. given id = %s", abstractLabel.getIdentifiers().size(), identifiers.length, label + id);
         List<Comparable> identifierValues = new ArrayList<>();
         int count = 0;
         for (String identifier : abstractLabel.getIdentifiers()) {

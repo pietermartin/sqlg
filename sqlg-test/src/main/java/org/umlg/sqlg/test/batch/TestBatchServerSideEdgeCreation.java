@@ -8,9 +8,10 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PartitionType;
@@ -23,6 +24,8 @@ import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("Duplicates")
 public class TestBatchServerSideEdgeCreation extends BaseTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestBatchServerSideEdgeCreation.class);
 
     @BeforeClass
     public static void beforeClass() {
@@ -49,7 +52,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("index", PropertyType.INTEGER);
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("index"))
@@ -57,7 +60,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("index", PropertyType.INTEGER);
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("index"))
@@ -66,12 +69,11 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
                 "AB",
                 aVertexLabel,
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
+                new LinkedHashMap<>() {{
                     put("part", PropertyType.STRING);
                     put("x", PropertyType.STRING);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of()),
                 PartitionType.LIST,
                 "part"
         );
@@ -90,7 +92,14 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        this.sqlgGraph.bulkAddEdges("A", "B", "AB", Pair.of("index", "index"), uids, "uid", UUID.randomUUID().toString(), "part", "part1", "x", "y");
+        this.sqlgGraph.bulkAddEdges(
+                "A",
+                "B",
+                "AB",
+                Pair.of("index", "index"),
+                uids,
+                "part", "part1",
+                "x", "y");
         this.sqlgGraph.tx().commit();
 
         testBulkEdges_assert(this.sqlgGraph);
@@ -180,16 +189,15 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        LOGGER.debug(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
 
         this.sqlgGraph.tx().streamingBatchModeOn();
-        SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        LOGGER.debug(stopWatch.toString());
 
         testBulkEdges2_assert(this.sqlgGraph, uuid1Cache, uuid2Cache);
         if (this.sqlgGraph1 != null) {
@@ -298,14 +306,14 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
         sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("Time to insert: " + stopWatch.toString());
+        LOGGER.debug("Time to insert: " + stopWatch);
         stopWatch.reset();
         stopWatch.start();
         this.sqlgGraph.tx().streamingBatchModeOn();
         sqlgGraph.bulkAddEdges("RealWorkspaceElement", "VirtualGroup", "realWorkspaceElement_virtualGroup", Pair.of("ID", "ID"), ids);
         sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("Time to insert: " + stopWatch.toString());
+        LOGGER.debug("Time to insert: " + stopWatch);
         assertEquals(1_000, this.sqlgGraph.traversal().V(virtualGroup).in("realWorkspaceElement_virtualGroup").count().next().intValue());
         if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);

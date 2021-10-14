@@ -109,7 +109,7 @@ public abstract class AbstractLabel implements TopologyInf {
     AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
         Preconditions.checkArgument(partitionType == PartitionType.RANGE || partitionType == PartitionType.LIST, "Only RANGE and LIST partitions are supported. Found %s", partitionType.name());
         Preconditions.checkArgument(!partitionExpression.isEmpty(), "partitionExpression may not be an empty string.");
-        Preconditions.checkArgument(!identifiers.isEmpty(), "Partitioned labels must have at least one identifier.");
+//        Preconditions.checkArgument(!identifiers.isEmpty(), "Partitioned labels must have at least one identifier.");
         this.sqlgGraph = sqlgGraph;
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {

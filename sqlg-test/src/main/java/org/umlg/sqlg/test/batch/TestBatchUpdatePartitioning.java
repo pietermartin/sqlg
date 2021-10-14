@@ -44,7 +44,7 @@ public class TestBatchUpdatePartitioning extends BaseTest {
                     put("other", PropertyType.STRING);
                     put("other2", PropertyType.STRING);
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("uid1")),
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "name")),
                 PartitionType.LIST,
                 "name"
         );

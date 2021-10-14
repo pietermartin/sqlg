@@ -42,6 +42,7 @@ import org.umlg.sqlg.test.localvertexstep.*;
 import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
+import org.umlg.sqlg.test.partition.TestJoinAcrossPartition;
 import org.umlg.sqlg.test.process.dropstep.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.properties.TestPropertyValues;
@@ -245,6 +246,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestUnoptimizedRepeatStep.class,
         TestPropertyReference.class,
         TestPartitioning.class,
+        TestJoinAcrossPartition.class,
         TestPartitionMultipleGraphs.class,
         TestSubSubPartition.class,
         TestIndexOnPartition.class,

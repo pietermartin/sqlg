@@ -26,6 +26,7 @@ import java.util.*;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2018/01/13
  */
+@SuppressWarnings({"UnusedAssignment", "unused", "DuplicatedCode"})
 public class TestPartitioning extends BaseTest {
 
     @Before
@@ -38,6 +39,69 @@ public class TestPartitioning extends BaseTest {
         TEST1,
         TEST2,
         TEST3
+    }
+
+    @Test
+    public void testReloadVertexLabelWithPartitions2() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("int1", PropertyType.INTEGER);
+                    put("int2", PropertyType.INTEGER);
+                    put("int3", PropertyType.INTEGER);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("int1", "int2")),
+                PartitionType.RANGE,
+                "int1,int2");
+        a.ensureRangePartitionExists("part1", "1,1", "5,5");
+        a.ensureRangePartitionExists("part2", "5,5", "10,10");
+        this.sqlgGraph.tx().commit();
+
+        String checkPrimaryKey = "SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type\n" +
+                "FROM   pg_index i\n" +
+                "JOIN   pg_attribute a ON a.attrelid = i.indrelid\n" +
+                "                     AND a.attnum = ANY(i.indkey)\n" +
+                "WHERE  i.indrelid = '\"V_A\"'::regclass\n" +
+                "AND    i.indisprimary;";
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery(checkPrimaryKey);
+            List<Pair<String, String>> keys = new ArrayList<>();
+            while (rs.next()) {
+                String key = rs.getString("attname");
+                String dataType = rs.getString("data_type");
+                keys.add(Pair.of(key, dataType));
+            }
+            Assert.assertEquals(2, keys.size());
+            Assert.assertEquals("int1", keys.get(0).getLeft());
+            Assert.assertEquals("int2", keys.get(1).getLeft());
+        } catch (SQLException throwables) {
+            Assert.fail(throwables.getMessage());
+        }
+
+        //Delete the topology
+        dropSqlgSchema(this.sqlgGraph);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+            Assert.assertEquals("int1,int2", a.getPartitionExpression());
+            Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
+
+            Optional<Partition> part1 = a.getPartition("part1");
+            Assert.assertTrue(part1.isPresent());
+            Assert.assertNull(part1.get().getPartitionExpression());
+            Assert.assertEquals("1, 1", part1.get().getFrom());
+            Assert.assertEquals("5, 5", part1.get().getTo());
+            Optional<Partition> part2 = a.getPartition("part2");
+            Assert.assertTrue(part2.isPresent());
+            Assert.assertNull(part2.get().getPartitionExpression());
+            Assert.assertEquals("5, 5", part2.get().getFrom());
+            Assert.assertEquals("10, 10", part2.get().getTo());
+        }
     }
 
     @Test
@@ -74,11 +138,10 @@ public class TestPartitioning extends BaseTest {
                 String dataType = rs.getString("data_type");
                 keys.add(Pair.of(key, dataType));
             }
-            //TODO Assertions to add for #408
-//            Assert.assertEquals(3, keys.size());
-//            Assert.assertEquals("uid1", keys.get(0).getLeft());
-//            Assert.assertEquals("uid2", keys.get(1).getLeft());
-//            Assert.assertEquals("uid3", keys.get(2).getLeft());
+            Assert.assertEquals(3, keys.size());
+            Assert.assertEquals("uid1", keys.get(0).getLeft());
+            Assert.assertEquals("uid2", keys.get(1).getLeft());
+            Assert.assertEquals("uid3", keys.get(2).getLeft());
         } catch (SQLException throwables) {
             Assert.fail(throwables.getMessage());
         }
@@ -92,6 +155,10 @@ public class TestPartitioning extends BaseTest {
         }
     }
 
+    /**
+     * This test had a bug, making it pass. It is not possible to define a LIST partition on multiple keys.
+     * As such this test name is incorrect but this comment should clarify the history.
+     */
     @Test
     public void testPartitionEdgeOnMultipleUserDefinedForeignKey() {
         LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
@@ -102,7 +169,7 @@ public class TestPartitioning extends BaseTest {
         VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "RealWorkspaceElement",
                 attributeMap,
-                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                ListOrderedSet.listOrderedSet(List.of("cmUid", "vendorTechnology")),
                 PartitionType.LIST,
                 "\"vendorTechnology\""
         );
@@ -122,7 +189,7 @@ public class TestPartitioning extends BaseTest {
                     put("uid2", PropertyType.STRING);
                     put("name", PropertyType.STRING);
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+                ListOrderedSet.listOrderedSet(List.of("uid1"))
         );
 
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExistOnInOrOutVertexLabel(
@@ -148,12 +215,12 @@ public class TestPartitioning extends BaseTest {
         Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "Northern");
         Partition partition = edgeLabel.ensureListPartitionExists(
                 "Northern",
-                "'" + ((RecordId)northern.id()).getID().getIdentifiers().get(0).toString() + "','" + ((RecordId)northern.id()).getID().getIdentifiers().get(1).toString() + "'"
+                "'" + ((RecordId)northern.id()).getID().getIdentifiers().get(0).toString() + "'"
         );
         Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "uid1", UUID.randomUUID().toString(), "uid2", UUID.randomUUID().toString(), "name", "Western");
         partition = edgeLabel.ensureListPartitionExists(
                 "Western",
-                "'" + ((RecordId)western.id()).getID().getIdentifiers().get(0).toString() + "','" + ((RecordId)western.id()).getID().getIdentifiers().get(1).toString() + "'"
+                "'" + ((RecordId)western.id()).getID().getIdentifiers().get(0).toString() + "'"
         );
         Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
         e.properties("what", "this");
@@ -168,8 +235,240 @@ public class TestPartitioning extends BaseTest {
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
         Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(northern));
+        Assert.assertTrue(vertices.contains(western));
+    }
+
+    @Test
+    public void testPartitionEdge() {
+        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
+        attributeMap.put("name", PropertyType.STRING);
+        attributeMap.put("cmUid", PropertyType.STRING);
+        attributeMap.put("vendorTechnology", PropertyType.STRING);
+
+        VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "RealWorkspaceElement",
+                attributeMap,
+                ListOrderedSet.listOrderedSet(List.of("cmUid", "vendorTechnology")),
+                PartitionType.LIST,
+                "\"vendorTechnology\""
+        );
+        for (TEST test : TEST.values()) {
+            Partition partition = realWorkspaceElementVertexLabel.ensureListPartitionExists(
+                    test.name(),
+                    "'" + test.name() + "'"
+            );
+        }
+
+        VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "VirtualGroup",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyType.STRING);
+                }}
+        );
+
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExist(
+                "virtualGroup_RealWorkspaceElement",
+                virtualGroupVertexLabel,
+                realWorkspaceElementVertexLabel,
+                new LinkedHashMap<>() {{
+                    put("uid", PropertyType.STRING);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid", "name")),
+                PartitionType.LIST,
+                "name"
+        );
+        Partition partition = edgeLabel.ensureListPartitionExists(
+                "Northern",
+                "'Northern'"
+        );
+        partition = edgeLabel.ensureListPartitionExists(
+                "Western",
+                "'Western'"
+        );
+
+
+        this.sqlgGraph.tx().commit();
+        String checkPrimaryKey = "SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type\n" +
+                "FROM   pg_index i\n" +
+                "JOIN   pg_attribute a ON a.attrelid = i.indrelid\n" +
+                "                     AND a.attnum = ANY(i.indkey)\n" +
+                "WHERE  i.indrelid = '\"E_virtualGroup_RealWorkspaceElement\"'::regclass\n" +
+                "AND    i.indisprimary;";
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery(checkPrimaryKey);
+            List<Pair<String, String>> keys = new ArrayList<>();
+            while (rs.next()) {
+                String key = rs.getString("attname");
+                String dataType = rs.getString("data_type");
+                keys.add(Pair.of(key, dataType));
+            }
+            Assert.assertEquals(2, keys.size());
+            Assert.assertEquals("uid", keys.get(0).getLeft());
+            Assert.assertEquals("name", keys.get(1).getLeft());
+        } catch (SQLException throwables) {
+            Assert.fail(throwables.getMessage());
+        }
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a1", "vendorTechnology", TEST.TEST1.name());
+        Vertex v11 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a2", "vendorTechnology", TEST.TEST1.name());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b1", "vendorTechnology", TEST.TEST2.name());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c1", "vendorTechnology", TEST.TEST3.name());
+        this.sqlgGraph.tx().commit();
+
+        Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Northern");
+        Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Western");
+        Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "name", "Northern", "uid", UUID.randomUUID().toString());
+        e = northern.addEdge("virtualGroup_RealWorkspaceElement", v11, "name", "Northern", "uid", UUID.randomUUID().toString());
+        e = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "name", "Western", "uid", UUID.randomUUID().toString());
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
+        Assert.assertEquals(2, vertices.size());
         Assert.assertEquals(northern, vertices.get(0));
         Assert.assertEquals(western, vertices.get(1));
+    }
+
+    @Test
+    public void testPartitionEdgeNoIdentifiers() {
+        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
+        attributeMap.put("name", PropertyType.STRING);
+        attributeMap.put("cmUid", PropertyType.STRING);
+        attributeMap.put("vendorTechnology", PropertyType.STRING);
+
+        VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "RealWorkspaceElement",
+                attributeMap,
+                ListOrderedSet.listOrderedSet(List.of("cmUid", "vendorTechnology")),
+                PartitionType.LIST,
+                "\"vendorTechnology\""
+        );
+        for (TEST test : TEST.values()) {
+            Partition partition = realWorkspaceElementVertexLabel.ensureListPartitionExists(
+                    test.name(),
+                    "'" + test.name() + "'"
+            );
+        }
+
+        VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "VirtualGroup",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyType.STRING);
+                }}
+        );
+
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExist(
+                "virtualGroup_RealWorkspaceElement",
+                virtualGroupVertexLabel,
+                realWorkspaceElementVertexLabel,
+                new LinkedHashMap<>() {{
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of()),
+                PartitionType.LIST,
+                "name"
+        );
+        Partition partition = edgeLabel.ensureListPartitionExists(
+                "Northern",
+                "'Northern'"
+        );
+        partition = edgeLabel.ensureListPartitionExists(
+                "Western",
+                "'Western'"
+        );
+
+
+        this.sqlgGraph.tx().commit();
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a1", "vendorTechnology", TEST.TEST1.name());
+        Vertex v11 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a2", "vendorTechnology", TEST.TEST1.name());
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b1", "vendorTechnology", TEST.TEST2.name());
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c1", "vendorTechnology", TEST.TEST3.name());
+        this.sqlgGraph.tx().commit();
+
+        Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Northern");
+        Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Western");
+        Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "name", "Northern");
+        e = northern.addEdge("virtualGroup_RealWorkspaceElement", v11, "name", "Northern");
+        e = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "name", "Western");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertEquals(northern, vertices.get(0));
+        Assert.assertEquals(western, vertices.get(1));
+        
+        //Check if the partitions are being used
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            boolean scanRealWorkspaceElementPartition = false;
+            if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
+                ResultSet rs = statement.executeQuery("explain SELECT\n" +
+                        "\t\"public\".\"V_VirtualGroup\".\"ID\" AS \"alias1\",\n" +
+                        "\t\"public\".\"V_VirtualGroup\".\"name\" AS \"alias2\"\n" +
+                        "FROM\n" +
+                        "\t\"public\".\"V_RealWorkspaceElement\" INNER JOIN\n" +
+                        "\t\"public\".\"E_virtualGroup_RealWorkspaceElement\" ON \"public\".\"V_RealWorkspaceElement\".\"cmUid\" = \"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.RealWorkspaceElement.cmUid__I\" AND \"public\".\"V_RealWorkspaceElement\".\"vendorTechnology\" = \"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.RealWorkspaceElement.vendorTechnology__I\" INNER JOIN\n" +
+                        "\t\"public\".\"V_VirtualGroup\" ON \"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.VirtualGroup__O\" = \"public\".\"V_VirtualGroup\".\"ID\"\n" +
+                        "WHERE\n" +
+                        "\t( \"public\".\"V_RealWorkspaceElement\".\"cmUid\" = 'a1' AND \"public\".\"V_RealWorkspaceElement\".\"vendorTechnology\" = 'TEST1')");
+                while (rs.next()) {
+                    String result = rs.getString(1);
+                    scanRealWorkspaceElementPartition = scanRealWorkspaceElementPartition || result.contains("Index Only Scan using \"TEST1_pkey\"");
+                }
+            }
+            Assert.assertTrue(scanRealWorkspaceElementPartition);
+        } catch (SQLException ee) {
+            Assert.fail(ee.getMessage());
+        }
+
+        vertices = this.sqlgGraph.traversal().V(v1).inE("virtualGroup_RealWorkspaceElement").has("name", "Northern").otherV().toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(northern, vertices.get(0));
+        try (Statement statement = conn.createStatement()) {
+            boolean scanRealWorkspaceElementPartition = false;
+            boolean scanEdgePartition = false;
+            if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
+                ResultSet rs = statement.executeQuery("explain SELECT\n" +
+                        "\t\"public\".\"V_RealWorkspaceElement\".\"cmUid\" AS \"alias1\",\n" +
+                        "\t\"public\".\"V_RealWorkspaceElement\".\"vendorTechnology\" AS \"alias2\",\n" +
+                        "\t\"public\".\"V_RealWorkspaceElement\".\"name\" AS \"alias3\",\n" +
+                        "\t\"public\".\"E_virtualGroup_RealWorkspaceElement\".\"ID\" AS \"alias4\",\n" +
+                        "\t\"public\".\"E_virtualGroup_RealWorkspaceElement\".\"name\" AS \"alias5\",\n" +
+                        "\t\"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.VirtualGroup__O\" AS \"alias6\",\n" +
+                        "\t\"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.RealWorkspaceElement.cmUid__I\" AS \"alias7\",\n" +
+                        "\t\"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.RealWorkspaceElement.vendorTechnology__I\" AS \"alias8\",\n" +
+                        "\t\"public\".\"V_VirtualGroup\".\"ID\" AS \"alias9\",\n" +
+                        "\t\"public\".\"V_VirtualGroup\".\"name\" AS \"alias10\"\n" +
+                        "FROM\n" +
+                        "\t\"public\".\"V_RealWorkspaceElement\" INNER JOIN\n" +
+                        "\t\"public\".\"E_virtualGroup_RealWorkspaceElement\" ON \"public\".\"V_RealWorkspaceElement\".\"cmUid\" = \"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.RealWorkspaceElement.cmUid__I\" AND \"public\".\"V_RealWorkspaceElement\".\"vendorTechnology\" = \"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.RealWorkspaceElement.vendorTechnology__I\" INNER JOIN\n" +
+                        "\t\"public\".\"V_VirtualGroup\" ON \"public\".\"E_virtualGroup_RealWorkspaceElement\".\"public.VirtualGroup__O\" = \"public\".\"V_VirtualGroup\".\"ID\"\n" +
+                        "WHERE\n" +
+                        "\t( \"public\".\"V_RealWorkspaceElement\".\"cmUid\" = 'a1' AND \"public\".\"V_RealWorkspaceElement\".\"vendorTechnology\" = 'TEST1') AND ( \"public\".\"E_virtualGroup_RealWorkspaceElement\".\"name\" = 'Northern')\n");
+                while (rs.next()) {
+                    String result = rs.getString(1);
+                    scanRealWorkspaceElementPartition = scanRealWorkspaceElementPartition || result.contains("Index Scan using \"TEST1_pkey\"");
+                    scanEdgePartition = scanEdgePartition || result.contains("Index Scan using \"Northern_public.RealWorkspaceElement.cmUid__I_public.RealWo_idx\" on \"Northern\"");
+                }
+            }
+            Assert.assertTrue(scanRealWorkspaceElementPartition);
+            Assert.assertTrue(scanEdgePartition);
+        } catch (SQLException ee) {
+            Assert.fail(ee.getMessage());
+        }
     }
 
     @Test
@@ -182,7 +481,7 @@ public class TestPartitioning extends BaseTest {
         VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "RealWorkspaceElement",
                 attributeMap,
-                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                ListOrderedSet.listOrderedSet(List.of("vendorTechnology", "cmUid")),
                 PartitionType.LIST,
                 "\"vendorTechnology\""
         );
@@ -192,8 +491,6 @@ public class TestPartitioning extends BaseTest {
                     "'" + test.name() + "'"
             );
         }
-        PropertyColumn propertyColumn = realWorkspaceElementVertexLabel.getProperty("cmUid").orElseThrow(IllegalStateException::new);
-        realWorkspaceElementVertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumn));
 
         VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "VirtualGroup",
@@ -222,6 +519,7 @@ public class TestPartitioning extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a", "vendorTechnology", TEST.TEST1.name());
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b", "vendorTechnology", TEST.TEST2.name());
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c", "vendorTechnology", TEST.TEST3.name());
+        Vertex v4 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "d", "vendorTechnology", TEST.TEST1.name());
         this.sqlgGraph.tx().commit();
 
         Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "uid", UUID.randomUUID().toString(), "name", "Northern");
@@ -234,21 +532,24 @@ public class TestPartitioning extends BaseTest {
                 "Western",
                 "'" + ((RecordId)western.id()).getID().getIdentifiers().get(0).toString() + "'"
         );
-        Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
-        e.properties("what", "this");
-        e = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
-        e.properties("what", "this");
+        Edge edgeFromNorthernToV1 = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        Edge edgeFromWesternToV1 = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
+        Edge edgeFromNorthernToV4 = northern.addEdge("virtualGroup_RealWorkspaceElement", v4, "uid", UUID.randomUUID().toString());
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
-        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
 
-        List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(v4).in("virtualGroup_RealWorkspaceElement").toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertTrue(vertices.contains(northern));
+
+        vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
         Assert.assertEquals(2, vertices.size());
-        Assert.assertEquals(northern, vertices.get(0));
-        Assert.assertEquals(western, vertices.get(1));
+        Assert.assertTrue(vertices.contains(northern));
+        Assert.assertTrue(vertices.contains(western));
     }
 
     @Test
@@ -261,7 +562,7 @@ public class TestPartitioning extends BaseTest {
         VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "RealWorkspaceElement",
                 attributeMap,
-                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                ListOrderedSet.listOrderedSet(List.of("vendorTechnology", "cmUid")),
                 PartitionType.LIST,
                 "\"vendorTechnology\""
         );
@@ -304,12 +605,12 @@ public class TestPartitioning extends BaseTest {
         Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Northern");
         Partition partition = edgeLabel.ensureListPartitionExists(
                 "Northern",
-                ((RecordId)northern.id()).getID().getSequenceId().toString()
+                ((RecordId) northern.id()).getID().getSequenceId().toString()
         );
         Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Western");
         partition = edgeLabel.ensureListPartitionExists(
                 "Western",
-                ((RecordId)western.id()).getID().getSequenceId().toString()
+                ((RecordId) western.id()).getID().getSequenceId().toString()
         );
         Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "uid", UUID.randomUUID().toString());
         e.properties("what", "this");
@@ -317,92 +618,19 @@ public class TestPartitioning extends BaseTest {
         e.properties("what", "this");
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
-        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(), 0);
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(), 0);
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
         Assert.assertEquals(2, vertices.size());
         Assert.assertEquals(northern, vertices.get(0));
         Assert.assertEquals(western, vertices.get(1));
-    }
 
-    @Test
-    public void testPartitionEdge() {
-        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
-        attributeMap.put("name", PropertyType.STRING);
-        attributeMap.put("cmUid", PropertyType.STRING);
-        attributeMap.put("vendorTechnology", PropertyType.STRING);
-
-        VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
-                "RealWorkspaceElement",
-                attributeMap,
-                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
-                PartitionType.LIST,
-                "\"vendorTechnology\""
-        );
-        for (TEST test : TEST.values()) {
-            Partition partition = realWorkspaceElementVertexLabel.ensureListPartitionExists(
-                    test.name(),
-                    "'" + test.name() + "'"
-            );
-        }
-        PropertyColumn propertyColumn = realWorkspaceElementVertexLabel.getProperty("cmUid").orElseThrow(IllegalStateException::new);
-        realWorkspaceElementVertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumn));
-
-        VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
-                "VirtualGroup",
-               new LinkedHashMap<>() {{
-                   put("name", PropertyType.STRING);
-               }}
-        );
-
-        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedEdgeLabelExist(
-                "virtualGroup_RealWorkspaceElement",
-                virtualGroupVertexLabel,
-                realWorkspaceElementVertexLabel,
-                new LinkedHashMap<>() {{
-                    put("name", PropertyType.STRING);
-                }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
-                PartitionType.LIST,
-                "name"
-        );
-        Partition partition = edgeLabel.ensureListPartitionExists(
-                "Northern",
-                "'Northern'"
-        );
-        partition = edgeLabel.ensureListPartitionExists(
-                "Western",
-                "'Western'"
-        );
-
-
-        this.sqlgGraph.tx().commit();
-
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a", "vendorTechnology", TEST.TEST1.name());
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b", "vendorTechnology", TEST.TEST2.name());
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "c", "vendorTechnology", TEST.TEST3.name());
-        this.sqlgGraph.tx().commit();
-
-        Vertex northern = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Northern");
-        Vertex western = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "Western");
-        Edge e = northern.addEdge("virtualGroup_RealWorkspaceElement", v1, "name", "Northern");
-        e.properties("what", "this");
-        e = western.addEdge("virtualGroup_RealWorkspaceElement", v1, "name", "Western");
-        e.properties("what", "this");
-        this.sqlgGraph.tx().commit();
-
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST1.name()).count().next(),0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST2.name()).count().next(),0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").has("vendorTechnology", TEST.TEST3.name()).count().next(),0);
-        Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("RealWorkspaceElement").count().next(),0);
-
-        List<Vertex> vertices = this.sqlgGraph.traversal().V(v1).in("virtualGroup_RealWorkspaceElement").toList();
-        Assert.assertEquals(2, vertices.size());
-        Assert.assertEquals(northern, vertices.get(0));
-        Assert.assertEquals(western, vertices.get(1));
+        vertices = this.sqlgGraph.traversal().V(northern).out("virtualGroup_RealWorkspaceElement").toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(v1, vertices.get(0));
     }
 
     @Test
@@ -415,7 +643,7 @@ public class TestPartitioning extends BaseTest {
         VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "RealWorkspaceElement",
                 attributeMap,
-                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                ListOrderedSet.listOrderedSet(List.of("cmUid", "vendorTechnology")),
                 PartitionType.LIST,
                 "\"vendorTechnology\""
         );
@@ -461,7 +689,7 @@ public class TestPartitioning extends BaseTest {
         VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "RealWorkspaceElement",
                 attributeMap,
-                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                ListOrderedSet.listOrderedSet(List.of("cmUid", "vendorTechnology")),
                 PartitionType.LIST,
                 "\"vendorTechnology\""
         );
@@ -496,7 +724,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
+                ListOrderedSet.listOrderedSet(List.of("int1", "int2")),
                 PartitionType.RANGE,
                 "int1,int2");
         this.sqlgGraph.tx().commit();
@@ -508,7 +736,7 @@ public class TestPartitioning extends BaseTest {
         this.sqlgGraph.close();
 
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            VertexLabel a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+            VertexLabel a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
             Assert.assertEquals("int1,int2", a.getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
         }
@@ -524,7 +752,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
+                ListOrderedSet.listOrderedSet(List.of("int1", "int2")),
                 PartitionType.RANGE,
                 "int1,int2");
         a.ensureRangePartitionExists("part1", "1,1", "5,5");
@@ -538,7 +766,7 @@ public class TestPartitioning extends BaseTest {
         this.sqlgGraph.close();
 
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
             Assert.assertEquals("int1,int2", a.getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
 
@@ -565,7 +793,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2", "int3")),
                 PartitionType.RANGE,
                 "int1,int2");
         Partition part1 = a.ensureRangePartitionWithSubPartitionExists("part1", "1,1", "5,5", PartitionType.RANGE, "int3");
@@ -583,7 +811,7 @@ public class TestPartitioning extends BaseTest {
         this.sqlgGraph.close();
 
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
             Assert.assertEquals("int1,int2", a.getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, a.getPartitionType());
 
@@ -651,7 +879,7 @@ public class TestPartitioning extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             EdgeLabel edgeLabel = sqlgGraph1.getTopology()
                     .getPublicSchema()
-                    .getEdgeLabel("ab").get();
+                    .getEdgeLabel("ab").orElseThrow();
             Assert.assertEquals("int1,int2", edgeLabel.getPartitionExpression());
             Assert.assertEquals(PartitionType.RANGE, edgeLabel.getPartitionType());
         }
@@ -694,7 +922,7 @@ public class TestPartitioning extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             EdgeLabel edgeLabel = sqlgGraph1.getTopology()
                     .getPublicSchema()
-                    .getEdgeLabel("ab").get();
+                    .getEdgeLabel("ab").orElseThrow();
             Assert.assertEquals("int1", edgeLabel.getPartitionExpression());
             Assert.assertEquals(PartitionType.LIST, edgeLabel.getPartitionType());
 
@@ -702,10 +930,10 @@ public class TestPartitioning extends BaseTest {
             Assert.assertTrue(edgeLabel.getPartitions().containsKey("int1"));
             Assert.assertTrue(edgeLabel.getPartitions().containsKey("int2"));
 
-            p1 = edgeLabel.getPartition("int1").get();
+            p1 = edgeLabel.getPartition("int1").orElseThrow();
             Assert.assertEquals(PartitionType.NONE, p1.getPartitionType());
             Assert.assertEquals("1, 2, 3, 4, 5", p1.getIn());
-            p2 = edgeLabel.getPartition("int2").get();
+            p2 = edgeLabel.getPartition("int2").orElseThrow();
             Assert.assertEquals(PartitionType.NONE, p2.getPartitionType());
             Assert.assertEquals("6, 7, 8, 9, 10", p2.getIn());
         }
@@ -730,7 +958,7 @@ public class TestPartitioning extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2", "int3")),
                 PartitionType.LIST,
                 "int1"
         );
@@ -752,7 +980,7 @@ public class TestPartitioning extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             EdgeLabel edgeLabel = sqlgGraph1.getTopology()
                     .getPublicSchema()
-                    .getEdgeLabel("ab").get();
+                    .getEdgeLabel("ab").orElseThrow();
             Assert.assertEquals("int1", edgeLabel.getPartitionExpression());
             Assert.assertEquals(PartitionType.LIST, edgeLabel.getPartitionType());
 
@@ -760,7 +988,7 @@ public class TestPartitioning extends BaseTest {
             Assert.assertTrue(edgeLabel.getPartitions().containsKey("p11"));
             Assert.assertTrue(edgeLabel.getPartitions().containsKey("p12"));
 
-            p1 = edgeLabel.getPartition("p11").get();
+            p1 = edgeLabel.getPartition("p11").orElseThrow();
             Assert.assertEquals(PartitionType.RANGE, p1.getPartitionType());
             Assert.assertEquals("1, 2, 3, 4, 5", p1.getIn());
             Assert.assertEquals(1, p1.getPartitions().size());
@@ -777,7 +1005,7 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals("1, 2, 3, 4, 5", p1111.getIn());
 
 
-            p2 = edgeLabel.getPartition("p12").get();
+            p2 = edgeLabel.getPartition("p12").orElseThrow();
             Assert.assertEquals(PartitionType.RANGE, p2.getPartitionType());
             Assert.assertEquals("6, 7, 8, 9, 10", p2.getIn());
             Assert.assertEquals(1, p2.getPartitions().size());
@@ -788,7 +1016,7 @@ public class TestPartitioning extends BaseTest {
             Assert.assertEquals("1", p121.getFrom());
             Assert.assertEquals("5", p121.getTo());
             Assert.assertTrue(p121.getPartition("p1211").isPresent());
-            Partition p1211 = p121.getPartition("p1211").get();
+            Partition p1211 = p121.getPartition("p1211").orElseThrow();
             Assert.assertTrue(p1211.getPartitionType().isNone());
             Assert.assertNull(p1211.getPartitionExpression());
             Assert.assertEquals("1, 2, 3, 4, 10", p1211.getIn());
@@ -821,7 +1049,7 @@ public class TestPartitioning extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate1).count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate2).count().next(), 0);
 
-        Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Measurement").get().getPartition("measurement1").get();
+        Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Measurement").orElseThrow().getPartition("measurement1").orElseThrow();
         partition.remove();
         this.sqlgGraph.tx().commit();
 
@@ -843,9 +1071,10 @@ public class TestPartitioning extends BaseTest {
                     put("name", PropertyType.STRING);
                     put("population", PropertyType.LONG);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
+                ListOrderedSet.listOrderedSet(List.of("name")),
                 PartitionType.LIST,
-                "left(lower(name), 1)");
+                "left(lower(name), 1)",
+                false);
         partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'a'");
         partitionedVertexLabel.ensureListPartitionExists("Cities_b", "'b'");
         partitionedVertexLabel.ensureListPartitionExists("Cities_c", "'c'");
@@ -854,13 +1083,13 @@ public class TestPartitioning extends BaseTest {
 
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.addVertex(T.label, "Cities", "name", "aasbc", "population", 1000L);
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "aasbc", "population", 1000L, "uid", i);
         }
-        this.sqlgGraph.addVertex(T.label, "Cities", "name", "basbc", "population", 1000L);
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "basbc", "population", 1000L, "uid", 1);
         for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.addVertex(T.label, "Cities", "name", "casbc", "population", 1000L);
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "casbc", "population", 1000L, "uid", i);
         }
-        this.sqlgGraph.addVertex(T.label, "Cities", "name", "dasbc", "population", 1000L);
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "dasbc", "population", 1000L, "uid", 1);
         this.sqlgGraph.tx().commit();
 
         Assert.assertEquals(202, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
@@ -868,7 +1097,7 @@ public class TestPartitioning extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "basbc").count().next(), 0);
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "casbc").count().next(), 0);
 
-        Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Cities").get().getPartition("Cities_a").get();
+        Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Cities").orElseThrow().getPartition("Cities_a").orElseThrow();
         partition.remove();
         this.sqlgGraph.tx().commit();
 
@@ -883,9 +1112,10 @@ public class TestPartitioning extends BaseTest {
         VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities",
                 new LinkedHashMap<>() {{
                     put("name", PropertyType.STRING);
+                    put("uid", PropertyType.STRING);
                     put("population", PropertyType.LONG);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
+                ListOrderedSet.listOrderedSet(List.of("name", "uid")),
                 PartitionType.LIST,
                 "name");
         partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'London'");
@@ -896,13 +1126,13 @@ public class TestPartitioning extends BaseTest {
 
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.addVertex(T.label, "Cities", "name", "London", "population", 1000L);
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "London", "population", 1000L, "uid", "uid_London_" + i);
         }
-        this.sqlgGraph.addVertex(T.label, "Cities", "name", "New York", "population", 1000L);
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "New York", "population", 1000L, "uid", "uid_NewYork_1");
         for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.addVertex(T.label, "Cities", "name", "Paris", "population", 1000L);
+            this.sqlgGraph.addVertex(T.label, "Cities", "name", "Paris", "population", 1000L, "uid", "uid_Paris_" + i);
         }
-        this.sqlgGraph.addVertex(T.label, "Cities", "name", "Johannesburg", "population", 1000L);
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "Johannesburg", "population", 1000L, "uid", "uid_Johannesburg_1");
         this.sqlgGraph.tx().commit();
 
         Assert.assertEquals(202, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
@@ -946,7 +1176,7 @@ public class TestPartitioning extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("test.Measurement").has("date", localDate1).count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("test.Measurement").has("date", localDate2).count().next(), 0);
 
-        Partition partition = this.sqlgGraph.getTopology().getSchema("test").get().getVertexLabel("Measurement").get().getPartition("measurement1").get();
+        Partition partition = this.sqlgGraph.getTopology().getSchema("test").orElseThrow().getVertexLabel("Measurement").orElseThrow().getPartition("measurement1").orElseThrow();
         partition.remove();
         this.sqlgGraph.tx().commit();
 
@@ -1003,11 +1233,11 @@ public class TestPartitioning extends BaseTest {
 
             Assert.assertEquals(
                     "date",
-                    sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("liveAt").get().getPartitionExpression()
+                    sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("liveAt").orElseThrow().getPartitionExpression()
             );
             Assert.assertEquals(
                     PartitionType.RANGE,
-                    sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("liveAt").get().getPartitionType()
+                    sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("liveAt").orElseThrow().getPartitionType()
             );
         } catch (Exception e) {
             Assert.fail(e.getMessage());
@@ -1062,7 +1292,7 @@ public class TestPartitioning extends BaseTest {
                     put("peaktemp", PropertyType.INTEGER);
                     put("unitsales", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
+                ListOrderedSet.listOrderedSet(List.of("name", "logdate", "peaktemp")),
                 PartitionType.RANGE,
                 "logdate");
 
@@ -1102,7 +1332,7 @@ public class TestPartitioning extends BaseTest {
                     put("list2", PropertyType.INTEGER);
                     put("unitsales", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
+                ListOrderedSet.listOrderedSet(List.of("name", "list1", "list2")),
                 PartitionType.LIST,
                 "list1");
 
@@ -1163,7 +1393,7 @@ public class TestPartitioning extends BaseTest {
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
+                ListOrderedSet.listOrderedSet(List.of("int1", "int2")),
                 PartitionType.RANGE,
                 "int1");
         Partition p11 = ab.ensureRangePartitionWithSubPartitionExists("int1_1_4", "1", "4", PartitionType.RANGE, "int2");
@@ -1216,7 +1446,7 @@ public class TestPartitioning extends BaseTest {
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2")),
                 PartitionType.LIST,
                 "int1");
         Partition p11 = ab.ensureListPartitionWithSubPartitionExists("int1_1_5", "1,2,3,4,5", PartitionType.LIST, "int2");

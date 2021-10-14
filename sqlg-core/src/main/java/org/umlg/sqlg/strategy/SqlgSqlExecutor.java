@@ -61,7 +61,7 @@ public class SqlgSqlExecutor {
                     executeDropQuery(sqlgGraph, sql, distinctQueryStack, addAdditionalPartitionHasContainer);
                     break;
                 default:
-                    throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery.toString());
+                    throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery);
             }
         }
     }

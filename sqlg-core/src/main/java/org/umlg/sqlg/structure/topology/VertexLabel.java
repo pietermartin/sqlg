@@ -82,14 +82,15 @@ public class VertexLabel extends AbstractLabel {
             Map<String, PropertyType> columns,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
-            String partitionExpression) {
+            String partitionExpression,
+            boolean addPrimaryKeyConstraint) {
 
         Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(partitionType != PartitionType.NONE, "PartitionType must be RANGE or LIST. Found NONE.");
         Preconditions.checkArgument(!StringUtils.isEmpty(partitionExpression), "partitionExpression may not be null or empty when creating a partitioned vertex label.");
         Preconditions.checkArgument(!identifiers.isEmpty(), "Partitioned label must have at least one identifier.");
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns, identifiers, partitionType, partitionExpression);
-        vertexLabel.createPartitionedVertexLabelOnDb(columns, identifiers);
+        vertexLabel.createPartitionedVertexLabelOnDb(columns, identifiers, addPrimaryKeyConstraint);
         TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns, identifiers, partitionType, partitionExpression);
         vertexLabel.committed = false;
         return vertexLabel;
@@ -323,6 +324,27 @@ public class VertexLabel extends AbstractLabel {
             Map<String, PropertyType> properties,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
+            String partitionExpression,
+            boolean isForeignKeyPartition) {
+
+        return this.getSchema().ensurePartitionedEdgeLabelExist(
+                edgeLabelName,
+                this,
+                inVertexLabel,
+                properties,
+                identifiers,
+                partitionType,
+                partitionExpression,
+                isForeignKeyPartition
+        );
+    }
+
+    public EdgeLabel ensurePartitionedEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyType> properties,
+            ListOrderedSet<String> identifiers,
+            PartitionType partitionType,
             String partitionExpression) {
 
         return this.getSchema().ensurePartitionedEdgeLabelExist(
@@ -341,7 +363,8 @@ public class VertexLabel extends AbstractLabel {
             final Map<String, PropertyType> properties,
             final ListOrderedSet<String> identifiers,
             final PartitionType partitionType,
-            final String partitionExpression) {
+            final String partitionExpression,
+            boolean isForeignKeyPartition) {
 
         EdgeLabel edgeLabel = EdgeLabel.createPartitionedEdgeLabel(
                 edgeLabelName,
@@ -350,7 +373,8 @@ public class VertexLabel extends AbstractLabel {
                 properties,
                 identifiers,
                 partitionType,
-                partitionExpression);
+                partitionExpression,
+                isForeignKeyPartition);
         if (this.schema.isSqlgSchema()) {
             this.outEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
             inVertexLabel.inEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
@@ -476,7 +500,7 @@ public class VertexLabel extends AbstractLabel {
         }
     }
 
-    private void createPartitionedVertexLabelOnDb(Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+    private void createPartitionedVertexLabelOnDb(Map<String, PropertyType> columns, ListOrderedSet<String> identifiers, boolean addPrimaryKeyConstraint) {
         Preconditions.checkState(!identifiers.isEmpty(), "Partitioned table must have identifiers.");
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
@@ -487,17 +511,17 @@ public class VertexLabel extends AbstractLabel {
 
         //below is needed for #408, to create the primary key.
         //It however clashes with existing partitioned table definitions.
-//        if (!identifiers.isEmpty()) {
-//            sql.append(", PRIMARY KEY(");
-//            int count = 1;
-//            for (String identifier : identifiers) {
-//                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
-//                if (count++ < identifiers.size()) {
-//                    sql.append(", ");
-//                }
-//            }
-//        }
-//        sql.append(")");
+        if (addPrimaryKeyConstraint) {
+            sql.append(", PRIMARY KEY(");
+            int count = 1;
+            for (String identifier : identifiers) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                if (count++ < identifiers.size()) {
+                    sql.append(", ");
+                }
+            }
+            sql.append(")");
+        }
 
         //nothing to do with the identifiers as partitioned tables do not have primary keys.
         sql.append(") PARTITION BY ");

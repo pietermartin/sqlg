@@ -166,7 +166,15 @@ public class TopologyManager {
         addVertexLabel(sqlgGraph, schema, tableName, columns, identifiers, PartitionType.NONE, null);
     }
 
-    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
+    public static void addVertexLabel(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String tableName,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers,
+            PartitionType partitionType,
+            String partitionExpression) {
+
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             //get the schema vertex

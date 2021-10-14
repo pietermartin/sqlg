@@ -85,7 +85,7 @@ public class WhereClause {
                         result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         result.append(containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size()));
                         if (i++ < schemaTableTree.getIdentifiers().size()) {
-                            result.append(" OR ");
+                            result.append(" AND ");
                         }
                     }
                 }

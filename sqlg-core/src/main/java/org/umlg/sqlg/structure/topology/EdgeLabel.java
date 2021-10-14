@@ -60,7 +60,7 @@ public class EdgeLabel extends AbstractLabel {
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties, identifiers);
-        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers);
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, false);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -72,7 +72,8 @@ public class EdgeLabel extends AbstractLabel {
             final Map<String, PropertyType> properties,
             final ListOrderedSet<String> identifiers,
             final PartitionType partitionType,
-            final String partitionExpression) {
+            final String partitionExpression,
+            boolean isForeignKeyPartition) {
 
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
@@ -85,7 +86,7 @@ public class EdgeLabel extends AbstractLabel {
                 identifiers,
                 partitionType,
                 partitionExpression);
-        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers);
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, isForeignKeyPartition);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -207,11 +208,12 @@ public class EdgeLabel extends AbstractLabel {
             VertexLabel outVertexLabel,
             VertexLabel inVertexLabel,
             Map<String, PropertyType> columns,
-            ListOrderedSet<String> identifiers) {
+            ListOrderedSet<String> identifiers,
+            boolean isForeignKeyPartition) {
 
-        if (!this.partitionType.isNone() && identifiers.isEmpty()) {
-            throw new IllegalStateException("Partitioned table must have identifiers.");
-        }
+//        if (!this.partitionType.isNone() && identifiers.isEmpty()) {
+//            throw new IllegalStateException("Partitioned table must have identifiers.");
+//        }
 
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
@@ -222,7 +224,7 @@ public class EdgeLabel extends AbstractLabel {
         sql.append(sqlDialect.maybeWrapInQoutes(schema));
         sql.append(".");
         sql.append(sqlDialect.maybeWrapInQoutes(tableName));
-        if (this.partitionType.isNone() && identifiers.isEmpty()) {
+        if (identifiers.isEmpty()) {
             sql.append("(\n\t");
             sql.append(sqlDialect.maybeWrapInQoutes("ID"));
             sql.append(" ");
@@ -238,7 +240,7 @@ public class EdgeLabel extends AbstractLabel {
             sql.append("(\n\t");
         }
         buildColumns(this.sqlgGraph, identifiers, columns, sql);
-        if (this.partitionType.isNone() && !identifiers.isEmpty()) {
+        if (!isForeignKeyPartition && !identifiers.isEmpty()) {
             sql.append(",\n\tPRIMARY KEY(");
             int count = 1;
             for (String identifier : identifiers) {
@@ -901,7 +903,7 @@ public class EdgeLabel extends AbstractLabel {
                     PropertyType propertyType = propertyColumn.getPropertyType();
                     String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
                     int count = 1;
-                    for (String ignore: propertyTypeToSqlDefinition) {
+                    for (String ignore : propertyTypeToSqlDefinition) {
                         if (count > 1) {
                             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                                     foreignVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END))

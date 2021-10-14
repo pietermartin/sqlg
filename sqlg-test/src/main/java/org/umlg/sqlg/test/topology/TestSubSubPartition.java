@@ -48,13 +48,13 @@ public class TestSubSubPartition extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.RANGE,
                 "int1");
         Partition p1 = a.ensureRangePartitionWithSubPartitionExists("int1", "1", "5", PartitionType.RANGE, "int2");
@@ -198,13 +198,13 @@ public class TestSubSubPartition extends BaseTest {
         EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
                 "ab",
                 b,
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.RANGE,
                 "int1");
         this.sqlgGraph.tx().commit();
@@ -362,13 +362,13 @@ public class TestSubSubPartition extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.LIST,
                 "int1");
         Partition p1 = a.ensureListPartitionWithSubPartitionExists("int1", "1,2,3,4,5", PartitionType.LIST, "int2");
@@ -426,13 +426,13 @@ public class TestSubSubPartition extends BaseTest {
         EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
                 "ab",
                 b,
-                new HashMap<String, PropertyType>() {{
+                new HashMap<>() {{
                     put("uid", PropertyType.STRING);
                     put("int1", PropertyType.INTEGER);
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.LIST,
                 "int1");
 

@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.process.dropstep;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -35,6 +34,7 @@ public class TestPartitionedDrop extends BaseTest {
         HCOMPT
     }
 
+    @SuppressWarnings({"unused", "UnusedAssignment"})
     @Test
     public void testPartitionEdgeOnUserDefinedForeignKey() {
         LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
@@ -45,7 +45,7 @@ public class TestPartitionedDrop extends BaseTest {
         VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "RealWorkspaceElement",
                 attributeMap,
-                ListOrderedSet.listOrderedSet(Collections.singletonList("cmUid")),
+                ListOrderedSet.listOrderedSet(List.of("cmUid", "vendorTechnology")),
                 PartitionType.LIST,
                 "\"vendorTechnology\""
         );
@@ -60,7 +60,7 @@ public class TestPartitionedDrop extends BaseTest {
 
         VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "VirtualGroup",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.STRING);
                     put("name", PropertyType.STRING);
                 }},
@@ -71,7 +71,7 @@ public class TestPartitionedDrop extends BaseTest {
                 "virtualGroup_RealWorkspaceElement",
                 virtualGroupVertexLabel,
                 realWorkspaceElementVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.STRING);
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
@@ -131,34 +131,40 @@ public class TestPartitionedDrop extends BaseTest {
                 .toList();
         Assert.assertEquals(5, ids.size());
 
-        sqlgGraph.traversal().V()
+        this.sqlgGraph.traversal().V()
                 .hasLabel("RealWorkspaceElement")
                 .has("vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name())
-                .has("cmUid", P.within(hgsmCmUid))
                 .drop()
                 .iterate();
 
-        this.sqlgGraph.tx().rollback();
-
-
-//        this.sqlgGraph.traversal().V(northern)
-//                .outE("virtualGroup_RealWorkspaceElement")
-//                .hasId(P.within(ids))
-//                .drop()
-//                .iterate();
-
         this.sqlgGraph.tx().commit();
-//
-//        ids =  this.sqlgGraph.traversal()
-//                .V(northern)
-//                .outE("virtualGroup_RealWorkspaceElement")
-//                .as("e")
-//                .otherV()
-//                .has("vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name())
-//                .select("e")
-//                .by("uid")
-//                .toList();
-//        Assert.assertEquals(0, ids.size());
+        ids =  this.sqlgGraph.traversal()
+                .V(northern)
+                .outE("virtualGroup_RealWorkspaceElement")
+                .as("e")
+                .otherV()
+                .has("vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name())
+                .select("e")
+                .by(T.id)
+                .toList();
+        Assert.assertEquals(0, ids.size());
+        List<Vertex> realWorkspaceVertices =  this.sqlgGraph.traversal()
+                .V(northern)
+                .out("virtualGroup_RealWorkspaceElement")
+                .has("vendorTechnology", VENDOR_TECHNOLOGY.HCOMPT.name())
+                .toList();
+        Assert.assertEquals(5, realWorkspaceVertices.size());
 
+        this.sqlgGraph.traversal().V()
+                .hasLabel("RealWorkspaceElement")
+                .has("vendorTechnology", VENDOR_TECHNOLOGY.HCOMPT.name())
+                .drop()
+                .iterate();
+        realWorkspaceVertices =  this.sqlgGraph.traversal()
+                .V(northern)
+                .out("virtualGroup_RealWorkspaceElement")
+                .has("vendorTechnology", VENDOR_TECHNOLOGY.HGSM.name())
+                .toList();
+        Assert.assertEquals(0, realWorkspaceVertices.size());
     }
 }

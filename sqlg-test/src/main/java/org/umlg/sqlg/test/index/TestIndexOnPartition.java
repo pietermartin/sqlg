@@ -250,17 +250,17 @@ public class TestIndexOnPartition extends BaseTest {
                     put("int3", PropertyType.INTEGER);
                     put("int4", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2", "int3")),
                 PartitionType.RANGE,
                 "int1");
 
-        PropertyColumn propertyColumnInt1 = vertexLabel.getProperty("int1").get();
+        PropertyColumn propertyColumnInt1 = vertexLabel.getProperty("int1").orElseThrow();
         Index index1 = vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumnInt1));
-        PropertyColumn propertyColumnInt2 = vertexLabel.getProperty("int2").get();
+        PropertyColumn propertyColumnInt2 = vertexLabel.getProperty("int2").orElseThrow();
         Index index2 = vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumnInt2));
-        PropertyColumn propertyColumnInt3 = vertexLabel.getProperty("int3").get();
+        PropertyColumn propertyColumnInt3 = vertexLabel.getProperty("int3").orElseThrow();
         Index index3 = vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumnInt3));
-        PropertyColumn propertyColumnInt4 = vertexLabel.getProperty("int4").get();
+        PropertyColumn propertyColumnInt4 = vertexLabel.getProperty("int4").orElseThrow();
         Index index4 = vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyColumnInt4));
 
         Partition int1_1_5 = vertexLabel.ensureRangePartitionWithSubPartitionExists("int1_1_5", "1", "5", PartitionType.RANGE, "int2");
@@ -316,7 +316,7 @@ public class TestIndexOnPartition extends BaseTest {
                     put("int3", PropertyType.INTEGER);
                     put("int4", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2")),
+                ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2", "int3")),
                 PartitionType.RANGE,
                 "int1");
 
@@ -388,7 +388,7 @@ public class TestIndexOnPartition extends BaseTest {
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
-                "int1");
+                "int1", false);
         VertexLabel b = bSchema.ensurePartitionedVertexLabelExist(
                 "B",
                 new HashMap<>() {{
@@ -400,7 +400,7 @@ public class TestIndexOnPartition extends BaseTest {
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
-                "int1");
+                "int1", false);
 
         EdgeLabel ab = a.ensurePartitionedEdgeLabelExist(
                 "ab",
@@ -412,14 +412,14 @@ public class TestIndexOnPartition extends BaseTest {
                     put("int3", PropertyType.INTEGER);
                     put("int4", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3", "int4")),
                 PartitionType.LIST,
                 "int1");
 
-        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int1").get()));
-        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int2").get()));
-        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int3").get()));
-        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int4").get()));
+        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int1").orElseThrow()));
+        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int2").orElseThrow()));
+        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int3").orElseThrow()));
+        a.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(a.getProperty("int4").orElseThrow()));
 
         Partition aInt1_1 = a.ensureListPartitionWithSubPartitionExists("aInt1_1", "1", PartitionType.LIST, "int2");
         Partition aInt1_2 = a.ensureListPartitionWithSubPartitionExists("aInt1_2", "2", PartitionType.LIST, "int2");
@@ -505,7 +505,7 @@ public class TestIndexOnPartition extends BaseTest {
         VertexLabel virtualGroupRootRealWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 VIRTUAL_GROUP_ROOT_REAL_WORKSPACE_ELEMENT_LABEL,
                 attributeMap,
-                ListOrderedSet.listOrderedSet(List.of(cmUid)),
+                ListOrderedSet.listOrderedSet(List.of(cmUid, VIRTUAL_GROUP_ID)),
                 PartitionType.LIST,
                 "\"" + VIRTUAL_GROUP_ID + "\""
         );
@@ -574,7 +574,7 @@ public class TestIndexOnPartition extends BaseTest {
         VertexLabel virtualGroupRootRealWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 VIRTUAL_GROUP_ROOT_REAL_WORKSPACE_ELEMENT_LABEL,
                 attributeMap,
-                ListOrderedSet.listOrderedSet(List.of(cmUid)),
+                ListOrderedSet.listOrderedSet(List.of(cmUid, VIRTUAL_GROUP_ID)),
                 PartitionType.RANGE,
                 "\"" + VIRTUAL_GROUP_ID + "\""
         );

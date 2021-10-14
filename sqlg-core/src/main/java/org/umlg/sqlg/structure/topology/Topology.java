@@ -162,7 +162,7 @@ public class Topology {
      */
     public static final String SQLG_SCHEMA_PARTITION_TO = "to";
     /**
-     * The Partition's in spec.
+     * The Partition's in spec. i.e. CREATE TABLE "public"."TEST1" PARTITION OF "public"."V_RealWorkspaceElement" FOR VALUES IN ('TEST1');
      */
     public static final String SQLG_SCHEMA_PARTITION_IN = "in";
     /**
