@@ -166,6 +166,14 @@ public class Topology {
      */
     public static final String SQLG_SCHEMA_PARTITION_IN = "in";
     /**
+     * The Partition's modulus spec. i.e. CREATE TABLE "public"."TEST1" PARTITION OF "public"."V_RealWorkspaceElement" FOR VALUES (MODULUS m, REMAINDER r);
+     */
+    public static final String SQLG_SCHEMA_PARTITION_MODULUS = "modulus";
+    /**
+     * The Partition's remainder spec. i.e. CREATE TABLE "public"."TEST1" PARTITION OF "public"."V_RealWorkspaceElement" FOR VALUES (MODULUS m, REMAINDER r);
+     */
+    public static final String SQLG_SCHEMA_PARTITION_REMAINDER = "remainder";
+    /**
      * The Partition's sub-partition's PartitionType.
      */
     public static final String SQLG_SCHEMA_PARTITION_PARTITION_TYPE = "partitionType";
@@ -379,6 +387,8 @@ public class Topology {
         columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_PARTITION_IN, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PARTITION_MODULUS, PropertyType.INTEGER);
+        columns.put(SQLG_SCHEMA_PARTITION_REMAINDER, PropertyType.INTEGER);
         columns.put(SQLG_SCHEMA_PARTITION_PARTITION_TYPE, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, PropertyType.STRING);
         partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
@@ -815,12 +825,12 @@ public class Topology {
     }
 
     private void beforeCommit() {
-        if (this.distributed && this.schemaChanged.get()) {
+        if (this.distributed && isSchemaChanged()) {
             Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
             if (jsonNodeOptional.isPresent()) {
                 SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
                 LocalDateTime timestamp = LocalDateTime.now();
-                int pid = sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get());
+                int pid = sqlSchemaChangeDialect.notifyChange(this.sqlgGraph, timestamp, jsonNodeOptional.get());
                 this.ownPids.add(pid);
             }
         }
@@ -1238,19 +1248,20 @@ public class Topology {
             return false;
         }
         Topology other = (Topology) o;
-        if (this.schemas.equals(other.schemas)) {
-            //check each schema individually as schema equals does not check the VertexLabels
-            for (Map.Entry<String, Schema> schemaEntry : schemas.entrySet()) {
-                Schema schema = schemaEntry.getValue();
-                Optional<Schema> otherSchemaOptional = other.getSchema(schemaEntry.getKey());
-                if (otherSchemaOptional.isPresent() && !schema.deepEquals(otherSchemaOptional.get())) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            return false;
-        }
+        return toJson().equals(other.toJson());
+//        if (this.schemas.equals(other.schemas)) {
+//            //check each schema individually as schema equals does not check the VertexLabels
+//            for (Map.Entry<String, Schema> schemaEntry : schemas.entrySet()) {
+//                Schema schema = schemaEntry.getValue();
+//                Optional<Schema> otherSchemaOptional = other.getSchema(schemaEntry.getKey());
+//                if (otherSchemaOptional.isPresent() && !schema.deepEquals(otherSchemaOptional.get())) {
+//                    return false;
+//                }
+//            }
+//            return true;
+//        } else {
+//            return false;
+//        }
     }
 
     /////////////////////////////////getters and cache/////////////////////////////

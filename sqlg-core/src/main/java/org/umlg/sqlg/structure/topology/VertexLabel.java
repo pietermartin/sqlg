@@ -707,6 +707,13 @@ public class VertexLabel extends AbstractLabel {
         }
         vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
 
+        ArrayNode partitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (Partition partition : this.getPartitions().values()) {
+            Optional<ObjectNode> json = partition.toJson();
+            json.ifPresent(partitionArrayNode::add);
+        }
+        vertexLabelNode.set("partitions", partitionArrayNode);
+
         if (this.schema.getTopology().isSchemaChanged()) {
             outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             edgeLabels = new ArrayList<>(this.uncommittedOutEdgeLabels.values());
@@ -899,7 +906,7 @@ public class VertexLabel extends AbstractLabel {
                         foreignKey = new ForeignKey();
                         for (String identifier : this.getIdentifiers()) {
                             if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
-                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                                //The distribution column needs to be ignored as it's a regular property and not a __I or __O property
                                 foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
                             }
                         }

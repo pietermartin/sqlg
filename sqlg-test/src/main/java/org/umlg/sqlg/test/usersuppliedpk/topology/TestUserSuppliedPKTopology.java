@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.usersuppliedpk.topology;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -15,12 +16,15 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.*;
+
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -338,6 +342,15 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         this.sqlgGraph = SqlgGraph.open(configuration);
         livesAt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "livesAt");
         Assert.assertTrue(livesAt.isPresent());
+
+        List<Vertex> edgeLabels =sqlgGraph.topology()
+                .V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA).has(Topology.SQLG_SCHEMA_SCHEMA_NAME, this.sqlgGraph.getSqlDialect().getPublicSchema())
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "livesAt")
+                .toList();
+        Preconditions.checkState(edgeLabels.size() == 1, "BUG: There can only ever be one EdgeLabel vertex, found %s", edgeLabels.size());
+
         Assert.assertEquals(2, livesAt.get().getIdentifiers().size());
         Assert.assertEquals("uid1", livesAt.get().getIdentifiers().get(0));
         Assert.assertEquals("uid2", livesAt.get().getIdentifiers().get(1));
@@ -416,6 +429,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         Assert.assertTrue(livesAt.isPresent());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testDuplicatePath() {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(

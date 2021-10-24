@@ -28,8 +28,8 @@ public enum PartitionType {
                 return PartitionType.RANGE;
             case "l":
                 return PartitionType.LIST;
-//            case "h":
-//                return PartitionType.HASH;
+            case "h":
+                return PartitionType.HASH;
             default:
                 throw new IllegalArgumentException(String.format("postgres partition type flag %s not supported", partitionType));
 

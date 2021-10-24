@@ -371,6 +371,63 @@ public class TopologyManager {
         }
     }
 
+    public static void addVertexLabelPartition(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String abstractLabel,
+            String name,
+            Integer modulus,
+            Integer remainder,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", abstractLabel)
+                    .toList();
+            if (vertices.size() == 0) {
+                throw new IllegalStateException("Found no vertex for " + schema + "." + abstractLabel);
+            }
+            if (vertices.size() > 1) {
+                throw new IllegalStateException("Found more than one vertex for " + schema + "." + abstractLabel);
+            }
+            Vertex vertex = vertices.get(0);
+
+            Vertex partition;
+            if (partitionExpression != null) {
+                Preconditions.checkState(!partitionType.isNone());
+                partition = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_MODULUS, modulus,
+                        SQLG_SCHEMA_PARTITION_REMAINDER, remainder,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
+                        CREATED_ON, LocalDateTime.now()
+                );
+            } else {
+                Preconditions.checkState(partitionType.isNone());
+                partition = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_MODULUS, modulus,
+                        SQLG_SCHEMA_PARTITION_REMAINDER, remainder,
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        CREATED_ON, LocalDateTime.now()
+                );
+            }
+            vertex.addEdge(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, partition);
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
     public static void addEdgeLabelPartition(
             SqlgGraph sqlgGraph,
             AbstractLabel abstractLabel,
@@ -470,6 +527,27 @@ public class TopologyManager {
 
     public static void addEdgeLabelPartition(
             SqlgGraph sqlgGraph,
+            AbstractLabel abstractLabel,
+            String name,
+            Integer modulus,
+            Integer remainder,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        addEdgeLabelPartition(
+                sqlgGraph,
+                abstractLabel.getSchema().getName(),
+                abstractLabel.getName(),
+                name,
+                modulus,
+                remainder,
+                partitionType,
+                partitionExpression
+        );
+    }
+
+    public static void addEdgeLabelPartition(
+            SqlgGraph sqlgGraph,
             String schema,
             String abstractLabel,
             String name,
@@ -512,6 +590,65 @@ public class TopologyManager {
                         T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
                         SQLG_SCHEMA_PARTITION_NAME, name,
                         SQLG_SCHEMA_PARTITION_IN, in,
+                        CREATED_ON, LocalDateTime.now(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name()
+                );
+            }
+            vertex.addEdge(SQLG_SCHEMA_EDGE_PARTITION_EDGE, property);
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
+
+    public static void addEdgeLabelPartition(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String abstractLabel,
+            String name,
+            Integer modulus,
+            Integer remainder,
+            PartitionType partitionType,
+            String partitionExpression) {
+
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertices = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .has("name", abstractLabel)
+                    .toList();
+            if (vertices.size() == 0) {
+                throw new IllegalStateException("Found no vertex for " + schema + "." + abstractLabel);
+            }
+            if (vertices.size() > 1) {
+                throw new IllegalStateException("Found more than one vertex for " + schema + "." + abstractLabel);
+            }
+            Vertex vertex = vertices.get(0);
+
+            Vertex property;
+            if (partitionExpression != null) {
+                Preconditions.checkState(!partitionType.isNone());
+                property = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_MODULUS, modulus,
+                        SQLG_SCHEMA_PARTITION_REMAINDER, remainder,
+                        CREATED_ON, LocalDateTime.now(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                        SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression
+                );
+            } else {
+                Preconditions.checkState(partitionType.isNone());
+                property = sqlgGraph.addVertex(
+                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                        SQLG_SCHEMA_PARTITION_NAME, name,
+                        SQLG_SCHEMA_PARTITION_MODULUS, modulus,
+                        SQLG_SCHEMA_PARTITION_REMAINDER, remainder,
                         CREATED_ON, LocalDateTime.now(),
                         SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name()
                 );
@@ -1229,7 +1366,9 @@ public class TopologyManager {
                 partition.getPartitionExpression(),
                 partition.getFrom(),
                 partition.getTo(),
-                partition.getIn()
+                partition.getIn(),
+                partition.getModulus(),
+                partition.getRemainder()
         );
 
     }
@@ -1246,7 +1385,9 @@ public class TopologyManager {
             String partitionExpression,
             String from,
             String to,
-            String in) {
+            String in,
+            Integer modulus,
+            Integer remainder) {
 
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -1318,8 +1459,7 @@ public class TopologyManager {
                             SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
                             CREATED_ON, LocalDateTime.now()
                     );
-                } else {
-                    Preconditions.checkState(in != null);
+                } else if (in != null) {
                     subPartition = sqlgGraph.addVertex(
                             T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
                             SQLG_SCHEMA_PARTITION_NAME, partitionName,
@@ -1328,6 +1468,19 @@ public class TopologyManager {
                             SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
                             CREATED_ON, LocalDateTime.now()
                     );
+                } else {
+                    Preconditions.checkState(modulus > 0);
+                    Preconditions.checkState(remainder >= 0);
+                    subPartition = sqlgGraph.addVertex(
+                            T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                            SQLG_SCHEMA_PARTITION_NAME, partitionName,
+                            SQLG_SCHEMA_PARTITION_MODULUS, modulus,
+                            SQLG_SCHEMA_PARTITION_REMAINDER, remainder,
+                            SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                            SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, partitionExpression,
+                            CREATED_ON, LocalDateTime.now()
+                    );
+
                 }
             } else {
                 if (from != null) {
@@ -1340,12 +1493,22 @@ public class TopologyManager {
                             SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
                             CREATED_ON, LocalDateTime.now()
                     );
-                } else {
-                    Preconditions.checkState(in != null);
+                } else if (in != null){
                     subPartition = sqlgGraph.addVertex(
                             T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
                             SQLG_SCHEMA_PARTITION_NAME, partitionName,
                             SQLG_SCHEMA_PARTITION_IN, in,
+                            SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
+                            CREATED_ON, LocalDateTime.now()
+                    );
+                } else {
+                    Preconditions.checkState(modulus > 0);
+                    Preconditions.checkState(remainder >= 0);
+                    subPartition = sqlgGraph.addVertex(
+                            T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
+                            SQLG_SCHEMA_PARTITION_NAME, partitionName,
+                            SQLG_SCHEMA_PARTITION_MODULUS, modulus,
+                            SQLG_SCHEMA_PARTITION_REMAINDER, remainder,
                             SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
                             CREATED_ON, LocalDateTime.now()
                     );

@@ -1169,6 +1169,10 @@ public interface SqlDialect {
         throw new IllegalStateException("Partitioning is not supported.");
     }
 
+    default List<String> addHashPartitionColumns() {
+        throw new IllegalStateException("Partitioning is not supported.");
+    }
+
     default String addDbVersionToGraph(DatabaseMetaData metadata) {
         try {
             return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT DEFAULT '" + metadata.getDatabaseProductVersion() + "';";

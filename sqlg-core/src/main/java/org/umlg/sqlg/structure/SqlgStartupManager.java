@@ -94,13 +94,12 @@ class SqlgStartupManager {
             if (canUserCreateSchemas && !existSqlgSchema) {
                 //old versions of sqlg needs the topology populated from the information_schema table.
                 logger.debug("Upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
-                StopWatch stopWatch2 = new StopWatch();
-                stopWatch2.start();
+                StopWatch stopWatch2 = StopWatch.createStarted();
                 loadSqlgSchemaFromInformationSchema();
                 String version = getBuildVersion();
                 TopologyManager.addGraph(this.sqlgGraph, version);
                 stopWatch2.stop();
-                logger.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
+                logger.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2);
                 logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             } else {
                 // make sure the index edge index property exist, this if for upgrading from 1.3.4 to 1.4.0
@@ -167,6 +166,9 @@ class SqlgStartupManager {
         if (v.isUnknownVersion() || v.compareTo(new Version(2, 0, 0, null, null, null)) < 0) {
             addPartitionSupportToSqlgSchema();
         }
+        if (v.isUnknownVersion() || v.compareTo(new Version(2, 1, 4, null, null, null)) < 0) {
+            addHashPartitionSupportToSqlgSchema();
+        }
     }
 
     private void addPartitionSupportToSqlgSchema() {
@@ -175,6 +177,18 @@ class SqlgStartupManager {
         for (String addPartitionTable : addPartitionTables) {
             try (Statement s = conn.createStatement()) {
                 s.execute(addPartitionTable);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void addHashPartitionSupportToSqlgSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        List<String> addPartitionColumns = this.sqlDialect.addHashPartitionColumns();
+        for (String addPartitionColumn : addPartitionColumns) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(addPartitionColumn);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -219,7 +233,7 @@ class SqlgStartupManager {
      * @return the old version of the graph, or null if there was no graph
      */
     private String createOrUpdateGraph(String version) {
-        String oldVersion = null;
+        String oldVersion;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
@@ -394,6 +408,8 @@ class SqlgStartupManager {
                         edgeVertex = TopologyManager.addEdgeLabel(this.sqlgGraph, table, Collections.emptyMap(), ListOrderedSet.listOrderedSet(primaryKeys), PartitionType.NONE, null);
                     }
                 }
+                Set<SchemaTable> inForeignKeys = new HashSet<>();
+                Set<SchemaTable> outForeignKeys = new HashSet<>();
                 for (Triple<String, Integer, String> edgeColumn : edgeColumns) {
                     String column = edgeColumn.getLeft();
                     if (table.startsWith(EDGE_PREFIX) && (column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END))) {
@@ -402,7 +418,7 @@ class SqlgStartupManager {
                         if (hasIDPrimaryKey(primaryKeys)) {
                             foreignKey = SchemaTable.of(split[0], split[1]);
                         } else {
-                            //There could be no ID pk because of user defined pk or because partioned tables have no pk.
+                            //There could be no ID pk because of user defined pk or because partitioned tables have no pk.
                             //This logic is because in TopologyManager.addLabelToEdge the '__I' or '__O' is assumed to be present and gets trimmed.
                             if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
                                 if (split.length == 3) {
@@ -421,11 +437,17 @@ class SqlgStartupManager {
                             }
                         }
                         if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                            TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, true, foreignKey);
+                            inForeignKeys.add(foreignKey);
                         } else if (column.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
-                            TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, false, foreignKey);
+                            outForeignKeys.add(foreignKey);
                         }
                     }
+                }
+                for (SchemaTable inForeignKey : inForeignKeys) {
+                    TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, true, inForeignKey);
+                }
+                for (SchemaTable outForeignKey : outForeignKeys) {
+                    TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, false, outForeignKey);
                 }
             }
 
@@ -479,6 +501,7 @@ class SqlgStartupManager {
             }
 
             if (this.sqlDialect.supportsPartitioning()) {
+                sqlgGraph.tx().commit();
                 //load the partitions
                 conn = this.sqlgGraph.tx().getConnection();
                 List<Map<String, String>> partitions = this.sqlDialect.getPartitions(conn);

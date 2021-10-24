@@ -81,13 +81,30 @@ public class WhereClause {
                     result.append(containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size()));
                 } else {
                     int i = 1;
-                    for (String identifier : schemaTableTree.getIdentifiers()) {
-                        result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
-                        result.append(containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size()));
-                        if (i++ < schemaTableTree.getIdentifiers().size()) {
-                            result.append(" AND ");
+                    Collection<?> recordIds = ((Collection<?>) p.getValue());
+                    for (Object ignore: recordIds) {
+                        int j = 1;
+                        result.append("(");
+                        for (String identifier : schemaTableTree.getIdentifiers()) {
+                            result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                            result.append(containsToSql((Contains) p.getBiPredicate(), 1));
+                            if (j++ < schemaTableTree.getIdentifiers().size()) {
+                                result.append(" AND ");
+                            }
+                        }
+                        result.append(")");
+                        if (i++ < recordIds.size()) {
+                            result.append(" OR\n\t");
                         }
                     }
+//                    for (String identifier : schemaTableTree.getIdentifiers()) {
+//                        result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+//                        result.append(containsToSql((Contains) p.getBiPredicate(), ((Collection<?>) p.getValue()).size()));
+//                        if (i++ < schemaTableTree.getIdentifiers().size()) {
+//                            result.append(" AND ");
+////                            result.append(" OR ");
+//                        }
+//                    }
                 }
             } else {
                 result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));

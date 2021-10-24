@@ -13,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/11/11
  */
+@SuppressWarnings({"DuplicatedCode", "unchecked", "unused", "rawtypes"})
 @RunWith(Parameterized.class)
 public class TestDropStep extends BaseTest {
 
@@ -48,7 +50,7 @@ public class TestDropStep extends BaseTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[]{Boolean.TRUE, Boolean.FALSE}, new Object[]{Boolean.FALSE, Boolean.FALSE},
                 new Object[]{Boolean.TRUE, Boolean.TRUE}, new Object[]{Boolean.FALSE, Boolean.TRUE});
-//        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.FALSE});
+//        return Collections.singletonList(new Object[]{Boolean.FALSE, Boolean.FALSE});
 //        return Collections.singletonList(new Object[]{Boolean.TRUE, Boolean.TRUE});
     }
 
@@ -86,7 +88,7 @@ public class TestDropStep extends BaseTest {
     public void testUserSuppliedIdsWithinID() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "PolicyDiscrepancy",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -127,7 +129,7 @@ public class TestDropStep extends BaseTest {
     public void testNormalAndUserSuppliedIdsIn() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -135,14 +137,14 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.STRING);
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
@@ -173,13 +175,13 @@ public class TestDropStep extends BaseTest {
     public void testNormalAndUserSuppliedIdsOut() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.STRING);
                 }}
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -188,7 +190,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
@@ -221,7 +223,7 @@ public class TestDropStep extends BaseTest {
     public void testUserSuppliedDrop() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.STRING);
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
@@ -257,7 +259,7 @@ public class TestDropStep extends BaseTest {
     @Test
     public void g_V_properties_drop() {
         loadModern();
-        final Traversal<Vertex, VertexProperty> traversal = (Traversal) this.sqlgGraph.traversal().V().properties().drop();
+        final Traversal<Vertex, VertexProperty<?>> traversal = (Traversal) this.sqlgGraph.traversal().V().properties().drop();
         printTraversalForm(traversal);
         Assert.assertFalse(traversal.hasNext());
         Assert.assertEquals(6, IteratorUtils.count(this.sqlgGraph.traversal().V()));
@@ -275,7 +277,7 @@ public class TestDropStep extends BaseTest {
         final MutationListener listener = new AbstractMutationListener() {
             @Override
             public void vertexRemoved(final Vertex element) {
-                Assert.assertThat(element, IsInstanceOf.instanceOf(ReferenceVertex.class));
+                MatcherAssert.assertThat(element, IsInstanceOf.instanceOf(ReferenceVertex.class));
                 Assert.assertEquals(id, element.id());
                 Assert.assertEquals(label, element.label());
                 triggered.set(true);
@@ -294,7 +296,7 @@ public class TestDropStep extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         AbstractGremlinTest.assertVertexEdgeCounts(this.sqlgGraph, 0, 0);
-        Assert.assertThat(triggered.get(), CoreMatchers.is(true));
+        MatcherAssert.assertThat(triggered.get(), CoreMatchers.is(true));
     }
 
     @Test
@@ -302,7 +304,7 @@ public class TestDropStep extends BaseTest {
 
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -317,7 +319,7 @@ public class TestDropStep extends BaseTest {
         final MutationListener listener = new AbstractMutationListener() {
             @Override
             public void vertexRemoved(final Vertex element) {
-                Assert.assertThat(element, IsInstanceOf.instanceOf(ReferenceVertex.class));
+                MatcherAssert.assertThat(element, IsInstanceOf.instanceOf(ReferenceVertex.class));
                 Assert.assertEquals(id, element.id());
                 Assert.assertEquals(label, element.label());
                 triggered.set(true);
@@ -336,7 +338,7 @@ public class TestDropStep extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         AbstractGremlinTest.assertVertexEdgeCounts(this.sqlgGraph, 0, 0);
-        Assert.assertThat(triggered.get(), CoreMatchers.is(true));
+        MatcherAssert.assertThat(triggered.get(), CoreMatchers.is(true));
     }
 
     @Test
@@ -346,7 +348,7 @@ public class TestDropStep extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        this.dropTraversal.V().hasLabel("A").has("name", "a1").drop().hasNext();
+        this.dropTraversal.V().hasLabel("A").has("name", "a1").drop().iterate();
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(2, vertices.size());
@@ -361,7 +363,7 @@ public class TestDropStep extends BaseTest {
     public void testDropStepUserSuppliedIds() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("name", PropertyType.STRING);
                     put("uid", PropertyType.varChar(100));
                 }},
@@ -399,7 +401,7 @@ public class TestDropStep extends BaseTest {
                 .repeat(__.out())
                 .times(3)
                 .drop()
-                .hasNext();
+                .iterate();
         this.sqlgGraph.tx().commit();
 
         Assert.assertFalse(this.sqlgGraph.traversal().V().hasLabel("D").hasNext());
@@ -414,7 +416,7 @@ public class TestDropStep extends BaseTest {
     public void testDropStepRepeat1UserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -422,7 +424,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -430,7 +432,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -438,7 +440,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "D",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -447,7 +449,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -456,7 +458,7 @@ public class TestDropStep extends BaseTest {
         bVertexLabel.ensureEdgeLabelExist(
                 "bc",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -465,7 +467,7 @@ public class TestDropStep extends BaseTest {
         cVertexLabel.ensureEdgeLabelExist(
                 "cd",
                 dVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -485,7 +487,7 @@ public class TestDropStep extends BaseTest {
                 .repeat(__.out())
                 .times(3)
                 .drop()
-                .hasNext();
+                .iterate();
         this.sqlgGraph.tx().commit();
 
         Assert.assertFalse(this.sqlgGraph.traversal().V().hasLabel("D").hasNext());
@@ -587,7 +589,7 @@ public class TestDropStep extends BaseTest {
     public void testDropStepRepeat2UserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -595,7 +597,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -603,7 +605,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -611,7 +613,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "D",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -620,7 +622,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -629,7 +631,7 @@ public class TestDropStep extends BaseTest {
         bVertexLabel.ensureEdgeLabelExist(
                 "bc",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -638,7 +640,7 @@ public class TestDropStep extends BaseTest {
         cVertexLabel.ensureEdgeLabelExist(
                 "cd",
                 dVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -648,7 +650,7 @@ public class TestDropStep extends BaseTest {
         bVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 aVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -657,7 +659,7 @@ public class TestDropStep extends BaseTest {
         cVertexLabel.ensureEdgeLabelExist(
                 "bc",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -666,7 +668,7 @@ public class TestDropStep extends BaseTest {
         dVertexLabel.ensureEdgeLabelExist(
                 "cd",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -758,7 +760,7 @@ public class TestDropStep extends BaseTest {
     public void testDropStepWithJoinWithuserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -767,7 +769,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -776,7 +778,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -786,7 +788,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -795,7 +797,7 @@ public class TestDropStep extends BaseTest {
         bVertexLabel.ensureEdgeLabelExist(
                 "bc",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -858,7 +860,7 @@ public class TestDropStep extends BaseTest {
         this.dropTraversal
                 .V().hasLabel("A").as("a")
                 .outE("ab")
-                .drop().hasNext();
+                .drop().iterate();
         this.sqlgGraph.tx().commit();
 
         Assert.assertFalse(this.sqlgGraph.traversal().E().hasLabel("ab").hasNext());
@@ -874,7 +876,7 @@ public class TestDropStep extends BaseTest {
     public void testDropEdgesUserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -882,7 +884,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -890,7 +892,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -899,7 +901,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
@@ -907,7 +909,7 @@ public class TestDropStep extends BaseTest {
         bVertexLabel.ensureEdgeLabelExist(
                 "bc",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
@@ -930,7 +932,7 @@ public class TestDropStep extends BaseTest {
         this.dropTraversal
                 .V().hasLabel("A").as("a")
                 .outE("ab")
-                .drop().hasNext();
+                .drop().iterate();
         this.sqlgGraph.tx().commit();
 
         Assert.assertFalse(this.sqlgGraph.traversal().E().hasLabel("ab").hasNext());
@@ -1022,7 +1024,7 @@ public class TestDropStep extends BaseTest {
     public void dropMultiplePathsToVerticesUserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1031,7 +1033,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1040,7 +1042,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1050,7 +1052,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1059,7 +1061,7 @@ public class TestDropStep extends BaseTest {
         bVertexLabel.ensureEdgeLabelExist(
                 "bc",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1162,7 +1164,7 @@ public class TestDropStep extends BaseTest {
     public void dropMultiplePathsToVerticesWithHasWithUserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1171,7 +1173,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1180,7 +1182,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1190,7 +1192,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1199,7 +1201,7 @@ public class TestDropStep extends BaseTest {
         bVertexLabel.ensureEdgeLabelExist(
                 "bc",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1291,7 +1293,7 @@ public class TestDropStep extends BaseTest {
     public void testDropStepWithJoinVertexStepUserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1300,7 +1302,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1310,7 +1312,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1388,7 +1390,7 @@ public class TestDropStep extends BaseTest {
     public void testDropOutMultipleOneUserSuppliedId() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -1396,7 +1398,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -1404,7 +1406,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
                 }},
@@ -1413,7 +1415,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
@@ -1421,7 +1423,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
@@ -1462,7 +1464,7 @@ public class TestDropStep extends BaseTest {
     public void testDropOutMultipleUserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1471,7 +1473,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1480,7 +1482,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1490,7 +1492,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1499,7 +1501,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1538,6 +1540,69 @@ public class TestDropStep extends BaseTest {
     }
 
     @Test
+    public void testDropOutMultipleUserSuppliedIdsSimpler() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "C",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                bVertexLabel,
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        aVertexLabel.ensureEdgeLabelExist(
+                "e1",
+                cVertexLabel,
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.varChar(100));
+                    put("uid2", PropertyType.varChar(100));
+                }},
+                ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "uid1", "a1", "uid2", "a11", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "uid1", "b1", "uid2", "b11", "name", "b1");
+        a1.addEdge("e1", b1, "uid1", "e1", "uid2", "e11");
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "uid1", "a2", "uid2", "a22", "name", "a2");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "uid1", "c1", "uid2", "c11", "name", "c2");
+        a2.addEdge("e1", c2, "uid1", "e2", "uid2", "e22");
+
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1, a2).out("e1").toList();
+        Assert.assertEquals(2, vertices.size());
+    }
+
+    @Test
     public void testDropOutMultipleAcrossSchemas() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
@@ -1573,7 +1638,7 @@ public class TestDropStep extends BaseTest {
     public void testDropOutMultipleAcrossSchemasuserSuppliedIds() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1582,7 +1647,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1591,7 +1656,7 @@ public class TestDropStep extends BaseTest {
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                     put("name", PropertyType.STRING);
@@ -1601,7 +1666,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 bVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},
@@ -1610,7 +1675,7 @@ public class TestDropStep extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "e1",
                 cVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid1", PropertyType.varChar(100));
                     put("uid2", PropertyType.varChar(100));
                 }},

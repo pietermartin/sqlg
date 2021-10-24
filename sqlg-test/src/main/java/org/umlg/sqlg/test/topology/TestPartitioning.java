@@ -409,7 +409,7 @@ public class TestPartitioning extends BaseTest {
         Assert.assertEquals(2, vertices.size());
         Assert.assertEquals(northern, vertices.get(0));
         Assert.assertEquals(western, vertices.get(1));
-        
+
         //Check if the partitions are being used
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {

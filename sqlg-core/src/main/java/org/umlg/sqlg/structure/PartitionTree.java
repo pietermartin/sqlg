@@ -22,10 +22,10 @@ class PartitionTree {
      */
     private final String partitionExpression1;
     /**
-     * partitionExpression2 is if the partition expression is an sql expression. i.e. not just specifying columns.
+     * partitionExpression2 is if the partition expression is a sql expression. i.e. not just specifying columns.
      */
     private final String partitionExpression2;
-    private final String fromToIn;
+    private final String fromToInModulusRemainder;
     private final PartitionType partitionType;
 
     private String parent;
@@ -47,7 +47,7 @@ class PartitionTree {
                         partition.get("partitionType"),
                         partition.get("partitionExpression1"),
                         partition.get("partitionExpression2"),
-                        partition.get("fromToIn")
+                        partition.get("fromToInModulusRemainder")
                 );
                 p.parent = partition.get("schema") + "." + partition.get("parent");
                 flattenedPartitionTrees.put(p.schemaAndName, p);
@@ -63,7 +63,7 @@ class PartitionTree {
                         partition.get("partitionType"),
                         partition.get("partitionExpression1"),
                         partition.get("partitionExpression2"),
-                        partition.get("fromToIn")
+                        partition.get("fromToInModulusRemainder")
                 );
                 if (!flattenedPartitionTrees.containsKey(p.schemaAndName)) {
                     flattenedPartitionTrees.put(p.schemaAndName, p);
@@ -92,14 +92,14 @@ class PartitionTree {
             String partitionType,
             String partitionExpression1,
             String partitionExpression2,
-            String fromToIn) {
+            String fromToInModulusRemainder) {
 
         this.schemaAndName = schemaAndName;
         this.schema = schema;
         this.name = StringUtils.removeEnd(StringUtils.removeFirst(name, "\""), "\"");
         this.partitionExpression1 = partitionExpression1;
         this.partitionExpression2 = partitionExpression2;
-        this.fromToIn = fromToIn;
+        this.fromToInModulusRemainder = fromToInModulusRemainder;
         if (partitionType == null) {
             this.partitionType = PartitionType.NONE;
         } else {
@@ -142,6 +142,18 @@ class PartitionTree {
                             child.toExpression(),
                             child.partitionType,
                             child.getPartitionExpression());
+                } else if (this.partitionType.isHash()) {
+                    Preconditions.checkState(child.modulusExpression() != null);
+                    Preconditions.checkState(child.remainderExpression() != null);
+                    TopologyManager.addVertexLabelPartition(
+                            sqlgGraph,
+                            this.schema,
+                            this.name.substring(Topology.VERTEX_PREFIX.length()),
+                            child.name,
+                            child.modulusExpression(),
+                            child.remainderExpression(),
+                            child.partitionType,
+                            child.getPartitionExpression());
                 } else {
                     Preconditions.checkState(child.inExpression() != null);
                     TopologyManager.addVertexLabelPartition(
@@ -171,6 +183,18 @@ class PartitionTree {
                             child.name,
                             child.fromExpression(),
                             child.toExpression(),
+                            child.partitionType,
+                            child.getPartitionExpression());
+                } else if (this.partitionType.isHash()) {
+                    Preconditions.checkState(child.modulusExpression() != null);
+                    Preconditions.checkState(child.remainderExpression() != null);
+                    TopologyManager.addEdgeLabelPartition(
+                            sqlgGraph,
+                            this.schema,
+                            this.name.substring(Topology.EDGE_PREFIX.length()),
+                            child.name,
+                            child.modulusExpression(),
+                            child.remainderExpression(),
                             child.partitionType,
                             child.getPartitionExpression());
                 } else {
@@ -209,16 +233,18 @@ class PartitionTree {
                     child.getPartitionExpression(),
                     child.fromExpression(),
                     child.toExpression(),
-                    child.inExpression()
+                    child.inExpression(),
+                    child.modulusExpression(),
+                    child.remainderExpression()
             );
             child.walk(sqlgGraph, isVertexLabel, schema, abstractLabel);
         }
     }
 
     private String fromExpression() {
-        if (this.fromToIn != null && this.parentPartitionTree.partitionType.isRange()) {
-            String tmp = this.fromToIn.substring("FOR VALUES FROM (".length());
-            String fromTo[] = tmp.split(" TO ");
+        if (this.fromToInModulusRemainder != null && this.parentPartitionTree.partitionType.isRange()) {
+            String tmp = this.fromToInModulusRemainder.substring("FOR VALUES FROM (".length());
+            String[] fromTo = tmp.split(" TO ");
             String from = fromTo[0].trim();
             from = StringUtils.removeStart(from, "(");
             from = StringUtils.removeEnd(from, ")");
@@ -229,9 +255,9 @@ class PartitionTree {
     }
 
     private String toExpression() {
-        if (this.fromToIn != null && this.parentPartitionTree.partitionType.isRange()) {
-            String tmp = this.fromToIn.substring("FOR VALUES FROM (".length());
-            String fromTo[] = tmp.split(" TO ");
+        if (this.fromToInModulusRemainder != null && this.parentPartitionTree.partitionType.isRange()) {
+            String tmp = this.fromToInModulusRemainder.substring("FOR VALUES FROM (".length());
+            String[] fromTo = tmp.split(" TO ");
             String to = fromTo[1].trim();
             to = StringUtils.removeStart(to, "(");
             to = StringUtils.removeEnd(to, ")");
@@ -242,13 +268,38 @@ class PartitionTree {
     }
 
     private String inExpression() {
-        if (this.fromToIn != null && this.parentPartitionTree.partitionType.isList()) {
-            String tmp = this.fromToIn.substring("FOR VALUES IN (".length());
-            String fromTo[] = tmp.split(" TO ");
+        if (this.fromToInModulusRemainder != null && this.parentPartitionTree.partitionType.isList()) {
+            String tmp = this.fromToInModulusRemainder.substring("FOR VALUES IN (".length());
+            String[] fromTo = tmp.split(" TO ");
             String in = fromTo[0];
             in = StringUtils.removeStart(in, "(");
             in = StringUtils.removeEnd(in, ")");
             return in;
+        } else {
+            return null;
+        }
+    }
+
+    private Integer modulusExpression() {
+        if (this.fromToInModulusRemainder != null && this.parentPartitionTree.partitionType.isHash()) {
+            String tmp = this.fromToInModulusRemainder.substring("FOR VALUES WITH (".length());
+            String[] modulusRemainder = tmp.split(",");
+            String modulus = modulusRemainder[0];
+            modulus = StringUtils.removeStart(modulus, "modulus ");
+            return Integer.valueOf(modulus);
+        } else {
+            return null;
+        }
+    }
+
+    private Integer remainderExpression() {
+        if (this.fromToInModulusRemainder != null && this.parentPartitionTree.partitionType.isHash()) {
+            String tmp = this.fromToInModulusRemainder.substring("FOR VALUES WITH (".length());
+            String[] modulusRemainder = tmp.split(",");
+            String remainder = modulusRemainder[1];
+            remainder = StringUtils.removeStart(remainder, " remainder ");
+            remainder = StringUtils.removeEnd(remainder, ")");
+            return Integer.valueOf(remainder);
         } else {
             return null;
         }

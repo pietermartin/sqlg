@@ -775,6 +775,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"from\" LONGVARCHAR, " +
                 "\"to\" LONGVARCHAR, " +
                 "\"in\" LONGVARCHAR, " +
+                "\"modulus\" INTEGER, " +
+                "\"remainder\" INTEGER, " +
                 "\"partitionType\" LONGVARCHAR, " +
                 "\"partitionExpression\" LONGVARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (" +

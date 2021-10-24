@@ -151,6 +151,7 @@ public class SqlgSqlExecutor {
         }
         try {
             if (!distinctQueryStack.isEmpty() && distinctQueryStack.peekFirst().getStepType() != SchemaTableTree.STEP_TYPE.GRAPH_STEP) {
+                Preconditions.checkState(distinctQueryStack.peekFirst() != null);
                 Preconditions.checkState(!distinctQueryStack.peekFirst().getParentIdsAndIndexes().isEmpty());
             }
             Connection conn = sqlgGraph.tx().getConnection();
@@ -161,10 +162,14 @@ public class SqlgSqlExecutor {
             sqlgGraph.tx().add(preparedStatement);
             int parameterCount = 1;
             SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount, includeAdditionalPartitionHasContainer);
+            int deleteCount;
             if (distinctQueryStack.isEmpty()) {
-                preparedStatement.execute();
+                deleteCount = preparedStatement.executeUpdate();
             } else {
-                preparedStatement.execute();
+                deleteCount = preparedStatement.executeUpdate();
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug("Deleted {} rows", deleteCount);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

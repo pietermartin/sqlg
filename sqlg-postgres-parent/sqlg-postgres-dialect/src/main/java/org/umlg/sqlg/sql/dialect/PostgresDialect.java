@@ -3138,6 +3138,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"from\" TEXT, " +
                 "\"to\" TEXT, " +
                 "\"in\" TEXT, " +
+                "\"modulus\" BIGINT, " +
+                "\"remainder\" BIGINT, " +
                 "\"partitionType\" TEXT, " +
                 "\"partitionExpression\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (" +
@@ -3332,8 +3334,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
+    public List<String> addHashPartitionColumns() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"modulus\" INTEGER;",
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"remainder\" INTEGER;"
+        );
+    }
+
+    @Override
     public List<String> addPartitionTables() {
-        return Arrays.asList(
+        return List.of(
                 "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionType\" TEXT DEFAULT 'NONE';",
                 "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"partitionExpression\" TEXT;",
                 "ALTER TABLE \"sqlg_schema\".\"V_vertex\" ADD COLUMN \"shardCount\" INTEGER;",
@@ -3813,9 +3823,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     connection.rollback();
                     PGNotification[] notifications = pgConnection.getNotifications();
                     if (notifications != null) {
-                        for (int i = 0; i < notifications.length; i++) {
-                            int pid = notifications[i].getPID();
-                            String notify = notifications[i].getParameter();
+                        for (PGNotification notification : notifications) {
+                            int pid = notification.getPID();
+                            String notify = notification.getParameter();
                             LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                             PostgresDialect.this.executorService.submit(() -> {
                                 try {
@@ -3841,12 +3851,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
                 this.sqlgGraph.tx().rollback();
             } catch (SQLException e) {
-                logger.error(String.format("change listener on graph %s error", this.sqlgGraph.toString()), e);
+                logger.error(String.format("change listener on graph %s error", this.sqlgGraph), e);
                 this.sqlgGraph.tx().rollback();
                 throw new RuntimeException(e);
             } catch (InterruptedException e) {
                 if (run.get()) {
-                    logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph.toString()));
+                    logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph));
                 }
                 this.sqlgGraph.tx().rollback();
                 //swallow
@@ -4749,7 +4759,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     "    p.partitionType,\n" +
                     "    p.\"partitionExpression1\",\n" +
                     "    p.\"partitionExpression2\",\n" +
-                    "    pg_get_expr(cl.relpartbound, cl.oid, true) as \"fromToIn\"\n" +
+                    "    pg_get_expr(cl.relpartbound, cl.oid, true) as \"fromToInModulusRemainder\"\n" +
                     "FROM\n" +
                     "    sqlg_schema.\"" + VERTEX_PREFIX + "schema\" s join\n" +
                     "\tpg_catalog.pg_namespace n on s.name = n.nspname join\n" +
@@ -4773,7 +4783,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 row.put("partitionType", resultSet.getString("partitionType"));
                 row.put("partitionExpression1", resultSet.getString("partitionExpression1"));
                 row.put("partitionExpression2", resultSet.getString("partitionExpression2"));
-                row.put("fromToIn", resultSet.getString("fromToIn"));
+                row.put("fromToInModulusRemainder", resultSet.getString("fromToInModulusRemainder"));
                 result.add(row);
             }
             return result;

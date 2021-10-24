@@ -610,6 +610,8 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"from\" VARCHAR, " +
                 "\"to\" VARCHAR, " +
                 "\"in\" VARCHAR, " +
+                "\"modulus\" INTEGER, " +
+                "\"remainder\" INTEGER, " +
                 "\"partitionType\" VARCHAR, " +
                 "\"partitionExpression\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (" +

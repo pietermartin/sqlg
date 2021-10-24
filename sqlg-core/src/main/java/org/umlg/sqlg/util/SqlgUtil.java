@@ -259,16 +259,15 @@ public class SqlgUtil {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     public static boolean isBulkWithinAndOut(SqlgGraph sqlgGraph, HasContainer hasContainer) {
-        BiPredicate p = hasContainer.getPredicate().getBiPredicate();
-        return (p == Contains.within || p == Contains.without) && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
+        BiPredicate<?, ?> p = hasContainer.getPredicate().getBiPredicate();
+        return (p == Contains.within || p == Contains.without) && ((Collection<?>) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isBulkWithin(SqlgGraph sqlgGraph, HasContainer hasContainer) {
-        BiPredicate p = hasContainer.getPredicate().getBiPredicate();
-        return p == Contains.within && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
+        BiPredicate<?, ?> p = hasContainer.getPredicate().getBiPredicate();
+        return p == Contains.within && ((Collection<?>) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
     public static void setParametersOnStatement(

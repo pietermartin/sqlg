@@ -107,7 +107,7 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param partitionExpression The sql fragment to express the partition column or expression.
      */
     AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
-        Preconditions.checkArgument(partitionType == PartitionType.RANGE || partitionType == PartitionType.LIST, "Only RANGE and LIST partitions are supported. Found %s", partitionType.name());
+        Preconditions.checkArgument(partitionType == PartitionType.RANGE || partitionType == PartitionType.LIST || partitionType == PartitionType.HASH, "Only RANGE and LIST partitions are supported. Found %s", partitionType.name());
         Preconditions.checkArgument(!partitionExpression.isEmpty(), "partitionExpression may not be an empty string.");
 //        Preconditions.checkArgument(!identifiers.isEmpty(), "Partitioned labels must have at least one identifier.");
         this.sqlgGraph = sqlgGraph;
@@ -180,6 +180,30 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     /**
+     * Ensures that a HASH partition exists.
+     *
+     * @param name      The partition's name.
+     * @param modulus   The HASH partition's 'modulus'.
+     * @param remainder The HASH partition's 'remainder'.
+     * @return The {@link Partition}
+     */
+    public Partition ensureHashPartitionExists(String name, int modulus, int remainder) {
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsPartitioning());
+        Objects.requireNonNull(name, "HASH Partition's \"name\" must not be null");
+        Preconditions.checkState(modulus > 0, "HASH Partition's \"modulus\" must be > 0");
+        Preconditions.checkState(remainder >= 0, "HASH Partition's \"remainder\" must be >= 0");
+        Preconditions.checkState(this.partitionType == PartitionType.HASH, "ensureHashPartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
+        Optional<Partition> partitionOptional = this.getPartition(name);
+        if (partitionOptional.isEmpty()) {
+            getTopology().lock();
+            partitionOptional = this.getPartition(name);
+            return partitionOptional.orElseGet(() -> this.createHashPartition(name, modulus, remainder));
+        } else {
+            return partitionOptional.get();
+        }
+    }
+
+    /**
      * Ensures that a LIST partition exists.
      *
      * @param name The partition's name.
@@ -190,7 +214,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsPartitioning());
         Objects.requireNonNull(name, "LIST Partition's \"name\" must not be null");
         Objects.requireNonNull(in, "LIST Partition's \"in\" must not be null");
-        Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureRangePartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
+        Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureListPartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
             getTopology().lock();
@@ -206,8 +230,8 @@ public abstract class AbstractLabel implements TopologyInf {
      *
      * @param name                The partition's name.
      * @param in                  The LIST partition's 'in' clause.
-     * @param partitionType       The partition's {@link PartitionType} if is is going to be sub-partitioned.
-     * @param partitionExpression The partition's partitionExpression if is is going to be sub-partitioned.
+     * @param partitionType       The partition's {@link PartitionType} if it is going to be sub-partitioned.
+     * @param partitionExpression The partition's partitionExpression if it is going to be sub-partitioned.
      * @return The {@link Partition}
      */
     public Partition ensureListPartitionWithSubPartitionExists(String name, String in, PartitionType partitionType, String partitionExpression) {
@@ -227,6 +251,34 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
+    /**
+     * Ensures that a HASH partition exists.
+     *
+     * @param name                The partition's name.
+     * @param modulus             The HASH partition's 'modulus' clause.
+     * @param remainder           The HASH partition's 'remainder' clause.
+     * @param partitionType       The partition's {@link PartitionType} if it is going to be sub-partitioned.
+     * @param partitionExpression The partition's partitionExpression if it is going to be sub-partitioned.
+     * @return The {@link Partition}
+     */
+    public Partition ensureHashPartitionWithSubPartitionExists(String name, Integer modulus, Integer remainder, PartitionType partitionType, String partitionExpression) {
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsPartitioning());
+        Objects.requireNonNull(name, "HASH Partition's \"name\" must not be null");
+        Preconditions.checkState(modulus > 0, "HASH Partition's \"modulus\" must > 0");
+        Preconditions.checkState(remainder >= 0, "HASH Partition's \"remainder\" must >= 0");
+        Objects.requireNonNull(partitionType, "Sub-partition's \"partitionType\" must not be null");
+        Objects.requireNonNull(partitionExpression, "Sub-partition's \"partitionExpression\" must not be null");
+        Preconditions.checkState(this.partitionType == PartitionType.HASH, "ensureHashPartitionWithSubPartitionExists can only be called for a HASH partitioned VertexLabel. Found %s", this.partitionType.name());
+        Optional<Partition> partitionOptional = this.getPartition(name);
+        if (partitionOptional.isEmpty()) {
+            getTopology().lock();
+            partitionOptional = this.getPartition(name);
+            return partitionOptional.orElseGet(() -> this.createHashPartitionWithSubPartition(name, modulus, remainder, partitionType, partitionExpression));
+        } else {
+            return partitionOptional.get();
+        }
+    }
+
     @Override
     public boolean isCommitted() {
         return this.committed;
@@ -239,6 +291,10 @@ public abstract class AbstractLabel implements TopologyInf {
     @SuppressWarnings("unused")
     public boolean isListPartition() {
         return partitionType.isList();
+    }
+
+    public boolean isHashPartition() {
+        return partitionType.isHash();
     }
 
     public boolean isPartition() {
@@ -263,6 +319,15 @@ public abstract class AbstractLabel implements TopologyInf {
         return partition;
     }
 
+    private Partition createHashPartition(String name, int modulus, int remainder) {
+        Preconditions.checkState(!this.getSchema().isSqlgSchema(), "createListPartition may not be called for \"%s\"", SQLG_SCHEMA);
+        this.uncommittedPartitions.remove(name);
+        Partition partition = Partition.createHashPartition(this.sqlgGraph, this, name, modulus, remainder);
+        this.uncommittedPartitions.put(name, partition);
+        getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        return partition;
+    }
+
     private Partition createListPartition(String name, String in) {
         Preconditions.checkState(!this.getSchema().isSqlgSchema(), "createListPartition may not be called for \"%s\"", SQLG_SCHEMA);
         this.uncommittedPartitions.remove(name);
@@ -276,6 +341,15 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(!this.getSchema().isSqlgSchema(), "createListPartitionWithSubPartition may not be called for \"%s\"", SQLG_SCHEMA);
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createListPartitionWithSubPartition(this.sqlgGraph, this, name, in, partitionType, partitionExpression);
+        this.uncommittedPartitions.put(name, partition);
+        getTopology().fire(partition, "", TopologyChangeAction.CREATE);
+        return partition;
+    }
+
+    private Partition createHashPartitionWithSubPartition(String name, Integer modulus, Integer remainder, PartitionType partitionType, String partitionExpression) {
+        Preconditions.checkState(!this.getSchema().isSqlgSchema(), "createHashPartitionWithSubPartition may not be called for \"%s\"", SQLG_SCHEMA);
+        this.uncommittedPartitions.remove(name);
+        Partition partition = Partition.createHashPartitionWithSubPartition(this.sqlgGraph, this, name, modulus, remainder, partitionType, partitionExpression);
         this.uncommittedPartitions.put(name, partition);
         getTopology().fire(partition, "", TopologyChangeAction.CREATE);
         return partition;
@@ -596,7 +670,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(getTopology().isSchemaChanged());
         this.identifierMap.put(index, propertyName);
         this.identifiers.clear();
-        for (Integer mapIndex: this.identifierMap.keySet()) {
+        for (Integer mapIndex : this.identifierMap.keySet()) {
             this.identifiers.add(this.identifierMap.get(mapIndex));
         }
     }
@@ -620,12 +694,16 @@ public abstract class AbstractLabel implements TopologyInf {
         VertexProperty<String> from = partitionVertex.property(SQLG_SCHEMA_PARTITION_FROM);
         VertexProperty<String> to = partitionVertex.property(SQLG_SCHEMA_PARTITION_TO);
         VertexProperty<String> in = partitionVertex.property(SQLG_SCHEMA_PARTITION_IN);
+        VertexProperty<Integer> modulus = partitionVertex.property(SQLG_SCHEMA_PARTITION_MODULUS);
+        VertexProperty<Integer> remainder = partitionVertex.property(SQLG_SCHEMA_PARTITION_REMAINDER);
         VertexProperty<String> partitionType = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_TYPE);
         VertexProperty<String> partitionExpression = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION);
         Partition partition;
         if (from.isPresent()) {
             Preconditions.checkState(to.isPresent());
             Preconditions.checkState(!in.isPresent());
+            Preconditions.checkState(!modulus.isPresent());
+            Preconditions.checkState(!remainder.isPresent());
             partition = new Partition(
                     this.sqlgGraph,
                     this,
@@ -634,14 +712,27 @@ public abstract class AbstractLabel implements TopologyInf {
                     to.value(),
                     PartitionType.from(partitionType.value()),
                     partitionExpression.isPresent() ? partitionExpression.value() : null);
-        } else {
+        } else if (in.isPresent()) {
             Preconditions.checkState(in.isPresent());
             Preconditions.checkState(!to.isPresent());
+            Preconditions.checkState(!modulus.isPresent());
+            Preconditions.checkState(!remainder.isPresent());
             partition = new Partition(
                     this.sqlgGraph,
                     this,
                     partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME),
                     in.value(),
+                    PartitionType.from(partitionType.value()),
+                    partitionExpression.isPresent() ? partitionExpression.value() : null);
+        } else {
+            Preconditions.checkState(modulus.isPresent());
+            Preconditions.checkState(remainder.isPresent());
+            partition = new Partition(
+                    this.sqlgGraph,
+                    this,
+                    partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME),
+                    modulus.value(),
+                    remainder.value(),
                     PartitionType.from(partitionType.value()),
                     partitionExpression.isPresent() ? partitionExpression.value() : null);
         }
@@ -764,7 +855,7 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             ArrayNode uncommittedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Partition partition : this.uncommittedPartitions.values()) {
-                Optional<ObjectNode> json = partition.toUncommitedPartitionNotifyJson();
+                Optional<ObjectNode> json = partition.toUncommittedPartitionNotifyJson();
                 json.ifPresent(uncommittedPartitionArrayNode::add);
             }
             ArrayNode removedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());

@@ -637,6 +637,8 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`from` TEXT, " +
                 "`to` TEXT, " +
                 "`in` TEXT, " +
+                "`modulus` INTEGER, " +
+                "`remainder` INTEGER, " +
                 "`partitionType` TEXT, " +
                 "`partitionExpression` TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_property` (" +
