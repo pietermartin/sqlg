@@ -1084,6 +1084,14 @@ public class MariadbDialect extends BaseSqlDialect {
         );
     }
 
+    @Override
+    public List<String> addHashPartitionColumns() {
+        return List.of(
+                "ALTER TABLE `sqlg_schema`.`V_partition` ADD COLUMN `modulus` INTEGER;",
+                "ALTER TABLE `sqlg_schema`.`V_partition` ADD COLUMN `remainder` INTEGER;"
+        );
+    }
+
     /**
      * Hardcoded the rows to return. MariaDB does nto support just an offset.
      *

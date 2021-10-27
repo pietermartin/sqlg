@@ -1242,6 +1242,14 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
+    public List<String> addHashPartitionColumns() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"modulus\" INTEGER;",
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"remainder\" INTEGER;"
+        );
+    }
+
+    @Override
     public String addDbVersionToGraph(DatabaseMetaData metadata) {
         try {
             return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" LONGVARCHAR DEFAULT '" + metadata.getDatabaseProductVersion() + "';";
