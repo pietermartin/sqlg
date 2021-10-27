@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.h2.jdbc.JdbcArray;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
@@ -1044,11 +1045,15 @@ public class H2Dialect extends BaseSqlDialect {
                 sb.append("(");
             }
         }
-        sb.append(maybeWrapInQoutes(column.getSchema()));
-        sb.append(".");
-        sb.append(maybeWrapInQoutes(column.getTable()));
-        sb.append(".");
-        sb.append(maybeWrapInQoutes(column.getColumn()));
+        if (!partOfDuplicateQuery && column.getAggregateFunction() != null && column.getAggregateFunction().equals(GraphTraversal.Symbols.count)) {
+            sb.append("1");
+        } else {
+            sb.append(maybeWrapInQoutes(column.getSchema()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(column.getTable()));
+            sb.append(".");
+            sb.append(maybeWrapInQoutes(column.getColumn()));
+        }
         if (!partOfDuplicateQuery && column.getAggregateFunction() != null) {
             if (column.getAggregateFunction().equals("avg")) {
                 sb.append(" as DOUBLE PRECISION)) AS ").append(maybeWrapInQoutes(alias));
