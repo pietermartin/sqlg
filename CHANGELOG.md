@@ -1,3 +1,8 @@
+##2.1.4
+
+* Support partitioned primary keys.
+* Added postgresql hash partition support.
+
 ##2.1.3
 
 * Added a ui to visualize and delete schema elements.
