@@ -1,5 +1,6 @@
 ##2.1.4
 
+* Upgrade HSQLDB to 2.6.1
 * Support partitioned primary keys.
 * Added postgresql hash partition support.
 
