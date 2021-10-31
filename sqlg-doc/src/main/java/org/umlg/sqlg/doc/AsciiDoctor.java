@@ -24,7 +24,7 @@ public class AsciiDoctor {
 
     private void createDocs() {
 //        String version = "2.0.1";
-        String version = "2.1.3";
+        String version = "2.1.4";
         Asciidoctor asciidoctor = create();
         try {
             File file = new File("sqlg-doc/docs/" + version + "/sqlg.adoc");

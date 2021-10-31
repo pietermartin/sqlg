@@ -1,0 +1,11 @@
+== Introduction
+
+Sqlg primary challenge is to reduce latency by combining TinkerPop
+{tinkerpop-docs}#graph-traversal-steps[steps] into as few as possible database calls.
+The fine-grained nature of graph traversals makes this crucial,
+otherwise the database call latency has prohibitively high performance impact.
+
+Sqlg supports various bulk modes to reduce latency when modifying the graph.
+
+[NOTE]
+Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and MariaDB as it runs embedded in the jvm.

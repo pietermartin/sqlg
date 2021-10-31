@@ -1,0 +1,80 @@
+==== And Step
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testStrategy2AndStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    a1.addEdge("ab", b1);
+    a1.addEdge("abb", b1);
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    a2.addEdge("abb", b2);
+    Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+    Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+    a3.addEdge("abbb", b3);
+
+    Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V().hasLabel("A").and(
+            __.out("ab"),
+            __.out("abb")
+    ).values("name");
+    printTraversalForm(traversal);
+
+    List<String> names = traversal.toList();
+    for (String name : names) {
+        System.out.println(name);
+    }
+}
+----
+
+[options="nowrap"]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), AndStep([[VertexStep(OUT,[ab],vertex)], [VertexStep(OUT,[abb],vertex)]]), PropertiesStep([name],value)]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-and-step-strategy2,after optimization]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel], SqlgAndStepBarrier([[SqlgVertexStep@[sqlgPathFakeLabel]], [SqlgVertexStep@[sqlgPathFakeLabel]]]), PropertiesStep([name],value)]
+----
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A"
+
+SELECT
+	"index" as "index",
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	(VALUES(1, 1),(2, 2),(3, 3)) AS tmp ("tmpId", "index") ON "public"."V_A"."ID" = tmp."tmpId"
+ORDER BY
+	"index"
+
+SELECT
+	"index" as "index",
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_abb" ON "public"."V_A"."ID" = "public"."E_abb"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_abb"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	(VALUES(1, 1),(2, 2),(3, 3)) AS tmp ("tmpId", "index") ON "public"."V_A"."ID" = tmp."tmpId"
+ORDER BY
+	"index"
+----
+
+.output
+----
+a1
+----

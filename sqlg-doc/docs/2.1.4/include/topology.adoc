@@ -1,0 +1,331 @@
+[[anchor-topology]]
+== Topology
+
+Sqlg stores the graph's topology information in the graph itself as a graph.
+The topology is stored in the `sqlg_schema` schema.
+
+.UML diagram of Sqlg's topology.
+image:uml/topology Class Diagram.png[image of Sqlg's topology]
+
+TinkerPop has no notion of schema or topology. However any TinkerPop graph has an implicit schema.
+Sqlg manages the schema as a first class construct.
+
+Sqlg follows the normal TinkerPop semantics in that the schema does not need to be defined upfront.
+Every graph modification first checks to see if the element's schema (label,name) exists.
+If not, it will create the element's schema. For `Postgresql` this works well as it supports transactional schema creation/modification.
+
+[WARNING]
+Hsqldb, H2 and MariaDb do not support transactional schema creation/modification. They will both silently commit the
+transaction and continue. This breaks the user's transaction boundaries. For Hsqldb, H2 and MariaDb it is recommended to
+create the schema upfront.
+
+It is possible to query and traverse the topology as a normal TinkerPop graph.
+To query the topology the `TopologyStrategy` is used. To facilitate ease of use, `SqlgGraph.topology()` method is added to enable the strategy.
+Being able to query the topology is helpful to understand a graph's structure.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showTopologyTraversals() {
+    Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0); <1>
+    final GraphReader reader = sqlgGraph.io(builder).reader().create();
+    try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern-v3d0.json")) {
+        reader.readGraph(stream, sqlgGraph);
+    } catch (IOException e) {
+        Assert.fail(e.getMessage());
+    }
+    System.out.println("//All vertex labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <2>
+            .forEachRemaining(
+                    v -> System.out.println(v.<String>value(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME))
+            );
+
+    System.out.println("//All edge labels");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) # <3>
+            .forEachRemaining(
+                    v -> System.out.println(v.<String>value(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME))
+            );
+
+    System.out.println("//'person' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "person") # <4>
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE) # <5>
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'software' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "software")
+            .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'created' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <6>
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE) # <7>
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "created") # <8>
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE) # <9>
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+    System.out.println("//'knows' properties");
+    sqlgGraph.topology().V()
+            .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+            .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+            .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "knows")
+            .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+            .forEachRemaining(
+                    v -> {
+                        System.out.print(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + " : ");
+                        System.out.println(v.<String>value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+                    }
+            );
+
+}
+----
+<1> Use TinkerPop's i.o. infrastructure to load the modern graph.
+<2> Find all VertexLabels, they are in `sqlg_schema.vertex`
+<3> Traverse out on the `out_edges` edge to find all the edges. 'WARNING' this may produce duplicates as a single edge label
+may have many different distinct out vertex labels.
+<4> Find the `person` vertex.
+<5> Traverse out on the `vertex_property` edge to find the 'person' vertex labels properties.
+<6> Find all vertex labels. i.e. vertices in `sqlg_schema.vertex`
+<7> Traverse the `out_edges` edge.
+<8> Filter the out edges for only the 'created' edges.
+<9> Traverse the `edge_properties` edge to find the 'created' edge's properties.
+
+
+.output
+----
+//All vertex labels
+person
+software
+//All edge labels
+knows
+created
+//'person' properties
+name : STRING
+age : INTEGER
+//'software' properties
+name : STRING
+lang : STRING
+//'created' properties
+weight : DOUBLE
+//'knows' properties
+weight : DOUBLE
+----
+
+
+=== Topology eager creation
+
+It is often useful to create the topology upfront. The topology creation api is accessed via the `Topology` object.
+It is a singleton. `Topology topology = sqlgGraph.getTopology();`
+To create new topology objects use the `ensureXXX` methods. They will return the a topology object representing the specific
+topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index` or `GlobalUniqueIndex`
+
+[NOTE]
+The `ensureXXX` methods will create the topology object if it does not exists.
+If it does exist it will simply return the relevant topology object.
+On any topology object one can call `isCommitted` or `isUncommitted` to check the state of the object.
+`committed` indicates that it already exists. `uncommitted` indicates that it has been created in the current active transaction.
+
+.eg
+[source,java,options="nowrap"]
+----
+@Test
+public void createModernTopology() {
+    Topology topology = this.sqlgGraph.getTopology(); # <1>
+    VertexLabel personVertexLabel = topology.ensureVertexLabelExist("public", "person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("age", PropertyType.INTEGER);
+    }}); # <2>
+    VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist("public", "software", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("lang", PropertyType.STRING);
+    }});
+    EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist("created", softwareVertexLabel, new HashMap<String, PropertyType>() {{
+        put("weight", PropertyType.DOUBLE);
+    }}); # <3>
+    EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap<String, PropertyType>() {{
+        put("weight", PropertyType.DOUBLE);
+    }});
+    this.sqlgGraph.tx().commit(); # <4>
+}
+----
+<1> Get the `Topology` object.
+<2> Create the 'person' VertexLabel. The `HashMap<String, PropertyType>` defines the 'person''s properties.
+<3> Create the 'created' EdgeLabel. The format is outVertexLabel.ensureEdgeLabelExist(name, inVertexLabel, properties)
+<4> Be sure to commit the transaction. Postgresql and MSSqlServer supports transactional schema creation. Hsqldb,H2 and MariaDB do not.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void generalTopologyCreationWithSchema() {
+    Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("Humans"); # <1>
+    VertexLabel personVertexLabel = schema.ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        put("name", PropertyType.STRING);
+        put("date", PropertyType.LOCALDATE);
+    }}); # <2>
+    this.sqlgGraph.tx().commit();
+}
+----
+<1> Create the 'Humans' schema
+<2> Create the 'Person' VertexLabel via the Schema object.
+
+Sqlg keeps an in-memory cache of the graphs entire topology. It is possible query this cache directly.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void queryCache() {
+    loadModern();
+    Optional<Schema> publicSchema = this.sqlgGraph.getTopology().getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()); # <1>
+    assertTrue(publicSchema.isPresent());
+    Schema publicSchemaViaShortCut = this.sqlgGraph.getTopology().getPublicSchema(); # <2>
+    Optional<VertexLabel> personVertexLabel = publicSchema.get().getVertexLabel("person"); # <3>
+    assertTrue(personVertexLabel.isPresent());
+    Optional<EdgeLabel> createEdgeLabel = personVertexLabel.get().getOutEdgeLabel("created"); # <4>
+    assertTrue(createEdgeLabel.isPresent());
+    Optional<EdgeLabel> knowsEdgeLabel = personVertexLabel.get().getOutEdgeLabel("knows"); # <5>
+    assertTrue(knowsEdgeLabel.isPresent());
+
+    Optional<PropertyColumn> namePropertyColumn = personVertexLabel.get().getProperty("name"); # <6>
+    assertTrue(namePropertyColumn.isPresent());
+    assertEquals(PropertyType.STRING, namePropertyColumn.get().getPropertyType()); # <7>
+    Optional<PropertyColumn> agePropertyColumn = personVertexLabel.get().getProperty("age");
+    assertTrue(agePropertyColumn.isPresent());
+    assertEquals(PropertyType.INTEGER, agePropertyColumn.get().getPropertyType());
+    Optional<PropertyColumn> weightPropertyColumn = createEdgeLabel.get().getProperty("weight");
+    assertTrue(weightPropertyColumn.isPresent());
+    assertEquals(PropertyType.DOUBLE, weightPropertyColumn.get().getPropertyType());
+}
+----
+<1> Get the 'public' schema object.
+<2> Because the 'public' schema will always exist there is a shortcut method to get it.
+<3> Use the 'Schema' object the get the 'person' VertexLabel
+<4> Use the 'person' VertexLabel to get its 'created' out edge.
+<5> Use the 'person' VertexLabel to get its 'knows' out edge.
+<6> Use the 'person' VertexLabel to get its 'name' property. Properties are represented by the `PropertyColumn` class.
+<7> On the `PropertyColumn` object one can get the `PropertyType`. PropertyType is an enum representing all data types supported by Sqlg.
+
+[[anchor-user-supplied-identifiers]]
+=== User supplied identifiers
+
+You can define your own identifiers for a VertexLabel or EdgeLabel. This will result in Sqlg generating primary keys on the specified identifiers instead of using an auto generated sequence.
+
+.eg.
+[source,java,options="nowrap"]
+----
+@Test
+public void testUserSuppliedIds() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+            "Person",
+            new LinkedHashMap<>() {{
+                put("name", PropertyType.STRING);
+                put("surname", PropertyType.STRING);
+                put("nickname", PropertyType.STRING);
+            }},
+            ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname")) # <1>
+    );
+    personVertexLabel.ensureEdgeLabelExist(
+            "marriedTo",
+            personVertexLabel,
+            new LinkedHashMap<>() {{
+                put("place", PropertyType.STRING);
+                put("when", PropertyType.LOCALDATETIME);
+            }},
+            ListOrderedSet.listOrderedSet(List.of("place", "when")) # <2>
+    );
+    this.sqlgGraph.tx().commit();
+
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "surname", "Longfellow", "nickname", "Longboy");
+    Vertex sue = this.sqlgGraph.addVertex(T.label, "Person", "name", "Sue", "surname", "Pretty");
+    john.addEdge("marriedTo", sue, "place", "Timbuck2", "when", LocalDateTime.now());
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> marriedTo = this.sqlgGraph.traversal().V().hasLabel("Person")
+            .has("name", "John")
+            .out("marriedTo")
+            .toList();
+    Assert.assertEquals(1, marriedTo.size());
+    Assert.assertEquals(sue, marriedTo.get(0));
+}
+----
+<1> Specify the `name` and `surname` properties as the primary key for the `Person` vertex label.
+<2> Specify the  `place` and `when` properties as the primary key for the `marriedTo` edge label.
+
+This will generate a table with `name` and `surname`, and `place` and `when` as composite primary keys.
+
+[source,sql,options="nowrap"]
+----
+CREATE TABLE public."V_Person"
+(
+    name text COLLATE pg_catalog."default" NOT NULL,
+    surname text COLLATE pg_catalog."default" NOT NULL,
+    nickname text COLLATE pg_catalog."default",
+    CONSTRAINT "V_Person_pkey" PRIMARY KEY (name, surname)
+);
+
+CREATE TABLE public."E_marriedTo"
+(
+    place text COLLATE pg_catalog."default" NOT NULL,
+    "when" timestamp without time zone NOT NULL,
+    "public.Person.name__I" text COLLATE pg_catalog."default",
+    "public.Person.surname__I" text COLLATE pg_catalog."default",
+    "public.Person.name__O" text COLLATE pg_catalog."default",
+    "public.Person.surname__O" text COLLATE pg_catalog."default",
+    CONSTRAINT "E_marriedTo_pkey" PRIMARY KEY (place, "when"),
+    CONSTRAINT "E_marriedTo_public.Person.name__I_public.Person.surname__I_fkey" FOREIGN KEY ("public.Person.name__I", "public.Person.surname__I")
+        REFERENCES public."V_Person" (name, surname) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        DEFERRABLE,
+    CONSTRAINT "E_marriedTo_public.Person.name__O_public.Person.surname__O_fkey" FOREIGN KEY ("public.Person.name__O", "public.Person.surname__O")
+        REFERENCES public."V_Person" (name, surname) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        DEFERRABLE
+)
+----
+
+The gremlin query will execute the following sql,
+[source,sql,options="nowrap"]
+----
+SELECT
+	a2."alias1", a2."alias2", a2."alias3"
+FROM (
+SELECT
+	"public"."E_marriedTo"."public.Person.name__I" AS "public.E_marriedTo.public.Person.name__I",
+	"public"."E_marriedTo"."public.Person.surname__I" AS "public.E_marriedTo.public.Person.surname__I"
+FROM
+	"public"."V_Person" INNER JOIN
+	"public"."E_marriedTo" ON "public"."V_Person"."name" = "public"."E_marriedTo"."public.Person.name__O" AND "public"."V_Person"."surname" = "public"."E_marriedTo"."public.Person.surname__O"
+WHERE
+	( "public"."V_Person"."name" = ?)
+) a1 INNER JOIN (
+SELECT
+	"public"."V_Person"."name" AS "alias1",
+	"public"."V_Person"."surname" AS "alias2",
+	"public"."V_Person"."nickname" AS "alias3"
+FROM
+	"public"."V_Person"
+) a2 ON a1."public.E_marriedTo.public.Person.name__I" = a2."alias1" AND a1."public.E_marriedTo.public.Person.surname__I" = a2."alias2"
+----
