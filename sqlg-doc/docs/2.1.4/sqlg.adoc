@@ -1,0 +1,181 @@
+= Sqlg Documentation
+Pieter Martin
+Version 2.1.4, November 2021:
+:sectnums:
+:toc: left
+:toclevels: 4
+:experimental:
+:description: Sqlg's documentation
+:keywords: Sqlg, TinkerPop, Gremlin, Graph, Database
+:imagesdir: ./img
+:apidocs: apidocs/
+:tinkerpop-docs: http://tinkerpop.apache.org/docs/current/reference/
+:includedir: include
+
+https://github.com/pietermartin/sqlg[*Sqlg*] image:github/SVG/mark-github.svg[] is a implementation of http://tinkerpop.apache.org/[Apache TinkerPop] on a
+http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS].
+Currently http://www.postgresql.org/[Postgresql], http://hsqldb.org/[HSQLDB], http://h2database.com[H2],
+https://mariadb.org/[MariaDB], https://www.mysql.com/[MySQL] and
+https://www.microsoft.com/en-us/sql-server/sql-server-2017[MSSqlServer] are supported.
+
+Sqlg has a github https://github.com/pietermartin/sqlg/discussions[discussions] page.
+
+include::{includedir}/introduction.adoc[]
+
+include::{includedir}/license.adoc[]
+
+include::{includedir}/supportedFeatures.adoc[]
+
+include::{includedir}/limitations.adoc[]
+
+include::{includedir}/gettingStarted.adoc[]
+
+include::{includedir}/dataTypes.adoc[]
+
+include::{includedir}/architecture.adoc[]
+
+include::{includedir}/indexes.adoc[]
+
+include::{includedir}/multipleJvm.adoc[]
+
+== Gremlin
+
+Sqlg optimizes a gremlin link:{tinkerpop-docs}#traversal[`traversal`]  by analyzing the
+link:{tinkerpop-docs}#graph-traversal-steps[`steps`] and where possible combining them into custom Sqlg steps. This can
+significantly reduce the number of database calls.
+
+Sqlg has two strategies for optimizing TinkerPop steps.
+
+ * Starting with the link:{tinkerpop-docs}#graph-step[`GraphStep`],
+consecutive optimizable steps are folded into link:{apidocs}org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`]. This
+stops at the first unoptimizable step after which the second strategy is used.
+* The second strategy is to `barrier` the incoming elements to the unoptimizable step. This means to exhaust the traversal/iterator
+up to the step and cache all the incoming elements for this step. From here the step is executed for all the incoming
+elements at once. This strategy effectively changes the semantics to a breath first retrieval.
+
+[NOTE]
+Optimizing gremlin is an ongoing task as gremlin is a large language.
+
+[NOTE]
+Turn sql logging on by setting `log4j.logger.org.umlg.sqlg=debug`
+
+=== Optimization (strategy 1)
+
+The following steps are optimized. Steps are
+
+* <<Graph Step>>
+* <<Vertex Step>>
+* <<Has Step>>
+* <<Or Step>>
+* <<And Step>>
+* <<Not Step>>
+* <<Repeat Step>>
+* <<Optional Step>>
+* <<Choose Step>>
+* <<Order Step>>
+* <<Range Step>>
+* <<Limit Step>>
+* <<Drop Step>>
+* <<Reducing Steps>>
+
+The combined step will then in turn generate the sql statements to retrieve the data.
+It attempts to retrieve the data in as few distinct sql statements as possible.
+
+include::{includedir}/gremlin/strategy1/graphStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/vertexStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/hasStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/andStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/notStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/repeatStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/optionalStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/chooseStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/orderStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/rangeStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/limitStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/dropStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducingSteps.adoc[]
+
+==== Reducing Steps
+
+link:{tinkerpop-docs}#a-note-on-barrier-steps[`Reducing Steps`]
+
+include::{includedir}/gremlin/strategy1/reducing/minStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/maxStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/sumStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/meanStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/countStep.adoc[]
+
+===== Group By
+
+link:{tinkerpop-docs}#group-step[`Group Step`]'s are optimized with sql's `group by` clause.
+
+include::{includedir}/gremlin/strategy1/reducing/groupByMinStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/groupByMaxStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/groupBySumStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/groupByMeanStep.adoc[]
+
+include::{includedir}/gremlin/strategy1/reducing/groupByCountStep.adoc[]
+
+=== Optimization (strategy 2)
+
+The following steps are optimized. Steps are
+
+* <<Vertex Step>>
+* <<Repeat Step>>
+* <<Optional Step>>
+* <<Choose Step>>
+* <<Local Step>>
+* <<And Step>>
+* <<Or Step>>
+* <<Not Step>>
+* <<Where Step>>
+
+The combined step will then in turn generate the sql statements to retrieve the data.
+It attempts to retrieve the data in as few distinct sql statements as possible.
+
+include::{includedir}/gremlin/strategy2/vertexStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/repeatStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/optionalStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/chooseStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/localStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/andStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/orStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/notStep.adoc[]
+
+include::{includedir}/gremlin/strategy2/whereStep.adoc[]
+
+include::{includedir}/gremlin/predicates.adoc[]
+
+include::{includedir}/batchMode.adoc[]
+
+include::{includedir}/topology.adoc[]
+
+include::{includedir}/postgresqlPartitioning.adoc[]
+
+include::{includedir}/sqlgui.adoc[]

@@ -1,0 +1,170 @@
+== Postgresql Partitioning
+
+Sqlg supports `postgresql` partitioning. To partition a table it needs to be created upfront using the `Topology` api.
+Sqlg currently supports `RANGE`, `LIST` and `HASH` partitions.
+
+=== Range partitioning
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testPartitioningRange() {
+    Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema(); # <1>
+    VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
+            "Measurement",
+            new LinkedHashMap<String, PropertyType>() {{
+                put("date", PropertyType.LOCALDATE);
+                put("temp", PropertyType.INTEGER);
+            }},
+            ListOrderedSet.listOrderedSet(Collections.singletonList("date")),
+            PartitionType.RANGE, #<2>
+            "date"); # <3>
+    partitionedVertexLabel.ensureRangePartitionExists("measurement1", "'2016-07-01'", "'2016-08-01'"); # <4>
+    partitionedVertexLabel.ensureRangePartitionExists("measurement2", "'2016-08-01'", "'2016-09-01'"); # <5>
+    this.sqlgGraph.tx().commit();
+
+    LocalDate localDate1 = LocalDate.of(2016, 7, 1);
+    this.sqlgGraph.addVertex(T.label, "Measurement", "date", localDate1);
+    LocalDate localDate2 = LocalDate.of(2016, 8, 1);
+    this.sqlgGraph.addVertex(T.label, "Measurement", "date", localDate2);
+    this.sqlgGraph.tx().commit();
+
+    Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("Measurement").count().next(), 0);
+    Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate1).count().next(), 0);
+    Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate2).count().next(), 0);
+
+    Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Measurement").get().getPartition("measurement1").get(); # <6>
+    partition.remove(); # <7>
+    this.sqlgGraph.tx().commit();
+
+    Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").count().next(), 0);
+    Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate1).count().next(), 0);
+    Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Measurement").has("date", localDate2).count().next(), 0);
+
+    Assert.assertEquals(1, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0); # <8>
+}
+----
+<1> Get the 'public' schema object.
+<2> Indicates a `RANGE` partition.
+<3> Create a `VertexLabel` with a range partition on the `date` field.
+<4> Create a named partition for the range '2016-07-01' to '2016-08-01'.
+<5> Create a named partition for the range '2016-08-01' to '2016-09-01'.
+<6> Using the `Topology` api get the `measurement1` partition.
+<7> Remove the `measurement1` partition.
+<8> Assert that `Sqlg`s topology only has one partition.
+
+=== List partitioning
+
+[source,java,options="nowrap"]
+----
+//the partitionExpression 'left(lower(name), 1)' is to complex for the query planner to optimize.
+//i.e. select * from Cities where name = 'asdasd' willscan all partitions.
+@Test
+public void testPartitioningList() {
+    Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+    VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist("Cities",
+            new LinkedHashMap<String, PropertyType>() {{
+                put("name", PropertyType.STRING);
+                put("population", PropertyType.LONG);
+            }},
+            ListOrderedSet.listOrderedSet(Collections.singletonList("name")),
+            PartitionType.LIST, # <1>
+            "left(lower(name), 1)"); # <2>
+    partitionedVertexLabel.ensureListPartitionExists("Cities_a", "'a'"); # <3>
+    partitionedVertexLabel.ensureListPartitionExists("Cities_b", "'b'");
+    partitionedVertexLabel.ensureListPartitionExists("Cities_c", "'c'");
+    partitionedVertexLabel.ensureListPartitionExists("Cities_d", "'d'");
+    this.sqlgGraph.tx().commit();
+
+    this.sqlgGraph.tx().normalBatchModeOn();
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "aasbc", "population", 1000L);
+    }
+    this.sqlgGraph.addVertex(T.label, "Cities", "name", "basbc", "population", 1000L);
+    for (int i = 0; i < 100; i++) {
+        this.sqlgGraph.addVertex(T.label, "Cities", "name", "casbc", "population", 1000L);
+    }
+    this.sqlgGraph.addVertex(T.label, "Cities", "name", "dasbc", "population", 1000L);
+    this.sqlgGraph.tx().commit();
+
+    Assert.assertEquals(202, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
+    Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "aasbc").count().next(), 0);
+    Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "basbc").count().next(), 0);
+    Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Cities").has("name", "casbc").count().next(), 0);
+
+    Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("Cities").get().getPartition("Cities_a").get();
+    partition.remove();
+    this.sqlgGraph.tx().commit();
+
+    Assert.assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Cities").count().next(), 0);
+    Assert.assertEquals(3, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
+}
+----
+
+<1> Indicates a `LIST` partition.
+<2> The partition expression.
+<3> Create a named partition for the list entry 'a'.
+
+=== Hash partitioning
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testPartitioningHash() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.INTEGER);
+                    put("name", PropertyType.STRING);
+                    put("surname", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid1")),
+                PartitionType.HASH, <1>
+                "\"uid1\"" <2>
+        );
+        for (int i = 0; i < 10; i++) {
+            vertexLabel.ensureHashPartitionExists("hashPartition" + i, 10, i); <3>
+        }
+        this.sqlgGraph.tx().commit();
+        for (int i = 0; i < 1000; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "uid1", i, "name", "name" + i, "surname", "surname" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement s = connection.createStatement()) {
+            ResultSet rs = s.executeQuery("select tableoid::regclass as partition_name, count(*) from \"V_A\" group by 1 order by 1;"); <4>
+            int count = 0;
+            Map<String, Long> partitionDistributionCount = new HashMap<>();
+            while (rs.next()) {
+                count++;
+                partitionDistributionCount.put(rs.getString(1), rs.getLong(2));
+            }
+            Assert.assertEquals(10, count); <5>
+            Assert.assertEquals(10, partitionDistributionCount.size());
+            for (int i = 0; i < 10; i++) {
+                Assert.assertTrue(partitionDistributionCount.containsKey("\"hashPartition" + i + "\""));
+            }
+            Assert.assertEquals(100, partitionDistributionCount.get("\"hashPartition0\""), 0);
+            Assert.assertEquals(92, partitionDistributionCount.get("\"hashPartition1\""), 0);
+            Assert.assertEquals(103, partitionDistributionCount.get("\"hashPartition2\""), 0);
+            Assert.assertEquals(88, partitionDistributionCount.get("\"hashPartition3\""), 0);
+            Assert.assertEquals(113, partitionDistributionCount.get("\"hashPartition4\""), 0);
+            Assert.assertEquals(90, partitionDistributionCount.get("\"hashPartition5\""), 0);
+            Assert.assertEquals(119, partitionDistributionCount.get("\"hashPartition6\""), 0);
+            Assert.assertEquals(92, partitionDistributionCount.get("\"hashPartition7\""), 0);
+            Assert.assertEquals(100, partitionDistributionCount.get("\"hashPartition8\""), 0);
+            Assert.assertEquals(103, partitionDistributionCount.get("\"hashPartition9\""), 0);
+        } catch (SQLException throwables) {
+            Assert.fail(throwables.getMessage());
+        }
+
+}
+----
+
+<1> Indicates a `HASH` partition.
+<2> The partition expression.
+<3> Create a named partition for the hash entry with it `modulus` and `remainder`.
+<4> Fetch the partitions for the assertion
+<5> Assert that there are as many partitions as the `modulus`
