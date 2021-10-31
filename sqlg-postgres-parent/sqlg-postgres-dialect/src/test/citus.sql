@@ -35,6 +35,13 @@ chown -R postgres:postgres worker4
 initdb -D /var/lib/postgres/worker4
 pg_ctl -D /var/lib/postgres/worker4 -o "-p 9704" start
 
+#on the coordinator
+SELECT * from citus_add_node('localhost', 9701);
+SELECT * from citus_add_node('localhost', 9702);
+SELECT * from citus_add_node('localhost', 9703);
+SELECT * from citus_add_node('localhost', 9704);
+SELECT * FROM citus_get_active_worker_nodes();
+
 pg_ctl -D coordinator -o "-p 9700"  start
 pg_ctl -D worker1 -o "-p 9701"  start
 pg_ctl -D worker2 -o "-p 9702"  start

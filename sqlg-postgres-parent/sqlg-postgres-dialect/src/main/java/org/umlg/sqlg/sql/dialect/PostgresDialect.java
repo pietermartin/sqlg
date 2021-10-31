@@ -100,7 +100,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public Set<String> getInternalSchemas() {
-        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "information_schema", "tiger", "tiger_data", "topology", "citus"));
+        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "information_schema", "tiger", "tiger_data", "topology", "citus", "citus_internal", "columnar"));
     }
 
     @Override

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestAddVertexViaMap;
+import org.umlg.sqlg.test.sharding.TestSharding;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.TestAddVertexViaMap;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAddVertexViaMap.class
+        TestSharding.class,
+//        TestShardingGremlin.class
 //        TestDropStep.class
 //        TestUserSuppliedPKTopology.class,
 //        TestHashPartitioning.class,
