@@ -40,7 +40,7 @@ public class TestReplacedStepEmitComparator extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         List<Path> paths = this.sqlgGraph.traversal()
-                .V().hasLabel("A").order().by("name", Order.decr)
+                .V().hasLabel("A").order().by("name", Order.desc)
                 .out("ab")
                 .path()
                 .toList();
@@ -91,8 +91,8 @@ public class TestReplacedStepEmitComparator extends BaseTest {
 
         List<Vertex> vertices = sqlgGraph.traversal()
                 .V().hasLabel("A")
-                .out("ab").order().by("name", Order.decr).limit(1)
-                .out("bc").order().by("name", Order.decr)
+                .out("ab").order().by("name", Order.desc).limit(1)
+                .out("bc").order().by("name", Order.desc)
                 .toList();
 
         Assert.assertEquals(3, vertices.size());
@@ -120,7 +120,7 @@ public class TestReplacedStepEmitComparator extends BaseTest {
     @Test
     public void testComparatorViolations() {
         loadGratefulDead();
-        final Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().has("song", "name", "OH BOY").out("followedBy").out("followedBy").order().by("performances").by("songType", Order.decr);
+        final Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().has("song", "name", "OH BOY").out("followedBy").out("followedBy").order().by("performances").by("songType", Order.desc);
         printTraversalForm(traversal);
         int counter = 0;
         String lastSongType = "a";
@@ -204,7 +204,7 @@ public class TestReplacedStepEmitComparator extends BaseTest {
                 .V().hasLabel("A")
                 .optional(
                         __.out().order().by("name").optional(
-                                __.out().order().by("name", Order.decr)
+                                __.out().order().by("name", Order.desc)
                         )
                 )
                 .path();
@@ -295,7 +295,7 @@ public class TestReplacedStepEmitComparator extends BaseTest {
                 .outE().as("e")
                 .inV().as("v")
                 .select("e")
-                .order().by("weight", Order.incr)
+                .order().by("weight", Order.asc)
                 .select("v")
                 .<String>values("name")
                 .dedup()

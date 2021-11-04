@@ -37,7 +37,7 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
 	@SuppressWarnings("resource")
 	@Override
 	public void apply(Admin<?, ?> traversal) {
-		if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+		if (traversal.getGraph().isEmpty() || !(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
 			return;
 		}
 		if (!SqlgTraversalUtil.mayOptimize(traversal)) {

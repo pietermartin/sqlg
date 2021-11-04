@@ -13,6 +13,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.ConnectiveStep
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WhereTraversalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ProfileStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -239,7 +240,16 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
                 ((SqlgWhereEndStep) this.getTraversal().getEndStep()).processStartTraverser(traverser);
             else if (this.getTraversal().getEndStep() instanceof ProfileStep && this.getTraversal().getEndStep().getPreviousStep() instanceof SqlgWhereTraversalStepBarrier.SqlgWhereEndStep)     // TOTAL SUCKY HACK!
                 ((SqlgWhereEndStep) this.getTraversal().getEndStep().getPreviousStep()).processStartTraverser(traverser);
-            return null == this.selectKey ? traverser.get() : this.getScopeValue(Pop.last, this.selectKey, traverser);
+
+            if (null == this.selectKey) {
+                return traverser.get();
+            } else {
+                try {
+                    return this.getScopeValue(Pop.last, this.selectKey, traverser);
+                } catch (KeyNotFoundException e) {
+                    return EmptyTraverser.instance();
+                }
+            }
         }
 
         @Override
@@ -276,7 +286,7 @@ public class SqlgWhereTraversalStepBarrier<S> extends SqlgAbstractStep<S, S> imp
 
         void processStartTraverser(final Traverser.Admin traverser) {
             if (null != this.matchKey) {
-                this.matchValue = this.getScopeValue(Pop.last, this.matchKey, traverser);
+                this.matchValue = this.getSafeScopeValue(Pop.last, this.matchKey, traverser);
                 this.startValueMap.put(traverser, this.matchValue);
             }
         }

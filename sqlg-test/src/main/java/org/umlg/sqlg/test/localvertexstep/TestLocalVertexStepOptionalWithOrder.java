@@ -44,7 +44,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .local(
-                        __.out().order().by("order", Order.decr)
+                        __.out().order().by("order", Order.desc)
                 );
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -85,8 +85,8 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         __.out().as("b")
                 )
                 .order()
-                .by(__.select("a").by("order"), Order.decr)
-                .by(__.select("b").by("order"), Order.decr);
+                .by(__.select("a").by("order"), Order.desc)
+                .by(__.select("b").by("order"), Order.desc);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(4, traversal.getSteps().size());
@@ -145,7 +145,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                 .local(
                         __.optional(
                                 __.out().order().by("name").optional(
-                                        __.out().order().by("name", Order.decr)
+                                        __.out().order().by("name", Order.desc)
                                 )
                         )
                 )
@@ -258,7 +258,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                 .local(
                         __.optional(
                                 __.out().order().by("name").optional(
-                                        __.out().order().by("name", Order.decr).range(2, 3)
+                                        __.out().order().by("name", Order.desc).range(2, 3)
                                 )
                         )
                 )
@@ -336,7 +336,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                 .local(
                         __.optional(
                                 __.out().order().by("name").range(1, 2).optional(
-                                        __.out().order().by("name", Order.decr).range(2, 3)
+                                        __.out().order().by("name", Order.desc).range(2, 3)
                                 )
                         )
                 )
@@ -429,11 +429,11 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1.id())
                 .local(
                         __.optional(
-                                __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.incr)
+                                __.outE("ab").as("ab").otherV().as("vb").order().by(__.select("ab").by("order"), Order.asc)
                                         .optional(
-                                                __.outE("bc").as("bc").otherV().as("vc").order().by(__.select("bc").by("order"), Order.incr)
+                                                __.outE("bc").as("bc").otherV().as("vc").order().by(__.select("bc").by("order"), Order.asc)
                                                         .optional(
-                                                                __.outE("cd").as("cd").inV().as("vd").order().by(__.select("cd").by("order"), Order.incr)
+                                                                __.outE("cd").as("cd").inV().as("vd").order().by(__.select("cd").by("order"), Order.asc)
                                                         )
                                         )
                         )
@@ -623,7 +623,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
                         )
                 )
                 .out()
-                .order().by("order", Order.decr);
+                .order().by("order", Order.desc);
 
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -680,7 +680,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal()
-                .V().hasLabel("A").as("a").order().by("name", Order.decr)
+                .V().hasLabel("A").as("a").order().by("name", Order.desc)
                 .local(
                         __.optional(
                                 __.outE().as("e1").inV().as("b").order().by(T.label).by(__.select("e1").by("order"))
@@ -816,7 +816,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         b1.addEdge("bcc", cc3, "order", 1);
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal()
-                .V().hasLabel("A").as("a").order().by("name", Order.decr)
+                .V().hasLabel("A").as("a").order().by("name", Order.desc)
                 .local(
                         __.optional(
                                 __.outE().as("e1").inV().as("b").order().by(__.select("a").by(T.id)).by(T.label).by(__.select("e1").by("order")).limit(1)

@@ -67,6 +67,8 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
 
     private Traverser.Admin<E> currentHead;
     private boolean isSqlgLocalStepBarrierChild;
+    private boolean first = true;
+    private boolean hasStarts = false;
 
     public SqlgVertexStep(final Traversal.Admin traversal) {
         super(traversal);
@@ -75,7 +77,16 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     }
 
     @Override
+    public boolean hasStarts() {
+        if (this.first) {
+            this.hasStarts = this.starts.hasNext();
+        }
+        return this.hasStarts;
+    }
+
+    @Override
     protected Traverser.Admin<E> processNextStart() {
+        this.first = false;
         if (this.starts.hasNext()) {
             barrierTheHeads();
             constructQueryPerSchemaTable();
@@ -308,6 +319,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     @Override
     public void reset() {
         super.reset();
+        this.first = true;
         this.startIndex = 1;
         this.heads.clear();
         this.startIndexTraverserAdminMap.clear();

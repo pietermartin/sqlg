@@ -81,7 +81,7 @@ public class TestOutE extends BaseTest {
         ps=vertexTraversal(this.sqlgGraph, v1)
             	.out("e1").as("v2")
             	.out("e2").as("v3")
-            	.outE("e3").order().by("sequence",Order.decr)
+            	.outE("e3").order().by("sequence",Order.desc)
             	.inV().as("v4-5").path().toList();
         assertEquals(2,ps.size());
         assertEquals(v4,ps.get(1).get("v4-5"));

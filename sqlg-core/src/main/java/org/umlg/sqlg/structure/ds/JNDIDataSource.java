@@ -1,9 +1,6 @@
 package org.umlg.sqlg.structure.ds;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgDataSource;
@@ -12,6 +9,8 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * Created by petercipov on 27/02/2017.

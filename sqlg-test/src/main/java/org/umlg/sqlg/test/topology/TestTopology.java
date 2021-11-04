@@ -108,7 +108,7 @@ public class TestTopology extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "B");
         this.sqlgGraph.addVertex(T.label, "C");
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").out("schema_vertex").order().by("name", Order.decr).toList();
+        List<Vertex> vertices = this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").out("schema_vertex").order().by("name", Order.desc).toList();
         Assert.assertEquals("A", vertices.get(2).value("name"));
         Assert.assertEquals("B", vertices.get(1).value("name"));
         Assert.assertEquals("C", vertices.get(0).value("name"));

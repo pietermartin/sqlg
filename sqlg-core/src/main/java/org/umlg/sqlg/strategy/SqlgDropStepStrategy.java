@@ -23,7 +23,7 @@ public class SqlgDropStepStrategy extends AbstractTraversalStrategy<TraversalStr
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+        if (traversal.getGraph().isEmpty() || !(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         if (!SqlgTraversalUtil.mayOptimize(traversal)) {

@@ -1,13 +1,13 @@
 package org.umlg.sqlg.structure;
 
-import static org.umlg.sqlg.structure.SqlgGraph.JDBC_URL;
-
-import java.lang.reflect.InvocationTargetException;
-
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.umlg.sqlg.structure.ds.C3P0DataSource;
 import org.umlg.sqlg.structure.ds.JNDIDataSource;
+
+import java.lang.reflect.InvocationTargetException;
+
+import static org.umlg.sqlg.structure.SqlgGraph.JDBC_URL;
 
 /**
  * Created by petercipov on 27/02/2017.

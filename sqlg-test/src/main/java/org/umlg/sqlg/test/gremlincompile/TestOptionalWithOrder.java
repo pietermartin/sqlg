@@ -332,7 +332,6 @@ public class TestOptionalWithOrder extends BaseTest {
         Assert.assertEquals("k", v.value("name"));
     }
 
-
     @Test
     public void testOptionalWithOrder2() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "order", 13);
@@ -353,6 +352,9 @@ public class TestOptionalWithOrder extends BaseTest {
                 ).order().by("order");
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
+        for (Step step : traversal.getSteps()) {
+            System.out.println(step.toString());
+        }
         Assert.assertEquals(3, traversal.getSteps().size());
 
         assertStep(traversal.getSteps().get(0), true, false, false, true);

@@ -47,7 +47,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .out()
-                .order().by("order", Order.decr);
+                .order().by("order", Order.desc);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -80,8 +80,8 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .V().hasLabel("A").as("a")
                 .out().as("b")
                 .order()
-                .by(__.select("a").by("order"), Order.decr)
-                .by(__.select("b").by("order"), Order.decr);
+                .by(__.select("a").by("order"), Order.desc)
+                .by(__.select("b").by("order"), Order.desc);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -108,7 +108,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
-                .order().by("order", Order.decr);
+                .order().by("order", Order.desc);
         assertEquals(4, traversal.getSteps().size());
         List<Edge> edges = traversal.toList();
         assertEquals(1, traversal.getSteps().size());
@@ -121,7 +121,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
-                .order().by("order", Order.incr);
+                .order().by("order", Order.asc);
         assertEquals(4, traversal.getSteps().size());
         edges = traversal.toList();
         assertEquals(1, traversal.getSteps().size());
@@ -164,7 +164,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
-                .order().by("order", Order.decr);
+                .order().by("order", Order.desc);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Edge> edges = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -191,7 +191,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
-                .order().by("order", Order.decr)
+                .order().by("order", Order.desc)
                 .inV();
         assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -205,7 +205,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
-                .order().by("order", Order.incr)
+                .order().by("order", Order.asc)
                 .inV();
         assertEquals(4, traversal.getSteps().size());
         vertices = traversal.toList();
@@ -230,7 +230,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         DefaultGraphTraversal<Vertex, Object> traversal = (DefaultGraphTraversal<Vertex, Object>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
-                .order().by("order", Order.decr)
+                .order().by("order", Order.desc)
                 .inV().values("name");
         assertEquals(5, traversal.getSteps().size());
         List<Object> vertices = traversal.toList();
@@ -244,7 +244,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         traversal = (DefaultGraphTraversal<Vertex, Object>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
-                .order().by("order", Order.incr)
+                .order().by("order", Order.asc)
                 .inV().values("name");
         assertEquals(5, traversal.getSteps().size());
         vertices = traversal.toList();
@@ -275,7 +275,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
-                .order().by("order", Order.decr)
+                .order().by("order", Order.desc)
                 .inV();
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
@@ -306,7 +306,7 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .outE().as("e")
                 .inV().as("v")
                 .select("e")
-                .order().by("weight", Order.incr)
+                .order().by("weight", Order.asc)
                 .select("v")
                 .<String>values("name")
                 .dedup()
@@ -328,7 +328,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         List<String> names = this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .order()
-                .<Vertex>by(v -> v.value("age"), Order.decr)
+                .<Vertex>by(v -> v.value("age"), Order.desc)
                 .<String>values("name")
                 .toList();
         Assert.assertEquals(4, names.size());
@@ -364,10 +364,10 @@ public class TestGraphStepOrderBy extends BaseTest {
         a1.addEdge("ab", b2);
         a1.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().order().by(__.outE().count(), Order.incr).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().order().by(__.outE().count(), Order.asc).toList();
         Assert.assertEquals(4, vertices.size());
         Assert.assertEquals(a1, vertices.get(3));
-        vertices = this.sqlgGraph.traversal().V().order().by(__.outE().count(), Order.decr).toList();
+        vertices = this.sqlgGraph.traversal().V().order().by(__.outE().count(), Order.desc).toList();
         Assert.assertEquals(4, vertices.size());
         Assert.assertEquals(a1, vertices.get(0));
     }
@@ -410,7 +410,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         List<Map<String, Object>> result = this.sqlgGraph.traversal().V().as("a")
-                .order().by("name", Order.decr)
+                .order().by("name", Order.desc)
                 .out("ab").as("b")
                 .order().by(Order.shuffle)
                 .select("a", "b")
@@ -464,7 +464,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         Vertex b = this.sqlgGraph.addVertex(T.label, "A.A", "name", "b");
         Vertex c = this.sqlgGraph.addVertex(T.label, "A.A", "name", "c");
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A.A").order().by("name", Order.decr).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A.A").order().by("name", Order.desc).toList();
         Assert.assertEquals(c, vertices.get(0));
         Assert.assertEquals(b, vertices.get(1));
         Assert.assertEquals(a, vertices.get(2));
@@ -491,7 +491,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .order()
-                .by("name", Order.incr).by("surname", Order.decr);
+                .by("name", Order.asc).by("surname", Order.desc);
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -549,11 +549,11 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .out("networkNodeGroupNetworkNode").as("nn")
                 .<Vertex>select("g", "network", "nsv", "nng", "nn")
                 .order()
-                .by(__.select("g").by("name"), Order.incr)
-                .by(__.select("network").by("name"), Order.incr)
-                .by(__.select("nsv").by("name"), Order.incr)
-                .by(__.select("nng").by("name"), Order.incr)
-                .by(__.select("nn").by("name"), Order.decr);
+                .by(__.select("g").by("name"), Order.asc)
+                .by(__.select("network").by("name"), Order.asc)
+                .by(__.select("nsv").by("name"), Order.asc)
+                .by(__.select("nng").by("name"), Order.asc)
+                .by(__.select("nn").by("name"), Order.desc);
         Assert.assertEquals(8, traversal.getSteps().size());
         List<Map<String, Vertex>> result = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
@@ -612,8 +612,8 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .out("ab").as("b")
                 .<Vertex>select("a", "b")
                 .order()
-                .by(__.select("a").by("name"), Order.incr)
-                .by(__.select("b").by("name"), Order.decr);
+                .by(__.select("a").by("name"), Order.asc)
+                .by(__.select("b").by("name"), Order.desc);
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Map<String, Vertex>> result = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
@@ -646,7 +646,7 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .V().hasLabel("A").as("a")
                 .out().order().by("name")
                 .in().order().by("name")
-                .out().order().by("name", Order.decr)
+                .out().order().by("name", Order.desc)
                 .toList();
         Assert.assertEquals(4, vertices.size());
         Assert.assertEquals("b1", vertices.get(0).value("name"));

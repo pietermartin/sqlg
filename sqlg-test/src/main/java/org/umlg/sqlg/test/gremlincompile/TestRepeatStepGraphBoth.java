@@ -21,11 +21,13 @@ import java.util.*;
  * Date: 2015/10/21
  * Time: 8:18 PM
  */
+@SuppressWarnings("DuplicatedCode")
 public class TestRepeatStepGraphBoth extends BaseTest {
 
     @Test
     public void testEmitRepeatWithVertexStepAfter() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        @SuppressWarnings("unused")
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
@@ -144,6 +146,24 @@ public class TestRepeatStepGraphBoth extends BaseTest {
     }
 
     @Test
+    public void testGroupByByFailureWithoutDedup() {
+        loadModern();
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Collection<Vertex>> traversal = (DefaultGraphTraversal<Vertex, Collection<Vertex>>) this.sqlgGraph.traversal()
+                .V().as("a")
+                .repeat(__.both()).times(3).emit().as("b")
+                .group()
+                .by(__.select("a"))
+                .by(__.select("b").dedup().order().by(T.id).fold())
+                .select(Column.values)
+                .<Collection<Vertex>>unfold();
+
+        final List<Collection<Vertex>> result = traversal.toList();
+        Assert.assertEquals(6, result.size());
+        Assert.assertTrue(result.stream().allMatch(v -> v.size() == 6));
+    }
+
+    @Test
     public void testGroupByByFailure() {
         loadModern();
         this.sqlgGraph.tx().commit();
@@ -242,9 +262,9 @@ public class TestRepeatStepGraphBoth extends BaseTest {
         Assert.assertEquals(2, paths.size());
 
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(b1) && p.get(1).equals(e1) && p.get(2).equals(a1)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(b1) && p.get(1).equals(e1) && p.get(2).equals(a1)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(b1) && p.get(1).equals(e1) && p.get(2).equals(a1)).findAny().orElseThrow());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(b1) && p.get(1).equals(e2) && p.get(2).equals(c1)));
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(b1) && p.get(1).equals(e2) && p.get(2).equals(c1)).findAny().get());
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(b1) && p.get(1).equals(e2) && p.get(2).equals(c1)).findAny().orElseThrow());
         Assert.assertTrue(paths.isEmpty());
     }
 }

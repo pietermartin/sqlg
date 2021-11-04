@@ -33,7 +33,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .out().as("b")
                 .<Vertex>select("a", "b")
                 .order()
-                .by(__.select("b").by("name"), Order.incr);
+                .by(__.select("b").by("name"), Order.asc);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Map<String, Vertex>> result = traversal
                 .toList();
@@ -49,7 +49,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .out().as("b")
                 .<Vertex>select("a", "b")
                 .order()
-                .by(__.select("b").by("name"), Order.decr);
+                .by(__.select("b").by("name"), Order.desc);
         Assert.assertEquals(4, traversal1.getSteps().size());
         result = traversal1.toList();
         Assert.assertEquals(2, traversal1.getSteps().size());
@@ -74,7 +74,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .V(a1)
                 .out()
                 .order()
-                .by("name", Order.incr);
+                .by("name", Order.asc);
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -87,7 +87,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .V(a1)
                 .out()
                 .order()
-                .by("name", Order.decr);
+                .by("name", Order.desc);
         Assert.assertEquals(3, traversal1.getSteps().size());
         result = traversal1.toList();
         Assert.assertEquals(1, traversal1.getSteps().size());
@@ -116,7 +116,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .out()
                 .out()
                 .order()
-                .by("name", Order.decr);
+                .by("name", Order.desc);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -145,7 +145,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .out().as("x")
                 .<Vertex>select("x")
                 .order()
-                .by(__.select("x").by("name"), Order.decr);
+                .by(__.select("x").by("name"), Order.desc);
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -175,7 +175,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .out()
                 .out()
                 .order()
-                .by("name", Order.incr);
+                .by("name", Order.asc);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
@@ -201,7 +201,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .outE("godDream").as("e")
                 .inV().as("v")
                 .select("e", "v")
-                .order().by(__.select("e").by("sequence"), Order.decr)
+                .order().by(__.select("e").by("sequence"), Order.desc)
                 .map(m -> (Vertex) m.get().get("v"));
         Assert.assertEquals(6, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
@@ -228,7 +228,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .outE("godDream").as("e")
                 .inV().as("v")
                 .select("e", "v")
-                .order().by(__.select("e").by("sequence"), Order.decr);
+                .order().by(__.select("e").by("sequence"), Order.desc);
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Map<String, Object>> result = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -258,7 +258,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .outE("subFolder").as("e")
                 .inV().as("v")
                 .select("e", "v")
-                .order().by(__.select("e").by("sequence"), Order.incr)
+                .order().by(__.select("e").by("sequence"), Order.asc)
                 .map(m -> (Vertex) m.get().get("v"));
         Assert.assertEquals(6, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();

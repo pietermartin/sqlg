@@ -32,6 +32,11 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
     }
 
     @Override
+    public boolean hasStarts() {
+        return this.starts.hasNext();
+    }
+
+    @Override
     public void setId(final String id) {
         this.id = id;
     }

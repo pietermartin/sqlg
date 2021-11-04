@@ -2,8 +2,8 @@ package org.umlg.sqlg.test.usersuppliedpk.topology;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -38,7 +38,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
     public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             if (isPostgres()) {
                 configuration.addProperty(SqlgGraph.DISTRIBUTED, true);
                 if (!configuration.containsKey(SqlgGraph.JDBC_URL))

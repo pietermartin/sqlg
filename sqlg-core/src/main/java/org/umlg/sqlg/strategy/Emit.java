@@ -6,9 +6,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.javatuples.Pair;
@@ -175,14 +175,14 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                         Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                         Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                         Preconditions.checkState(
-                                selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal ||
+                                selectOneStep.getLocalChildren().get(0) instanceof ValueTraversal ||
                                         selectOneStep.getLocalChildren().get(0) instanceof TokenTraversal,
                                 "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or a TokenTraversal!");
                         String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
                         SqlgElement sqlgElementSelect = traverser.path().get(selectKey);
                         Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>) selectOneStep.getLocalChildren().get(0);
-                        if (t instanceof ElementValueTraversal) {
-                            ElementValueTraversal elementValueTraversal = (ElementValueTraversal) t;
+                        if (t instanceof ValueTraversal) {
+                            ValueTraversal elementValueTraversal = (ValueTraversal) t;
                             this.comparatorValues.add(Pair.with(sqlgElementSelect.value(elementValueTraversal.getPropertyKey()), comparator));
                         } else {
                             TokenTraversal tokenTraversal = (TokenTraversal) t;
@@ -191,9 +191,9 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                     } else if (traversal instanceof IdentityTraversal) {
                         //This is for Order.shuffle, Order.shuffle can not be used in Collections.sort(), it violates the sort contract.
                         //Basically its a crap comparator.
-                        this.comparatorValues.add(Pair.with(new Random().nextInt(), Order.incr));
-                    } else if (traversal instanceof ElementValueTraversal) {
-                        ElementValueTraversal elementValueTraversal = (ElementValueTraversal) traversal;
+                        this.comparatorValues.add(Pair.with(new Random().nextInt(), Order.asc));
+                    } else if (traversal instanceof ValueTraversal) {
+                        ValueTraversal elementValueTraversal = (ValueTraversal) traversal;
                         this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
                     } else if (traversal instanceof TokenTraversal) {
                         TokenTraversal tokenTraversal = (TokenTraversal) traversal;

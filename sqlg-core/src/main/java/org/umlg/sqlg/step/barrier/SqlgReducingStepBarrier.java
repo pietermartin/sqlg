@@ -23,6 +23,8 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
     private Supplier<E> seedSupplier;
     private Iterator<Traverser.Admin<E>> resultIterator = null;
     private boolean resetted = false;
+    private boolean inSideStartLoop = false;
+    private boolean hasStarts = false;
 
     public SqlgReducingStepBarrier(Traversal.Admin<?, ?> traversal) {
         super(traversal);
@@ -33,13 +35,26 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
     }
 
     @Override
+    public boolean hasStarts() {
+        if (this.first) {
+            this.hasStarts = this.starts.hasNext();
+        }
+        return this.hasStarts;
+    }
+
+    @Override
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         if (this.first) {
             this.first = false;
+//            boolean seedSupplierIsCollection = false;
+//            boolean seedSupplierIsMap = false;
             if (this.seedSupplier != null) {
                 this.result = this.seedSupplier.get();
+//                seedSupplierIsCollection = this.result instanceof Collection;
+//                seedSupplierIsMap = !seedSupplierIsCollection && this.result instanceof Map;
             }
             while (this.starts.hasNext()) {
+                this.inSideStartLoop = true;
                 if (this.resetted) {
                     this.resetted = false;
                     this.first = true;
@@ -48,6 +63,9 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
                 Traverser.Admin<S> s = this.starts.next();
                 this.result = reduce(this.result, s.get());
             }
+            this.inSideStartLoop = false;
+
+//            if (this.result == null || (seedSupplierIsCollection && ((Collection<?>) result).isEmpty()) || (seedSupplierIsMap && ((Map<?, ?>) this.result).isEmpty())) {
             if (this.result == null) {
                 throw FastNoSuchElementException.instance();
             } else {
@@ -58,7 +76,6 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
         if (this.resultIterator != null && this.resultIterator.hasNext()) {
             return this.resultIterator.next();
         } else {
-            reset();
             throw FastNoSuchElementException.instance();
         }
     }
@@ -73,6 +90,12 @@ public abstract class SqlgReducingStepBarrier<S, E> extends SqlgAbstractStep<S, 
 
     @Override
     public void reset() {
-        this.resetted = true;
+        super.reset();
+        this.first = true;
+        if (!this.inSideStartLoop) {
+            this.result = null;
+        } else {
+            this.resetted = true;
+        }
     }
 }

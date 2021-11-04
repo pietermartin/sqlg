@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.tinkerpop.gremlin.util.NumberHelper;
 import org.javatuples.Pair;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.SqlgElement;
@@ -84,7 +83,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             }
             while (true) {
                 //Branch traversal assumes every start only returns exactly one result.
-                //If it returns more then the first value is taken.
+                //If it returns more than one then first value is taken.
                 //This is taken from Tinkerpop's branch traversal's logic.
                 //BranchStep.applyCurrentTraverser
                 //final Object choice = TraversalUtil.apply(start, this.branchTraversal);
@@ -100,12 +99,9 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
                         if (cachedStart.get() instanceof SqlgElement) {
                             startCount = ((SqlgElement) cachedStart.get()).getInternalStartTraverserIndex();
                         }
-                        boolean startsWith = false;
+                        boolean startsWith = m instanceof Boolean && (!((Boolean) m)) || !(branchTraverserPathObjects.get(0) instanceof SqlgElement);
                         //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
                         //for SqlgHasNextStep the path is lost on 'false'.
-                        if (m instanceof Boolean && (!((Boolean) m)) || !(branchTraverserPathObjects.get(0) instanceof SqlgElement)) {
-                            startsWith = true;
-                        }
                         if (!startsWith) {
                             Object cachedStartObject = cachedStart.get();
                             long internalStartTraversalIndex = ((SqlgElement) cachedStartObject).getInternalStartTraverserIndex();
@@ -141,9 +137,9 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             for (Pair<Traversal.Admin, Traversal.Admin<S, E>> traversalOptionPair : traversalOptions) {
                 Traversal.Admin<S, E> traversalOption = traversalOptionPair.getValue1();
                 while (true) {
-                    //TinkerPop 3.5.0 fixes TestInject
-//                    if (traversalOption.getStartStep().hasStarts() && traversalOption.hasNext()) {
-                    if (traversalOption.getStartStep().hasNext() && traversalOption.hasNext()) {
+                    //hasStarts do not work as Sqlg frequently barriers all the starts upfront in which case hasStarts will return false on the second iteration.
+                    if (traversalOption.getStartStep().hasStarts() && traversalOption.hasNext()) {
+//                    if (traversalOption.getStartStep().hasNext() && traversalOption.hasNext()) {
                         this.results.add(traversalOption.nextTraverser());
                     } else {
                         break;
@@ -164,7 +160,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
                 }
             }
 
-            //Sort the results, this is to ensure the the incoming start order is not lost.
+            //Sort the results, this is to ensure the incoming start order is not lost.
             this.results.sort((o1, o2) -> {
                 SqlgTraverser x = (SqlgTraverser) o1;
                 SqlgTraverser y = (SqlgTraverser) o2;
@@ -187,9 +183,6 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
             }
         }
         for (final Pair<Traversal.Admin, Traversal.Admin<S, E>> p : this.traversalOptions) {
-//            if (TraversalUtil.test(choice, p.getValue0())) {
-//                branches.add(p.getValue1());
-//            }
             if (SqlgTraversalUtil.test(choice, p.getValue0())) {
                 branches.add(p.getValue1());
             }
@@ -199,20 +192,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
 
     @Override
     public SqlgBranchStepBarrier<S, E, M> clone() {
-        final SqlgBranchStepBarrier<S, E, M> clone = (SqlgBranchStepBarrier<S, E, M>) super.clone();
-//        clone.traversalOptions = new HashMap<>(this.traversalOptions.size());
-//        for (final Map.Entry<M, List<Traversal.Admin<S, E>>> entry : this.traversalOptions.entrySet()) {
-//            final List<Traversal.Admin<S, E>> traversals = entry.getValue();
-//            if (traversals.size() > 0) {
-//                final List<Traversal.Admin<S, E>> clonedTraversals = clone.traversalOptions.compute(entry.getKey(), (k, v) ->
-//                        (v == null) ? new ArrayList<>(traversals.size()) : v);
-//                for (final Traversal.Admin<S, E> traversal : traversals) {
-//                    clonedTraversals.add(traversal.clone());
-//                }
-//            }
-//        }
-//        clone.branchTraversal = this.branchTraversal.clone();
-        return clone;
+        return (SqlgBranchStepBarrier<S, E, M>) super.clone();
     }
 
     @Override
@@ -266,38 +246,4 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
         return Collections.singletonList(this.branchTraversal);
     }
 
-    /**
-     * PickTokenKey is basically a wrapper for numbers that are used as a PickToken. This is
-     * required in order to treat equal numbers of different data types as a match.
-     */
-    private static class PickTokenKey {
-
-        final Number number;
-
-        private PickTokenKey(final Number number) {
-            this.number = number;
-        }
-
-        static Object make(final Object value) {
-            return value instanceof Number ? new PickTokenKey((Number) value) : value;
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            final PickTokenKey other = (PickTokenKey) o;
-            return 0 == NumberHelper.compare(number, other.number);
-        }
-
-        @Override
-        public int hashCode() {
-            return number.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return number.toString();
-        }
-    }
 }

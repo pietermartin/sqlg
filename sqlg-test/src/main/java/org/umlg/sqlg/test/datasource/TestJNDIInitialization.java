@@ -1,7 +1,8 @@
 package org.umlg.sqlg.test.datasource;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,7 +20,6 @@ import javax.naming.spi.NamingManager;
 import javax.sql.DataSource;
 import java.net.URL;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -49,7 +49,8 @@ public class TestJNDIInitialization {
     @BeforeClass
     public static void beforeClass() throws Exception {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
-        configuration = new PropertiesConfiguration(sqlProperties);
+        Configurations configs = new Configurations();
+        configuration = configs.properties(sqlProperties);
         if (!configuration.containsKey("jdbc.url")) {
             throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
         }
@@ -75,7 +76,7 @@ public class TestJNDIInitialization {
     public void testLoadingDatasourceFromJndi() throws Exception {
         SqlgGraph g = SqlgGraph.open(configuration);
         assertNotNull(g.getSqlDialect());
-        assertEquals(configuration.getString("jdbc.url"), g.getJdbcUrl());
+        Assert.assertEquals(configuration.getString("jdbc.url"), g.getJdbcUrl());
         assertNotNull(g.getConnection());
     }
 }
