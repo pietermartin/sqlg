@@ -51,12 +51,6 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
-        method = "shouldAllowNullAddEdge",
-        reason = "nulls")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
-        method = "shouldAllowNullAddVertex",
-        reason = "nulls")
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
         method = "g_addVXnullX_propertyXid_nullX",
         reason = "nulls")
@@ -66,12 +60,13 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectTest",
         method = "g_injectX10_20_null_20_10_10X_groupCountXxX_dedup_asXyX_projectXa_bX_by_byXselectXxX_selectXselectXyXXX",
         reason = "nulls")
-@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.CoreTraversalTest",
-        method = "g_addVXpersonX_propertyXname_nullX",
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddEdgeTest",
+        method = "g_V_outE_propertyXweight_nullX",
         reason = "nulls")
-@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.CoreTraversalTest",
-        method = "g_VX1X_asXaX_outXcreatedX_addEXcreatedByX_toXaX_propertyXweight_nullX",
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
+        method = "g_V_hasLabelXpersonX_propertyXname_nullX",
         reason = "nulls")
+
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
         method = "shouldGenerateCorrectTraversers",
         reason = "Tests assumes traversers.")
@@ -247,7 +242,7 @@ public class SqlgGraph implements Graph {
     private final String jdbcUrl;
     private final ObjectMapper mapper = new ObjectMapper();
     private final Configuration configuration;
-    private final ISqlGFeatures features = new SqlGFeatures();
+    private final ISqlGFeatures features = new SqlgFeatures();
 
     /**
      * the build version of sqlg
@@ -641,7 +636,7 @@ public class SqlgGraph implements Graph {
         boolean supportsBatchMode();
     }
 
-    public class SqlGFeatures implements ISqlGFeatures {
+    public class SqlgFeatures implements ISqlGFeatures {
         @Override
         public GraphFeatures graph() {
             return new GraphFeatures() {
@@ -665,12 +660,12 @@ public class SqlgGraph implements Graph {
 
         @Override
         public VertexFeatures vertex() {
-            return new SqlVertexFeatures();
+            return new SqlgVertexFeatures();
         }
 
         @Override
         public EdgeFeatures edge() {
-            return new SqlEdgeFeatures();
+            return new SqlgEdgeFeatures();
         }
 
         @Override
@@ -683,7 +678,13 @@ public class SqlgGraph implements Graph {
             return getSqlDialect().supportsBatchMode();
         }
 
-        class SqlVertexFeatures implements VertexFeatures {
+        class SqlgVertexFeatures implements VertexFeatures {
+
+            @FeatureDescriptor(name = FEATURE_NULL_PROPERTY_VALUES)
+            @Override
+            public boolean supportsNullPropertyValues() {
+                return false;
+            }
 
             @Override
             @FeatureDescriptor(name = FEATURE_MULTI_PROPERTIES)
@@ -735,7 +736,7 @@ public class SqlgGraph implements Graph {
 
             @Override
             public VertexPropertyFeatures properties() {
-                return new SqlGVertexPropertyFeatures();
+                return new SqlgVertexPropertyFeatures();
             }
 
             @Override
@@ -744,7 +745,13 @@ public class SqlgGraph implements Graph {
             }
         }
 
-        class SqlEdgeFeatures implements EdgeFeatures {
+        class SqlgEdgeFeatures implements EdgeFeatures {
+
+            @FeatureDescriptor(name = FEATURE_NULL_PROPERTY_VALUES)
+            @Override
+            public boolean supportsNullPropertyValues() {
+                return false;
+            }
 
             @Override
             @FeatureDescriptor(name = FEATURE_USER_SUPPLIED_IDS)
@@ -789,7 +796,12 @@ public class SqlgGraph implements Graph {
 
         }
 
-        class SqlGVertexPropertyFeatures implements VertexPropertyFeatures {
+        class SqlgVertexPropertyFeatures implements VertexPropertyFeatures {
+
+            @FeatureDescriptor(name = FEATURE_NULL_PROPERTY_VALUES)
+            public boolean supportsNullPropertyValues() {
+                return false;
+            }
 
             @Override
             @FeatureDescriptor(name = FEATURE_REMOVE_PROPERTY)
