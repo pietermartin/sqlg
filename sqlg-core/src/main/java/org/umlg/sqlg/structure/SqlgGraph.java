@@ -51,6 +51,12 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
+@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
+        method = "shouldNotAllowNullAddVertex",
+        reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
+        method = "shouldNotAllowNullAddEdge",
+        reason = "nulls")
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
         method = "g_addVXnullX_propertyXid_nullX",
         reason = "nulls")
