@@ -626,11 +626,6 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"name\" VARCHAR, " +
                 "\"index_type\" VARCHAR);");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
-                "\"ID\" IDENTITY PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP, " +
-                "\"name\" VARCHAR);");
-
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(" +
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"sqlg_schema.vertex__I\" BIGINT, " +
@@ -748,12 +743,6 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"pid\" INTEGER, " +
                 "\"log\" VARCHAR);");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_globalUniqueIndex_property\"(" +
-                "\"ID\" IDENTITY PRIMARY KEY, " +
-                "\"sqlg_schema.property__I\" BIGINT, " +
-                "\"sqlg_schema.globalUniqueIndex__O\" BIGINT, " +
-                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
-                "FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
         return result;
     }
 

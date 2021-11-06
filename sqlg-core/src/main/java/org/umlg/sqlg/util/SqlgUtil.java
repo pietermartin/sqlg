@@ -884,14 +884,6 @@ public class SqlgUtil {
                         s.execute("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM \"sqlgReadOnly\"");
                         s.execute("REVOKE USAGE ON SCHEMA public FROM \"sqlgReadOnly\"");
 
-                        // If gui_schema has been created, we must revoke privileges against it as well.
-                        ResultSet rs2 = statement.executeQuery("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'gui_schema'");
-                        if (rs2.next()) {
-                            s.execute("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
-                            s.execute("REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
-                            s.execute("REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA gui_schema FROM \"sqlgReadOnly\"");
-                            s.execute("REVOKE USAGE ON SCHEMA gui_schema FROM \"sqlgReadOnly\"");
-                        }
                         s.execute("DROP ROLE \"sqlgReadOnly\"");
                     } catch (SQLException e) {
                         throw new RuntimeException(e);

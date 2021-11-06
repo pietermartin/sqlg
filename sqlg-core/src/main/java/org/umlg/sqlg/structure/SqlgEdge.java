@@ -280,9 +280,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 }
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             }
-            if (!keyValueMap.isEmpty()) {
-                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
-            }
         }
     }
 

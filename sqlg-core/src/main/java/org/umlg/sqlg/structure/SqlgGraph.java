@@ -390,10 +390,6 @@ public class SqlgGraph implements Graph {
         return this.traversal().withStrategies(TopologyStrategy.build().sqlgSchema().create());
     }
 
-    public GraphTraversalSource globalUniqueIndexes() {
-        return this.traversal().withStrategies(TopologyStrategy.build().globallyUniqueIndexes().create());
-    }
-
     @Override
     public Configuration configuration() {
         return this.configuration;

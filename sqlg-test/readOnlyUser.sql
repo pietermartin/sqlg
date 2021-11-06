@@ -5,10 +5,8 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 --this assumes a role "sqlgReadOnly" has been created.
 GRANT USAGE ON ALL TABLES IN SCHEMA public TO "sqlgReadOnly";
 GRANT USAGE ON ALL TABLES IN SCHEMA sqlg_schema TO "sqlgReadOnly";
-GRANT USAGE ON ALL TABLES IN SCHEMA gui_schema TO "sqlgReadOnly";
 
 GRANT SELECT ON ALL TABLES IN SCHEMA sqlg_schema TO "sqlgReadOnly";
-GRANT SELECT ON ALL TABLES IN SCHEMA gui_schema TO "sqlgReadOnly";
 
 SELECT *, grantee, privilege_type
 FROM information_schema.role_table_grants

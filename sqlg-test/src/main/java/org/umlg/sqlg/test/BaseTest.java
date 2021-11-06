@@ -197,7 +197,6 @@ public abstract class BaseTest {
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_index_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
-        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_globalUniqueIndex_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
 
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_graph") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_log") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
@@ -207,7 +206,6 @@ public abstract class BaseTest {
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_partition") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
-        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_globalUniqueIndex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
 
         result.add(sqlgGraph.getSqlDialect().dropSchemaStatement("sqlg_schema"));
 

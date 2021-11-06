@@ -35,8 +35,7 @@ public class SqlgMSSqlServerGremlinPlugin  extends AbstractGremlinPlugin {
                             PropertyColumn.class,
                             Index.class,
                             IndexType.class,
-                            Graph.class,
-                            GlobalUniqueIndex.class
+                            Graph.class
                     )
                     .create();
         } catch (Exception ex) {

@@ -5,13 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyInf;
-import org.umlg.sqlg.util.ThreadLocalSet;
-
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Date: 2016/09/04
@@ -23,8 +16,6 @@ public class PropertyColumn implements TopologyInf {
     private final String name;
     private boolean committed = true;
     private final PropertyType propertyType;
-    private final Set<GlobalUniqueIndex> globalUniqueIndices = ConcurrentHashMap.newKeySet();
-    private final Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new ThreadLocalSet<>();
 
     PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
         this.abstractLabel = abstractLabel;
@@ -53,44 +44,13 @@ public class PropertyColumn implements TopologyInf {
         this.committed = committed;
     }
 
-    public Set<GlobalUniqueIndex> getGlobalUniqueIndices() {
-        HashSet<GlobalUniqueIndex> result = new HashSet<>();
-        result.addAll(this.globalUniqueIndices);
-        if (this.abstractLabel.getSchema().getTopology().isSchemaChanged()) {
-            result.addAll(this.uncommittedGlobalUniqueIndices);
-        }
-        return result;
-    }
-
     void afterCommit() {
         Preconditions.checkState(this.getParentLabel().getTopology().isSchemaChanged(), "PropertyColumn.afterCommit must have schemaChanged = true");
-        Iterator<GlobalUniqueIndex> globalUniqueIndexIter = this.uncommittedGlobalUniqueIndices.iterator();
-        while (globalUniqueIndexIter.hasNext()) {
-            GlobalUniqueIndex globalUniqueIndex = globalUniqueIndexIter.next();
-            this.globalUniqueIndices.add(globalUniqueIndex);
-            globalUniqueIndexIter.remove();
-        }
         this.committed = true;
     }
 
     void afterRollback() {
         Preconditions.checkState(this.getParentLabel().getTopology().isSchemaChanged(), "PropertyColumn.afterRollback must have schemaChanged = true");
-        this.uncommittedGlobalUniqueIndices.clear();
-    }
-
-    /**
-     * Only called from {@link Topology#fromNotifyJson(int, LocalDateTime)}
-     *
-     * @param globalUniqueIndex The {@link GlobalUniqueIndex} to add.
-     */
-    void addToGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
-        this.globalUniqueIndices.add(globalUniqueIndex);
-        this.abstractLabel.addGlobalUniqueIndexToProperties(this);
-    }
-
-    void addGlobalUniqueIndex(GlobalUniqueIndex globalUniqueIndex) {
-        this.uncommittedGlobalUniqueIndices.add(globalUniqueIndex);
-        this.abstractLabel.addGlobalUniqueIndexToUncommittedProperties(this);
     }
 
     ObjectNode toNotifyJson() {

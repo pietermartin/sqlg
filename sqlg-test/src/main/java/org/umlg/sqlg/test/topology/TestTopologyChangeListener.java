@@ -13,7 +13,6 @@ import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -54,10 +53,7 @@ public class TestTopologyChangeListener extends BaseTest {
 
         Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(aVertexLabel.getProperties().values()));
 
-        //This adds a schema and 2 indexes and the globalUniqueIndex, so 4 elements in all
-        GlobalUniqueIndex globalUniqueIndex = schema.ensureGlobalUniqueIndexExist(new HashSet<>(aVertexLabel.getProperties().values()));
-
-        assertEquals(12, this.topologyListenerTriple.size());
+        assertEquals(8, this.topologyListenerTriple.size());
 
         assertEquals(schema, this.topologyListenerTriple.get(0).getLeft());
         assertEquals("", this.topologyListenerTriple.get(0).getMiddle());
@@ -98,10 +94,6 @@ public class TestTopologyChangeListener extends BaseTest {
         assertEquals(index, this.topologyListenerTriple.get(7).getLeft());
         assertEquals("", this.topologyListenerTriple.get(7).getMiddle());
         assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(7).getRight());
-
-        assertEquals(globalUniqueIndex, this.topologyListenerTriple.get(11).getLeft());
-        assertEquals("", this.topologyListenerTriple.get(11).getMiddle());
-        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(11).getRight());
 
         this.sqlgGraph.tx().commit();
     }

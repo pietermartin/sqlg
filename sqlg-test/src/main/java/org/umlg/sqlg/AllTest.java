@@ -198,8 +198,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSchemaEagerCreation.class,
         TestIndexTopologyTraversal.class,
         TestNotifyJson.class,
-        TestGlobalUniqueIndex.class,
-        TestBatchGlobalUniqueIndexes.class,
         TestVertexEdges.class,
         TestSqlgSchema.class,
         TestValidateTopology.class,

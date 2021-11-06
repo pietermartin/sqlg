@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.structure.BatchManager;
@@ -103,11 +102,6 @@ public class TopologyManager {
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
                         .drop().iterate();
-                traversalSource.V(vs)
-                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                        .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-                        .inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
-                        .drop().iterate();
 
                 traversalSource.V(vs)
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
@@ -118,12 +112,7 @@ public class TopologyManager {
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
                         .drop().iterate();
-                traversalSource.V(vs)
-                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-                        .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
-                        .inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
-                        .drop().iterate();
+
                 traversalSource.V(vs)
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
@@ -142,17 +131,6 @@ public class TopologyManager {
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .drop().iterate();
 
-                // delete global unique indices with no properties left
-                // TODO this doesn't work, to investigate?
-                /*traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
-            		.where(__.not(__.out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)))
-            		.drop().iterate();*/
-                for (Vertex v : traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
-                        .toList()) {
-                    if (!v.edges(Direction.OUT, SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).hasNext()) {
-                        traversalSource.V(v).drop().iterate();
-                    }
-                }
                 traversalSource.V(vs)
                         .drop().iterate();
             }
@@ -1214,89 +1192,6 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
-
-    static void addGlobalUniqueIndex(SqlgGraph sqlgGraph, String globalUniqueIndexName, Set<PropertyColumn> properties) {
-        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
-        try {
-            GraphTraversalSource traversalSource = sqlgGraph.topology();
-            List<Vertex> uniquePropertyConstraints = traversalSource.V()
-                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
-                    .has("name", globalUniqueIndexName)
-                    .toList();
-            if (uniquePropertyConstraints.size() > 0) {
-                throw new IllegalStateException("Unique property constraint with name already exists. name = " + globalUniqueIndexName);
-            }
-            Vertex globalUniquePropertyConstraint = sqlgGraph.addVertex(
-                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
-                    "name", globalUniqueIndexName,
-                    CREATED_ON, LocalDateTime.now()
-            );
-            for (PropertyColumn property : properties) {
-                String elementLabel = property.getParentLabel().getLabel();
-                List<Vertex> uniquePropertyConstraintProperty;
-                if (property.getParentLabel() instanceof VertexLabel) {
-                    uniquePropertyConstraintProperty = traversalSource.V()
-                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
-                            .has("name", elementLabel)
-                            .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-                            .has("name", property.getName())
-                            .toList();
-                } else {
-                    Set<Vertex> edges = traversalSource.V()
-                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
-                            .has("name", elementLabel)
-                            .as("a")
-                            .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
-                            .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                            .has("name", property.getParentLabel().getSchema().getName())
-                            .<Vertex>select("a")
-                            .toSet();
-                    if (edges.size() == 0) {
-                        throw new IllegalStateException(String.format("Found no edge for %s.%s", property.getParentLabel().getSchema().getName(), elementLabel));
-                    }
-                    if (edges.size() > 1) {
-                        throw new IllegalStateException(String.format("Found more than one edge for %s.%s", property.getParentLabel().getSchema().getName(), elementLabel));
-                    }
-                    Vertex edge = edges.iterator().next();
-                    uniquePropertyConstraintProperty = traversalSource.V(edge)
-                            .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
-                            .has("name", property.getName())
-                            .toList();
-                }
-                if (uniquePropertyConstraintProperty.size() == 0) {
-                    throw new IllegalStateException(String.format("Found no Property for %s.%s.%s", property.getParentLabel().getSchema().getName(), property.getParentLabel().getLabel(), property.getName()));
-                }
-                Vertex propertyVertex = uniquePropertyConstraintProperty.get(0);
-                globalUniquePropertyConstraint.addEdge(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE, propertyVertex);
-            }
-        } finally {
-            sqlgGraph.tx().batchMode(batchModeType);
-        }
-    }
-
-    static void removeGlobalUniqueIndex(SqlgGraph sqlgGraph, String globalUniqueIndexName) {
-        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
-        try {
-            GraphTraversalSource traversalSource = sqlgGraph.topology();
-            List<Vertex> uniquePropertyConstraints = traversalSource.V()
-                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
-                    .has("name", globalUniqueIndexName)
-                    .toList();
-            if (uniquePropertyConstraints.size() > 0) {
-                traversalSource.V(uniquePropertyConstraints.get(0))
-                        .out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
-                        .drop()
-                        .iterate();
-                traversalSource.V(uniquePropertyConstraints.get(0))
-                        .drop()
-                        .iterate();
-            }
-
-        } finally {
-            sqlgGraph.tx().batchMode(batchModeType);
-        }
-    }
-
 
     private static BatchManager.BatchModeType flushAndSetTxToNone(SqlgGraph sqlgGraph) {
         //topology elements can not be added in batch mode because on flushing the topology

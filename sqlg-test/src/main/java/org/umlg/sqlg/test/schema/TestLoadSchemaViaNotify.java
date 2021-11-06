@@ -338,23 +338,16 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             properties.put("name5", PropertyType.STRING);
             properties.put("name6", PropertyType.STRING);
             EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
-            Set<PropertyColumn> globalUniqueIndexPropertyColumns = new HashSet<>();
-            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
-            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
-            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(edgeLabel.getProperties().values()));
-            this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPropertyColumns);
             this.sqlgGraph.tx().commit();
 
             //allow time for notification to happen
             Thread.sleep(1_000);
 
-            Assert.assertEquals(1, sqlgGraph1.getTopology().getGlobalUniqueIndexes().size());
-
             sqlgGraph1.addVertex(T.label, "A", "name1", "123");
             sqlgGraph1.tx().commit();
             try {
                 sqlgGraph.addVertex(T.label, "A", "name1", "123");
-                Assert.fail("GlobalUniqueIndex should prevent this from happening");
+//                Assert.fail("GlobalUniqueIndex should prevent this from happening");
             } catch (Exception e) {
                 //swallow
             }
@@ -416,10 +409,6 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             VertexLabel bVertexLabel = schema.getVertexLabel("B").orElseThrow();
             Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(aVertexLabel.getProperties().values()));
 
-            //This adds a schema and 2 indexes and the globalUniqueIndex, so 4 elements in all
-            GlobalUniqueIndex globalUniqueIndex = schema.ensureGlobalUniqueIndexExist(new HashSet<>(aVertexLabel.getProperties().values()));
-
-
             this.sqlgGraph.tx().commit();
             //allow time for notification to happen
             Thread.sleep(1_000);
@@ -454,7 +443,6 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Assert.assertEquals("", topologyListenerTriple.get(4).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
 
-            Assert.assertEquals(globalUniqueIndex, topologyListenerTriple.get(5).getLeft());
             Assert.assertEquals("", topologyListenerTriple.get(5).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
         }

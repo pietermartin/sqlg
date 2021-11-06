@@ -422,9 +422,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                     throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", Topology.VERTICES));
                 }
             }
-            if (!temporary) {
-                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
-            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

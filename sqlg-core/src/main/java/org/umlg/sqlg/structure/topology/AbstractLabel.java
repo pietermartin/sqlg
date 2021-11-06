@@ -49,9 +49,6 @@ public abstract class AbstractLabel implements TopologyInf {
     private int shardCount = -1;
     private int uncommittedShardCount = -1;
 
-    private final Map<String, PropertyColumn> globalUniqueIndexProperties = new ConcurrentHashMap<>();
-    private final Map<String, PropertyColumn> uncommittedGlobalUniqueIndexProperties = new ThreadLocalMap<>();
-
     private final Map<String, Index> indexes = new ConcurrentHashMap<>();
     private final Map<String, Index> uncommittedIndexes = new ThreadLocalMap<>();
     private final Set<String> uncommittedRemovedIndexes = new ThreadLocalSet<>();
@@ -505,14 +502,6 @@ public abstract class AbstractLabel implements TopologyInf {
         return result;
     }
 
-    public Map<String, PropertyColumn> getGlobalUniqueIndexProperties() {
-        Map<String, PropertyColumn> result = new HashMap<>(this.globalUniqueIndexProperties);
-        if (getTopology().isSchemaChanged()) {
-            result.putAll(this.uncommittedGlobalUniqueIndexProperties);
-        }
-        return result;
-    }
-
     public Optional<PropertyColumn> getProperty(String key) {
         PropertyColumn propertyColumn = getProperties().get(key);
         if (propertyColumn != null) {
@@ -755,12 +744,6 @@ public abstract class AbstractLabel implements TopologyInf {
         }
         this.identifiers.addAll(this.uncommittedIdentifiers);
         this.uncommittedIdentifiers.clear();
-        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedGlobalUniqueIndexProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, PropertyColumn> entry = it.next();
-            this.globalUniqueIndexProperties.put(entry.getKey(), entry.getValue());
-            entry.getValue().afterCommit();
-            it.remove();
-        }
         for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Index> entry = it.next();
             this.indexes.put(entry.getKey(), entry.getValue());
@@ -810,7 +793,6 @@ public abstract class AbstractLabel implements TopologyInf {
         }
         this.uncommittedRemovedProperties.clear();
         this.uncommittedIdentifiers.clear();
-        this.uncommittedGlobalUniqueIndexProperties.clear();
         for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Index> entry = it.next();
             entry.getValue().afterRollback();
@@ -1036,14 +1018,6 @@ public abstract class AbstractLabel implements TopologyInf {
         }
         AbstractLabel other = (AbstractLabel) o;
         return this.label.equals(other.label);
-    }
-
-    void addGlobalUniqueIndexToUncommittedProperties(PropertyColumn propertyColumn) {
-        this.uncommittedGlobalUniqueIndexProperties.put(propertyColumn.getName(), propertyColumn);
-    }
-
-    void addGlobalUniqueIndexToProperties(PropertyColumn propertyColumn) {
-        this.globalUniqueIndexProperties.put(propertyColumn.getName(), propertyColumn);
     }
 
     protected abstract List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException;

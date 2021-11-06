@@ -11,16 +11,14 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.topology.EdgeLabel;
-import org.umlg.sqlg.structure.topology.GlobalUniqueIndex;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -374,40 +372,6 @@ public class TestLoadSchema extends BaseTest {
         a1.addEdge("hi", d1);
         this.sqlgGraph.tx().commit();
         assertEquals(3, this.sqlgGraph.traversal().V(a1).out().count().next(), 0);
-    }
-
-    @Test
-    public void testLoadGlobalUniqueIndexes() {
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name1", PropertyType.STRING);
-        properties.put("name2", PropertyType.STRING);
-        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
-        Assert.assertTrue(aVertexLabel.isUncommitted());
-        properties.clear();
-        properties.put("name3", PropertyType.STRING);
-        properties.put("name4", PropertyType.STRING);
-        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
-        Assert.assertTrue(bVertexLabel.isUncommitted());
-        properties.clear();
-        properties.put("name5", PropertyType.STRING);
-        properties.put("name6", PropertyType.STRING);
-        EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
-        Assert.assertTrue(edgeLabel.isUncommitted());
-        Set<PropertyColumn> globalUniqueIndexPropertyColumns = new HashSet<>();
-        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
-        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
-        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(edgeLabel.getProperties().values()));
-        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPropertyColumns);
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph.getTopology().getGlobalUniqueIndexes().size());
-            GlobalUniqueIndex globalUniqueIndex = sqlgGraph.getTopology().getGlobalUniqueIndexes().iterator().next();
-            Assert.assertTrue(globalUniqueIndex.getProperties().containsAll(globalUniqueIndexPropertyColumns));
-            for (PropertyColumn globalUniqueIndexPropertyColumn : globalUniqueIndexPropertyColumns) {
-                assertEquals(1, globalUniqueIndexPropertyColumn.getGlobalUniqueIndices().size());
-            }
-        }
     }
 
 }

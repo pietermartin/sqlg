@@ -566,10 +566,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 "\"createdOn\" DATETIME, " +
                 "\"name\" VARCHAR(255), " +
                 "\"index_type\" VARCHAR(255));");
-        result.add("CREATE TABLE \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
-                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
-                "\"createdOn\" DATETIME, " +
-                "\"name\" VARCHAR(255));");
 
         result.add("CREATE TABLE \"sqlg_schema\".\"E_schema_vertex\"(" +
                 "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
@@ -690,12 +686,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 "\"pid\" INTEGER, " +
                 "\"log\" VARCHAR);");
 
-        result.add("CREATE TABLE \"sqlg_schema\".\"E_globalUniqueIndex_property\"(" +
-                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
-                "\"sqlg_schema.property__I\" BIGINT, " +
-                "\"sqlg_schema.globalUniqueIndex__O\" BIGINT, " +
-                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
-                "FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
         return result;
     }
 
@@ -1042,60 +1032,6 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void flushVertexGlobalUniqueIndexes(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
-        for (SchemaTable schemaTable : vertexCache.keySet()) {
-            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-            Map<String, PropertyColumn> propertyColumnMap = sqlgGraph.getTopology().getPropertiesFor(schemaTable.withPrefix(VERTEX_PREFIX));
-            for (Map.Entry<String, PropertyColumn> propertyColumnEntry : propertyColumnMap.entrySet()) {
-                PropertyColumn propertyColumn = propertyColumnEntry.getValue();
-                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
-                    try {
-                        Connection connection = sqlgGraph.tx().getConnection();
-                        SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
-                        try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
-                            bulkCopy.setDestinationTableName(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + "." +
-                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName())
-                            );
-                            bulkCopy.writeToServer(new SQLServerVertexGlobalUniqueIndexBulkRecord(bulkCopy, sqlgGraph, vertices, propertyColumn));
-                        }
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-    }
-
-    @Override
-    public void flushEdgeGlobalUniqueIndexes(SqlgGraph sqlgGraph,
-                                             Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        for (MetaEdge metaEdge : edgeCache.keySet()) {
-
-            Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
-            Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeMap = triples.getRight();
-            Map<String, PropertyColumn> propertyColumnMap = sqlgGraph.getTopology().getPropertiesFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
-
-            for (Map.Entry<String, PropertyColumn> propertyColumnEntry : propertyColumnMap.entrySet()) {
-                PropertyColumn propertyColumn = propertyColumnEntry.getValue();
-                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
-                    try {
-                        Connection connection = sqlgGraph.tx().getConnection();
-                        SQLServerConnection sqlServerConnection = connection.unwrap(SQLServerConnection.class);
-                        try (SQLServerBulkCopy bulkCopy = new SQLServerBulkCopy(sqlServerConnection)) {
-                            bulkCopy.setDestinationTableName(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + "." +
-                                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName())
-                            );
-                            bulkCopy.writeToServer(new SQLServerEdgeGlobalUniqueIndexBulkRecord(bulkCopy, sqlgGraph, edgeMap, propertyColumn));
-                        }
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
         }
     }
 

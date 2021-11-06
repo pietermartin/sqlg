@@ -115,7 +115,7 @@ public class SchemaTableTree {
         this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
-        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()), Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
     }
@@ -162,7 +162,7 @@ public class SchemaTableTree {
         this.drop = drop;
         this.aggregateFunction = aggregateFunction;
         this.groupBy = groupBy;
-        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()), Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
         initializeAliasColumnNameMaps();

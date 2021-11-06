@@ -545,7 +545,6 @@ public abstract class BaseStrategy {
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
                 if (isNotWithMultipleColumnValue(hasContainerHolder)) {
                     toRemoveHasContainers.addAll(isForSqlgSchema(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(isForGuiSchema(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
                     //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                     //i.e. for neq and without 'or' logic
@@ -612,16 +611,6 @@ public abstract class BaseStrategy {
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)) {
                 currentReplacedStep.markForSqlgSchema();
-                return Collections.singletonList(hasContainer);
-            }
-        }
-        return Collections.emptyList();
-    }
-
-    private List<HasContainer> isForGuiSchema(ReplacedStep<?, ?> currentReplacedStep, List<HasContainer> hasContainers) {
-        for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)) {
-                currentReplacedStep.markForGuiSchema();
                 return Collections.singletonList(hasContainer);
             }
         }
