@@ -3,8 +3,8 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
@@ -143,7 +143,7 @@ public class ReplacedStepTree<S, E> {
                     Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                     Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                     Preconditions.checkState(
-                            selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal ||
+                            selectOneStep.getLocalChildren().get(0) instanceof ValueTraversal ||
                                     selectOneStep.getLocalChildren().get(0) instanceof TokenTraversal
                             ,
                             "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or a TokenTraversal!");

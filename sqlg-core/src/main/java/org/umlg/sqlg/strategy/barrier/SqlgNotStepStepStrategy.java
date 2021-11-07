@@ -29,7 +29,7 @@ public class SqlgNotStepStepStrategy<S> extends AbstractTraversalStrategy<Traver
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //Only optimize SqlgGraph. StarGraph also passes through here.
-        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+        if (traversal.getGraph().isEmpty() || !(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         if (!SqlgTraversalUtil.mayOptimize(traversal)) {

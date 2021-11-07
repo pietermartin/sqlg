@@ -17,12 +17,15 @@ public class TestInject extends BaseTest {
 
     @Test
     public void testInjectWithChoose() {
-        Traversal traversal = this.sqlgGraph.traversal().inject(1).choose(__.is(1), __.constant(10).fold(), __.fold());
-        final List expected = new ArrayList() {{ add(10);}};
+        Traversal<?, ?> traversal = this.sqlgGraph.traversal().inject(1).choose(__.is(1), __.constant(10).fold(), __.fold());
+        final List<Integer> expected = new ArrayList<>() {{
+            add(10);
+        }};
         Assert.assertEquals(expected, traversal.next());
         MatcherAssert.assertThat(traversal.hasNext(), Matchers.is(false));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testInjectAndUnion() {
         this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

@@ -1,22 +1,21 @@
 package org.umlg.sqlg.test.datasource;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
-
-import java.net.URL;
-import java.util.Objects;
-
-import javax.sql.DataSource;
-
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.ds.C3P0DataSource;
+
+import javax.sql.DataSource;
+import java.net.URL;
+import java.util.Objects;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author jgustie
@@ -28,7 +27,8 @@ public class TestCustomDataSource {
     @Before
     public void before() throws ConfigurationException {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
-        this.configuration = new PropertiesConfiguration(sqlProperties);
+        Configurations configs = new Configurations();
+        configuration = configs.properties(sqlProperties);
     }
 
     @Test

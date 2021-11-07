@@ -26,7 +26,8 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.*;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -49,11 +50,11 @@ public class TestReducing extends BaseTest {
     @Test
     public void testRepeatAndMin() {
         loadModern();
-        final Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().repeat(both()).times(5).values("age").min();
+        final Traversal<Vertex, Integer> traversal = this.sqlgGraph.traversal().V().repeat(__.both()).times(5).values("age").min();
         printTraversalForm(traversal);
 //        List<Integer> result = traversal.toList();
 //        System.out.println(result);
-        checkResults(Arrays.asList(27), traversal);
+        checkResults(List.of(27), traversal);
     }
 
     @Test
@@ -63,9 +64,9 @@ public class TestReducing extends BaseTest {
         printTraversalForm(traversal);
         Map<String, Long> result = traversal.next();
         AbstractGremlinProcessTest.checkMap(new HashMap<>() {{
-            put("original", 771317l);
-            put("", 160968l);
-            put("cover", 368579l);
+            put("original", 771317L);
+            put("", 160968L);
+            put("cover", 368579L);
         }}, result);
         Assert.assertFalse(traversal.hasNext());
         AbstractGremlinProcessTest.checkSideEffects(traversal.asAdmin().getSideEffects());
@@ -341,7 +342,6 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "age", 1);
         this.sqlgGraph.addVertex(T.label, "Person", "age", 2);
         this.sqlgGraph.addVertex(T.label, "Person", "age", 3);
-        this.sqlgGraph.addVertex(T.label, "Person", "age", 0);
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person").values("age").sum();
@@ -854,9 +854,8 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").values("age").sum();
+        @SuppressWarnings("unused")
         String sql = getSQL(traversal);
-        if (isPostgres()) {
-        }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep);
@@ -887,6 +886,7 @@ public class TestReducing extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultTraversal<Vertex, Map<String, Long>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V(a1).out("ab", "ac").group().by("name").by(__.values("age").count());
+        @SuppressWarnings("unused")
         String sql = getSQL(traversal);
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
@@ -1818,4 +1818,18 @@ public class TestReducing extends BaseTest {
         Assert.assertFalse(traversal.hasNext());
     }
 
+    @Test
+    public void g_V_groupXaX_byXnameX_capXaX() {
+        loadModern();
+        final Traversal<Vertex, Map<String, Collection<Vertex>>> traversal = this.sqlgGraph.traversal().V().group("a").by("name").cap("a");
+        printTraversalForm(traversal);
+        final Map<String, Collection<Vertex>> map = traversal.next();
+        assertEquals(6, map.size());
+        map.forEach((key, values) -> {
+            assertEquals(1, values.size());
+            assertEquals(convertToVertexId(key), values.iterator().next().id());
+        });
+        assertFalse(traversal.hasNext());
+//        checkSideEffects(traversal.asAdmin().getSideEffects(), "a", HashMap.class);
+    }
 }

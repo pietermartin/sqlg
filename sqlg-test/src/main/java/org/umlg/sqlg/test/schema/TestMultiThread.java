@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.schema;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -100,11 +100,11 @@ public class TestMultiThread extends BaseTest {
     @Test
     public void shouldExecuteWithCompetingThreads() throws InterruptedException {
         //Create the schema upfront so that graphs (Hsqldb, H2, Mysql...) that do not support transactional schema's can succeed.
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("vertex", new HashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("vertex", new HashMap<>() {{
             put("test", PropertyType.LONG);
             put("blah", PropertyType.DOUBLE);
         }});
-        vertexLabel.ensureEdgeLabelExist("friend", vertexLabel, new HashMap<String, PropertyType>() {{
+        vertexLabel.ensureEdgeLabelExist("friend", vertexLabel, new HashMap<>() {{
             put("bloop", PropertyType.INTEGER);
         }});
         this.sqlgGraph.tx().commit();
@@ -187,7 +187,7 @@ public class TestMultiThread extends BaseTest {
             executorService.submit(() -> {
                 try {
                     final Random random = new Random();
-                    int randomInt = random.nextInt();
+                    random.nextInt();
                     for (int i = 0; i < 10; i++) {
                         sqlgGraph.addVertex(T.label, "Person" + finalJ, "name", String.valueOf(finalJ));
                     }
@@ -226,8 +226,8 @@ public class TestMultiThread extends BaseTest {
                 final Random random = new Random();
                 int randomInt = random.nextInt();
                 for (int i = 0; i < 10; i++) {
-                    Vertex v2 = sqlgGraph.addVertex(T.label, "Person" + String.valueOf(randomInt), "name", String.valueOf(randomInt));
-                    v1.addEdge("test" + String.valueOf(randomInt), v2);
+                    Vertex v2 = sqlgGraph.addVertex(T.label, "Person" + randomInt, "name", String.valueOf(randomInt));
+                    v1.addEdge("test" + randomInt, v2);
                     tables.add(randomInt);
                 }
                 sqlgGraph.tx().commit();
@@ -270,7 +270,8 @@ public class TestMultiThread extends BaseTest {
     public void testMultipleGraphs() throws Exception {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
             if (!configuration.containsKey("jdbc.url"))
@@ -336,14 +337,13 @@ public class TestMultiThread extends BaseTest {
     /**
      * test when each graph is created in its own thread, in distributed mode
      * each thread created a different label
-     *
-     * @throws Exception
      */
     @Test
     public void testMultipleGraphsMultipleLabels() throws Exception {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
             configuration.addProperty("maxPoolSize", 3);

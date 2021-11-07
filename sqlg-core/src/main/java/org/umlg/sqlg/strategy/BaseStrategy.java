@@ -6,9 +6,9 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
@@ -80,14 +80,7 @@ public abstract class BaseStrategy {
             CountGlobalStep.class,
             GroupStep.class,
             GroupCountStep.class
-    );
-
-    static final List<Class> REDUCING_STEPS = Arrays.asList(
-            MaxGlobalStep.class,
-            MinGlobalStep.class,
-            SumGlobalStep.class,
-            MeanGlobalStep.class,
-            CountGlobalStep.class
+//            FoldStep.class
     );
 
     public static final String PATH_LABEL_SUFFIX = "P~~~";
@@ -248,6 +241,8 @@ public abstract class BaseStrategy {
                 return handleGroupStep(this.currentReplacedStep, step);
             } else if (step instanceof GroupCountStep) {
                 return handleGroupCountStep(this.currentReplacedStep, step);
+//            } else if (step instanceof FoldStep) {
+//                return handleFoldStep(this.currentReplacedStep, (FoldStep)step);
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
             }
@@ -550,7 +545,6 @@ public abstract class BaseStrategy {
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
                 if (isNotWithMultipleColumnValue(hasContainerHolder)) {
                     toRemoveHasContainers.addAll(isForSqlgSchema(this.currentReplacedStep, hasContainers));
-                    toRemoveHasContainers.addAll(isForGuiSchema(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
                     //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
                     //i.e. for neq and without 'or' logic
@@ -617,16 +611,6 @@ public abstract class BaseStrategy {
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)) {
                 currentReplacedStep.markForSqlgSchema();
-                return Collections.singletonList(hasContainer);
-            }
-        }
-        return Collections.emptyList();
-    }
-
-    private List<HasContainer> isForGuiSchema(ReplacedStep<?, ?> currentReplacedStep, List<HasContainer> hasContainers) {
-        for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)) {
-                currentReplacedStep.markForGuiSchema();
                 return Collections.singletonList(hasContainer);
             }
         }
@@ -1353,8 +1337,8 @@ public abstract class BaseStrategy {
         if (localChildren.size() == 1) {
             List<String> groupByKeys = new ArrayList<>();
             Traversal.Admin<?, ?> groupByCountTraversal = localChildren.get(0);
-            if (groupByCountTraversal instanceof  ElementValueTraversal) {
-                ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal) groupByCountTraversal;
+            if (groupByCountTraversal instanceof  ValueTraversal) {
+                ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal) groupByCountTraversal;
                 groupByKeys.add(elementValueTraversal.getPropertyKey());
                 replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));
             } else if (groupByCountTraversal instanceof TokenTraversal) {
@@ -1386,8 +1370,8 @@ public abstract class BaseStrategy {
             Traversal.Admin<?, ?> aggregateOverTraversal = localChildren.get(1);
             boolean isPropertiesStep = false;
             List<String> groupByKeys = new ArrayList<>();
-            if (groupByTraversal instanceof ElementValueTraversal) {
-                ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal) groupByTraversal;
+            if (groupByTraversal instanceof ValueTraversal) {
+                ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal) groupByTraversal;
                 groupByKeys.add(elementValueTraversal.getPropertyKey());
             } else if (groupByTraversal instanceof DefaultGraphTraversal) {
                 List<Step> groupBySteps = groupByTraversal.getSteps();
@@ -1466,6 +1450,13 @@ public abstract class BaseStrategy {
             }
             return false;
         }
+        return false;
+    }
+
+    public boolean handleFoldStep(ReplacedStep<?, ?> replacedStep, FoldStep<?, ?> foldStep) {
+        SqlgFoldStep<?, ?> sqlgFoldStep = new SqlgFoldStep(this.traversal, foldStep.getSeedSupplier(), foldStep.isListFold(), foldStep.getBiOperator());
+        //noinspection unchecked
+        TraversalHelper.replaceStep((Step) foldStep, sqlgFoldStep, this.traversal);
         return false;
     }
 }

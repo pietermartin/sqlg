@@ -78,10 +78,6 @@ public class ReplacedStep<S, E> {
      * If the query is a for sqlg_schema only. i.e. sqlgGraph.topology().V()....
      */
     private boolean isForSqlgSchema;
-    /**
-     * If the query is a for gui_schema only. i.e. sqlgGraph.globalUniqueIndexes().V()....
-     */
-    private boolean isForGuiSchema;
 
     private ReplacedStep() {
     }
@@ -168,7 +164,7 @@ public class ReplacedStep<S, E> {
     private Set<SchemaTableTree> appendPathForVertexStep(SchemaTableTree schemaTableTree) {
         Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found " + schemaTableTree.getSchemaTable().getTable());
 
-        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema, this.isForGuiSchema);
+        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
 
         Set<SchemaTableTree> result = new HashSet<>();
         Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.topology.getTableLabels(schemaTableTree.getSchemaTable());
@@ -479,7 +475,7 @@ public class ReplacedStep<S, E> {
         }
 
         //All tables depending on the strategy, topology tables only or the rest.
-        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema, this.isForGuiSchema);
+        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
 
         //Optimization for the simple case of only one label specified.
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
@@ -851,10 +847,6 @@ public class ReplacedStep<S, E> {
 
     public boolean isForSqlgSchema() {
         return isForSqlgSchema;
-    }
-
-    public void markForGuiSchema() {
-        this.isForGuiSchema = true;
     }
 
     public Pair<String, List<String>> getAggregateFunction() {

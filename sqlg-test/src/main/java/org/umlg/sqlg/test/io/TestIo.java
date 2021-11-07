@@ -100,7 +100,6 @@ public class TestIo extends BaseTest {
         assertThat(f.length() > 0, is(true));
     }
 
-
     @Test
     public void g_io_writeXkryoX() throws IOException {
         loadModern();

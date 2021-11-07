@@ -15,12 +15,34 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 /**
  * Date: 2016/05/30
  * Time: 9:01 PM
  */
 @SuppressWarnings("unchecked")
 public class TestUnion extends BaseTest {
+
+    @Test
+    public void g_V_unionXrepeatXunionXoutXcreatedX__inXcreatedXX_timesX2X__repeatXunionXinXcreatedX__outXcreatedXX_timesX2XX_label_groupCount() {
+        loadModern();
+        final Traversal<Vertex, Map<String, Long>> traversal =  (Traversal) this.sqlgGraph.traversal().V().union(
+                        repeat(union(
+                                out("created"),
+                                in("created"))).times(2),
+                        repeat(union(
+                                in("created"),
+                                out("created"))).times(2))
+                .label().groupCount();
+        final Map<String, Long> groupCount = traversal.next();
+        assertFalse(traversal.hasNext());
+        assertEquals(2, groupCount.size());
+        assertEquals(12L, groupCount.get("software").longValue());
+        assertEquals(20L, groupCount.get("person").longValue());
+    }
 
     /**
      * https://github.com/pietermartin/sqlg/issues/416

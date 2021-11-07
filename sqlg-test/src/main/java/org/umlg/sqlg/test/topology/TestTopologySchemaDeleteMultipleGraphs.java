@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.topology;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -26,7 +26,8 @@ public class TestTopologySchemaDeleteMultipleGraphs extends BaseTest {
     public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
             if (!configuration.containsKey("jdbc.url"))

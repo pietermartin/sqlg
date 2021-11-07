@@ -25,11 +25,20 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
     private final List<Traversal.Admin<S, TraversalOptionParent.Pick>> localTraversals;
     private final List<Traverser.Admin<E>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<E>> resultIterator;
+    private boolean hasStarts = false;
 
     public SqlgUnionStepBarrier(final Traversal.Admin traversal, UnionStep<S, E> unionStep) {
         super(traversal);
         this.globalTraversals = unionStep.getGlobalChildren();
         this.localTraversals = unionStep.getLocalChildren();
+    }
+
+    @Override
+    public boolean hasStarts() {
+        if (this.first) {
+            this.hasStarts = this.starts.hasNext();
+        }
+        return this.hasStarts;
     }
 
     @SuppressWarnings("unchecked")
@@ -87,6 +96,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
 
     @Override
     public void reset() {
+//        super.reset();
         this.first = true;
         this.results.clear();
     }

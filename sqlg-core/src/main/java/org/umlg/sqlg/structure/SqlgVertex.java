@@ -155,7 +155,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
         if (!complete && keyValueMapTriple.getRight().size() != keyValueMapTriple.getMiddle().size()) {
-            throw Property.Exceptions.propertyValueCanNotBeNull();
+//            throw Property.Exceptions.propertyValueCanNotBeNull();
+            throw Property.Exceptions.propertyKeyCanNotBeNull();
         }
         final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
         final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
@@ -420,9 +421,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 } else {
                     throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", Topology.VERTICES));
                 }
-            }
-            if (!temporary) {
-                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

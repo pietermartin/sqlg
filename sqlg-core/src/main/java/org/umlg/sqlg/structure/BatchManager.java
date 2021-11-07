@@ -213,11 +213,6 @@ public class BatchManager {
         this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
         this.close();
         this.isBusyFlushing = false;
-        this.sqlDialect.flushVertexGlobalUniqueIndexes(this.sqlgGraph, this.vertexCache);
-        this.sqlDialect.flushEdgeGlobalUniqueIndexes(this.sqlgGraph, this.edgeCache);
-        this.sqlDialect.flushVertexGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
-        this.sqlDialect.flushEdgeGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.edgePropertyCache);
-        this.sqlDialect.flushRemovedGlobalUniqueIndexVertices(this.sqlgGraph, this.removeVertexCache);
         this.clear();
     }
 

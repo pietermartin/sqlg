@@ -37,7 +37,7 @@ public class TestRepeatWithOrderAndRange extends BaseTest {
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .repeat(
-                        __.out().order().by("order", Order.decr)
+                        __.out().order().by("order", Order.desc)
                 ).times(2);
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();

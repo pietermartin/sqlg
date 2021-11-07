@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.repeatstep;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
@@ -25,7 +25,8 @@ public class NetAggregateTest extends BaseTest {
     public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             configuration.setProperty("cache.vertices", true);
             if (!configuration.containsKey("jdbc.url")) {
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));

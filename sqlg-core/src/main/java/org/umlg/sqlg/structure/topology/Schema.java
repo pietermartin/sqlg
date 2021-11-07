@@ -47,10 +47,6 @@ public class Schema implements TopologyInf {
     final Set<String> uncommittedRemovedEdgeLabels = new ThreadLocalSet<>();
 
     public static final String SQLG_SCHEMA = "sqlg_schema";
-    public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
-    private final Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new ThreadLocalMap<>();
-    private final Set<String> uncommittedRemovedGlobalUniqueIndexes = new ThreadLocalSet<>();
-    final Map<String, GlobalUniqueIndex> globalUniqueIndexes = new ConcurrentHashMap<>();
     private static final String MARKER = "~gremlin.incidentToAdjacent";
 
     //temporary table map. it is in a thread local as temporary tables are only valid per session/connection.
@@ -90,16 +86,6 @@ public class Schema implements TopologyInf {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Creates the 'gui_schema'. A schema in which to store the GlobalUniqueIndexes. The 'gui_schema' always already exist and is pre-loaded in {@link Topology()} @see {@link Topology#cacheTopology()}
-     *
-     * @param topology The {@link Topology} that contains the public schema.
-     * @return The Schema that represents 'public'
-     */
-    static Schema createGlobalUniqueIndexSchema(Topology topology) {
-        return new Schema(topology, GLOBAL_UNIQUE_INDEX_SCHEMA);
     }
 
     static Schema createSchema(SqlgGraph sqlgGraph, Topology topology, String name) {
@@ -805,22 +791,6 @@ public class Schema implements TopologyInf {
         return Collections.emptyMap();
     }
 
-    Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", VERTEX_PREFIX, EDGE_PREFIX);
-        if (schemaTable.isVertexTable()) {
-            Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
-            if (vertexLabelOptional.isPresent()) {
-                return vertexLabelOptional.get().getGlobalUniqueIndexProperties();
-            }
-        } else {
-            Optional<EdgeLabel> edgeLabelOptional = getEdgeLabel(schemaTable.withOutPrefix().getTable());
-            if (edgeLabelOptional.isPresent()) {
-                return edgeLabelOptional.get().getGlobalUniqueIndexProperties();
-            }
-        }
-        return Collections.emptyMap();
-    }
-
     Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
         Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", VERTEX_PREFIX, EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
@@ -879,59 +849,12 @@ public class Schema implements TopologyInf {
         return result;
     }
 
-    /**
-     * @deprecated No longer supporting this feature.
-     */
-    public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
-        String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(this.topology, properties);
-        Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
-        if (globalIndexOptional.isEmpty()) {
-            //take any property
-            properties.iterator().next().getParentLabel().getSchema().getTopology().lock();
-            globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
-            if (globalIndexOptional.isEmpty()) {
-                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(this.sqlgGraph, this.topology, globalUniqueIndexName, properties);
-                this.uncommittedGlobalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
-                this.getTopology().fire(globalUniqueIndex, "", TopologyChangeAction.CREATE);
-                return globalUniqueIndex;
-            } else {
-                return globalIndexOptional.get();
-            }
-        } else {
-            return globalIndexOptional.get();
-        }
-    }
-
-    public Optional<GlobalUniqueIndex> getGlobalUniqueIndex(String name) {
-        Objects.requireNonNull(name, "name may not be null for getGlobalUniqueIndex");
-        GlobalUniqueIndex globalUniqueIndex = getGlobalUniqueIndexes().get(name);
-        return Optional.ofNullable(globalUniqueIndex);
-    }
-
-    public Map<String, GlobalUniqueIndex> getGlobalUniqueIndexes() {
-        Map<String, GlobalUniqueIndex> result = new HashMap<>(this.globalUniqueIndexes);
-        if (this.topology.isSchemaChanged()) {
-            result.putAll(this.uncommittedGlobalUniqueIndexes);
-            for (String s : this.uncommittedRemovedGlobalUniqueIndexes) {
-                result.remove(s);
-            }
-        }
-        return Collections.unmodifiableMap(result);
-    }
-
     void afterCommit() {
         Preconditions.checkState(this.topology.isSchemaChanged(), "Schema.afterCommit must have schemaChanged = true");
         for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, VertexLabel> entry = it.next();
             this.vertexLabels.put(entry.getKey(), entry.getValue());
             it.remove();
-        }
-        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
-            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
-                this.globalUniqueIndexes.put(entry.getKey(), entry.getValue());
-                it.remove();
-            }
         }
         for (Iterator<String> it = uncommittedRemovedVertexLabels.iterator(); it.hasNext(); ) {
             String s = it.next();
@@ -943,16 +866,6 @@ public class Schema implements TopologyInf {
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterCommit();
-        }
-        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
-            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
-                globalUniqueIndex.afterCommit();
-            }
-            for (Iterator<String> it = uncommittedRemovedGlobalUniqueIndexes.iterator(); it.hasNext(); ) {
-                String s = it.next();
-                this.globalUniqueIndexes.remove(s);
-                it.remove();
-            }
         }
         for (Iterator<String> it = uncommittedRemovedEdgeLabels.iterator(); it.hasNext(); ) {
             String s = it.next();
@@ -974,28 +887,15 @@ public class Schema implements TopologyInf {
             entry.getValue().afterRollbackForOutEdges();
             it.remove();
         }
-        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
-            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
-                entry.getValue().afterRollback();
-                it.remove();
-            }
-        }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterRollbackForInEdges();
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterRollbackForOutEdges();
         }
-        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
-            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
-                globalUniqueIndex.afterRollback();
-            }
-        }
         this.uncommittedOutEdgeLabels.clear();
         this.uncommittedRemovedEdgeLabels.clear();
         this.uncommittedRemovedVertexLabels.clear();
-        this.uncommittedRemovedGlobalUniqueIndexes.clear();
     }
 
     boolean isSqlgSchema() {
@@ -1501,24 +1401,6 @@ public class Schema implements TopologyInf {
             schemaNode.set("uncommittedRemovedEdgeLabels", edgeLabelArrayNode);
             foundVertexLabels = true;
         }
-        if (this.topology.isSchemaChanged() && !this.uncommittedGlobalUniqueIndexes.isEmpty()) {
-            ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-            for (GlobalUniqueIndex globalUniqueIndex : this.uncommittedGlobalUniqueIndexes.values()) {
-
-                Optional<JsonNode> jsonNodeOptional = globalUniqueIndex.toNotifyJson();
-                jsonNodeOptional.ifPresent(unCommittedGlobalUniqueIndexesArrayNode::add);
-
-            }
-            schemaNode.set("uncommittedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);
-        }
-        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedGlobalUniqueIndexes.isEmpty()) {
-            ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-            for (String globalUniqueIndex : this.uncommittedRemovedGlobalUniqueIndexes) {
-                unCommittedGlobalUniqueIndexesArrayNode.add(globalUniqueIndex);
-            }
-
-            schemaNode.set("uncommittedRemovedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);
-        }
 
         if (!this.vertexLabels.isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
@@ -1621,56 +1503,6 @@ public class Schema implements TopologyInf {
                 }
             }
         }
-
-        ArrayNode globalUniqueIndexes = (ArrayNode) jsonSchema.get("uncommittedGlobalUniqueIndexes");
-        if (globalUniqueIndexes != null) {
-            for (JsonNode jsonGlobalUniqueIndex : globalUniqueIndexes) {
-                String globalUniqueIndexName = jsonGlobalUniqueIndex.get("name").asText();
-                GlobalUniqueIndex globalUniqueIndex = this.globalUniqueIndexes.get(globalUniqueIndexName);
-                if (globalUniqueIndex == null) {
-                    globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(getTopology(), globalUniqueIndexName);
-                    getTopology().fire(globalUniqueIndex, "", TopologyChangeAction.CREATE);
-                }
-                Set<PropertyColumn> properties = new HashSet<>();
-                ArrayNode jsonProperties = (ArrayNode) jsonGlobalUniqueIndex.get("uncommittedProperties");
-                for (JsonNode jsonProperty : jsonProperties) {
-                    ObjectNode propertyObjectNode = (ObjectNode) jsonProperty;
-                    String propertyName = propertyObjectNode.get("name").asText();
-                    String schemaName = propertyObjectNode.get("schemaName").asText();
-                    Optional<Schema> schemaOptional = getTopology().getSchema(schemaName);
-                    Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present for GlobalUniqueIndexes fromNotifyJson");
-                    Schema schema = schemaOptional.get();
-                    String abstractLabelName = propertyObjectNode.get("abstractLabelLabel").asText();
-                    AbstractLabel abstractLabel;
-                    Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(abstractLabelName);
-                    if (vertexLabelOptional.isEmpty()) {
-                        Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(abstractLabelName);
-                        Preconditions.checkState(edgeLabelOptional.isPresent(), "VertexLabel or EdgeLabel \"%s\" must be present for GlobalUniqueIndex fromNotifyJson", abstractLabelName);
-                        abstractLabel = edgeLabelOptional.get();
-                    } else {
-                        abstractLabel = vertexLabelOptional.get();
-                    }
-                    Optional<PropertyColumn> propertyColumnOptional = abstractLabel.getProperty(propertyName);
-                    Preconditions.checkState(propertyColumnOptional.isPresent(), "PropertyColumn must be present for GlobalUniqueIndex fromNotifyJson");
-                    properties.add(propertyColumnOptional.get());
-                }
-                globalUniqueIndex.addGlobalUniqueProperties(properties);
-                this.globalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
-            }
-
-        }
-        ArrayNode remGlobalUniqueIndexes = (ArrayNode) jsonSchema.get("uncommittedRemovedGlobalUniqueIndexes");
-        if (remGlobalUniqueIndexes != null) {
-            for (JsonNode jsonGlobalUniqueIndex : remGlobalUniqueIndexes) {
-                String globalUniqueIndexName = jsonGlobalUniqueIndex.asText();
-                GlobalUniqueIndex gui = this.globalUniqueIndexes.remove(globalUniqueIndexName);
-                if (gui != null) {
-                    this.getTopology().fire(gui, "", TopologyChangeAction.DELETE);
-                }
-            }
-        }
-
-
     }
 
     void fromNotifyJsonInEdges(JsonNode jsonSchema) {
@@ -1837,26 +1669,6 @@ public class Schema implements TopologyInf {
             getTopology().fire(vertexLabel, "", TopologyChangeAction.DELETE);
         }
 
-    }
-
-    /**
-     * remove the given global unique index
-     *
-     * @param index        the index to remove
-     * @param preserveData should we keep the sql data?
-     */
-    void removeGlobalUniqueIndex(GlobalUniqueIndex index, boolean preserveData) {
-        getTopology().lock();
-        String fn = index.getName();
-        if (!uncommittedRemovedGlobalUniqueIndexes.contains(fn)) {
-            uncommittedRemovedGlobalUniqueIndexes.add(fn);
-            TopologyManager.removeGlobalUniqueIndex(sqlgGraph, fn);
-            if (!preserveData) {
-                getVertexLabel(index.getName()).ifPresent(
-                        (VertexLabel vl) -> vl.remove(false));
-            }
-            getTopology().fire(index, "", TopologyChangeAction.DELETE);
-        }
     }
 
     /**

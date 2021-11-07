@@ -587,10 +587,6 @@ public interface SqlDialect {
         return this.createSchemaStatement(Schema.SQLG_SCHEMA) + (needsSemicolon() ? ";" : "");
     }
 
-    default String sqlgGuiSchemaCreationScript() {
-        return this.createSchemaStatement(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + (needsSemicolon() ? ";" : "");
-    }
-
     List<String> sqlgTopologyCreationScripts();
 
     String sqlgAddIndexEdgeSequenceColumn();

@@ -1,3 +1,8 @@
+##2.1.5
+
+* Upgrade to TinkerPop 3.1.5
+* Remove support for globally unique indexes
+
 ##2.1.4
 
 * Upgrade HSQLDB to 2.6.1

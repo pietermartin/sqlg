@@ -7,8 +7,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
@@ -115,7 +115,7 @@ public class SchemaTableTree {
         this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
-        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()), Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
     }
@@ -162,7 +162,7 @@ public class SchemaTableTree {
         this.drop = drop;
         this.aggregateFunction = aggregateFunction;
         this.groupBy = groupBy;
-        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()), Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
         initializeAliasColumnNameMaps();
@@ -1530,12 +1530,12 @@ public class SchemaTableTree {
                 }
                 result += " " + alias;
                 //noinspection deprecation
-                if (elementValueComparator.getValueComparator() == Order.incr) {
+                if (elementValueComparator.getValueComparator() == Order.asc) {
                     result += " ASC";
                 } else if (elementValueComparator.getValueComparator() == Order.asc) {
                     result += " ASC";
                 } else //noinspection deprecation
-                    if (elementValueComparator.getValueComparator() == Order.decr) {
+                    if (elementValueComparator.getValueComparator() == Order.desc) {
                         result += " DESC";
                     } else if (elementValueComparator.getValueComparator() == Order.desc) {
                         result += " DESC";
@@ -1544,7 +1544,7 @@ public class SchemaTableTree {
                     }
 
                 //TODO redo this via SqlgOrderGlobalStep
-            } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
+            } else if ((comparator.getValue0() instanceof ValueTraversal<?, ?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
                     && comparator.getValue1() instanceof Order) {
                 Traversal.Admin<?, ?> t = comparator.getValue0();
                 String prefix = String.valueOf(this.stepDepth);
@@ -1556,8 +1556,8 @@ public class SchemaTableTree {
                 prefix += this.getSchemaTable().getTable();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 String key;
-                if (t instanceof ElementValueTraversal) {
-                    ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal<?>) t;
+                if (t instanceof ValueTraversal) {
+                    ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal<?, ?>) t;
                     key = elementValueTraversal.getPropertyKey();
                 } else {
                     TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
@@ -1582,19 +1582,13 @@ public class SchemaTableTree {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
                 result += " " + alias;
-                //noinspection deprecation
-                if (comparator.getValue1() == Order.incr) {
+                if (comparator.getValue1() == Order.asc) {
                     result += " ASC";
-                } else if (comparator.getValue1() == Order.asc) {
-                    result += " ASC";
-                } else //noinspection deprecation
-                    if (comparator.getValue1() == Order.decr) {
-                        result += " DESC";
-                    } else if (comparator.getValue1() == Order.desc) {
-                        result += " DESC";
-                    } else {
-                        throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
-                    }
+                } else if (comparator.getValue1() == Order.desc) {
+                    result += " DESC";
+                } else {
+                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
+                }
             } else {
                 Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
@@ -1603,7 +1597,7 @@ public class SchemaTableTree {
                 Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                 Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>) selectOneStep.getLocalChildren().get(0);
                 Preconditions.checkState(
-                        t instanceof ElementValueTraversal ||
+                        t instanceof ValueTraversal ||
                                 t instanceof TokenTraversal,
                         "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or TokenTraversal!");
 
@@ -1628,8 +1622,8 @@ public class SchemaTableTree {
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += selectSchemaTableTree.getSchemaTable().getTable();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
-                if (t instanceof ElementValueTraversal) {
-                    ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal<?>) t;
+                if (t instanceof ValueTraversal) {
+                    ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal<?, ?>) t;
                     prefix += elementValueTraversal.getPropertyKey();
                 } else {
                     TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
@@ -1652,19 +1646,13 @@ public class SchemaTableTree {
                     alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
                 result += " " + alias;
-                //noinspection deprecation
-                if (comparator.getValue1() == Order.incr) {
+                if (comparator.getValue1() == Order.asc) {
                     result += " ASC";
-                } else if (comparator.getValue1() == Order.asc) {
-                    result += " ASC";
-                } else //noinspection deprecation
-                    if (comparator.getValue1() == Order.decr) {
-                        result += " DESC";
-                    } else if (comparator.getValue1() == Order.desc) {
-                        result += " DESC";
-                    } else {
-                        throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.toString());
-                    }
+                } else if (comparator.getValue1() == Order.desc) {
+                    result += " DESC";
+                } else {
+                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.toString());
+                }
             }
         }
         return result;
@@ -1812,10 +1800,10 @@ public class SchemaTableTree {
                 ListOrderedSet<String> identifiers = firstSchemaTableTree.getIdentifiers();
                 for (String identifier : identifiers) {
                     columnList.add(
-                        firstSchemaTable,
-                        identifier,
-                        firstSchemaTableTree.stepDepth,
-                        firstSchemaTableTree.calculateLabeledAliasPropertyName(identifier)
+                            firstSchemaTable,
+                            identifier,
+                            firstSchemaTableTree.stepDepth,
+                            firstSchemaTableTree.calculateLabeledAliasPropertyName(identifier)
                     );
                 }
             }
@@ -2910,12 +2898,12 @@ public class SchemaTableTree {
             if (comparator.getValue1() instanceof ElementValueComparator) {
                 this.restrictedProperties.add(((ElementValueComparator<?>) comparator.getValue1()).getPropertyKey());
 
-            } else if ((comparator.getValue0() instanceof ElementValueTraversal<?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
+            } else if ((comparator.getValue0() instanceof ValueTraversal<?, ?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
                     && comparator.getValue1() instanceof Order) {
                 Traversal.Admin<?, ?> t = comparator.getValue0();
                 String key;
-                if (t instanceof ElementValueTraversal) {
-                    ElementValueTraversal<?> elementValueTraversal = (ElementValueTraversal<?>) t;
+                if (t instanceof ValueTraversal) {
+                    ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal<?, ?>) t;
                     key = elementValueTraversal.getPropertyKey();
                 } else {
                     TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;

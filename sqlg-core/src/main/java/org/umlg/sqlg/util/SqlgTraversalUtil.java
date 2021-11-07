@@ -107,7 +107,7 @@ public class SqlgTraversalUtil {
 
     public static boolean mayOptimize(final Traversal.Admin<?, ?> traversal) {
         return true;
-//        return !TraversalHelper.hasStepOfAssignableClass(InjectStep.class, traversal);
+//        return !TraversalHelper.hasStepOfAssignableClass(FoldStep.class, traversal);
     }
 
     public static final <S, E> boolean test(final S start, final Traversal.Admin<S, E> traversal) {

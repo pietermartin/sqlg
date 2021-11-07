@@ -24,7 +24,7 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
-        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+        if (traversal.getGraph().isEmpty() || !(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         if (!SqlgTraversalUtil.mayOptimize(traversal)) {

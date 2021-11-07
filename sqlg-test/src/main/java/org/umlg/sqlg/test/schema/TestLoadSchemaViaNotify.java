@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.schema;
 
 import org.apache.commons.collections4.IteratorUtils;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -30,7 +30,8 @@ public class TestLoadSchemaViaNotify extends BaseTest {
     public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
             if (!configuration.containsKey("jdbc.url"))
@@ -323,44 +324,6 @@ public class TestLoadSchemaViaNotify extends BaseTest {
     }
 
     @Test
-    public void testGlobalUniqueIndexViaNotify() throws Exception {
-        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            Map<String, PropertyType> properties = new HashMap<>();
-            properties.put("name1", PropertyType.STRING);
-            properties.put("name2", PropertyType.STRING);
-            VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
-            properties.clear();
-            properties.put("name3", PropertyType.STRING);
-            properties.put("name4", PropertyType.STRING);
-            VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
-            properties.clear();
-            properties.put("name5", PropertyType.STRING);
-            properties.put("name6", PropertyType.STRING);
-            EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
-            Set<PropertyColumn> globalUniqueIndexPropertyColumns = new HashSet<>();
-            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
-            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
-            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(edgeLabel.getProperties().values()));
-            this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPropertyColumns);
-            this.sqlgGraph.tx().commit();
-
-            //allow time for notification to happen
-            Thread.sleep(1_000);
-
-            Assert.assertEquals(1, sqlgGraph1.getTopology().getGlobalUniqueIndexes().size());
-
-            sqlgGraph1.addVertex(T.label, "A", "name1", "123");
-            sqlgGraph1.tx().commit();
-            try {
-                sqlgGraph.addVertex(T.label, "A", "name1", "123");
-                Assert.fail("GlobalUniqueIndex should prevent this from happening");
-            } catch (Exception e) {
-                //swallow
-            }
-        }
-    }
-
-    @Test
     public void testViaNotifyIsCommitted() throws Exception {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "halo");
@@ -415,16 +378,12 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             VertexLabel bVertexLabel = schema.getVertexLabel("B").orElseThrow();
             Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(aVertexLabel.getProperties().values()));
 
-            //This adds a schema and 2 indexes and the globalUniqueIndex, so 4 elements in all
-            GlobalUniqueIndex globalUniqueIndex = schema.ensureGlobalUniqueIndexExist(new HashSet<>(aVertexLabel.getProperties().values()));
-
-
             this.sqlgGraph.tx().commit();
             //allow time for notification to happen
             Thread.sleep(1_000);
 
             // we're not getting property notification since we get vertex label notification, these include all properties committed
-            Assert.assertEquals(9, topologyListenerTriple.size());
+            Assert.assertEquals(5, topologyListenerTriple.size());
 
             Assert.assertEquals(schema, topologyListenerTriple.get(0).getLeft());
             Assert.assertEquals("", topologyListenerTriple.get(0).getMiddle());
@@ -452,10 +411,6 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());
             Assert.assertEquals("", topologyListenerTriple.get(4).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
-
-            Assert.assertEquals(globalUniqueIndex, topologyListenerTriple.get(5).getLeft());
-            Assert.assertEquals("", topologyListenerTriple.get(5).getMiddle());
-            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
         }
     }
 }

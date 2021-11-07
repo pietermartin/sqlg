@@ -31,7 +31,7 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
     @SuppressWarnings("resource")
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if (!(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+        if (traversal.getGraph().isEmpty() || !(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
             return;
         }
         if (!SqlgTraversalUtil.mayOptimize(traversal)) {

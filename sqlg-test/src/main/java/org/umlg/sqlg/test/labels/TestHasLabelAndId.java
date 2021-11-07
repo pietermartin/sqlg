@@ -23,6 +23,7 @@ import java.util.List;
  * Date: 2014/07/29
  * Time: 2:21 PM
  */
+@SuppressWarnings({"rawtypes", "DuplicatedCode"})
 public class TestHasLabelAndId extends BaseTest {
 
     @Test

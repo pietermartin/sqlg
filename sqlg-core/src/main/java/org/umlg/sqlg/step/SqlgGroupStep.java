@@ -4,7 +4,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -12,7 +11,10 @@ import org.umlg.sqlg.step.barrier.SqlgReducingStepBarrier;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.traverser.SqlgGroupByTraverser;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -117,87 +119,10 @@ public class SqlgGroupStep<K, V> extends SqlgReducingStepBarrier<SqlgElement, Ma
         return end;
     }
 
-//    @Override
-    protected Traverser.Admin<Map<K, V>> processNextStartXXX() throws NoSuchElementException {
-        SqlgGroupByTraverser<K, V> end = new SqlgGroupByTraverser<>(new HashMap<>());
-        while (this.starts.hasNext()) {
-            if (this.resetted) {
-                this.resetted = false;
-                return end;
-            }
-            final Traverser.Admin<SqlgElement> start = this.starts.next();
-            SqlgElement sqlgElement = start.get();
-            V value;
-            if (this.reduction == REDUCTION.MEAN) {
-                Pair<Number, Long> avgAndWeight = sqlgElement.value(this.aggregateOn);
-                value = (V) new MeanGlobalStep.MeanNumber(avgAndWeight.getLeft(), avgAndWeight.getRight());
-//                value = (V) avgAndWeight.getLeft();
-            } else {
-                value = sqlgElement.value(this.aggregateOn);
-            }
-            if (this.groupBy.size() == 1) {
-                if (this.groupBy.get(0).equals(T.label.getAccessor())) {
-                    Property<?> property = sqlgElement.property(this.aggregateOn);
-                    if (property.isPresent()) {
-                        end.put((K) sqlgElement.label(), value);
-                    } else {
-                        end.put((K) sqlgElement.label(), (V) Integer.valueOf(1));
-                    }
-                } else {
-                    K key = sqlgElement.value(this.groupBy.get(0));
-                    V currentValue = end.get().get(key);
-                    if (currentValue == null) {
-                        end.put(key, value);
-                    } else {
-                        switch (this.reduction) {
-                            case MIN:
-                                if ((Integer)currentValue < (Integer)value) {
-                                    end.put(key, currentValue);
-                                }
-                                break;
-                            case MAX:
-                                if ((Integer)currentValue > (Integer)value) {
-                                    end.put(key, currentValue);
-                                }
-                                break;
-                            case SUM:
-                                Long sum = (Long) currentValue + (Long) value;
-                                end.put(key, (V)sum);
-                                break;
-                            case MEAN:
-                                MeanGlobalStep.MeanNumber current = (MeanGlobalStep.MeanNumber)currentValue;
-                                MeanGlobalStep.MeanNumber v = (MeanGlobalStep.MeanNumber)value;
-                                MeanGlobalStep.MeanNumber mean = current.add(v);
-                                end.put(key, (V)mean);
-                                break;
-                            case COUNT:
-                                throw new RuntimeException("TODO");
-                        }
-                    }
-                }
-            } else if (this.isPropertiesStep) {
-                end.put((K) IteratorUtils.list(sqlgElement.values(this.groupBy.toArray(new String[]{}))), value);
-            } else {
-                Map<String, List<?>> keyMap = new HashMap<>();
-                for (String s : this.groupBy) {
-                    List<?> keyValues = new ArrayList<>();
-                    keyValues.add(sqlgElement.value(s));
-                    keyMap.put(s, keyValues);
-                }
-                end.put((K) keyMap, value);
-            }
-        }
-        if (end.get().isEmpty()) {
-            throw FastNoSuchElementException.instance();
-        }
-        return end;
-    }
-
     @Override
     public void reset() {
         super.reset();
         this.resetted = true;
     }
-
 
 }

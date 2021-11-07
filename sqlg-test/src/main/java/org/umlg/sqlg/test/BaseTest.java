@@ -1,8 +1,9 @@
 package org.umlg.sqlg.test;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
@@ -83,7 +84,8 @@ public abstract class BaseTest {
     public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             if (!configuration.containsKey("jdbc.url")) {
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
             }
@@ -195,7 +197,6 @@ public abstract class BaseTest {
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_vertex_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_edge_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_index_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
-        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_globalUniqueIndex_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
 
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_graph") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_log") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
@@ -205,7 +206,6 @@ public abstract class BaseTest {
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_partition") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_property") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
         result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_index") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
-        result.add("DROP TABLE " + sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("V_globalUniqueIndex") + (sqlgGraph.getSqlDialect().needsSemicolon() ? ";" : ""));
 
         result.add(sqlgGraph.getSqlDialect().dropSchemaStatement("sqlg_schema"));
 
@@ -354,8 +354,8 @@ public abstract class BaseTest {
     }
 
     private static void assertToyGraph(final Graph g1, final boolean assertDouble, final boolean lossyForId, final boolean assertSpecificLabel) {
-        assertEquals(new Long(6), g1.traversal().V().count().next());
-        assertEquals(new Long(6), g1.traversal().E().count().next());
+        assertEquals(Long.valueOf(6), g1.traversal().V().count().next());
+        assertEquals(Long.valueOf(6), g1.traversal().E().count().next());
 
         final Vertex v1 = g1.traversal().V().has("name", "marko").next();
         assertEquals(29, v1.<Integer>value("age").intValue());

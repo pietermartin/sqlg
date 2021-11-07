@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.sharding.TestSharding;
+import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 
 /**
  * Date: 2014/07/16
@@ -10,17 +10,7 @@ import org.umlg.sqlg.test.sharding.TestSharding;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSharding.class,
-//        TestShardingGremlin.class
-//        TestDropStep.class
-//        TestUserSuppliedPKTopology.class,
-//        TestHashPartitioning.class,
-//        TestJoinAcrossPartition.class,
-//        TestPartitioning.class,
-//        TestBatchServerSideEdgeCreation.class,
-//        TestPartitionMultipleGraphs.class, TestSubSubPartition.class, TestIndexOnPartition.class,
-//        TestPartitionedDrop.class, TestDropStepPartition.class, TestBatchUpdatePartitioning.class,
-//        TestTopologyMultipleGraphs.class
+        TestTopologyChangeListener.class
 })
 public class AnyTest {
 }

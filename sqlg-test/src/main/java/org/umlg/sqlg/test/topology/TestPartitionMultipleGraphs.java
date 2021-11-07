@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.topology;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.*;
 import org.umlg.sqlg.structure.PropertyType;
@@ -13,7 +13,10 @@ import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -29,7 +32,8 @@ public class TestPartitionMultipleGraphs extends BaseTest {
     public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
             if (!configuration.containsKey("jdbc.url"))

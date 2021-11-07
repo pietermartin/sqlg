@@ -61,11 +61,8 @@ class SqlgStartupManager {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
             if (canUserCreateSchemas && !existSqlgSchema) {
-                //This exist separately because Hsqldb and H2 do not support "if exist" in the schema creation sql.
+                //This exists separately because Hsqldb and H2 do not support "if exist" in the schema creation sql.
                 createSqlgSchema();
-            }
-            if (canUserCreateSchemas && !existGuiSchema()) {
-                createGuiSchema();
             }
             if (canUserCreateSchemas && !existSqlgSchema) {
                 createSqlgSchemaTablesAndIndexes();
@@ -169,6 +166,9 @@ class SqlgStartupManager {
         if (v.isUnknownVersion() || v.compareTo(new Version(2, 1, 4, null, null, null)) < 0) {
             addHashPartitionSupportToSqlgSchema();
         }
+        if (v.isUnknownVersion() || v.compareTo(new Version(2, 1, 5, null, null, null)) < 0) {
+            removeGlobalUniqueIndexFromSqlgSchema();
+        }
     }
 
     private void addPartitionSupportToSqlgSchema() {
@@ -193,6 +193,17 @@ class SqlgStartupManager {
                 throw new RuntimeException(e);
             }
         }
+    }
+    private void removeGlobalUniqueIndexFromSqlgSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement s = conn.createStatement()) {
+            s.execute("delete from \"sqlg_schema\".\"V_schema\" where name = 'gui_schema';");
+            s.execute("drop table \"sqlg_schema\".\"E_globalUniqueIndex_property\";");
+            s.execute("drop table \"sqlg_schema\".\"V_globalUniqueIndex\";");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     private void upgradeForeignKeysToDeferrable() {
@@ -538,9 +549,7 @@ class SqlgStartupManager {
                 lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
             } else if (!lastIndexName.equals(indexName)) {
                 if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
-                    if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-                        TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
-                    }
+                    TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
                 }
                 lastColumns.clear();
                 lastIndexName = indexName;
@@ -549,9 +558,7 @@ class SqlgStartupManager {
             lastColumns.add(columnName);
         }
         if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
-            if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-                TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
-            }
+            TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
         }
     }
 
@@ -612,15 +619,6 @@ class SqlgStartupManager {
         );
     }
 
-    private void createGuiSchema() {
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement statement = conn.createStatement()) {
-            statement.execute(this.sqlDialect.sqlgGuiSchemaCreationScript());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void createSqlgSchemaTablesAndIndexes() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
@@ -652,16 +650,6 @@ class SqlgStartupManager {
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             return this.sqlDialect.schemaExists(metadata, this.sqlDialect.getPublicSchema());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private boolean existGuiSchema() {
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try {
-            DatabaseMetaData metadata = conn.getMetaData();
-            return this.sqlDialect.schemaExists(metadata, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

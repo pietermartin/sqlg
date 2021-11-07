@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import javax.sql.DataSource;

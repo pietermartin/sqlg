@@ -1,22 +1,25 @@
 package org.umlg.sqlg.test.topology;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.topology.*;
+import org.umlg.sqlg.structure.topology.IndexType;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -31,7 +34,8 @@ public class TestValidateTopology extends BaseTest {
     public static void beforeClass() {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
-            configuration = new PropertiesConfiguration(sqlProperties);
+            Configurations configs = new Configurations();
+            configuration = configs.properties(sqlProperties);
             configuration.addProperty("validate.topology", true);
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
@@ -189,38 +193,4 @@ public class TestValidateTopology extends BaseTest {
         }
     }
 
-    @Test
-    public void testGlobalUniqueIndexExist() {
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name1", PropertyType.STRING);
-        properties.put("name2", PropertyType.STRING);
-        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
-        properties.clear();
-        properties.put("name3", PropertyType.STRING);
-        properties.put("name4", PropertyType.STRING);
-        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
-        properties.clear();
-        properties.put("name5", PropertyType.STRING);
-        properties.put("name6", PropertyType.STRING);
-        EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
-        Set<PropertyColumn> globalUniqueIndexPropertyColumns = new HashSet<>();
-        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
-        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
-        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(edgeLabel.getProperties().values()));
-        GlobalUniqueIndex globalUniqueIndex = this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPropertyColumns);
-        this.sqlgGraph.tx().commit();
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement statement = conn.createStatement()) {
-            statement.execute("DROP TABLE " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + "." +
-                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + globalUniqueIndex.getName()) +
-                    (this.sqlgGraph.getSqlDialect().supportsCascade() ? " CASCADE " : ""));
-            this.sqlgGraph.tx().commit();
-        } catch (SQLException e) {
-            fail(e.getMessage());
-        }
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(0, sqlgGraph1.getTopology().getValidationErrors().size());
-        }
-    }
 }

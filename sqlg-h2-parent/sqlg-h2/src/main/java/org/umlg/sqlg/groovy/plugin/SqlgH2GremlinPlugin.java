@@ -35,8 +35,7 @@ public class SqlgH2GremlinPlugin extends AbstractGremlinPlugin {
                             PropertyColumn.class,
                             Index.class,
                             IndexType.class,
-                            Graph.class,
-                            GlobalUniqueIndex.class
+                            Graph.class
                     )
                     .create();
         } catch (Exception ex) {

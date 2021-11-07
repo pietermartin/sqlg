@@ -20,6 +20,7 @@ import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
 import org.umlg.sqlg.test.filter.or.TestOrStep;
 import org.umlg.sqlg.test.filter.or.TestOrStepAfterVertexStepBarrier;
 import org.umlg.sqlg.test.filter.or.barrier.TestOrStepBarrier;
+import org.umlg.sqlg.test.fold.TestFoldStep;
 import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
@@ -197,8 +198,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSchemaEagerCreation.class,
         TestIndexTopologyTraversal.class,
         TestNotifyJson.class,
-        TestGlobalUniqueIndex.class,
-        TestBatchGlobalUniqueIndexes.class,
         TestVertexEdges.class,
         TestSqlgSchema.class,
         TestValidateTopology.class,
@@ -271,7 +270,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestDropStepPartition.class,
         TestBatchUpdatePartitioning.class,
         TestLargeSchemaPerformance.class,
-        TestInject.class
+        TestInject.class,
+        TestFoldStep.class
 })
 public class AllTest {
 

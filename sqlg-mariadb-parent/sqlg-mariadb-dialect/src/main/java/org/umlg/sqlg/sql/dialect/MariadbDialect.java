@@ -651,10 +651,6 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`createdOn` DATETIME, " +
                 "`name` TEXT, " +
                 "`index_type` TEXT);");
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_globalUniqueIndex` (" +
-                "`ID` SERIAL PRIMARY KEY, " +
-                "`createdOn` DATETIME, " +
-                "`name` TEXT);");
 
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_schema_vertex`(" +
                 "`ID` SERIAL PRIMARY KEY, " +
@@ -784,14 +780,6 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`sequence` INTEGER, " +
                 "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
                 "FOREIGN KEY (`sqlg_schema.index__O`) REFERENCES `sqlg_schema`.`V_index` (`ID`)" +
-                ");");
-
-        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_globalUniqueIndex_property`(" +
-                "`ID` SERIAL PRIMARY KEY, " +
-                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
-                "`sqlg_schema.globalUniqueIndex__O` BIGINT UNSIGNED, " +
-                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
-                "FOREIGN KEY (`sqlg_schema.globalUniqueIndex__O`) REFERENCES `sqlg_schema`.`V_globalUniqueIndex` (`ID`)" +
                 ");");
 
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_log`(`ID` SERIAL PRIMARY KEY, `timestamp` DATETIME, `pid` INTEGER, `log` TEXT);");

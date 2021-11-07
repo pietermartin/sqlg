@@ -39,7 +39,7 @@ public class TestSqlgSchema extends BaseTest {
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
                     .toList();
-            Assert.assertEquals(2, schemas.size());
+            Assert.assertEquals(1, schemas.size());
             Assert.assertEquals(sqlgGraph1.getSqlDialect().getPublicSchema(), schemas.get(0).value("name"));
 
             //Assert the vertex labels

@@ -62,9 +62,9 @@ public class TestLocalVertexStepWithOrder extends BaseTest {
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1)
                 .local(
-                        __.out("ab", "abb").order().by("order", Order.decr)
+                        __.out("ab", "abb").order().by("order", Order.desc)
                                 .local(
-                                        __.out("bc", "bcc").order().by("order", Order.decr)
+                                        __.out("bc", "bcc").order().by("order", Order.desc)
                                 )
                 ).path();
         List<Path> paths = traversal.toList();
@@ -148,9 +148,9 @@ public class TestLocalVertexStepWithOrder extends BaseTest {
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").order().by("order")
                 .local(
-                        __.outE("ab").order().by("order", Order.decr).inV()
+                        __.outE("ab").order().by("order", Order.desc).inV()
                                 .local(
-                                        __.out("bc").order().by("order", Order.decr)
+                                        __.out("bc").order().by("order", Order.desc)
                                 )
                 )
                 .path();

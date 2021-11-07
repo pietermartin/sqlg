@@ -34,18 +34,18 @@ public class TestRepeatStepOnEdges extends BaseTest {
 
     private final Logger logger = LoggerFactory.getLogger(TestRepeatStepOnEdges.class);
 
-//    @Test
-//    public void test() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-//        a1.addEdge("ab", b1);
-//        this.sqlgGraph.tx().commit();
-//        DefaultGraphTraversal<Edge, Edge> traversal = (DefaultGraphTraversal<Edge, Edge>) this.sqlgGraph.traversal().E().repeat(__.outV().outE()).times(2).emit();
-//        Assert.assertEquals(2, traversal.getSteps().size());
-//        List<Edge> edges = traversal.toList();
-//        Assert.assertEquals(1, traversal.getSteps().size());
-//        Assert.assertEquals(2, edges.size());
-//    }
+    @Test
+    public void test() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Edge, Edge> traversal = (DefaultGraphTraversal<Edge, Edge>) this.sqlgGraph.traversal().E().repeat(__.outV().outE()).times(2).emit();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        List<Edge> edges = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(2, edges.size());
+    }
 
     @Test
     public void testBug116() {

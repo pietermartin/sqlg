@@ -179,7 +179,7 @@ public class TestPropertyValues extends BaseTest {
     @Test
     public void testInMemoryOrderByValues() {
         loadModern();
-        final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V().both().hasLabel("person").order().by("age", Order.decr).limit(5).values("name");
+        final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V().both().hasLabel("person").order().by("age", Order.desc).limit(5).values("name");
         printTraversalForm(traversal);
         checkOrderedResults(Arrays.asList("peter", "josh", "josh", "josh", "marko"), traversal);
     }

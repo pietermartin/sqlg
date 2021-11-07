@@ -4,14 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IdentityRemovalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
@@ -33,6 +34,7 @@ import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
@@ -48,6 +50,28 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
  */
 @OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
+
+@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
+        method = "shouldNotAllowNullAddVertex",
+        reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
+        method = "shouldNotAllowNullAddEdge",
+        reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
+        method = "g_addVXnullX_propertyXid_nullX",
+        reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectTest",
+        method = "g_injectXnull_1_3_nullX",
+        reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectTest",
+        method = "g_injectX10_20_null_20_10_10X_groupCountXxX_dedup_asXyX_projectXa_bX_by_byXselectXxX_selectXselectXyXXX",
+        reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddEdgeTest",
+        method = "g_V_outE_propertyXweight_nullX",
+        reason = "nulls")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
+        method = "g_V_hasLabelXpersonX_propertyXname_nullX",
+        reason = "nulls")
 
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
         method = "shouldGenerateCorrectTraversers",
@@ -224,7 +248,7 @@ public class SqlgGraph implements Graph {
     private final String jdbcUrl;
     private final ObjectMapper mapper = new ObjectMapper();
     private final Configuration configuration;
-    private final ISqlGFeatures features = new SqlGFeatures();
+    private final ISqlGFeatures features = new SqlgFeatures();
 
     /**
      * the build version of sqlg
@@ -257,10 +281,11 @@ public class SqlgGraph implements Graph {
                                 new SqlgStartStepStrategy(),
                                 new SqlgInjectStepStrategy(),
                                 new SqlgHasNextStepStrategy(),
+                                new SqlgFoldStepStrategy(),
 //                                new SqlgAddEdgeStartStepStrategy(),
                                 TopologyStrategy.build().create())
                         .removeStrategies(
-                                PathRetractionStrategy.class)
+                                PathRetractionStrategy.class, IdentityRemovalStrategy.class)
         );
     }
 
@@ -268,7 +293,9 @@ public class SqlgGraph implements Graph {
         if (null == pathToSqlgProperties) throw Graph.Exceptions.argumentCanNotBeNull("pathToSqlgProperties");
 
         try {
-            return open(new PropertiesConfiguration(pathToSqlgProperties));
+            Configurations configs = new Configurations();
+            Configuration config = configs.properties(new File(pathToSqlgProperties));
+            return open(config);
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -361,10 +388,6 @@ public class SqlgGraph implements Graph {
 
     public GraphTraversalSource topology() {
         return this.traversal().withStrategies(TopologyStrategy.build().sqlgSchema().create());
-    }
-
-    public GraphTraversalSource globalUniqueIndexes() {
-        return this.traversal().withStrategies(TopologyStrategy.build().globallyUniqueIndexes().create());
     }
 
     @Override
@@ -615,7 +638,7 @@ public class SqlgGraph implements Graph {
         boolean supportsBatchMode();
     }
 
-    public class SqlGFeatures implements ISqlGFeatures {
+    public class SqlgFeatures implements ISqlGFeatures {
         @Override
         public GraphFeatures graph() {
             return new GraphFeatures() {
@@ -639,12 +662,12 @@ public class SqlgGraph implements Graph {
 
         @Override
         public VertexFeatures vertex() {
-            return new SqlVertexFeatures();
+            return new SqlgVertexFeatures();
         }
 
         @Override
         public EdgeFeatures edge() {
-            return new SqlEdgeFeatures();
+            return new SqlgEdgeFeatures();
         }
 
         @Override
@@ -657,7 +680,13 @@ public class SqlgGraph implements Graph {
             return getSqlDialect().supportsBatchMode();
         }
 
-        class SqlVertexFeatures implements VertexFeatures {
+        class SqlgVertexFeatures implements VertexFeatures {
+
+            @FeatureDescriptor(name = FEATURE_NULL_PROPERTY_VALUES)
+            @Override
+            public boolean supportsNullPropertyValues() {
+                return false;
+            }
 
             @Override
             @FeatureDescriptor(name = FEATURE_MULTI_PROPERTIES)
@@ -709,7 +738,7 @@ public class SqlgGraph implements Graph {
 
             @Override
             public VertexPropertyFeatures properties() {
-                return new SqlGVertexPropertyFeatures();
+                return new SqlgVertexPropertyFeatures();
             }
 
             @Override
@@ -718,7 +747,13 @@ public class SqlgGraph implements Graph {
             }
         }
 
-        class SqlEdgeFeatures implements EdgeFeatures {
+        class SqlgEdgeFeatures implements EdgeFeatures {
+
+            @FeatureDescriptor(name = FEATURE_NULL_PROPERTY_VALUES)
+            @Override
+            public boolean supportsNullPropertyValues() {
+                return false;
+            }
 
             @Override
             @FeatureDescriptor(name = FEATURE_USER_SUPPLIED_IDS)
@@ -763,7 +798,12 @@ public class SqlgGraph implements Graph {
 
         }
 
-        class SqlGVertexPropertyFeatures implements VertexPropertyFeatures {
+        class SqlgVertexPropertyFeatures implements VertexPropertyFeatures {
+
+            @FeatureDescriptor(name = FEATURE_NULL_PROPERTY_VALUES)
+            public boolean supportsNullPropertyValues() {
+                return false;
+            }
 
             @Override
             @FeatureDescriptor(name = FEATURE_REMOVE_PROPERTY)

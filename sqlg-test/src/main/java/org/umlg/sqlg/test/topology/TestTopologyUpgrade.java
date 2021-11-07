@@ -294,10 +294,10 @@ public class TestTopologyUpgrade extends BaseTest {
         List<Vertex> schemas = traversalSource.V()
                 .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                 .toList();
-        //public and gui_schema
-        Assert.assertEquals(2, schemas.size());
+        //public
+        Assert.assertEquals(1, schemas.size());
         Long count = this.sqlgGraph.topology().V().count().next();
-        Assert.assertEquals(8, count, 0);
+        Assert.assertEquals(7, count, 0);
     }
 
     @Test
