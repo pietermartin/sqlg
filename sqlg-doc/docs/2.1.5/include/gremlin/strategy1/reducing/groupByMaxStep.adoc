@@ -1,0 +1,135 @@
+===== Group By and Max Step
+
+[source,java,options="nowrap"]
+----
+    @Test
+    public void testGroupByLabelMax() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "age", 10);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "age", 20);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "C", "age", 100);
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "D", "age", 40);
+
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "A", "age", 10);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "B", "age", 200);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "C", "age", 30);
+        this.sqlgGraph.addVertex(T.label, "Dog", "name", "D", "age", 40);
+
+        this.sqlgGraph.tx().commit();
+
+        DefaultTraversal<Vertex, Map<String, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().<String, Integer>group().by(T.label).by(__.values("age").max());
+        printTraversalForm(traversal);
+
+        Map<String, Integer> result = traversal.next();
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, result.size());
+        Assert.assertTrue(result.containsKey("Person"));
+        Assert.assertTrue(result.containsKey("Dog"));
+        Assert.assertEquals(100, result.get("Person"), 0);
+        Assert.assertEquals(200, result.get("Dog"), 0);
+    }
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-groupbymax-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), GroupStep(label,[PropertiesStep([age],value), MaxGlobalStep]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-groupbymax-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	MAX("public"."V_Person"."age") AS "alias1"
+FROM
+	"public"."V_Person"
+
+SELECT
+	MAX("public"."V_Dog"."age") AS "alias1"
+FROM
+	"public"."V_Dog"
+----
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testGroupOverTwoPropertiesWithValues() {
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "surname", "C", "age", 1);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "surname", "D", "age", 2);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "A", "surname", "C", "age", 3);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "B", "surname", "E", "age", 4);
+    this.sqlgGraph.addVertex(T.label, "Person", "name", "C", "surname", "E", "age", 5);
+    this.sqlgGraph.tx().commit();
+
+    DefaultTraversal<Vertex, Map<List<String>, Integer>> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().hasLabel("Person")
+            .<List<String>, Integer>group()
+            .by(__.values("name", "surname").fold())
+            .by(__.values("age").max());
+
+    printTraversalForm(traversal);
+
+    Map<List<String>, Integer> result = traversal.next();
+    Assert.assertTrue(result.containsKey(Arrays.asList("A", "C")) || result.containsKey(Arrays.asList("C", "A")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("B", "D")) || result.containsKey(Arrays.asList("D", "B")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("B", "E")) || result.containsKey(Arrays.asList("E", "B")));
+    Assert.assertTrue(result.containsKey(Arrays.asList("C", "E")) || result.containsKey(Arrays.asList("E", "C")));
+    Assert.assertEquals(4, result.size());
+    Assert.assertFalse(traversal.hasNext());
+
+    if (result.containsKey(Arrays.asList("A", "C"))) {
+        Assert.assertEquals(3, result.get(Arrays.asList("A", "C")), 0);
+    } else {
+        Assert.assertEquals(3, result.get(Arrays.asList("C", "A")), 0);
+    }
+    if (result.containsKey(Arrays.asList("B", "D"))) {
+        Assert.assertEquals(2, result.get(Arrays.asList("B", "D")), 0);
+    } else {
+        Assert.assertEquals(2, result.get(Arrays.asList("D", "B")), 0);
+    }
+    if (result.containsKey(Arrays.asList("B", "E"))) {
+        Assert.assertEquals(4, result.get(Arrays.asList("B", "E")), 0);
+    } else {
+        Assert.assertEquals(4, result.get(Arrays.asList("E", "B")), 0);
+    }
+    if (result.containsKey(Arrays.asList("C", "E"))) {
+        Assert.assertEquals(5, result.get(Arrays.asList("C", "E")), 0);
+    } else {
+        Assert.assertEquals(5, result.get(Arrays.asList("E", "C")), 0);
+    }
+}
+----
+
+[options="nowrap"]
+[[anchor-before-optimization-groupbymax2-step]]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(Person)]), GroupStep([PropertiesStep([name, surname],value), FoldStep],[PropertiesStep([age],value), MaxGlobalStep])]
+----
+
+[options="nowrap"]
+[[anchor-after-optimization-groupbymax2-step]]
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathTempFakeLabel], SqlgGroupStep]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Person"."surname" AS "alias1",
+	"public"."V_Person"."name" AS "alias2",
+	MAX("public"."V_Person"."age") AS "alias3"
+FROM
+	"public"."V_Person"
+GROUP BY
+	"public"."V_Person"."name",
+	"public"."V_Person"."surname"
+----

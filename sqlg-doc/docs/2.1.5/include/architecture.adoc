@@ -1,0 +1,127 @@
+== Architecture
+
+TinkerPop's property graph semantics specifies that every vertex and edge has a single label. Modelling this in a RDBMS
+is trivial. TinkerPop has no notion of cardinality nor of order. Every relationship between vertex labels is modelled as
+`many to many` relationship with no specified order.
+
+This realizes itself as a classic `many to many` relationship in a RDBMS database.
+
+----
+VertexLabel <---- EdgeLabel ----> VertexLabel
+----
+
+=== Vertex tables
+Every unique vertex label maps to a table. Vertex tables are prefixed with a `V_`. i.e. `V_Person`. The vertex table
+stores the vertex's properties.
+
+
+=== Edge tables
+Every unique edge label maps to a table. Edge tables are prefixed with a `E_`. i.e. `E_friend`. The edge table stores
+each edge's adjacent vertex ids and the edge properties. The column corresponding to each adjacent vertex id (`IN` and `OUT`)
+has a foreign key to the adjacent vertex's table. The foreign key is optional, instead just an index on the adjacent vertex id
+can be used.
+
+[NOTE]
+By default, Sqlg will use an auto increment `ID` `bigint` for the primary key. You can however use the <<anchor-topology, topology>> interface to define which properties to use as the primary key.
+
+[NOTE]
+`sqlg.properties` `implement.foreign.keys = false` +
+Edge foreign keys have a significant impact on performance. +
+Edge foreign keys are enabled by default.
+
+From a rdbms' perspective each edge table is the classic `many to many` join table between vertices.
+
+=== TinkerPop-modern
+
+Taken from http://tinkerpop.apache.org/docs/current/reference/#intro[TinkerPop]
+
+image:sqlg/tinkerpop-modern-graph.png[image of tinkerpop-classic]
+
+.ER Diagram
+image:sqlg/tinkerpop-modern-er.png[image of tinkerpop-classic]
+
+.V_person
+image:sqlg/V_person.png[image of tinkerpop-classic]
+
+.V_software
+image:sqlg/V_software.png[image of tinkerpop-classic]
+
+.E_knows
+image:sqlg/E_knows.png[image of tinkerpop-classic]
+
+.E_created
+image:sqlg/E_created.png[image of tinkerpop-classic]
+
+=== Namespacing and Schemas
+
+Many RDBMS databases have the notion of a `schema` as a namespace for tables. Sqlg supports schemas
+for vertex labels. Distinct schemas for edge tables are unnecessary as edge tables are created in the schema of the adjacent `out` vertex.
+By default schemas for vertex tables go into the underlying databases' default schema. For Postgresql, hsqldb and H2 this
+is the `public` schema.
+
+To specify the schema for a label Sqlg uses the dot `.` notation.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testElementsInSchema() {
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Manager", "name", "john"); # <1>
+    Vertex palace1 = this.sqlgGraph.addVertex(T.label, "continent.House", "name", "palace1"); # <2>
+    Vertex corrola = this.sqlgGraph.addVertex(T.label, "fleet.Car", "model", "corrola"); # <3>
+    palace1.addEdge("managedBy", john);
+    corrola.addEdge("owner", john);
+    this.sqlgGraph.tx().commit();
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Manager").count().next().intValue()); # <4>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("House").count().next().intValue()); # <5>
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("continent.House").count().next().intValue()); <6>
+    assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("fleet.Car").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("managedBy").count().next().intValue());
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("owner").count().next().intValue());
+}
+----
+<1> 'Manager' will be in the default 'public' schema.
+<2> 'House' will be in the 'continent' schema.
+<3> 'Car' will be in the 'fleet' schema.
+<4> Vertices in the public schema do not need to be qualified with the schema.
+<5> Vertices not in the public schema must be qualified with its schema. In this case 'House' will not be found.
+<6> As 'House' is qualified with the 'continent' schema it will be found.
+
+Table `V_manager` is in the `public` (default) schema. +
+Table `V_house` is in the `continent` schema. +
+Table `V_car` is in the `fleet` schema. +
+Table `E_managedBy` is in the `continent` schema as its `out` vertex `palace1` is in the `continent` schema. +
+Table `E_owner` is in the `fleet` schema as its `out` vertex is in the `fleet`schema.
+
+.postgresql schemas
+image:sqlg/schemas.png[image of tinkerpop-classic]
+image:sqlg/continent.png[image of tinkerpop-classic]
+image:sqlg/fleet.png[image of tinkerpop-classic]
+image:sqlg/public.png[image of tinkerpop-classic]
+
+==== Edge label
+
+An edge label can have many different out vertex labels.
+This means that its possible for a single edge label to be stored in multiple schemas and tables.
+One for each distinct out vertex label. Gremlin queries will work as per normal.
+However it is possible to target the edges per out vertex schema directly.
+
+.eg.
+[source,java,options="nowrap"]
+----
+@Test
+public void testEdgeAcrossSchema() {
+    Vertex a = this.sqlgGraph.addVertex(T.label, "A.A");
+    Vertex b = this.sqlgGraph.addVertex(T.label, "B.B");
+    Vertex c = this.sqlgGraph.addVertex(T.label, "C.C");
+    a.addEdge("specialEdge", b);
+    b.addEdge("specialEdge", c);
+    this.sqlgGraph.tx().commit();
+    assertEquals(2, this.sqlgGraph.traversal().E().hasLabel("specialEdge").count().next().intValue()); # <1>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.specialEdge").count().next().intValue()); # <2>
+    assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("B.specialEdge").count().next().intValue()); # <3>
+}
+----
+<1> Query 'specialEdge'
+<2> Query 'specialEdge' with, out vertex labels in the 'A' schema.
+<3> Query 'specialEdge' with, out vertex labels in the 'B' schema.

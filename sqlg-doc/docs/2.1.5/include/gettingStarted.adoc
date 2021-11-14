@@ -1,0 +1,190 @@
+== Getting Started
+
+=== Maven coordinates
+
+.Postgresql
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-postgres</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.HSQLDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-hsqldb</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.H2
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-h2</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.MariaDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mariadb</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.MySQL
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mysql</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.MSSqlServer
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mssqlserver</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+This will include `gremlin-groovy`. If you have no need for that then use the following coordinates.
+
+.Postgresql
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-postgres-dialect</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.HSQLDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-hsqldb-dialect</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.H2
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-h2-dialect</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.MariaDB
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mariadb-dialect</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.MySQL
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mysql-dialect</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+.MSSqlServer
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-mssqlserver-dialect</artifactId>
+     <version>2.1.5</version>
+ </dependency>
+
+=== Start
+
+`SqlgGraph` is a singleton that can be shared among multiple threads. You instantiate `SqlgGraph` using the standard
+TinkerPop static constructors.
+
+* `Graph g = SqlgGraph.open(final Configuration configuration)`
+* `Graph g = SqlgGraph.open(final String pathToSqlgProperties)`
+
+The configuration object requires the following properties.
+
+.Postgresql
+ jdbc.url=jdbc:postgresql://localhost:5432/yourdb
+ jdbc.username=postgres
+ jdbc.password=******
+
+.HSQLDB
+ jdbc.url=jdbc:hsqldb:file:/tmp/yourdb
+ jdbc.username=SA
+ jdbc.password=
+
+.H2
+ jdbc.url=jdbc:h2:file:target/tmp/yourdb
+ jdbc.username=SA
+ jdbc.password=
+
+.MariaDB
+ jdbc.url=jdbc:mariadb://localhost:3306/?useSSL=false
+ jdbc.username=mariadb
+ jdbc.password=mariadb
+
+.MySQL
+ jdbc.url=jdbc:mysql://localhost:3306/?useSSL=false
+ jdbc.username=mysql
+ jdbc.password=mysql
+
+.MSSqlServer
+ jdbc.url=jdbc:sqlserver://localhost:1433;databaseName=yourdb;
+ jdbc.username=SA
+ jdbc.password=*****
+
+In the case of Postgresql and MSSqlServer the database must already exist.
+
+Once you have access to the graph you can use it as per normal.
+[source,java,options="nowrap"]
+----
+@Test
+public void useAsPerNormal() {
+    Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex address = this.sqlgGraph.addVertex(T.label, "Address", "street", "13th");
+    person.addEdge("livesAt", address, "since", LocalDate.of(2010, 1, 21));
+    this.sqlgGraph.tx().commit(); # <1>
+    List<Vertex> addresses = this.sqlgGraph.traversal().V().hasLabel("Person").out("livesAt").toList();
+    assertEquals(1, addresses.size());
+}
+----
+<1> It is very important to always commit or rollback the transaction.
+If you do not, connections to the database will remain open and eventually
+the connection pool with run out of connections.
+
+=== Gremlin Console
+
+.Postgresql
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.5.1-bin/apache-tinkerpop-gremlin-console-3.5.1/bin/$ ./gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin> :install org.umlg sqlg-postgres 2.1.5
+==>Loaded: [org.umlg, sqlg-postgres, 2.1.5] - restart the console to use [sqlg.postgres]
+gremlin> :x
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.5.1-bin/apache-tinkerpop-gremlin-console-3.5.1/bin/$ ./gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+gremlin> :plugin list
+==>tinkerpop.server[active]
+==>tinkerpop.gephi
+==>tinkerpop.utilities[active]
+==>tinkerpop.sugar
+==>tinkerpop.credentials
+==>sqlg.postgres
+==>tinkerpop.tinkergraph[active]
+gremlin> :plugin use sqlg.postgres
+==>sqlg.postgres activated
+gremlin> graph = SqlgGraph.open('/pathTo/sqlg.properties')
+==>sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb) (user = postgres)
+gremlin> g = graph.traversal()
+==>sqlggraphtraversalsource[sqlggraph[SqlGraph] (jdbc:postgresql://localhost:5432/sqlgraphdb) (user = postgres), standard]
+gremlin> graph.io(GraphSONIo.build(GraphSONVersion.V3_0)).readGraph("/pathTo/grateful-dead-v3d0.json")
+==>null
+gremlin> g.V().count()
+==>808
+gremlin>
