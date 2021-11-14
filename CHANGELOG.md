@@ -2,6 +2,7 @@
 
 * Upgrade to TinkerPop 3.1.5
 * Remove support for globally unique indexes
+* Update support for citus to work with citus 10.x
 
 ##2.1.4
 

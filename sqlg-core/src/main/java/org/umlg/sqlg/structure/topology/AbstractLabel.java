@@ -1133,9 +1133,9 @@ public abstract class AbstractLabel implements TopologyInf {
     private void distribute(Connection connection, PropertyColumn distributionPropertyColumn, AbstractLabel colocate) {
         StringBuilder sql = new StringBuilder();
         //If its not the public schema then first make sure the schema exist on all workers
-        if (!this.getSchema().getName().equals(this.sqlgGraph.getSqlDialect().getPublicSchema())) {
-            sql.append("SELECT run_command_on_workers($cmd$CREATE SCHEMA IF NOT EXISTS \"").append(getSchema().getName()).append("\"$cmd$);\n");
-        }
+//        if (!this.getSchema().getName().equals(this.sqlgGraph.getSqlDialect().getPublicSchema())) {
+//            sql.append("SELECT run_command_on_workers($cmd$CREATE SCHEMA IF NOT EXISTS \"").append(getSchema().getName()).append("\"$cmd$);\n");
+//        }
         sql.append("SELECT create_distributed_table('");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchema().getName()));
         sql.append(".");
