@@ -13,7 +13,7 @@ import org.umlg.sqlg.structure.TopologyInf;
 public class PropertyColumn implements TopologyInf {
 
     private final AbstractLabel abstractLabel;
-    private final String name;
+    private String name;
     private boolean committed = true;
     private final PropertyType propertyType;
 
@@ -111,5 +111,18 @@ public class PropertyColumn implements TopologyInf {
     @Override
     public void remove(boolean preserveData) {
     	this.abstractLabel.removeProperty(this, preserveData);
+    }
+
+    @Override
+    public void rename(String name) {
+        this.abstractLabel.renameProperty(name, this);
+    }
+
+    /**
+     * Only called from afterRollback to reset the property's name.
+     * @param name The old name  of the property.
+     */
+    void setName(String name) {
+        this.name = name;
     }
 }

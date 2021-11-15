@@ -952,6 +952,29 @@ public class TopologyManager {
 
     }
 
+    public static void renamePropertyColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column, String newName) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(prefixedTable.startsWith(VERTEX_PREFIX), "prefixedTable must be for a vertex. prefixedTable = " + prefixedTable);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+
+            List<Vertex> propertiesToRename = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has(SQLG_SCHEMA_SCHEMA_NAME, schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, prefixedTable.substring(VERTEX_PREFIX.length()))
+                    .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                    .has(SQLG_SCHEMA_PROPERTY_NAME, column)
+                    .toList();
+            Preconditions.checkState(propertiesToRename.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, propertiesToRename, column, propertiesToRename.size()));
+            propertiesToRename.get(0).property(SQLG_SCHEMA_PROPERTY_NAME, newName);
+
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
+
     public static void removeEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -1245,7 +1268,7 @@ public class TopologyManager {
      * Adds the partition to a partition. A new Vertex with label Partition is added and in linked to its parent with
      * the SQLG_SCHEMA_PARTITION_PARTITION_EDGE edge label.
      *
-     * @param sqlgGraph
+     * @param sqlgGraph The graph.
      */
     public static void addSubPartition(SqlgGraph sqlgGraph, Partition partition) {
         AbstractLabel abstractLabel = partition.getAbstractLabel();

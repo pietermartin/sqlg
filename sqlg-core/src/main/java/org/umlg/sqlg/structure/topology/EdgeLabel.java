@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
@@ -1176,6 +1177,17 @@ public class EdgeLabel extends AbstractLabel {
             }
             this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
         }
+    }
+
+    @Override
+    void renameProperty(String name, PropertyColumn propertyColumn) {
+        Pair<String, String> namePair = Pair.of(propertyColumn.getName(), name);
+//        if (!this.uncommittedRenamedProperties.contains(namePair)) {
+//            this.uncommittedRenamedProperties.add(namePair);
+//            TopologyManager.renamePropertyColumn(this.sqlgGraph, getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName(), name);
+//            renameColumn(getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName(), name);
+//            this.getSchema().getTopology().fire(propertyColumn, namePair.getLeft(), TopologyChangeAction.UPDATE);
+//        }
     }
 
     @Override

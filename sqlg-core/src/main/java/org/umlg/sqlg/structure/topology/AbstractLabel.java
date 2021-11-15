@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
@@ -40,6 +41,8 @@ public abstract class AbstractLabel implements TopologyInf {
     private final TreeMap<Integer, String> identifierMap = new TreeMap<>();
     private final ListOrderedSet<String> identifiers = new ListOrderedSet<>();
     private final Set<String> uncommittedIdentifiers = new ThreadLocalListOrderedSet<>();
+    //Pair of <old,new> identifiers
+    final Set<Pair<String, String>> renamedIdentifiers = new ThreadLocalListOrderedSet<>();
 
     //Citus sharding
     private PropertyColumn distributionPropertyColumn;
@@ -106,7 +109,6 @@ public abstract class AbstractLabel implements TopologyInf {
     AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
         Preconditions.checkArgument(partitionType == PartitionType.RANGE || partitionType == PartitionType.LIST || partitionType == PartitionType.HASH, "Only RANGE and LIST partitions are supported. Found %s", partitionType.name());
         Preconditions.checkArgument(!partitionExpression.isEmpty(), "partitionExpression may not be an empty string.");
-//        Preconditions.checkArgument(!identifiers.isEmpty(), "Partitioned labels must have at least one identifier.");
         this.sqlgGraph = sqlgGraph;
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
@@ -498,6 +500,10 @@ public abstract class AbstractLabel implements TopologyInf {
         ListOrderedSet<String> result = ListOrderedSet.listOrderedSet(this.identifiers);
         if (getTopology().isSchemaChanged()) {
             result.addAll(this.uncommittedIdentifiers);
+            for (Pair<String, String> oldNew : this.renamedIdentifiers) {
+                result.remove(oldNew.getLeft());
+                result.add(oldNew.getRight());
+            }
         }
         return result;
     }
@@ -743,6 +749,12 @@ public abstract class AbstractLabel implements TopologyInf {
             it.remove();
         }
         this.identifiers.addAll(this.uncommittedIdentifiers);
+        for (Iterator<Pair<String, String>> it = this.renamedIdentifiers.iterator(); it.hasNext(); ) {
+            Pair<String, String> oldName = it.next();
+            this.identifiers.remove(oldName.getLeft());
+            this.identifiers.add(oldName.getRight());
+            it.remove();
+        }
         this.uncommittedIdentifiers.clear();
         for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Index> entry = it.next();
@@ -793,6 +805,7 @@ public abstract class AbstractLabel implements TopologyInf {
         }
         this.uncommittedRemovedProperties.clear();
         this.uncommittedIdentifiers.clear();
+        this.renamedIdentifiers.clear();
         for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Index> entry = it.next();
             entry.getValue().afterRollback();
@@ -834,6 +847,13 @@ public abstract class AbstractLabel implements TopologyInf {
             ArrayNode identifierArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String identifier : this.uncommittedIdentifiers) {
                 identifierArrayNode.add(identifier);
+            }
+            ArrayNode renamedIdentifierArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (Pair<String, String> oldNew : this.renamedIdentifiers) {
+                ObjectNode renamedObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                renamedObjectNode.put("old", oldNew.getLeft());
+                renamedObjectNode.put("new", oldNew.getRight());
+                renamedIdentifierArrayNode.add(renamedObjectNode);
             }
             ArrayNode uncommittedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Partition partition : this.uncommittedPartitions.values()) {
@@ -879,6 +899,7 @@ public abstract class AbstractLabel implements TopologyInf {
             result.set("uncommittedProperties", propertyArrayNode);
             result.set("uncommittedRemovedProperties", removedPropertyArrayNode);
             result.set("uncommittedIdentifiers", identifierArrayNode);
+            result.set("renamedIdentifiers", renamedIdentifierArrayNode);
             result.set("uncommittedPartitions", uncommittedPartitionArrayNode);
             result.set("partitions", committedPartitionArrayNode);
             result.set("uncommittedRemovedPartitions", removedPartitionArrayNode);
@@ -926,6 +947,16 @@ public abstract class AbstractLabel implements TopologyInf {
         if (identifiersNode != null) {
             for (JsonNode identifierNode : identifiersNode) {
                 this.identifiers.add(identifierNode.asText());
+            }
+        }
+        ArrayNode renamedIdentifiersNode = (ArrayNode) vertexLabelJson.get("renamedIdentifiers");
+        if (renamedIdentifiersNode != null) {
+            for (JsonNode identifierNode : renamedIdentifiersNode) {
+                ObjectNode identifierObjectNode = (ObjectNode)identifierNode;
+                String oldIdentifier = identifierObjectNode.get("old").asText();
+                String newIdentifier = identifierObjectNode.get("new").asText();
+                this.identifiers.remove(oldIdentifier);
+                this.identifiers.add(newIdentifier);
             }
         }
         ArrayNode removedPropertyArrayNode = (ArrayNode) vertexLabelJson.get("uncommittedRemovedProperties");
@@ -1033,6 +1064,14 @@ public abstract class AbstractLabel implements TopologyInf {
     abstract void removeProperty(PropertyColumn propertyColumn, boolean preserveData);
 
     /**
+     * rename the given property
+     *
+     * @param name           the new name for the property column
+     * @param propertyColumn the property column
+     */
+    abstract void renameProperty(String name, PropertyColumn propertyColumn);
+
+    /**
      * remove a column from the table
      *
      * @param schema the schema
@@ -1058,6 +1097,27 @@ public abstract class AbstractLabel implements TopologyInf {
         Connection conn = sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * rename a column of the table
+     *
+     * @param schema  the schema
+     * @param table   the table name
+     * @param column  the column name
+     * @param newName the new column name
+     */
+    void renameColumn(String schema, String table, String column, String newName) {
+        String sql = this.sqlgGraph.getSqlDialect().renameColumn(schema, table, column, newName);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql);
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

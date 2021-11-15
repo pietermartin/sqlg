@@ -744,6 +744,7 @@ public class VertexLabel extends AbstractLabel {
         if (abstractLabelNode.isPresent()) {
             vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             vertexLabelNode.set("uncommittedIdentifiers", abstractLabelNode.get().get("uncommittedIdentifiers"));
+            vertexLabelNode.set("renamedIdentifiers", abstractLabelNode.get().get("renamedIdentifiers"));
             vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
             vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
             if (abstractLabelNode.get().get("uncommittedDistributionPropertyColumn") != null) {
@@ -1084,8 +1085,8 @@ public class VertexLabel extends AbstractLabel {
     @Override
     void removeProperty(PropertyColumn propertyColumn, boolean preserveData) {
         this.getSchema().getTopology().lock();
-        if (!uncommittedRemovedProperties.contains(propertyColumn.getName())) {
-            uncommittedRemovedProperties.add(propertyColumn.getName());
+        if (!this.uncommittedRemovedProperties.contains(propertyColumn.getName())) {
+            this.uncommittedRemovedProperties.add(propertyColumn.getName());
             for (Index index : getIndexes().values()) {
                 for (PropertyColumn property : index.getProperties()) {
                     if (property.getName().equals(propertyColumn.getName())) {
@@ -1099,6 +1100,25 @@ public class VertexLabel extends AbstractLabel {
                 removeColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());
             }
             this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
+        }
+    }
+
+    @Override
+    void renameProperty(String name, PropertyColumn propertyColumn) {
+        this.getSchema().getTopology().lock();
+        String oldName = propertyColumn.getName();
+        Pair<String, String> namePair = Pair.of(oldName, name);
+        if (!this.uncommittedRemovedProperties.contains(name)) {
+            this.uncommittedRemovedProperties.add(oldName);
+            PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyType());
+            this.uncommittedProperties.put(name, copy);
+            TopologyManager.renamePropertyColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
+            renameColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
+            if (this.getIdentifiers().contains(oldName)) {
+                Preconditions.checkState(!this.renamedIdentifiers.contains(namePair), "BUG! renamedIdentifiers may not yet contain '%s'", oldName);
+                this.renamedIdentifiers.add(namePair);
+            }
+            this.getSchema().getTopology().fire(propertyColumn, namePair.getLeft(), TopologyChangeAction.UPDATE);
         }
     }
 

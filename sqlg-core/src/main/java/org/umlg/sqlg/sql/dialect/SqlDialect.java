@@ -377,16 +377,15 @@ public interface SqlDialect {
 
     default String indexName(SchemaTable schemaTable, String prefix, String postfix, List<String> columns) {
         Preconditions.checkState(!columns.isEmpty(), "SqlDialect.indexName may not be called with an empty list of columns");
-        StringBuilder sb = new StringBuilder();
-        sb.append(schemaTable.getSchema());
-        sb.append("_");
-        sb.append(prefix);
-        sb.append(schemaTable.getTable());
-        sb.append("_");
-        //noinspection OptionalGetWithoutIsPresent
-        sb.append(columns.stream().reduce((a, b) -> a + "_" + b).get());
-        sb.append(postfix);
-        return sb.toString();
+        String sb = schemaTable.getSchema() +
+                "_" +
+                prefix +
+                schemaTable.getTable() +
+                "_" +
+                //noinspection OptionalGetWithoutIsPresent
+                columns.stream().reduce((a, b) -> a + "_" + b).orElseThrow() +
+                postfix;
+        return sb;
     }
 
 
@@ -577,7 +576,7 @@ public interface SqlDialect {
      * These are internal columns used by sqlg that must be ignored when loading elements.
      * eg. '_copy_dummy' when doing using the copy command on postgresql.
      *
-     * @return
+     * @return The columns to ignore.
      */
     default List<String> columnsToIgnore() {
         return Collections.emptyList();
@@ -603,7 +602,7 @@ public interface SqlDialect {
      * range condition
      *
      * @param r range
-     * @return
+     * @return the range clause.
      */
     default String getRangeClause(Range<Long> r) {
         return "LIMIT " + (r.getMaximum() - r.getMinimum()) + " OFFSET " + r.getMinimum();
@@ -1360,5 +1359,20 @@ public interface SqlDialect {
      */
     default boolean canUserCreateSchemas(SqlgGraph sqlgGraph) {
         return true;
+    }
+
+    default String renameColumn(String schema, String table, String column, String newName) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(table));
+        sql.append(" RENAME COLUMN ");
+        sql.append(maybeWrapInQoutes(column));
+        sql.append(" TO ");
+        sql.append(maybeWrapInQoutes(newName));
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
     }
 }

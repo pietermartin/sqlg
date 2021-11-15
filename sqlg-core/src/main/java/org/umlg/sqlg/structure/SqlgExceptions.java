@@ -8,8 +8,13 @@ public class SqlgExceptions {
 
     private static final String BATCH_MODE_NOT_SUPPORTED = "Batch processing is not supported by %s";
     private static final String MULTIPLE_JVM_NOT_SUPPORTED = "Multiple jvm(s) is not supported by %s";
+    private static final String TOPOLOGY_RENAME_NOT_SUPPORTED = "Topology rename is not supported by %s";
 
     private SqlgExceptions() {}
+
+    public static UnsupportedOperationException topologyRenameNotSupported(String type) {
+        return new UnsupportedOperationException(String.format(TOPOLOGY_RENAME_NOT_SUPPORTED, type));
+    }
 
     public static UnsupportedOperationException multipleJvmNotSupported(String dialect) {
         return new UnsupportedOperationException(String.format(MULTIPLE_JVM_NOT_SUPPORTED, dialect));

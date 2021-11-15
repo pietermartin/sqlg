@@ -92,11 +92,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALDATE_ARRAY_ORDINAL:
                 return toValuesArray(true, getArrayDriverType(propertyType), value).toString();
             case LOCALDATETIME_ORDINAL:
-                return "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime) value).toString() + "'";
+                return "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime) value) + "'";
             case LOCALDATETIME_ARRAY_ORDINAL:
                 return toLocalDateTimeArray(true, getArrayDriverType(propertyType), value).toString();
             case LOCALTIME_ORDINAL:
-                return "TIME '" + Time.valueOf((LocalTime) value).toString() + "'";
+                return "TIME '" + Time.valueOf((LocalTime) value) + "'";
             case LOCALTIME_ARRAY_ORDINAL:
                 return toLocalTimeArray(true, getArrayDriverType(propertyType), value).toString();
             case JSON_ORDINAL:
@@ -150,7 +150,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             if (quote) {
                 sb.append("'");
             }
-            sb.append(Timestamp.valueOf(valueOfArray).toString());
+            sb.append(Timestamp.valueOf(valueOfArray));
             sb.append("+0:00");
             if (quote) {
                 sb.append("'");
@@ -176,7 +176,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             if (quote) {
                 sb.append("'");
             }
-            sb.append(Time.valueOf(valueOfArray).toString());
+            sb.append(Time.valueOf(valueOfArray));
             sb.append("+0:00");
             if (quote) {
                 sb.append("'");
@@ -1312,5 +1312,21 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
 //            return false;
 //        }
         return true;
+    }
+
+    @Override
+    public String renameColumn(String schema, String table, String column, String newName) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(table));
+        sql.append(" ALTER COLUMN ");
+        sql.append(maybeWrapInQoutes(column));
+        sql.append(" RENAME TO ");
+        sql.append(maybeWrapInQoutes(newName));
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
     }
 }
