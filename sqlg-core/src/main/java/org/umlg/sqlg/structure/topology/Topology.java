@@ -420,7 +420,7 @@ public class Topology {
         columns.put(SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE, PropertyType.INTEGER);
         indexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertexLabel, columns);
         columns.clear();
-        
+
         columns.put(SQLG_SCHEMA_LOG_TIMESTAMP, PropertyType.LOCALDATETIME);
         columns.put(SQLG_SCHEMA_LOG_LOG, PropertyType.JSON);
         columns.put(SQLG_SCHEMA_LOG_PID, PropertyType.INTEGER);
@@ -560,6 +560,128 @@ public class Topology {
         }
     }
 
+    /**
+     * Import the foreign schema into the local graph's meta data.
+     *
+     * @param originalSchemas The foreign schemas to import.
+     */
+    public void importForeignSchemas(Set<Schema> originalSchemas) {
+        Preconditions.checkState(!isSchemaChanged(), "To import a foreign schema there must not be any pending changes!");
+
+        //validate all edge's vertices are in a foreign schema
+        Schema.validateImportingEdgeLabels(originalSchemas);
+        //Validate the VertexLabel's in and outEdgeLabels are in an imported schema.
+        Schema.validateImportingVertexLabels(originalSchemas);
+
+        Set<Schema> foreignSchemas = new HashSet<>();
+        for (Schema originalSchema : originalSchemas) {
+            Schema copy = originalSchema.readOnlyCopyVertexLabels(getSqlgGraph(), this, originalSchemas);
+            Preconditions.checkState(!this.schemas.containsKey(copy.getName()), "Schema with name '%s' exists.", copy.getName());
+            foreignSchemas.add(copy);
+            this.schemas.put(copy.getName(), copy);
+            for (String label : copy.getVertexLabels().keySet()) {
+                VertexLabel vertexLabel = copy.getVertexLabels().get(label);
+                this.allTableCache.put(label, vertexLabel.getPropertyTypeMap());
+            }
+        }
+        for (Schema originalSchema : originalSchemas) {
+            Preconditions.checkState(this.schemas.containsKey(originalSchema.getName()), "'%s' not found in the schemas.", originalSchema.getName());
+            Schema foreignSchema = this.schemas.get(originalSchema.getName());
+            originalSchema.readOnlyCopyEdgeLabels(this, foreignSchema, foreignSchemas);
+        }
+
+        for (Schema originalSchema : originalSchemas) {
+            Schema foreignSchema = this.schemas.get(originalSchema.getName());
+            for (String label : foreignSchema.getEdgeLabels().keySet()) {
+                EdgeLabel edgeLabel = foreignSchema.getEdgeLabels().get(label);
+                this.allTableCache.put(label, edgeLabel.getPropertyTypeMap());
+            }
+            for (VertexLabel vertexLabel : foreignSchema.getVertexLabels().values()) {
+                SchemaTable vertexLabelSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
+                this.schemaTableForeignKeyCache.put(vertexLabelSchemaTable, Pair.of(new HashSet<>(), new HashSet<>()));
+                for (EdgeLabel edgeLabel : vertexLabel.getInEdgeLabels().values()) {
+                    this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable)
+                            .getLeft()
+                            .add(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
+                }
+                for (EdgeLabel edgeLabel : vertexLabel.getOutEdgeLabels().values()) {
+                    this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable)
+                            .getRight()
+                            .add(SchemaTable.of(vertexLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
+                }
+            }
+            this.edgeForeignKeyCache.putAll(foreignSchema.getAllEdgeForeignKeys());
+        }
+    }
+
+    public void clearForeignSchemas() {
+        Set<String> toRemove = new HashSet<>();
+        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+            String schemaKey = schemaEntry.getKey();
+            Schema schema = schemaEntry.getValue();
+            if (schema.isForeignSchema()) {
+                toRemove.add(schemaKey);
+                for (Map.Entry<String, EdgeLabel> edgeLabelEntry : schema.getEdgeLabels().entrySet()) {
+                    String key = edgeLabelEntry.getKey();
+                    EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+                    Preconditions.checkState(edgeLabel.isForeign());
+                    Preconditions.checkState(this.allTableCache.remove(key) != null, "Failed to remove '%s' from 'allTableCache'", key);
+                    Preconditions.checkState(
+                            this.edgeForeignKeyCache.remove(schemaKey + "." + EDGE_PREFIX + edgeLabel.getLabel()) != null,
+                            "Failed to remove '%s' from 'edgeForeignKeyCache'", key);
+                }
+                for (Map.Entry<String, VertexLabel> vertexLabelEntry : schema.getVertexLabels().entrySet()) {
+                    String key = vertexLabelEntry.getKey();
+                    VertexLabel vertexLabel = vertexLabelEntry.getValue();
+                    Preconditions.checkState(vertexLabel.isForeign());
+                    Preconditions.checkState(this.allTableCache.remove(key) != null, "Failed to remove '%s' from 'allTableCache'", key);
+                    SchemaTable schemaTable = SchemaTable.of(schemaKey, VERTEX_PREFIX + vertexLabel.getLabel());
+                    Preconditions.checkState(this.schemaTableForeignKeyCache.remove(schemaTable) != null, "Failed to remove '%s' from 'schemaTableForeignKeyCache'", key);
+                }
+            } else {
+                Pair<Set<Pair<String,String>>, Set<Pair<String, String>>> removed = schema.clearForeignAbstractLabels();
+                for (Pair<String,String> vertex: removed.getLeft()) {
+                    Preconditions.checkState(this.allTableCache.remove(vertex.getLeft()) != null, "Failed to remove '%s' from 'allTableCache", vertex.getLeft());
+                    SchemaTable schemaTable = SchemaTable.of(schemaKey, VERTEX_PREFIX + vertex.getRight());
+                    Preconditions.checkState(this.schemaTableForeignKeyCache.remove(schemaTable) != null, "Failed to remove '%s' from 'schemaTableForeignKeyCache'", schemaTable.toString());
+                }
+                for (Pair<String,String> edge: removed.getRight()) {
+                    Preconditions.checkState(this.allTableCache.remove(edge.getLeft()) != null, "Failed to remove '%s' from 'allTableCache", edge.getLeft());
+                    Preconditions.checkState(
+                            this.edgeForeignKeyCache.remove(schemaKey + "." + EDGE_PREFIX + edge.getRight()) != null,
+                            "Failed to remove '%s' from 'edgeForeignKeyCache'", edge);
+                }
+            }
+        }
+        for (String remove : toRemove) {
+            this.schemas.remove(remove);
+        }
+    }
+
+    public void importForeignVertexEdgeLabels(Schema importIntoSchema, Set<VertexLabel> vertexLabels, Set<EdgeLabel> edgeLabels) {
+        importIntoSchema.importForeignVertexAndEdgeLabels(vertexLabels, edgeLabels);
+        for (VertexLabel vertexLabel : vertexLabels) {
+            this.allTableCache.put(importIntoSchema.getName() + "." + VERTEX_PREFIX + vertexLabel.getLabel(), vertexLabel.getPropertyTypeMap());
+        }
+        for (EdgeLabel edgeLabel : edgeLabels) {
+            this.allTableCache.put(importIntoSchema.getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyTypeMap());
+            this.edgeForeignKeyCache.put(importIntoSchema.getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getAllEdgeForeignKeys());
+        }
+        vertexLabels.forEach((v) -> {
+            SchemaTable vertexLabelSchemaTable = SchemaTable.of(v.getSchema().getName(), VERTEX_PREFIX + v.getLabel());
+            this.schemaTableForeignKeyCache.put(vertexLabelSchemaTable, Pair.of(new HashSet<>(), new HashSet<>()));
+            v.getInEdgeLabels().forEach(
+                    (edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable)
+                            .getLeft()
+                            .add(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()))
+            );
+            v.getOutEdgeLabels().forEach(
+                    (edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable)
+                            .getRight()
+                            .add(SchemaTable.of(v.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()))
+            );
+        });
+    }
 
     /**
      * Ensures that the vertex table exist in the db. The default schema is assumed. @See {@link SqlDialect#getPublicSchema()}
@@ -1305,6 +1427,7 @@ public class Topology {
         }
     }
 
+    @SuppressWarnings("unused")
     public Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
         Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
         return schemaOptional.map(schema -> Collections.unmodifiableMap(schema.getPropertiesFor(schemaTable))).orElse(Collections.emptyMap());

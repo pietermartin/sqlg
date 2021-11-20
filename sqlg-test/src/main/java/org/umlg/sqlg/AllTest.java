@@ -273,7 +273,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestInject.class,
         TestFoldStep.class,
         TestTopologyRename.class,
-        TestTopologyRenameDistributed.class
+        TestTopologyRenameDistributed.class,
+        TestForeignSchema.class
 })
 public class AllTest {
 

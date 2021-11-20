@@ -101,6 +101,11 @@ public class VertexLabel extends AbstractLabel {
         this.schema = schema;
     }
 
+    VertexLabel(Schema schema, String label, boolean isForeignVertexLabel) {
+        super(schema.getSqlgGraph(), label, isForeignVertexLabel);
+        this.schema = schema;
+    }
+
     /**
      * Only called for a new label being added.
      *
@@ -430,6 +435,7 @@ public class VertexLabel extends AbstractLabel {
 
     //    @Override
     public void ensurePropertiesExist(Map<String, PropertyType> columns) {
+        Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign VertexLabel!", this.label);
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
@@ -1213,5 +1219,13 @@ public class VertexLabel extends AbstractLabel {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    VertexLabel readOnlyCopy(Schema schema) {
+        VertexLabel copy = new VertexLabel(schema, this.label, true);
+        for (String property : this.properties.keySet()) {
+            copy.properties.put(property, this.properties.get(property).readOnlyCopy(copy));
+        }
+        return copy;
     }
 }

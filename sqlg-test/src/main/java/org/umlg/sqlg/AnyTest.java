@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyRename;
+import org.umlg.sqlg.test.topology.TestForeignSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.topology.TestTopologyRename;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyRename.class
+        TestForeignSchema.class
+//        TestHashPartitioning.class
 })
 public class AnyTest {
 }

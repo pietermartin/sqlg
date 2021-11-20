@@ -67,6 +67,8 @@ public abstract class AbstractLabel implements TopologyInf {
     private final Map<String, Partition> uncommittedPartitions = new ThreadLocalMap<>();
     private final Set<String> uncommittedRemovedPartitions = new ThreadLocalSet<>();
 
+    protected final boolean isForeignAbstractLabel;
+
     /**
      * Only called for a partitioned vertex/edge label being added.
      *
@@ -77,6 +79,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.label = label;
         this.partitionType = partitionType;
         this.partitionExpression = partitionExpression;
+        this.isForeignAbstractLabel = false;
     }
 
     /**
@@ -95,6 +98,7 @@ public abstract class AbstractLabel implements TopologyInf {
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
         this.uncommittedIdentifiers.addAll(identifiers);
+        this.isForeignAbstractLabel = false;
     }
 
     /**
@@ -119,11 +123,24 @@ public abstract class AbstractLabel implements TopologyInf {
         this.uncommittedIdentifiers.addAll(identifiers);
         this.partitionType = partitionType;
         this.partitionExpression = partitionExpression;
+        this.isForeignAbstractLabel = false;
     }
 
     AbstractLabel(SqlgGraph sqlgGraph, String label) {
         this.sqlgGraph = sqlgGraph;
         this.label = label;
+        this.isForeignAbstractLabel = false;
+    }
+
+    AbstractLabel(SqlgGraph sqlgGraph, String label, boolean isForeignAbstractLabel) {
+        Preconditions.checkState(isForeignAbstractLabel);
+        this.sqlgGraph = sqlgGraph;
+        this.label = label;
+        this.isForeignAbstractLabel = isForeignAbstractLabel;
+    }
+
+    public boolean isForeign() {
+        return isForeignAbstractLabel;
     }
 
     /**
@@ -1271,4 +1288,5 @@ public abstract class AbstractLabel implements TopologyInf {
     void setShardCount(int shardCount) {
         this.shardCount = shardCount;
     }
+
 }

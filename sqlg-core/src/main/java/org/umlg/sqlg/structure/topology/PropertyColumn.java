@@ -16,11 +16,21 @@ public class PropertyColumn implements TopologyInf {
     private String name;
     private boolean committed = true;
     private final PropertyType propertyType;
+    private final boolean isForeignPropertyColumn;;
 
     PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
         this.abstractLabel = abstractLabel;
         this.name = name;
         this.propertyType = propertyType;
+        this.isForeignPropertyColumn = false;
+    }
+
+    private PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType, boolean isForeignPropertyColumn) {
+        Preconditions.checkState(isForeignPropertyColumn);
+        this.abstractLabel = abstractLabel;
+        this.name = name;
+        this.propertyType = propertyType;
+        this.isForeignPropertyColumn = true;
     }
 
     public String getName() {
@@ -124,5 +134,9 @@ public class PropertyColumn implements TopologyInf {
      */
     void setName(String name) {
         this.name = name;
+    }
+
+    PropertyColumn readOnlyCopy(AbstractLabel abstractLabel) {
+        return new PropertyColumn(abstractLabel, this.name, this.propertyType, true);
     }
 }

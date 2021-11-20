@@ -23,6 +23,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
@@ -37,6 +38,8 @@ public class Schema implements TopologyInf {
     private final Topology topology;
     private final String name;
     private boolean committed = true;
+    private boolean isForeignSchema;
+
     //The key is schema + "." + VERTEX_PREFIX + vertex label. i.e. "A.V_A"
     private final Map<String, VertexLabel> vertexLabels = new ConcurrentHashMap<>();
     private final Map<String, VertexLabel> uncommittedVertexLabels = new ThreadLocalMap<>();
@@ -109,9 +112,21 @@ public class Schema implements TopologyInf {
     }
 
     private Schema(Topology topology, String name) {
+        this(topology.getSqlgGraph(), topology, name);
+    }
+
+    private Schema(SqlgGraph sqlgGraph, Topology topology, String name) {
         this.topology = topology;
         this.name = name;
-        this.sqlgGraph = this.topology.getSqlgGraph();
+        this.sqlgGraph = sqlgGraph;
+    }
+
+    private Schema(SqlgGraph sqlgGraph, Topology topology, String name, boolean isForeignSchema) {
+        Preconditions.checkState(isForeignSchema);
+        this.topology = topology;
+        this.name = name;
+        this.sqlgGraph = sqlgGraph;
+        this.isForeignSchema = true;
     }
 
     SqlgGraph getSqlgGraph() {
@@ -121,6 +136,10 @@ public class Schema implements TopologyInf {
     @Override
     public boolean isCommitted() {
         return this.committed;
+    }
+
+    public boolean isForeignSchema() {
+        return isForeignSchema;
     }
 
     public VertexLabel ensureVertexLabelExist(final String label) {
@@ -148,6 +167,7 @@ public class Schema implements TopologyInf {
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with \"%s\"", VERTEX_PREFIX);
+        Preconditions.checkState(!this.isForeignSchema, "'%s' is a read only foreign schema!", this.name);
         for (String identifier : identifiers) {
             Preconditions.checkState(columns.containsKey(identifier), "The identifiers must be in the specified columns. \"%s\" not found", identifier);
         }
@@ -221,6 +241,7 @@ public class Schema implements TopologyInf {
             Map<String, PropertyType> columns,
             ListOrderedSet<String> identifiers) {
 
+        Preconditions.checkState(!this.isForeignSchema, "'A' is a read only foreign schema!");
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
@@ -1755,4 +1776,142 @@ public class Schema implements TopologyInf {
     public Map<String, PropertyType> getTemporaryTable(String tableName) {
         return this.threadLocalTemporaryTables.get().get(tableName);
     }
+
+    Schema readOnlyCopyVertexLabels(SqlgGraph sqlgGraph, Topology topology, Set<Schema> originalSchemas) {
+        Preconditions.checkState(!getTopology().isSchemaChanged(), "To make a schema copy the topology must not have any pending changes!");
+        Schema foreignSchema = new Schema(sqlgGraph, topology, this.name, true);
+        for (String label : this.vertexLabels.keySet()) {
+            VertexLabel vertexLabel = this.vertexLabels.get(label);
+            VertexLabel foreignVertexLabel = vertexLabel.readOnlyCopy(foreignSchema);
+            foreignSchema.vertexLabels.put(label, foreignVertexLabel);
+        }
+        return foreignSchema;
+    }
+
+    void readOnlyCopyEdgeLabels(Topology topology, Schema foreignSchema, Set<Schema> foreignSchemas) {
+        Preconditions.checkState(!getTopology().isSchemaChanged(), "To make a schema copy the topology must not have any pending changes!");
+        for (String label : this.outEdgeLabels.keySet()) {
+            EdgeLabel edgeLabel = this.outEdgeLabels.get(label);
+            EdgeLabel foreignEdgeLabel = edgeLabel.readOnlyCopy(topology, foreignSchema, foreignSchemas);
+            foreignSchema.addToAllEdgeCache(foreignEdgeLabel);
+            this.outEdgeLabels.put(label, foreignEdgeLabel);
+        }
+    }
+
+    void importForeignVertexAndEdgeLabels(Set<VertexLabel> vertexLabels, Set<EdgeLabel> edgeLabels) {
+        Preconditions.checkState(!getTopology().isSchemaChanged(), "To import a foreign VertexLabel there must not be any pending changes!");
+
+        Set<String> fullVertexLabels = vertexLabels.stream().map(AbstractLabel::getFullName).collect(Collectors.toSet());
+        Set<String> fullEdgeLabels = edgeLabels.stream().map(AbstractLabel::getFullName).collect(Collectors.toSet());
+
+        for (VertexLabel vertexLabel : vertexLabels) {
+            for (EdgeLabel inEdgeLabel : vertexLabel.inEdgeLabels.values()) {
+                Preconditions.checkState(fullEdgeLabels.contains(inEdgeLabel.getFullName()), "'%s' is not present in the foreign EdgeLabels", this.name + "." + EDGE_PREFIX + inEdgeLabel.getFullName());
+            }
+            for (EdgeLabel outEdgeLabel : vertexLabel.outEdgeLabels.values()) {
+                Preconditions.checkState(fullEdgeLabels.contains(outEdgeLabel.getFullName()), "'%s' is not present in the foreign EdgeLabels", this.name + "." + EDGE_PREFIX + outEdgeLabel.getFullName());
+            }
+        }
+        for (EdgeLabel edgeLabel : edgeLabels) {
+            for (VertexLabel vertexLabel : edgeLabel.inVertexLabels) {
+                Preconditions.checkState(fullVertexLabels.contains(vertexLabel.getFullName()), "'%s' is not present in the foreign VertexLabels", this.name + "." + VERTEX_PREFIX + vertexLabel.getFullName());
+            }
+        }
+
+        for (VertexLabel vertexLabel : vertexLabels) {
+            VertexLabel foreignVertexLabel = vertexLabel.readOnlyCopy(this);
+            this.vertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabel.getLabel(), foreignVertexLabel);
+        }
+        for (EdgeLabel edgeLabel : edgeLabels) {
+            EdgeLabel foreignEdgeLabel = edgeLabel.readOnlyCopy(topology, this, Set.of(this));
+            Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
+            for (VertexLabel outVertexLabel : outVertexLabels) {
+                String l = this.getName() + "." + VERTEX_PREFIX + outVertexLabel.getLabel();
+                Preconditions.checkState(this.vertexLabels.containsKey(l), "VertexLabel '%s' not found in schema '%s'.", l, this.getName());
+                foreignEdgeLabel.outVertexLabels.add(this.vertexLabels.get(l));
+            }
+            Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
+            for (VertexLabel inVertexLabel : inVertexLabels) {
+                String l = this.getName() + "." + VERTEX_PREFIX + inVertexLabel.getLabel();
+                Preconditions.checkState(this.vertexLabels.containsKey(l), "VertexLabel '%s' not found in schema '%s'.", l, this.getName());
+                foreignEdgeLabel.inVertexLabels.add(this.vertexLabels.get(l));
+            }
+            this.addToAllEdgeCache(foreignEdgeLabel);
+            this.outEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabel.getLabel(), foreignEdgeLabel);
+        }
+    }
+
+    static void validateImportingVertexLabels(Set<Schema> originalSchemas) {
+        for (Schema foreignSchema : originalSchemas) {
+            for (String label : foreignSchema.vertexLabels.keySet()) {
+                VertexLabel vertexLabel = foreignSchema.vertexLabels.get(label);
+                for (EdgeLabel edgeLabel : vertexLabel.outEdgeLabels.values()) {
+                    Schema edgeSchema = edgeLabel.getSchema();
+                    if (originalSchemas.stream().noneMatch(s -> s.getName().equals(edgeSchema.getName()))) {
+                        throw new IllegalStateException(String.format(
+                                "VertexLabel '%s' has an outEdgeLabel '%s' that is not present in a foreign schema",
+                                label, edgeLabel.getLabel()));
+                    }
+                }
+                for (EdgeLabel edgeLabel : vertexLabel.inEdgeLabels.values()) {
+                    Schema edgeSchema = edgeLabel.getSchema();
+                    if (originalSchemas.stream().noneMatch(s -> s.getName().equals(edgeSchema.getName()))) {
+                        throw new IllegalStateException(String.format(
+                                "VertexLabel '%s' has an inEdgeLabel '%s' that is not present in a foreign schema",
+                                label, edgeLabel.getLabel()));
+                    }
+                }
+            }
+        }
+    }
+
+    static void validateImportingEdgeLabels(Set<Schema> originalSchemas) {
+        for (Schema foreignSchema : originalSchemas) {
+            for (String label : foreignSchema.outEdgeLabels.keySet()) {
+                EdgeLabel edgeLabel = foreignSchema.outEdgeLabels.get(label);
+                for (VertexLabel inVertexLabel : edgeLabel.inVertexLabels) {
+                    //Is the inVertexLabel in the current schema being imported or in an already imported schema
+                    if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(inVertexLabel.getLabel()).isPresent())) {
+                        throw new IllegalStateException(String.format("EdgeLabel '%s' has a inVertexLabel '%s' that is not present in a foreign schema", label, inVertexLabel.getLabel()));
+                    }
+                }
+                for (VertexLabel outVertexLabel : edgeLabel.outVertexLabels) {
+                    //Is the outVertexLabel in the current schema being imported or in an already imported schema
+                    if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(outVertexLabel.getLabel()).isPresent())) {
+                        throw new IllegalStateException(String.format("EdgeLabel '%s' has a outVertexLabel '%s' that is not present in a foreign schema", label, outVertexLabel.getLabel()));
+                    }
+                }
+            }
+        }
+    }
+
+    Pair<Set<Pair<String, String>>, Set<Pair<String, String>>> clearForeignAbstractLabels() {
+        Pair<Set<Pair<String, String>>, Set<Pair<String, String>>> result = Pair.of(new HashSet<>(), new HashSet<>());
+        Set<String> toRemoveEdges = new HashSet<>();
+        for (Map.Entry<String, EdgeLabel> edgeLabelEntry : this.getEdgeLabels().entrySet()) {
+            String key = edgeLabelEntry.getKey();
+            EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+            if (edgeLabel.isForeign()) {
+                result.getRight().add(Pair.of(key, edgeLabel.getLabel()));
+                toRemoveEdges.add(key);
+            }
+        }
+        for (String toRemoveEdge : toRemoveEdges) {
+            this.outEdgeLabels.remove(toRemoveEdge);
+        }
+        Set<String> toRemoveVertices = new HashSet<>();
+        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.getVertexLabels().entrySet()) {
+            String key = vertexLabelEntry.getKey();
+            VertexLabel vertexLabel = vertexLabelEntry.getValue();
+            if (vertexLabel.isForeign()) {
+                result.getLeft().add(Pair.of(key, vertexLabel.getLabel()));
+                toRemoveVertices.add(key);
+            }
+        }
+        for (String toRemoveVertex : toRemoveVertices) {
+            this.vertexLabels.remove(toRemoveVertex);
+        }
+        return result;
+    }
+
 }

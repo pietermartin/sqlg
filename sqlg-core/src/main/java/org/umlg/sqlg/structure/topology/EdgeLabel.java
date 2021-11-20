@@ -166,6 +166,12 @@ public class EdgeLabel extends AbstractLabel {
         this.topology = topology;
     }
 
+    private EdgeLabel(Topology topology, String edgeLabelName, boolean isForeignEdgeLabel) {
+        super(topology.getSqlgGraph(), edgeLabelName, isForeignEdgeLabel);
+        Preconditions.checkState(isForeignEdgeLabel);
+        this.topology = topology;
+    }
+
     @Override
     public Schema getSchema() {
         if (!this.outVertexLabels.isEmpty()) {
@@ -1262,5 +1268,30 @@ public class EdgeLabel extends AbstractLabel {
 
     public void ensureDistributed(int shardCount, PropertyColumn distributionPropertyColumn) {
         ensureDistributed(shardCount, distributionPropertyColumn, getOutVertexLabels().iterator().next());
+    }
+
+    EdgeLabel readOnlyCopy(Topology topology, Schema foreignSchema, Set<Schema> foreignSchemas) {
+        EdgeLabel copy = new EdgeLabel(topology, this.label, true);
+        for (VertexLabel outVertexLabel : this.outVertexLabels) {
+            Optional<VertexLabel> foreignOutVertexLabelOptional = foreignSchema.getVertexLabel(outVertexLabel.getLabel());
+            Preconditions.checkState(foreignOutVertexLabelOptional.isPresent());
+            VertexLabel foreignOutVertexLabel = foreignOutVertexLabelOptional.get();
+            copy.outVertexLabels.add(foreignOutVertexLabel);
+            foreignOutVertexLabel.outEdgeLabels.put(copy.getFullName(), copy);
+        }
+        for (VertexLabel inVertexLabel : this.inVertexLabels) {
+            Optional<VertexLabel> foreignInVertexLabelOptional = foreignSchemas.stream()
+                    .filter(s -> s.getVertexLabel(inVertexLabel.getLabel()).isPresent())
+                    .map(s -> s.getVertexLabel(inVertexLabel.getLabel()).orElseThrow())
+                    .findAny();
+            Preconditions.checkState(foreignInVertexLabelOptional.isPresent());
+            VertexLabel foreignInVertexLabel = foreignInVertexLabelOptional.get();
+            copy.inVertexLabels.add(foreignInVertexLabel);
+            foreignInVertexLabel.inEdgeLabels.put(copy.getFullName(), copy);
+        }
+        for (String property : this.properties.keySet()) {
+            copy.properties.put(property, this.properties.get(property).readOnlyCopy(copy));
+        }
+        return copy;
     }
 }

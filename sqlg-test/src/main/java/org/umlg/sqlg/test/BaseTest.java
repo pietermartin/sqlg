@@ -116,7 +116,7 @@ public abstract class BaseTest {
         logger.info("Startup time for test = " + stopWatch);
     }
 
-    private void grantReadOnlyUserPrivileges() {
+    protected void grantReadOnlyUserPrivileges() {
         this.sqlgGraph.getSqlDialect().grantReadOnlyUserPrivilegesToSqlgSchemas(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
     }
