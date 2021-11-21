@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
@@ -19,6 +20,7 @@ public class TestTopologyRename extends BaseTest {
 
     @Test
     public void testPropertyRename() {
+        Assume.assumeTrue(!isMariaDb() && !isMysql());
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
                     put("column1", PropertyType.STRING);
@@ -56,6 +58,7 @@ public class TestTopologyRename extends BaseTest {
 
     @Test
     public void testRenameIdentifier() {
+        Assume.assumeTrue(!isMariaDb() && !isMysql());
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
                     put("column1", PropertyType.STRING);
