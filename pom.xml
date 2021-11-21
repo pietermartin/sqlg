@@ -202,6 +202,7 @@
         <module>sqlg-mssqlserver-parent</module>
         <module>sqlg-doc</module>
         <module>sqlg-ui</module>
+        <module>sqlg-gremlin-server</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -232,7 +233,16 @@
                 <artifactId>gremlin-groovy-test</artifactId>
                 <version>${tinkerpop.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-server</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.tinkerpop</groupId>
+                <artifactId>gremlin-driver</artifactId>
+                <version>${tinkerpop.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-core</artifactId>

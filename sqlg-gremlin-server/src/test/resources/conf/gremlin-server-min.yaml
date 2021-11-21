@@ -1,0 +1,12 @@
+host: localhost
+port: 8182
+graphs: {
+  graph: src/test/resources/conf/sqlg.properties}
+scriptEngines: {
+  gremlin-groovy: {
+    plugins: { org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
+               org.umlg.sqlg.groovy.plugin.SqlgPostgresGremlinPlugin: {},
+               org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: {files: [src/test/resources/conf/gremlin-server-sqlg-postgres.groovy]} } } }
+serializers:
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphBinaryMessageSerializerV1, config: { ioRegistries: [org.umlg.sqlg.structure.SqlgIoRegistryV3] } }        # application/vnd.graphbinary-v1.0
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV3d0, config: { ioRegistries: [org.umlg.sqlg.structure.SqlgIoRegistryV3] } }        # application/json
