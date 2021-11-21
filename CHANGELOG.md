@@ -3,6 +3,8 @@
 *Implemented [#428](https://github.com/pietermartin/sqlg/issues/428). 
 Added ability to import foreign schemas and to import tables into an existing schema.
 Both import must be consistent, i.e. can not reference elements that are not being imported.
+
+* Removed deprecated `RecordId.getId()`
  
 ##2.1.5
 
