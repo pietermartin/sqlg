@@ -188,15 +188,6 @@ public class RecordId implements KryoSerializable, Comparable {
         return this.id;
     }
 
-    /**
-     * @deprecated Replaced with {@link RecordId#getID()}
-     */
-    @Deprecated
-    public Long getId() {
-        Preconditions.checkState(this.id.hasSequenceId(), "getId() can not be called for user supplied primary keys! Use getID() instead.");
-        return this.id.sequenceId;
-    }
-
     public List<Comparable> getIdentifiers() {
         return this.id.identifiers;
     }
