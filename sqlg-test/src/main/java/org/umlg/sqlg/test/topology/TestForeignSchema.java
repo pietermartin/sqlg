@@ -134,6 +134,7 @@ public class TestForeignSchema extends BaseTest {
             this.sqlgGraph.tx().commit();
         } catch (Exception e) {
             //swallow
+            LOGGER.error("Failed to create 'sqlgraph_fwd_server'", e);
         } finally {
             this.sqlgGraph.tx().rollback();
         }
