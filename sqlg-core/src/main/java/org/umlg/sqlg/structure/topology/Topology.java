@@ -550,7 +550,7 @@ public class Topology {
                 schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
                 this.uncommittedRemovedSchemas.remove(schemaName);
                 this.uncommittedSchemas.put(schemaName, schema);
-                fire(schema, "", TopologyChangeAction.CREATE);
+                fire(schema, null, TopologyChangeAction.CREATE);
                 return schema;
             } else {
                 return schemaOptional.get();
@@ -575,7 +575,7 @@ public class Topology {
 
         Set<Schema> foreignSchemas = new HashSet<>();
         for (Schema originalSchema : originalSchemas) {
-            Schema copy = originalSchema.readOnlyCopyVertexLabels(getSqlgGraph(), this, originalSchemas);
+            Schema copy = originalSchema.readOnlyCopyVertexLabels(getSqlgGraph(), this);
             Preconditions.checkState(!this.schemas.containsKey(copy.getName()), "Schema with name '%s' exists.", copy.getName());
             foreignSchemas.add(copy);
             this.schemas.put(copy.getName(), copy);
@@ -1213,7 +1213,7 @@ public class Topology {
                         //add to map
                         schema = Schema.instantiateSchema(this, schemaName);
                         this.schemas.put(schemaName, schema);
-                        fire(schema, "", TopologyChangeAction.CREATE);
+                        fire(schema, null, TopologyChangeAction.CREATE);
                     }
                 }
                 for (JsonNode jsonSchema : schemas) {
@@ -1243,7 +1243,7 @@ public class Topology {
                 String name = jsonSchema.asText();
                 Schema s = removeSchemaFromCaches(name);
                 if (s != null) {
-                    fire(s, "", TopologyChangeAction.DELETE);
+                    fire(s, s, TopologyChangeAction.DELETE);
                 }
             }
         }
@@ -1644,7 +1644,7 @@ public class Topology {
         this.topologyListeners.add(topologyListener);
     }
 
-    void fire(TopologyInf topologyInf, String oldValue, TopologyChangeAction action) {
+    void fire(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action) {
         for (TopologyListener topologyListener : this.topologyListeners) {
             topologyListener.change(topologyInf, oldValue, action);
         }
@@ -1685,7 +1685,7 @@ public class Topology {
             if (!preserveData) {
                 schema.delete();
             }
-            fire(schema, "", TopologyChangeAction.DELETE);
+            fire(schema, schema, TopologyChangeAction.DELETE);
         }
     }
 

@@ -6,5 +6,5 @@ package org.umlg.sqlg.structure;
  */
 public interface TopologyListener {
 
-    void change(TopologyInf topologyInf, String oldValue, TopologyChangeAction action);
+    void change(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action);
 }

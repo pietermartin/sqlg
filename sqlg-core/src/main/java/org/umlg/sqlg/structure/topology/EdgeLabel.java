@@ -204,7 +204,7 @@ public class EdgeLabel extends AbstractLabel {
                         PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
-                        this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
+                        this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
                     }
                 }
             }
@@ -782,8 +782,7 @@ public class EdgeLabel extends AbstractLabel {
                 //TODO investigate user supplied id foreignKeys
                 SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
                 addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), vertexLabel, direction, foreignKey);
-                SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
-                this.getSchema().getTopology().fire(this, vertexSchemaTable.toString(), TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE);
+                this.getSchema().getTopology().fire(this, vertexLabel, TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE);
             }
         }
     }
@@ -1181,7 +1180,7 @@ public class EdgeLabel extends AbstractLabel {
             if (!preserveData) {
                 removeColumn(this.getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName());
             }
-            this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
+            this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE);
         }
     }
 

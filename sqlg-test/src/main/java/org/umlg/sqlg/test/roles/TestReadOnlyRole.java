@@ -117,7 +117,7 @@ public class TestReadOnlyRole extends BaseTest {
         }
 
         @Override
-        public void change(TopologyInf topologyInf, String oldValue, TopologyChangeAction action) {
+        public void change(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action) {
             switch (action) {
                 case CREATE:
                     if (topologyInf instanceof VertexLabel) {

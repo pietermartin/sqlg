@@ -270,7 +270,7 @@ public class Schema implements TopologyInf {
                 edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
-                this.getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
+                this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
                 edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
@@ -313,7 +313,7 @@ public class Schema implements TopologyInf {
                 edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
-                this.getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
+                this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
                 edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
@@ -436,7 +436,7 @@ public class Schema implements TopologyInf {
                         isForeignKeyPartition);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
-                this.getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
+                this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
                 edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
@@ -554,7 +554,7 @@ public class Schema implements TopologyInf {
         this.uncommittedRemovedVertexLabels.remove(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         VertexLabel vertexLabel = VertexLabel.createVertexLabel(this.sqlgGraph, this, vertexLabelName, columns, identifiers);
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
-        this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
+        this.getTopology().fire(vertexLabel, null, TopologyChangeAction.CREATE);
         return vertexLabel;
     }
 
@@ -585,7 +585,7 @@ public class Schema implements TopologyInf {
                 addPrimaryKeyConstraint
         );
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
-        this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
+        this.getTopology().fire(vertexLabel, null, TopologyChangeAction.CREATE);
         return vertexLabel;
     }
 
@@ -1128,7 +1128,7 @@ public class Schema implements TopologyInf {
                         //Check if the property is an identifier (primary key)
                         if (edgeIdentifierEdge != null && edgeIdentifierEdge.label().equals("edge_identifier")) {
                             edgeLabel.addIdentifier(edgePropertyPartitionVertex.value(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME), edgeIdentifierEdge.value(Topology.SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE));
-                        } else if (edgeIdentifierEdge.label().equals(SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE)) {
+                        } else if (edgeIdentifierEdge != null && edgeIdentifierEdge.label().equals(SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE)) {
                             edgeLabel.addDistributionProperty(edgePropertyPartitionVertex);
                         }
                     } else if (edgeIdentifierEdge != null && edgeIdentifierEdge.label().equals("edge_colocate")) {
@@ -1159,9 +1159,6 @@ public class Schema implements TopologyInf {
 
     /**
      * load indices for all vertices in schema
-     *
-     * @param traversalSource
-     * @param schemaVertex
      */
     void loadVertexIndices(GraphTraversalSource traversalSource, Vertex schemaVertex) {
         List<Path> indices = traversalSource
@@ -1298,9 +1295,6 @@ public class Schema implements TopologyInf {
 
     /**
      * load indices for (out) edges on all vertices of schema
-     *
-     * @param traversalSource
-     * @param schemaVertex
      */
     void loadEdgeIndices(GraphTraversalSource traversalSource, Vertex schemaVertex) {
         List<Path> indices = traversalSource
@@ -1473,7 +1467,7 @@ public class Schema implements TopologyInf {
                             vertexLabel = new VertexLabel(this, vertexLabelName, partitionType, partitionExpression);
                         }
                         this.vertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
-                        this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
+                        this.getTopology().fire(vertexLabel, null, TopologyChangeAction.CREATE);
                     }
                     //The order of the next two statements matter.
                     //fromNotifyJsonOutEdge needs to happen first to ensure the properties are on the VertexLabel
@@ -1497,7 +1491,7 @@ public class Schema implements TopologyInf {
                     for (EdgeRole er : lbl.getInEdgeRoles().values()) {
                         er.getEdgeLabel().inVertexLabels.remove(lbl);
                     }
-                    this.getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
+                    this.getTopology().fire(lbl, lbl, TopologyChangeAction.DELETE);
 
                 }
             }
@@ -1520,7 +1514,7 @@ public class Schema implements TopologyInf {
                             lbl.inEdgeLabels.remove(edgeLabel.getFullName());
                         }
                     }
-                    this.getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
+                    this.getTopology().fire(edgeLabel, edgeLabel, TopologyChangeAction.DELETE);
                 }
             }
         }
@@ -1568,25 +1562,6 @@ public class Schema implements TopologyInf {
         //only equals on the name of the schema. it is assumed that the VertexLabels (tables) are the same.
         Schema other = (Schema) o;
         return this.name.equals(other.name);
-    }
-
-    boolean deepEquals(Schema other) {
-        Preconditions.checkState(this.name.equals(other.name), "deepEquals is called after the regular equals. i.e. the names must be equals");
-        if (!(this.vertexLabels.equals(other.getVertexLabels()))) {
-            return false;
-        } else {
-            if (!this.vertexLabels.equals(other.getVertexLabels())) {
-                return false;
-            }
-            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
-                VertexLabel vertexLabel = vertexLabelEntry.getValue();
-                VertexLabel otherVertexLabel = other.getVertexLabels().get(vertexLabelEntry.getKey());
-                if (!vertexLabel.deepEquals(otherVertexLabel)) {
-                    return false;
-                }
-            }
-            return true;
-        }
     }
 
     @Override
@@ -1662,7 +1637,7 @@ public class Schema implements TopologyInf {
             if (!preserveData) {
                 edgeLabel.delete();
             }
-            getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
+            getTopology().fire(edgeLabel, edgeLabel, TopologyChangeAction.DELETE);
         }
     }
 
@@ -1687,7 +1662,7 @@ public class Schema implements TopologyInf {
             if (!preserveData) {
                 vertexLabel.delete();
             }
-            getTopology().fire(vertexLabel, "", TopologyChangeAction.DELETE);
+            getTopology().fire(vertexLabel, vertexLabel, TopologyChangeAction.DELETE);
         }
 
     }
@@ -1712,7 +1687,7 @@ public class Schema implements TopologyInf {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
-            logger.error("schema deletion failed " + this.sqlgGraph.toString(), e);
+            logger.error("schema deletion failed " + this.sqlgGraph, e);
             throw new RuntimeException(e);
         }
     }
@@ -1777,7 +1752,7 @@ public class Schema implements TopologyInf {
         return this.threadLocalTemporaryTables.get().get(tableName);
     }
 
-    Schema readOnlyCopyVertexLabels(SqlgGraph sqlgGraph, Topology topology, Set<Schema> originalSchemas) {
+    Schema readOnlyCopyVertexLabels(SqlgGraph sqlgGraph, Topology topology) {
         Preconditions.checkState(!getTopology().isSchemaChanged(), "To make a schema copy the topology must not have any pending changes!");
         Schema foreignSchema = new Schema(sqlgGraph, topology, this.name, true);
         for (String label : this.vertexLabels.keySet()) {

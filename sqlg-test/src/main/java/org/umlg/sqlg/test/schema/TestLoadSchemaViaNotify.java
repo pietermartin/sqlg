@@ -360,7 +360,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
     @Test
     public void testDistributedTopologyListener() throws Exception {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
+            List<Triple<TopologyInf, TopologyInf, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
             TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
             sqlgGraph1.getTopology().registerListener(topologyListenerTest);
@@ -386,18 +386,18 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Assert.assertEquals(5, topologyListenerTriple.size());
 
             Assert.assertEquals(schema, topologyListenerTriple.get(0).getLeft());
-            Assert.assertEquals("", topologyListenerTriple.get(0).getMiddle());
+            Assert.assertNull(topologyListenerTriple.get(0).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(0).getRight());
 
             Assert.assertEquals(aVertexLabel, topologyListenerTriple.get(1).getLeft());
-            Assert.assertEquals("", topologyListenerTriple.get(1).getMiddle());
+            Assert.assertNull(topologyListenerTriple.get(1).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(1).getRight());
             Map<String, PropertyColumn> props = ((VertexLabel) topologyListenerTriple.get(1).getLeft()).getProperties();
             Assert.assertTrue(props.containsKey("name"));
             Assert.assertTrue(props.containsKey("surname"));
 
             Assert.assertEquals(index, topologyListenerTriple.get(2).getLeft());
-            Assert.assertEquals("", topologyListenerTriple.get(2).getMiddle());
+            Assert.assertNull(topologyListenerTriple.get(2).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(2).getRight());
 
             Assert.assertEquals(edgeLabel, topologyListenerTriple.get(3).getLeft());
@@ -405,11 +405,11 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Assert.assertTrue(s.contains(edgeLabel.getSchema().getName()));
             props = ((EdgeLabel) topologyListenerTriple.get(3).getLeft()).getProperties();
             Assert.assertTrue(props.containsKey("special"));
-            Assert.assertEquals("", topologyListenerTriple.get(3).getMiddle());
+            Assert.assertNull(topologyListenerTriple.get(3).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());
 
             Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());
-            Assert.assertEquals("", topologyListenerTriple.get(4).getMiddle());
+            Assert.assertNull(topologyListenerTriple.get(4).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
         }
     }

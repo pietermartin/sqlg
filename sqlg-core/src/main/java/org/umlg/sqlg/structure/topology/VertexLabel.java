@@ -448,7 +448,7 @@ public class VertexLabel extends AbstractLabel {
                         PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
-                        this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
+                        this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
                     }
                 }
             }
@@ -895,7 +895,7 @@ public class VertexLabel extends AbstractLabel {
                     );
                     // fire only applies to top level, fire for new edges
                     if (edgeLabelOptional.isEmpty()) {
-                        this.getSchema().getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
+                        this.getSchema().getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                     }
                 }
             }
@@ -927,10 +927,11 @@ public class VertexLabel extends AbstractLabel {
 
                     switch (ert) {
                         case EDGE_LABEL:
-                            this.getSchema().getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
+                            this.getSchema().getTopology().fire(lbl, lbl, TopologyChangeAction.DELETE);
                             break;
                         case EDGE_ROLE:
-                            this.getSchema().getTopology().fire(new EdgeRole(this, lbl, Direction.OUT, true), "", TopologyChangeAction.DELETE);
+                            EdgeRole topologyInf = new EdgeRole(this, lbl, Direction.OUT, true);
+                            this.getSchema().getTopology().fire(topologyInf, topologyInf, TopologyChangeAction.DELETE);
                             break;
                         default:
                             break;
@@ -1005,10 +1006,11 @@ public class VertexLabel extends AbstractLabel {
 
                     switch (ert) {
                         case EDGE_LABEL:
-                            this.getSchema().getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
+                            this.getSchema().getTopology().fire(lbl, lbl, TopologyChangeAction.DELETE);
                             break;
                         case EDGE_ROLE:
-                            this.getSchema().getTopology().fire(new EdgeRole(this, lbl, Direction.IN, true), "", TopologyChangeAction.DELETE);
+                            EdgeRole topologyInf = new EdgeRole(this, lbl, Direction.IN, true);
+                            this.getSchema().getTopology().fire(topologyInf, topologyInf, TopologyChangeAction.DELETE);
                             break;
                     }
 
@@ -1105,7 +1107,7 @@ public class VertexLabel extends AbstractLabel {
             if (!preserveData) {
                 removeColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());
             }
-            this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
+            this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE);
         }
     }
 
@@ -1124,7 +1126,7 @@ public class VertexLabel extends AbstractLabel {
                 Preconditions.checkState(!this.renamedIdentifiers.contains(namePair), "BUG! renamedIdentifiers may not yet contain '%s'", oldName);
                 this.renamedIdentifiers.add(namePair);
             }
-            this.getSchema().getTopology().fire(propertyColumn, namePair.getLeft(), TopologyChangeAction.UPDATE);
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
         }
     }
 
@@ -1182,7 +1184,7 @@ public class VertexLabel extends AbstractLabel {
                     break;
             }
 
-            this.getSchema().getTopology().fire(er, "", TopologyChangeAction.DELETE);
+            this.getSchema().getTopology().fire(er, er, TopologyChangeAction.DELETE);
         }
     }
 
