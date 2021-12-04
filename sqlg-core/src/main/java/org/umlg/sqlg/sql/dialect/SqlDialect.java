@@ -515,6 +515,10 @@ public interface SqlDialect {
         return false;
     }
 
+    default boolean isH2() {
+        return false;
+    }
+
     default <T> T getGis(SqlgGraph sqlgGraph) {
         throw SqlgExceptions.gisNotSupportedException();
     }

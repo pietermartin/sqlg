@@ -702,6 +702,40 @@ public class EdgeLabel extends AbstractLabel {
         return result;
     }
 
+    Set<ForeignKey> getUncommittedRemovedEdgeForeignKeys() {
+        Set<ForeignKey> result = new HashSet<>();
+        if (this.topology.isSchemaChanged()) {
+            //noinspection Duplicates
+            for (VertexLabel vertexLabel : this.uncommittedRemovedInVertexLabels) {
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    result.add(ForeignKey.of(vertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
+                } else {
+                    ForeignKey foreignKey = new ForeignKey();
+                    for (String identifier : vertexLabel.getIdentifiers()) {
+                        if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                            foreignKey.add(vertexLabel.getFullName(), identifier, Topology.IN_VERTEX_COLUMN_END);
+                        }
+                    }
+                    result.add(foreignKey);
+                }
+            }
+            for (VertexLabel vertexLabel : this.uncommittedRemovedOutVertexLabels) {
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    result.add(ForeignKey.of(vertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
+                } else {
+                    ForeignKey foreignKey = new ForeignKey();
+                    for (String identifier : vertexLabel.getIdentifiers()) {
+                        if (!vertexLabel.isDistributed() || !vertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                            foreignKey.add(vertexLabel.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
+                        }
+                    }
+                    result.add(foreignKey);
+                }
+            }
+        }
+        return result;
+    }
+
     boolean isValid() {
         return this.outVertexLabels.size() > 0 || this.uncommittedOutVertexLabels.size() > 0;
     }
@@ -1245,8 +1279,15 @@ public class EdgeLabel extends AbstractLabel {
      * @param lbl          the vertex label
      * @param preserveData should we keep the sql data?
      */
-    void removeOutVertexLabel(VertexLabel lbl, boolean preserveData) {
+    void removeOutVertexLabel(VertexLabel lbl, boolean dropEdges, boolean preserveData) {
+        if (dropEdges) {
+            this.sqlgGraph.traversal().V().hasLabel(lbl.getSchema().getName() + "." + lbl.getLabel())
+                    .outE(getLabel())
+                    .drop()
+                    .iterate();
+        }
         this.uncommittedRemovedOutVertexLabels.add(lbl);
+        TopologyManager.removeOutEdgeRole(this.sqlgGraph, this, lbl);
         if (!preserveData) {
             deleteColumn(lbl.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
         }
@@ -1258,8 +1299,17 @@ public class EdgeLabel extends AbstractLabel {
      * @param lbl          the vertex label
      * @param preserveData should we keep the sql data?
      */
-    void removeInVertexLabel(VertexLabel lbl, boolean preserveData) {
+    void removeInVertexLabel(VertexLabel lbl, boolean dropEdges, boolean preserveData) {
+        //If this code executes via a VertexLabel.remove or Schema.remove there is no need to drop the edges and
+        // dropping the VertexLabel will already drop the edges.
+        if (dropEdges) {
+            this.sqlgGraph.traversal().V().hasLabel(lbl.getSchema().getName() + "." + lbl.getLabel())
+                    .inE(getLabel())
+                    .drop()
+                    .iterate();
+        }
         this.uncommittedRemovedInVertexLabels.add(lbl);
+        TopologyManager.removeInEdgeRole(this.sqlgGraph, this, lbl);
         if (!preserveData) {
             deleteColumn(lbl.getFullName() + Topology.IN_VERTEX_COLUMN_END);
         }

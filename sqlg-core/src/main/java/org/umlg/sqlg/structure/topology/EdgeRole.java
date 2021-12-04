@@ -86,7 +86,11 @@ public class EdgeRole implements TopologyInf {
 
     @Override
     public void remove(boolean preserveData) {
-        getVertexLabel().removeEdgeRole(this, preserveData);
+        getVertexLabel().removeEdgeRole(this, true, preserveData);
+    }
+
+    void removeViaVertexLabelRemove(boolean preserveData) {
+        getVertexLabel().removeEdgeRole(this, false, preserveData);
     }
 
     @Override

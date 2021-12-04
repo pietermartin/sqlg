@@ -10,8 +10,11 @@ import org.umlg.sqlg.test.topology.TestTopologyRename;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyRename.class,
-//        TestTopologyRenameDistributed.class,
+        TestTopologyDeleteEdgeRole.class,
+//        TestTopologyVertexLabelRenameDistributed.class,
+//        TestTopologyVertexLabelRename.class,
+//        TestTopologyPropertyColumnRename.class,
+//        TestTopologyPropertyColumnRenameDistributed.class,
 //        TestReadOnlyRole.class,
 //        TestLoadSchemaViaNotify.class,
 //        TestPartitionMultipleGraphs.class,

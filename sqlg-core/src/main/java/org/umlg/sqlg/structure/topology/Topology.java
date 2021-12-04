@@ -974,6 +974,16 @@ public class Topology {
                         foreignKeys.addAll(entry.getValue());
                     }
                 }
+                Map<String, Set<ForeignKey>> uncommittedRemovedEdgeForeignKeys = getUncommittedRemovedEdgeForeignKeys();
+                for (Map.Entry<String, Set<ForeignKey>> entry : uncommittedRemovedEdgeForeignKeys.entrySet()) {
+                    Set<ForeignKey> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
+                    if (foreignKeys != null) {
+                        foreignKeys.removeAll(entry.getValue());
+                        if (foreignKeys.isEmpty()) {
+                            this.edgeForeignKeyCache.remove(entry.getKey());
+                        }
+                    }
+                }
                 for (Schema schema : this.schemas.values()) {
                     schema.afterCommit();
                 }
@@ -1067,23 +1077,6 @@ public class Topology {
         this.schemaTableForeignKeyCache.putAll(loadTableLabels());
         //populate the edgeForeignKey cache
         this.edgeForeignKeyCache.putAll(loadAllEdgeForeignKeys());
-    }
-
-    //This is for backward compatibility.
-    public Map<String, Set<String>> getAllEdgeForeignKeys() {
-        Map<String, Set<String>> result = new HashMap<>();
-        Map<String, Set<ForeignKey>> allEdgeForeignKeys = getEdgeForeignKeys();
-        for (Map.Entry<String, Set<ForeignKey>> stringSetEntry : allEdgeForeignKeys.entrySet()) {
-
-            String key = stringSetEntry.getKey();
-            Set<ForeignKey> foreignKeys = stringSetEntry.getValue();
-            Set<String> foreignKeySet = new HashSet<>();
-            result.put(key, foreignKeySet);
-            for (ForeignKey foreignKey : foreignKeys) {
-                foreignKeySet.add(foreignKey.getCompositeKeys().get(0));
-            }
-        }
-        return result;
     }
 
     public void validateTopology() {
@@ -1360,6 +1353,20 @@ public class Topology {
         return result;
     }
 
+    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedRemovedSchemaTableForeignKeys() {
+        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedRemovedSchemaTableForeignKeys must have schemaChanged = true");
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedRemovedSchemaTableForeignKeys());
+        }
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedRemovedSchemaTableForeignKeys());
+        }
+        return result;
+    }
+
     private Map<String, Set<ForeignKey>> getUncommittedEdgeForeignKeys() {
         Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedEdgeForeignKeys must have schemaChanged = true");
         Map<String, Set<ForeignKey>> result = new HashMap<>();
@@ -1370,6 +1377,21 @@ public class Topology {
         for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedEdgeForeignKeys());
+        }
+        //TODO include removedSchemas
+        return result;
+    }
+
+    private Map<String, Set<ForeignKey>> getUncommittedRemovedEdgeForeignKeys() {
+        Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedRemovedEdgeForeignKeys must have schemaChanged = true");
+        Map<String, Set<ForeignKey>> result = new HashMap<>();
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedRemovedEdgeForeignKeys());
+        }
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedRemovedEdgeForeignKeys());
         }
         return result;
     }
@@ -1399,7 +1421,11 @@ public class Topology {
                 Map<String, Map<String, PropertyType>> result;
                 result = new HashMap<>();
                 for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
-                    result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
+                    String key = allTableCacheMapEntry.getKey();
+                    SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, key);
+                    if (!this.uncommittedRemovedSchemas.contains(schemaTable.getSchema())) {
+                        result.put(key, new HashMap<>(allTableCacheMapEntry.getValue()));
+                    }
                 }
                 Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
                 for (String table : uncommittedLabels.keySet()) {
@@ -1417,7 +1443,6 @@ public class Topology {
                     for (String removed : s.uncommittedRemovedEdgeLabels) {
                         result.remove(removed);
                     }
-
                 }
                 return Collections.unmodifiableMap(result);
 
@@ -1445,13 +1470,29 @@ public class Topology {
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
         if (isSchemaChanged()) {
             Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedRemovedSchemaTableForeignKeys = getUncommittedRemovedSchemaTableForeignKeys();
             for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : this.schemaTableForeignKeyCache.entrySet()) {
-                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = uncommittedSchemaTableForeignKeys.get(schemaTablePairEntry.getKey());
+                SchemaTable schemaTable = schemaTablePairEntry.getKey();
+                Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = schemaTablePairEntry.getValue();
+                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = uncommittedSchemaTableForeignKeys.get(schemaTable);
+                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedRemovedForeignKeys = uncommittedRemovedSchemaTableForeignKeys.get(schemaTable);
                 if (uncommittedForeignKeys != null) {
-                    uncommittedForeignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
-                    uncommittedForeignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
+                    Set<SchemaTable> leftForeignKeys = new HashSet<>(foreignKeys.getLeft());
+                    Set<SchemaTable> rightForeignKeys = new HashSet<>(foreignKeys.getRight());
+                    if (uncommittedRemovedForeignKeys != null) {
+                        leftForeignKeys.removeAll(uncommittedRemovedForeignKeys.getLeft());
+                        rightForeignKeys.removeAll(uncommittedRemovedForeignKeys.getRight());
+                    }
+                    uncommittedForeignKeys.getLeft().addAll(leftForeignKeys);
+                    uncommittedForeignKeys.getRight().addAll(rightForeignKeys);
                 } else {
-                    uncommittedSchemaTableForeignKeys.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+                    Set<SchemaTable> leftForeignKeys = new HashSet<>(foreignKeys.getLeft());
+                    Set<SchemaTable> rightForeignKeys = new HashSet<>(foreignKeys.getRight());
+                    if (uncommittedRemovedForeignKeys != null) {
+                        leftForeignKeys.removeAll(uncommittedRemovedForeignKeys.getLeft());
+                        rightForeignKeys.removeAll(uncommittedRemovedForeignKeys.getRight());
+                    }
+                    uncommittedSchemaTableForeignKeys.put(schemaTable, Pair.of(leftForeignKeys, rightForeignKeys));
                 }
             }
             return Collections.unmodifiableMap(uncommittedSchemaTableForeignKeys);
@@ -1481,22 +1522,30 @@ public class Topology {
     }
 
     public Map<String, Set<ForeignKey>> getEdgeForeignKeys() {
+        Map<String, Set<ForeignKey>> copy = new HashMap<>(this.edgeForeignKeyCache);
         if (isSchemaChanged()) {
-            Map<String, Set<ForeignKey>> committed = new HashMap<>(this.edgeForeignKeyCache);
             Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
             for (Map.Entry<String, Set<ForeignKey>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
-                Set<ForeignKey> committedForeignKeys = committed.get(uncommittedEntry.getKey());
+                Set<ForeignKey> committedForeignKeys = copy.get(uncommittedEntry.getKey());
                 if (committedForeignKeys != null) {
                     Set<ForeignKey> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
                     originalPlusUncommittedForeignKeys.addAll(uncommittedEntry.getValue());
-                    committed.put(uncommittedEntry.getKey(), originalPlusUncommittedForeignKeys);
+                    copy.put(uncommittedEntry.getKey(), originalPlusUncommittedForeignKeys);
                 } else {
-                    committed.put(uncommittedEntry.getKey(), uncommittedEntry.getValue());
+                    copy.put(uncommittedEntry.getKey(), uncommittedEntry.getValue());
                 }
             }
-            return Collections.unmodifiableMap(committed);
+            Map<String, Set<ForeignKey>> uncommittedRemovedEdgeForeignKeys = getUncommittedRemovedEdgeForeignKeys();
+            for (Map.Entry<String, Set<ForeignKey>> uncommittedRemovedEntry : uncommittedRemovedEdgeForeignKeys.entrySet()) {
+                Set<ForeignKey> removedForeignKeys = uncommittedRemovedEntry.getValue();
+                Set<ForeignKey> committedForeignKeys = copy.get(uncommittedRemovedEntry.getKey());
+                if (committedForeignKeys != null) {
+                    committedForeignKeys.removeAll(removedForeignKeys);
+                }
+            }
+            return Collections.unmodifiableMap(copy);
         } else {
-            return Collections.unmodifiableMap(this.edgeForeignKeyCache);
+            return Collections.unmodifiableMap(copy);
         }
     }
 
@@ -1664,7 +1713,7 @@ public class Topology {
             for (VertexLabel vlbl : schema.getVertexLabels().values()) {
                 for (EdgeRole er : vlbl.getInEdgeRoles().values()) {
                     if (er.getEdgeLabel().getSchema() != schema) {
-                        er.remove(preserveData);
+                        er.removeViaVertexLabelRemove(preserveData);
                     }
                 }
                 // remove out edge roles in other schemas edges
@@ -1672,7 +1721,7 @@ public class Topology {
                     if (er.getEdgeLabel().getSchema() == schema) {
                         for (EdgeRole erIn : er.getEdgeLabel().getInEdgeRoles()) {
                             if (erIn.getVertexLabel().getSchema() != schema) {
-                                erIn.remove(preserveData);
+                                erIn.removeViaVertexLabelRemove(preserveData);
                             }
                         }
 

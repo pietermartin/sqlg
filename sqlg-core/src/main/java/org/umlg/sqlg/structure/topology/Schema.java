@@ -785,6 +785,26 @@ public class Schema implements TopologyInf {
         return result;
     }
 
+    Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedRemovedSchemaTableForeignKeys() {
+        Preconditions.checkState(getTopology().isSchemaChanged(), "Schema.getUncommittedRemovedSchemaTableForeignKeys must have schemaChanged = true");
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
+            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
+            SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
+            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = vertexLabelEntry.getValue().getUncommittedRemovedSchemaTableForeignKeys();
+            if (!uncommittedSchemaTableForeignKeys.getLeft().isEmpty() || !uncommittedSchemaTableForeignKeys.getRight().isEmpty()) {
+                result.put(schemaTable, uncommittedSchemaTableForeignKeys);
+            }
+        }
+        for (Map.Entry<String, VertexLabel> uncommittedVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + uncommittedVertexLabelEntry.getValue().getLabel();
+            SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
+            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = uncommittedVertexLabelEntry.getValue().getUncommittedRemovedSchemaTableForeignKeys();
+            result.put(schemaTable, uncommittedSchemaTableForeignKeys);
+        }
+        return result;
+    }
+
     Map<String, Set<ForeignKey>> getUncommittedEdgeForeignKeys() {
         Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
@@ -792,6 +812,20 @@ public class Schema implements TopologyInf {
         }
         for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
             result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+        }
+        for (String e : this.uncommittedRemovedEdgeLabels) {
+            result.remove(e);
+        }
+        return result;
+    }
+
+    Map<String, Set<ForeignKey>> getUncommittedRemovedEdgeForeignKeys() {
+        Map<String, Set<ForeignKey>> result = new HashMap<>();
+        for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
+            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedRemovedEdgeForeignKeys());
+        }
+        for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
+            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedRemovedEdgeForeignKeys());
         }
         return result;
     }
@@ -1624,8 +1658,8 @@ public class Schema implements TopologyInf {
         getTopology().lock();
         String fn = this.name + "." + EDGE_PREFIX + edgeLabel.getName();
 
-        if (!uncommittedRemovedEdgeLabels.contains(fn)) {
-            uncommittedRemovedEdgeLabels.add(fn);
+        if (!this.uncommittedRemovedEdgeLabels.contains(fn)) {
+            this.uncommittedRemovedEdgeLabels.add(fn);
             TopologyManager.removeEdgeLabel(this.sqlgGraph, edgeLabel);
             for (VertexLabel lbl : edgeLabel.getOutVertexLabels()) {
                 lbl.removeOutEdge(edgeLabel);
@@ -1650,14 +1684,15 @@ public class Schema implements TopologyInf {
     void removeVertexLabel(VertexLabel vertexLabel, boolean preserveData) {
         getTopology().lock();
         String fn = this.name + "." + VERTEX_PREFIX + vertexLabel.getName();
-        if (!uncommittedRemovedVertexLabels.contains(fn)) {
-            uncommittedRemovedVertexLabels.add(fn);
+        if (!this.uncommittedRemovedVertexLabels.contains(fn)) {
+            this.sqlgGraph.traversal().V().hasLabel(this.name + "." + vertexLabel.getLabel()).drop().iterate();
+            this.uncommittedRemovedVertexLabels.add(fn);
             TopologyManager.removeVertexLabel(this.sqlgGraph, vertexLabel);
             for (EdgeRole er : vertexLabel.getOutEdgeRoles().values()) {
-                er.remove(preserveData);
+                er.removeViaVertexLabelRemove(preserveData);
             }
             for (EdgeRole er : vertexLabel.getInEdgeRoles().values()) {
-                er.remove(preserveData);
+                er.removeViaVertexLabelRemove(preserveData);
             }
             if (!preserveData) {
                 vertexLabel.delete();

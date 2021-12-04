@@ -36,7 +36,12 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsCascade() {
-        return false;
+        return true;
+    }
+
+    @Override
+    public boolean isH2() {
+        return true;
     }
 
     @Override

@@ -787,6 +787,41 @@ public class TopologyManager {
         }
     }
 
+    public static void removeOutEdgeRole(SqlgGraph sqlgGraph, EdgeLabel edgeLabel, VertexLabel vertexLabel) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            String schema = edgeLabel.getSchema().getName();
+            traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has(SQLG_SCHEMA_SCHEMA_NAME, vertexLabel.getSchema().getName())
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, vertexLabel.getLabel())
+                    .outE(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .drop()
+                    .iterate();
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static void removeInEdgeRole(SqlgGraph sqlgGraph, EdgeLabel edgeLabel, VertexLabel vertexLabel) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has(SQLG_SCHEMA_SCHEMA_NAME, vertexLabel.getSchema().getName())
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, vertexLabel.getLabel())
+                    .outE(SQLG_SCHEMA_IN_EDGES_EDGE)
+                    .drop()
+                    .iterate();
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
     public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
