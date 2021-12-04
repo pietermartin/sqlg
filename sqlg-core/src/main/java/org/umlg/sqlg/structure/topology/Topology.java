@@ -30,8 +30,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
  */
 public class Topology {
 
-//    private static final Logger LOGGER = LoggerFactory.getLogger(Topology.class);
-
     public static final String GRAPH = "graph";
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
@@ -539,6 +537,7 @@ public class Topology {
      * @param schemaName The schema to create if it does not exist.
      */
     public Schema ensureSchemaExist(final String schemaName) {
+        Objects.requireNonNull(schemaName, "schemaName can not be null!");
         Optional<Schema> schemaOptional = this.getSchema(schemaName);
         Schema schema;
         if (schemaOptional.isEmpty()) {
@@ -1252,19 +1251,6 @@ public class Topology {
         }
         Topology other = (Topology) o;
         return toJson().equals(other.toJson());
-//        if (this.schemas.equals(other.schemas)) {
-//            //check each schema individually as schema equals does not check the VertexLabels
-//            for (Map.Entry<String, Schema> schemaEntry : schemas.entrySet()) {
-//                Schema schema = schemaEntry.getValue();
-//                Optional<Schema> otherSchemaOptional = other.getSchema(schemaEntry.getKey());
-//                if (otherSchemaOptional.isPresent() && !schema.deepEquals(otherSchemaOptional.get())) {
-//                    return false;
-//                }
-//            }
-//            return true;
-//        } else {
-//            return false;
-//        }
     }
 
     /////////////////////////////////getters and cache/////////////////////////////

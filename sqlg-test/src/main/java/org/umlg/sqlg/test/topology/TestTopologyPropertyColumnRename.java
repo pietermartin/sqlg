@@ -1,7 +1,9 @@
 package org.umlg.sqlg.test.topology;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -19,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
-public class TestTopologyRename extends BaseTest {
+public class TestTopologyPropertyColumnRename extends BaseTest {
 
     private final List<Triple<TopologyInf, TopologyInf, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
@@ -74,56 +76,56 @@ public class TestTopologyRename extends BaseTest {
         }
     }
 
-//    @Test
-//    public void testRenameIdentifier() {
-//        Assume.assumeTrue(!isMariaDb() && !isMysql());
-//        this.sqlgGraph.getTopology().getPublicSchema()
-//                .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
-//                    put("column1", PropertyType.STRING);
-//                    put("column2", PropertyType.STRING);
-//                }}, ListOrderedSet.listOrderedSet(List.of("column1")));
-//        this.sqlgGraph.tx().commit();
-//        Optional<VertexLabel> aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
-//        Preconditions.checkState(aVertexLabelOptional.isPresent());
-//        VertexLabel aVertexLabel = aVertexLabelOptional.get();
-//        Optional<PropertyColumn> column1Optional = aVertexLabel.getProperty("column1");
-//        Preconditions.checkState(column1Optional.isPresent());
-//        ListOrderedSet<String> identifiers = aVertexLabel.getIdentifiers();
-//        Assert.assertEquals(1, identifiers.size());
-//        Assert.assertEquals("column1", identifiers.get(0));
-//        PropertyColumn column1 = column1Optional.get();
-//        column1.rename("column1PK");
-//        this.sqlgGraph.tx().commit();
-//
-//        List<Vertex> identifierProperties = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
-//                .out(Topology.SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE)
-//                .toList();
-//        Assert.assertEquals(1, identifierProperties.size());
-//        Assert.assertEquals("column1PK", identifierProperties.get(0).value(Topology.SQLG_SCHEMA_PROPERTY_NAME));
-//
-//        aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
-//        Preconditions.checkState(aVertexLabelOptional.isPresent());
-//        aVertexLabel = aVertexLabelOptional.get();
-//        column1Optional = aVertexLabel.getProperty("column1PK");
-//        Preconditions.checkState(column1Optional.isPresent());
-//        column1 = column1Optional.get();
-//        identifiers = aVertexLabel.getIdentifiers();
-//        Assert.assertEquals(1, identifiers.size());
-//        Assert.assertEquals("column1PK", identifiers.get(0));
-//
-//        column1.rename("_column1PK");
-//        this.sqlgGraph.tx().rollback();
-//
-//        if (isPostgres() || isMsSqlServer()) {
-//            aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
-//            Preconditions.checkState(aVertexLabelOptional.isPresent());
-//            aVertexLabel = aVertexLabelOptional.get();
-//            column1Optional = aVertexLabel.getProperty("column1PK");
-//            Preconditions.checkState(column1Optional.isPresent());
-//            identifiers = aVertexLabel.getIdentifiers();
-//            Assert.assertEquals(1, identifiers.size());
-//            Assert.assertEquals("column1PK", identifiers.get(0));
-//        }
-//    }
+    @Test
+    public void testRenameIdentifier() {
+        Assume.assumeTrue(!isMariaDb() && !isMysql());
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
+                    put("column1", PropertyType.STRING);
+                    put("column2", PropertyType.STRING);
+                }}, ListOrderedSet.listOrderedSet(List.of("column1")));
+        this.sqlgGraph.tx().commit();
+        Optional<VertexLabel> aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
+        Preconditions.checkState(aVertexLabelOptional.isPresent());
+        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+        Optional<PropertyColumn> column1Optional = aVertexLabel.getProperty("column1");
+        Preconditions.checkState(column1Optional.isPresent());
+        ListOrderedSet<String> identifiers = aVertexLabel.getIdentifiers();
+        Assert.assertEquals(1, identifiers.size());
+        Assert.assertEquals("column1", identifiers.get(0));
+        PropertyColumn column1 = column1Optional.get();
+        column1.rename("column1PK");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> identifierProperties = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+                .out(Topology.SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE)
+                .toList();
+        Assert.assertEquals(1, identifierProperties.size());
+        Assert.assertEquals("column1PK", identifierProperties.get(0).value(Topology.SQLG_SCHEMA_PROPERTY_NAME));
+
+        aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
+        Preconditions.checkState(aVertexLabelOptional.isPresent());
+        aVertexLabel = aVertexLabelOptional.get();
+        column1Optional = aVertexLabel.getProperty("column1PK");
+        Preconditions.checkState(column1Optional.isPresent());
+        column1 = column1Optional.get();
+        identifiers = aVertexLabel.getIdentifiers();
+        Assert.assertEquals(1, identifiers.size());
+        Assert.assertEquals("column1PK", identifiers.get(0));
+
+        column1.rename("_column1PK");
+        this.sqlgGraph.tx().rollback();
+
+        if (isPostgres() || isMsSqlServer()) {
+            aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
+            Preconditions.checkState(aVertexLabelOptional.isPresent());
+            aVertexLabel = aVertexLabelOptional.get();
+            column1Optional = aVertexLabel.getProperty("column1PK");
+            Preconditions.checkState(column1Optional.isPresent());
+            identifiers = aVertexLabel.getIdentifiers();
+            Assert.assertEquals(1, identifiers.size());
+            Assert.assertEquals("column1PK", identifiers.get(0));
+        }
+    }
 
 }

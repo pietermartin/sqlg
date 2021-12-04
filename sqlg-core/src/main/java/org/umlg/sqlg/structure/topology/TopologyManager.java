@@ -211,6 +211,24 @@ public class TopologyManager {
         }
     }
 
+    public static void renameVertexLabel(SqlgGraph sqlgGraph, String schema, String oldVertexLabel, String newVertexLabel) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(oldVertexLabel.startsWith(VERTEX_PREFIX), "prefixedTable must be for a vertex. prefixedTable = " + oldVertexLabel);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> vertexLabelsToRename = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has(SQLG_SCHEMA_SCHEMA_NAME, schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, oldVertexLabel.substring(VERTEX_PREFIX.length()))
+                    .toList();
+            Preconditions.checkState(vertexLabelsToRename.size() == 1, String.format("Expected exactly one VertexLabel in %s.%s. Found %d", schema, oldVertexLabel, vertexLabelsToRename.size()));
+            vertexLabelsToRename.get(0).property(SQLG_SCHEMA_VERTEX_LABEL_NAME, newVertexLabel.substring(VERTEX_PREFIX.length()));
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
     public static void removeVertexLabel(SqlgGraph sqlgGraph, VertexLabel vertexLabel) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -1007,7 +1025,6 @@ public class TopologyManager {
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
-
     }
 
     public static void removeEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column) {

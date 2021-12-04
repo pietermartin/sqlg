@@ -524,7 +524,7 @@ public class SchemaTableTree {
     }
 
     private void setIdentifiersAndDistributionColumn() {
-        Supplier<IllegalStateException> illegalStateExceptionSupplier = () -> new IllegalStateException(String.format("Label %s must ne present.", this.schemaTable.toString()));
+        Supplier<IllegalStateException> illegalStateExceptionSupplier = () -> new IllegalStateException(String.format("Label '%s' must be present.", this.schemaTable.toString()));
         if (this.schemaTable.isVertexTable()) {
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getVertexLabel(
                     this.schemaTable.withOutPrefix().getSchema(),

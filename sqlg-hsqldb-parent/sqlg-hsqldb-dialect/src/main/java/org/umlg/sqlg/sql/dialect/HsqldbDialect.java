@@ -211,6 +211,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
+    public boolean supportsIfExists() {
+        return false;
+    }
+
+    @Override
     public void validateProperty(Object key, Object value) {
         if (value instanceof String) {
             return;

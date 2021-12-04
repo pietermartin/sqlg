@@ -75,6 +75,15 @@ public class VertexLabel extends AbstractLabel {
         return vertexLabel;
     }
 
+    static VertexLabel renameVertexLabel(SqlgGraph sqlgGraph, Schema schema, String oldLabel, String newLabel, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+        Preconditions.checkArgument(!schema.isSqlgSchema(), "renameVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
+        VertexLabel vertexLabel = new VertexLabel(schema, newLabel, columns, identifiers);
+        vertexLabel.renameVertexLabelOnDb(oldLabel, newLabel);
+        TopologyManager.renameVertexLabel(sqlgGraph, schema.getName(), VERTEX_PREFIX + oldLabel, VERTEX_PREFIX + newLabel);
+        vertexLabel.committed = false;
+        return vertexLabel;
+    }
+
     static VertexLabel createPartitionedVertexLabel(
             SqlgGraph sqlgGraph,
             Schema schema,
@@ -240,7 +249,7 @@ public class VertexLabel extends AbstractLabel {
                     result.put(outEdgeLabel.getLabel(), outEdgeLabel);
                 }
             }
-            return result;
+            return Collections.unmodifiableMap(result);
         } else {
             return Collections.emptyMap();
         }
@@ -492,6 +501,27 @@ public class VertexLabel extends AbstractLabel {
             sql.append(")");
         }
         sql.append(")");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void renameVertexLabelOnDb(String oldLabel, String newLabel) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
+        sql.append(".");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + oldLabel));
+        sql.append(" RENAME TO ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + newLabel));
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
@@ -1082,10 +1112,18 @@ public class VertexLabel extends AbstractLabel {
     Pair<Set<SchemaTable>, Set<SchemaTable>> getUncommittedSchemaTableForeignKeys() {
         Pair<Set<SchemaTable>, Set<SchemaTable>> result = Pair.of(new HashSet<>(), new HashSet<>());
         for (Map.Entry<String, EdgeLabel> uncommittedEdgeLabelEntry : this.uncommittedOutEdgeLabels.entrySet()) {
-            result.getRight().add(SchemaTable.of(this.getSchema().getName(), EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
+            String key = uncommittedEdgeLabelEntry.getKey();
+            EdgeLabel edgeLabel = uncommittedEdgeLabelEntry.getValue();
+            if (!this.uncommittedRemovedOutEdgeLabels.containsKey(key)) {
+                result.getRight().add(SchemaTable.of(this.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
+            }
         }
         for (Map.Entry<String, EdgeLabel> uncommittedEdgeLabelEntry : this.uncommittedInEdgeLabels.entrySet()) {
-            result.getLeft().add(SchemaTable.of(uncommittedEdgeLabelEntry.getValue().getSchema().getName(), EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
+            String key = uncommittedEdgeLabelEntry.getKey();
+            EdgeLabel edgeLabel = uncommittedEdgeLabelEntry.getValue();
+            if (!this.uncommittedRemovedInEdgeLabels.containsKey(key)) {
+                result.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
+            }
         }
         return result;
     }
@@ -1245,5 +1283,24 @@ public class VertexLabel extends AbstractLabel {
             copy.properties.put(property, this.properties.get(property).readOnlyCopy(copy));
         }
         return copy;
+    }
+
+    @Override
+    public void rename(String label) {
+        Objects.requireNonNull(label, "Given label must not be null");
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with \"%s\"", VERTEX_PREFIX);
+        Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign table!", label);
+        this.getSchema().getTopology().lock();
+        VertexLabel renamedVertexLabel = this.getSchema().renameVertexLabel(this, label);
+        Map<String, EdgeLabel> outEdgeLabels = getOutEdgeLabels();
+        for (String outEdgeLabel : outEdgeLabels.keySet()) {
+            EdgeLabel edgeLabel = outEdgeLabels.get(outEdgeLabel);
+            edgeLabel.renameOutVertexLabel(renamedVertexLabel, this);
+        }
+        Map<String, EdgeLabel> inEdgeLabels = getInEdgeLabels();
+        for (String inEdgeLabel : inEdgeLabels.keySet()) {
+            EdgeLabel edgeLabel = inEdgeLabels.get(inEdgeLabel);
+            edgeLabel.renameInVertexLabel(renamedVertexLabel, this);
+        }
     }
 }

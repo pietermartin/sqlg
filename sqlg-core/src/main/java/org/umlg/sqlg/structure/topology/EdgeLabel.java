@@ -218,10 +218,6 @@ public class EdgeLabel extends AbstractLabel {
             ListOrderedSet<String> identifiers,
             boolean isForeignKeyPartition) {
 
-//        if (!this.partitionType.isNone() && identifiers.isEmpty()) {
-//            throw new IllegalStateException("Partitioned table must have identifiers.");
-//        }
-
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
 
@@ -1139,46 +1135,18 @@ public class EdgeLabel extends AbstractLabel {
 
         if (this.topology.isSchemaChanged() && !this.uncommittedOutVertexLabels.isEmpty()) {
             foundSomething = true;
-            ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
-                ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
-                outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
-                outVertexLabelArrayNode.add(outVertexLabelObjectNode);
-            }
-            edgeLabelNode.set("uncommittedOutVertexLabels", outVertexLabelArrayNode);
         }
 
         if (this.topology.isSchemaChanged() && !this.uncommittedRemovedOutVertexLabels.isEmpty()) {
             foundSomething = true;
-            ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel outVertexLabel : this.uncommittedRemovedOutVertexLabels) {
-                ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
-                outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
-                outVertexLabelArrayNode.add(outVertexLabelObjectNode);
-            }
-            edgeLabelNode.set("uncommittedRemovedOutVertexLabels", outVertexLabelArrayNode);
         }
 
         if (this.topology.isSchemaChanged() && !this.uncommittedInVertexLabels.isEmpty()) {
             foundSomething = true;
-            ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {
-                ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
-                inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
-                inVertexLabelArrayNode.add(inVertexLabelObjectNode);
-            }
-            edgeLabelNode.set("uncommittedInVertexLabels", inVertexLabelArrayNode);
         }
 
         if (this.topology.isSchemaChanged() && !this.uncommittedRemovedInVertexLabels.isEmpty()) {
             foundSomething = true;
-            ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel inVertexLabel : this.uncommittedRemovedInVertexLabels) {
-                ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
-                inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
-                inVertexLabelArrayNode.add(inVertexLabelObjectNode);
-            }
-            edgeLabelNode.set("uncommittedRemovedInVertexLabels", inVertexLabelArrayNode);
         }
 
         if (foundSomething) {
@@ -1342,5 +1310,29 @@ public class EdgeLabel extends AbstractLabel {
             copy.properties.put(property, this.properties.get(property).readOnlyCopy(copy));
         }
         return copy;
+    }
+
+    void renameOutVertexLabel(VertexLabel renamedVertexLabel, VertexLabel oldVertexLabel) {
+        this.uncommittedRemovedOutVertexLabels.add(oldVertexLabel);
+        this.uncommittedOutVertexLabels.add(renamedVertexLabel);
+        renamedVertexLabel.addToUncommittedOutEdgeLabels(renamedVertexLabel.getSchema(), this);
+        renameColumn(
+                getSchema().getName(),
+                EDGE_PREFIX + getLabel(),
+                oldVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END,
+                renamedVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END
+        );
+    }
+
+    void renameInVertexLabel(VertexLabel renamedVertexLabel, VertexLabel oldVertexLabel) {
+        this.uncommittedRemovedInVertexLabels.add(oldVertexLabel);
+        this.uncommittedInVertexLabels.add(renamedVertexLabel);
+        renamedVertexLabel.addToUncommittedInEdgeLabels(renamedVertexLabel.getSchema(), this);
+        renameColumn(
+                getSchema().getName(),
+                EDGE_PREFIX + getLabel(),
+                oldVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END,
+                renamedVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END
+        );
     }
 }

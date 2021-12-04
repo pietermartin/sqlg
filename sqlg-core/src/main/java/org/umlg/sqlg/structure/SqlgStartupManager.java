@@ -197,9 +197,24 @@ class SqlgStartupManager {
     private void removeGlobalUniqueIndexFromSqlgSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement s = conn.createStatement()) {
-            s.execute("delete from \"sqlg_schema\".\"V_schema\" where name = 'gui_schema';");
-            s.execute("drop table \"sqlg_schema\".\"E_globalUniqueIndex_property\";");
-            s.execute("drop table \"sqlg_schema\".\"V_globalUniqueIndex\";");
+            String sql = String.format("delete from %s.%s where name = 'gui_schema';", this.sqlDialect.maybeWrapInQoutes("sqlg_schema"), this.sqlDialect.maybeWrapInQoutes("V_schema"));
+            if (this.sqlDialect.needsSemicolon()) {
+                sql = sql + ";";
+            }
+            s.execute(sql);
+            sql = String.format("drop table %s.%s;", this.sqlDialect.maybeWrapInQoutes("sqlg_schema"), this.sqlDialect.maybeWrapInQoutes("E_globalUniqueIndex_property"));
+            if (this.sqlDialect.needsSemicolon()) {
+                sql = sql + ";";
+            }
+            s.execute(sql);
+            sql = String.format("drop table %s.%s;", this.sqlDialect.maybeWrapInQoutes("sqlg_schema"), this.sqlDialect.maybeWrapInQoutes("V_globalUniqueIndex"));
+            if (this.sqlDialect.needsSemicolon()) {
+                sql = sql + ";";
+            }
+            s.execute(sql);
+//            s.execute("delete from \"sqlg_schema\".\"V_schema\" where name = 'gui_schema';");
+//            s.execute("drop table \"sqlg_schema\".\"E_globalUniqueIndex_property\";");
+//            s.execute("drop table \"sqlg_schema\".\"V_globalUniqueIndex\";");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

@@ -61,6 +61,10 @@ public interface SqlDialect {
         return true;
     }
 
+    default boolean supportsIfExists() {
+        return true;
+    }
+
     default boolean needsSchemaDropCascade() {
         return supportsCascade();
     }

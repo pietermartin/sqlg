@@ -189,6 +189,26 @@ public class Schema implements TopologyInf {
         }
     }
 
+    VertexLabel renameVertexLabel(VertexLabel vertexLabel, String label) {
+        Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
+        Preconditions.checkState(vertexLabelOptional.isEmpty(), "'%s' already exists", label);
+        Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
+        this.sqlgGraph.getSqlDialect().validateTableName(label);
+        this.uncommittedRemovedVertexLabels.add(this.name + "." + VERTEX_PREFIX + vertexLabel.label);
+        VertexLabel renamedVertexLabel = VertexLabel.renameVertexLabel(
+                this.sqlgGraph,
+                this,
+                vertexLabel.label,
+                label,
+                vertexLabel.getPropertyTypeMap(),
+                vertexLabel.getIdentifiers()
+        );
+        this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + label, renamedVertexLabel);
+        this.getTopology().fire(renamedVertexLabel, vertexLabel, TopologyChangeAction.UPDATE);
+        return renamedVertexLabel;
+    }
+
     public VertexLabel ensurePartitionedVertexLabelExist(
             final String label,
             final Map<String, PropertyType> columns,
@@ -1427,9 +1447,12 @@ public class Schema implements TopologyInf {
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
                 //VertexLabel toNotifyJson always returns something even though its an Optional.
                 //This is because it extends AbstractElement's toNotifyJson that does not always return something.
-                @SuppressWarnings("OptionalGetWithoutIsPresent")
-                JsonNode jsonNode = vertexLabel.toNotifyJson().get();
-                vertexLabelArrayNode.add(jsonNode);
+                //Do not send uncommitted vertex labels that have also been removed
+                if (!this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabel.getLabel())) {
+                    @SuppressWarnings("OptionalGetWithoutIsPresent")
+                    JsonNode jsonNode = vertexLabel.toNotifyJson().get();
+                    vertexLabelArrayNode.add(jsonNode);
+                }
             }
             schemaNode.set("uncommittedVertexLabels", vertexLabelArrayNode);
             foundVertexLabels = true;
@@ -1437,7 +1460,10 @@ public class Schema implements TopologyInf {
         if (this.topology.isSchemaChanged() && !this.uncommittedRemovedVertexLabels.isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String s : this.uncommittedRemovedVertexLabels) {
-                vertexLabelArrayNode.add(s);
+                //Do not send uncommitted removed if it has also been uncommitted added.
+                if (!this.getUncommittedVertexLabels().containsKey(s)) {
+                    vertexLabelArrayNode.add(s);
+                }
             }
             schemaNode.set("uncommittedRemovedVertexLabels", vertexLabelArrayNode);
             foundVertexLabels = true;

@@ -1100,6 +1100,42 @@ public abstract class AbstractLabel implements TopologyInf {
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
         sql.append(".");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" DROP COLUMN ");
+        if (sqlgGraph.getSqlDialect().supportsIfExists()) {
+            sql.append("IF EXISTS ");
+        }
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+        //H2 does not support CASCADE on drop column
+        if (!sqlgGraph.getSqlDialect().isH2() && sqlgGraph.getSqlDialect().supportsCascade()) {
+            sql.append(" CASCADE");
+        }
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * rename a column of the table
+     *
+     * @param schema the schema
+     * @param table  the table name
+     * @param column the column to rename
+     * @param newName the column to rename to
+     */
+    void removeColumn(String schema, String table, String column, String newName) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
         sql.append(" DROP COLUMN IF EXISTS ");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
         if (sqlgGraph.getSqlDialect().supportsCascade()) {

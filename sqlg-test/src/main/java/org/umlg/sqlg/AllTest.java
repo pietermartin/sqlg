@@ -220,6 +220,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTopologyChangeListener.class,
         TestTopologyDelete.class,
         TestTopologyDeleteSpecific.class,
+        TestTopologyDeleteEdgeRole.class,
         TestTinkerPopEvent.class,
         TestIo.class,
         TestComplex.class,
@@ -272,9 +273,12 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestLargeSchemaPerformance.class,
         TestInject.class,
         TestFoldStep.class,
-        TestTopologyRename.class,
-        TestTopologyRenameDistributed.class,
-        TestForeignSchema.class
+        TestForeignSchema.class,
+        TestTopologyPropertyColumnRename.class,
+        TestTopologyPropertyColumnRenameDistributed.class,
+        TestTopologyVertexLabelRename.class,
+        TestTopologyVertexLabelRenameDistributed.class
+
 })
 public class AllTest {
 

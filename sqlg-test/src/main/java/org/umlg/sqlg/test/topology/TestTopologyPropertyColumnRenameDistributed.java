@@ -21,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
-public class TestTopologyRenameDistributed extends BaseTest {
+public class TestTopologyPropertyColumnRenameDistributed extends BaseTest {
 
     @BeforeClass
     public static void beforeClass() {
