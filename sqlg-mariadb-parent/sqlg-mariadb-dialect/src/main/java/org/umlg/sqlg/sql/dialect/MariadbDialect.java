@@ -1124,4 +1124,20 @@ public class MariadbDialect extends BaseSqlDialect {
         }
         return sql.toString();
     }
+
+    @Override
+    public String renameTable(String schema, String table, String newName) {
+        StringBuilder sql = new StringBuilder("RENAME TABLE ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(table));
+        sql.append(" TO ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(newName));
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
+    }
 }

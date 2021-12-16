@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyDeleteEdgeRole;
+import org.umlg.sqlg.test.topology.TestTopologyVertexLabelRename;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,9 @@ import org.umlg.sqlg.test.topology.TestTopologyDeleteEdgeRole;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyDeleteEdgeRole.class,
+//        TestTopologyDeleteEdgeRole.class,
 //        TestTopologyVertexLabelRenameDistributed.class,
-//        TestTopologyVertexLabelRename.class,
+        TestTopologyVertexLabelRename.class,
 //        TestTopologyPropertyColumnRename.class,
 //        TestTopologyPropertyColumnRenameDistributed.class,
 //        TestReadOnlyRole.class,

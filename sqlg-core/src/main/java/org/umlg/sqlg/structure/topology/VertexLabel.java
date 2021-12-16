@@ -516,21 +516,17 @@ public class VertexLabel extends AbstractLabel {
     }
 
     private void renameVertexLabelOnDb(String oldLabel, String newLabel) {
-        StringBuilder sql = new StringBuilder("ALTER TABLE ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
-        sql.append(".");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + oldLabel));
-        sql.append(" RENAME TO ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + newLabel));
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
+        String sql = this.sqlgGraph.getSqlDialect().renameTable(
+                this.schema.getName(),
+                VERTEX_PREFIX + oldLabel,
+                VERTEX_PREFIX + newLabel
+        );
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(sql.toString());
+            LOGGER.debug(sql);
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
+            stmt.execute(sql);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

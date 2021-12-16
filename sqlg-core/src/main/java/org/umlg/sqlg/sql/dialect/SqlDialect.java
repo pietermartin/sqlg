@@ -1383,4 +1383,17 @@ public interface SqlDialect {
         }
         return sql.toString();
     }
+
+    default String renameTable(String schema, String table, String newName) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(table));
+        sql.append(" RENAME TO ");
+        sql.append(maybeWrapInQoutes(newName));
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
+    }
 }
