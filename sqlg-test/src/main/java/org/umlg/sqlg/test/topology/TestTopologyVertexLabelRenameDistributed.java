@@ -12,14 +12,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.EdgeRole;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @RunWith(Parameterized.class)
 public class TestTopologyVertexLabelRenameDistributed extends BaseTest {
@@ -122,122 +122,122 @@ public class TestTopologyVertexLabelRenameDistributed extends BaseTest {
         }
     }
 
-//    @Test
-//    public void testDistributedNameChange2() throws InterruptedException {
-//        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-//            sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-//                put("a", PropertyType.STRING);
-//            }});
-//            sqlgGraph1.tx().commit();
-//            Thread.sleep(1_000);
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
-//            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//
-//            VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
-//            aVertexLabel.rename("B");
-//            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
-//            sqlgGraph1.tx().commit();
-//            Thread.sleep(1_000);
-//            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
-//        }
-//    }
-//
-//    @Test
-//    public void testDistributedNameChangeWithQuery() throws InterruptedException {
-//        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-//            sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-//                put("a", PropertyType.STRING);
-//            }});
-//            sqlgGraph1.addVertex(T.label, "A", "a", "halo");
-//            VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
-//            Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("A").count().next(), 0);
-//            aVertexLabel.rename("B");
-//            Assert.assertEquals(0, sqlgGraph1.traversal().V().hasLabel("A").count().next(), 0);
-//            Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("B").count().next(), 0);
-//            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
-//            sqlgGraph1.tx().commit();
-//            Thread.sleep(1_000);
-//            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
-//            Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-//            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
-//        }
-//    }
-//
-//    @Test
-//    public void testDistributedVertexLabelRenameAsEdgeRole() throws InterruptedException {
-//        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-//            VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-//                put("a", PropertyType.STRING);
-//            }});
-//            VertexLabel bVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("B", new HashMap<>() {{
-//                put("a", PropertyType.STRING);
-//            }});
-//            aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
-//            sqlgGraph1.tx().commit();
-//            Thread.sleep(1_000);
-//            aVertexLabel.rename("AA");
-//            sqlgGraph1.tx().commit();
-//            Thread.sleep(2_000);
-//
-//            EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
-//            Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
-//            Assert.assertEquals(1, outVertexLabels.size());
-//            Assert.assertEquals("AA", new ArrayList<>(outVertexLabels).get(0).getLabel());
-//            Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
-//            Assert.assertEquals(1, inVertexLabels.size());
-//            Assert.assertEquals("B", new ArrayList<>(inVertexLabels).get(0).getLabel());
-//            Set<EdgeRole> inEdgeRoles = edgeLabel.getInEdgeRoles();
-//            Assert.assertEquals(1, inEdgeRoles.size());
-//            Set<EdgeRole> outEdgeRoles = edgeLabel.getOutEdgeRoles();
-//            Assert.assertEquals(1, outEdgeRoles.size());
-//
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isEmpty());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("AA").isPresent());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("AA").orElseThrow().getOutEdgeLabel("ab").isPresent());
-//            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//            Assert.assertEquals(1, this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getInEdgeLabels().size());
-//            Assert.assertEquals("ab", this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getInEdgeLabels().values().iterator().next().getLabel());
-//
-//            List<Vertex> outEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
-//                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-//                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "AA")
-//                    .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
-//                    .toList();
-//            Assert.assertEquals(1, outEdges.size());
-//            List<Vertex> inEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
-//                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-//                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "AA")
-//                    .out(Topology.SQLG_SCHEMA_IN_EDGES_EDGE)
-//                    .toList();
-//            Assert.assertEquals(0, inEdges.size());
-//            outEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
-//                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-//                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "B")
-//                    .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
-//                    .toList();
-//            Assert.assertEquals(0, outEdges.size());
-//            inEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
-//                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-//                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "B")
-//                    .out(Topology.SQLG_SCHEMA_IN_EDGES_EDGE)
-//                    .toList();
-//            Assert.assertEquals(1, inEdges.size());
-//
-//        }
-//    }
+    @Test
+    public void testDistributedNameChange2() throws InterruptedException {
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+                put("a", PropertyType.STRING);
+            }});
+            sqlgGraph1.tx().commit();
+            Thread.sleep(1_000);
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
+            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+
+            VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
+            aVertexLabel.rename("B");
+            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
+            sqlgGraph1.tx().commit();
+            Thread.sleep(1_000);
+            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
+        }
+    }
+
+    @Test
+    public void testDistributedNameChangeWithQuery() throws InterruptedException {
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+                put("a", PropertyType.STRING);
+            }});
+            sqlgGraph1.addVertex(T.label, "A", "a", "halo");
+            VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("A").count().next(), 0);
+            aVertexLabel.rename("B");
+            Assert.assertEquals(0, sqlgGraph1.traversal().V().hasLabel("A").count().next(), 0);
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("B").count().next(), 0);
+            Assert.assertFalse(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+            Assert.assertTrue(sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
+            sqlgGraph1.tx().commit();
+            Thread.sleep(1_000);
+            Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
+            Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+        }
+    }
+
+    @Test
+    public void testDistributedVertexLabelRenameAsEdgeRole() throws InterruptedException {
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+                put("a", PropertyType.STRING);
+            }});
+            VertexLabel bVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("B", new HashMap<>() {{
+                put("a", PropertyType.STRING);
+            }});
+            aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
+            sqlgGraph1.tx().commit();
+            Thread.sleep(1_000);
+            aVertexLabel.rename("AA");
+            sqlgGraph1.tx().commit();
+            Thread.sleep(2_000);
+
+            EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
+            Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
+            Assert.assertEquals(1, outVertexLabels.size());
+            Assert.assertEquals("AA", new ArrayList<>(outVertexLabels).get(0).getLabel());
+            Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
+            Assert.assertEquals(1, inVertexLabels.size());
+            Assert.assertEquals("B", new ArrayList<>(inVertexLabels).get(0).getLabel());
+            Set<EdgeRole> inEdgeRoles = edgeLabel.getInEdgeRoles();
+            Assert.assertEquals(1, inEdgeRoles.size());
+            Set<EdgeRole> outEdgeRoles = edgeLabel.getOutEdgeRoles();
+            Assert.assertEquals(1, outEdgeRoles.size());
+
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isEmpty());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("AA").isPresent());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("AA").orElseThrow().getOutEdgeLabel("ab").isPresent());
+            Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+            Assert.assertEquals(1, this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getInEdgeLabels().size());
+            Assert.assertEquals("ab", this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getInEdgeLabels().values().iterator().next().getLabel());
+
+            List<Vertex> outEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "AA")
+                    .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .toList();
+            Assert.assertEquals(1, outEdges.size());
+            List<Vertex> inEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "AA")
+                    .out(Topology.SQLG_SCHEMA_IN_EDGES_EDGE)
+                    .toList();
+            Assert.assertEquals(0, inEdges.size());
+            outEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "B")
+                    .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .toList();
+            Assert.assertEquals(0, outEdges.size());
+            inEdges = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "B")
+                    .out(Topology.SQLG_SCHEMA_IN_EDGES_EDGE)
+                    .toList();
+            Assert.assertEquals(1, inEdges.size());
+
+        }
+    }
 }
