@@ -10,6 +10,7 @@ import org.umlg.sqlg.test.topology.TestTopologyVertexLabelRename;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+//        TestTopologyEdgeLabelRename.class,
 //        TestTopologyDeleteEdgeRole.class,
 //        TestTopologyVertexLabelRenameDistributed.class,
         TestTopologyVertexLabelRename.class,

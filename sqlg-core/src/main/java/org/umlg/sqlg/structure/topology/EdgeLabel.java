@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.util.ThreadLocalSet;
 
@@ -154,6 +155,11 @@ public class EdgeLabel extends AbstractLabel {
             this.uncommittedProperties.clear();
         }
         this.topology = outVertexLabel.getSchema().getTopology();
+    }
+
+    EdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+        super(sqlgGraph, edgeLabelName, properties, identifiers);
+        this.topology = sqlgGraph.getTopology();
     }
 
     EdgeLabel(Topology topology, String edgeLabelName) {
@@ -1334,5 +1340,64 @@ public class EdgeLabel extends AbstractLabel {
                 oldVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END,
                 renamedVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END
         );
+    }
+
+    @Override
+    public void rename(String label) {
+        Objects.requireNonNull(label, "Given label must not be null");
+        Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not be prefixed with \"%s\"", EDGE_PREFIX);
+        Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign table!", label);
+        this.getSchema().getTopology().lock();
+        this.getSchema().renameEdgeLabel(this, label);
+    }
+
+    static EdgeLabel renameEdgeLabel(
+            SqlgGraph sqlgGraph,
+            Schema schema,
+            EdgeLabel oldEdgeLabel,
+            String newLabel,
+            Set<VertexLabel> outVertexLabels,
+            Set<VertexLabel> inVertexLabels,
+            Map<String, PropertyType> properties,
+            ListOrderedSet<String> identifiers) {
+
+        Preconditions.checkArgument(!schema.isSqlgSchema(), "renameEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
+        EdgeLabel edgeLabel = new EdgeLabel(
+                sqlgGraph,
+                newLabel,
+                properties,
+                identifiers
+        );
+        edgeLabel.uncommittedOutVertexLabels.addAll(outVertexLabels);
+        edgeLabel.uncommittedInVertexLabels.addAll(inVertexLabels);
+        edgeLabel.renameEdgeLabelOnDb(oldEdgeLabel.getLabel(), newLabel);
+        TopologyManager.renameEdgeLabel(sqlgGraph, schema.getName(), EDGE_PREFIX + oldEdgeLabel.getLabel(), EDGE_PREFIX + newLabel);
+        edgeLabel.committed = false;
+        for (VertexLabel outVertexLabel : outVertexLabels) {
+            outVertexLabel.removeOutEdge(oldEdgeLabel);
+            outVertexLabel.addToUncommittedOutEdgeLabels(edgeLabel.getSchema(), edgeLabel);
+        }
+        for (VertexLabel inVertexLabel : inVertexLabels) {
+            inVertexLabel.removeInEdge(oldEdgeLabel);
+            inVertexLabel.addToUncommittedInEdgeLabels(edgeLabel.getSchema(), edgeLabel);
+        }
+        return edgeLabel;
+    }
+
+    private void renameEdgeLabelOnDb(String oldLabel, String newLabel) {
+        String sql = this.sqlgGraph.getSqlDialect().renameTable(
+                getSchema().getName(),
+                EDGE_PREFIX + oldLabel,
+                EDGE_PREFIX + newLabel
+        );
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql);
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

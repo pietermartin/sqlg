@@ -277,7 +277,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTopologyPropertyColumnRename.class,
         TestTopologyPropertyColumnRenameDistributed.class,
         TestTopologyVertexLabelRename.class,
-        TestTopologyVertexLabelRenameDistributed.class
+        TestTopologyVertexLabelRenameDistributed.class,
+        TestTopologyEdgeLabelRename.class
 
 })
 public class AllTest {

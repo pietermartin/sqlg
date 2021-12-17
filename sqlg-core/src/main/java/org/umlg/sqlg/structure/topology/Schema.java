@@ -192,7 +192,7 @@ public class Schema implements TopologyInf {
     VertexLabel renameVertexLabel(VertexLabel vertexLabel, String label) {
         Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
         Preconditions.checkState(vertexLabelOptional.isEmpty(), "'%s' already exists", label);
-        Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
+        Preconditions.checkState(!this.isSqlgSchema(), "renameVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
         this.sqlgGraph.getSqlDialect().validateTableName(label);
         this.uncommittedRemovedVertexLabels.add(this.name + "." + VERTEX_PREFIX + vertexLabel.label);
@@ -207,6 +207,32 @@ public class Schema implements TopologyInf {
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + label, renamedVertexLabel);
         this.getTopology().fire(renamedVertexLabel, vertexLabel, TopologyChangeAction.UPDATE);
         return renamedVertexLabel;
+    }
+
+    EdgeLabel renameEdgeLabel(EdgeLabel edgeLabel, String label) {
+        Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(label);
+        Preconditions.checkState(edgeLabelOptional.isEmpty(), "'%s' already exists", label);
+        Preconditions.checkState(!this.isSqlgSchema(), "renameEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
+        Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "edge label may not start with " + EDGE_PREFIX);
+        this.sqlgGraph.getSqlDialect().validateTableName(label);
+        this.uncommittedRemovedEdgeLabels.add(this.name + "." + EDGE_PREFIX + edgeLabel.label);
+
+        Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
+        Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
+
+        EdgeLabel renamedEdgeLabel = EdgeLabel.renameEdgeLabel(
+                this.sqlgGraph,
+                this,
+                edgeLabel,
+                label,
+                outVertexLabels,
+                inVertexLabels,
+                edgeLabel.getPropertyTypeMap(),
+                edgeLabel.getIdentifiers()
+        );
+        this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + label, renamedEdgeLabel);
+        this.getTopology().fire(renamedEdgeLabel, edgeLabel, TopologyChangeAction.UPDATE);
+        return renamedEdgeLabel;
     }
 
     public VertexLabel ensurePartitionedVertexLabelExist(
