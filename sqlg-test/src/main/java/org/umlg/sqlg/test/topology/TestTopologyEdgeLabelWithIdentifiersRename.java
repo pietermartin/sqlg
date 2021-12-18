@@ -66,23 +66,23 @@ public class TestTopologyEdgeLabelWithIdentifiersRename extends BaseTest {
         Schema schema2 = this.sqlgGraph.getTopology().ensureSchemaExist(this.schema2);
 
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         EdgeLabel abEdgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );

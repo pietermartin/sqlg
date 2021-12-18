@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.topology;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,83 +25,83 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         this.topologyListenerTriple.clear();
     }
 
-//    @Test
-//    public void testVertexLabelSimple() {
-//        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
-//        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
-//        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
-//                "A",
-//                new HashMap<>() {{
-//                    put("id1", PropertyType.STRING);
-//                    put("id2", PropertyType.STRING);
-//                    put("a", PropertyType.STRING);
-//                }},
-//                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
-//        );
-//        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
-//        aVertexLabel.rename("B");
-//        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
-//        this.sqlgGraph.tx().commit();
-//        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
-//
-//        Assert.assertEquals(2, this.topologyListenerTriple.size());
-//        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(0).getRight());
-//        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
-//        Assert.assertEquals("A", this.topologyListenerTriple.get(1).getMiddle().getName());
-//        Assert.assertEquals("B", this.topologyListenerTriple.get(1).getLeft().getName());
-//    }
-//
-//    @Test
-//    public void testVertexLabelSimpleWithQueries() {
-//        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-//                    put("id1", PropertyType.STRING);
-//                    put("id2", PropertyType.STRING);
-//                    put("a", PropertyType.STRING);
-//                }},
-//                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
-//        );
-//        this.sqlgGraph.addVertex(T.label, "A", "id1", "1", "id2", "2", "a", "halo1");
-//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-//        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//        aVertexLabel.rename("B");
-//        Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
-//
-//        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//        this.sqlgGraph.tx().commit();
-//        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
-//        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
-//        Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-//        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
-//}
+    @Test
+    public void testVertexLabelSimple() {
+        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new HashMap<>() {{
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
+        );
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").isPresent());
+        aVertexLabel.rename("B");
+        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
+
+        Assert.assertEquals(2, this.topologyListenerTriple.size());
+        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(0).getRight());
+        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+        Assert.assertEquals("A", this.topologyListenerTriple.get(1).getMiddle().getName());
+        Assert.assertEquals("B", this.topologyListenerTriple.get(1).getLeft().getName());
+    }
+
+    @Test
+    public void testVertexLabelSimpleWithQueries() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
+        );
+        this.sqlgGraph.addVertex(T.label, "A", "id1", "1", "id2", "2", "a", "halo1");
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+        aVertexLabel.rename("B");
+        Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+
+        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
+        Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+}
 
     @Test
     public void testVertexLabelRenameAsEdgeRole() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -205,9 +206,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -215,9 +216,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -322,9 +323,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -332,9 +333,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -439,9 +440,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -449,15 +450,15 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.STRING);
-                    put("id2", PropertyType.STRING);
-                    put("a", PropertyType.STRING);
+                    put("id1", PropertyType.varChar(10));
+                    put("id2", PropertyType.varChar(10));
+                    put("a", PropertyType.varChar(10));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         Schema schema3 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA3");
         VertexLabel cVertexLabel = schema3.ensureVertexLabelExist("C", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyType.varChar(10));
         }});
         bVertexLabel.ensureEdgeLabelExist("abc", aVertexLabel);
         cVertexLabel.ensureEdgeLabelExist("abc", aVertexLabel);
