@@ -8,11 +8,14 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.Assert.assertFalse;
 
 /**
  * Date: 2014/07/13
@@ -185,6 +188,21 @@ public class TestHas extends BaseTest {
         v1.addEdge("friend", v2, "weight", "5");
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().E().has("weight", "5").count().next(), 0);
+    }
+
+    //This is from TinkerPop process test suite. It fails for MariaDb
+    @Test
+    public void g_V_hasXk_withinXcXX_valuesXkX() {
+        Assume.assumeTrue(!isMariaDb());
+        this.sqlgGraph.traversal().addV().property("k", "轉注").
+                addV().property("k", "✦").
+                addV().property("k", "♠").
+                addV().property("k", "A").iterate();
+
+        final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V().has("k", P.within("轉注", "✦", "♠")).values("k");
+        printTraversalForm(traversal);
+        checkResults(Arrays.asList("轉注", "✦", "♠"), traversal);
+        assertFalse(traversal.hasNext());
     }
 
     @Test
