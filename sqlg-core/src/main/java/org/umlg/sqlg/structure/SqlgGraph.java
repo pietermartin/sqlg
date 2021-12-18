@@ -232,6 +232,10 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.WriteTest",
         method = "g_io_writeXkryoX",
         reason = "Needs to register SqlgIoRegistryV3, this test is duplicated in TestIo")
+@OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasTest",
+        method = "g_V_hasXk_withinXcXX_valuesXkX",
+        reason = "Fails for MariaDb, the test is copied to TestHas for the other dbs")
 public class SqlgGraph implements Graph {
 
     public static final String DATA_SOURCE = "sqlg.dataSource";
