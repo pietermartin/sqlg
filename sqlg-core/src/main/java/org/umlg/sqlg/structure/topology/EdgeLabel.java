@@ -1322,24 +1322,46 @@ public class EdgeLabel extends AbstractLabel {
         this.uncommittedRemovedOutVertexLabels.add(oldVertexLabel);
         this.uncommittedOutVertexLabels.add(renamedVertexLabel);
         renamedVertexLabel.addToUncommittedOutEdgeLabels(renamedVertexLabel.getSchema(), this);
-        renameColumn(
-                getSchema().getName(),
-                EDGE_PREFIX + getLabel(),
-                oldVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END,
-                renamedVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END
-        );
+        if (oldVertexLabel.hasIDPrimaryKey()) {
+            renameColumn(
+                    getSchema().getName(),
+                    EDGE_PREFIX + getLabel(),
+                    oldVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END,
+                    renamedVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END
+            );
+        } else {
+            for (String identifier : oldVertexLabel.getIdentifiers()) {
+                renameColumn(
+                        getSchema().getName(),
+                        EDGE_PREFIX + getLabel(),
+                        oldVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END,
+                        renamedVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END
+                );
+            }
+        }
     }
 
     void renameInVertexLabel(VertexLabel renamedVertexLabel, VertexLabel oldVertexLabel) {
         this.uncommittedRemovedInVertexLabels.add(oldVertexLabel);
         this.uncommittedInVertexLabels.add(renamedVertexLabel);
         renamedVertexLabel.addToUncommittedInEdgeLabels(renamedVertexLabel.getSchema(), this);
-        renameColumn(
-                getSchema().getName(),
-                EDGE_PREFIX + getLabel(),
-                oldVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END,
-                renamedVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END
-        );
+        if (oldVertexLabel.hasIDPrimaryKey()) {
+            renameColumn(
+                    getSchema().getName(),
+                    EDGE_PREFIX + getLabel(),
+                    oldVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END,
+                    renamedVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END
+            );
+        } else {
+            for (String identifier : oldVertexLabel.getIdentifiers()) {
+                renameColumn(
+                        getSchema().getName(),
+                        EDGE_PREFIX + getLabel(),
+                        oldVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END,
+                        renamedVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END
+                );
+            }
+        }
     }
 
     @Override

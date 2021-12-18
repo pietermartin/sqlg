@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyVertexLabelRename;
+import org.umlg.sqlg.test.topology.TestTopologyEdgeLabelRenameDistributed;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,14 @@ import org.umlg.sqlg.test.topology.TestTopologyVertexLabelRename;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        TestTopologyEdgeLabelRenameDistributed.class,
+//        TestTopologyEdgeLabelWithIdentifiersRename.class,
+//        TestTopologyVertexLabelWithIdentifiersRenameDistributed.class,
+//        TestTopologyVertexLabelWithIdentifiersRename.class,
 //        TestTopologyEdgeLabelRename.class,
 //        TestTopologyDeleteEdgeRole.class,
 //        TestTopologyVertexLabelRenameDistributed.class,
-        TestTopologyVertexLabelRename.class,
+//        TestTopologyVertexLabelRename.class,
 //        TestTopologyPropertyColumnRename.class,
 //        TestTopologyPropertyColumnRenameDistributed.class,
 //        TestReadOnlyRole.class,

@@ -75,7 +75,14 @@ public class VertexLabel extends AbstractLabel {
         return vertexLabel;
     }
 
-    static VertexLabel renameVertexLabel(SqlgGraph sqlgGraph, Schema schema, String oldLabel, String newLabel, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+    static VertexLabel renameVertexLabel(
+            SqlgGraph sqlgGraph,
+            Schema schema,
+            String oldLabel,
+            String newLabel,
+            Map<String, PropertyType> columns,
+            ListOrderedSet<String> identifiers) {
+
         Preconditions.checkArgument(!schema.isSqlgSchema(), "renameVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, newLabel, columns, identifiers);
         vertexLabel.renameVertexLabelOnDb(oldLabel, newLabel);

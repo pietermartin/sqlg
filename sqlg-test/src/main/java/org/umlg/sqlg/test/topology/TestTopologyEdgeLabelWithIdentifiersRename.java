@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -21,7 +22,7 @@ import java.util.*;
 
 @SuppressWarnings("DuplicatedCode")
 @RunWith(Parameterized.class)
-public class TestTopologyEdgeLabelRename extends BaseTest {
+public class TestTopologyEdgeLabelWithIdentifiersRename extends BaseTest {
 
     private final List<Triple<TopologyInf, TopologyInf, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
@@ -56,7 +57,7 @@ public class TestTopologyEdgeLabelRename extends BaseTest {
         super.before();
         this.topologyListenerTriple.clear();
     }
-    
+
     @Test
     public void testEdgeLabelSimple() {
         TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
@@ -65,14 +66,26 @@ public class TestTopologyEdgeLabelRename extends BaseTest {
         Schema schema2 = this.sqlgGraph.getTopology().ensureSchemaExist(this.schema2);
 
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
-        }});
+                    put("id1", PropertyType.STRING);
+                    put("id2", PropertyType.STRING);
+                    put("a", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
+        );
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-            put("a", PropertyType.STRING);
-        }});
+                    put("id1", PropertyType.STRING);
+                    put("id2", PropertyType.STRING);
+                    put("a", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
+        );
         EdgeLabel abEdgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
-        }});
+                    put("id1", PropertyType.STRING);
+                    put("id2", PropertyType.STRING);
+                    put("a", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
+        );
         this.sqlgGraph.tx().commit();
 
         Optional<EdgeLabel> edgeLabelOptional = schema1.getEdgeLabel("AB");
@@ -111,9 +124,9 @@ public class TestTopologyEdgeLabelRename extends BaseTest {
                 .toList();
         Assert.assertEquals(1, inVertices.size());
 
-        Vertex a = this.sqlgGraph.addVertex(T.label, this.schema1 + ".A", "a", "haloA");
-        Vertex b = this.sqlgGraph.addVertex(T.label, this.schema2 + ".B", "a", "haloB");
-        a.addEdge("ab", b, "a", "halo_ab");
+        Vertex a = this.sqlgGraph.addVertex(T.label, this.schema1 + ".A", "id1", "1", "id2", "2", "a", "haloA");
+        Vertex b = this.sqlgGraph.addVertex(T.label, this.schema2 + ".B", "id1", "1", "id2", "2", "a", "haloB");
+        a.addEdge("ab", b, "id1", "1", "id2", "2", "a", "halo_ab");
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel(this.schema1 + ".A").out("ab").toList();
