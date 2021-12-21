@@ -1318,6 +1318,27 @@ public class EdgeLabel extends AbstractLabel {
         return copy;
     }
 
+    void renameOutForeignKeyIdentifier(String oldName, String newName, VertexLabel oldVertexLabel) {
+        renameInOutForeignKeyIdentifier(oldName, newName, oldVertexLabel, Direction.OUT);
+    }
+
+    void renameInForeignKeyIdentifier(String oldName, String newName, VertexLabel oldVertexLabel) {
+        renameInOutForeignKeyIdentifier(oldName, newName, oldVertexLabel, Direction.IN);
+    }
+
+    private void renameInOutForeignKeyIdentifier(String oldName, String newName, VertexLabel oldVertexLabel, Direction direction) {
+        Preconditions.checkState(!oldVertexLabel.hasIDPrimaryKey());
+        Optional<String> newIdentifierOptional = oldVertexLabel.getIdentifiers().stream().filter(i -> i.equals(newName)).findAny();
+        Preconditions.checkState(newIdentifierOptional.isPresent());
+        Preconditions.checkState(oldVertexLabel.renamedIdentifiers.stream().anyMatch(p -> p.getLeft().equals(oldName)));
+        renameColumn(
+                getSchema().getName(),
+                EDGE_PREFIX + getLabel(),
+                oldVertexLabel.getFullName() + "." + oldName + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : IN_VERTEX_COLUMN_END),
+                oldVertexLabel.getFullName() + "." + newName + (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : IN_VERTEX_COLUMN_END)
+        );
+    }
+
     void renameOutVertexLabel(VertexLabel renamedVertexLabel, VertexLabel oldVertexLabel) {
         this.uncommittedRemovedOutVertexLabels.add(oldVertexLabel);
         this.uncommittedOutVertexLabels.add(renamedVertexLabel);

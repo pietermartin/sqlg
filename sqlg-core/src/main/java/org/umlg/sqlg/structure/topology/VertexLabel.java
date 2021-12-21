@@ -1181,6 +1181,18 @@ public class VertexLabel extends AbstractLabel {
             if (this.getIdentifiers().contains(oldName)) {
                 Preconditions.checkState(!this.renamedIdentifiers.contains(namePair), "BUG! renamedIdentifiers may not yet contain '%s'", oldName);
                 this.renamedIdentifiers.add(namePair);
+
+                Map<String, EdgeLabel> outEdgeLabels = getOutEdgeLabels();
+                for (String outEdgeLabel : outEdgeLabels.keySet()) {
+                    EdgeLabel edgeLabel = outEdgeLabels.get(outEdgeLabel);
+                    edgeLabel.renameOutForeignKeyIdentifier(oldName, name, this);
+                }
+                Map<String, EdgeLabel> inEdgeLabels = getInEdgeLabels();
+                for (String inEdgeLabel : inEdgeLabels.keySet()) {
+                    EdgeLabel edgeLabel = inEdgeLabels.get(inEdgeLabel);
+                    edgeLabel.renameInForeignKeyIdentifier(oldName, name, this);
+                }
+
             }
             this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
         }

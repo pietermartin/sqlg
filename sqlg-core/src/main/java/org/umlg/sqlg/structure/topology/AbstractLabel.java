@@ -514,7 +514,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public ListOrderedSet<String> getIdentifiers() {
-        ListOrderedSet<String> result = ListOrderedSet.listOrderedSet(this.identifiers);
+        ListOrderedSet<String> result = ListOrderedSet.listOrderedSet(new ArrayList<>(this.identifiers.asList()));
         if (getTopology().isSchemaChanged()) {
             result.addAll(this.uncommittedIdentifiers);
             for (Pair<String, String> oldNew : this.renamedIdentifiers) {
@@ -766,10 +766,12 @@ public abstract class AbstractLabel implements TopologyInf {
             it.remove();
         }
         this.identifiers.addAll(this.uncommittedIdentifiers);
+        int index = -1;
         for (Iterator<Pair<String, String>> it = this.renamedIdentifiers.iterator(); it.hasNext(); ) {
+            index++;
             Pair<String, String> oldName = it.next();
             this.identifiers.remove(oldName.getLeft());
-            this.identifiers.add(oldName.getRight());
+            this.identifiers.add(index, oldName.getRight());
             it.remove();
         }
         this.uncommittedIdentifiers.clear();

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyEdgeLabelRenameDistributed;
+import org.umlg.sqlg.test.schema.TestMultiThread;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,13 @@ import org.umlg.sqlg.test.topology.TestTopologyEdgeLabelRenameDistributed;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyEdgeLabelRenameDistributed.class,
+        TestMultiThread.class,
+//        TestTopologyPropertyColumnRename.class,
+//        TestTopologyPropertyColumnRename.class,
+//        TestTopologyEdgeLabelRenameDistributed.class,
 //        TestTopologyEdgeLabelWithIdentifiersRename.class,
+//        TestTopologyVertexLabelWithIdentifiersRename.class,
+//        TestTopologyVertexLabelWithIdentifiersRenameDistributed.class,
 //        TestTopologyVertexLabelWithIdentifiersRenameDistributed.class,
 //        TestTopologyVertexLabelWithIdentifiersRename.class,
 //        TestTopologyEdgeLabelRename.class,
