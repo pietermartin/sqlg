@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.h2.jdbc.JdbcArray;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.structure.PropertyType;
@@ -118,52 +117,37 @@ public class H2Dialect extends BaseSqlDialect {
      */
     @Override
     public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
-        Connection connection = sqlgGraph.tx().getConnection();
-        try (Statement statement = connection.createStatement()) {
-            String sql = "SELECT \"" + columnName + "\" FROM \"" + schema + "\".\"" + table + "\" WHERE \"" + columnName + "\" IS NOT NULL LIMIT 1";
-            ResultSet rs = statement.executeQuery(sql);
-            if (!rs.next()) {
-                throw new IllegalStateException("The sqlg_schema can not be created because the column " + schema + "." + table + "." + columnName + " has no data in it. For arrays on H2 there must be data in the column to determine the type.");
-            } else {
-                java.sql.Array o = rs.getArray(1);
-                JdbcArray jdbcArray = (JdbcArray) o;
-                Object[] array = (Object[]) jdbcArray.getArray();
-                for (Object o1 : array) {
-                    if (o1 instanceof Byte) {
-                        return PropertyType.BYTE_ARRAY;
-                    } else if (o1 instanceof Short) {
-                        return PropertyType.SHORT_ARRAY;
-                    } else if (o1 instanceof Integer) {
-                        return PropertyType.INTEGER_ARRAY;
-                    } else if (o1 instanceof Long) {
-                        return PropertyType.LONG_ARRAY;
-                    } else if (o1 instanceof Float) {
-                        return PropertyType.FLOAT_ARRAY;
-                    } else if (o1 instanceof Double) {
-                        return PropertyType.DOUBLE_ARRAY;
-                    } else if (o1 instanceof String) {
-                        return PropertyType.STRING_ARRAY;
-                    } else if (o1 instanceof Timestamp) {
-                        //ja well this sucks but I know of no other way to distinguish between LocalDateTime and LocalDate
-                        Timestamp timestamp = (Timestamp) o1;
-                        LocalDateTime localDateTime = timestamp.toLocalDateTime();
-                        if (localDateTime.getHour() == 0 && localDateTime.getMinute() == 0 && localDateTime.getSecond() == 0 && localDateTime.getNano() == 0) {
-                            return PropertyType.LOCALDATE_ARRAY;
-                        } else {
-                            return PropertyType.LOCALDATETIME_ARRAY;
-                        }
-                    } else if (o1 instanceof Time) {
-                        return PropertyType.LOCALTIME_ARRAY;
-                    } else {
-                        throw new UnsupportedOperationException("H2 does not support typeName on arrays");
-                    }
+        switch (typeName) {
+            case "BOOLEAN ARRAY":
+                return PropertyType.BOOLEAN_ARRAY;
+            case "SMALLINT ARRAY":
+                return PropertyType.SHORT_ARRAY;
+            case "INTEGER ARRAY":
+                return PropertyType.INTEGER_ARRAY;
+            case "BIGINT ARRAY":
+                return PropertyType.LONG_ARRAY;
+            case "DOUBLE PRECISION ARRAY":
+                return PropertyType.DOUBLE_ARRAY;
+            case "DATE ARRAY":
+                return PropertyType.LOCALDATE_ARRAY;
+            case "TIME ARRAY":
+                return PropertyType.LOCALTIME_ARRAY;
+            case "TIMESTAMP ARRAY":
+                //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
+                Triple<String, Integer, String> metaData = metaDataIter.next();
+                metaDataIter.previous();
+                if (metaData.getLeft().startsWith(columnName + "~~~")) {
+                    return PropertyType.ZONEDDATETIME_ARRAY;
+                } else {
+                    return PropertyType.LOCALDATETIME_ARRAY;
                 }
-            }
-            rs.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            case "CHARACTER VARYING ARRAY":
+                return PropertyType.STRING_ARRAY;
+            case "REAL ARRAY":
+                return FLOAT_ARRAY;
+            default:
+                throw new RuntimeException(String.format("Array type not supported typeName = %s", typeName));
         }
-        throw new UnsupportedOperationException("H2 does not support typeName on arrays");
     }
 
 
@@ -243,9 +227,9 @@ public class H2Dialect extends BaseSqlDialect {
             case BYTE_ORDINAL:
                 return new String[]{"TINYINT"};
             case byte_ARRAY_ORDINAL:
-                return new String[]{"BINARY"};
+                return new String[]{"VARBINARY"};
             case BYTE_ARRAY_ORDINAL:
-                return new String[]{"BINARY"};
+                return new String[]{"VARBINARY"};
             case DOUBLE_ORDINAL:
                 return new String[]{"DOUBLE"};
             case DURATION_ORDINAL:
@@ -273,32 +257,47 @@ public class H2Dialect extends BaseSqlDialect {
             case ZONEDDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP", "VARCHAR"};
             case BOOLEAN_ARRAY_ORDINAL:
+                return new String[]{"BOOLEAN ARRAY"};
             case boolean_ARRAY_ORDINAL:
+                return new String[]{"BOOLEAN ARRAY"};
             case DOUBLE_ARRAY_ORDINAL:
+                return new String[]{"DOUBLE ARRAY"};
             case double_ARRAY_ORDINAL:
+                return new String[]{"DOUBLE ARRAY"};
             case FLOAT_ARRAY_ORDINAL:
+                return new String[]{"REAL ARRAY"};
             case float_ARRAY_ORDINAL:
+                return new String[]{"REAL ARRAY"};
             case int_ARRAY_ORDINAL:
+                return new String[]{"INT ARRAY"};
             case INTEGER_ARRAY_ORDINAL:
+                return new String[]{"INT ARRAY"};
             case LOCALDATE_ARRAY_ORDINAL:
+                return new String[]{"DATE ARRAY"};
             case LOCALDATETIME_ARRAY_ORDINAL:
+                return new String[]{"TIMESTAMP ARRAY"};
             case LOCALTIME_ARRAY_ORDINAL:
+                return new String[]{"TIME ARRAY"};
             case LONG_ARRAY_ORDINAL:
+                return new String[]{"BIGINT ARRAY"};
             case long_ARRAY_ORDINAL:
+                return new String[]{"BIGINT ARRAY"};
             case SHORT_ARRAY_ORDINAL:
+                return new String[]{"SMALLINT ARRAY"};
             case short_ARRAY_ORDINAL:
+                return new String[]{"SMALLINT ARRAY"};
             case STRING_ARRAY_ORDINAL:
-                return new String[]{"ARRAY"};
+                return new String[]{"VARCHAR ARRAY"};
             case DURATION_ARRAY_ORDINAL:
-                return new String[]{"ARRAY", "ARRAY"};
+                return new String[]{"BIGINT ARRAY", "INT ARRAY"};
             case PERIOD_ARRAY_ORDINAL:
-                return new String[]{"ARRAY", "ARRAY", "ARRAY"};
+                return new String[]{"INT ARRAY", "INT ARRAY", "INT ARRAY"};
             case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new String[]{"ARRAY", "ARRAY"};
+                return new String[]{"TIMESTAMP ARRAY", "VARCHAR ARRAY"};
             case JSON_ORDINAL:
                 return new String[]{"VARCHAR"};
             case JSON_ARRAY_ORDINAL:
-                return new String[]{"ARRAY"};
+                return new String[]{"VARCHAR ARRAY"};
             case POINT_ORDINAL:
                 throw new IllegalStateException("H2 does not support gis types!");
             case POLYGON_ORDINAL:
@@ -769,9 +768,9 @@ public class H2Dialect extends BaseSqlDialect {
             case boolean_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
             case SHORT_ARRAY_ORDINAL:
-                return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
             case short_ARRAY_ORDINAL:
-                return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[]) array.getArray());
+                return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
             case INTEGER_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerArray((Object[]) array.getArray());
             case int_ARRAY_ORDINAL:

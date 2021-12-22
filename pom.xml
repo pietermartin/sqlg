@@ -101,8 +101,8 @@
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <includes>
                         <include>**/H2AllTest.java</include>
-<!--                        <include>**/SqlgH2StructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
+                        <include>**/SqlgH2StructureStandardTest.java</include>
+                        <include>**/SqlgH2ProcessStandardTest.java</include>
 
                         <include>**/SqlgPostgresStructureStandardTest.java</include>
                         <include>**/SqlgPostgresProcessStandardTest.java</include>
