@@ -4,6 +4,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
@@ -20,6 +22,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @SuppressWarnings("Duplicates")
 public class TestDeadLock extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() {
+        Assume.assumeFalse(isH2());
+    }
 
     @Test
     public void testDeadLock4() throws InterruptedException {
