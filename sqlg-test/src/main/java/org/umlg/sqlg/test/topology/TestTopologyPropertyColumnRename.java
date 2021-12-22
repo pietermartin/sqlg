@@ -200,8 +200,9 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
             id1Optional = aVertexLabel.getProperty("id1PK");
             Preconditions.checkState(id1Optional.isPresent());
             identifiers = aVertexLabel.getIdentifiers();
-            Assert.assertEquals(1, identifiers.size());
+            Assert.assertEquals(2, identifiers.size());
             Assert.assertEquals("id1PK", identifiers.get(0));
+            Assert.assertEquals("id2", identifiers.get(1));
         }
     }
 
