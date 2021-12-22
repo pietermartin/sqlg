@@ -2,10 +2,7 @@ package org.umlg.sqlg.test.datasource;
 
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -34,6 +31,7 @@ public class TestJNDIInitialization {
 
     private static Configuration configuration;
     private static DataSource ds;
+    private static C3P0DataSource c3P0DataSource;
 
     @Rule
     public TestRule watcher = new TestWatcher() {
@@ -55,7 +53,8 @@ public class TestJNDIInitialization {
             throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
         }
 
-        ds = C3P0DataSource.create(configuration).getDatasource();
+        c3P0DataSource = C3P0DataSource.create(configuration);
+        ds = c3P0DataSource.getDatasource();
 
         //change the connection url to be a JNDI one
         configuration.setProperty("jdbc.url", "jndi:testConnection");
@@ -72,11 +71,17 @@ public class TestJNDIInitialization {
         });
     }
 
+    @AfterClass
+    public static void afterClass() {
+        c3P0DataSource.close();
+    }
+
     @Test
     public void testLoadingDatasourceFromJndi() throws Exception {
-        SqlgGraph g = SqlgGraph.open(configuration);
-        assertNotNull(g.getSqlDialect());
-        Assert.assertEquals(configuration.getString("jdbc.url"), g.getJdbcUrl());
-        assertNotNull(g.getConnection());
+        try (SqlgGraph g = SqlgGraph.open(configuration)) {
+            assertNotNull(g.getSqlDialect());
+            Assert.assertEquals(configuration.getString("jdbc.url"), g.getJdbcUrl());
+            assertNotNull(g.getConnection());
+        }
     }
 }
