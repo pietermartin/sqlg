@@ -28,8 +28,8 @@ public class SparkResources implements SparkApplication {
     }
 
     public static void staticResources(Service http) {
-        http.staticFiles.externalLocation("sqlg-ui/src/main/web/dist/dist");
-//        http.staticFiles.location("/dist");
+//        http.staticFiles.externalLocation("sqlg-ui/src/main/web/dist/dist");
+        http.staticFiles.location("/dist");
     }
 
     public static void resources(Service http) {
