@@ -1024,7 +1024,7 @@ public class TopologyManager {
 
     }
 
-    public static void renamePropertyColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column, String newName) {
+    static void renameVertexLabelPropertyColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column, String newName) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(VERTEX_PREFIX), "prefixedTable must be for a vertex. prefixedTable = " + prefixedTable);
@@ -1041,6 +1041,28 @@ public class TopologyManager {
             Preconditions.checkState(propertiesToRename.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, propertiesToRename, column, propertiesToRename.size()));
             propertiesToRename.get(0).property(SQLG_SCHEMA_PROPERTY_NAME, newName);
 
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    static void renameEdgeLabelPropertyColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column, String newName) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(prefixedTable.startsWith(EDGE_PREFIX), "prefixedTable must be for a edge. prefixedTable = " + prefixedTable);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+
+            List<Vertex> propertiesToRename = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has(SQLG_SCHEMA_SCHEMA_NAME, schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .has(SQLG_SCHEMA_EDGE_LABEL_NAME, prefixedTable.substring(EDGE_PREFIX.length()))
+                    .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                    .has(SQLG_SCHEMA_PROPERTY_NAME, column)
+                    .toList();
+            Preconditions.checkState(propertiesToRename.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, propertiesToRename, column, propertiesToRename.size()));
+            propertiesToRename.get(0).property(SQLG_SCHEMA_PROPERTY_NAME, newName);
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

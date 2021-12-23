@@ -70,6 +70,53 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
     }
 
     @Test
+    public void testPropertyOnEdgeLabelRename() {
+        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("A", new LinkedHashMap<>());
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("B", new LinkedHashMap<>());
+        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
+            put("column1", PropertyType.STRING);
+        }});
+        this.sqlgGraph.tx().commit();
+        Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
+        Preconditions.checkState(edgeLabelOptional.isPresent());
+        EdgeLabel edgeLabel = edgeLabelOptional.get();
+        Optional<PropertyColumn> column1Optional = edgeLabel.getProperty("column1");
+        Preconditions.checkState(column1Optional.isPresent());
+        PropertyColumn column1 = column1Optional.get();
+        column1.rename("column2");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(4, this.topologyListenerTriple.size());
+        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(3).getLeft());
+        Assert.assertEquals(column1, this.topologyListenerTriple.get(3).getMiddle());
+        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(3).getRight());
+        Optional<PropertyColumn> column2Optional = edgeLabel.getProperty("column2");
+        Preconditions.checkState(column2Optional.isPresent());
+        PropertyColumn column2 = column2Optional.get();
+        Assert.assertEquals(column2, this.topologyListenerTriple.get(3).getLeft());
+
+        List<String> propertyNames = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PROPERTY).<String>values(Topology.SQLG_SCHEMA_PROPERTY_NAME).toList();
+        Assert.assertEquals(1, propertyNames.size());
+        Assert.assertEquals("column2", propertyNames.get(0));
+
+        column2.rename("column3");
+        propertyNames = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PROPERTY).<String>values(Topology.SQLG_SCHEMA_PROPERTY_NAME).toList();
+        Assert.assertEquals(1, propertyNames.size());
+        Assert.assertEquals("column3", propertyNames.get(0));
+        this.sqlgGraph.tx().rollback();
+
+        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+            propertyNames = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PROPERTY).<String>values(Topology.SQLG_SCHEMA_PROPERTY_NAME).toList();
+            Assert.assertEquals(1, propertyNames.size());
+            Assert.assertEquals("column2", propertyNames.get(0));
+        }
+    }
+
+    @Test
     public void testRenameIdentifier() {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
@@ -140,8 +187,8 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
         this.sqlgGraph.tx().commit();
 
-        Vertex a= this.sqlgGraph.addVertex(T.label, "A", "id1", "1", "id2", "2", "a", "a");
-        Vertex b= this.sqlgGraph.addVertex(T.label, "B", "id1", "1", "id2", "2", "a", "a");
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "id1", "1", "id2", "2", "a", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "id1", "1", "id2", "2", "a", "a");
         a.addEdge("ab", b);
         this.sqlgGraph.tx().commit();
 

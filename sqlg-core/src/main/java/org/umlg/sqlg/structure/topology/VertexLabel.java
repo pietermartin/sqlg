@@ -1176,7 +1176,7 @@ public class VertexLabel extends AbstractLabel {
             this.uncommittedRemovedProperties.add(oldName);
             PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyType());
             this.uncommittedProperties.put(name, copy);
-            TopologyManager.renamePropertyColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
+            TopologyManager.renameVertexLabelPropertyColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
             renameColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
             if (this.getIdentifiers().contains(oldName)) {
                 Preconditions.checkState(!this.renamedIdentifiers.contains(namePair), "BUG! renamedIdentifiers may not yet contain '%s'", oldName);

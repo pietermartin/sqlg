@@ -1194,13 +1194,21 @@ public class EdgeLabel extends AbstractLabel {
 
     @Override
     void renameProperty(String name, PropertyColumn propertyColumn) {
-        Pair<String, String> namePair = Pair.of(propertyColumn.getName(), name);
-//        if (!this.uncommittedRenamedProperties.contains(namePair)) {
-//            this.uncommittedRenamedProperties.add(namePair);
-//            TopologyManager.renamePropertyColumn(this.sqlgGraph, getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName(), name);
-//            renameColumn(getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName(), name);
-//            this.getSchema().getTopology().fire(propertyColumn, namePair.getLeft(), TopologyChangeAction.UPDATE);
-//        }
+        this.getSchema().getTopology().lock();
+        String oldName = propertyColumn.getName();
+        Pair<String, String> namePair = Pair.of(oldName, name);
+        if (!this.uncommittedRemovedProperties.contains(name)) {
+            this.uncommittedRemovedProperties.add(oldName);
+            PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyType());
+            this.uncommittedProperties.put(name, copy);
+            TopologyManager.renameEdgeLabelPropertyColumn(this.sqlgGraph, getSchema().getName(), EDGE_PREFIX + getLabel(), oldName, name);
+            renameColumn(getSchema().getName(), EDGE_PREFIX + getLabel(), oldName, name);
+            if (this.getIdentifiers().contains(oldName)) {
+                Preconditions.checkState(!this.renamedIdentifiers.contains(namePair), "BUG! renamedIdentifiers may not yet contain '%s'", oldName);
+                this.renamedIdentifiers.add(namePair);
+            }
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
+        }
     }
 
     @Override
