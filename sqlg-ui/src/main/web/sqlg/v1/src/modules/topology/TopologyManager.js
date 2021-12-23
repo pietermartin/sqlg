@@ -267,6 +267,43 @@ const TopologyManager = {
             callBackError(e);
         })
     },
+    renameVertexLabel: (schemaName, oldVertexLabel, newVertexLabel, callBack, callBackError) => {
+        let url;
+        let params = {
+            schemaName: schemaName,
+            vertexLabel: oldVertexLabel,
+            newVertexLabel: newVertexLabel
+        };
+        url = SqlgGlobal.url + SqlgGlobal.CONTEXT + "rename/schema/:schemaName/:vertexLabel/:newVertexLabel";
+        m.request({
+            method: "PUT",
+            url: url,
+            params: params
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    renameProperties: (schemaName, abstractLabelName, vertexOrEdge, properties, callBack, callBackError) => {
+        m.request({
+            method: "PUT",
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "rename/schema/:schemaName/:abstractLabel/:vertexOrEdge/properties",
+            params: {
+                schemaName: schemaName,
+                abstractLabel: abstractLabelName,
+                vertexOrEdge: vertexOrEdge,
+            },
+            body: properties
+        }).then(function (data) {
+            callBack(data);
+        }).catch(function (e) {
+            callBackError(e);
+        })
+    },
+    renameEdgeLabel: (callBack, callBackError) => {
+
+    }
 }
 
 export default TopologyManager;

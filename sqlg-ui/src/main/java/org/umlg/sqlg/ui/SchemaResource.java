@@ -31,6 +31,26 @@ public class SchemaResource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaResource.class);
 
+    private enum VERTEX_EDGE {
+        VERTEX("vertex"),
+        EDGE("edge");
+        private final String name;
+
+        VERTEX_EDGE(String name) {
+            this.name = name;
+        }
+
+        public static VERTEX_EDGE from(String name) {
+            if ("vertex".equals(name)) {
+                return VERTEX_EDGE.VERTEX;
+            } else if ("edge".equals(name)) {
+                return VERTEX_EDGE.EDGE;
+            }
+            throw new IllegalStateException("Unknown VERTEX_EDGE " + name);
+        }
+
+    }
+
     public static ObjectNode userAllowedToEdit(Request req, Response res) {
         ObjectMapper mapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
         String token = req.cookie(AuthUtil.SQLG_TOKEN);
@@ -229,6 +249,7 @@ public class SchemaResource {
             propertyColumnsGridData.set("data", propertyColumnGridData);
             propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("name", "name", PropertyType.STRING)
                     .setMinWidth(220)
+                    .setEditable(true)
                     .build().toJson(objectMapper));
             propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("type", "sqlg type", PropertyType.STRING)
                     .setMinWidth(220)
@@ -285,7 +306,7 @@ public class SchemaResource {
                     .setMinWidth(80)
                     .build().toJson(objectMapper));
 
-            if (vertexOrEdge.equals("vertex")) {
+            if (vertexOrEdge.equals(VERTEX_EDGE.VERTEX.name)) {
 
                 ObjectNode inEdgeLabelGrid = objectMapper.createObjectNode();
                 abstractLabelObjectNode.set("inEdgeLabels", inEdgeLabelGrid);
@@ -676,13 +697,13 @@ public class SchemaResource {
                     NotificationManager.INSTANCE.sendNotification(
                             String.format(
                                     "Start deleting %s, [%s]",
-                                    abstractLabelHolder.vertexOrEdge.equals("vertex") ? "VertexLabel" : "EdgeLabel",
+                                    abstractLabelHolder.vertexOrEdge.equals(VERTEX_EDGE.VERTEX.name) ? "VertexLabel" : "EdgeLabel",
                                     abstractLabelHolder.abstractLabel));
                     SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
                     Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(abstractLabelHolder.schemaName);
                     if (schemaOptional.isPresent()) {
                         Schema schema = schemaOptional.get();
-                        if (abstractLabelHolder.vertexOrEdge.equals("vertex")) {
+                        if (abstractLabelHolder.vertexOrEdge.equals(VERTEX_EDGE.VERTEX.name)) {
                             Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(abstractLabelHolder.abstractLabel);
                             if (vertexLabelOptional.isPresent()) {
                                 VertexLabel vertexLabel = vertexLabelOptional.get();
@@ -702,7 +723,7 @@ public class SchemaResource {
                     NotificationManager.INSTANCE.sendNotification(
                             String.format(
                                     "Done deleting %s, [%s]",
-                                    abstractLabelHolder.vertexOrEdge.equals("vertex") ? "VertexLabel" : "EdgeLabel",
+                                    abstractLabelHolder.vertexOrEdge.equals(VERTEX_EDGE.VERTEX.name) ? "VertexLabel" : "EdgeLabel",
                                     abstractLabelHolder.abstractLabel));
                 });
         return objectMapper.createObjectNode();
@@ -733,8 +754,9 @@ public class SchemaResource {
                             if (schemaOptional.isPresent()) {
                                 Schema schema = schemaOptional.get();
                                 AbstractLabel _abstractLabel;
-                                switch (propertyHolder.vertexOrEdge) {
-                                    case "vertex":
+                                VERTEX_EDGE vertex_edge = VERTEX_EDGE.from(propertyHolder.vertexOrEdge);
+                                switch (vertex_edge) {
+                                    case VERTEX:
                                         Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(propertyHolder.abstractLabel);
                                         if (vertexLabelOptional.isPresent()) {
                                             _abstractLabel = vertexLabelOptional.get();
@@ -742,7 +764,7 @@ public class SchemaResource {
                                             throw new IllegalStateException(String.format("VertexLabel '%s' not found.", propertyHolder.abstractLabel));
                                         }
                                         break;
-                                    case "edge":
+                                    case EDGE:
                                         Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(propertyHolder.abstractLabel);
                                         if (edgeLabelOptional.isPresent()) {
                                             _abstractLabel = edgeLabelOptional.get();
@@ -836,7 +858,7 @@ public class SchemaResource {
                             NotificationManager.INSTANCE.sendRefreshAbstractLabel(
                                     inEdgeLabelHolder.schemaName,
                                     inEdgeLabelHolder.abstractLabel,
-                                    "vertex",
+                                    VERTEX_EDGE.VERTEX.name,
                                     "Deleted inEdgeLabels successfully.");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
@@ -847,7 +869,7 @@ public class SchemaResource {
                             NotificationManager.INSTANCE.sendRefreshAbstractLabel(
                                     inEdgeLabelHolder.schemaName,
                                     inEdgeLabelHolder.abstractLabel,
-                                    "vertex",
+                                    VERTEX_EDGE.VERTEX.name,
                                     "Failed to delete inEdgeLabels");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
@@ -906,7 +928,7 @@ public class SchemaResource {
                             NotificationManager.INSTANCE.sendRefreshAbstractLabel(
                                     edgeLabelHolder.schemaName,
                                     edgeLabelHolder.abstractLabel,
-                                    "vertex",
+                                    VERTEX_EDGE.VERTEX.name,
                                     "Deleted inEdgeLabels successfully.");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
@@ -917,7 +939,7 @@ public class SchemaResource {
                             NotificationManager.INSTANCE.sendRefreshAbstractLabel(
                                     edgeLabelHolder.schemaName,
                                     edgeLabelHolder.abstractLabel,
-                                    "vertex",
+                                    VERTEX_EDGE.VERTEX.name,
                                     "Failed to delete inEdgeLabels");
                             NotificationManager.INSTANCE.sendNotification(
                                     String.format(
@@ -958,8 +980,9 @@ public class SchemaResource {
                             if (schemaOptional.isPresent()) {
                                 Schema schema = schemaOptional.get();
                                 AbstractLabel _abstractLabel;
-                                switch (indexesHolder.vertexOrEdge) {
-                                    case "vertex":
+                                VERTEX_EDGE vertex_edge = VERTEX_EDGE.from(indexesHolder.vertexOrEdge);
+                                switch (vertex_edge) {
+                                    case VERTEX:
                                         Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(indexesHolder.abstractLabel);
                                         if (vertexLabelOptional.isPresent()) {
                                             _abstractLabel = vertexLabelOptional.get();
@@ -967,7 +990,7 @@ public class SchemaResource {
                                             throw new IllegalStateException(String.format("VertexLabel '%s' not found.", indexesHolder.abstractLabel));
                                         }
                                         break;
-                                    case "edge":
+                                    case EDGE:
                                         Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(indexesHolder.abstractLabel);
                                         if (edgeLabelOptional.isPresent()) {
                                             _abstractLabel = edgeLabelOptional.get();
@@ -1042,8 +1065,9 @@ public class SchemaResource {
                             if (schemaOptional.isPresent()) {
                                 Schema schema = schemaOptional.get();
                                 AbstractLabel _abstractLabel;
-                                switch (partitionsHolder.vertexOrEdge) {
-                                    case "vertex":
+                                VERTEX_EDGE vertex_edge = VERTEX_EDGE.from(partitionsHolder.vertexOrEdge);
+                                switch (vertex_edge) {
+                                    case VERTEX:
                                         Optional<VertexLabel> vertexLabelOptional = schema.getVertexLabel(partitionsHolder.abstractLabel);
                                         if (vertexLabelOptional.isPresent()) {
                                             _abstractLabel = vertexLabelOptional.get();
@@ -1051,7 +1075,7 @@ public class SchemaResource {
                                             throw new IllegalStateException(String.format("VertexLabel '%s' not found.", partitionsHolder.abstractLabel));
                                         }
                                         break;
-                                    case "edge":
+                                    case EDGE:
                                         Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(partitionsHolder.abstractLabel);
                                         if (edgeLabelOptional.isPresent()) {
                                             _abstractLabel = edgeLabelOptional.get();
@@ -1091,6 +1115,133 @@ public class SchemaResource {
                                     String.format(
                                             "Failed deleting partitions, [%s], %s",
                                             partitionsHolder.partitionsToRemove.stream().reduce((a, b) -> a + "," + b).orElse(""), e.getMessage()));
+                        } finally {
+                            sqlgGraph.tx().rollback();
+                        }
+                    }));
+            return objectMapper.createObjectNode();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ObjectNode renameVertexLabel(Request req) {
+        String schemaName = req.params("schemaName");
+        String vertexLabel = req.params("vertexLabel");
+        String newVertexLabel = req.params("newVertexLabel");
+
+        Mono.just(new RenameVertexLabelHolder(schemaName, vertexLabel, newVertexLabel))
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe((renameVertexLabelHolder -> {
+                    SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                    try {
+                        NotificationManager.INSTANCE.sendNotification(
+                                String.format(
+                                        "Start renaming VertexLabel, [%s]",
+                                        renameVertexLabelHolder.vertexLabel));
+                        Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaName);
+                        Preconditions.checkState(schemaOptional.isPresent(), "Schema %s does not exist", schemaName);
+                        Optional<VertexLabel> vertexLabelOptional = schemaOptional.get().getVertexLabel(renameVertexLabelHolder.vertexLabel);
+                        Preconditions.checkState(vertexLabelOptional.isPresent(), "VertexLabel %s does not exist", renameVertexLabelHolder.vertexLabel);
+                        vertexLabelOptional.get().rename(renameVertexLabelHolder.newVertexLabel);
+                        sqlgGraph.tx().commit();
+                        NotificationManager.INSTANCE.sendRefreshTree(
+                                String.format("metaSchema_%s_%s", renameVertexLabelHolder.schemaName, VERTEX_EDGE.VERTEX.name));
+                        NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                renameVertexLabelHolder.schemaName,
+                                renameVertexLabelHolder.vertexLabel,
+                                VERTEX_EDGE.VERTEX.name,
+                                "Renamed VertexLabel successfully");
+                        NotificationManager.INSTANCE.sendNotification(
+                                String.format(
+                                        "Renamed VertexLabel, [%s]",
+                                        renameVertexLabelHolder.vertexLabel));
+                    } catch (Exception e) {
+                        LOGGER.error("Failed to rename VertexLabel!", e);
+                        NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                renameVertexLabelHolder.schemaName,
+                                renameVertexLabelHolder.vertexLabel,
+                                VERTEX_EDGE.VERTEX.name,
+                                "Failed to delete partitions");
+                        NotificationManager.INSTANCE.sendNotification(
+                                String.format(
+                                        "Failed renaming VertexLabel, [%s], %s",
+                                        renameVertexLabelHolder.vertexLabel, e.getMessage()));
+                    } finally {
+                        sqlgGraph.tx().rollback();
+                    }
+                }));
+
+
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        return objectMapper.createObjectNode();
+    }
+
+    public static ObjectNode renameProperties(Request req) {
+        ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
+        String schemaName = req.params("schemaName");
+        String abstractLabel = req.params("abstractLabel");
+        String vertexOrEdge = req.params("vertexOrEdge");
+        String body = req.body();
+        try {
+            Set<Pair<String, String>> propertiesToRename = new HashSet<>();
+            ArrayNode properties = (ArrayNode) objectMapper.readTree(body);
+            for (JsonNode property : properties) {
+                ObjectNode objectNode = (ObjectNode) property;
+                String id = objectNode.get("id").asText();
+                Preconditions.checkState(id.startsWith(schemaName + "_" + abstractLabel + "_"));
+                String oldName = id.substring((schemaName + "_" + abstractLabel + "_").length());
+                String name = objectNode.get("name").asText();
+                propertiesToRename.add(Pair.of(oldName, name));
+            }
+            Mono.just(new PropertyRenameHolder(schemaName, abstractLabel, vertexOrEdge, propertiesToRename))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .subscribe((renamePropertyHolder -> {
+                        SqlgGraph sqlgGraph = SqlgUI.INSTANCE.getSqlgGraph();
+                        try {
+                            Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(renamePropertyHolder.schemaName);
+                            Preconditions.checkState(schemaOptional.isPresent(), "Schema %s does not exist", renamePropertyHolder.schemaName);
+                            VERTEX_EDGE vertex_edge = VERTEX_EDGE.from(renamePropertyHolder.vertexOrEdge);
+                            if (vertex_edge == VERTEX_EDGE.VERTEX) {
+                                Optional<VertexLabel> vertexLabelOptional = schemaOptional.get().getVertexLabel(renamePropertyHolder.abstractLabel);
+                                Preconditions.checkState(vertexLabelOptional.isPresent(), "VertexLabel %s does not exist", renamePropertyHolder.abstractLabel);
+                                for (Pair<String, String> oldNewNamePair : renamePropertyHolder.propertiesToRename) {
+                                    Optional<PropertyColumn> propertyColumnOptional = vertexLabelOptional.get().getProperty(oldNewNamePair.getLeft());
+                                    Preconditions.checkState(propertyColumnOptional.isPresent(), "PropertyColumn %s does not exist", oldNewNamePair.getLeft());
+                                    propertyColumnOptional.get().rename(oldNewNamePair.getRight());
+                                }
+                            } else if (vertex_edge == VERTEX_EDGE.EDGE) {
+                                Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(renamePropertyHolder.abstractLabel);
+                                Preconditions.checkState(edgeLabelOptional.isPresent(), "EdgeLabel %s does not exist", renamePropertyHolder.abstractLabel);
+                                for (Pair<String, String> oldNewNamePair : renamePropertyHolder.propertiesToRename) {
+                                    Optional<PropertyColumn> propertyColumnOptional = edgeLabelOptional.get().getProperty(oldNewNamePair.getLeft());
+                                    Preconditions.checkState(propertyColumnOptional.isPresent(), "PropertyColumn %s does not exist", oldNewNamePair.getLeft());
+                                    propertyColumnOptional.get().rename(oldNewNamePair.getRight());
+                                }
+                            } else {
+                                throw new IllegalStateException("Unknown vertexOrEdge " + vertexOrEdge);
+                            }
+                            sqlgGraph.tx().commit();
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    renamePropertyHolder.schemaName,
+                                    renamePropertyHolder.abstractLabel,
+                                    renamePropertyHolder.vertexOrEdge,
+                                    "Renamed property successfully");
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Renamed property on, [%s]",
+                                            renamePropertyHolder.abstractLabel));
+                        } catch (Exception e) {
+                            LOGGER.error("Failed to rename property!", e);
+                            NotificationManager.INSTANCE.sendRefreshAbstractLabel(
+                                    renamePropertyHolder.schemaName,
+                                    renamePropertyHolder.abstractLabel,
+                                    renamePropertyHolder.vertexOrEdge,
+                                    "Failed to rename property");
+                            NotificationManager.INSTANCE.sendNotification(
+                                    String.format(
+                                            "Failed renaming property on, [%s], %s",
+                                            renamePropertyHolder.abstractLabel, e.getMessage()));
                         } finally {
                             sqlgGraph.tx().rollback();
                         }
@@ -1158,6 +1309,37 @@ public class SchemaResource {
         }
     }
 
+    private static class PropertyRenameHolder {
+        String schemaName;
+        String abstractLabel;
+        String vertexOrEdge;
+        Set<Pair<String, String>> propertiesToRename;
+        String propertiesConcatenated;
+
+        private PropertyRenameHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<Pair<String, String>> propertiesToRename) {
+            this.schemaName = schemaName;
+            this.abstractLabel = abstractLabel;
+            this.vertexOrEdge = vertexOrEdge;
+            this.propertiesToRename = propertiesToRename;
+            this.propertiesConcatenated = propertiesToRename.stream().map(a -> a.getLeft()).reduce((a, b) -> a + b).orElse("");
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.schemaName + this.abstractLabel + this.vertexOrEdge + this.propertiesConcatenated).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof PropertyRenameHolder)) {
+                return false;
+            }
+            PropertyRenameHolder other = (PropertyRenameHolder) o;
+            return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) &&
+                    this.vertexOrEdge.equals(other.vertexOrEdge) && this.propertiesConcatenated.equals(other.propertiesConcatenated);
+        }
+    }
+
     private static class IndexesHolder {
         String schemaName;
         String abstractLabel;
@@ -1215,6 +1397,33 @@ public class SchemaResource {
             EdgeLabelHolder other = (EdgeLabelHolder) o;
             return this.schemaName.equals(other.schemaName) && this.abstractLabel.equals(other.abstractLabel) &&
                     this.edgeLabelsConcatenated.equals(other.edgeLabelsConcatenated);
+        }
+    }
+
+    private static class RenameVertexLabelHolder {
+        String schemaName;
+        String vertexLabel;
+        String newVertexLabel;
+
+        public RenameVertexLabelHolder(String schemaName, String vertexLabel, String newVertexLabel) {
+            this.schemaName = schemaName;
+            this.vertexLabel = vertexLabel;
+            this.newVertexLabel = newVertexLabel;
+        }
+
+        @Override
+        public int hashCode() {
+            return (this.schemaName + this.vertexLabel + this.newVertexLabel).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof PartitionsHolder)) {
+                return false;
+            }
+            RenameVertexLabelHolder other = (RenameVertexLabelHolder) o;
+            return this.schemaName.equals(other.schemaName) && this.vertexLabel.equals(other.vertexLabel) &&
+                    this.newVertexLabel.equals(other.newVertexLabel);
         }
     }
 

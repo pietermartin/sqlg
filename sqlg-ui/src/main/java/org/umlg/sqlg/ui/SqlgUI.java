@@ -1,6 +1,7 @@
 package org.umlg.sqlg.ui;
 
 import org.umlg.sqlg.structure.SqlgGraph;
+import spark.Service;
 import spark.Spark;
 
 public class SqlgUI {
@@ -10,15 +11,15 @@ public class SqlgUI {
 
     public static void initialize(int port) {
         if (INSTANCE == null) {
-            SparkResources.staticResources();
+            Service http = Service.ignite();
+            SparkResources.staticResources(http);
             if (port != -1) {
-                Spark.port(port);
+                http.port(port);
             }
-            SparkResources.websocket();
-            SparkResources.resources();
-            Spark.awaitInitialization();
+            SparkResources.websocket(http);
+            SparkResources.resources(http);
+            http.awaitInitialization();
         }
-
     }
 
     public static void initialize() {

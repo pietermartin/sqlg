@@ -25,7 +25,7 @@ function SchemaDetail(ignore) {
                     }, "createdOn"),
                     m("div.col-sm-10", [
                         m("input.form-control.form-control-sm", {
-                            id: "abstractLabelName",
+                            id: "schemaCreatedOn",
                             readonly: "",
                             type: "text",
                             value: state.topologyDetails.schema.createdOn

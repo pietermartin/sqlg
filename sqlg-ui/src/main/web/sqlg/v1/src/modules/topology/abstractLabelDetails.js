@@ -89,12 +89,19 @@ function AbstractLabelDetail(ignore) {
                         for: "abstractLabelName"
                     }, "name"),
                     m("div.col-sm-10", [
-                        m("input.form-control.form-control-sm", {
-                            id: "abstractLabelName",
-                            readonly: "",
-                            type: "text",
-                            value: state.topologyDetails.abstractLabel.name
-                        })
+                        state.editable ?
+                            m("input.form-control.form-control-sm", {
+                                id: "abstractLabelName",
+                                type: "text",
+                                value: state.topologyDetails.abstractLabel.newName,
+                                oninput: actions.updateVertexLabelName
+                            }) :
+                            m("input.form-control.form-control-sm", {
+                                id: "abstractLabelName",
+                                readonly: '',
+                                type: "text",
+                                value: state.topologyDetails.abstractLabel.name
+                            })
                     ]),
                 ]),
                 state.editable ?
@@ -104,6 +111,14 @@ function AbstractLabelDetail(ignore) {
                             icon: "fas fa-minus-circle",
                             text: "Delete",
                             onclick: actions.deleteAbstractLabel
+                        }),
+                        m(Button, {
+                            class: "ms-1 bg-primary",
+                            icon: "fas fa-minus-circle",
+                            text: "Rename",
+                            enabled: state.editable &&
+                                (state.topologyDetails.abstractLabel.name !== state.topologyDetails.abstractLabel.newName),
+                            onclick: actions.renameVertexLabel
                         })
                     ) :
                     m("div"),
@@ -165,12 +180,17 @@ function AbstractLabelDetail(ignore) {
                         showSpinner: state.topologyDetails.abstractLabel.propertyColumns.spin,
                         data: state.topologyDetails.abstractLabel.propertyColumns.data,
                         deletedItems: state.topologyDetails.abstractLabel.propertyColumns.deletedItems,
+                        updatedItems: state.topologyDetails.abstractLabel.propertyColumns.updatedItems,
                         options: {
-                            deletionCheckBox: state.editable
+                            deletionCheckBox: state.editable,
+                            editable: state.editable,
                         },
                         deletedItemsCallBack: function (data) {
                             m.redraw();
-                        }
+                        },
+                        updatedItemCallBack: function (args) {
+                            m.redraw();
+                        },
                     }),
                     state.editable ? m(ButtonPanel, {justify: "left"}, [
                         m(Button, {
@@ -179,6 +199,13 @@ function AbstractLabelDetail(ignore) {
                             text: "Delete",
                             enabled: state.topologyDetails.abstractLabel.propertyColumns.deletedItems.length > 0,
                             onclick: actions.deleteProperties
+                        }),
+                        m(Button, {
+                            class: "bg-primary",
+                            icon: "fas fa-minus-circle",
+                            text: "Rename",
+                            enabled: state.editable && state.topologyDetails.abstractLabel.propertyColumns.updatedItems.length > 0,
+                            onclick: actions.renameProperties
                         })
                     ]) : m("div")
                 ),

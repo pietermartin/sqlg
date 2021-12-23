@@ -119,6 +119,7 @@ function SqlgModel() {
                         schemaName: "",
                         label: "VertexLabel",//This is 'VertexLabel' or 'EdgeLabel'
                         name: "",
+                        newName: "",
                         identifierData: {
                             userDefinedIdentifiers: false,
                             identifiers: []
@@ -126,6 +127,7 @@ function SqlgModel() {
                         propertyColumns: {
                             data: {columns: [], data: []},
                             checkedItems: [],
+                            updatedItems: [],
                             refresh: false,
                             rebuild: false,
                             spin: false,
@@ -250,6 +252,7 @@ function SqlgModel() {
                             schemaName: "",
                             label: "VertexLabel",//This is 'VertexLabel' or 'EdgeLabel'
                             name: "",
+                            oldName: "",
                             identifierData: {
                                 userDefinedIdentifiers: false,
                                 identifiers: []
@@ -257,6 +260,7 @@ function SqlgModel() {
                             propertyColumns: {
                                 data: {columns: [], data: []},
                                 checkedItems: [],
+                                updatedItems: [],
                                 refresh: false,
                                 rebuild: false,
                                 spin: false,
@@ -329,6 +333,55 @@ function SqlgModel() {
                         return toasts;
                     }
                 });
+
+            },
+            updateVertexLabelName: (e) => {
+                update({
+                    topologyDetails: {
+                        abstractLabel: {
+                            newName: e.currentTarget.value
+                        }
+                    }
+                })
+            },
+            renameVertexLabel: () => {
+                let state = states();
+                TopologyManager.renameVertexLabel(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.abstractLabel.newName,
+                    () => {
+                        actions.message({message: "Submitted", type: "info"});
+                    }, (e) => {
+                        actions.message({message: "Failed to submit VertexLabel rename.", type: "failure"});
+                    });
+            },
+            renameProperties: () => {
+                let state = states();
+                TopologyManager.renameProperties(
+                    state.topologyDetails.abstractLabel.schemaName,
+                    state.topologyDetails.abstractLabel.name,
+                    state.topologyDetails.elementType === ELEMENT_TYPE.VERTEX_LABEL ? "vertex" : "edge",
+                    state.topologyDetails.abstractLabel.propertyColumns.updatedItems.map(i => {
+                            return {id: i.id, name: i.name}
+                    }),
+                    () => {
+                        actions.message({message: "Submitted", type: "info"});
+                        update({
+                            topologyDetails: {
+                                abstractLabel: {
+                                    propertyColumns: {
+                                        updatedItems: (updatedItems) => {
+                                            updatedItems.splice(0, updatedItems.length);
+                                            return updatedItems;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }, (e) => {
+                        actions.message({message: "Failed to submit properties rename.", type: "failure"});
+                    });
 
             },
             loggedInUsername: (e) => {
@@ -976,6 +1029,7 @@ function SqlgModel() {
                                     schemaName: details.abstractLabel.schemaName,
                                     label: details.abstractLabel.label,
                                     name: details.abstractLabel.name,
+                                    newName: details.abstractLabel.name,
                                     identifierData: (identifierData) => {
                                         identifierData.userDefinedIdentifiers = details.abstractLabel.identifierData.userDefinedIdentifiers;
                                         identifierData.identifiers.splice(0, identifierData.identifiers.length);

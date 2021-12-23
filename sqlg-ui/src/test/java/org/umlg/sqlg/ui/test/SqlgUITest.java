@@ -75,7 +75,7 @@ public class SqlgUITest extends BaseTest {
                     put("int2", PropertyType.INTEGER);
                     put("int3", PropertyType.INTEGER);
                 }},
-                ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
+                ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.LIST,
                 "int1");
         Partition p1 = a.ensureListPartitionWithSubPartitionExists("int1", "1,2,3,4,5", PartitionType.LIST, "int2");
