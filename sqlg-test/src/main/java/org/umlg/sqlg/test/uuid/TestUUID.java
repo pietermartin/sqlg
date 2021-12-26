@@ -150,4 +150,26 @@ public class TestUUID extends BaseTest {
         List<Edge> otherEdges = this.sqlgGraph.traversal().V().hasId(person1.id()).outE("knows").toList();
         Assert.assertEquals(100, otherEdges.size());
     }
+
+    @Test
+    public void testUUIDViaNormalBatchMode() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "uuid", UUID.randomUUID());
+        }
+        this.sqlgGraph.tx().commit();
+        List<UUID> uuids = this.sqlgGraph.traversal().V().hasLabel("A").<UUID>values("uuid").toList();
+        Assert.assertEquals(100, uuids.size());
+    }
+
+    @Test
+    public void testUUIDViaStreamingBatchMode() {
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.streamVertex(T.label, "A", "uuid", UUID.randomUUID());
+        }
+        this.sqlgGraph.tx().commit();
+        List<UUID> uuids = this.sqlgGraph.traversal().V().hasLabel("A").<UUID>values("uuid").toList();
+        Assert.assertEquals(100, uuids.size());
+    }
 }
