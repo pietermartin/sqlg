@@ -19,7 +19,7 @@ public class GremlinParser {
         this.sqlgGraph = sqlgGraph;
     }
 
-    public Set<SchemaTableTree> parse(ReplacedStepTree replacedStepTree) {
+    public Set<SchemaTableTree> parse(ReplacedStepTree<?,?> replacedStepTree) {
         ReplacedStep<?, ?> startReplacedStep = replacedStepTree.root().getReplacedStep();
         Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedStepTree.getDepth());

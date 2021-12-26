@@ -79,7 +79,8 @@ public abstract class BaseStrategy {
             MeanGlobalStep.class,
             CountGlobalStep.class,
             GroupStep.class,
-            GroupCountStep.class
+            GroupCountStep.class,
+            IdStep.class
 //            FoldStep.class
     );
 
@@ -221,6 +222,8 @@ public abstract class BaseStrategy {
                 return handlePropertiesStep(this.currentReplacedStep, step);
             } else if (step instanceof PropertyMapStep) {
                 return handlePropertyMapStep(step);
+            } else if (step instanceof IdStep) {
+                return handleIdStep(step);
             } else if (step instanceof MaxGlobalStep) {
                 return handleAggregateGlobalStep(this.currentReplacedStep, step, max);
             } else if (step instanceof MinGlobalStep) {
@@ -257,6 +260,39 @@ public abstract class BaseStrategy {
                 step.removeLabel(label);
             }
         }
+    }
+
+    private boolean handleIdStep(Step<?, ?> step) {
+        Step<?, ?> dropStep = SqlgTraversalUtil.stepAfter(this.traversal, DropStep.class, step);
+        if (dropStep != null) {
+            return false;
+        }
+        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(this.traversal, OrderGlobalStep.class, step);
+        if (orderGlobalStep != null) {
+            return false;
+        }
+        Step<?, ?> selectOneStep = SqlgTraversalUtil.stepAfter(this.traversal, SelectOneStep.class, step);
+        if (selectOneStep != null) {
+            return false;
+        }
+        Step<?, ?> selectStep = SqlgTraversalUtil.stepAfter(this.traversal, SelectStep.class, step);
+        if (selectStep != null) {
+            return false;
+        }
+        Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(this.traversal, step);
+        if (lambdaStep == null) {
+            SqlgIdStep sqlgIdStep = new SqlgIdStep(traversal);
+            for (String label : step.getLabels()) {
+                sqlgIdStep.addLabel(label);
+            }
+            //noinspection unchecked,rawtypes
+            TraversalHelper.replaceStep((Step) step, sqlgIdStep, traversal);
+            this.currentReplacedStep.setIdOnly(true);
+            if (this.currentReplacedStep.getRestrictedProperties() == null) {
+                this.currentReplacedStep.setRestrictedProperties(new HashSet<>());
+            }
+        }
+        return true;
     }
 
     private boolean handlePropertyMapStep(Step<?, ?> step) {
@@ -1337,7 +1373,7 @@ public abstract class BaseStrategy {
         if (localChildren.size() == 1) {
             List<String> groupByKeys = new ArrayList<>();
             Traversal.Admin<?, ?> groupByCountTraversal = localChildren.get(0);
-            if (groupByCountTraversal instanceof  ValueTraversal) {
+            if (groupByCountTraversal instanceof ValueTraversal) {
                 ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal) groupByCountTraversal;
                 groupByKeys.add(elementValueTraversal.getPropertyKey());
                 replacedStep.setRestrictedProperties(new HashSet<>(groupByKeys));

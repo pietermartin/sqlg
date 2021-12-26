@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.uuid.TestUUID;
+import org.umlg.sqlg.test.idstep.TestIdStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.uuid.TestUUID;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestUUID.class
+        TestIdStep.class
 })
 public class AnyTest {
 }

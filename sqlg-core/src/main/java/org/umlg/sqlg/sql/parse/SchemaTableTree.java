@@ -87,6 +87,7 @@ public class SchemaTableTree {
     private ListOrderedSet<String> identifiers;
     private String distributionColumn;
     private boolean localStep = false;
+    private boolean isIdStep = false;
     private boolean fakeEmit = false;
     /**
      * Indicates the DropStep.
@@ -106,6 +107,9 @@ public class SchemaTableTree {
     private List<String> groupBy = null;
     private Pair<String, List<String>> aggregateFunction = null;
 
+    //Indicates a IdStep, only the element id must be returned.
+    private final boolean idOnly;
+
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
@@ -118,6 +122,7 @@ public class SchemaTableTree {
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
+        this.idOnly = false;
     }
 
     /**
@@ -143,7 +148,8 @@ public class SchemaTableTree {
                     int replacedStepDepth,
                     Set<String> labels,
                     Pair<String, List<String>> aggregateFunction,
-                    List<String> groupBy
+                    List<String> groupBy,
+                    boolean idOnly
     ) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
@@ -166,6 +172,7 @@ public class SchemaTableTree {
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
         initializeAliasColumnNameMaps();
+        this.idOnly = idOnly;
     }
 
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
@@ -479,7 +486,9 @@ public class SchemaTableTree {
     }
 
     private static boolean invalidateByRestrictedProperty(SchemaTableTree schemaTableTree) {
-        if (schemaTableTree.getRestrictedProperties() != null) {
+        if (schemaTableTree.idOnly) {
+            return false;
+        } else if (schemaTableTree.getRestrictedProperties() != null) {
             for (String restrictedProperty : schemaTableTree.getRestrictedProperties()) {
                 if (schemaTableTree.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(restrictedProperty)) {
                     return false;
@@ -2790,6 +2799,14 @@ public class SchemaTableTree {
 
     void setLocalStep(boolean localStep) {
         this.localStep = localStep;
+    }
+
+    public boolean isIdStep() {
+        return isIdStep;
+    }
+
+    public void setIdStep(boolean idStep) {
+        isIdStep = idStep;
     }
 
     public boolean isLocalBarrierStep() {
