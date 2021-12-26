@@ -62,6 +62,7 @@ import org.umlg.sqlg.test.usersuppliedpk.topology.TestMultipleIDQuery;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexEdgeGremlin;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKTopology;
+import org.umlg.sqlg.test.uuid.TestUUID;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
@@ -282,7 +283,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTopologyVertexLabelWithIdentifiersRenameDistributed.class,
         TestTopologyVertexLabelWithIdentifiersRename.class,
         TestTopologyEdgeLabelWithIdentifiersRename.class,
-        TestTopologyEdgeLabelRenameDistributed.class
+        TestTopologyEdgeLabelRenameDistributed.class,
+        TestUUID.class
 
 })
 public class AllTest {

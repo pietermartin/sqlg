@@ -427,6 +427,9 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
+                case UUID_ORDINAL:
+                    preparedStatement.setObject(parameterStartIndex++, pair.right);
+                    break;
                 case BOOLEAN_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
@@ -1203,6 +1206,12 @@ public class SqlgUtil {
                         Integer i = resultSet.getInt(column.getColumnIndex());
                         if (!resultSet.wasNull()) {
                             result.add(i);
+                        }
+                        break;
+                    case UUID_ORDINAL:
+                        UUID uuid = (UUID)resultSet.getObject(column.getColumnIndex());
+                        if (!resultSet.wasNull()) {
+                            result.add(uuid);
                         }
                         break;
                     default:

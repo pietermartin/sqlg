@@ -1693,4 +1693,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         }
         return sb.toString();
     }
+
+    @Override
+    public boolean supportsUUID() {
+        return false;
+    }
 }

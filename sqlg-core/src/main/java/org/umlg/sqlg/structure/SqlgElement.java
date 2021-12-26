@@ -695,6 +695,14 @@ public abstract class SqlgElement implements Element {
                 } else {
                     return false;
                 }
+            case UUID_ORDINAL:
+                UUID uuid = (UUID)resultSet.getObject(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, uuid);
+                    return true;
+                } else {
+                    return false;
+                }
             case boolean_ARRAY_ORDINAL:
                 java.sql.Array array = resultSet.getArray(columnIndex);
                 if (array != null) {

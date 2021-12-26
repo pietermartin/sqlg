@@ -157,6 +157,10 @@ public interface SqlDialect {
         return false;
     }
 
+    default boolean supportsUUID() {
+        return true;
+    }
+
     default boolean supportsDurationArrayValues() {
         return true;
     }

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestArrayProperties;
+import org.umlg.sqlg.test.uuid.TestUUID;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.TestArrayProperties;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestArrayProperties.class
+        TestUUID.class
 })
 public class AnyTest {
 }

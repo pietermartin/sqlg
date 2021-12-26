@@ -101,6 +101,8 @@ public class PropertyType {
     public static final PropertyType JSON_ARRAY = new PropertyType("JSON_ARRAY", JSON_ARRAY_ORDINAL, JsonNode[].class.getName(), new String[]{});
 
     public static final int VARCHAR_ORDINAL = 42;
+    public static final int UUID_ORDINAL = 43;
+    public static final PropertyType UUID = new PropertyType("UUID", UUID_ORDINAL, java.util.UUID.class.getName(), new String[]{});
 
     public static PropertyType varChar(int length) {
         return new PropertyType(String.class.getName(), new String[]{}, length);
@@ -196,6 +198,7 @@ public class PropertyType {
                 PropertyType.POLYGON,
                 PropertyType.GEOGRAPHY_POINT,
                 PropertyType.GEOGRAPHY_POLYGON,
+                PropertyType.UUID,
                 PropertyType.boolean_ARRAY,
                 PropertyType.BOOLEAN_ARRAY,
                 PropertyType.byte_ARRAY,

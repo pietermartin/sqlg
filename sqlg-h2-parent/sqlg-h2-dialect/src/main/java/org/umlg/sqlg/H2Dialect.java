@@ -201,6 +201,9 @@ public class H2Dialect extends BaseSqlDialect {
         if (value instanceof JsonNode || value instanceof JsonNode[]) {
             return;
         }
+        if (value instanceof UUID) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
 
@@ -254,6 +257,8 @@ public class H2Dialect extends BaseSqlDialect {
                 return new String[]{"VARCHAR"};
             case VARCHAR_ORDINAL:
                 return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case UUID_ORDINAL:
+                return new String[]{"UUID"};
             case ZONEDDATETIME_ORDINAL:
                 return new String[]{"TIMESTAMP", "VARCHAR"};
             case BOOLEAN_ARRAY_ORDINAL:

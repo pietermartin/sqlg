@@ -1889,6 +1889,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return new String[]{"JSONB[]"};
             case VARCHAR_ORDINAL:
                 return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case UUID_ORDINAL:
+                return new String[]{"UUID"};
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
         }
@@ -2122,6 +2124,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             return;
         }
         if (value instanceof Polygon) {
+            return;
+        }
+        if (value instanceof UUID) {
             return;
         }
         if (value instanceof byte[]) {

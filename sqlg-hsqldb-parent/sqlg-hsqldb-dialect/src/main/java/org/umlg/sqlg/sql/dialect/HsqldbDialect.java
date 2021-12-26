@@ -262,6 +262,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
         if (value instanceof JsonNode) {
             return;
         }
+        if (value instanceof UUID) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -379,6 +382,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
             case JSON_ORDINAL:
                 return new String[]{"LONGVARCHAR"};
+            case UUID_ORDINAL:
+                return new String[]{"UUID"};
             case POINT_ORDINAL:
                 throw new IllegalStateException("HSQLDB does not support gis types!");
             case POLYGON_ORDINAL:
