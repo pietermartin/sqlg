@@ -19,16 +19,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Date: 2014/07/12
  * Time: 7:00 AM
  */
-public final class C3P0DataSource implements SqlgDataSource {
+public final class SqlgC3P0DataSource implements SqlgDataSource {
 
-    private static final Logger logger = LoggerFactory.getLogger(C3P0DataSource.class);
+    private static final Logger logger = LoggerFactory.getLogger(SqlgC3P0DataSource.class);
 
     private ComboPooledDataSource dss;
     private final String jdbcUrl;
     private final SqlDialect sqlDialect;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    public static C3P0DataSource create(final Configuration configuration) throws Exception {
+    public static SqlgC3P0DataSource create(final Configuration configuration) throws Exception {
         Preconditions.checkState(configuration.containsKey(SqlgGraph.JDBC_URL));
         Preconditions.checkState(configuration.containsKey("jdbc.username"));
         Preconditions.checkState(configuration.containsKey("jdbc.password"));
@@ -44,9 +44,12 @@ public final class C3P0DataSource implements SqlgDataSource {
         ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
         comboPooledDataSource.setDriverClass(driver);
         comboPooledDataSource.setJdbcUrl(jdbcUrl);
-        comboPooledDataSource.setMaxPoolSize(configuration.getInt("maxPoolSize", 100));
-        comboPooledDataSource.setMaxIdleTime(configuration.getInt("maxIdleTime", 3600));
-        comboPooledDataSource.setAcquireRetryAttempts(configuration.getInt("jdbc.acquireRetryAttempts", 30));
+        if (!StringUtils.isEmpty(username)) {
+            comboPooledDataSource.setUser(username);
+        }
+        if (!StringUtils.isEmpty(password)) {
+            comboPooledDataSource.setPassword(password);
+        }
         comboPooledDataSource.setForceUseNamedDriverClass(true);
         if (SqlgDataSource.isPostgres(configuration) || SqlgDataSource.isHsqldb(configuration) || SqlgDataSource.isH2(configuration)) {
             comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("/") + 1));
@@ -57,23 +60,17 @@ public final class C3P0DataSource implements SqlgDataSource {
         } else if (SqlgDataSource.isMsSqlServer(configuration)) {
             comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("databaseName=") + "databaseName=".length()));
         }
-        if (!StringUtils.isEmpty(username)) {
-            comboPooledDataSource.setUser(username);
-        }
-        if (!StringUtils.isEmpty(password)) {
-            comboPooledDataSource.setPassword(password);
-        }
-        return new C3P0DataSource(jdbcUrl, comboPooledDataSource, sqlDialect);
+        return new SqlgC3P0DataSource(jdbcUrl, comboPooledDataSource, sqlDialect);
     }
 
-    private C3P0DataSource(String jdbcUrl, ComboPooledDataSource dss, SqlDialect sqlDialect) {
+    private SqlgC3P0DataSource(String jdbcUrl, ComboPooledDataSource dss, SqlDialect sqlDialect) {
         this.dss = dss;
         this.jdbcUrl = jdbcUrl;
         this.sqlDialect = sqlDialect;
     }
 
     @Override
-    public final DataSource getDatasource() {
+    public DataSource getDatasource() {
         return this.dss;
     }
 
@@ -133,69 +130,4 @@ public final class C3P0DataSource implements SqlgDataSource {
         }
     }
 
-    /*
-     final static Set<String> TO_STRING_IGNORE_PROPS = new HashSet<>(Arrays.asList(new String[]{
-     "connection",
-     "lastAcquisitionFailureDefaultUser",
-     "lastCheckinFailureDefaultUser",
-     "lastCheckoutFailureDefaultUser",
-     "lastConnectionTestFailureDefaultUser",
-     "lastIdleTestFailureDefaultUser",
-     "logWriter",
-     "loginTimeout",
-     "numBusyConnections",
-     "numBusyConnectionsAllUsers",
-     "numBusyConnectionsDefaultUser",
-     "numConnections",
-     "numConnectionsAllUsers",
-     "numConnectionsDefaultUser",
-     "numFailedCheckinsDefaultUser",
-     "numFailedCheckoutsDefaultUser",
-     "numFailedIdleTestsDefaultUser",
-     "numIdleConnections",
-     "numIdleConnectionsAllUsers",
-     "numThreadsAwaitingCheckoutDefaultUser",
-     "numIdleConnectionsDefaultUser",
-     "numUnclosedOrphanedConnections",
-     "numUnclosedOrphanedConnectionsAllUsers",
-     "numUnclosedOrphanedConnectionsDefaultUser",
-     "numUserPools",
-     "effectivePropertyCycleDefaultUser",
-     "parentLogger",
-     "startTimeMillisDefaultUser",
-     "statementCacheNumCheckedOutDefaultUser",
-     "statementCacheNumCheckedOutStatementsAllUsers",
-     "statementCacheNumConnectionsWithCachedStatementsAllUsers",
-     "statementCacheNumConnectionsWithCachedStatementsDefaultUser",
-     "statementCacheNumStatementsAllUsers",
-     "statementCacheNumStatementsDefaultUser",
-     "statementDestroyerNumConnectionsInUseAllUsers",
-     "statementDestroyerNumConnectionsWithDeferredDestroyStatementsAllUsers",
-     "statementDestroyerNumDeferredDestroyStatementsAllUsers",
-     "statementDestroyerNumConnectionsInUseDefaultUser",
-     "statementDestroyerNumConnectionsWithDeferredDestroyStatementsDefaultUser",
-     "statementDestroyerNumDeferredDestroyStatementsDefaultUser",
-     "statementDestroyerNumThreads",
-     "statementDestroyerNumActiveThreads",
-     "statementDestroyerNumIdleThreads",
-     "statementDestroyerNumTasksPending",
-     "threadPoolSize",
-     "threadPoolNumActiveThreads",
-     "threadPoolNumIdleThreads",
-     "threadPoolNumTasksPending",
-     "threadPoolStackTraces",
-     "threadPoolStatus",
-     "overrideDefaultUser",
-     "overrideDefaultPassword",
-     "password",
-     "reference",
-     "upTimeMillisDefaultUser",
-     "user",
-     "userOverridesAsString",
-     "allUsers",
-     "connectionPoolDataSource",
-     "propertyChangeListeners",
-     "vetoableChangeListeners"
-     }));
-     */
 }

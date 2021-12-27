@@ -1,41 +1,37 @@
 package org.umlg.sqlg.test.datasource;
 
 import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.ds.C3P0DataSource;
+import org.umlg.sqlg.test.BaseTest;
 
 import javax.sql.DataSource;
-import java.net.URL;
 import java.util.Objects;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertThat;
 
 /**
  * @author jgustie
  */
-public class TestCustomDataSource {
+public class TestCustomDataSource extends BaseTest {
 
-    protected Configuration configuration;
+    private static SqlgDataSource sqlgDataSource;
 
     @Before
-    public void before() throws ConfigurationException {
-        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
-        Configurations configs = new Configurations();
-        configuration = configs.properties(sqlProperties);
+    public void before() throws Exception {
+        super.before();
+        sqlgDataSource = this.sqlgGraph.getSqlgDataSource();
     }
 
     @Test
     public void testCustomDataSourceImplementation() {
         configuration.setProperty(SqlgGraph.DATA_SOURCE, TestSqlgDataSource.class.getName());
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(this.configuration)) {
-            assertThat(sqlgGraph.getSqlgDataSource(), instanceOf(TestSqlgDataSource.class));
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            MatcherAssert.assertThat(sqlgGraph.getSqlgDataSource(), instanceOf(TestSqlgDataSource.class));
         }
     }
 
@@ -45,8 +41,8 @@ public class TestCustomDataSource {
     public static class TestSqlgDataSource implements SqlgDataSource {
 
         public static TestSqlgDataSource create(Configuration configuration) throws Exception {
-            // We cannot extend C3P0DataSoruce, but we can delegate everything to it
-            return new TestSqlgDataSource(C3P0DataSource.create(configuration));
+            // We cannot extend C3P0DataSource, but we can delegate everything to it
+            return new TestSqlgDataSource(sqlgDataSource);
         }
 
         private final SqlgDataSource delegate;

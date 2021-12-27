@@ -51,8 +51,6 @@ public class TestDataSource {
         for (int i = 0; i < 100; i++) {
             Assume.assumeTrue(this.configuration.getString("jdbc.url").contains("postgresql"));
             try {
-//                Configuration readOnlyConfiguration = new PropertiesConfiguration("sqlg.readonly.properties");
-
                 Configurations readOnlyConfiguration = new Configurations();
                 configuration = readOnlyConfiguration.properties("sqlg.readonly.properties");
                 try (SqlgGraph ignored = SqlgGraph.open(configuration)) {

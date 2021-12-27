@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.idstep.TestIdStep;
+import org.umlg.sqlg.test.datasource.TestJNDIInitialization;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,10 @@ import org.umlg.sqlg.test.idstep.TestIdStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestIdStep.class
+//        TestDataSource.class
+//        TestMultiThread.class
+//        TestCustomDataSource.class,
+        TestJNDIInitialization.class
 })
 public class AnyTest {
 }

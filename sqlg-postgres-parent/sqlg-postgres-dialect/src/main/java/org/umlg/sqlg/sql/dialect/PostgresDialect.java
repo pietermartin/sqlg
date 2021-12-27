@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
@@ -38,6 +37,7 @@ import java.sql.Date;
 import java.sql.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -3350,9 +3350,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public int getConnectionBackendPid(Connection connection) {
-        C3P0ProxyConnection c3P0ProxyConnection = (C3P0ProxyConnection) connection;
         try {
-            PGConnection pgConnection = c3P0ProxyConnection.unwrap(PGConnection.class);
+            PGConnection pgConnection = connection.unwrap(PGConnection.class);
             return pgConnection.getBackendPID();
         } catch (Exception e) {
             throw new RuntimeException(e);

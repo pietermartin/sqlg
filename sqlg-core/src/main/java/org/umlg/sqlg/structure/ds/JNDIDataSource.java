@@ -29,8 +29,8 @@ public final class JNDIDataSource implements SqlgDataSource {
 
     public static SqlgDataSource create(Configuration configuration) throws NamingException, SQLException {
         String url = configuration.getString(SqlgGraph.JDBC_URL);
-        if (! isJNDIUrl(url)) {
-            throw new IllegalArgumentException("Creating JNDI ds from invalid url: "+url);
+        if (!isJNDIUrl(url)) {
+            throw new IllegalArgumentException("Creating JNDI ds from invalid url: " + url);
         }
 
         String jndiName = url.substring(JNDI_PREFIX.length());

@@ -6,6 +6,8 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import javax.sql.DataSource;
 
 public interface SqlgDataSource {
+    String C3P0DataSource = "org.umlg.sqlg.structure.ds.SqlgC3P0DataSource";
+    String SqlgHikariDataSource = "org.umlg.sqlg.structure.ds.SqlgHikariDataSource";
     DataSource getDatasource();
 
     SqlDialect getDialect();

@@ -34,7 +34,7 @@
         <sqlg.version>2.1.6-SNAPSHOT</sqlg.version>
         <tinkerpop.version>3.5.1</tinkerpop.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <junit.version>4.13.1</junit.version>
+        <junit.version>4.13.2</junit.version>
     </properties>
     <developers>
         <developer>
@@ -203,6 +203,7 @@
         <module>sqlg-doc</module>
         <module>sqlg-ui</module>
         <module>sqlg-gremlin-server</module>
+        <module>sqlg-jdbc-pool</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -246,6 +247,16 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-core</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-c3p0</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-hikari</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>
@@ -340,6 +351,11 @@
                 <groupId>com.mchange</groupId>
                 <artifactId>c3p0</artifactId>
                 <version>0.9.5.5</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>5.0.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>

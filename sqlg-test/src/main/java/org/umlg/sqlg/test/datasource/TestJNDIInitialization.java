@@ -6,10 +6,11 @@ import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.mockito.ArgumentMatchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.ds.C3P0DataSource;
 
 import javax.naming.Context;
 import javax.naming.spi.InitialContextFactory;
@@ -17,8 +18,6 @@ import javax.naming.spi.NamingManager;
 import javax.sql.DataSource;
 import java.net.URL;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,9 +28,9 @@ public class TestJNDIInitialization {
 
     private static final Logger logger = LoggerFactory.getLogger(TestJNDIInitialization.class);
 
+    private static SqlgGraph sqlgGraph;
     private static Configuration configuration;
     private static DataSource ds;
-    private static C3P0DataSource c3P0DataSource;
 
     @Rule
     public TestRule watcher = new TestWatcher() {
@@ -52,9 +51,10 @@ public class TestJNDIInitialization {
         if (!configuration.containsKey("jdbc.url")) {
             throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
         }
+        sqlgGraph = SqlgGraph.open(configuration);
 
-        c3P0DataSource = C3P0DataSource.create(configuration);
-        ds = c3P0DataSource.getDatasource();
+        SqlgDataSource sqlgDataSource = sqlgGraph.getSqlgDataSource();
+        ds = sqlgDataSource.getDatasource();
 
         //change the connection url to be a JNDI one
         configuration.setProperty("jdbc.url", "jndi:testConnection");
@@ -63,7 +63,7 @@ public class TestJNDIInitialization {
         NamingManager.setInitialContextFactoryBuilder(environment -> {
             InitialContextFactory mockFactory = mock(InitialContextFactory.class);
             Context mockContext = mock(Context.class);
-            when(mockFactory.getInitialContext(any())).thenReturn(mockContext);
+            when(mockFactory.getInitialContext(ArgumentMatchers.any())).thenReturn(mockContext);
 
             when(mockContext.lookup("testConnection")).thenReturn(ds);
 
@@ -73,15 +73,15 @@ public class TestJNDIInitialization {
 
     @AfterClass
     public static void afterClass() {
-        c3P0DataSource.close();
+        sqlgGraph.close();
     }
 
     @Test
     public void testLoadingDatasourceFromJndi() throws Exception {
         try (SqlgGraph g = SqlgGraph.open(configuration)) {
-            assertNotNull(g.getSqlDialect());
+            Assert.assertNotNull(g.getSqlDialect());
             Assert.assertEquals(configuration.getString("jdbc.url"), g.getJdbcUrl());
-            assertNotNull(g.getConnection());
+            Assert.assertNotNull(g.getConnection());
         }
     }
 }
