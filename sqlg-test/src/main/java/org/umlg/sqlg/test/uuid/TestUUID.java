@@ -164,6 +164,7 @@ public class TestUUID extends BaseTest {
 
     @Test
     public void testUUIDViaStreamingBatchMode() {
+        Assume.assumeTrue(isPostgres());
         this.sqlgGraph.tx().streamingBatchModeOn();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex(T.label, "A", "uuid", UUID.randomUUID());
