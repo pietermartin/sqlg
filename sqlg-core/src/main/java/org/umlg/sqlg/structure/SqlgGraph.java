@@ -345,7 +345,7 @@ public class SqlgGraph implements Graph {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
+        this.sqlgTransaction = new SqlgTransaction(this);
 
         // read fetch size from configuration, use default as specified in the dialect
         // this can be very useful for Postgres since according to < https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor>

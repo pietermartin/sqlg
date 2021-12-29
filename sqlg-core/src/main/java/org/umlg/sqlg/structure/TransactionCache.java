@@ -2,7 +2,6 @@ package org.umlg.sqlg.structure;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -16,8 +15,6 @@ class TransactionCache {
     private final Connection connection;
     private final Map<ElementPropertyRollback, Object> elementPropertyRollbackFunctions = new WeakHashMap<>();
     private BatchManager batchManager;
-    private final boolean cacheVertices;
-    private final Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
     private boolean writeTransaction;
 
     /**
@@ -31,31 +28,28 @@ class TransactionCache {
     private Integer fetchSize = null;
 
 
-    static TransactionCache of(boolean cacheVertices, Connection connection, BatchManager batchManager, boolean lazyQueries) {
-        return new TransactionCache(cacheVertices, connection, batchManager, lazyQueries);
+    static TransactionCache of(Connection connection, BatchManager batchManager, boolean lazyQueries) {
+        return new TransactionCache(connection, batchManager, lazyQueries);
     }
 
-    static TransactionCache of(boolean cacheVertices, Connection connection, boolean lazyQueries) {
-        return new TransactionCache(cacheVertices, connection, lazyQueries);
+    static TransactionCache of(Connection connection, boolean lazyQueries) {
+        return new TransactionCache(connection, lazyQueries);
     }
 
     private TransactionCache(
-            boolean cacheVertices,
             Connection connection,
             boolean lazyQueries) {
 
-        this.cacheVertices = cacheVertices;
         this.connection = connection;
         this.lazyQueries = lazyQueries;
     }
 
     private TransactionCache(
-            boolean cacheVertices,
             Connection connection,
             BatchManager batchManager,
             boolean lazyQueries) {
 
-        this(cacheVertices, connection, lazyQueries);
+        this(connection, lazyQueries);
         this.batchManager = batchManager;
     }
 
@@ -84,9 +78,6 @@ class TransactionCache {
         if (this.batchManager != null) {
             this.batchManager.clear();
         }
-        if (this.cacheVertices) {
-            this.vertexCache.clear();
-        }
         try {
             if (!this.connection.isClosed()) {
                 this.connection.close();
@@ -97,88 +88,7 @@ class TransactionCache {
     }
 
     /**
-     * The recordId is not referenced in the SqlgVertex.
-     * It is important that the value of the WeakHashMap does not reference the key.
-     *
-     * @param sqlgGraph The graph
-     * @return the vertex. If cacheVertices is true and the vertex is cached then the cached vertex will be returned else
-     * a the vertex will be instantiated.
-     */
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, Long id) {
-        RecordId recordId = RecordId.from(SchemaTable.of(schema, table), id);
-        SqlgVertex sqlgVertex;
-        if (this.cacheVertices) {
-            sqlgVertex = this.vertexCache.get(recordId);
-            if (sqlgVertex == null) {
-                sqlgVertex = new SqlgVertex(sqlgGraph, id, schema, table);
-                this.vertexCache.put(recordId, sqlgVertex);
-                return sqlgVertex;
-            }
-        } else {
-            sqlgVertex = new SqlgVertex(sqlgGraph, id, schema, table);
-        }
-        return sqlgVertex;
-    }
-
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, List<Comparable> identifiers) {
-        RecordId recordId = RecordId.from(SchemaTable.of(schema, table), identifiers);
-        SqlgVertex sqlgVertex;
-        if (this.cacheVertices) {
-            sqlgVertex = this.vertexCache.get(recordId);
-            if (sqlgVertex == null) {
-                sqlgVertex = new SqlgVertex(sqlgGraph, identifiers, schema, table);
-                this.vertexCache.put(recordId, sqlgVertex);
-                return sqlgVertex;
-            }
-        } else {
-            sqlgVertex = new SqlgVertex(sqlgGraph, identifiers, schema, table);
-        }
-        return sqlgVertex;
-    }
-
-    SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
-        RecordId vertexRecordId = (RecordId) sqlgVertex.id();
-        SqlgVertex sqlgVertexFromCache;
-        if (this.cacheVertices) {
-            sqlgVertexFromCache = this.vertexCache.get(vertexRecordId);
-            if (sqlgVertexFromCache == null) {
-                //copy the RecordId so that the WeakHashMap value does not reference the key
-                SchemaTable schemaTable = vertexRecordId.getSchemaTable();
-                RecordId recordId;
-                if (vertexRecordId.hasSequenceId()) {
-                    recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.sequenceId());
-                } else {
-                    recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getIdentifiers());
-                }
-                this.vertexCache.put(recordId, sqlgVertex);
-                return sqlgVertex;
-            } else {
-                return sqlgVertexFromCache;
-            }
-
-        } else {
-            return sqlgVertex;
-        }
-    }
-
-    void add(SqlgVertex sqlgVertex) {
-        RecordId vertexRecordId = (RecordId) sqlgVertex.id();
-        if (this.vertexCache.containsKey(vertexRecordId)) {
-            throw new IllegalStateException("The vertex cache should never already contain a new vertex!");
-        } else {
-            SchemaTable schemaTable = vertexRecordId.getSchemaTable();
-            RecordId recordId;
-            if (vertexRecordId.hasSequenceId()) {
-                recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.sequenceId());
-            } else {
-                recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getIdentifiers());
-            }
-            this.vertexCache.put(recordId, sqlgVertex);
-        }
-    }
-
-    /**
-     * are we reading the SQL query results laszily?
+     * are we reading the SQL query results lazily?
      *
      * @return true if we are processing the results lazily, false otherwise
      */
@@ -189,7 +99,7 @@ class TransactionCache {
     /**
      * set the laziness on query result reading
      *
-     * @param lazyQueries
+     * @param lazyQueries set the queries to being lazy.
      */
     public void setLazyQueries(boolean lazyQueries) {
         this.lazyQueries = lazyQueries;

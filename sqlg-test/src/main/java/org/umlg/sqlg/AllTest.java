@@ -113,7 +113,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
 
         TestNewVertex.class,
         TestEdgeCache.class,
-        TestVertexCache.class,
         TestTinkerpopBug.class,
         TestLoadSchemaViaNotify.class,
         TestCreateEdgeBetweenVertices.class,

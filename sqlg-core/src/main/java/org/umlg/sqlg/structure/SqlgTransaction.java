@@ -12,7 +12,6 @@ import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.List;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlGraph.
@@ -31,7 +30,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlgTransaction.class);
-    private final boolean cacheVertices;
 
     private final ThreadLocal<TransactionCache> threadLocalTx = ThreadLocal.withInitial(() -> null);
 
@@ -43,10 +41,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private Integer defaultFetchSize = null;
 
 
-    SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
+    SqlgTransaction(Graph sqlgGraph) {
         super(sqlgGraph);
         this.sqlgGraph = (SqlgGraph) sqlgGraph;
-        this.cacheVertices = cacheVertices;
     }
 
     @Override
@@ -70,9 +67,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 boolean lazy = this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY, true);
                 TransactionCache tc;
                 if (supportsBatchMode()) {
-                    tc = TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect) this.sqlgGraph.getSqlDialect())), lazy);
+                    tc = TransactionCache.of(connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect) this.sqlgGraph.getSqlDialect())), lazy);
                 } else {
-                    tc = TransactionCache.of(this.cacheVertices, connection, lazy);
+                    tc = TransactionCache.of(connection, lazy);
                 }
                 tc.setFetchSize(getDefaultFetchSize());
                 this.threadLocalTx.set(tc);
@@ -293,24 +290,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         return this.threadLocalTx.get() != null;
     }
 
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, Long id) {
-        return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, id);
-    }
-
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, List<Comparable> identifiers) {
-        return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, schema, table, identifiers);
-    }
-
-    //Called for vertices that exist but are not yet in the transaction cache
-    SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
-        return this.threadLocalTx.get().putVertexIfAbsent(sqlgVertex);
-    }
-
-    //Called for new vertices
-    void add(SqlgVertex sqlgVertex) {
-        this.threadLocalTx.get().add(sqlgVertex);
-    }
-
     public void add(PreparedStatement preparedStatement) {
         this.threadLocalPreparedStatementTx.get().add(preparedStatement);
     }
@@ -343,7 +322,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     /**
      * get default fetch size
      *
-     * @return
+     * @return The default jdbc fetch size
      */
     private Integer getDefaultFetchSize() {
         return defaultFetchSize;
@@ -352,7 +331,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     /**
      * set default fetch size
      *
-     * @param fetchSize
+     * @param fetchSize Set the jdbc fetch size
      */
     public void setDefaultFetchSize(Integer fetchSize) {
         this.defaultFetchSize = fetchSize;
@@ -361,7 +340,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     /**
      * get fetch size for current transaction
      *
-     * @return
+     * @return The jdbc fetch for the current transaction
      */
     public Integer getFetchSize() {
         readWrite();
@@ -371,7 +350,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     /**
      * set fetch size for current transaction
      *
-     * @param fetchSize
+     * @param fetchSize Set the current transaction's jdbc fetch size
      */
     public void setFetchSize(Integer fetchSize) {
         readWrite();

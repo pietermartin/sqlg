@@ -38,7 +38,6 @@ public class TestTinkerPopEvent extends BaseTest {
         try {
             Configurations configs = new Configurations();
             configuration = configs.properties(sqlProperties);
-            configuration.setProperty("cache.vertices", true);
             if (!configuration.containsKey("jdbc.url")) {
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
             }
@@ -57,8 +56,9 @@ public class TestTinkerPopEvent extends BaseTest {
         a1Again.property("name", "Peter");
         this.sqlgGraph.tx().commit();
 
-        //This fails, TinkerPop does not specify transaction memory visibility
-        Assert.assertEquals("Peter", a1.value("name"));
+        //This used to work when we had a vertex transaction cached.
+//        Assert.assertEquals("Peter", a1.value("name"));
+        Assert.assertNotEquals("Peter", a1.value("name"));
     }
 
     @Test
@@ -89,7 +89,8 @@ public class TestTinkerPopEvent extends BaseTest {
         gts.V(v).properties("to-remove").drop().iterate();
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, IteratorUtils.count(v.properties()));
+        Vertex vAgain = gts.V(v).next();
+        Assert.assertEquals(1, IteratorUtils.count(vAgain.properties()));
         Assert.assertEquals(vpToKeep.value(), v.value("to-keep"));
         MatcherAssert.assertThat(triggered.get(), CoreMatchers.is(true));
     }
