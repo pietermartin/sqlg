@@ -344,7 +344,6 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
     private void testBulkAddEdgesINinStringOut_assert(SqlgGraph sqlgGraph, Vertex v1, Vertex v2) {
         assertEquals(1, sqlgGraph.traversal().V(v1).out("ab").count().next().intValue());
         assertEquals(v2.id(), sqlgGraph.traversal().V(v1).out("ab").next().id());
-
     }
 
 }
