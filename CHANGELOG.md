@@ -1,5 +1,6 @@
 ##2.1.6
 
+* Upgrade postgresql jdbc driver to 42.3.1
 * Implemented [#361](https://github.com/pietermartin/sqlg/issues/361). Implements UUID support on postgresql, hsqldb and h2.
 * Implemented [#431](https://github.com/pietermartin/sqlg/issues/431). Optimizes `id()`.
 * Implemented [#139](https://github.com/pietermartin/sqlg/issues/139).

@@ -156,18 +156,19 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return "bool";
             case SHORT_ARRAY_ORDINAL:
             case short_ARRAY_ORDINAL:
-                return "smallint";
+                return "int2";
             case INTEGER_ARRAY_ORDINAL:
             case int_ARRAY_ORDINAL:
-                return "integer";
+                return "int4";
             case LONG_ARRAY_ORDINAL:
             case long_ARRAY_ORDINAL:
-                return "bigint";
+                return "int8";
             case FLOAT_ARRAY_ORDINAL:
             case float_ARRAY_ORDINAL:
+                return "float4";
             case double_ARRAY_ORDINAL:
             case DOUBLE_ARRAY_ORDINAL:
-                return "float";
+                return "float8";
             case STRING_ARRAY_ORDINAL:
                 return "text";
             case LOCALDATETIME_ARRAY_ORDINAL:

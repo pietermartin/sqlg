@@ -60,7 +60,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
     @Override
     public List<Triple<String, String, String>> getVertexTables(DatabaseMetaData metaData) {
         List<Triple<String, String, String>> vertexTables = new ArrayList<>();
-        String[] types = new String[]{"TABLE"};
+        String[] types = new String[]{"TABLE", "PARTITIONED TABLE"};
         try {
             //load the vertices
             try (ResultSet vertexRs = metaData.getTables(null, null, Topology.VERTEX_PREFIX + "%", types)) {

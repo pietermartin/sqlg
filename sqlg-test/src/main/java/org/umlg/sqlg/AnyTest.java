@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.datasource.TestJNDIInitialization;
+import org.umlg.sqlg.test.topology.TestForeignSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,7 @@ import org.umlg.sqlg.test.datasource.TestJNDIInitialization;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestDataSource.class
-//        TestMultiThread.class
-//        TestCustomDataSource.class,
-        TestJNDIInitialization.class
+        TestForeignSchema.class
 })
 public class AnyTest {
 }

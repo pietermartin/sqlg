@@ -19,17 +19,18 @@ import java.util.Properties;
  */
 public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgPostgresProvider.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgPostgresProvider.class);
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
-        logger.info("Postgresql, Starting test: " + test.getSimpleName() + "." + testMethodName);
-        Map<String, Object> m = new HashMap<String, Object>() {{
+        LOGGER.info("Postgresql, Starting test: " + test.getSimpleName() + "." + testMethodName);
+        Map<String, Object> m = new HashMap<>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
             put("jdbc.username", "postgres");
             put("jdbc.password", "postgres");
-            put("maxPoolSize", 10);
+            put("c3p0.maxPoolSize", 10);
+            put("dataSource.maximumPoolSize", 3);
         }};
 
         InputStream sqlProperties = Thread.currentThread().getContextClassLoader().getResourceAsStream("sqlg.properties");
@@ -48,13 +49,11 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
                     m.put(k, v);
                 }
             } catch (IOException ioe) {
-                LoggerFactory.getLogger(getClass()).error("Cannot read properties from sqlg.properties", ioe.getMessage());
+                LOGGER.error("Cannot read properties from sqlg.properties", ioe);
             }
 
         }
         return m;
-
-
     }
 
 

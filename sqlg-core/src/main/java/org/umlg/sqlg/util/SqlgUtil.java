@@ -179,7 +179,7 @@ public class SqlgUtil {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 E sqlgElement = null;
                 boolean resultSetWasNull = false;
-                Long id = -1L;
+                long id = -1L;
                 if (schemaTableTree.isHasIDPrimaryKey()) {
                     //aggregate queries have no ID
                     if (!schemaTableTree.hasAggregateFunction()) {

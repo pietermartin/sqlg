@@ -340,13 +340,14 @@ public class TestMultiThread extends BaseTest {
      */
     @Test
     public void testMultipleGraphsMultipleLabels() throws Exception {
+        Assume.assumeTrue(isPostgres());
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             Configurations configs = new Configurations();
             configuration = configs.properties(sqlProperties);
-            Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
-            configuration.addProperty("maxPoolSize", 3);
+            configuration.addProperty("c3p0.maxPoolSize", 3);
+            configuration.addProperty("dataSource.maximumPoolSize", 3);
             if (!configuration.containsKey("jdbc.url"))
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
 
