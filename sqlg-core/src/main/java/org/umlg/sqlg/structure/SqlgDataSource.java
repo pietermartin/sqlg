@@ -49,4 +49,11 @@ public interface SqlgDataSource {
         return configuration.getString("jdbc.url").contains("mysql");
     }
 
+    default boolean isC3p0() {
+        return false;
+    }
+
+    default boolean isHikari() {
+        return false;
+    }
 }
