@@ -21,18 +21,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Date: 2014/07/12
  * Time: 7:00 AM
  */
-@SuppressWarnings({"CommentedOutCode", "unused"})
+@SuppressWarnings({"unused"})
 public final class SqlgHikariDataSource implements SqlgDataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(SqlgHikariDataSource.class);
 
-    private HikariConfig config = new HikariConfig();
+    private final HikariConfig config = new HikariConfig();
     private HikariDataSource dss;
     private final String jdbcUrl;
     private final SqlDialect sqlDialect;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    public static SqlgHikariDataSource create(final Configuration configuration) throws Exception {
+    public static SqlgHikariDataSource create(final Configuration configuration) {
         Preconditions.checkState(configuration.containsKey(SqlgGraph.JDBC_URL));
         Preconditions.checkState(configuration.containsKey("jdbc.username"));
         Preconditions.checkState(configuration.containsKey("jdbc.password"));
@@ -121,4 +121,8 @@ public final class SqlgHikariDataSource implements SqlgDataSource {
         }
     }
 
+    @Override
+    public boolean isHikari() {
+        return true;
+    }
 }
