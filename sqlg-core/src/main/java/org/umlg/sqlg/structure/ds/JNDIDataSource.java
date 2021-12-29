@@ -69,18 +69,14 @@ public final class JNDIDataSource implements SqlgDataSource {
     @Override
     public String getPoolStatsAsJson() {
         try {
-            StringBuilder json = new StringBuilder();
-            json.append("[");
-
-            json.append("{\"jdbcUrl\":\"").append(jdbcUrl).append("\",");
-            json.append("\"jndi\": true");
-            json.append("}");
-
-
-            json.append("]");
-            return json.toString();
+            return "[" +
+                    "{\"jdbcUrl\":\"" + jdbcUrl + "\"," +
+                    "\"jndi\": true" +
+                    "}" +
+                    "]";
         } catch (Exception e) {
             throw new IllegalStateException("Json generation failed", e);
         }
     }
+
 }
