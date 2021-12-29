@@ -122,11 +122,11 @@ public class RecordId implements KryoSerializable, Comparable {
         AbstractLabel abstractLabel;
         Optional<VertexLabel> vertexLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", schemaTable.getSchema())))
                 .getVertexLabel(schemaTable.getTable());
-        if (!vertexLabel.isPresent()) {
+        if (vertexLabel.isEmpty()) {
             Optional<EdgeLabel> edgeLabel = sqlgGraph.getTopology().getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", schemaTable.getSchema())))
                     .getEdgeLabel(schemaTable.getTable());
-            if (!edgeLabel.isPresent()) {
-                throw new IllegalStateException(String.format("SchemaTable %s not found", schemaTable.toString()));
+            if (edgeLabel.isEmpty()) {
+                throw new IllegalStateException(String.format("SchemaTable %s not found", schemaTable));
             }
             abstractLabel = edgeLabel.get();
         } else {
@@ -142,7 +142,7 @@ public class RecordId implements KryoSerializable, Comparable {
                 Comparable value = (Comparable) SqlgUtil.stringValueToType(propertyType, identifiers[count++].trim());
                 identifierValues.add(value);
             } else {
-                throw new IllegalStateException(String.format("identifier %s for %s not found", identifier, schemaTable.toString()));
+                throw new IllegalStateException(String.format("identifier %s for %s not found", identifier, schemaTable));
             }
         }
         return RecordId.from(schemaTable, identifierValues);
