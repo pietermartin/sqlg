@@ -40,6 +40,7 @@ public class TestCustomDataSource extends BaseTest {
      */
     public static class TestSqlgDataSource implements SqlgDataSource {
 
+        @SuppressWarnings("unused")
         public static TestSqlgDataSource create(Configuration configuration) throws Exception {
             // We cannot extend C3P0DataSource, but we can delegate everything to it
             return new TestSqlgDataSource(sqlgDataSource);
@@ -70,6 +71,7 @@ public class TestCustomDataSource extends BaseTest {
         public String getPoolStatsAsJson() {
             return delegate.getPoolStatsAsJson();
         }
+        
     }
     
 }
