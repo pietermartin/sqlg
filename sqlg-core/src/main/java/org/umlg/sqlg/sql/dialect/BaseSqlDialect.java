@@ -85,7 +85,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
     @Override
     public List<Triple<String, String, String>> getEdgeTables(DatabaseMetaData metaData) {
         List<Triple<String, String, String>> edgeTables = new ArrayList<>();
-        String[] types = new String[]{"TABLE"};
+        String[] types = new String[]{"TABLE", "PARTITIONED TABLE"};
         try {
             //load the edges without their properties
             try (ResultSet edgeRs = metaData.getTables(null, null, Topology.EDGE_PREFIX + "%", types)) {
