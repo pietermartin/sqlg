@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Date: 2014/07/12
  * Time: 7:00 AM
  */
+@SuppressWarnings("unused")
 public final class SqlgC3P0DataSource implements SqlgDataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(SqlgC3P0DataSource.class);
@@ -49,6 +50,11 @@ public final class SqlgC3P0DataSource implements SqlgDataSource {
         }
         if (!StringUtils.isEmpty(password)) {
             comboPooledDataSource.setPassword(password);
+        }
+        //Only used for testing, under normal circumstances it can be set in c3p0.properties
+        if (configuration.containsKey("c3p0.maxPoolSize")) {
+            int maxPoolSize = configuration.getInt("c3p0.maxPoolSize");
+            comboPooledDataSource.setMaxPoolSize(maxPoolSize);
         }
         comboPooledDataSource.setForceUseNamedDriverClass(true);
         if (SqlgDataSource.isPostgres(configuration) || SqlgDataSource.isHsqldb(configuration) || SqlgDataSource.isH2(configuration)) {
@@ -130,4 +136,8 @@ public final class SqlgC3P0DataSource implements SqlgDataSource {
         }
     }
 
+    @Override
+    public boolean isC3p0() {
+        return true;
+    }
 }
