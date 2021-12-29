@@ -37,5 +37,15 @@
             <artifactId>sqlg-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>org.umlg</groupId>-->
+        <!--            <artifactId>sqlg-c3p0</artifactId>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
+        <dependency>
+            <groupId>org.umlg</groupId>
+            <artifactId>sqlg-hikari</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
