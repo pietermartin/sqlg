@@ -108,12 +108,12 @@
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
                         <include>**/HsqldbAllTest.java</include>
 
-<!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
-<!--                        <include>**/PostgresAllTest.java</include>-->
+                        <include>**/SqlgPostgresStructureStandardTest.java</include>
+                        <include>**/SqlgPostgresProcessStandardTest.java</include>
+                        <include>**/PostgresAllTest.java</include>
 
-<!--                        <include>**/SqlgMariaDBProcessStandardTest.java</include>-->
-<!--                        <include>**/MariadbAllTest.java</include>-->
+                        <include>**/SqlgMariaDBProcessStandardTest.java</include>
+                        <include>**/MariadbAllTest.java</include>
 
 <!--                        <include>**/SqlgMSSqlServerStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgGraphMSSqlServerProcessStandardTest.java</include>-->
