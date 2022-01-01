@@ -100,13 +100,13 @@
                 <configuration>
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <includes>
-                        <include>**/H2AllTest.java</include>
-                        <include>**/SqlgH2StructureStandardTest.java</include>
-                        <include>**/SqlgH2ProcessStandardTest.java</include>
+<!--                        <include>**/H2AllTest.java</include>-->
+<!--                        <include>**/SqlgH2StructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
 
-                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
-                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
-                        <include>**/HsqldbAllTest.java</include>
+<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
+<!--                        <include>**/HsqldbAllTest.java</include>-->
 
 <!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
