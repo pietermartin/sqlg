@@ -102,7 +102,7 @@
                     <includes>
                         <include>**/H2AllTest.java</include>
                         <include>**/SqlgH2StructureStandardTest.java</include>
-<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
+                        <include>**/SqlgH2ProcessStandardTest.java</include>
 
 <!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
