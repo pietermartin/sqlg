@@ -1856,7 +1856,7 @@ public class Schema implements TopologyInf {
             EdgeLabel edgeLabel = this.outEdgeLabels.get(label);
             EdgeLabel foreignEdgeLabel = edgeLabel.readOnlyCopy(topology, foreignSchema, foreignSchemas);
             foreignSchema.addToAllEdgeCache(foreignEdgeLabel);
-            this.outEdgeLabels.put(label, foreignEdgeLabel);
+            foreignSchema.outEdgeLabels.put(label, foreignEdgeLabel);
         }
     }
 

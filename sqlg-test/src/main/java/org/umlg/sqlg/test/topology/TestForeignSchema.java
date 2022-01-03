@@ -32,7 +32,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "DuplicatedCode"})
 public class TestForeignSchema extends BaseTest {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(TestForeignSchema.class);
@@ -286,7 +286,15 @@ public class TestForeignSchema extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
 
-        this.sqlgGraph.getTopology().importForeignSchemas(Set.of(this.sqlgGraphFdw.getTopology().getSchema("A").orElseThrow()));
+        Schema a1 = this.sqlgGraphFdw.getTopology().getSchema("A").orElseThrow();
+        EdgeLabel ab = a1.getEdgeLabel("ab").orElseThrow();
+        this.sqlgGraph.getTopology().importForeignSchemas(Set.of(a1));
+        EdgeLabel ab_after =  a1.getEdgeLabel("ab").orElseThrow();
+        VertexLabel aVertexLabel_after = a1.getVertexLabel("A").orElseThrow();
+        VertexLabel bVertexLabel_after = a1.getVertexLabel("B").orElseThrow();
+        Assert.assertSame(ab, ab_after);
+        Assert.assertSame(aVertexLabel, aVertexLabel_after);
+        Assert.assertSame(bVertexLabel, bVertexLabel_after);
 
         Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("A");
         Assert.assertTrue(schemaOptional.isPresent());
@@ -341,11 +349,6 @@ public class TestForeignSchema extends BaseTest {
             failed = true;
         }
         Assert.assertTrue(failed);
-    }
-
-    @Test
-    public void clearImportedTopologyElements() {
-
     }
 
     @Test
