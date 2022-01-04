@@ -1312,7 +1312,7 @@ public class EdgeLabel extends AbstractLabel {
         }
         for (VertexLabel inVertexLabel : this.inVertexLabels) {
             Optional<VertexLabel> foreignInVertexLabelOptional = foreignSchemas.stream()
-                    .filter(s -> s.getVertexLabel(inVertexLabel.getLabel()).isPresent())
+                    .filter(s -> s.getName().equals(inVertexLabel.getSchema().getName()) && s.getVertexLabel(inVertexLabel.getLabel()).isPresent())
                     .map(s -> s.getVertexLabel(inVertexLabel.getLabel()).orElseThrow())
                     .findAny();
             Preconditions.checkState(foreignInVertexLabelOptional.isPresent());

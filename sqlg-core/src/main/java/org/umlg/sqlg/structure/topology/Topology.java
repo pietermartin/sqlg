@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2016/09/04
@@ -613,48 +614,54 @@ public class Topology {
         }
     }
 
-    public void clearForeignSchemas() {
+    public void clearForeignSchemas(Set<String> schemasToClear) {
         Set<String> toRemove = new HashSet<>();
-        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-            String schemaKey = schemaEntry.getKey();
-            Schema schema = schemaEntry.getValue();
-            if (schema.isForeignSchema()) {
-                toRemove.add(schemaKey);
-                for (Map.Entry<String, EdgeLabel> edgeLabelEntry : schema.getEdgeLabels().entrySet()) {
-                    String key = edgeLabelEntry.getKey();
-                    EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                    Preconditions.checkState(edgeLabel.isForeign());
-                    Preconditions.checkState(this.allTableCache.remove(key) != null, "Failed to remove '%s' from 'allTableCache'", key);
-                    Preconditions.checkState(
-                            this.edgeForeignKeyCache.remove(schemaKey + "." + EDGE_PREFIX + edgeLabel.getLabel()) != null,
-                            "Failed to remove '%s' from 'edgeForeignKeyCache'", key);
+        for (String schemaNameToRemove : schemasToClear) {
+            if (this.schemas.containsKey(schemaNameToRemove)) {
+                Schema schema = this.schemas.get(schemaNameToRemove);
+                if (schema.isForeignSchema()) {
+                    toRemove.add(schemaNameToRemove);
+                    for (Map.Entry<String, EdgeLabel> edgeLabelEntry : schema.getEdgeLabels().entrySet()) {
+                        String key = edgeLabelEntry.getKey();
+                        EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+                        Preconditions.checkState(edgeLabel.isForeign());
+                        Preconditions.checkState(this.allTableCache.remove(key) != null, "Failed to remove '%s' from 'allTableCache'", key);
+                        Preconditions.checkState(
+                                this.edgeForeignKeyCache.remove(schemaNameToRemove + "." + EDGE_PREFIX + edgeLabel.getLabel()) != null,
+                                "Failed to remove '%s' from 'edgeForeignKeyCache'", key);
+                    }
+                    for (Map.Entry<String, VertexLabel> vertexLabelEntry : schema.getVertexLabels().entrySet()) {
+                        String key = vertexLabelEntry.getKey();
+                        VertexLabel vertexLabel = vertexLabelEntry.getValue();
+                        Preconditions.checkState(vertexLabel.isForeign());
+                        Preconditions.checkState(this.allTableCache.remove(key) != null, "Failed to remove '%s' from 'allTableCache'", key);
+                        SchemaTable schemaTable = SchemaTable.of(schemaNameToRemove, VERTEX_PREFIX + vertexLabel.getLabel());
+                        Preconditions.checkState(this.schemaTableForeignKeyCache.remove(schemaTable) != null, "Failed to remove '%s' from 'schemaTableForeignKeyCache'", key);
+                    }
+                } else {
+                    Pair<Set<Pair<String,String>>, Set<Pair<String, String>>> removed = schema.clearForeignAbstractLabels();
+                    for (Pair<String,String> vertex: removed.getLeft()) {
+                        Preconditions.checkState(this.allTableCache.remove(vertex.getLeft()) != null, "Failed to remove '%s' from 'allTableCache", vertex.getLeft());
+                        SchemaTable schemaTable = SchemaTable.of(schemaNameToRemove, VERTEX_PREFIX + vertex.getRight());
+                        Preconditions.checkState(this.schemaTableForeignKeyCache.remove(schemaTable) != null, "Failed to remove '%s' from 'schemaTableForeignKeyCache'", schemaTable.toString());
+                    }
+                    for (Pair<String,String> edge: removed.getRight()) {
+                        Preconditions.checkState(this.allTableCache.remove(edge.getLeft()) != null, "Failed to remove '%s' from 'allTableCache", edge.getLeft());
+                        Preconditions.checkState(
+                                this.edgeForeignKeyCache.remove(schemaNameToRemove + "." + EDGE_PREFIX + edge.getRight()) != null,
+                                "Failed to remove '%s' from 'edgeForeignKeyCache'", edge);
+                    }
                 }
-                for (Map.Entry<String, VertexLabel> vertexLabelEntry : schema.getVertexLabels().entrySet()) {
-                    String key = vertexLabelEntry.getKey();
-                    VertexLabel vertexLabel = vertexLabelEntry.getValue();
-                    Preconditions.checkState(vertexLabel.isForeign());
-                    Preconditions.checkState(this.allTableCache.remove(key) != null, "Failed to remove '%s' from 'allTableCache'", key);
-                    SchemaTable schemaTable = SchemaTable.of(schemaKey, VERTEX_PREFIX + vertexLabel.getLabel());
-                    Preconditions.checkState(this.schemaTableForeignKeyCache.remove(schemaTable) != null, "Failed to remove '%s' from 'schemaTableForeignKeyCache'", key);
-                }
-            } else {
-                Pair<Set<Pair<String,String>>, Set<Pair<String, String>>> removed = schema.clearForeignAbstractLabels();
-                for (Pair<String,String> vertex: removed.getLeft()) {
-                    Preconditions.checkState(this.allTableCache.remove(vertex.getLeft()) != null, "Failed to remove '%s' from 'allTableCache", vertex.getLeft());
-                    SchemaTable schemaTable = SchemaTable.of(schemaKey, VERTEX_PREFIX + vertex.getRight());
-                    Preconditions.checkState(this.schemaTableForeignKeyCache.remove(schemaTable) != null, "Failed to remove '%s' from 'schemaTableForeignKeyCache'", schemaTable.toString());
-                }
-                for (Pair<String,String> edge: removed.getRight()) {
-                    Preconditions.checkState(this.allTableCache.remove(edge.getLeft()) != null, "Failed to remove '%s' from 'allTableCache", edge.getLeft());
-                    Preconditions.checkState(
-                            this.edgeForeignKeyCache.remove(schemaKey + "." + EDGE_PREFIX + edge.getRight()) != null,
-                            "Failed to remove '%s' from 'edgeForeignKeyCache'", edge);
-                }
+
             }
         }
         for (String remove : toRemove) {
             this.schemas.remove(remove);
         }
+    }
+
+    public void clearForeignSchemas() {
+        clearForeignSchemas(this.schemas.values().stream().map(Schema::getName).collect(Collectors.toSet()));
     }
 
     public void importForeignVertexEdgeLabels(Schema importIntoSchema, Set<VertexLabel> vertexLabels, Set<EdgeLabel> edgeLabels) {

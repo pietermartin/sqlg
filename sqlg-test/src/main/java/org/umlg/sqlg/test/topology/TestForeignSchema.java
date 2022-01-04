@@ -352,6 +352,68 @@ public class TestForeignSchema extends BaseTest {
     }
 
     @Test
+    public void testVertexLabelWithSameNameInDifferentSchemas() {
+        Schema real = this.sqlgGraphFdw.getTopology().ensureSchemaExist("REAL");
+        VertexLabel realPerson = real.ensureVertexLabelExist("Person");
+        VertexLabel realSoftware = real.ensureVertexLabelExist("Software");
+        realPerson.ensureEdgeLabelExist("created", realSoftware);
+        Schema plan = this.sqlgGraphFdw.getTopology().ensureSchemaExist("PLAN");
+        VertexLabel planPerson = plan.ensureVertexLabelExist("Person");
+        VertexLabel planSoftware = plan.ensureVertexLabelExist("Software");
+        planPerson.ensureEdgeLabelExist("created", planSoftware);
+        this.sqlgGraphFdw.tx().commit();
+        this.sqlgGraph.getTopology().importForeignSchemas(Set.of(real, plan));
+
+        Map<String, VertexLabel> vertexLabelMap = real.getVertexLabels();
+        Assert.assertTrue(vertexLabelMap.containsKey("REAL.V_Person"));
+        Assert.assertTrue(vertexLabelMap.containsKey("REAL.V_Software"));
+        VertexLabel vertexLabel = vertexLabelMap.get("REAL.V_Person");
+        Map<String, EdgeLabel> edgeLabelMap = vertexLabel.getInEdgeLabels();
+        Assert.assertEquals(0, edgeLabelMap.size());
+        vertexLabel = vertexLabelMap.get("REAL.V_Software");
+        edgeLabelMap = vertexLabel.getInEdgeLabels();
+        Assert.assertEquals(1, edgeLabelMap.size());
+
+        Schema foreignReal = this.sqlgGraph.getTopology().getSchema("REAL").orElseThrow();
+        vertexLabelMap = foreignReal.getVertexLabels();
+        Assert.assertTrue(vertexLabelMap.containsKey("REAL.V_Person"));
+        Assert.assertTrue(vertexLabelMap.containsKey("REAL.V_Software"));
+        vertexLabel = vertexLabelMap.get("REAL.V_Person");
+        edgeLabelMap = vertexLabel.getInEdgeLabels();
+        Assert.assertEquals(0, edgeLabelMap.size());
+        vertexLabel = vertexLabelMap.get("REAL.V_Software");
+        edgeLabelMap = vertexLabel.getInEdgeLabels();
+        Assert.assertEquals(1, edgeLabelMap.size());
+    }
+
+    @Test
+    public void testReimportForeignSchema() {
+        Schema aSchema = this.sqlgGraphFdw.getTopology().ensureSchemaExist("A");
+        VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("a", PropertyType.STRING);
+                }}
+        );
+        VertexLabel bVertexLabel = aSchema.ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<>() {{
+                    put("a", PropertyType.STRING);
+                }}
+        );
+        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
+            put("a", PropertyType.STRING);
+        }});
+        this.sqlgGraphFdw.tx().commit();
+        this.sqlgGraph.getTopology().importForeignSchemas(Set.of(aSchema));
+        this.sqlgGraph.getTopology().clearForeignSchemas();
+        this.sqlgGraph.getTopology().importForeignSchemas(Set.of(aSchema));
+        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema("A").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("B").isPresent());
+    }
+
+    @Test
     public void testImportForeignSchemaEdgeLabelAcrossSchemaInVertexLabelFailure1() throws SQLException {
         Schema aSchema = this.sqlgGraphFdw.getTopology().ensureSchemaExist("A");
         Schema bSchema = this.sqlgGraphFdw.getTopology().ensureSchemaExist("B");
