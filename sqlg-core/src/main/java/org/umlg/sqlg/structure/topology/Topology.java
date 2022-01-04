@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -60,6 +61,7 @@ public class Topology {
     private final Map<String, Schema> schemas = new ConcurrentHashMap<>();
 
     private final ThreadLocal<Boolean> schemaChanged = ThreadLocal.withInitial(() -> false);
+    private final AtomicBoolean locked = new AtomicBoolean(false);
     private final ThreadLocalMap<String, Schema> uncommittedSchemas = new ThreadLocalMap<>();
     private final Set<String> uncommittedRemovedSchemas = new ConcurrentSkipListSet<>();
     private final Map<String, Schema> metaSchemas;
@@ -512,12 +514,22 @@ public class Topology {
     }
 
     /**
-     * Global lock on the topology.
-     * For distributed graph (multiple jvm) this happens on the db via a lock sql statement.
+     * Global indicator to change the topology.
      */
-    void lock() {
+    void startSchemaChange() {
+        if (this.locked.get()) {
+            throw new IllegalStateException("The topology is locked! Changes are not allowed, first unlock it.");
+        }
         this.sqlgGraph.tx().readWrite();
         this.schemaChanged.set(true);
+    }
+
+    public void lock() {
+        this.locked.set(true);
+    }
+
+    public void unlock() {
+        this.locked.set(false);
     }
 
     boolean isSchemaChanged() {
@@ -542,7 +554,7 @@ public class Topology {
         Optional<Schema> schemaOptional = this.getSchema(schemaName);
         Schema schema;
         if (schemaOptional.isEmpty()) {
-            this.lock();
+            this.startSchemaChange();
             //search again after the lock is obtained.
             schemaOptional = this.getSchema(schemaName);
             if (schemaOptional.isEmpty()) {
@@ -1034,7 +1046,7 @@ public class Topology {
     }
 
     public void cacheTopology() {
-        this.lock();
+        this.startSchemaChange();
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         //load the last log
         //the last timestamp is needed when just after obtaining the lock the log table is queried again to ensure that the last log is indeed
@@ -1699,7 +1711,7 @@ public class Topology {
      * @param preserveData should we preserve the SQL data?
      */
     void removeSchema(Schema schema, boolean preserveData) {
-        lock();
+        startSchemaChange();
         if (!this.uncommittedRemovedSchemas.contains(schema.getName())) {
             // remove edge roles in other schemas pointing to vertex labels in removed schema
             // TODO undo this in case of rollback?

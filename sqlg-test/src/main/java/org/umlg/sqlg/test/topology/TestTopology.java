@@ -26,6 +26,44 @@ import java.util.*;
 public class TestTopology extends BaseTest {
 
     @Test
+    public void testTopologyLocked() {
+        this.sqlgGraph.getTopology().lock();
+        boolean failed = false;
+        try {
+            this.sqlgGraph.addVertex(T.label, "A");
+        } catch (IllegalStateException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        failed = false;
+        this.sqlgGraph.getTopology().unlock();
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertexList = this.sqlgGraph.traversal().V().toList();
+        Assert.assertEquals(1, vertexList.size());
+        this.sqlgGraph.getTopology().lock();
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+        try {
+            vertexLabel.ensurePropertiesExist(new HashMap<>() {{
+                put("a", PropertyType.STRING);
+            }});
+        } catch (IllegalStateException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        this.sqlgGraph.getTopology().unlock();
+        vertexLabel.ensurePropertiesExist(new HashMap<>() {{
+            put("a", PropertyType.STRING);
+        }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+        this.sqlgGraph.addVertex(T.label, "A", "a", "halo");
+        this.sqlgGraph.tx().commit();
+        vertexList = this.sqlgGraph.traversal().V().toList();
+        Assert.assertEquals(2, vertexList.size());
+    }
+
+    @Test
     public void testDotInLabelName() {
         Vertex hand = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a");
         Vertex finger = this.sqlgGraph.addVertex(T.label, "A.B.interface", "name", "b");
@@ -43,7 +81,7 @@ public class TestTopology extends BaseTest {
         Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel testVertexLabel = aSchema.ensureVertexLabelExist(
                 "TestA",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name1", PropertyType.STRING);
                 }},
@@ -51,7 +89,7 @@ public class TestTopology extends BaseTest {
         );
         VertexLabel testTestVertexLabel = aSchema.ensureVertexLabelExist(
                 "TestB",
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name1", PropertyType.STRING);
                 }},
@@ -65,7 +103,7 @@ public class TestTopology extends BaseTest {
                 "e1",
                 testVertexLabel,
                 testTestVertexLabel,
-                new LinkedHashMap<String, PropertyType>() {{
+                new LinkedHashMap<>() {{
                     put("uid", PropertyType.varChar(100));
                     put("name1", PropertyType.STRING);
                 }},

@@ -203,7 +203,7 @@ public class EdgeLabel extends AbstractLabel {
                 Preconditions.checkState(!this.getSchema().isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
-                    this.getSchema().getTopology().lock();
+                    this.getSchema().getTopology().startSchemaChange();
                     if (getProperty(column.getKey()).isEmpty()) {
                         TopologyManager.addEdgeColumn(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), column, new ListOrderedSet<>());
                         addColumn(this.getSchema().getName(), EDGE_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
@@ -803,7 +803,7 @@ public class EdgeLabel extends AbstractLabel {
         if (!foreignKeysContains(direction, vertexLabel)) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
-            schema.getTopology().lock();
+            schema.getTopology().startSchemaChange();
             if (!foreignKeysContains(direction, vertexLabel)) {
                 SchemaTable foreignKeySchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
                 TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKeySchemaTable);
@@ -1181,7 +1181,7 @@ public class EdgeLabel extends AbstractLabel {
 
     @Override
     void removeProperty(PropertyColumn propertyColumn, boolean preserveData) {
-        this.getSchema().getTopology().lock();
+        this.getSchema().getTopology().startSchemaChange();
         if (!uncommittedRemovedProperties.contains(propertyColumn.getName())) {
             uncommittedRemovedProperties.add(propertyColumn.getName());
             TopologyManager.removeEdgeColumn(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName());
@@ -1194,7 +1194,7 @@ public class EdgeLabel extends AbstractLabel {
 
     @Override
     void renameProperty(String name, PropertyColumn propertyColumn) {
-        this.getSchema().getTopology().lock();
+        this.getSchema().getTopology().startSchemaChange();
         String oldName = propertyColumn.getName();
         Pair<String, String> namePair = Pair.of(oldName, name);
         if (!this.uncommittedRemovedProperties.contains(name)) {
@@ -1398,7 +1398,7 @@ public class EdgeLabel extends AbstractLabel {
         Objects.requireNonNull(label, "Given label must not be null");
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not be prefixed with \"%s\"", EDGE_PREFIX);
         Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign table!", label);
-        this.getSchema().getTopology().lock();
+        this.getSchema().getTopology().startSchemaChange();
         this.getSchema().renameEdgeLabel(this, label);
     }
 

@@ -214,7 +214,7 @@ public class Partition implements TopologyInf {
     }
 
     private void removePartition(Partition partition, boolean preserveData) {
-        this.getAbstractLabel().getSchema().getTopology().lock();
+        this.getAbstractLabel().getSchema().getTopology().startSchemaChange();
         for (Partition partition1 : partition.getPartitions().values()) {
             partition.removePartition(partition1, preserveData);
         }
@@ -1092,7 +1092,7 @@ public class Partition implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensureRangePartitionExists(String name, String from, String to) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            this.getAbstractLabel().getSchema().getTopology().lock();
+            this.getAbstractLabel().getSchema().getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             partitionOptional.orElseGet(() -> this.createRangePartition(name, from, to));
         }
@@ -1104,7 +1104,7 @@ public class Partition implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureListPartitionExists(String name, String in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            this.getAbstractLabel().getSchema().getTopology().lock();
+            this.getAbstractLabel().getSchema().getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             partitionOptional.orElseGet(() -> this.createListPartition(name, in));
         }
@@ -1117,7 +1117,7 @@ public class Partition implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.HASH, "ensureHashPartitionExists(String name, String in) can only be called for a HASH partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            this.getAbstractLabel().getSchema().getTopology().lock();
+            this.getAbstractLabel().getSchema().getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             partitionOptional.orElseGet(() -> this.createHashPartition(name, modulus, remainder));
         }
@@ -1138,7 +1138,7 @@ public class Partition implements TopologyInf {
 
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            this.getAbstractLabel().getSchema().getTopology().lock();
+            this.getAbstractLabel().getSchema().getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createRangePartitionWithSubPartition(name, from, to, partitionType, partitionExpression));
         } else {
@@ -1159,7 +1159,7 @@ public class Partition implements TopologyInf {
 
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            this.getAbstractLabel().getSchema().getTopology().lock();
+            this.getAbstractLabel().getSchema().getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createListPartitionWithSubPartition(name, in, partitionType, partitionExpression));
         } else {

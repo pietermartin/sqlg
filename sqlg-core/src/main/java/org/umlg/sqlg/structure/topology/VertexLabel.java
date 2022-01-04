@@ -289,6 +289,7 @@ public class VertexLabel extends AbstractLabel {
      * @param properties    A map of the edge's properties.
      * @return The {@link EdgeLabel} that been loaded.
      */
+    @SuppressWarnings("UnusedReturnValue")
     EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         Preconditions.checkState(this.schema.isSqlgSchema(), "loadSqlgSchemaEdgeLabel must be called for \"%s\" found \"%s\"", SQLG_SCHEMA, this.schema.getName());
         EdgeLabel edgeLabel = EdgeLabel.loadSqlgSchemaEdgeLabel(edgeLabelName, this, inVertexLabel, properties);
@@ -457,7 +458,7 @@ public class VertexLabel extends AbstractLabel {
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
-                    this.schema.getTopology().lock();
+                    this.schema.getTopology().startSchemaChange();
                     if (getProperty(column.getKey()).isEmpty()) {
                         TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
@@ -1148,7 +1149,7 @@ public class VertexLabel extends AbstractLabel {
 
     @Override
     void removeProperty(PropertyColumn propertyColumn, boolean preserveData) {
-        this.getSchema().getTopology().lock();
+        this.getSchema().getTopology().startSchemaChange();
         if (!this.uncommittedRemovedProperties.contains(propertyColumn.getName())) {
             this.uncommittedRemovedProperties.add(propertyColumn.getName());
             for (Index index : getIndexes().values()) {
@@ -1169,7 +1170,7 @@ public class VertexLabel extends AbstractLabel {
 
     @Override
     void renameProperty(String name, PropertyColumn propertyColumn) {
-        this.getSchema().getTopology().lock();
+        this.getSchema().getTopology().startSchemaChange();
         String oldName = propertyColumn.getName();
         Pair<String, String> namePair = Pair.of(oldName, name);
         if (!this.uncommittedRemovedProperties.contains(name)) {
@@ -1237,7 +1238,7 @@ public class VertexLabel extends AbstractLabel {
         if (ers.size() == 1) {
             er.getEdgeLabel().remove(preserveData);
         } else {
-            getSchema().getTopology().lock();
+            getSchema().getTopology().startSchemaChange();
             EdgeLabel edgeLabel = er.getEdgeLabel();
             switch (er.getDirection()) {
                 // we don't support both
@@ -1305,7 +1306,7 @@ public class VertexLabel extends AbstractLabel {
         Objects.requireNonNull(label, "Given label must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with \"%s\"", VERTEX_PREFIX);
         Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign table!", label);
-        this.getSchema().getTopology().lock();
+        this.getSchema().getTopology().startSchemaChange();
         VertexLabel renamedVertexLabel = this.getSchema().renameVertexLabel(this, label);
         Map<String, EdgeLabel> outEdgeLabels = getOutEdgeLabels();
         for (String outEdgeLabel : outEdgeLabels.keySet()) {

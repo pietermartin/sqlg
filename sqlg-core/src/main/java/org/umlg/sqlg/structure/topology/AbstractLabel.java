@@ -159,7 +159,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensureRangePartitionExists(String name, String from, String to) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getTopology().lock();
+            getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createRangePartition(name, from, to));
         } else {
@@ -187,7 +187,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensureRangePartitionExists(String name, String from, String to, PartitionType partitionType, String partitionExpression) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getTopology().lock();
+            getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createRangePartitionWithSubPartition(name, from, to, partitionType, partitionExpression));
         } else {
@@ -203,6 +203,7 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param remainder The HASH partition's 'remainder'.
      * @return The {@link Partition}
      */
+    @SuppressWarnings("UnusedReturnValue")
     public Partition ensureHashPartitionExists(String name, int modulus, int remainder) {
         Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsPartitioning());
         Objects.requireNonNull(name, "HASH Partition's \"name\" must not be null");
@@ -211,7 +212,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.HASH, "ensureHashPartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getTopology().lock();
+            getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createHashPartition(name, modulus, remainder));
         } else {
@@ -233,7 +234,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureListPartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getTopology().lock();
+            getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createListPartition(name, in));
         } else {
@@ -259,7 +260,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureRangePartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getTopology().lock();
+            getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createListPartitionWithSubPartition(name, in, partitionType, partitionExpression));
         } else {
@@ -287,7 +288,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(this.partitionType == PartitionType.HASH, "ensureHashPartitionWithSubPartitionExists can only be called for a HASH partitioned VertexLabel. Found %s", this.partitionType.name());
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
-            getTopology().lock();
+            getTopology().startSchemaChange();
             partitionOptional = this.getPartition(name);
             return partitionOptional.orElseGet(() -> this.createHashPartitionWithSubPartition(name, modulus, remainder, partitionType, partitionExpression));
         } else {
@@ -384,7 +385,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 }
             }
 
-            getTopology().lock();
+            getTopology().startSchemaChange();
             for (Index idx : this.getIndexes().values()) {
                 if (idx.getProperties().equals(properties)) {
                     return idx;
@@ -398,7 +399,7 @@ public abstract class AbstractLabel implements TopologyInf {
 
             Optional<Index> indexOptional = this.getIndex(indexName);
             if (indexOptional.isEmpty()) {
-                this.getTopology().lock();
+                this.getTopology().startSchemaChange();
                 indexOptional = this.getIndex(indexName);
                 if (indexOptional.isEmpty()) {
                     return this.createIndex(indexName, indexType, properties);
@@ -1185,7 +1186,7 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param preserveData should we keep the SQL data
      */
     void removeIndex(Index idx, boolean preserveData) {
-        this.getTopology().lock();
+        this.getTopology().startSchemaChange();
         if (!uncommittedRemovedIndexes.contains(idx.getName())) {
             uncommittedRemovedIndexes.add(idx.getName());
             TopologyManager.removeIndex(this.sqlgGraph, idx);
@@ -1207,7 +1208,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public void removePartition(Partition partition, boolean preserveData) {
-        this.getTopology().lock();
+        this.getTopology().startSchemaChange();
 
         for (Partition partition1 : partition.getPartitions().values()) {
             partition1.remove(preserveData);
@@ -1283,7 +1284,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Preconditions.checkState(getProperty(distributionPropertyColumn.getName()).get().equals(distributionPropertyColumn), "distributionPropertyColumn \"%s\" must be a property of \"%s\"", distributionPropertyColumn.getName(), this.getFullName());
         Preconditions.checkArgument(getIdentifiers().contains(distributionPropertyColumn.getName()), "The distribution column must be part of the primary key");
         if (!this.isDistributed()) {
-            this.getTopology().lock();
+            this.getTopology().startSchemaChange();
             if (!this.isDistributed()) {
                 TopologyManager.distributeAbstractLabel(this.sqlgGraph, this, shardCount, distributionPropertyColumn, colocate);
                 distribute(shardCount, distributionPropertyColumn, colocate);

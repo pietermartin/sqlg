@@ -152,7 +152,7 @@ public class Schema implements TopologyInf {
 
         final String prefixedTable = VERTEX_PREFIX + label;
         if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
-            this.topology.lock();
+            this.topology.startSchemaChange();
             if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
                 this.threadLocalTemporaryTables.get().put(prefixedTable, columns);
                 createTempTable(prefixedTable, columns);
@@ -174,7 +174,7 @@ public class Schema implements TopologyInf {
 
         Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
         if (vertexLabelOptional.isEmpty()) {
-            this.topology.lock();
+            this.topology.startSchemaChange();
             vertexLabelOptional = this.getVertexLabel(label);
             if (vertexLabelOptional.isEmpty()) {
                 return this.createVertexLabel(label, columns, identifiers);
@@ -209,6 +209,7 @@ public class Schema implements TopologyInf {
         return renamedVertexLabel;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     EdgeLabel renameEdgeLabel(EdgeLabel edgeLabel, String label) {
         Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(label);
         Preconditions.checkState(edgeLabelOptional.isEmpty(), "'%s' already exists", label);
@@ -259,7 +260,7 @@ public class Schema implements TopologyInf {
 
         Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
         if (vertexLabelOptional.isEmpty()) {
-            this.topology.lock();
+            this.topology.startSchemaChange();
             vertexLabelOptional = this.getVertexLabel(label);
             return vertexLabelOptional.orElseGet(
                     () -> this.createPartitionedVertexLabel(label, columns, identifiers, partitionType, partitionExpression, addPrimaryKeyConstraint)
@@ -310,7 +311,7 @@ public class Schema implements TopologyInf {
         EdgeLabel edgeLabel;
         Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
         if (edgeLabelOptional.isEmpty()) {
-            this.topology.lock();
+            this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {
                 edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers);
@@ -353,7 +354,7 @@ public class Schema implements TopologyInf {
         EdgeLabel edgeLabel;
         Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
         if (edgeLabelOptional.isEmpty()) {
-            this.topology.lock();
+            this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {
                 edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers);
@@ -468,7 +469,7 @@ public class Schema implements TopologyInf {
         EdgeLabel edgeLabel;
         Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
         if (edgeLabelOptional.isEmpty()) {
-            this.topology.lock();
+            this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {
                 edgeLabel = this.createPartitionedEdgeLabel(
@@ -1707,7 +1708,7 @@ public class Schema implements TopologyInf {
      * @param preserveData should we keep the SQL data
      */
     void removeEdgeLabel(EdgeLabel edgeLabel, boolean preserveData) {
-        getTopology().lock();
+        getTopology().startSchemaChange();
         String fn = this.name + "." + EDGE_PREFIX + edgeLabel.getName();
 
         if (!this.uncommittedRemovedEdgeLabels.contains(fn)) {
@@ -1734,7 +1735,7 @@ public class Schema implements TopologyInf {
      * @param preserveData should we keep the SQL data
      */
     void removeVertexLabel(VertexLabel vertexLabel, boolean preserveData) {
-        getTopology().lock();
+        getTopology().startSchemaChange();
         String fn = this.name + "." + VERTEX_PREFIX + vertexLabel.getName();
         if (!this.uncommittedRemovedVertexLabels.contains(fn)) {
             this.sqlgGraph.traversal().V().hasLabel(this.name + "." + vertexLabel.getLabel()).drop().iterate();

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.event.TestTinkerPopEvent;
+import org.umlg.sqlg.test.topology.TestTopology;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.event.TestTinkerPopEvent;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTinkerPopEvent.class
+        TestTopology.class
 })
 public class AnyTest {
 }
