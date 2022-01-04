@@ -210,7 +210,7 @@ public class Schema implements TopologyInf {
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    EdgeLabel renameEdgeLabel(EdgeLabel edgeLabel, String label) {
+    void renameEdgeLabel(EdgeLabel edgeLabel, String label) {
         Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(label);
         Preconditions.checkState(edgeLabelOptional.isEmpty(), "'%s' already exists", label);
         Preconditions.checkState(!this.isSqlgSchema(), "renameEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
@@ -233,7 +233,6 @@ public class Schema implements TopologyInf {
         );
         this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + label, renamedEdgeLabel);
         this.getTopology().fire(renamedEdgeLabel, edgeLabel, TopologyChangeAction.UPDATE);
-        return renamedEdgeLabel;
     }
 
     public VertexLabel ensurePartitionedVertexLabelExist(

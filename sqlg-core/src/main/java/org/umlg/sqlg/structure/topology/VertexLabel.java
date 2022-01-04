@@ -287,15 +287,12 @@ public class VertexLabel extends AbstractLabel {
      * @param edgeLabelName The edge's label.
      * @param inVertexLabel The edge's in {@link VertexLabel}. 'this' is the out {@link VertexLabel}.
      * @param properties    A map of the edge's properties.
-     * @return The {@link EdgeLabel} that been loaded.
      */
-    @SuppressWarnings("UnusedReturnValue")
-    EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    void loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         Preconditions.checkState(this.schema.isSqlgSchema(), "loadSqlgSchemaEdgeLabel must be called for \"%s\" found \"%s\"", SQLG_SCHEMA, this.schema.getName());
         EdgeLabel edgeLabel = EdgeLabel.loadSqlgSchemaEdgeLabel(edgeLabelName, this, inVertexLabel, properties);
         this.outEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
         inVertexLabel.inEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
-        return edgeLabel;
     }
 
     /**
