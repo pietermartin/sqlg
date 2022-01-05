@@ -579,6 +579,7 @@ public class Topology {
      */
     public void importForeignSchemas(Set<Schema> originalSchemas) {
         Preconditions.checkState(!isSchemaChanged(), "To import a foreign schema there must not be any pending changes!");
+        Preconditions.checkState(!this.locked.get(), "The topology is locked, first unlock it before importing foreign schemas.");
 
         //validate all edge's vertices are in a foreign schema
         Schema.validateImportingEdgeLabels(originalSchemas);
