@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -61,7 +61,8 @@ public class Topology {
     private final Map<String, Schema> schemas = new ConcurrentHashMap<>();
 
     private final ThreadLocal<Boolean> schemaChanged = ThreadLocal.withInitial(() -> false);
-    private final AtomicBoolean locked = new AtomicBoolean(false);
+    private boolean locked = false;
+    private final ReentrantLock topologyLock = new ReentrantLock();
     private final ThreadLocalMap<String, Schema> uncommittedSchemas = new ThreadLocalMap<>();
     private final Set<String> uncommittedRemovedSchemas = new ConcurrentSkipListSet<>();
     private final Map<String, Schema> metaSchemas;
@@ -517,19 +518,23 @@ public class Topology {
      * Global indicator to change the topology.
      */
     void startSchemaChange() {
-        if (this.locked.get()) {
-            throw new IllegalStateException("The topology is locked! Changes are not allowed, first unlock it.");
+        if (this.locked && this.sqlgGraph.tx().isTopologyLocked()) {
+            throw new IllegalStateException("The topology is locked! Changes are not allowed, first unlock it. Either globally or for the transaction.");
         }
         this.sqlgGraph.tx().readWrite();
         this.schemaChanged.set(true);
     }
 
-    public void lock() {
-        this.locked.set(true);
+    public void lock()  {
+        this.locked = true;
     }
 
     public void unlock() {
-        this.locked.set(false);
+        this.locked = false;
+    }
+
+    public boolean isLocked() {
+        return this.locked;
     }
 
     boolean isSchemaChanged() {
@@ -579,7 +584,7 @@ public class Topology {
      */
     public void importForeignSchemas(Set<Schema> originalSchemas) {
         Preconditions.checkState(!isSchemaChanged(), "To import a foreign schema there must not be any pending changes!");
-        Preconditions.checkState(!this.locked.get(), "The topology is locked, first unlock it before importing foreign schemas.");
+        Preconditions.checkState(!this.locked, "The topology is locked, first unlock it before importing foreign schemas.");
 
         //validate all edge's vertices are in a foreign schema
         Schema.validateImportingEdgeLabels(originalSchemas);

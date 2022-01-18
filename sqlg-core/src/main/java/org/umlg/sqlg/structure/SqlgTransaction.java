@@ -8,10 +8,12 @@ import org.apache.tinkerpop.gremlin.structure.util.TransactionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
+import org.umlg.sqlg.structure.topology.Topology;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlGraph.
@@ -34,6 +36,8 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private final ThreadLocal<TransactionCache> threadLocalTx = ThreadLocal.withInitial(() -> null);
 
     private final ThreadLocal<PreparedStatementCache> threadLocalPreparedStatementTx = ThreadLocal.withInitial(PreparedStatementCache::new);
+
+    private final ThreadLocal<AtomicBoolean> threadLocalTopologyLocked = ThreadLocal.withInitial(() -> new AtomicBoolean(true));
 
     /**
      * default fetch size
@@ -86,6 +90,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
         Connection connection = null;
         try {
+            this.threadLocalTopologyLocked.get().set(true);
             if (supportsBatchMode() && this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 getBatchManager().flush();
             }
@@ -129,6 +134,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
         Connection connection = null;
         try {
+            this.threadLocalTopologyLocked.get().set(true);
             if (supportsBatchMode() && this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 try {
                     this.threadLocalTx.get().getBatchManager().close();
@@ -164,6 +170,21 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 this.threadLocalPreparedStatementTx.remove();
             }
         }
+    }
+
+    /**
+     * If {@link Topology#isLocked()} then this method will unlock the {@link Topology} for the duration of the transaction.
+     * It will automatically be locked again on commit or rollback.
+     */
+    public void unlockTopology() {
+        this.threadLocalTopologyLocked.get().set(false);
+    }
+
+    /**
+     * @return Returns false if the topology is unlocked or the current transaction has not unlocked it.
+     */
+    public boolean isTopologyLocked() {
+        return this.sqlgGraph.getTopology().isLocked() && this.threadLocalTopologyLocked.get().get();
     }
 
     public void streamingWithLockBatchModeOn() {

@@ -138,8 +138,8 @@ weight : DOUBLE
 
 It is often useful to create the topology upfront. The topology creation api is accessed via the `Topology` object.
 It is a singleton. `Topology topology = sqlgGraph.getTopology();`
-To create new topology objects use the `ensureXXX` methods. They will return the a topology object representing the specific
-topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index` or `GlobalUniqueIndex`
+To create new topology objects use the `ensureXXX` methods. They will return a topology object representing the specific
+topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index`
 
 [NOTE]
 The `ensureXXX` methods will create the topology object if it does not exists.
@@ -329,3 +329,58 @@ FROM
 	"public"."V_Person"
 ) a2 ON a1."public.E_marriedTo.public.Person.name__I" = a2."alias1" AND a1."public.E_marriedTo.public.Person.surname__I" = a2."alias2"
 ----
+
+=== Lock the topology
+
+It is possible to lock the topology. This will prevent any creation of topology elements without explicitly unlocking the topology.
+The topology can only be locked globally. However, there are two ways to unlock the topology. Either globally or per transaction.
+Unlocking the topology on the transaction unlocks the topology only for the current transaction. This means that globally
+the topology remains locked and that other threads (transactions) will not be able to change the topology. To do so they
+too will have to first unlock the topology.  There is no need to lock the topology again for the transaction. It will
+automatically do so on `commit` or `rollback`.
+
+[source,sql,options="nowrap"]
+----
+@Test
+public void topologyGlobalLockUnlock() {
+    this.sqlgGraph.getTopology().lock(); # <1>
+    try {
+        this.sqlgGraph.addVertex(T.label, "A"); # <2>
+        Assert.fail("Expected IllegalStateException");
+    } catch (IllegalStateException e) {
+        //The topology is locked so an IllegalStateException is thrown.
+    }
+    this.sqlgGraph.getTopology().unlock(); # <3>
+    this.sqlgGraph.addVertex(T.label, "A"); # <4>
+    this.sqlgGraph.tx().commit();
+    Assert.assertTrue(this.sqlgGraph.getTopology()
+            .getPublicSchema()
+            .getVertexLabel("A")
+            .isPresent());
+}
+----
+<1> Globally lock the topology.
+<2> Try to create a VertexLabel 'A', it will fail with an `IllegalStateException` as the topology is locked.
+<3> Globally unlock the topology.
+<4> Create a VertexLabel 'A'. This time it will succeed as the topology is not locked.
+
+
+[source,sql,options="nowrap"]
+----
+@Test
+public void topologyGlobalLockTransactionUnlock() {
+    this.sqlgGraph.getTopology().lock(); # <1>
+    this.sqlgGraph.tx().unlockTopology(); # <2>
+    this.sqlgGraph.addVertex(T.label, "A"); # <3>
+    this.sqlgGraph.tx().commit(); # <4>
+    Assert.assertTrue(this.sqlgGraph.getTopology()
+            .getPublicSchema()
+            .getVertexLabel("A")
+            .isPresent());
+}
+----
+
+<1> Globally lock the topology.
+<2> Unlock the topology only for the current transaction.
+<3> Create a VertexLabel 'A'. This will succeed for the current transaction.
+<4> On commit the `unlockTopology` is automatically no longer valid.
