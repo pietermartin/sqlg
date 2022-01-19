@@ -825,6 +825,8 @@ public abstract class BaseStrategy {
                         boolean hasContainerKeyNotIdOrLabel = hasContainerKeyNotIdOrLabel(hasContainer);
                         if (hasContainerKeyNotIdOrLabel && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
                             andOrHasContainer.addHasContainer(hasContainer);
+                        } else if (hasContainerKeyNotIdOrLabel && (hasContainer.getBiPredicate().equals(Contains.within) || hasContainer.getBiPredicate().equals(Contains.without))) {
+                            andOrHasContainer.addHasContainer(hasContainer);
                         } else if (hasContainerKeyNotIdOrLabel && hasContainer.getPredicate() instanceof AndP) {
                             AndP<?> andP = (AndP) hasContainer.getPredicate();
                             List<? extends P<?>> predicates = andP.getPredicates();
