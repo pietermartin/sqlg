@@ -28,6 +28,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -901,4 +904,54 @@ public class TestForeignSchema extends BaseTest {
                 by(__.coalesce(__.out("sungBy", "writtenBy").dedup().values("name"), __.constant("Unknown")).fold());
     }
 
+    @Test
+    public void testQueryViaFDW_WhileInsertingDirectly() throws SQLException, InterruptedException {
+        this.sqlgGraphFdw.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("a", PropertyType.STRING);
+                }}
+        );
+        this.sqlgGraphFdw.tx().commit();
+
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            String sql = String.format(
+                    "IMPORT FOREIGN SCHEMA \"%s\" LIMIT TO (%s) FROM SERVER \"%s\" INTO \"%s\";",
+                    this.sqlgGraph.getSqlDialect().getPublicSchema(),
+                    "\"V_A\"",
+                    "sqlgraph_fwd_server",
+                    this.sqlgGraph.getSqlDialect().getPublicSchema()
+            );
+            statement.execute(sql);
+        }
+        this.sqlgGraph.tx().commit();
+
+        ExecutorService executorService1 = Executors.newFixedThreadPool(1);
+        executorService1.submit(() -> {
+            for (int i = 0; i < 10_000; i++) {
+                this.sqlgGraphFdw.addVertex(T.label, "A", "a", "halo A");
+            }
+            this.sqlgGraphFdw.tx().commit();
+            LOGGER.info("Completed executorService1");
+        });
+        ExecutorService executorService2 = Executors.newFixedThreadPool(1);
+        executorService2.submit(() -> {
+            for (int i = 0; i < 10_000; i++) {
+                List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+                Assert.assertEquals(0, vertices.size());
+            }
+            this.sqlgGraphFdw.tx().rollback();
+            LOGGER.info("Completed executorService2");
+        });
+        executorService1.shutdown();
+        if (!executorService1.awaitTermination(1, TimeUnit.MINUTES)) {
+            Assert.fail("ExecutorService did not shutdown in 1 minute");
+        }
+        executorService2.shutdown();
+        if (!executorService2.awaitTermination(1, TimeUnit.MINUTES)) {
+            Assert.fail("ExecutorService did not shutdown in 1 minute");
+        }
+        LOGGER.debug("Done");
+    }
 }
