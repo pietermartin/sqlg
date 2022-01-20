@@ -63,7 +63,7 @@ public abstract class AbstractLabel implements TopologyInf {
      */
     PartitionType partitionType = PartitionType.NONE;
     String partitionExpression;
-    private final Map<String, Partition> partitions = new HashMap<>();
+    private final Map<String, Partition> partitions = new ConcurrentHashMap<>();
     private final Map<String, Partition> uncommittedPartitions = new ThreadLocalMap<>();
     private final Set<String> uncommittedRemovedPartitions = new ThreadLocalSet<>();
 
