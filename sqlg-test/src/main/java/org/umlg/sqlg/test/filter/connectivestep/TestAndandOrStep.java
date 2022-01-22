@@ -17,6 +17,7 @@ import java.util.List;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/11/05
  */
+@SuppressWarnings("unused")
 public class TestAndandOrStep extends BaseTest {
 
     @SuppressWarnings("unused")
@@ -46,6 +47,72 @@ public class TestAndandOrStep extends BaseTest {
                         __.has("name", P.within("a3", "a4"))
                 ).toList();
         Assert.assertEquals(2, vertices.size());
+    }
+
+    /**
+     * For simple HasContainers, sqlg optimizes within via a join statement.
+     * This does not work with nested AND/OR, so we skip the bulk logic
+     */
+    @SuppressWarnings("unused")
+    @Test
+    public void testAndWithWithinNotTriggeringBulkWithin() {
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a" +  i, "surname", "s" + i, "age", i);
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .and(
+                        __.has("name", P.eq("a1")),
+                        __.has("name", P.eq("a3"))
+                ).toList();
+        Assert.assertEquals(0, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .and(
+                        __.has("name", P.within("a1", "a2", "a3", "a4")),
+                        __.has("name", P.within("a2", "a3", "a4", "a5"))
+                ).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .and(
+                        __.has("name", P.without("a1", "a2", "a3")),
+                        __.has("name", P.within("a3", "a4", "a5"))
+                ).toList();
+        Assert.assertEquals(2, vertices.size());
+    }
+
+    /**
+     * For simple HasContainers, sqlg optimizes within via a join statement.
+     * This does not work with nested AND/OR, so we skip the bulk logic
+     */
+    @SuppressWarnings("unused")
+    @Test
+    public void testOrWithWithinNotTriggeringBulkWithin() {
+        for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a" +  i, "surname", "s" + i, "age", i);
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .or(
+                        __.has("name", P.eq("a1")),
+                        __.has("name", P.eq("a3"))
+                ).toList();
+        Assert.assertEquals(2, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .or(
+                        __.has("name", P.within("a1", "a2", "a3", "a4")),
+                        __.has("name", P.within("a2", "a3", "a4", "a5"))
+                ).toList();
+        Assert.assertEquals(5, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .or(
+                        __.has("name", P.without("a1", "a2", "a3")),
+                        __.has("name", P.within("a3", "a4", "a5"))
+                ).toList();
+        Assert.assertEquals(98, vertices.size());
     }
 
     @Test

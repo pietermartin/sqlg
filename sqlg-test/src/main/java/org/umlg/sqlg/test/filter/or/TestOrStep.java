@@ -22,9 +22,8 @@ import java.util.List;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/10/30
  */
-@SuppressWarnings("DuplicatedCode")
+@SuppressWarnings({"DuplicatedCode", "unused"})
 public class TestOrStep extends BaseTest {
-
 
     @Test
     public void testSelect() {
@@ -33,7 +32,7 @@ public class TestOrStep extends BaseTest {
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
 
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A").as("a").out("ab").<Vertex>select("a");
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A").as("a").out("ab").select("a");
         printTraversalForm(traversal);
         List<Vertex> result = traversal.toList();
         Assert.assertEquals(1, result.size());
@@ -208,7 +207,7 @@ public class TestOrStep extends BaseTest {
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2) && vertices.contains(a3));
     }
 
-    //    //Unoptimized
+
     @Test
     public void testOrWithinPredicate() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
@@ -219,6 +218,7 @@ public class TestOrStep extends BaseTest {
         Vertex a6 = this.sqlgGraph.addVertex(T.label, "A", "name", "a6");
         Vertex a7 = this.sqlgGraph.addVertex(T.label, "A", "name", "a7");
         this.sqlgGraph.tx().commit();
+
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .or(
@@ -228,7 +228,7 @@ public class TestOrStep extends BaseTest {
                         )
                 );
         List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(6, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2) && vertices.contains(a3));
 
@@ -242,7 +242,7 @@ public class TestOrStep extends BaseTest {
                         )
                 );
         vertices = traversal.toList();
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(6, vertices.size());
         Assert.assertTrue(vertices.contains(a1) && vertices.contains(a2) && vertices.contains(a3));
     }
@@ -324,8 +324,8 @@ public class TestOrStep extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
 
 
-        VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
-        vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").get()));
+        VertexLabel vl = this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").orElseThrow();
+        vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").orElseThrow()));
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
@@ -348,7 +348,7 @@ public class TestOrStep extends BaseTest {
         vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(1, vertices.size());
-        Assert.assertTrue(vertices.containsAll(Arrays.asList(v1)));
+        Assert.assertTrue(vertices.containsAll(List.of(v1)));
     }
 
     @Test

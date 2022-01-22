@@ -10,7 +10,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,42 +94,42 @@ public class AndOrHasContainer {
         if (!this.hasContainers.isEmpty()) {
             boolean first = true;
             for (HasContainer h : this.hasContainers) {
-                if (!SqlgUtil.isBulkWithin(sqlgGraph, h)) {
+//                if (!SqlgUtil.isBulkWithin(sqlgGraph, h)) {
                     if (first) {
                         first = false;
                         result.append("(");
                     } else {
-                    	result.append(" AND ");
+                        result.append(" AND ");
                     }
-                    String k=h.getKey();
+                    String k = h.getKey();
                     WhereClause whereClause = WhereClause.from(h.getPredicate());
-                    
+
                     // check if property exists
-                    String bool=null;
-                    if (!k.equals(T.id.getAccessor())){
-                    	Map<String,PropertyType> pts=sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
-                        if (pts!=null && !pts.containsKey(k)){
-                        	// verify if we have a value
-                        	Multimap<String, Object> keyValueMap=LinkedListMultimap.create();
-                        	whereClause.putKeyValueMap(h, keyValueMap, schemaTableTree);
-                        	// we do
-                        	if (keyValueMap.size()>0){
-                        		bool="? is null";
-                        	} else {
-                        		 if (Existence.NULL.equals(h.getBiPredicate())) {
-                        			 bool="1=1";
-                        		 } else {
-                        			 bool="1=0";
-                        		 }
-                        	}
+                    String bool = null;
+                    if (!k.equals(T.id.getAccessor())) {
+                        Map<String, PropertyType> pts = sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
+                        if (pts != null && !pts.containsKey(k)) {
+                            // verify if we have a value
+                            Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
+                            whereClause.putKeyValueMap(h, keyValueMap, schemaTableTree);
+                            // we do
+                            if (keyValueMap.size() > 0) {
+                                bool = "? is null";
+                            } else {
+                                if (Existence.NULL.equals(h.getBiPredicate())) {
+                                    bool = "1=1";
+                                } else {
+                                    bool = "1=0";
+                                }
+                            }
                         }
                     }
-                    if (bool!=null){
-                    	result.append(bool);
+                    if (bool != null) {
+                        result.append(bool);
                     } else {
-                    	result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h));
+                        result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h, true));
                     }
-                }
+//                }
             }
             if (!first) {
                 result.append(")");

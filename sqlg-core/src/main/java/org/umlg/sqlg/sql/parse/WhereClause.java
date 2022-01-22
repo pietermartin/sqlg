@@ -40,13 +40,21 @@ public class WhereClause {
     }
 
     public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer) {
+        return toSql(sqlgGraph, schemaTableTree, hasContainer, false);
+    }
+
+    public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer, boolean isInAndOrHsContainer) {
         String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
         prefix += ".";
         prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
-        return toSql(sqlgGraph, schemaTableTree, hasContainer, prefix);
+        return toSql(sqlgGraph, schemaTableTree, hasContainer, prefix, isInAndOrHsContainer);
     }
 
     public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer, String prefix) {
+        return toSql(sqlgGraph, schemaTableTree, hasContainer, prefix, false);
+    }
+
+    public String toSql(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, HasContainer hasContainer, String prefix, boolean isInAndOrHsContainer) {
         StringBuilder result = new StringBuilder();
 
         if (p.getValue() instanceof PropertyReference && p.getBiPredicate() instanceof Compare) {
@@ -74,7 +82,9 @@ public class WhereClause {
                 result.append(compareToSql((Compare) p.getBiPredicate()));
             }
             return result.toString();
-        } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
+        } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer)) || isInAndOrHsContainer) &&
+                        p.getBiPredicate() instanceof Contains) {
+
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 if (schemaTableTree.isHasIDPrimaryKey()) {
                     result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
