@@ -4,6 +4,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -15,6 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class TestTopologyLock extends BaseTest {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(TestTopologyLock.class);
 
     @Test
     public void testTopologyLocked() {
@@ -187,11 +191,17 @@ public class TestTopologyLock extends BaseTest {
         for (int i = 0; i < 200; i++) {
             int finalI = i;
             executorService.submit(() -> {
-                this.sqlgGraph.tx().unlockTopology();
-                for (int j = 0; j < 10; j++) {
-                    this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A" + finalI + "_" + j);
+                try {
+                    this.sqlgGraph.tx().unlockTopology();
+                    for (int j = 0; j < 10; j++) {
+                        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A" + finalI + "_" + j);
+                    }
+                    this.sqlgGraph.tx().commit();
+                } catch (Exception e) {
+                    LOGGER.error(e.getMessage(), e);
+                    Assert.fail(e.getMessage());
+                    this.sqlgGraph.tx().commit();
                 }
-                this.sqlgGraph.tx().commit();
             });
         }
         executorService.shutdown();
