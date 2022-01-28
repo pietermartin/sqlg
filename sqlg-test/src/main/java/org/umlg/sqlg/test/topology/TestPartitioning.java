@@ -1382,6 +1382,27 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
+    public void testPartitionWithListPartitionNameToLong() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyType.INTEGER);
+                    put("uid2", PropertyType.LONG);
+                    put("uid3", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
+                PartitionType.LIST,
+                "\"uid1\""
+        );
+        try {
+            vertexLabel.ensureListPartitionExists("01234567890123456789012345678901234567890123456789012345678901234", "'1'");
+            Assert.fail("suppose to fail with InvalidTableException");
+        } catch (SqlgExceptions.InvalidTableException ignore) {
+            //swallow
+        }
+    }
+
+    @Test
     public void testEdgeSubPartitioningRange() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensureVertexLabelExist("A");

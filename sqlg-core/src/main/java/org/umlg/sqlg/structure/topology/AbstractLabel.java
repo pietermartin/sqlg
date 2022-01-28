@@ -185,6 +185,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Objects.requireNonNull(partitionType, "Sub-partition's \"partitionType\" must not be null");
         Objects.requireNonNull(partitionExpression, "Sub-partition's \"partitionExpression\" must not be null");
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensureRangePartitionExists(String name, String from, String to, PartitionType partitionType, String partitionExpression) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
+        this.sqlgGraph.getSqlDialect().validateTableName(name);
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
             getTopology().startSchemaChange();
@@ -232,6 +233,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Objects.requireNonNull(name, "LIST Partition's \"name\" must not be null");
         Objects.requireNonNull(in, "LIST Partition's \"in\" must not be null");
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureListPartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
+        this.sqlgGraph.getSqlDialect().validateTableName(name);
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
             getTopology().startSchemaChange();
@@ -258,6 +260,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Objects.requireNonNull(partitionType, "Sub-partition's \"partitionType\" must not be null");
         Objects.requireNonNull(partitionExpression, "Sub-partition's \"partitionExpression\" must not be null");
         Preconditions.checkState(this.partitionType == PartitionType.LIST, "ensureRangePartitionExists(String name, String ... in) can only be called for a LIST partitioned VertexLabel. Found %s", this.partitionType.name());
+        this.sqlgGraph.getSqlDialect().validateTableName(name);
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
             getTopology().startSchemaChange();
