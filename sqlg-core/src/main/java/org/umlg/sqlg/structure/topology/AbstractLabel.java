@@ -157,6 +157,7 @@ public abstract class AbstractLabel implements TopologyInf {
         Objects.requireNonNull(from, "RANGE Partition's \"from\" must not be null");
         Objects.requireNonNull(to, "RANGE Partition's \"to\" must not be null");
         Preconditions.checkState(this.partitionType == PartitionType.RANGE, "ensureRangePartitionExists(String name, String from, String to) can only be called for a RANGE partitioned VertexLabel. Found %s", this.partitionType.name());
+        this.sqlgGraph.getSqlDialect().validateTableName(name);
         Optional<Partition> partitionOptional = this.getPartition(name);
         if (partitionOptional.isEmpty()) {
             getTopology().startSchemaChange();

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.filter.connectivestep.TestAndandOrStep;
+import org.umlg.sqlg.test.topology.TestPartitioning;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.filter.connectivestep.TestAndandOrStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAndandOrStep.class
+        TestPartitioning.class
 })
 public class AnyTest {
 }
