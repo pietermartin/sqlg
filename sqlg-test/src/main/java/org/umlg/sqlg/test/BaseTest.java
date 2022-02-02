@@ -5,7 +5,11 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -25,7 +29,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.TestAppender;
+import org.umlg.sqlg.Log4j2TestAppender;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
@@ -54,7 +58,7 @@ import static org.junit.Assert.*;
  */
 public abstract class BaseTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseTest.class.getName());
     protected SqlgGraph sqlgGraph;
     protected SqlgGraph sqlgGraph1;
     protected GraphTraversalSource gt;
@@ -66,7 +70,7 @@ public abstract class BaseTest {
     public TestRule watcher = new TestWatcher() {
         protected void starting(Description description) {
             BaseTest.this.start = System.currentTimeMillis();
-            logger.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
+            LOGGER.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
         }
 
         protected void finished(Description description) {
@@ -76,7 +80,7 @@ public abstract class BaseTest {
                     TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)),
                     TimeUnit.MILLISECONDS.toMillis(millis) - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(millis))
             );
-            logger.info(String.format("Finished test: %s.%s Time taken: %s", description.getClassName(), description.getMethodName(), time));
+            LOGGER.info(String.format("Finished test: %s.%s Time taken: %s", description.getClassName(), description.getMethodName(), time));
         }
     };
 
@@ -113,7 +117,7 @@ public abstract class BaseTest {
             assertEquals(this.sqlgGraph.getBuildVersion(), this.sqlgGraph1.getBuildVersion());
         }
         stopWatch.stop();
-        logger.info("Startup time for test = " + stopWatch);
+        LOGGER.info("Startup time for test = " + stopWatch);
     }
 
     protected void grantReadOnlyUserPrivileges() {
@@ -127,7 +131,7 @@ public abstract class BaseTest {
             this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
             this.sqlgGraph.close();
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
         try {
             if (this.sqlgGraph1 != null) {
@@ -135,7 +139,7 @@ public abstract class BaseTest {
                 this.sqlgGraph1.close();
             }
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -238,8 +242,8 @@ public abstract class BaseTest {
                 if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
-                if (logger.isDebugEnabled()) {
-                    logger.debug(sql.toString());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(sql.toString());
                 }
                 try (ResultSet rs = stmt.executeQuery(sql.toString())) {
                     int countRows = 0;
@@ -275,20 +279,22 @@ public abstract class BaseTest {
      * @return the SQL or null
      */
     protected String getSQL(final Traversal<?, ?> traversal) {
-        org.apache.log4j.Logger l = org.apache.log4j.Logger.getLogger(SqlgSqlExecutor.class);
-        Level old = l.getLevel();
+        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        final org.apache.logging.log4j.core.config.Configuration config = ctx.getConfiguration();
+        LoggerConfig loggerConfig = config.getLoggerConfig("org.umlg.sqlg");
+        Level old = loggerConfig.getLevel();
         try {
-            l.setLevel(Level.DEBUG);
+            loggerConfig.setLevel(Level.DEBUG);
             printTraversalForm(traversal);
-            org.apache.log4j.spi.LoggingEvent evt = TestAppender.getLast(SqlgSqlExecutor.class.getName());
-            if (evt != null) {
-                return String.valueOf(evt.getMessage());
+            LogEvent logEvent = Log4j2TestAppender.last(SqlgSqlExecutor.class.getName());
+            if (logEvent != null) {
+                return logEvent.getMessage().getFormattedMessage();
+            } else {
+                return null;
             }
-            return null;
         } finally {
-            l.setLevel(old);
+            loggerConfig.setLevel(old);
         }
-
     }
 
     protected void loadModern(SqlgGraph sqlgGraph) {
@@ -552,8 +558,8 @@ public abstract class BaseTest {
         final List<T> results = traversal.toList();
         Assert.assertFalse(traversal.hasNext());
         if (expectedResults.size() != results.size()) {
-            logger.error("Expected results: " + expectedResults);
-            logger.error("Actual results:   " + results);
+            LOGGER.error("Expected results: " + expectedResults);
+            LOGGER.error("Actual results:   " + results);
             Assert.assertEquals("Checking result size", expectedResults.size(), results.size());
         }
 
