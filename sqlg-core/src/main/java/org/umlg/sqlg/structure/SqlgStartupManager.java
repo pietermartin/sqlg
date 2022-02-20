@@ -169,6 +169,10 @@ class SqlgStartupManager {
         if (v.isUnknownVersion() || v.compareTo(new Version(2, 1, 5, null, null, null)) < 0) {
             removeGlobalUniqueIndexFromSqlgSchema();
         }
+        if (v.isUnknownVersion() || v.compareTo(new Version(2, 1, 6, null, null, null)) < 0) {
+            //https://github.com/pietermartin/sqlg/issues/450
+            correctSqlgSchemaDDLOnForeignKeyIndexes();
+        }
     }
 
     private void addPartitionSupportToSqlgSchema() {
@@ -218,6 +222,34 @@ class SqlgStartupManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
+    }
+
+    //https://github.com/pietermartin/sqlg/issues/450
+    private void correctSqlgSchemaDDLOnForeignKeyIndexes() {
+        List<String> result = new ArrayList<>();
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_identifier_property__I_idx\" ON \"sqlg_schema\".\"E_edge_identifier\" (\"sqlg_schema.property__I\");");
+        result.add("ALTER INDEX IF EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "_vertex_identifier_edge__O_idx\" RENAME TO \"" + Topology.EDGE_PREFIX + "_edge_identifier_edge__O_idx\";");
+
+        result.add("ALTER INDEX IF EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "_vertex_partition_edge__O_idx\" RENAME TO \"" + Topology.EDGE_PREFIX + "_edge_partition_edge__O_idx\";");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_edge_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_edge_partition\" (\"sqlg_schema.partition__I\");");
+
+        result.add("ALTER INDEX IF EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "_vertex_partition_partition__O_idx\" RENAME TO \"" + Topology.EDGE_PREFIX + "_partition_partition_partition__O_idx\";");
+        result.add("CREATE INDEX IF NOT EXISTS \"" + Topology.EDGE_PREFIX + "_partition_partition_partition__I_idx\" ON \"sqlg_schema\".\"E_partition_partition\" (\"sqlg_schema.partition__I\");");
+
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            //Hsqldb can not do this in one go
+            for (String script: result) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(script);
+                }
+                statement.execute(script);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
 
     }
 
