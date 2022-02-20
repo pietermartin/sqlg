@@ -62,7 +62,7 @@ public class TestDataSource {
                 Assert.fail(e.getMessage());
             }
         }
-        Thread.sleep(5000);
+        Thread.sleep(30_000);
         int count = countConnections();
         //7 is a tad arbitrary, not really getting it.
         //C3P0 has 3 helper threads, looks like they hang around after closing the datasource. going with 12 for good measure.
