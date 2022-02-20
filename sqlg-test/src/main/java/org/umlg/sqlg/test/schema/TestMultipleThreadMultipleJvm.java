@@ -131,7 +131,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             for (Future<SqlgGraph> result : results) {
                 result.get(1, TimeUnit.MINUTES);
             }
-            Thread.sleep(10_000);
+            Thread.sleep(20_000);
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
                 for (Schema schema : graph.getTopology().getSchemas()) {
@@ -198,7 +198,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             for (Future<SqlgGraph> result : results) {
                 result.get(1, TimeUnit.MINUTES);
             }
-            Thread.sleep(10_000);
+            Thread.sleep(20_000);
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
             }
@@ -277,7 +277,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             for (Future<SqlgGraph> result : results) {
                 result.get(5, TimeUnit.MINUTES);
             }
-            Thread.sleep(10_000);
+            Thread.sleep(20_000);
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
                 logger.info(graph.getTopology().toJson().toString());
@@ -331,7 +331,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                 result.get(30, TimeUnit.SECONDS);
             }
             //Because of the rollBack logic the insert code may also create topology elements, so sleep a bit for notify to do its thing.
-            Thread.sleep(10_000);
+            Thread.sleep(20_000);
             logger.info("starting querying data");
             Set<Vertex> vertices = this.sqlgGraph.traversal().V().out().toSet();
             this.sqlgGraph.tx().rollback();
