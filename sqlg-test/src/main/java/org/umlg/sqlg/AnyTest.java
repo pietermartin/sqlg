@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestSqlgSchemaIncorrectIndexNames;
+import org.umlg.sqlg.test.edges.TestLoadEdgeWithSpecialCharacters;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.topology.TestSqlgSchemaIncorrectIndexNames;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSqlgSchemaIncorrectIndexNames.class
+        TestLoadEdgeWithSpecialCharacters.class
 })
 public class AnyTest {
 }
