@@ -2479,9 +2479,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(maybeWrapInQoutes(key));
             }
             sql.append(")");
-            sql.append(" FROM stdin DELIMITER '");
+            sql.append(" FROM stdin CSV DELIMITER '");
             sql.append(COPY_COMMAND_DELIMITER);
-            sql.append("';");
+            sql.append("' ");
+            sql.append("QUOTE ");
+            sql.append(COPY_COMMAND_QUOTE);
+            sql.append(" ESCAPE '");
+            sql.append(ESCAPE);
+            sql.append("'");
+            sql.append(";");
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
