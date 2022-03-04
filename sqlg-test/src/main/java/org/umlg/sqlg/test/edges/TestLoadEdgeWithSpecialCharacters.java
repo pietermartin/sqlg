@@ -2,6 +2,8 @@ package org.umlg.sqlg.test.edges;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -13,6 +15,11 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 public class TestLoadEdgeWithSpecialCharacters extends BaseTest {
+
+    @Before
+    public void beforeTest() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
+    }
 
     @Test
     public void testBulkAddEdgesWithSpecialCharactersInValues() {
@@ -41,14 +48,5 @@ public class TestLoadEdgeWithSpecialCharacters extends BaseTest {
         assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("SIPHeader").count().next(), 0);
         assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("SPT").out().count().next(), 0);
     }
-
-//        int count = 0;
-//        for (int i = 0; i < 10; i++) {
-//            this.sqlgGraph.addVertex(T.label, "A", "index", Integer.toString(i));
-//            for (int j = 0; j < 10; j++) {
-//                this.sqlgGraph.addVertex(T.label, "B", "index", Integer.toString(count));
-//                uids.add(Pair.of(Integer.toString(i), Integer.toString(count++)));
-//            }
-//        }
 
 }
