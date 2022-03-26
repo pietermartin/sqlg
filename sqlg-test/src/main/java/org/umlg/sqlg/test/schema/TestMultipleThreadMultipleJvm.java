@@ -249,8 +249,8 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                                                 Assert.assertNotNull(edgeLabel);
                                                 final Random random = new Random();
                                                 if (random.nextBoolean()) {
-                                                    successfulSchemas.add(count);
                                                     sqlgGraphAsync.tx().commit();
+                                                    successfulSchemas.add(count);
                                                 } else {
                                                     sqlgGraphAsync.tx().rollback();
                                                 }
@@ -275,12 +275,12 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             for (Future<SqlgGraph> result : results) {
                 result.get(5, TimeUnit.MINUTES);
             }
-            Thread.sleep(30_000);
+            Thread.sleep(20_000);
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
                 logger.info(graph.getTopology().toJson().toString());
-                assertEquals(successfulSchemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());
-                assertEquals(successfulSchemas.size() + 1, graph.getTopology().getSchemas().size());
+                assertEquals("this.sqlGraph schema sizes mismatch", successfulSchemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());
+                assertEquals("graph schema sizes mismatch", successfulSchemas.size() + 1, graph.getTopology().getSchemas().size());
                 if (!this.sqlgGraph.getTopology().toJson().equals(graph.getTopology().toJson())) {
                     for (Schema schema : this.sqlgGraph.getTopology().getSchemas()) {
                         Optional<Schema> otherSchema = graph.getTopology().getSchema(schema.getName());
