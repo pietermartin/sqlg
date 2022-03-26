@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.time.StopWatch;
@@ -10,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 import org.slf4j.Logger;
@@ -101,7 +103,6 @@ public class TestForeignSchema extends BaseTest {
             statement.execute(sql);
         }
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
 
@@ -156,6 +157,32 @@ public class TestForeignSchema extends BaseTest {
             //swallow for mostly the server will already exist
         } finally {
             this.sqlgGraph.tx().rollback();
+        }
+    }
+
+    @After
+    public void after() {
+        try {
+            this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+            this.sqlgGraph.close();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+        try {
+            if (this.sqlgGraph1 != null) {
+                this.sqlgGraph1.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+                this.sqlgGraph1.close();
+            }
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+        try {
+            if (this.sqlgGraphFdw != null) {
+                this.sqlgGraphFdw.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+                this.sqlgGraphFdw.close();
+            }
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -243,6 +270,16 @@ public class TestForeignSchema extends BaseTest {
             put("c", PropertyType.STRING);
         }});
         this.sqlgGraph.tx().commit();
+
+        //Assert that one can not insert into a foreign table with sequence primary key.
+        failed = false;
+        try {
+            this.sqlgGraph.addVertex(T.label, "B.B", "b", "halo again");
+        } catch (IllegalStateException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        this.sqlgGraph.tx().rollback();
     }
 
     @Test
@@ -301,11 +338,15 @@ public class TestForeignSchema extends BaseTest {
 
         Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("A");
         Assert.assertTrue(schemaOptional.isPresent());
+        Assert.assertTrue(schemaOptional.get().isForeignSchema());
         Schema aForeignSchema = schemaOptional.get();
         Assert.assertTrue(aForeignSchema.getVertexLabel("A").isPresent());
+        Assert.assertTrue(aForeignSchema.getVertexLabel("A").get().isForeign());
         VertexLabel aForeignVertexLabel = aForeignSchema.getVertexLabel("A").get();
         Assert.assertTrue(aForeignSchema.getVertexLabel("B").isPresent());
+        Assert.assertTrue(aForeignSchema.getVertexLabel("B").get().isForeign());
         Assert.assertTrue(aForeignSchema.getEdgeLabel("ab").isPresent());
+        Assert.assertTrue(aForeignSchema.getEdgeLabel("ab").get().isForeign());
 
         vertices = this.sqlgGraph.traversal().V().hasLabel("A.A").toList();
         Assert.assertEquals(1, vertices.size());
@@ -352,6 +393,33 @@ public class TestForeignSchema extends BaseTest {
             failed = true;
         }
         Assert.assertTrue(failed);
+
+        //Check can not insert vertex via foreign label
+        failed = false;
+        try {
+            this.sqlgGraph.addVertex(T.label, "A.A", "a", "haloAgain");
+        } catch (IllegalStateException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        this.sqlgGraph.tx().rollback();
+
+        //Check can not insert edge via foreign label
+        failed = false;
+        try {
+            vertices = this.sqlgGraph.traversal().V().hasLabel("A.A").toList();
+            Assert.assertEquals(1, vertices.size());
+            a = vertices.get(0);
+            vertices = this.sqlgGraph.traversal().V().hasLabel("A.B").toList();
+            Assert.assertEquals(1, vertices.size());
+            b = vertices.get(0);
+            a.addEdge("ab", b);
+            this.sqlgGraph.tx().commit();
+        } catch (IllegalStateException e) {
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        this.sqlgGraph.tx().rollback();
     }
 
     @Test
@@ -953,5 +1021,181 @@ public class TestForeignSchema extends BaseTest {
             Assert.fail("ExecutorService did not shutdown in 1 minute");
         }
         LOGGER.debug("Done");
+    }
+
+    @Test
+    public void testInsertViaForeignSchema() throws SQLException {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uuid", PropertyType.UUID);
+                    put("a", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("uuid"))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Schema b = this.sqlgGraphFdw.getTopology().ensureSchemaExist("B");
+        @SuppressWarnings("UnusedAssignment")
+        VertexLabel bVertexLabel = b.ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<>() {{
+                    put("uuid", PropertyType.UUID);
+                    put("b", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("uuid"))
+        );
+        this.sqlgGraphFdw.tx().commit();
+
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            String sql = String.format(
+                    "CREATE SCHEMA \"%s\";",
+                    "B"
+            );
+            statement.execute(sql);
+            sql = String.format(
+                    "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\";",
+                    "B",
+                    "sqlgraph_fwd_server",
+                    "B"
+            );
+            statement.execute(sql);
+        }
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.getTopology().importForeignSchemas(Set.of(this.sqlgGraphFdw.getTopology().getSchema("B").orElseThrow()));
+        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema("B").isPresent());
+
+        //Check its readOnly
+        Schema foreignSchema = this.sqlgGraph.getTopology().getSchema("B").orElseThrow();
+        boolean failed = false;
+        try {
+            foreignSchema.ensureVertexLabelExist("D",
+                    new LinkedHashMap<>() {{
+                        put("d", PropertyType.STRING);
+                    }});
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof IllegalStateException);
+            Assert.assertEquals("'B' is a read only foreign schema!", e.getMessage());
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+        failed = false;
+        try {
+            bVertexLabel = foreignSchema.getVertexLabel("B").orElseThrow();
+            Map<String, PropertyColumn> properties = bVertexLabel.getProperties();
+            Map<String, PropertyType> propertyTypeMap = new HashMap<>();
+            for (String p : properties.keySet()) {
+                propertyTypeMap.put(p, properties.get(p).getPropertyType());
+            }
+            propertyTypeMap.put("bb", PropertyType.STRING);
+            bVertexLabel.ensurePropertiesExist(propertyTypeMap);
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof IllegalStateException);
+            Assert.assertEquals("'B' is a read only foreign VertexLabel!", e.getMessage());
+            failed = true;
+        }
+        Assert.assertTrue(failed);
+
+        this.sqlgGraphFdw.addVertex(T.label, "B.B", "uuid", UUID.randomUUID(), "b", "halo");
+        this.sqlgGraphFdw.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B.B").toList();
+        Assert.assertEquals(1, vertices.size());
+
+        this.sqlgGraph.addVertex(T.label, "A", "uuid", UUID.randomUUID(), "a", "test");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> aVertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(1, aVertices.size());
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C", new LinkedHashMap<>() {{
+            put("c", PropertyType.STRING);
+        }});
+        this.sqlgGraph.tx().commit();
+
+        //Assert that one can not insert into a foreign table with sequence primary key.
+        failed = false;
+        try {
+            this.sqlgGraph.addVertex(T.label, "B.B", "uuid", UUID.randomUUID(), "b", "halo again");
+        } catch (IllegalStateException e) {
+            failed = true;
+        }
+        Assert.assertFalse(failed);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraphFdw.traversal().V().hasLabel("B.B").count().next(), 0L);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("B.B").count().next(), 0L);
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraphFdw.tx().rollback();
+    }
+
+    @Test
+    public void testInsertEdgesViaForeignSchema() throws SQLException {
+        Schema a = this.sqlgGraphFdw.getTopology().ensureSchemaExist("A");
+        VertexLabel aVertexLabel = a.ensureVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uuid", PropertyType.UUID);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("uuid"))
+        );
+        VertexLabel bVertexLabel = a.ensureVertexLabelExist(
+                "B",
+                new LinkedHashMap<>() {{
+                    put("uuid", PropertyType.UUID);
+                    put("name", PropertyType.STRING);
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("uuid"))
+        );
+        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
+                new HashMap<>() {{
+                    put("uuid", PropertyType.UUID);
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("uuid"))
+        );
+        this.sqlgGraphFdw.tx().commit();
+
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            String sql = String.format(
+                    "CREATE SCHEMA \"%s\";",
+                    "A"
+            );
+            statement.execute(sql);
+            sql = String.format(
+                    "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\";",
+                    "A",
+                    "sqlgraph_fwd_server",
+                    "A"
+            );
+            statement.execute(sql);
+        }
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.getTopology().importForeignSchemas(Set.of(this.sqlgGraphFdw.getTopology().getSchema("A").orElseThrow()));
+        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema("A").isPresent());
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "uuid", UUID.randomUUID(), "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "uuid", UUID.randomUUID(), "name", "a2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "A.B", "uuid", UUID.randomUUID(), "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "A.B", "uuid", UUID.randomUUID(), "name", "b2");
+        a1.addEdge("ab", b1, "uuid", UUID.randomUUID());
+        a1.addEdge("ab", b2, "uuid", UUID.randomUUID());
+        a2.addEdge("ab", b1, "uuid", UUID.randomUUID());
+        a2.addEdge("ab", b2, "uuid", UUID.randomUUID());
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(2, this.sqlgGraphFdw.traversal().V().hasLabel("A.A").count().next(), 0L);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A.A").count().next(), 0L);
+        Assert.assertEquals(2, this.sqlgGraphFdw.traversal().V().hasLabel("A.B").count().next(), 0L);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A.B").count().next(), 0L);
+        Assert.assertEquals(4, this.sqlgGraphFdw.traversal().E().hasLabel("A.ab").count().next(), 0L);
+        Assert.assertEquals(4, this.sqlgGraph.traversal().E().hasLabel("A.ab").count().next(), 0L);
+
+        Assert.assertEquals(2, this.sqlgGraphFdw.traversal().V(a1.id()).out("ab").count().next(), 0L);
+        Assert.assertEquals(2, this.sqlgGraphFdw.traversal().V(a2.id()).out("ab").count().next(), 0L);
+        Assert.assertEquals(2, this.sqlgGraphFdw.traversal().V(b1.id()).in("ab").count().next(), 0L);
+        Assert.assertEquals(2, this.sqlgGraphFdw.traversal().V(b2.id()).in("ab").count().next(), 0L);
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraphFdw.tx().rollback();
     }
 }

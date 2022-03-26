@@ -167,13 +167,13 @@ public class Schema implements TopologyInf {
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with \"%s\"", VERTEX_PREFIX);
-        Preconditions.checkState(!this.isForeignSchema, "'%s' is a read only foreign schema!", this.name);
         for (String identifier : identifiers) {
             Preconditions.checkState(columns.containsKey(identifier), "The identifiers must be in the specified columns. \"%s\" not found", identifier);
         }
 
         Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
         if (vertexLabelOptional.isEmpty()) {
+            Preconditions.checkState(!this.isForeignSchema, "'%s' is a read only foreign schema!", this.name);
             this.topology.startSchemaChange();
             vertexLabelOptional = this.getVertexLabel(label);
             if (vertexLabelOptional.isEmpty()) {
@@ -287,7 +287,6 @@ public class Schema implements TopologyInf {
             Map<String, PropertyType> columns,
             ListOrderedSet<String> identifiers) {
 
-        Preconditions.checkState(!this.isForeignSchema, "'A' is a read only foreign schema!");
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
@@ -310,6 +309,7 @@ public class Schema implements TopologyInf {
         EdgeLabel edgeLabel;
         Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
         if (edgeLabelOptional.isEmpty()) {
+            Preconditions.checkState(!this.isForeignSchema, "'A' is a read only foreign schema!");
             this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {

@@ -39,7 +39,7 @@ public abstract class AbstractLabel implements TopologyInf {
     final Set<String> uncommittedRemovedProperties = new ThreadLocalSet<>();
 
     private final TreeMap<Integer, String> identifierMap = new TreeMap<>();
-    private final ListOrderedSet<String> identifiers = new ListOrderedSet<>();
+    final ListOrderedSet<String> identifiers = new ListOrderedSet<>();
     private final Set<String> uncommittedIdentifiers = new ThreadLocalListOrderedSet<>();
     //Pair of <old,new> identifiers
     final Set<Pair<String, String>> renamedIdentifiers = new ThreadLocalListOrderedSet<>();

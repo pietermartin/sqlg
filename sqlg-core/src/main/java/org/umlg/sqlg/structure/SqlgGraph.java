@@ -423,6 +423,8 @@ public class SqlgGraph implements Graph {
             VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
             if (!vertexLabel.hasIDPrimaryKey()) {
                 Preconditions.checkArgument(columns.keySet().containsAll(vertexLabel.getIdentifiers()), "identifiers must be present %s", vertexLabel.getIdentifiers());
+            } else if (vertexLabel.isForeign()) {
+                throw SqlgExceptions.invalidMode("Foreign VertexLabel must have user defined identifiers to support addition.");
             }
             return new SqlgVertex(this, false, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
         }

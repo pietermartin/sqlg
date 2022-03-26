@@ -449,9 +449,9 @@ public class VertexLabel extends AbstractLabel {
 
     //    @Override
     public void ensurePropertiesExist(Map<String, PropertyType> columns) {
-        Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign VertexLabel!", this.label);
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
+                Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign VertexLabel!", this.label);
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
@@ -1295,6 +1295,7 @@ public class VertexLabel extends AbstractLabel {
         for (String property : this.properties.keySet()) {
             copy.properties.put(property, this.properties.get(property).readOnlyCopy(copy));
         }
+        copy.identifiers.addAll(this.identifiers);
         return copy;
     }
 

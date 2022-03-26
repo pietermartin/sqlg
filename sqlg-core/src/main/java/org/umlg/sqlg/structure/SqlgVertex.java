@@ -159,6 +159,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
         if (!edgeLabel.hasIDPrimaryKey()) {
             Preconditions.checkArgument(columns.keySet().containsAll(edgeLabel.getIdentifiers()), "identifiers must be present %s", edgeLabel.getIdentifiers());
+        } else if (edgeLabel.isForeign()) {
+            throw SqlgExceptions.invalidMode("Foreign EdgeLabel must have user defined identifiers to support addition.");
         }
         return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValueMapPair);
     }

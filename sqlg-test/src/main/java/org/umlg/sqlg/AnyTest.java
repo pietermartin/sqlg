@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.edges.TestLoadEdgeWithSpecialCharacters;
+import org.umlg.sqlg.test.topology.TestForeignSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.edges.TestLoadEdgeWithSpecialCharacters;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLoadEdgeWithSpecialCharacters.class
+        TestForeignSchema.class
 })
 public class AnyTest {
 }

@@ -1323,6 +1323,7 @@ public class EdgeLabel extends AbstractLabel {
         for (String property : this.properties.keySet()) {
             copy.properties.put(property, this.properties.get(property).readOnlyCopy(copy));
         }
+        copy.identifiers.addAll(this.identifiers);
         return copy;
     }
 
