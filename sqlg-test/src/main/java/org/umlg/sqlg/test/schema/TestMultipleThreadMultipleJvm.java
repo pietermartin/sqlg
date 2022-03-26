@@ -429,12 +429,12 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             readPoolPerGraph.shutdown();
 
             for (Future<SqlgGraph> result : results) {
-                SqlgGraph graph = result.get(30, TimeUnit.SECONDS);
+                result.get(30, TimeUnit.SECONDS);
                 logger.info("graph results returned");
             }
             keepReading.set(false);
             for (Future<SqlgGraph> result : readResults) {
-                SqlgGraph g = result.get(30, TimeUnit.SECONDS);
+                result.get(30, TimeUnit.SECONDS);
                 logger.info("graph readResults returned");
             }
             logger.info("starting querying data");
@@ -442,7 +442,9 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             this.sqlgGraph.tx().rollback();
             for (SqlgGraph graph : graphs) {
                 logger.info("assert querying data");
-                assertEquals(vertices, graph.traversal().V().out().toSet());
+                Set<Vertex> other = graph.traversal().V().out().toSet();
+                Assert.assertEquals(vertices.size(), other.size());
+                Assert.assertEquals(vertices, other);
                 graph.tx().rollback();
             }
         } finally {
