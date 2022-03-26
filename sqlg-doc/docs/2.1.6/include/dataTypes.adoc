@@ -67,6 +67,13 @@
 |VARCHAR(x)
 |VARCHAR(x)
 
+|UUID
+|UUID
+|UUID
+|UUID
+|*Not supported*
+|*Not supported*
+
 |Boolean[]
 |BOOLEAN[]
 |BOOLEAN ARRAY DEFAULT ARRAY[]

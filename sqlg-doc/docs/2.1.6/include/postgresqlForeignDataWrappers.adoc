@@ -1,0 +1,201 @@
+== Postgresql Foreign Data Wrappers
+
+Sqlg supports https://www.postgresql.org/docs/current/postgres-fdw.html[postgres-fdw].
+This allows the graph to scale horizontally over multiple databases.
+
+[NOTE]
+====
+ * `postgres_fdw` does not support distributed https://www.postgresql.org/docs/current/postgres-fdw.html#id-1.11.7.44.14[transactions].
+ * It is **not** possible to use `SERIAL` id fields for inserting data into a remote database via `postgres_fdw`
+* It **is** possible to read `VertexLabel(s)` and `EdgeLabel(s)` with a `SERIAL` id field from a remote database via `postgres_fdw`.
+====
+
+=== How it works
+
+Sqlg imports the foreign graph schema/topology, either complete schemas or a subset of `VertexLabel(s)` and `EdgeLabel(s)`
+This allows Sqlg to refer to parts of the foreign graph as though it is local.
+The rest, postgresql takes care of by forwarding sql statements to the remote server.
+
+=== Prepare
+
+The user is responsible to prepare the environment. i.e.
+
+[source,sql,options="nowrap"]
+```
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+CREATE SERVER "sqlgraph_fwd_server" FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', dbname 'sqlgraphdb_fdw', port '5432')
+CREATE USER MAPPING FOR postgres SERVER "sqlgraph_fwd_server" OPTIONS (user 'postgres', password 'postgres');
+```
+
+=== Import a foreign schema
+
+First we need to create 2 separate graphs pointing to different databases.
+
+[NOTE]
+====
+We are creating the `VertexLabel` and `EdgeLabel` using <<anchor-user-supplied-identifiers, identifiers>> as it is not possible to insert into a `SERIAL` auto generated primary key.
+====
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testImportForeignSchema() {
+    PropertiesConfiguration properties = new PropertiesConfiguration();
+    properties.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
+    properties.setProperty("jdbc.username", "postgres");
+    properties.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraph = SqlgGraph.open(properties); <1>
+
+    PropertiesConfiguration propertiesForeign = new PropertiesConfiguration();
+    propertiesForeign.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb_fdw");
+    propertiesForeign.setProperty("jdbc.username", "postgres");
+    propertiesForeign.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraphForeign = SqlgGraph.open(propertiesForeign); <2>
+
+    Schema foreignSchemaA = sqlgGraphForeign.getTopology().ensureSchemaExist("A"); <3>
+    VertexLabel aVertexLabel = foreignSchemaA.ensureVertexLabelExist("A", new HashMap<>() {{
+                put("ID", PropertyType.UUID);
+                put("name", PropertyType.STRING);
+            }},
+            ListOrderedSet.listOrderedSet(List.of("ID"))
+    ); <4>
+    VertexLabel bVertexLabel = foreignSchemaA.ensureVertexLabelExist("B", new HashMap<>() {{
+                put("ID", PropertyType.UUID);
+                put("name", PropertyType.STRING);
+            }},
+            ListOrderedSet.listOrderedSet(List.of("ID"))
+    ); <5>
+    aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
+                put("ID", PropertyType.UUID);
+                put("name", PropertyType.STRING);
+            }}, ListOrderedSet.listOrderedSet(Set.of("ID"))
+    ); <6>
+    sqlgGraphForeign.tx().commit();
+
+    Connection connection = sqlgGraph.tx().getConnection();
+    try (Statement statement = connection.createStatement()) {
+        String sql = String.format(
+                "CREATE SCHEMA \"%s\";",
+                "A"
+        ); <7>
+        statement.execute(sql);
+        sql = String.format(
+                "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\";",
+                "A",
+                "sqlgraph_fwd_server",
+                "A"
+        ); <8>
+        statement.execute(sql);
+    } catch (SQLException e) {
+        Assert.fail(e.getMessage());
+    }
+    sqlgGraph.tx().commit();
+    sqlgGraph.getTopology().importForeignSchemas(Set.of(foreignSchemaA)); <9>
+
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").isPresent());
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").isPresent());
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("B").isPresent());
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").orElseThrow().getEdgeLabel("ab").isPresent()); <10>
+
+    Vertex aVertex = sqlgGraph.addVertex(T.label, "A.A", "ID", UUID.randomUUID(), "name", "John");
+    Vertex bVertex = sqlgGraph.addVertex(T.label, "A.B", "ID", UUID.randomUUID(), "name", "Joe");
+    aVertex.addEdge("ab", bVertex, "ID", UUID.randomUUID(), "name", "myEdge");
+    sqlgGraph.tx().commit();
+    Assert.assertEquals(1L, sqlgGraph.traversal().V()
+            .hasLabel("A.A")
+            .has("name", P.eq("John"))
+            .out("ab")
+            .count().next(), 0); <11>
+}
+----
+
+<1> A SqlgGraph pointing to `sqlgraphdb`
+<2> A SqlgGraph pointing to `sqlgraphdb_fwd`
+<3> Create a `Schema` `A` in `sqlgrapdb_fdw
+<4> Create a `VertexLabel` `A` in `sqlgraphdb_fdw`
+<5> Create a `VertexLabel` `B` in `sqlgraphdb_fdw`
+<6> Create a `EdgeLabel` `ab` in `sqlgraphdb_fdw`
+<7> Create the schema `A` in `sqlgraphdb`
+<8> Import the foreign schema `A` in `sqlgraphdb_fdw` into `A` in `sqlgraphdb`
+<9> Inform SqlgGraph of `sqlgraphdb` about the foreign elements it can refer to as local.
+<10> Assert that the foreign schema elements are available to the local SqlgGraph pointing to `sqlgraphdb`.
+<11> Insert and query data into `sqlgraphdb_fdw` using the local SqlgGraph on `sqlgraphdb`
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testImportForeignSchemaWithSERIAL() {
+    PropertiesConfiguration properties = new PropertiesConfiguration();
+    properties.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
+    properties.setProperty("jdbc.username", "postgres");
+    properties.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraph = SqlgGraph.open(properties); <1>
+
+    PropertiesConfiguration propertiesForeign = new PropertiesConfiguration();
+    propertiesForeign.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb_fdw");
+    propertiesForeign.setProperty("jdbc.username", "postgres");
+    propertiesForeign.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraphForeign = SqlgGraph.open(propertiesForeign); <2>
+
+    Schema foreignSchemaA = sqlgGraphForeign.getTopology().ensureSchemaExist("A"); <3>
+    VertexLabel aVertexLabel = foreignSchemaA.ensureVertexLabelExist("A",
+            new HashMap<>() {{
+                put("name", PropertyType.STRING);
+            }}
+    ); <4>
+    VertexLabel bVertexLabel = foreignSchemaA.ensureVertexLabelExist("B",
+            new HashMap<>() {{
+                put("name", PropertyType.STRING);
+            }}
+    ); <5>
+    aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
+            new HashMap<>() {{
+                put("name", PropertyType.STRING);
+            }}
+    ); <6>
+    sqlgGraphForeign.tx().commit();
+
+    Connection connection = sqlgGraph.tx().getConnection();
+    try (Statement statement = connection.createStatement()) {
+        String sql = String.format(
+                "CREATE SCHEMA \"%s\";",
+                "A"
+        ); <7>
+        statement.execute(sql);
+        sql = String.format(
+                "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\";",
+                "A",
+                "sqlgraph_fwd_server",
+                "A"
+        ); <8>
+        statement.execute(sql);
+    } catch (SQLException e) {
+        Assert.fail(e.getMessage());
+    }
+    sqlgGraph.tx().commit();
+    sqlgGraph.getTopology().importForeignSchemas(Set.of(foreignSchemaA)); <9>
+
+    Vertex aVertex = sqlgGraphForeign.addVertex(T.label, "A.A", "name", "John");
+    Vertex bVertex = sqlgGraphForeign.addVertex(T.label, "A.B", "name", "Joe");
+    aVertex.addEdge("ab", bVertex, "name", "myEdge");
+    sqlgGraphForeign.tx().commit(); <10>
+
+    Assert.assertEquals(1L, sqlgGraph.traversal().V()
+            .hasLabel("A.A")
+            .has("name", P.eq("John"))
+            .out("ab")
+            .count().next(), 0); <11>
+}
+----
+
+<1> A SqlgGraph pointing to `sqlgraphdb`
+<2> A SqlgGraph pointing to `sqlgraphdb_fwd`
+<3> Create a `Schema` `A` in `sqlgrapdb_fdw
+<4> Create a `VertexLabel` `A` with a `SERIAL` id in `sqlgraphdb_fdw`
+<5> Create a `VertexLabel` `B` with a `SERIAL` id in `sqlgraphdb_fdw`
+<6> Create a `EdgeLabel` `ab` with a `SERIAL` id in `sqlgraphdb_fdw`
+<7> Create the schema `A` in `sqlgraphdb`
+<8> Import the foreign schema `A` in `sqlgraphdb_fdw` into `A` in `sqlgraphdb`
+<9> Inform SqlgGraph of `sqlgraphdb` about the foreign elements it can refer to as local.
+<10> Insert the data directly into `sqlgraphdb_fdw`
+<11> Read the data from `sqlgraphdb` via `postgres_fdw`

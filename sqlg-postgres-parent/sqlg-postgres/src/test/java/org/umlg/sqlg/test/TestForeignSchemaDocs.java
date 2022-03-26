@@ -22,7 +22,7 @@ import java.util.UUID;
 
 public class TestForeignSchemaDocs {
 
-    public static void main2(String[] args) {
+    public static void main(String[] args) {
         PropertiesConfiguration properties = new PropertiesConfiguration();
         properties.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
         properties.setProperty("jdbc.username", "postgres");
@@ -123,7 +123,7 @@ public class TestForeignSchemaDocs {
                 .count().next(), 0);
     }
 
-    public static void main(String[] args) {
+    public static void main4(String[] args) {
         PropertiesConfiguration properties = new PropertiesConfiguration();
         properties.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
         properties.setProperty("jdbc.username", "postgres");

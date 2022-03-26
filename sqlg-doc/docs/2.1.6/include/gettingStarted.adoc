@@ -1,6 +1,50 @@
 == Getting Started
 
+There are a few ways to initialize Sqlg. The easiest is to include one of the provided connection pools and choose a supported database.
+
+e.g.
+
+.C3P0
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-c3p0</artifactId>
+     <version>2.1.6</version>
+ </dependency>
+
+.Postgresql
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-postgres</artifactId>
+     <version>2.1.6</version>
+ </dependency>
+
+You can also provide your own custom datasource by implementing `org.umlg.sqlg.structure.SqlgDataSource`. To let `Sqlg` know about your custom datasource you need to specify the fully qualified class name in `sqlg.properties`
+
+```
+sqlg.dataSource=your.custom.SqlgDataSource
+```
+
+Sqlg can also do a `JNDI` lookup to find the datasource. For this to work the `jdbc.url` property must begin with `jndi:`
+
 === Maven coordinates
+
+Sqlg has support for https://www.mchange.com/projects/c3p0/[c3p0] and https://github.com/brettwooldridge/HikariCP[hikari] connection pools.
+
+.C3P0
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-c3p0</artifactId>
+     <version>2.1.6</version>
+ </dependency>
+
+.Hikari
+ <dependency>
+     <groupId>org.umlg</groupId>
+     <artifactId>sqlg-hikari</artifactId>
+     <version>2.1.6</version>
+ </dependency>
+
+The various `Sqlg` supported databases.
 
 .Postgresql
  <dependency>
@@ -44,7 +88,8 @@
      <version>2.1.6</version>
  </dependency>
 
-This will include `gremlin-groovy`. If you have no need for that then use the following coordinates.
+
+These will include `gremlin-groovy`. If you have no need for that then only include the dialect.
 
 .Postgresql
  <dependency>
@@ -145,7 +190,7 @@ public void useAsPerNormal() {
 ----
 <1> It is very important to always commit or rollback the transaction.
 If you do not, connections to the database will remain open and eventually
-the connection pool with run out of connections.
+the connection pool will run out of connections.
 
 === Gremlin Console
 

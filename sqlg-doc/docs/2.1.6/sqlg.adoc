@@ -1,6 +1,6 @@
 = Sqlg Documentation
 Pieter Martin
-Version 2.1.6, December 2021:
+Version 2.1.6, March 2022:
 :sectnums:
 :toc: left
 :toclevels: 4
@@ -177,6 +177,8 @@ include::{includedir}/batchMode.adoc[]
 include::{includedir}/topology.adoc[]
 
 include::{includedir}/postgresqlPartitioning.adoc[]
+
+include::{includedir}/postgresqlForeignDataWrappers.adoc[]
 
 include::{includedir}/sqlgui.adoc[]
 

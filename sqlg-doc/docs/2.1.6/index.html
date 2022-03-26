@@ -2138,7 +2138,7 @@ p {
 <div class="details">
 <span id="author" class="author">Pieter Martin</span><br>
 <span id="revnumber">version 2.1.6,</span>
-<span id="revdate">December 2021</span>
+<span id="revdate">March 2022</span>
 <br><span id="revremark"></span>
 </div>
 <div id="toc" class="toc2">
@@ -2255,6 +2255,7 @@ p {
 <ul class="sectlevel2">
 <li><a href="#_topology_eager_creation">12.1. Topology eager creation</a></li>
 <li><a href="#anchor-user-supplied-identifiers">12.2. User supplied identifiers</a></li>
+<li><a href="#_lock_the_topology">12.3. Lock the topology</a></li>
 </ul>
 </li>
 <li><a href="#_postgresql_partitioning">13. Postgresql Partitioning</a>
@@ -2264,15 +2265,22 @@ p {
 <li><a href="#_hash_partitioning">13.3. Hash partitioning</a></li>
 </ul>
 </li>
-<li><a href="#_sqlg_ui">14. Sqlg ui</a>
+<li><a href="#_postgresql_foreign_data_wrappers">14. Postgresql Foreign Data Wrappers</a>
 <ul class="sectlevel2">
-<li><a href="#_startup">14.1. Startup</a></li>
-<li><a href="#_authentication">14.2. Authentication</a></li>
+<li><a href="#_how_it_works">14.1. How it works</a></li>
+<li><a href="#_prepare">14.2. Prepare</a></li>
+<li><a href="#_import_a_foreign_schema">14.3. Import a foreign schema</a></li>
 </ul>
 </li>
-<li><a href="#_gremlin_server">15. Gremlin server</a>
+<li><a href="#_sqlg_ui">15. Sqlg ui</a>
 <ul class="sectlevel2">
-<li><a href="#_minimal_config">15.1. Minimal config</a></li>
+<li><a href="#_startup">15.1. Startup</a></li>
+<li><a href="#_authentication">15.2. Authentication</a></li>
+</ul>
+</li>
+<li><a href="#_gremlin_server">16. Gremlin server</a>
+<ul class="sectlevel2">
+<li><a href="#_minimal_config">16.1. Minimal config</a></li>
 </ul>
 </li>
 </ul>
@@ -2485,8 +2493,71 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <div class="sect1">
 <h2 id="_getting_started">5. Getting Started</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>There are a few ways to initialize Sqlg. The easiest is to include one of the provided connection pools and choose a supported database.</p>
+</div>
+<div class="paragraph">
+<p>e.g.</p>
+</div>
+<div class="literalblock">
+<div class="title">C3P0</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-c3p0&lt;/artifactId&gt;
+    &lt;version&gt;2.1.6&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">Postgresql</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-postgres&lt;/artifactId&gt;
+    &lt;version&gt;2.1.6&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also provide your own custom datasource by implementing <code>org.umlg.sqlg.structure.SqlgDataSource</code>. To let <code>Sqlg</code> know about your custom datasource you need to specify the fully qualified class name in <code>sqlg.properties</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">sqlg.dataSource=your.custom.SqlgDataSource</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Sqlg can also do a <code>JNDI</code> lookup to find the datasource. For this to work the <code>jdbc.url</code> property must begin with <code>jndi:</code></p>
+</div>
 <div class="sect2">
 <h3 id="_maven_coordinates">5.1. Maven coordinates</h3>
+<div class="paragraph">
+<p>Sqlg has support for <a href="https://www.mchange.com/projects/c3p0/">c3p0</a> and <a href="https://github.com/brettwooldridge/HikariCP">hikari</a> connection pools.</p>
+</div>
+<div class="literalblock">
+<div class="title">C3P0</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-c3p0&lt;/artifactId&gt;
+    &lt;version&gt;2.1.6&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">Hikari</div>
+<div class="content">
+<pre>&lt;dependency&gt;
+    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
+    &lt;artifactId&gt;sqlg-hikari&lt;/artifactId&gt;
+    &lt;version&gt;2.1.6&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The various <code>Sqlg</code> supported databases.</p>
+</div>
 <div class="literalblock">
 <div class="title">Postgresql</div>
 <div class="content">
@@ -2548,7 +2619,7 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 </div>
 </div>
 <div class="paragraph">
-<p>This will include <code>gremlin-groovy</code>. If you have no need for that then use the following coordinates.</p>
+<p>These will include <code>gremlin-groovy</code>. If you have no need for that then only include the dialect.</p>
 </div>
 <div class="literalblock">
 <div class="title">Postgresql</div>
@@ -2702,7 +2773,7 @@ public void useAsPerNormal() {
 <li>
 <p>It is very important to always commit or rollback the transaction.
 If you do not, connections to the database will remain open and eventually
-the connection pool with run out of connections.</p>
+the connection pool will run out of connections.</p>
 </li>
 </ol>
 </div>
@@ -2854,6 +2925,14 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Boolean[]</p></td>
@@ -7139,8 +7218,8 @@ weight : DOUBLE</pre>
 <div class="paragraph">
 <p>It is often useful to create the topology upfront. The topology creation api is accessed via the <code>Topology</code> object.
 It is a singleton. <code>Topology topology = sqlgGraph.getTopology();</code>
-To create new topology objects use the <code>ensureXXX</code> methods. They will return the a topology object representing the specific
-topology element. i.e. <code>Schema</code>, <code>VertexLabel</code>, <code>EdgeLabel</code>, <code>PropertyColumn</code>, <code>Index</code> or <code>GlobalUniqueIndex</code></p>
+To create new topology objects use the <code>ensureXXX</code> methods. They will return a topology object representing the specific
+topology element. i.e. <code>Schema</code>, <code>VertexLabel</code>, <code>EdgeLabel</code>, <code>PropertyColumn</code>, <code>Index</code></p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -7392,6 +7471,85 @@ FROM
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_lock_the_topology">12.3. Lock the topology</h3>
+<div class="paragraph">
+<p>It is possible to lock the topology. This will prevent any creation of topology elements without explicitly unlocking the topology.
+The topology can only be locked globally. However, there are two ways to unlock the topology. Either globally or per transaction.
+Unlocking the topology on the transaction unlocks the topology only for the current transaction. This means that globally
+the topology remains locked and that other threads (transactions) will not be able to change the topology. To do so they
+too will have to first unlock the topology.  There is no need to lock the topology again for the transaction. It will
+automatically do so on <code>commit</code> or <code>rollback</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">@Test
+public void topologyGlobalLockUnlock() {
+    this.sqlgGraph.getTopology().lock(); # <b class="conum">(1)</b>
+    try {
+        this.sqlgGraph.addVertex(T.label, "A"); # <b class="conum">(2)</b>
+        Assert.fail("Expected IllegalStateException");
+    } catch (IllegalStateException e) {
+        //The topology is locked so an IllegalStateException is thrown.
+    }
+    this.sqlgGraph.getTopology().unlock(); # <b class="conum">(3)</b>
+    this.sqlgGraph.addVertex(T.label, "A"); # <b class="conum">(4)</b>
+    this.sqlgGraph.tx().commit();
+    Assert.assertTrue(this.sqlgGraph.getTopology()
+            .getPublicSchema()
+            .getVertexLabel("A")
+            .isPresent());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Globally lock the topology.</p>
+</li>
+<li>
+<p>Try to create a VertexLabel 'A', it will fail with an <code>IllegalStateException</code> as the topology is locked.</p>
+</li>
+<li>
+<p>Globally unlock the topology.</p>
+</li>
+<li>
+<p>Create a VertexLabel 'A'. This time it will succeed as the topology is not locked.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">@Test
+public void topologyGlobalLockTransactionUnlock() {
+    this.sqlgGraph.getTopology().lock(); # <b class="conum">(1)</b>
+    this.sqlgGraph.tx().unlockTopology(); # <b class="conum">(2)</b>
+    this.sqlgGraph.addVertex(T.label, "A"); # <b class="conum">(3)</b>
+    this.sqlgGraph.tx().commit(); # <b class="conum">(4)</b>
+    Assert.assertTrue(this.sqlgGraph.getTopology()
+            .getPublicSchema()
+            .getVertexLabel("A")
+            .isPresent());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Globally lock the topology.</p>
+</li>
+<li>
+<p>Unlock the topology only for the current transaction.</p>
+</li>
+<li>
+<p>Create a VertexLabel 'A'. This will succeed for the current transaction.</p>
+</li>
+<li>
+<p>On commit the <code>unlockTopology</code> is automatically no longer valid.</p>
+</li>
+</ol>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -7615,7 +7773,295 @@ public void testPartitioningHash() {
 </div>
 </div>
 <div class="sect1">
-<h2 id="_sqlg_ui">14. Sqlg ui</h2>
+<h2 id="_postgresql_foreign_data_wrappers">14. Postgresql Foreign Data Wrappers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sqlg supports <a href="https://www.postgresql.org/docs/current/postgres-fdw.html">postgres-fdw</a>.
+This allows the graph to scale horizontally over multiple databases.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><code>postgres_fdw</code> does not support distributed <a href="https://www.postgresql.org/docs/current/postgres-fdw.html#id-1.11.7.44.14">transactions</a>.</p>
+</li>
+<li>
+<p>It is <strong>not</strong> possible to use <code>SERIAL</code> id fields for inserting data into a remote database via <code>postgres_fdw</code></p>
+</li>
+<li>
+<p>It <strong>is</strong> possible to read <code>VertexLabel(s)</code> and <code>EdgeLabel(s)</code> with a <code>SERIAL</code> id field from a remote database via <code>postgres_fdw</code>.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_how_it_works">14.1. How it works</h3>
+<div class="paragraph">
+<p>Sqlg imports the foreign graph schema/topology, either complete schemas or a subset of <code>VertexLabel(s)</code> and <code>EdgeLabel(s)</code>
+This allows Sqlg to refer to parts of the foreign graph as though it is local.
+The rest, postgresql takes care of by forwarding sql statements to the remote server.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_prepare">14.2. Prepare</h3>
+<div class="paragraph">
+<p>The user is responsible to prepare the environment. i.e.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-none hljs">CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+CREATE SERVER "sqlgraph_fwd_server" FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'localhost', dbname 'sqlgraphdb_fdw', port '5432')
+CREATE USER MAPPING FOR postgres SERVER "sqlgraph_fwd_server" OPTIONS (user 'postgres', password 'postgres');</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_import_a_foreign_schema">14.3. Import a foreign schema</h3>
+<div class="paragraph">
+<p>First we need to create 2 separate graphs pointing to different databases.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>We are creating the <code>VertexLabel</code> and <code>EdgeLabel</code> using <a href="#anchor-user-supplied-identifiers">identifiers</a> as it is not possible to insert into a <code>SERIAL</code> auto generated primary key.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testImportForeignSchema() {
+    PropertiesConfiguration properties = new PropertiesConfiguration();
+    properties.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
+    properties.setProperty("jdbc.username", "postgres");
+    properties.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraph = SqlgGraph.open(properties); <b class="conum">(1)</b>
+
+    PropertiesConfiguration propertiesForeign = new PropertiesConfiguration();
+    propertiesForeign.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb_fdw");
+    propertiesForeign.setProperty("jdbc.username", "postgres");
+    propertiesForeign.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraphForeign = SqlgGraph.open(propertiesForeign); <b class="conum">(2)</b>
+
+    Schema foreignSchemaA = sqlgGraphForeign.getTopology().ensureSchemaExist("A"); <b class="conum">(3)</b>
+    VertexLabel aVertexLabel = foreignSchemaA.ensureVertexLabelExist("A", new HashMap&lt;&gt;() {{
+                put("ID", PropertyType.UUID);
+                put("name", PropertyType.STRING);
+            }},
+            ListOrderedSet.listOrderedSet(List.of("ID"))
+    ); <b class="conum">(4)</b>
+    VertexLabel bVertexLabel = foreignSchemaA.ensureVertexLabelExist("B", new HashMap&lt;&gt;() {{
+                put("ID", PropertyType.UUID);
+                put("name", PropertyType.STRING);
+            }},
+            ListOrderedSet.listOrderedSet(List.of("ID"))
+    ); <b class="conum">(5)</b>
+    aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap&lt;&gt;() {{
+                put("ID", PropertyType.UUID);
+                put("name", PropertyType.STRING);
+            }}, ListOrderedSet.listOrderedSet(Set.of("ID"))
+    ); <b class="conum">(6)</b>
+    sqlgGraphForeign.tx().commit();
+
+    Connection connection = sqlgGraph.tx().getConnection();
+    try (Statement statement = connection.createStatement()) {
+        String sql = String.format(
+                "CREATE SCHEMA \"%s\";",
+                "A"
+        ); <b class="conum">(7)</b>
+        statement.execute(sql);
+        sql = String.format(
+                "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\";",
+                "A",
+                "sqlgraph_fwd_server",
+                "A"
+        ); <b class="conum">(8)</b>
+        statement.execute(sql);
+    } catch (SQLException e) {
+        Assert.fail(e.getMessage());
+    }
+    sqlgGraph.tx().commit();
+    sqlgGraph.getTopology().importForeignSchemas(Set.of(foreignSchemaA)); <b class="conum">(9)</b>
+
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").isPresent());
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").isPresent());
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("B").isPresent());
+    Assert.assertTrue(sqlgGraph.getTopology().getSchema("A").orElseThrow().getEdgeLabel("ab").isPresent()); <b class="conum">(10)</b>
+
+    Vertex aVertex = sqlgGraph.addVertex(T.label, "A.A", "ID", UUID.randomUUID(), "name", "John");
+    Vertex bVertex = sqlgGraph.addVertex(T.label, "A.B", "ID", UUID.randomUUID(), "name", "Joe");
+    aVertex.addEdge("ab", bVertex, "ID", UUID.randomUUID(), "name", "myEdge");
+    sqlgGraph.tx().commit();
+    Assert.assertEquals(1L, sqlgGraph.traversal().V()
+            .hasLabel("A.A")
+            .has("name", P.eq("John"))
+            .out("ab")
+            .count().next(), 0); <b class="conum">(11)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>A SqlgGraph pointing to <code>sqlgraphdb</code></p>
+</li>
+<li>
+<p>A SqlgGraph pointing to <code>sqlgraphdb_fwd</code></p>
+</li>
+<li>
+<p>Create a <code>Schema</code> <code>A</code> in `sqlgrapdb_fdw</p>
+</li>
+<li>
+<p>Create a <code>VertexLabel</code> <code>A</code> in <code>sqlgraphdb_fdw</code></p>
+</li>
+<li>
+<p>Create a <code>VertexLabel</code> <code>B</code> in <code>sqlgraphdb_fdw</code></p>
+</li>
+<li>
+<p>Create a <code>EdgeLabel</code> <code>ab</code> in <code>sqlgraphdb_fdw</code></p>
+</li>
+<li>
+<p>Create the schema <code>A</code> in <code>sqlgraphdb</code></p>
+</li>
+<li>
+<p>Import the foreign schema <code>A</code> in <code>sqlgraphdb_fdw</code> into <code>A</code> in <code>sqlgraphdb</code></p>
+</li>
+<li>
+<p>Inform SqlgGraph of <code>sqlgraphdb</code> about the foreign elements it can refer to as local.</p>
+</li>
+<li>
+<p>Assert that the foreign schema elements are available to the local SqlgGraph pointing to <code>sqlgraphdb</code>.</p>
+</li>
+<li>
+<p>Insert and query data into <code>sqlgraphdb_fdw</code> using the local SqlgGraph on <code>sqlgraphdb</code></p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testImportForeignSchemaWithSERIAL() {
+    PropertiesConfiguration properties = new PropertiesConfiguration();
+    properties.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
+    properties.setProperty("jdbc.username", "postgres");
+    properties.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraph = SqlgGraph.open(properties); <b class="conum">(1)</b>
+
+    PropertiesConfiguration propertiesForeign = new PropertiesConfiguration();
+    propertiesForeign.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb_fdw");
+    propertiesForeign.setProperty("jdbc.username", "postgres");
+    propertiesForeign.setProperty("jdbc.password", "postgres");
+    SqlgGraph sqlgGraphForeign = SqlgGraph.open(propertiesForeign); <b class="conum">(2)</b>
+
+    Schema foreignSchemaA = sqlgGraphForeign.getTopology().ensureSchemaExist("A"); <b class="conum">(3)</b>
+    VertexLabel aVertexLabel = foreignSchemaA.ensureVertexLabelExist("A",
+            new HashMap&lt;&gt;() {{
+                put("name", PropertyType.STRING);
+            }}
+    ); <b class="conum">(4)</b>
+    VertexLabel bVertexLabel = foreignSchemaA.ensureVertexLabelExist("B",
+            new HashMap&lt;&gt;() {{
+                put("name", PropertyType.STRING);
+            }}
+    ); <b class="conum">(5)</b>
+    aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
+            new HashMap&lt;&gt;() {{
+                put("name", PropertyType.STRING);
+            }}
+    ); <b class="conum">(6)</b>
+    sqlgGraphForeign.tx().commit();
+
+    Connection connection = sqlgGraph.tx().getConnection();
+    try (Statement statement = connection.createStatement()) {
+        String sql = String.format(
+                "CREATE SCHEMA \"%s\";",
+                "A"
+        ); <b class="conum">(7)</b>
+        statement.execute(sql);
+        sql = String.format(
+                "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\";",
+                "A",
+                "sqlgraph_fwd_server",
+                "A"
+        ); <b class="conum">(8)</b>
+        statement.execute(sql);
+    } catch (SQLException e) {
+        Assert.fail(e.getMessage());
+    }
+    sqlgGraph.tx().commit();
+    sqlgGraph.getTopology().importForeignSchemas(Set.of(foreignSchemaA)); <b class="conum">(9)</b>
+
+    Vertex aVertex = sqlgGraphForeign.addVertex(T.label, "A.A", "name", "John");
+    Vertex bVertex = sqlgGraphForeign.addVertex(T.label, "A.B", "name", "Joe");
+    aVertex.addEdge("ab", bVertex, "name", "myEdge");
+    sqlgGraphForeign.tx().commit(); <b class="conum">(10)</b>
+
+    Assert.assertEquals(1L, sqlgGraph.traversal().V()
+            .hasLabel("A.A")
+            .has("name", P.eq("John"))
+            .out("ab")
+            .count().next(), 0); <b class="conum">(11)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>A SqlgGraph pointing to <code>sqlgraphdb</code></p>
+</li>
+<li>
+<p>A SqlgGraph pointing to <code>sqlgraphdb_fwd</code></p>
+</li>
+<li>
+<p>Create a <code>Schema</code> <code>A</code> in `sqlgrapdb_fdw</p>
+</li>
+<li>
+<p>Create a <code>VertexLabel</code> <code>A</code> with a <code>SERIAL</code> id in <code>sqlgraphdb_fdw</code></p>
+</li>
+<li>
+<p>Create a <code>VertexLabel</code> <code>B</code> with a <code>SERIAL</code> id in <code>sqlgraphdb_fdw</code></p>
+</li>
+<li>
+<p>Create a <code>EdgeLabel</code> <code>ab</code> with a <code>SERIAL</code> id in <code>sqlgraphdb_fdw</code></p>
+</li>
+<li>
+<p>Create the schema <code>A</code> in <code>sqlgraphdb</code></p>
+</li>
+<li>
+<p>Import the foreign schema <code>A</code> in <code>sqlgraphdb_fdw</code> into <code>A</code> in <code>sqlgraphdb</code></p>
+</li>
+<li>
+<p>Inform SqlgGraph of <code>sqlgraphdb</code> about the foreign elements it can refer to as local.</p>
+</li>
+<li>
+<p>Insert the data directly into <code>sqlgraphdb_fdw</code></p>
+</li>
+<li>
+<p>Read the data from <code>sqlgraphdb</code> via <code>postgres_fdw</code></p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_sqlg_ui">15. Sqlg ui</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Sqlg includes a basic ui to visualize and delete/remove schema elements.</p>
@@ -7633,7 +8079,7 @@ Sqlg' ui is very dangerous as it allows for deletion of schema elements includin
 </table>
 </div>
 <div class="sect2">
-<h3 id="_startup">14.1. Startup</h3>
+<h3 id="_startup">15.1. Startup</h3>
 <div class="paragraph">
 <p>The ui uses <a href="http://sparkjava.com"><strong>Sparkjava</strong></a> as its web framework.</p>
 </div>
@@ -7716,7 +8162,7 @@ The webserver mode has not been tested, nor do I know how the websocket will be 
 </div>
 </div>
 <div class="sect2">
-<h3 id="_authentication">14.2. Authentication</h3>
+<h3 id="_authentication">15.2. Authentication</h3>
 <div class="paragraph">
 <p>The ui uses cookie authentication.</p>
 </div>
@@ -7750,7 +8196,7 @@ sqlg.ui.username.peter.edit=true</pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_gremlin_server">15. Gremlin server</h2>
+<h2 id="_gremlin_server">16. Gremlin server</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>As sqlg implements TinkerPop you can access it via gremlin server.</p>
@@ -7769,7 +8215,7 @@ i.e. No batch mode and no postgresql partitions.
 </table>
 </div>
 <div class="sect2">
-<h3 id="_minimal_config">15.1. Minimal config</h3>
+<h3 id="_minimal_config">16.1. Minimal config</h3>
 <div class="paragraph">
 <p>gremlin-server-min.yaml</p>
 </div>
@@ -7851,7 +8297,7 @@ globals &lt;&lt; [g : graph.traversal()]</pre>
 <div id="footer">
 <div id="footer-text">
 Version 2.1.6<br>
-Last updated 2021-12-23 11:37:43 +0200
+Last updated 2022-03-13 09:01:08 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
