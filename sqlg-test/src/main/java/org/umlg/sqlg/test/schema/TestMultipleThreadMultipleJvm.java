@@ -437,6 +437,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                 result.get(30, TimeUnit.SECONDS);
                 logger.info("graph readResults returned");
             }
+            Thread.sleep(10_000);
             logger.info("starting querying data");
             Set<Vertex> vertices = this.sqlgGraph.traversal().V().out().toSet();
             this.sqlgGraph.tx().rollback();
