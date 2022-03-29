@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -45,8 +46,8 @@ public class TestMultipleIDQuery extends BaseTest {
         aSchema.ensureVertexLabelExist(
                 "A",
                 new HashMap<>(){{
-                    put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         this.sqlgGraph.tx().commit();
@@ -68,8 +69,8 @@ public class TestMultipleIDQuery extends BaseTest {
         aSchema.ensureVertexLabelExist(
                 "A",
                 new HashMap<>(){{
-                    put("uid", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }});
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -90,8 +91,8 @@ public class TestMultipleIDQuery extends BaseTest {
         aSchema.ensureVertexLabelExist(
                 "A",
                 new HashMap<>(){{
-                    put("uid", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         this.sqlgGraph.tx().commit();
@@ -111,14 +112,14 @@ public class TestMultipleIDQuery extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("name", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("name", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
@@ -126,8 +127,8 @@ public class TestMultipleIDQuery extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         this.sqlgGraph.tx().commit();

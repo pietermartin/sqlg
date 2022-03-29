@@ -6,10 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.umlg.sqlg.structure.BatchManager;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -140,7 +137,13 @@ public class TopologyManager {
         }
     }
 
-    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+    public static void addVertexLabel(
+            SqlgGraph sqlgGraph,
+            String schema,
+            String tableName,
+            Map<String, PropertyDefinition> columns,
+            ListOrderedSet<String> identifiers) {
+
         addVertexLabel(sqlgGraph, schema, tableName, columns, identifiers, PartitionType.NONE, null);
     }
 
@@ -148,7 +151,7 @@ public class TopologyManager {
             SqlgGraph sqlgGraph,
             String schema,
             String tableName,
-            Map<String, PropertyType> columns,
+            Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
@@ -187,11 +190,11 @@ public class TopologyManager {
                         Topology.SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, PartitionType.NONE.name());
             }
             schemaVertex.addEdge(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
-            for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
+            for (Map.Entry<String, PropertyDefinition> columnEntry : columns.entrySet()) {
                 Vertex property = sqlgGraph.addVertex(
                         T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                         "name", columnEntry.getKey(),
-                        "type", columnEntry.getValue().name(),
+                        "type", columnEntry.getValue().propertyType().name(),
                         Topology.CREATED_ON, LocalDateTime.now()
                 );
                 vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
@@ -682,7 +685,7 @@ public class TopologyManager {
             String prefixedTable,
             SchemaTable foreignKeyOut,
             SchemaTable foreignKeyIn,
-            Map<String, PropertyType> columns,
+            Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers) {
 
         addEdgeLabel(sqlgGraph, schema, prefixedTable, foreignKeyOut, foreignKeyIn, columns, identifiers, PartitionType.NONE, null);
@@ -694,7 +697,7 @@ public class TopologyManager {
             String prefixedTable,
             SchemaTable foreignKeyOut,
             SchemaTable foreignKeyIn,
-            Map<String, PropertyType> columns,
+            Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
@@ -748,7 +751,7 @@ public class TopologyManager {
     public static Vertex addEdgeLabel(
             SqlgGraph sqlgGraph,
             String prefixedTable,
-            Map<String, PropertyType> columns,
+            Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
@@ -773,11 +776,11 @@ public class TopologyManager {
                         Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PartitionType.NONE.name());
             }
 
-            for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
+            for (Map.Entry<String, PropertyDefinition> columnEntry : columns.entrySet()) {
                 Vertex property = sqlgGraph.addVertex(
                         T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                         "name", columnEntry.getKey(),
-                        "type", columnEntry.getValue().name(),
+                        "type", columnEntry.getValue().propertyType().name(),
                         CREATED_ON, LocalDateTime.now()
                 );
                 edgeVertex.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
@@ -969,7 +972,7 @@ public class TopologyManager {
         }
     }
 
-    public static void addVertexColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column) {
+    public static void addVertexColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyDefinition> column) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(VERTEX_PREFIX), "prefixedTable must be for a vertex. prefixedTable = " + prefixedTable);
@@ -992,7 +995,7 @@ public class TopologyManager {
             Vertex property = sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                     "name", column.getKey(),
-                    "type", column.getValue().name(),
+                    "type", column.getValue().propertyType().name(),
                     CREATED_ON, LocalDateTime.now()
             );
             vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
@@ -1262,13 +1265,13 @@ public class TopologyManager {
         }
     }
 
-    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column, ListOrderedSet<String> primaryKeys) {
-        for (Map.Entry<String, PropertyType> stringPropertyTypeEntry : column.entrySet()) {
-            addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyTypeEntry, primaryKeys);
+    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyDefinition> column, ListOrderedSet<String> primaryKeys) {
+        for (Map.Entry<String, PropertyDefinition> stringPropertyDefinitionEntry : column.entrySet()) {
+            addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyDefinitionEntry, primaryKeys);
         }
     }
 
-    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column, ListOrderedSet<String> identifiers) {
+    static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyDefinition> column, ListOrderedSet<String> identifiers) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(EDGE_PREFIX), "prefixedTable must be for an edge. prefixedTable = " + prefixedTable);
@@ -1293,7 +1296,7 @@ public class TopologyManager {
             Vertex property = sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                     "name", column.getKey(),
-                    "type", column.getValue().name(),
+                    "type", column.getValue().propertyType().name(),
                     CREATED_ON, LocalDateTime.now()
             );
             edge.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);

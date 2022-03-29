@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -129,16 +130,16 @@ public class TestIdStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uuid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(10));
+                    put("uuid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uuid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("uuid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(10));
+                    put("uuid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uuid"))
         );
@@ -146,8 +147,8 @@ public class TestIdStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<>() {{
-                    put("uuid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(10));
+                    put("uuid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uuid"))
         );

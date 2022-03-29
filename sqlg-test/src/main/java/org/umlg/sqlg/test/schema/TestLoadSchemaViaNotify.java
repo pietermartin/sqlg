@@ -296,8 +296,8 @@ public class TestLoadSchemaViaNotify extends BaseTest {
         //Create a new sqlgGraph
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
 
-            Map<String, PropertyType> properties = new HashMap<>();
-            properties.put("name", PropertyType.STRING);
+            Map<String, PropertyDefinition> properties = new HashMap<>();
+            properties.put("name", PropertyDefinition.of(PropertyType.STRING));
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
             vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(vertexLabel.getProperty("name").get()));
             this.sqlgGraph.tx().commit();

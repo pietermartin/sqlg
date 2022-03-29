@@ -19,6 +19,7 @@ import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgGroupStep;
 import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.step.barrier.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -1753,8 +1754,8 @@ public class TestReducing extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<>() {{
-                            put("uid", PropertyType.varChar(100));
-                            put("name", PropertyType.varChar(100));
+                            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
                 );

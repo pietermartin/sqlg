@@ -413,9 +413,9 @@ public class SqlgGraph implements Graph {
         if (this.tx().isInStreamingWithLockBatchMode()) {
             return internalStreamVertex(keyValues);
         } else {
-            Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+            Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
             final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
-            final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
+            final Map<String, PropertyDefinition> columns = keyValueMapTriple.getLeft();
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
             SchemaTable schemaTablePair = SchemaTable.from(this, label);
             this.tx().readWrite();
@@ -434,10 +434,10 @@ public class SqlgGraph implements Graph {
         if (this.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode(String.format("Transaction is in %s, use streamVertex(Object ... keyValues)", this.tx().getBatchModeType().toString()));
         }
-        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+        Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label, true);
-        final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
+        final Map<String, PropertyDefinition> columns = keyValueMapTriple.getLeft();
         this.getTopology().ensureTemporaryVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
         new SqlgVertex(this, true, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
@@ -491,9 +491,9 @@ public class SqlgGraph implements Graph {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
-        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValuesTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
+        Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValuesTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
         final Map<String, Object> allKeyValueMap = keyValuesTriple.getMiddle();
-        final Map<String, PropertyType> columns = keyValuesTriple.getLeft();
+        final Map<String, PropertyDefinition> columns = keyValuesTriple.getLeft();
         this.tx().readWrite();
         this.getTopology().ensureTemporaryVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         new SqlgVertex(this, schemaTablePair.getTable(), allKeyValueMap);
@@ -509,9 +509,9 @@ public class SqlgGraph implements Graph {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
-        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
+        Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
         final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
-        final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
+        final Map<String, PropertyDefinition> columns = keyValueMapTriple.getLeft();
         this.tx().readWrite();
         this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         return new SqlgVertex(this, false, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
@@ -529,7 +529,7 @@ public class SqlgGraph implements Graph {
         if (!uids.isEmpty()) {
             SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel);
             SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel);
-            Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+            Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
             sqlBulkDialect.bulkAddEdges(this, outSchemaTable, inSchemaTable, edgeLabel, idFields, uids, keyValueMapTriple.getLeft(), keyValueMapTriple.getRight());
         }
     }
@@ -1179,7 +1179,7 @@ public class SqlgGraph implements Graph {
      */
     @Deprecated
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
-        Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(dummykeyValues);
+        Map<String, PropertyDefinition> columns = SqlgUtil.transformToColumnDefinitionMap(dummykeyValues);
         SchemaTable schemaTablePair = SchemaTable.from(this, label);
         VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         List<PropertyColumn> properties = new ArrayList<>();

@@ -8,7 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.OrStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.Existence;
-import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.ArrayList;
@@ -107,7 +107,7 @@ public class AndOrHasContainer {
                     // check if property exists
                     String bool = null;
                     if (!k.equals(T.id.getAccessor())) {
-                        Map<String, PropertyType> pts = sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
+                        Map<String, PropertyDefinition> pts = sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
                         if (pts != null && !pts.containsKey(k)) {
                             // verify if we have a value
                             Multimap<String, Object> keyValueMap = LinkedListMultimap.create();

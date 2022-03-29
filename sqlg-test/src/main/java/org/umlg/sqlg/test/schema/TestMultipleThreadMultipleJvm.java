@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -225,9 +226,9 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
         ExecutorService poolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);
         CompletionService<SqlgGraph> poolPerGraphsExecutorCompletionService = new ExecutorCompletionService<>(poolPerGraph);
         try {
-            Map<String, PropertyType> properties = new HashMap<>();
-            properties.put("name", PropertyType.STRING);
-            properties.put("age", PropertyType.INTEGER);
+            Map<String, PropertyDefinition> properties = new HashMap<>();
+            properties.put("name", PropertyDefinition.of(PropertyType.STRING));
+            properties.put("age", PropertyDefinition.of(PropertyType.INTEGER));
             List<Future<SqlgGraph>> results = new ArrayList<>();
             for (final SqlgGraph sqlgGraphAsync : graphs) {
                 for (int i = 0; i < NUMBER_OF_SCHEMAS; i++) {

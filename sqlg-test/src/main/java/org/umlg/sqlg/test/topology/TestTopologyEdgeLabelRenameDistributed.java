@@ -8,10 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyChangeAction;
-import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.Topology;
@@ -84,13 +81,13 @@ public class TestTopologyEdgeLabelRenameDistributed extends BaseTest {
             Schema schema2 = sqlgGraph1.getTopology().ensureSchemaExist(this.schema2);
 
             VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             EdgeLabel abEdgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             sqlgGraph1.tx().commit();
 

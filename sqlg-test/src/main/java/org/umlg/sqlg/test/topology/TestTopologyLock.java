@@ -7,6 +7,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -41,7 +42,7 @@ public class TestTopologyLock extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
         try {
             vertexLabel.ensurePropertiesExist(new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
         } catch (IllegalStateException e) {
             failed = true;
@@ -49,7 +50,7 @@ public class TestTopologyLock extends BaseTest {
         Assert.assertTrue(failed);
         this.sqlgGraph.getTopology().unlock();
         vertexLabel.ensurePropertiesExist(new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.getTopology().lock();
@@ -140,7 +141,7 @@ public class TestTopologyLock extends BaseTest {
             this.sqlgGraph.getTopology().getSchema("B").orElseThrow()
                     .getVertexLabel("B").orElseThrow()
                     .ensurePropertiesExist(new HashMap<>() {{
-                        put("a", PropertyType.STRING);
+                        put("a", PropertyDefinition.of(PropertyType.STRING));
                     }});
             Assert.fail("Expected IllegalStateException");
         } catch (IllegalStateException ignore) {
@@ -149,7 +150,7 @@ public class TestTopologyLock extends BaseTest {
         this.sqlgGraph.getTopology().getSchema("B").orElseThrow()
                 .getVertexLabel("B").orElseThrow()
                 .ensurePropertiesExist(new HashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }});
         this.sqlgGraph.tx().commit();
         Assert.assertTrue(this.sqlgGraph.getTopology().getSchema("B").orElseThrow().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());

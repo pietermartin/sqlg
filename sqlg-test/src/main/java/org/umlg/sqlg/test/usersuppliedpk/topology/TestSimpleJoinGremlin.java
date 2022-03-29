@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -26,17 +27,17 @@ public class TestSimpleJoinGremlin extends BaseTest {
     public void testSinglePath() {
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
+                new HashMap<>(){{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
         VertexLabel address = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Address",
-                new HashMap<String, PropertyType>(){{
-                    put("street", PropertyType.varChar(100));
-                    put("suburb", PropertyType.varChar(100));
+                new HashMap<>(){{
+                    put("street", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("suburb", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("street", "suburb"))
         );
@@ -44,8 +45,8 @@ public class TestSimpleJoinGremlin extends BaseTest {
         EdgeLabel livesAt = person.ensureEdgeLabelExist(
                 "livesAt",
                 address,
-                new HashMap<String, PropertyType>() {{
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraph.tx().commit();
@@ -102,9 +103,9 @@ public class TestSimpleJoinGremlin extends BaseTest {
     public void testDuplicatePath() {
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
+                new HashMap<>(){{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
@@ -112,8 +113,8 @@ public class TestSimpleJoinGremlin extends BaseTest {
         EdgeLabel livesAt = person.ensureEdgeLabelExist(
                 "loves",
                 person,
-                new HashMap<String, PropertyType>() {{
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraph.tx().commit();
@@ -140,17 +141,17 @@ public class TestSimpleJoinGremlin extends BaseTest {
     public void testDuplicatePath2() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.varChar(100));
-                    put("name2", PropertyType.varChar(100));
+                new HashMap<>(){{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "name2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
-                new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.varChar(100));
-                    put("name2", PropertyType.varChar(100));
+                new HashMap<>(){{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "name2"))
         );

@@ -10,7 +10,6 @@ import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +30,8 @@ public class TinkerpopTest extends BaseTest {
 
     private static final String partition = "gremlin.partitionGraphStrategy.partition";
 
-    @Test
+    //This no longer works on jdk 17
+//    @Test
     public void testTail() throws IOException {
         Graph graph = this.sqlgGraph;
         final GraphReader reader = GryoReader.build()

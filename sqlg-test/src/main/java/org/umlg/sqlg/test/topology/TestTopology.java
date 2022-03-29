@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.Topology;
@@ -44,16 +45,16 @@ public class TestTopology extends BaseTest {
         VertexLabel testVertexLabel = aSchema.ensureVertexLabelExist(
                 "TestA",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name1", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name1", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
         VertexLabel testTestVertexLabel = aSchema.ensureVertexLabelExist(
                 "TestB",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name1", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name1", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -66,8 +67,8 @@ public class TestTopology extends BaseTest {
                 testVertexLabel,
                 testTestVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name1", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name1", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );

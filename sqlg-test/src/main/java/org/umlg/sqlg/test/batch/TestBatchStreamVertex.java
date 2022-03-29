@@ -14,6 +14,7 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -49,8 +50,8 @@ public class TestBatchStreamVertex extends BaseTest {
     public void testStreamTooLongLabelNameEnsureMethods() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraph.tx().commit();
@@ -63,8 +64,8 @@ public class TestBatchStreamVertex extends BaseTest {
     public void testStreamColumnTooLongLabelNameEnsureMethods() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "AAAAAAAAAA",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEEFFFFFFFFFFABCDEFGH", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraph.tx().commit();
@@ -412,7 +413,7 @@ public class TestBatchStreamVertex extends BaseTest {
     @Test
     public void testStreamLocalDateTime() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.streamVertex(T.label, "Person", "createOn", now);
         }
@@ -474,7 +475,7 @@ public class TestBatchStreamVertex extends BaseTest {
 
     @Test
     public void testStreamZonedDateTime() throws InterruptedException {
-        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        ZonedDateTime zonedDateTime = ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         this.sqlgGraph.tx().streamingBatchModeOn();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.streamVertex(T.label, "Person", "createOn", zonedDateTime);
@@ -730,7 +731,7 @@ public class TestBatchStreamVertex extends BaseTest {
     @Test
     public void testLocalDateTimeArray() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
-        LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now().minusDays(1), LocalDateTime.now()};
+        LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now().minusDays(1).truncatedTo(ChronoUnit.MILLIS), LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)};
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.streamVertex(T.label, "Person", "names", localDateTimes);
         }
@@ -796,7 +797,7 @@ public class TestBatchStreamVertex extends BaseTest {
 
     @Test
     public void testZonedDateTimeArray() throws InterruptedException {
-        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now().minusHours(1), ZonedDateTime.now()};
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now().minusHours(1).truncatedTo(ChronoUnit.MILLIS), ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS)};
         this.sqlgGraph.addVertex(T.label, "Person", "names", zonedDateTimes);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().streamingBatchModeOn();

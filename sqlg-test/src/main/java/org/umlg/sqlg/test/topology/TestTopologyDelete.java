@@ -11,6 +11,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.TopologyChangeAction;
@@ -244,9 +245,9 @@ public class TestTopologyDelete extends BaseTest {
                 _schema = sqlgGraph.getTopology().getPublicSchema();
             }
             VertexLabel vertexLabel = _schema.ensureVertexLabelExist("A", new HashMap<>() {{
-                put("name", PropertyType.STRING);
-                put("p1", PropertyType.STRING);
-                put("p2", PropertyType.STRING);
+                put("name", PropertyDefinition.of(PropertyType.STRING));
+                put("p1", PropertyDefinition.of(PropertyType.STRING));
+                put("p2", PropertyDefinition.of(PropertyType.STRING));
             }});
             Optional<PropertyColumn> propertyColumnOptional = vertexLabel.getProperty("p1");
             Assert.assertTrue(propertyColumnOptional.isPresent());

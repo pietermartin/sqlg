@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 
 import java.util.Collections;
@@ -46,8 +47,8 @@ public class TestLoadElementProperties extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<>() {{
-                            put("uid", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
                 );

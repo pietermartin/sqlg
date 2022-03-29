@@ -13,6 +13,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -101,11 +102,11 @@ public class TestMultiThread extends BaseTest {
     public void shouldExecuteWithCompetingThreads() throws InterruptedException {
         //Create the schema upfront so that graphs (Hsqldb, H2, Mysql...) that do not support transactional schema's can succeed.
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("vertex", new HashMap<>() {{
-            put("test", PropertyType.LONG);
-            put("blah", PropertyType.DOUBLE);
+            put("test", PropertyDefinition.of(PropertyType.LONG));
+            put("blah", PropertyDefinition.of(PropertyType.DOUBLE));
         }});
         vertexLabel.ensureEdgeLabelExist("friend", vertexLabel, new HashMap<>() {{
-            put("bloop", PropertyType.INTEGER);
+            put("bloop", PropertyDefinition.of(PropertyType.INTEGER));
         }});
         this.sqlgGraph.tx().commit();
         final Graph graph = this.sqlgGraph;
@@ -282,22 +283,22 @@ public class TestMultiThread extends BaseTest {
             throw new RuntimeException(e);
         }
         VertexLabel personTrue = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person_True", new LinkedHashMap<>() {{
-            put("name", PropertyType.STRING);
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }});
         VertexLabel addressTrue = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address_True", new LinkedHashMap<>() {{
-            put("name", PropertyType.STRING);
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }});
         personTrue.ensureEdgeLabelExist("address_True", addressTrue, new LinkedHashMap<>() {{
-            put("name", PropertyType.STRING);
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }});
         VertexLabel personLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
-            put("name", PropertyType.STRING);
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }});
         VertexLabel addressLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address", new LinkedHashMap<>() {{
-            put("name", PropertyType.STRING);
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }});
         personLabel.ensureEdgeLabelExist("address", addressLabel, new LinkedHashMap<>() {{
-            put("name", PropertyType.STRING);
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.tx().commit();
         ExecutorService executorService = Executors.newFixedThreadPool(50);

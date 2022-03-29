@@ -7,8 +7,12 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.topology.*;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.PartitionType;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;
@@ -33,15 +37,15 @@ public class TestJoinAcrossPartition extends BaseTest {
         VertexLabel animalTypeVertexLabel = publicSchema.ensureVertexLabelExist(
                 "AnimalType",
                 new LinkedHashMap<>() {{
-                    put("type", PropertyType.STRING);
+                    put("type", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("type"))
         );
         VertexLabel animalVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
                 "Animal",
                 new LinkedHashMap<>() {{
-                    put("type", PropertyType.STRING);
-                    put("name", PropertyType.STRING);
+                    put("type", PropertyDefinition.of(PropertyType.STRING));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("type", "name")),
                 PartitionType.LIST,
@@ -55,7 +59,7 @@ public class TestJoinAcrossPartition extends BaseTest {
                 animalTypeVertexLabel,
                 animalVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid")),
                 PartitionType.LIST,

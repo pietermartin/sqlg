@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgIoRegistryV3;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -213,20 +214,20 @@ public class TestIo extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "friends",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("weight", PropertyType.DOUBLE);
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("weight", PropertyDefinition.of(PropertyType.DOUBLE));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );

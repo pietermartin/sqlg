@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
@@ -29,7 +30,7 @@ public class TestTopologyVertexLabelRename extends BaseTest {
         TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
         Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").isPresent());
@@ -54,7 +55,7 @@ public class TestTopologyVertexLabelRename extends BaseTest {
     @Test
     public void testVertexLabelSimpleWithQueries() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.addVertex(T.label, "A", "a", "halo1");
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
@@ -77,10 +78,10 @@ public class TestTopologyVertexLabelRename extends BaseTest {
     @Test
     public void testVertexLabelRenameAsEdgeRole() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
         this.sqlgGraph.tx().commit();
@@ -181,11 +182,11 @@ public class TestTopologyVertexLabelRename extends BaseTest {
     public void testVertexLabelRenameOutEdgeRole() {
         Schema schema1 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA1");
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         Schema schema2 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA2");
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
         this.sqlgGraph.tx().commit();
@@ -286,11 +287,11 @@ public class TestTopologyVertexLabelRename extends BaseTest {
     public void testVertexLabelRenameInEdgeRole() {
         Schema schema1 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA1");
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         Schema schema2 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA2");
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
         this.sqlgGraph.tx().commit();
@@ -391,15 +392,15 @@ public class TestTopologyVertexLabelRename extends BaseTest {
     public void testVertexLabelRenameEdgeRoleInMultipleTables() {
         Schema schema1 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA1");
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         Schema schema2 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA2");
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         Schema schema3 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA3");
         VertexLabel cVertexLabel = schema3.ensureVertexLabelExist("C", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         bVertexLabel.ensureEdgeLabelExist("abc", aVertexLabel);
         cVertexLabel.ensureEdgeLabelExist("abc", aVertexLabel);

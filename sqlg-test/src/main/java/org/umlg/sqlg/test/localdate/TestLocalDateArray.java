@@ -24,8 +24,8 @@ public class TestLocalDateArray extends BaseTest {
     public void testLocalDateTimeArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         LocalDateTime[] localDateTimes = new LocalDateTime[]{
-                isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(),
-                isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now()
+                LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+                LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
         };
         this.sqlgGraph.addVertex(T.label, "A", "localDateTimes", localDateTimes);
         this.sqlgGraph.tx().commit();
@@ -44,8 +44,8 @@ public class TestLocalDateArray extends BaseTest {
     public void testLocalDateTimeArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         LocalDateTime[] localDateTimes = new LocalDateTime[]{
-                isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(),
-                isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now()
+                LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+                LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS)
         };
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimes", localDateTimes);
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimes", localDateTimes);
@@ -143,9 +143,9 @@ public class TestLocalDateArray extends BaseTest {
     public void testZonedDateTimeArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
-        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(), zoneIdShanghai);
+        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS), zoneIdShanghai);
         ZoneId zoneIdHarare = ZoneId.of("Africa/Harare");
-        ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(), zoneIdHarare);
+        ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS), zoneIdHarare);
         ZonedDateTime[] zonedDateTimes = {zonedDateTimeAGT, zonedDateTimeAGTHarare};
         this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimes", zonedDateTimes);
         this.sqlgGraph.tx().commit();
@@ -165,9 +165,9 @@ public class TestLocalDateArray extends BaseTest {
     public void testZonedDateTimeArrayOnEdge() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
-        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(), zoneIdShanghai);
+        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS), zoneIdShanghai);
         ZoneId zoneIdHarare = ZoneId.of("Africa/Harare");
-        ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(), zoneIdHarare);
+        ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS), zoneIdHarare);
         ZonedDateTime[] zonedDateTimes = {zonedDateTimeAGT, zonedDateTimeAGTHarare};
 
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimes", zonedDateTimes);
@@ -261,9 +261,9 @@ public class TestLocalDateArray extends BaseTest {
     public void testZonedDateTimeArray2() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");
-        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(), zoneIdShanghai);
+        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS), zoneIdShanghai);
         ZoneId zoneIdHarare = ZoneId.of("Africa/Harare");
-        ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(), zoneIdHarare);
+        ZonedDateTime zonedDateTimeAGTHarare = ZonedDateTime.of(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS), zoneIdHarare);
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{zonedDateTimeAGT, zonedDateTimeAGTHarare};
         this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimes", zonedDateTimes);
         this.sqlgGraph.tx().commit();

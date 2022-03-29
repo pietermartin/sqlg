@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
@@ -47,8 +48,8 @@ public class TestTopologyUpgrade extends BaseTest {
         //TODO one day for HSQLDB and the rest
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().isPostgresql());
 
-        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
-            put("name", PropertyType.STRING);
+        Map<String, PropertyDefinition> properties = new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }};
         Schema hour = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel vertexLabel = hour.ensureVertexLabelExist("A", properties);
@@ -77,8 +78,8 @@ public class TestTopologyUpgrade extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B");
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
-        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
-            put("name", PropertyType.STRING);
+        Map<String, PropertyDefinition> properties = new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }};
         @SuppressWarnings("UnusedAssignment")
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureEdgeLabelExist("edge", bVertexLabel, aVertexLabel, properties);
@@ -246,7 +247,7 @@ public class TestTopologyUpgrade extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         loadGratefulDead(this.sqlgGraph);
         Traversal<Vertex, Long> traversal = get_g_V_both_both_count(this.sqlgGraph.traversal());
-        Assert.assertEquals(new Long(1406914), traversal.next());
+        Assert.assertEquals(Long.valueOf(1406914), traversal.next());
         Assert.assertFalse(traversal.hasNext());
 
         //Delete the topology
@@ -256,7 +257,7 @@ public class TestTopologyUpgrade extends BaseTest {
         for (int i = 0; i < 2; i++) {
             try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
                 traversal = get_g_V_both_both_count(sqlgGraph1.traversal());
-                Assert.assertEquals(new Long(1406914), traversal.next());
+                Assert.assertEquals(Long.valueOf(1406914), traversal.next());
                 Assert.assertFalse(traversal.hasNext());
             }
         }
@@ -266,7 +267,7 @@ public class TestTopologyUpgrade extends BaseTest {
     public void testModernGraph() {
         loadModern();
         Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().both().both().count();
-        Assert.assertEquals(new Long(30), traversal.next());
+        Assert.assertEquals(Long.valueOf(30), traversal.next());
         Assert.assertFalse(traversal.hasNext());
         this.sqlgGraph.traversal().V().forEachRemaining(Element::remove);
         this.sqlgGraph.tx().commit();
@@ -277,7 +278,7 @@ public class TestTopologyUpgrade extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             loadModern(sqlgGraph1);
             traversal = sqlgGraph1.traversal().V().both().both().count();
-            Assert.assertEquals(new Long(30), traversal.next());
+            Assert.assertEquals(Long.valueOf(30), traversal.next());
             Assert.assertFalse(traversal.hasNext());
         }
     }
@@ -327,9 +328,7 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpgradeTypesWithMoreThanOneColumn() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb() ||isMariaDb()) {
-            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
-        }
+        zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         Duration duration = Duration.ofDays(1);
         Period period = Period.of(1, 1, 1);
         this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "zonedDateTime", zonedDateTime);
@@ -384,9 +383,7 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpgradeTypesWithMoreThanOneColumnOnEdge() {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb() || isMariaDb()) {
-            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
-        }
+        zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         Duration duration = Duration.ofDays(1);
         Period period = Period.of(1, 1, 1);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1");
@@ -424,9 +421,9 @@ public class TestTopologyUpgrade extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
-                isHsqldb() ? ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now(),
-                isHsqldb() ? ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(1),
-                isHsqldb() ? ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(2)
+                ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+                ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS),
+                ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS)
         };
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
@@ -484,9 +481,9 @@ public class TestTopologyUpgrade extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
-                isHsqldb() ? ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now(),
-                isHsqldb() ? ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(1),
-                isHsqldb() ? ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusMonths(2)
+                ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+                ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS),
+                ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS)
         };
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
@@ -584,13 +581,9 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testUpdateLocalDateTimeAndZonedDateTime() {
         LocalDateTime localDateTime = LocalDateTime.now();
-        if (isHsqldb() || isMariaDb()) {
-            localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
-        }
+        localDateTime = localDateTime.truncatedTo(ChronoUnit.MILLIS);
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        if (isHsqldb() || isMariaDb()) {
-            zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
-        }
+        zonedDateTime = zonedDateTime.truncatedTo(ChronoUnit.MILLIS);
         this.sqlgGraph.addVertex(T.label, "A", "localDateTime", localDateTime, "zonedDateTime", zonedDateTime);
         this.sqlgGraph.tx().commit();
 
@@ -627,15 +620,15 @@ public class TestTopologyUpgrade extends BaseTest {
         String[] strings = new String[]{"a", "b", "c"};
         LocalDate[] localDates = new LocalDate[]{LocalDate.now(), LocalDate.now().minusMonths(2), LocalDate.now().minusMonths(3)};
         LocalDateTime[] localDateTimes = new LocalDateTime[]{
-                isHsqldb() ? LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now(),
-                isHsqldb() ? LocalDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now().minusMonths(2),
-                isHsqldb() ? LocalDateTime.now().minusMonths(3).truncatedTo(ChronoUnit.MILLIS) : LocalDateTime.now().minusMonths(3)
+                LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+                LocalDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS),
+                LocalDateTime.now().minusMonths(3).truncatedTo(ChronoUnit.MILLIS)
         };
         LocalTime[] localTimes = new LocalTime[]{LocalTime.now(), LocalTime.now().minusHours(2), LocalTime.now().minusHours(3)};
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
-                isHsqldb() ? ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now(),
-                isHsqldb() ? ZonedDateTime.now().minusHours(2).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusHours(2),
-                isHsqldb() ? ZonedDateTime.now().minusHours(3).truncatedTo(ChronoUnit.MILLIS) : ZonedDateTime.now().minusHours(3)
+                ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+                ZonedDateTime.now().minusHours(2).truncatedTo(ChronoUnit.MILLIS),
+                ZonedDateTime.now().minusHours(3).truncatedTo(ChronoUnit.MILLIS)
         };
         this.sqlgGraph.addVertex(T.label, "A",
                 "bytes", bytes, "bytes2", bytes2,
@@ -709,20 +702,20 @@ public class TestTopologyUpgrade extends BaseTest {
         //with topology
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new HashMap<String, PropertyType>() {{
-                    put("firstName", PropertyType.STRING);
-                    put("lastName", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("firstName", PropertyDefinition.of(PropertyType.STRING));
+                    put("lastName", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         personVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(personVertexLabel.getProperties().values()));
-        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
-            put("name", PropertyType.STRING);
+        Map<String, PropertyDefinition> properties = new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
         }};
         VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Dog", properties);
         dogVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList<>(dogVertexLabel.getProperties().values()));
 
-        Map<String, PropertyType> eproperties = new HashMap<String, PropertyType>() {{
-            put("since", PropertyType.LOCALDATE);
+        Map<String, PropertyDefinition> eproperties = new HashMap<>() {{
+            put("since", PropertyDefinition.of(PropertyType.LOCALDATE));
         }};
         EdgeLabel eLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist("Owns",
                 personVertexLabel,
@@ -732,7 +725,7 @@ public class TestTopologyUpgrade extends BaseTest {
 
         // test performance
         /*for (int a=0;a<1000;a++){
-        	VertexLabel testVertex = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person"+a, new HashMap<String, PropertyType>() {{
+        	VertexLabel testVertex = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person"+a, new HashMap<>() {{
                 put("firstName", PropertyType.STRING);
                 put("lastName", PropertyType.STRING);
             }});

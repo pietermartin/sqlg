@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -44,11 +45,11 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
     public void testBulkUpdateUserSuppliedBulkMode() {
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("nameA", PropertyType.STRING);
-                    put("nameB", PropertyType.STRING);
-                    put("nameC", PropertyType.STRING);
-                    put("other", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("nameA", PropertyDefinition.of(PropertyType.STRING));
+                    put("nameB", PropertyDefinition.of(PropertyType.STRING));
+                    put("nameC", PropertyDefinition.of(PropertyType.STRING));
+                    put("other", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("nameA", "nameB", "nameC"))
         );
@@ -80,11 +81,11 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("nameA", PropertyType.STRING);
-                    put("nameB", PropertyType.STRING);
-                    put("nameC", PropertyType.STRING);
-                    put("other", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("nameA", PropertyDefinition.of(PropertyType.STRING));
+                    put("nameB", PropertyDefinition.of(PropertyType.STRING));
+                    put("nameC", PropertyDefinition.of(PropertyType.STRING));
+                    put("other", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("nameA", "nameB", "nameC"))
         );
@@ -120,8 +121,8 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
         //noinspection Duplicates
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
@@ -139,24 +140,24 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
         @SuppressWarnings("Duplicates")
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         this.sqlgGraph.tx().commit();
@@ -176,9 +177,9 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("name1", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name1", PropertyDefinition.of(PropertyType.STRING));
+                    put("name2", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name1", "name2"))
         );
@@ -196,15 +197,15 @@ public class TestUserSuppliedPKBulkMode extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );

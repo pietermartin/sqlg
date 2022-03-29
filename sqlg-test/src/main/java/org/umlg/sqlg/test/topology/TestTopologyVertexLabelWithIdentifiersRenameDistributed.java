@@ -11,6 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -73,23 +74,23 @@ public class TestTopologyVertexLabelWithIdentifiersRenameDistributed extends Bas
             VertexLabel aVertexLabel = sqlgGraph1.getTopology().ensureSchemaExist(this.schema1).ensureVertexLabelExist(
                     "A",
                     new HashMap<>() {{
-                        put("id1", PropertyType.varChar(10));
-                        put("id2", PropertyType.varChar(10));
-                        put("a", PropertyType.varChar(10));
+                        put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
             );
             VertexLabel bVertexLabel = sqlgGraph1.getTopology().ensureSchemaExist(this.schema2).ensureVertexLabelExist(
                     "B",
                     new HashMap<>() {{
-                        put("id1", PropertyType.varChar(10));
-                        put("id2", PropertyType.varChar(10));
-                        put("a", PropertyType.varChar(10));
+                        put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
             );
             aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                put("a", PropertyType.varChar(10));
+                put("a", PropertyDefinition.of(PropertyType.varChar(10)));
             }});
             Vertex a = sqlgGraph1.addVertex(T.label, this.schema1 + ".A", "id1", "1", "id2", "2", "a", "haloA");
             Vertex b = sqlgGraph1.addVertex(T.label, this.schema2 + ".B", "id1", "1", "id2", "2", "a", "haloB");
@@ -141,9 +142,9 @@ public class TestTopologyVertexLabelWithIdentifiersRenameDistributed extends Bas
             sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist(
                     "A",
                     new HashMap<>() {{
-                        put("id1", PropertyType.varChar(10));
-                        put("id2", PropertyType.varChar(10));
-                        put("a", PropertyType.varChar(10));
+                        put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
             );
@@ -173,9 +174,9 @@ public class TestTopologyVertexLabelWithIdentifiersRenameDistributed extends Bas
     public void testDistributedNameChangeWithQuery() throws InterruptedException {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-                put("id1", PropertyType.varChar(10));
-                put("id2", PropertyType.varChar(10));
-                put("a", PropertyType.varChar(10));
+                put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                put("a", PropertyDefinition.of(PropertyType.varChar(10)));
             }});
             sqlgGraph1.addVertex(T.label, "A", "id1", "1", "id2", "2", "a", "halo");
             VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
@@ -203,16 +204,16 @@ public class TestTopologyVertexLabelWithIdentifiersRenameDistributed extends Bas
     public void testDistributedVertexLabelRenameAsEdgeRole() throws InterruptedException {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-                        put("id1", PropertyType.varChar(10));
-                        put("id2", PropertyType.varChar(10));
-                        put("a", PropertyType.varChar(10));
+                        put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
             );
             VertexLabel bVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("B", new HashMap<>() {{
-                        put("id1", PropertyType.varChar(10));
-                        put("id2", PropertyType.varChar(10));
-                        put("a", PropertyType.varChar(10));
+                        put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                        put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
             );

@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
@@ -32,9 +33,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -61,9 +62,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
     @Test
     public void testVertexLabelSimpleWithQueries() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -90,18 +91,18 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -206,9 +207,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -216,9 +217,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -323,9 +324,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -333,9 +334,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -440,9 +441,9 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
@@ -450,15 +451,15 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         Schema schema3 = this.sqlgGraph.getTopology().ensureSchemaExist("SCHEMA3");
         VertexLabel cVertexLabel = schema3.ensureVertexLabelExist("C", new HashMap<>() {{
-            put("a", PropertyType.varChar(10));
+            put("a", PropertyDefinition.of(PropertyType.varChar(10)));
         }});
         bVertexLabel.ensureEdgeLabelExist("abc", aVertexLabel);
         cVertexLabel.ensureEdgeLabelExist("abc", aVertexLabel);

@@ -52,7 +52,7 @@ public class SchemaTableTree {
     private final List<SchemaTableTree> leafNodes = new ArrayList<>();
     private final List<HasContainer> additionalPartitionHasContainers = new ArrayList<>();
     //This represents all tables filtered by TopologyStrategy
-    private final Map<String, Map<String, PropertyType>> filteredAllTables;
+    private final Map<String, Map<String, PropertyDefinition>> filteredAllTables;
     private final int replacedStepDepth;
     private final boolean hasIDPrimaryKey;
     private final List<ColumnList> columnListStack = new ArrayList<>();
@@ -668,7 +668,7 @@ public class SchemaTableTree {
         return schemaTableTree;
     }
 
-    private Map<String, Map<String, PropertyType>> getFilteredAllTables() {
+    private Map<String, Map<String, PropertyDefinition>> getFilteredAllTables() {
         return getRoot().filteredAllTables;
     }
 
@@ -1185,8 +1185,8 @@ public class SchemaTableTree {
                         singlePathSql.append(".");
                         singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         singlePathSql.append(" = ");
-                        PropertyType propertyType = this.filteredAllTables.get(firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable()).get(identifier);
-                        singlePathSql.append(this.sqlgGraph.getSqlDialect().toRDBSStringLiteral(propertyType, this.parentIdsAndIndexes.get(0).getLeft().getIdentifiers().get(cnt - 1)));
+                        PropertyDefinition propertyDefinition = this.filteredAllTables.get(firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable()).get(identifier);
+                        singlePathSql.append(this.sqlgGraph.getSqlDialect().toRDBSStringLiteral(propertyDefinition.propertyType(), this.parentIdsAndIndexes.get(0).getLeft().getIdentifiers().get(cnt - 1)));
                         if (cnt++ < firstSchemaTableTree.getIdentifiers().size()) {
                             singlePathSql.append(" AND ");
                         }
@@ -1523,8 +1523,7 @@ public class SchemaTableTree {
             } else {
                 result += ",\n\t";
             }
-            if (comparator.getValue1() instanceof ElementValueComparator) {
-                ElementValueComparator<?> elementValueComparator = (ElementValueComparator<?>) comparator.getValue1();
+            if (comparator.getValue1() instanceof ElementValueComparator<?> elementValueComparator) {
                 String prefix = this.getSchemaTable().getSchema();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.getSchemaTable().getTable();
@@ -1538,19 +1537,13 @@ public class SchemaTableTree {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
                 result += " " + alias;
-                //noinspection deprecation
                 if (elementValueComparator.getValueComparator() == Order.asc) {
                     result += " ASC";
-                } else if (elementValueComparator.getValueComparator() == Order.asc) {
-                    result += " ASC";
-                } else //noinspection deprecation
-                    if (elementValueComparator.getValueComparator() == Order.desc) {
-                        result += " DESC";
-                    } else if (elementValueComparator.getValueComparator() == Order.desc) {
-                        result += " DESC";
-                    } else {
-                        throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
-                    }
+                } else if (elementValueComparator.getValueComparator() == Order.desc) {
+                    result += " DESC";
+                } else {
+                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
+                }
 
                 //TODO redo this via SqlgOrderGlobalStep
             } else if ((comparator.getValue0() instanceof ValueTraversal<?, ?> || comparator.getValue0() instanceof TokenTraversal<?, ?>)
@@ -1966,10 +1959,10 @@ public class SchemaTableTree {
             }
         } else {
             //first print the identifiers
-            Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+            Map<String, PropertyDefinition> propertyDefinitionMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
             ListOrderedSet<String> identifiers = lastSchemaTableTree.getIdentifiers();
             for (String identifier : identifiers) {
-                printColumn(lastSchemaTableTree, cols, propertyTypeMap, identifier);
+                printColumn(lastSchemaTableTree, cols, propertyDefinitionMap, identifier);
             }
         }
     }
@@ -1988,16 +1981,16 @@ public class SchemaTableTree {
                     lastSchemaTableTree.aggregateFunction.getLeft()
             );
         }
-        Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
-        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
-            String col = propertyTypeMapEntry.getKey();
+        Map<String, PropertyDefinition> propertyDefinitionMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+        for (Map.Entry<String, PropertyDefinition> propertyDefinitionMapEntry : propertyDefinitionMap.entrySet()) {
+            String col = propertyDefinitionMapEntry.getKey();
             if (lastSchemaTableTree.shouldSelectProperty(col)) {
-                printColumn(lastSchemaTableTree, cols, propertyTypeMap, col);
+                printColumn(lastSchemaTableTree, cols, propertyDefinitionMap, col);
             }
         }
     }
 
-    private void printColumn(SchemaTableTree lastSchemaTableTree, ColumnList cols, Map<String, PropertyType> propertyTypeMap, String col) {
+    private void printColumn(SchemaTableTree lastSchemaTableTree, ColumnList cols, Map<String, PropertyDefinition> propertyDefinitionMap, String col) {
         String alias = cols.getAlias(lastSchemaTableTree, col);
         if (alias == null) {
             alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(col);
@@ -2024,7 +2017,7 @@ public class SchemaTableTree {
         } else {
             lastSchemaTableTree.calculateLabeledAliasPropertyName(col, alias);
         }
-        for (String postFix : propertyTypeMap.get(col).getPostFixes()) {
+        for (String postFix : propertyDefinitionMap.get(col).propertyType().getPostFixes()) {
             String postFixedCol = col + postFix;
             alias = cols.getAlias(lastSchemaTableTree, postFixedCol);
             // postfix do not use labeled methods
@@ -2706,7 +2699,7 @@ public class SchemaTableTree {
             for (ColumnList.Column column : columns.keySet()) {
                 if (!column.getColumn().equals("index") && !column.isID() && !column.isForeignKey()) {
                     String propertyName = column.getColumn();
-                    PropertyType propertyType = column.getPropertyType();
+                    PropertyDefinition propertyDefinition = column.getPropertyDefinition();
                     boolean settedProperty;
                     if (column.getAggregateFunction() != null && column.getAggregateFunction().equalsIgnoreCase("avg")) {
                         settedProperty = sqlgElement.loadProperty(
@@ -2715,24 +2708,52 @@ public class SchemaTableTree {
                                 column.getColumnIndex() - 1,
                                 getColumnNameAliasMap(),
                                 this.stepDepth,
-                                PropertyType.DOUBLE,
+                                new PropertyDefinition(PropertyType.DOUBLE),
                                 true);
 
                     } else if (column.getAggregateFunction() != null && column.getAggregateFunction().equalsIgnoreCase("sum")) {
-                        PropertyType becomes;
-                        if (column.getPropertyType() == PropertyType.INTEGER || column.getPropertyType() == PropertyType.SHORT) {
-                            becomes = PropertyType.LONG;
+                        PropertyDefinition becomes;
+                        if (column.getPropertyDefinition().propertyType() == PropertyType.INTEGER || column.getPropertyDefinition().propertyType() == PropertyType.SHORT) {
+                            becomes = new PropertyDefinition(PropertyType.LONG);
                         } else {
-                            becomes = column.getPropertyType();
+                            becomes = column.getPropertyDefinition();
                         }
-                        settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, becomes);
+                        settedProperty = sqlgElement.loadProperty(
+                                resultSet,
+                                propertyName,
+                                column.getColumnIndex(),
+                                getColumnNameAliasMap(),
+                                this.stepDepth,
+                                becomes
+                        );
                     } else if (column.getAggregateFunction() != null && column.getAggregateFunction().equals(GraphTraversal.Symbols.count)) {
-                        PropertyType becomes = PropertyType.LONG;
-                        settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, becomes);
+                        PropertyDefinition becomes = new PropertyDefinition(PropertyType.LONG);
+                        settedProperty = sqlgElement.loadProperty(
+                                resultSet,
+                                propertyName,
+                                column.getColumnIndex(),
+                                getColumnNameAliasMap(),
+                                this.stepDepth,
+                                becomes
+                        );
                     } else if (column.getAggregateFunction() != null) {
-                        settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, propertyType);
+                        settedProperty = sqlgElement.loadProperty(
+                                resultSet,
+                                propertyName,
+                                column.getColumnIndex(),
+                                getColumnNameAliasMap(),
+                                this.stepDepth,
+                                propertyDefinition
+                        );
                     } else {
-                        settedProperty = sqlgElement.loadProperty(resultSet, propertyName, column.getColumnIndex(), getColumnNameAliasMap(), this.stepDepth, propertyType);
+                        settedProperty = sqlgElement.loadProperty(
+                                resultSet,
+                                propertyName,
+                                column.getColumnIndex(),
+                                getColumnNameAliasMap(),
+                                this.stepDepth,
+                                propertyDefinition
+                        );
                     }
                     //Check if the query returned anything at all, if not default the aggregate result
                     if (!settedProperty && column.getAggregateFunction() != null) {

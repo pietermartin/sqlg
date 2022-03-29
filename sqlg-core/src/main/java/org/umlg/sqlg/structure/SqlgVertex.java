@@ -142,13 +142,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         } else {
             previousBatchModeKeys = Collections.emptyList();
         }
-        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
+        Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
         if (!complete && keyValueMapTriple.getRight().size() != keyValueMapTriple.getMiddle().size()) {
 //            throw Property.Exceptions.propertyValueCanNotBeNull();
             throw Property.Exceptions.propertyKeyCanNotBeNull();
         }
         final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
-        final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
+        final Map<String, PropertyDefinition> columns = keyValueMapTriple.getLeft();
         Optional<VertexLabel> outVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.schema, this.table);
         Optional<VertexLabel> inVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(((SqlgVertex) inVertex).schema, ((SqlgVertex) inVertex).table);
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", this.schema + "." + this.table);
@@ -346,7 +346,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             VERTEX_PREFIX + this.table));
         }
 
-        Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
+        Map<String, Pair<PropertyDefinition, Object>> propertyDefinitionValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = null;
         VertexLabel vertexLabel = null;
         if (!temporary) {
@@ -359,23 +359,23 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (!temporary) {
                 //sync up the keyValueMap with its PropertyColumn
                 for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
-                    PropertyType propertyType = propertyColumns.get(keyValueEntry.getKey()).getPropertyType();
-                    Pair<PropertyType, Object> propertyTypeObjectPair = Pair.of(propertyType, keyValueEntry.getValue());
-                    propertyTypeValueMap.put(keyValueEntry.getKey(), propertyTypeObjectPair);
+                    PropertyDefinition propertyDefinition = propertyColumns.get(keyValueEntry.getKey()).getPropertyDefinition();
+                    Pair<PropertyDefinition, Object> propertyTypeObjectPair = Pair.of(propertyDefinition, keyValueEntry.getValue());
+                    propertyDefinitionValueMap.put(keyValueEntry.getKey(), propertyTypeObjectPair);
                 }
             } else {
-                Map<String, PropertyType> properties = this.sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + this.table);
+                Map<String, PropertyDefinition> properties = this.sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + this.table);
                 //sync up the keyValueMap with its PropertyColumn
                 for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
-                    PropertyType propertyType = properties.get(keyValueEntry.getKey());
-                    Pair<PropertyType, Object> propertyTypeObjectPair = Pair.of(propertyType, keyValueEntry.getValue());
-                    propertyTypeValueMap.put(keyValueEntry.getKey(), propertyTypeObjectPair);
+                    PropertyDefinition propertyDefinition = properties.get(keyValueEntry.getKey());
+                    Pair<PropertyDefinition, Object> propertyTypeObjectPair = Pair.of(propertyDefinition, keyValueEntry.getValue());
+                    propertyDefinitionValueMap.put(keyValueEntry.getKey(), propertyTypeObjectPair);
                 }
             }
             sql.append(" (");
-            writeColumnNames(propertyTypeValueMap, sql);
+            writeColumnNames(propertyDefinitionValueMap, sql);
             sql.append(") VALUES (");
-            writeColumnParameters(propertyTypeValueMap, sql);
+            writeColumnParameters(propertyDefinitionValueMap, sql);
             sql.append(")");
         } else {
             sql.append(this.sqlgGraph.getSqlDialect().sqlInsertEmptyValues());
@@ -389,13 +389,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
+            SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyDefinitionValueMap);
             preparedStatement.executeUpdate();
             if (!temporary && !vertexLabel.getIdentifiers().isEmpty()) {
                 List<Comparable> identifiers = new ArrayList<>();
                 for (String identifier : vertexLabel.getIdentifiers()) {
                     //noinspection unchecked
-                    identifiers.add((Comparable) propertyTypeValueMap.get(identifier).getRight());
+                    identifiers.add((Comparable) propertyDefinitionValueMap.get(identifier).getRight());
                 }
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             } else {

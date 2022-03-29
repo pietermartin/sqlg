@@ -5,6 +5,7 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -43,7 +44,7 @@ public class ColumnList {
     /**
      * A map of all the properties and their types.
      */
-    private final Map<String, Map<String, PropertyType>> filteredAllTables;
+    private final Map<String, Map<String, PropertyDefinition>> filteredAllTables;
 
     private final ListOrderedSet<String> identifiers;
 
@@ -59,7 +60,7 @@ public class ColumnList {
      * @param drop
      * @param filteredAllTables
      */
-    public ColumnList(SqlgGraph graph, boolean drop, ListOrderedSet<String> identifiers, Map<String, Map<String, PropertyType>> filteredAllTables) {
+    public ColumnList(SqlgGraph graph, boolean drop, ListOrderedSet<String> identifiers, Map<String, Map<String, PropertyDefinition>> filteredAllTables) {
         super();
         this.sqlgGraph = graph;
         this.drop = drop;
@@ -114,20 +115,20 @@ public class ColumnList {
         Column c = internalAdd(schema, table, column, stepDepth, alias, null);
         c.isForeignKey = true;
         if (foreignKeyParts.length == 3) {
-            Map<String, PropertyType> properties = this.filteredAllTables.get(foreignKeyParts[0] + "." + Topology.VERTEX_PREFIX + foreignKeyParts[1]);
+            Map<String, PropertyDefinition> properties = this.filteredAllTables.get(foreignKeyParts[0] + "." + Topology.VERTEX_PREFIX + foreignKeyParts[1]);
             if (foreignKeyParts[2].endsWith(Topology.IN_VERTEX_COLUMN_END)) {
-                c.propertyType = properties.get(foreignKeyParts[2].substring(0, foreignKeyParts[2].length() - Topology.IN_VERTEX_COLUMN_END.length()));
+                c.propertyDefinition = properties.get(foreignKeyParts[2].substring(0, foreignKeyParts[2].length() - Topology.IN_VERTEX_COLUMN_END.length()));
                 c.foreignKeyDirection = Direction.IN;
                 c.foreignSchemaTable = SchemaTable.of(foreignKeyParts[0], foreignKeyParts[1]);
                 c.foreignKeyProperty = foreignKeyParts[2];
             } else {
-                c.propertyType = properties.get(foreignKeyParts[2].substring(0, foreignKeyParts[2].length() - Topology.OUT_VERTEX_COLUMN_END.length()));
+                c.propertyDefinition = properties.get(foreignKeyParts[2].substring(0, foreignKeyParts[2].length() - Topology.OUT_VERTEX_COLUMN_END.length()));
                 c.foreignKeyDirection = Direction.OUT;
                 c.foreignSchemaTable = SchemaTable.of(foreignKeyParts[0], foreignKeyParts[1]);
                 c.foreignKeyProperty = foreignKeyParts[2];
             }
         } else {
-            c.propertyType = PropertyType.LONG;
+            c.propertyDefinition = new PropertyDefinition(PropertyType.LONG);
             c.foreignKeyDirection = (column.endsWith(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT);
             c.foreignSchemaTable = SchemaTable.of(foreignKeyParts[0], foreignKeyParts[1].substring(0, foreignKeyParts[1].length() - Topology.IN_VERTEX_COLUMN_END.length()));
             c.foreignKeyProperty = null;
@@ -209,10 +210,10 @@ public class ColumnList {
         return toSelectString(false);
     }
 
-    public Pair<String, PropertyType> getPropertyType(String alias) {
+    public Pair<String, PropertyDefinition> getPropertyDefinition(String alias) {
         Column column = this.aliases.get(alias);
         if (column != null) {
-            return Pair.of(column.column, column.propertyType);
+            return Pair.of(column.column, column.propertyDefinition);
         } else {
             return null;
         }
@@ -350,7 +351,7 @@ public class ColumnList {
         private final int stepDepth;
         private final boolean ID;
         private final String aggregateFunction;
-        private PropertyType propertyType;
+        private PropertyDefinition propertyDefinition;
         private int columnIndex = -1;
         //Foreign key properties
         private boolean isForeignKey;
@@ -359,13 +360,13 @@ public class ColumnList {
         //Only set for user identifier primary keys
         private String foreignKeyProperty;
 
-        Column(String schema, String table, String column, PropertyType propertyType, int stepDepth, String aggregateFunction) {
+        Column(String schema, String table, String column, PropertyDefinition propertyDefinition, int stepDepth, String aggregateFunction) {
             super();
             this.schema = schema;
             this.table = table;
             this.column = column;
             this.isForeignKey = column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END);
-            this.propertyType = propertyType;
+            this.propertyDefinition = propertyDefinition;
             this.stepDepth = stepDepth;
             this.ID = this.column.equals(Topology.ID);
             this.aggregateFunction = aggregateFunction;
@@ -440,8 +441,8 @@ public class ColumnList {
             return stepDepth;
         }
 
-        public PropertyType getPropertyType() {
-            return propertyType;
+        public PropertyDefinition getPropertyDefinition() {
+            return propertyDefinition;
         }
 
         public boolean isID() {

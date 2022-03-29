@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -53,7 +54,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "A",
                 new LinkedHashMap<>() {{
-                    put("index", PropertyType.INTEGER);
+                    put("index", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("index"))
         );
@@ -61,7 +62,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "B",
                 new LinkedHashMap<>() {{
-                    put("index", PropertyType.INTEGER);
+                    put("index", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("index"))
         );
@@ -70,8 +71,8 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
                 aVertexLabel,
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("part", PropertyType.STRING);
-                    put("x", PropertyType.STRING);
+                    put("part", PropertyDefinition.of(PropertyType.STRING));
+                    put("x", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of()),
                 PartitionType.LIST,

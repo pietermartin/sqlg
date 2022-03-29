@@ -5,10 +5,7 @@ import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.*;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyChangeAction;
-import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -61,9 +58,9 @@ public class TestPartitionMultipleGraphs extends BaseTest {
             VertexLabel measurement = publicSchema.ensurePartitionedVertexLabelExist(
                     "Measurement",
                     new HashMap<>() {{
-                        put("uid", PropertyType.STRING);
-                        put("date", PropertyType.LOCALDATE);
-                        put("temp", PropertyType.INTEGER);
+                        put("uid", PropertyDefinition.of(PropertyType.STRING));
+                        put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
+                        put("temp", PropertyDefinition.of(PropertyType.INTEGER));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid", "date")),
                     PartitionType.RANGE,
@@ -118,8 +115,8 @@ public class TestPartitionMultipleGraphs extends BaseTest {
                     "livesAt",
                     address,
                     new HashMap<>() {{
-                        put("uid", PropertyType.STRING);
-                        put("date", PropertyType.LOCALDATE);
+                        put("uid", PropertyDefinition.of(PropertyType.STRING));
+                        put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid", "date")),
                     PartitionType.RANGE,
@@ -168,11 +165,11 @@ public class TestPartitionMultipleGraphs extends BaseTest {
         VertexLabel a = aSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>(){{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
-                    put("int4", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int4", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3", "int4")),
                 PartitionType.LIST,

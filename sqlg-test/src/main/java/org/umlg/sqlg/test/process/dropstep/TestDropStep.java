@@ -21,9 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -89,9 +87,9 @@ public class TestDropStep extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "PolicyDiscrepancy",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -130,22 +128,22 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -176,14 +174,14 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -191,7 +189,7 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -224,9 +222,9 @@ public class TestDropStep extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.STRING);
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -305,8 +303,8 @@ public class TestDropStep extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2")));
         this.sqlgGraph.tx().commit();
@@ -364,8 +362,8 @@ public class TestDropStep extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.STRING);
-                    put("uid", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -417,32 +415,32 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "D",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -450,8 +448,8 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -459,8 +457,8 @@ public class TestDropStep extends BaseTest {
                 "bc",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -468,8 +466,8 @@ public class TestDropStep extends BaseTest {
                 "cd",
                 dVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -590,32 +588,32 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "D",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -623,8 +621,8 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -632,8 +630,8 @@ public class TestDropStep extends BaseTest {
                 "bc",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -641,8 +639,8 @@ public class TestDropStep extends BaseTest {
                 "cd",
                 dVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -651,8 +649,8 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 aVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -660,8 +658,8 @@ public class TestDropStep extends BaseTest {
                 "bc",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -669,8 +667,8 @@ public class TestDropStep extends BaseTest {
                 "cd",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -761,27 +759,27 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -789,8 +787,8 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -798,8 +796,8 @@ public class TestDropStep extends BaseTest {
                 "bc",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -877,24 +875,24 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -902,7 +900,7 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -910,7 +908,7 @@ public class TestDropStep extends BaseTest {
                 "bc",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -1025,27 +1023,27 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1053,8 +1051,8 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1062,8 +1060,8 @@ public class TestDropStep extends BaseTest {
                 "bc",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1165,27 +1163,27 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1193,8 +1191,8 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1202,8 +1200,8 @@ public class TestDropStep extends BaseTest {
                 "bc",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1294,18 +1292,18 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1313,8 +1311,8 @@ public class TestDropStep extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1391,24 +1389,24 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
         );
@@ -1416,7 +1414,7 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
         );
@@ -1424,7 +1422,7 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid1"))
         );
@@ -1465,27 +1463,27 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1493,8 +1491,8 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1502,8 +1500,8 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1544,27 +1542,27 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1572,8 +1570,8 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1581,8 +1579,8 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1639,27 +1637,27 @@ public class TestDropStep extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1667,8 +1665,8 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1676,8 +1674,8 @@ public class TestDropStep extends BaseTest {
                 "e1",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );

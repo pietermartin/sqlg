@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.Schema;
@@ -70,20 +71,20 @@ public class TestForeignSchemaDocs {
 
         Schema foreignSchemaA = sqlgGraphForeign.getTopology().ensureSchemaExist("A");
         VertexLabel aVertexLabel = foreignSchemaA.ensureVertexLabelExist("A", new HashMap<>() {{
-                    put("ID", PropertyType.UUID);
-                    put("name", PropertyType.STRING);
+                    put("ID", PropertyDefinition.of(PropertyType.UUID));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("ID"))
         );
         VertexLabel bVertexLabel = foreignSchemaA.ensureVertexLabelExist("B", new HashMap<>() {{
-                    put("ID", PropertyType.UUID);
-                    put("name", PropertyType.STRING);
+                    put("ID", PropertyDefinition.of(PropertyType.UUID));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("ID"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                    put("ID", PropertyType.UUID);
-                    put("name", PropertyType.STRING);
+                    put("ID", PropertyDefinition.of(PropertyType.UUID));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }}, ListOrderedSet.listOrderedSet(Set.of("ID"))
         );
         sqlgGraphForeign.tx().commit();
@@ -172,17 +173,17 @@ public class TestForeignSchemaDocs {
         Schema foreignSchemaA = sqlgGraphForeign.getTopology().ensureSchemaExist("A");
         VertexLabel aVertexLabel = foreignSchemaA.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = foreignSchemaA.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new HashMap<>() {{
-                    put("name", PropertyType.STRING);
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         sqlgGraphForeign.tx().commit();

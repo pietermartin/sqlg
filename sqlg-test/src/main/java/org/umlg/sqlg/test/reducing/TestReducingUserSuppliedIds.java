@@ -14,6 +14,7 @@ import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgGroupStep;
 import org.umlg.sqlg.step.SqlgPropertiesStep;
 import org.umlg.sqlg.step.barrier.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -46,9 +47,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
             this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                     s,
                     new LinkedHashMap<>() {{
-                        put("uid", PropertyType.varChar(100));
-                        put("name", PropertyType.varChar(100));
-                        put("age", PropertyType.INTEGER);
+                        put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("age", PropertyDefinition.of(PropertyType.INTEGER));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid"))
             );
@@ -75,9 +76,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
             this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                     s,
                     new LinkedHashMap<>() {{
-                        put("uid", PropertyType.varChar(100));
-                        put("name", PropertyType.varChar(100));
-                        put("age", PropertyType.INTEGER);
+                        put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("age", PropertyDefinition.of(PropertyType.INTEGER));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid"))
             );
@@ -104,9 +105,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -129,10 +130,10 @@ public class TestReducingUserSuppliedIds extends BaseTest {
             this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                     s,
                     new LinkedHashMap<>() {{
-                        put("uid1", PropertyType.varChar(100));
-                        put("uid2", PropertyType.varChar(100));
-                        put("name", PropertyType.varChar(100));
-                        put("age", PropertyType.INTEGER);
+                        put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("age", PropertyDefinition.of(PropertyType.INTEGER));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid1", "uid2"))
             );
@@ -171,10 +172,10 @@ public class TestReducingUserSuppliedIds extends BaseTest {
             this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                     s,
                     new LinkedHashMap<>() {{
-                        put("uid1", PropertyType.varChar(100));
-                        put("uid2", PropertyType.varChar(100));
-                        put("name", PropertyType.varChar(100));
-                        put("age", PropertyType.INTEGER);
+                        put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                        put("age", PropertyDefinition.of(PropertyType.INTEGER));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid1", "uid2"))
             );
@@ -213,10 +214,10 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2"))
         );
@@ -250,9 +251,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
-                    put("x", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("x", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -283,9 +284,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -326,8 +327,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -360,8 +361,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -393,8 +394,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -426,8 +427,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -459,8 +460,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -493,9 +494,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -536,9 +537,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -579,9 +580,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -622,11 +623,11 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2"))
         );
@@ -698,11 +699,11 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2"))
         );
@@ -779,19 +780,19 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("year", PropertyType.INTEGER);
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("year", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2"))
         );
@@ -851,16 +852,16 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name", "age"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Dog",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name", "age"))
         );
@@ -905,9 +906,9 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -915,7 +916,7 @@ public class TestReducingUserSuppliedIds extends BaseTest {
                 "aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -964,8 +965,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
@@ -973,7 +974,7 @@ public class TestReducingUserSuppliedIds extends BaseTest {
                 "aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -1022,15 +1023,15 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         vertexLabel.ensureEdgeLabelExist("aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -1049,15 +1050,15 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         vertexLabel.ensureEdgeLabelExist("aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -1115,15 +1116,15 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
         vertexLabel.ensureEdgeLabelExist("aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -1181,15 +1182,15 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
         vertexLabel.ensureEdgeLabelExist("aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -1247,15 +1248,15 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
         vertexLabel.ensureEdgeLabelExist("aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -1313,15 +1314,15 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
         vertexLabel.ensureEdgeLabelExist("aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
@@ -1379,24 +1380,24 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -1444,33 +1445,33 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
-        }},
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                }},
                 ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1, "uid", UUID.randomUUID().toString());
@@ -1521,35 +1522,35 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         aVertexLabel.ensureEdgeLabelExist("ac", cVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1, "uid", UUID.randomUUID().toString());
@@ -1600,35 +1601,35 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         aVertexLabel.ensureEdgeLabelExist("ac", cVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1, "uid", UUID.randomUUID().toString());
@@ -1679,35 +1680,35 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         aVertexLabel.ensureEdgeLabelExist("ac", cVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1, "uid", UUID.randomUUID().toString());
@@ -1758,35 +1759,35 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         aVertexLabel.ensureEdgeLabelExist("ac", cVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1, "uid", UUID.randomUUID().toString());
@@ -1837,35 +1838,35 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         aVertexLabel.ensureEdgeLabelExist("ac", cVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1, "uid", UUID.randomUUID().toString());
@@ -1917,14 +1918,14 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("aa", aVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1, "uid", UUID.randomUUID().toString());
@@ -1981,14 +1982,14 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("age", PropertyType.INTEGER);
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("age", PropertyType.INTEGER);
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
@@ -2020,14 +2021,14 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("age", PropertyType.INTEGER);
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("age", PropertyType.INTEGER);
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
@@ -2059,14 +2060,14 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("age", PropertyType.INTEGER);
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("age", PropertyType.INTEGER);
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("age"))
         );
@@ -2098,16 +2099,16 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -2142,13 +2143,13 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel person = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         person.ensureEdgeLabelExist("knows", person, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex p1 = this.sqlgGraph.addVertex(T.label, "person", "age", 1, "name", "person1");
@@ -2200,16 +2201,16 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Dog",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -2231,8 +2232,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -2258,8 +2259,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("uid", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -2290,19 +2291,19 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("name", PropertyType.varChar(100));
+            put("name", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("name")));
         this.sqlgGraph.tx().commit();
 
@@ -2332,20 +2333,20 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-            put("name", PropertyType.varChar(100));
+            put("name", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("name")));
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "age", 1);
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b", "age", 2, "uid", UUID.randomUUID().toString());
@@ -2370,7 +2371,7 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         }
         Assert.assertEquals(4, traversal.next(), 0);
         Assert.assertFalse(traversal.hasNext());
-        Traversal<Vertex, Integer> maxTraversal  = this.sqlgGraph.traversal().V().outE().otherV().values("age").max();
+        Traversal<Vertex, Integer> maxTraversal = this.sqlgGraph.traversal().V().outE().otherV().values("age").max();
         sql = getSQL(maxTraversal);
         if (isPostgres()) {
             Assert.assertEquals("\n" +
@@ -2403,14 +2404,14 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("prop", PropertyType.varChar(100));
+                    put("prop", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("prop"))
         );
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
@@ -2445,12 +2446,12 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         aVertexLabel.ensureEdgeLabelExist("aa", aVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
@@ -2502,7 +2503,7 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("prop", PropertyType.varChar(100));
+                    put("prop", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("prop"))
         );
@@ -2519,13 +2520,13 @@ public class TestReducingUserSuppliedIds extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name"))
         );
         aVertexLabel.ensureEdgeLabelExist("aa", aVertexLabel, new LinkedHashMap<>() {{
-            put("uid", PropertyType.varChar(100));
+            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Set.of("uid")));
         this.sqlgGraph.tx().commit();
 
@@ -2575,8 +2576,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<>() {{
-                            put("uid", PropertyType.varChar(100));
-                            put("name", PropertyType.varChar(100));
+                            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
                 );
@@ -2608,8 +2609,8 @@ public class TestReducingUserSuppliedIds extends BaseTest {
                 .ensureVertexLabelExist(
                         "Person",
                         new HashMap<>() {{
-                            put("name1", PropertyType.varChar(100));
-                            put("name2", PropertyType.varChar(100));
+                            put("name1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name2", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("name1"))
                 );

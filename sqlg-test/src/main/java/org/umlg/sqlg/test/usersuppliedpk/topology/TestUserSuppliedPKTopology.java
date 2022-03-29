@@ -12,6 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgPropertiesStep;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -55,9 +56,9 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("nickname", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("nickname", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
@@ -65,8 +66,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "marriedTo",
                 personVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("place", PropertyType.varChar(100));
-                    put("when", PropertyType.LOCALDATETIME);
+                    put("place", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("when", PropertyDefinition.of(PropertyType.LOCALDATETIME));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("place", "when"))
         );
@@ -90,18 +91,18 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.LONG);
-                    put("uid2", PropertyType.LONG);
-                    put("name", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.LONG));
+                    put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.INTEGER);
-                    put("uid2", PropertyType.INTEGER);
-                    put("name", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -123,27 +124,27 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
         VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -151,8 +152,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "e1",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -160,8 +161,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "e1",
                 cVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -186,9 +187,9 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
@@ -213,9 +214,9 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
@@ -262,19 +263,19 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
         VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Address",
                 new LinkedHashMap<>() {{
-                    put("street", PropertyType.varChar(100));
-                    put("suburb", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
-                    put("province", PropertyType.varChar(100));
+                    put("street", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("suburb", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("province", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("street", "suburb"))
         );
@@ -284,8 +285,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 personVertexLabel,
                 addressVertexLabel,
                 new HashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2")));
 
@@ -304,8 +305,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 personVertexLabel,
                 addressVertexLabel,
                 new HashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2")));
         this.sqlgGraph.tx().commit();
@@ -344,7 +345,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         livesAt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "livesAt");
         Assert.assertTrue(livesAt.isPresent());
 
-        List<Vertex> edgeLabels =sqlgGraph.topology()
+        List<Vertex> edgeLabels = sqlgGraph.topology()
                 .V().hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA).has(Topology.SQLG_SCHEMA_SCHEMA_NAME, this.sqlgGraph.getSqlDialect().getPublicSchema())
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                 .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
@@ -362,17 +363,17 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
                 new LinkedHashMap<>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }});
         VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Address",
                 new LinkedHashMap<>() {{
-                    put("street", PropertyType.varChar(100));
-                    put("suburb", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
-                    put("province", PropertyType.varChar(100));
+                    put("street", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("suburb", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("province", PropertyDefinition.of(PropertyType.varChar(100)));
                 }});
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.getTopology().ensureEdgeLabelExist(
@@ -380,8 +381,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 personVertexLabel,
                 addressVertexLabel,
                 new HashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }});
         this.sqlgGraph.tx().rollback();
 
@@ -399,8 +400,8 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 personVertexLabel,
                 addressVertexLabel,
                 new HashMap<>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }});
         this.sqlgGraph.tx().commit();
 
@@ -436,9 +437,9 @@ public class TestUserSuppliedPKTopology extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name", PropertyType.varChar(100));
-                    put("age", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid"))
         );
@@ -446,7 +447,7 @@ public class TestUserSuppliedPKTopology extends BaseTest {
                 "aa",
                 vertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.varChar(100));
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid")));
         this.sqlgGraph.tx().commit();

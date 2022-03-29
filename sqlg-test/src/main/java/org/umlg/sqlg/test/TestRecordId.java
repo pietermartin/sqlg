@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -22,8 +23,8 @@ public class TestRecordId extends BaseTest {
     public void testRecordIdHasCommas() {
         Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         schema.ensureVertexLabelExist("aaa.bbb", new LinkedHashMap<>() {{
-            put("_id", PropertyType.varChar(100));
-            put("value", PropertyType.varChar(100));
+            put("_id", PropertyDefinition.of(PropertyType.varChar(100)));
+            put("value", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Collections.singletonList("_id")));
         this.sqlgGraph.tx().commit();
 
@@ -34,8 +35,8 @@ public class TestRecordId extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A.aaa.bbb").hasId(P.eq(recordId)).count().next(), 0L);
 
         schema.ensureVertexLabelExist("aaa.ccc", new LinkedHashMap<>() {{
-            put("_id", PropertyType.varChar(100));
-            put("value", PropertyType.varChar(100));
+            put("_id", PropertyDefinition.of(PropertyType.varChar(100)));
+            put("value", PropertyDefinition.of(PropertyType.varChar(100)));
         }}, ListOrderedSet.listOrderedSet(Collections.singletonList("_id")));
         this.sqlgGraph.tx().commit();
 
@@ -82,8 +83,8 @@ public class TestRecordId extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "A",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("uid1")));
         String uid1 = UUID.randomUUID().toString();
@@ -104,9 +105,9 @@ public class TestRecordId extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "A",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2")));
         String uid1 = UUID.randomUUID().toString();
@@ -129,10 +130,10 @@ public class TestRecordId extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "A",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("uid3", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid3", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2", "uid3")));
         String uid1 = UUID.randomUUID().toString();

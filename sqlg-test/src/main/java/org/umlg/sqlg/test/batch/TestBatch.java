@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
@@ -47,13 +48,11 @@ public class TestBatch extends BaseTest {
     public void testBatchNormalModeEdgeMultiColumnProperties() {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime now = ZonedDateTime.now();
-        if (isHsqldb() || isMariaDb()) {
-            now = now.truncatedTo(ChronoUnit.MILLIS);
-        }
+        now = now.truncatedTo(ChronoUnit.MILLIS);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "t", now);
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
         a1.addEdge("ab", a2, "t", now);
-        a1.addEdge("ab", a2 );
+        a1.addEdge("ab", a2);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("t", now).count().next(), 0);
@@ -67,9 +66,7 @@ public class TestBatch extends BaseTest {
     public void testBatchNormalModeMultiColumnProperties() {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime now = ZonedDateTime.now();
-        if (isHsqldb() || isMariaDb()) {
-            now = now.truncatedTo(ChronoUnit.MILLIS);
-        }
+        now = now.truncatedTo(ChronoUnit.MILLIS);
         this.sqlgGraph.addVertex(T.label, "A", "t", now);
         this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
@@ -86,11 +83,11 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(3, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("d").count().next(), 0);
 
         this.sqlgGraph.tx().normalBatchModeOn();
-        this.sqlgGraph.addVertex(T.label, "A", "p", Period.of(1,1,1));
+        this.sqlgGraph.addVertex(T.label, "A", "p", Period.of(1, 1, 1));
         this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(6, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("p", Period.of(1,1,1)).count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("A").has("p", Period.of(1, 1, 1)).count().next(), 0);
         Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("A").hasNot("p").count().next(), 0);
     }
 
@@ -476,13 +473,13 @@ public class TestBatch extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person",
                     "age2", (short) i,
                     "age3", i,
-                    "age4", new Long(i),
-                    "age6", new Double(i)
+                    "age4", Long.valueOf(i),
+                    "age6", Double.valueOf(i)
             );
             shortList.add((short) i);
-            integerList.add(new Integer(i));
-            longList.add(new Long(i));
-            doubleList.add(new Double(i));
+            integerList.add(Integer.valueOf(i));
+            longList.add(Long.valueOf(i));
+            doubleList.add(Double.valueOf(i));
         }
         Assert.assertEquals(100, shortList.size());
         this.sqlgGraph.tx().commit();
@@ -512,13 +509,13 @@ public class TestBatch extends BaseTest {
             v1.addEdge("Friend", v2,
                     "age2", (short) i,
                     "age3", i,
-                    "age4", new Long(i),
-                    "age6", new Double(i)
+                    "age4", Long.valueOf(i),
+                    "age6", Double.valueOf(i)
             );
             shortList.add((short) i);
-            integerList.add(new Integer(i));
-            longList.add(new Long(i));
-            doubleList.add(new Double(i));
+            integerList.add(Integer.valueOf(i));
+            longList.add(Long.valueOf(i));
+            doubleList.add(Double.valueOf(i));
         }
         Assert.assertEquals(100, shortList.size());
         this.sqlgGraph.tx().commit();
@@ -630,29 +627,29 @@ public class TestBatch extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "Friend",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("weight", PropertyType.INTEGER);
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("weight", PropertyDefinition.of(PropertyType.INTEGER));
                 }}
         );
         personVertexLabel.ensureEdgeLabelExist(
                 "Colleague",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("toRemove", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("toRemove", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -704,29 +701,29 @@ public class TestBatch extends BaseTest {
         VertexLabel rootVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "ROOT",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("dummy", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("dummy", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         VertexLabel godVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "God",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("dummy", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("dummy", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         rootVertexLabel.ensureEdgeLabelExist(
                 "rootGod",
                 godVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1122,9 +1119,9 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
@@ -1145,18 +1142,18 @@ public class TestBatch extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "test",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1206,18 +1203,18 @@ public class TestBatch extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "test",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1293,18 +1290,18 @@ public class TestBatch extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "test",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );
@@ -1616,19 +1613,19 @@ public class TestBatch extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("dummy", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("dummy", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "test",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );

@@ -18,6 +18,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -94,20 +95,20 @@ public class TestIoEdge extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().
                 ensureVertexLabelExist(
                         "person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "friend",
                 personVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("uid2", PropertyType.varChar(100));
-                    put("weight", PropertyType.DOUBLE);
-                    put("acl", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("weight", PropertyDefinition.of(PropertyType.DOUBLE));
+                    put("acl", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
         );

@@ -14,6 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.barrier.SqlgAndStepBarrier;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -197,40 +198,40 @@ public class TestAndStepBarrier extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist(
                 "B",
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         aVertexLabel.ensureEdgeLabelExist(
                 "abb",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         aVertexLabel.ensureEdgeLabelExist(
                 "abbb",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("country", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country")));
         this.sqlgGraph.tx().commit();

@@ -1,9 +1,5 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -14,6 +10,10 @@ import org.umlg.sqlg.predicate.ArrayContains;
 import org.umlg.sqlg.structure.topology.IndexType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Test array contains predicate

@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
@@ -68,10 +69,10 @@ public class TestUUID extends BaseTest {
     @Test
     public void testUUIDViaTopologyApi() {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<>() {{
-            put("uuid", PropertyType.UUID);
+            put("uuid", PropertyDefinition.of(PropertyType.UUID));
         }});
         personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap<>() {{
-            put("uuid", PropertyType.UUID);
+            put("uuid", PropertyDefinition.of(PropertyType.UUID));
         }});
         this.sqlgGraph.tx().commit();
 
@@ -126,7 +127,7 @@ public class TestUUID extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "Person",
                 new HashMap<>() {{
-                    put("uuid", PropertyType.UUID);
+                    put("uuid", PropertyDefinition.of(PropertyType.UUID));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uuid"))
         );
@@ -134,7 +135,7 @@ public class TestUUID extends BaseTest {
                 "knows",
                 personVertexLabel,
                 new HashMap<>() {{
-                    put("uuid", PropertyType.UUID);
+                    put("uuid", PropertyDefinition.of(PropertyType.UUID));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uuid")));
         this.sqlgGraph.tx().commit();

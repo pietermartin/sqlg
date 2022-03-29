@@ -293,7 +293,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 EdgeLabel edgeLabel = sqlgGraph.getTopology().getEdgeLabel(metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel not found for %s.%s", metaEdge.getSchemaTable().getSchema(), metaEdge.getSchemaTable().getTable())));
 
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
-                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
+                Map<String, PropertyDefinition> propertyDefinitionMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
 
                 Iterator<Long> it = null;
                 if (edgeLabel.hasIDPrimaryKey()) {
@@ -357,7 +357,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             sql.append(", ");
                         }
                         count++;
-                        appendKeyForStream(propertyTypeMap.get(key), sql, key);
+                        appendKeyForStream(propertyDefinitionMap.get(key), sql, key);
                     }
                     break;
                 }
@@ -1042,19 +1042,19 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             int count = 1;
             //this map is for optimizations reason to not look up the property via all tables within the loop
-            Map<String, PropertyType> keyPropertyTypeMap = new HashMap<>();
-            Map<String, PropertyType> keyPropertyTypes = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(forVertices ? VERTEX_PREFIX : EDGE_PREFIX));
+            Map<String, PropertyDefinition> keyPropertyDefinitionMap = new HashMap<>();
+            Map<String, PropertyDefinition> keyPropertyDefinition = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(forVertices ? VERTEX_PREFIX : EDGE_PREFIX));
             for (String key : keys) {
-                PropertyType propertyType = keyPropertyTypes.get(key);
-                if (keys.size() == 1 && propertyType.getPostFixes().length > 0) {
+                PropertyDefinition propertyDefinition = keyPropertyDefinition.get(key);
+                if (keys.size() == 1 && propertyDefinition.propertyType().getPostFixes().length > 0) {
                     sql.append("(");
                 }
-                keyPropertyTypeMap.put(key, propertyType);
-                appendKeyForBatchUpdate(propertyType, sql, key, false);
+                keyPropertyDefinitionMap.put(key, propertyDefinition);
+                appendKeyForBatchUpdate(propertyDefinition, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
-                if (keys.size() == 1 && propertyType.getPostFixes().length > 0) {
+                if (keys.size() == 1 && propertyDefinition.propertyType().getPostFixes().length > 0) {
                     sql.append(")");
                 }
             }
@@ -1065,9 +1065,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             count = 1;
             for (String key : keys) {
                 sql.append("v.");
-                PropertyType propertyType = keyPropertyTypeMap.get(key);
-                appendKeyForBatchUpdate(propertyType, sql, key, true);
-                sqlCastArray(sql, propertyType);
+                PropertyDefinition propertyDefinition = keyPropertyDefinitionMap.get(key);
+                appendKeyForBatchUpdate(propertyDefinition, sql, key, true);
+                sqlCastArray(sql, propertyDefinition.propertyType());
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
@@ -1104,8 +1104,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             value = sqlgElement.value(key);
                         }
                     }
-                    PropertyType propertyType = keyPropertyTypeMap.get(key);
-                    appendSqlValue(sql, value, propertyType);
+                    PropertyDefinition propertyDefinition = keyPropertyDefinitionMap.get(key);
+                    appendSqlValue(sql, value, propertyDefinition.propertyType());
                     if (countProperties++ < keys.size()) {
                         sql.append(", ");
                     }
@@ -1127,8 +1127,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             count = 1;
             for (String key : keys) {
-                PropertyType propertyType = keyPropertyTypeMap.get(key);
-                appendKeyForBatchUpdate(propertyType, sql, key, false);
+                PropertyDefinition propertyDefinition = keyPropertyDefinitionMap.get(key);
+                appendKeyForBatchUpdate(propertyDefinition, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
@@ -1181,11 +1181,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, String schema, String table, boolean needID, Set<String> keys) {
-        Map<String, PropertyType> propertyTypeMap;
+        Map<String, PropertyDefinition> propertyDefinitionMap;
         if (isTemp) {
-            propertyTypeMap = sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + table);
+            propertyDefinitionMap = sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + table);
         } else {
-            propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(schema, VERTEX_PREFIX + table));
+            propertyDefinitionMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(schema, VERTEX_PREFIX + table));
         }
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
@@ -1203,8 +1203,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             //check if the dummy field exist, if not createVertexLabel it
             // if we had an ID, we don't need the dummy field
             if (!needID) {
-                Map<String, PropertyType> columns = new HashMap<>();
-                columns.put(COPY_DUMMY, PropertyType.from(0));
+                Map<String, PropertyDefinition> columns = new HashMap<>();
+                columns.put(COPY_DUMMY, new PropertyDefinition(PropertyType.from(0)));
                 sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                         schema,
                         table,
@@ -1222,7 +1222,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(", ");
                 }
                 count++;
-                appendKeyForStream(propertyTypeMap.get(key), sql, key);
+                appendKeyForStream(propertyDefinitionMap.get(key), sql, key);
             }
         }
         sql.append(")");
@@ -1245,7 +1245,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, VertexLabel outVertexLabel, VertexLabel inVertexLabel, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(sqlgEdge.getSchema(), EDGE_PREFIX + sqlgEdge.getTable()));
+        Map<String, PropertyDefinition> propertyDefinitionMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(sqlgEdge.getSchema(), EDGE_PREFIX + sqlgEdge.getTable()));
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
@@ -1282,7 +1282,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sql.append(", ");
             }
             count++;
-            appendKeyForStream(propertyTypeMap.get(key), sql, key);
+            appendKeyForStream(propertyDefinitionMap.get(key), sql, key);
         }
         sql.append(") ");
 
@@ -1298,12 +1298,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return sql.toString();
     }
 
-    private void appendKeyForStream(PropertyType propertyType, StringBuilder sql, String key) {
-        String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyType);
+    private void appendKeyForStream(PropertyDefinition propertyDefinition, StringBuilder sql, String key) {
+        String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyDefinition.propertyType());
         int countPerKey = 1;
         for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
             if (countPerKey > 1) {
-                sql.append(maybeWrapInQoutes(key + propertyType.getPostFixes()[countPerKey - 2]));
+                sql.append(maybeWrapInQoutes(key + propertyDefinition.propertyType().getPostFixes()[countPerKey - 2]));
             } else {
                 sql.append(maybeWrapInQoutes(key));
             }
@@ -1313,15 +1313,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    private void appendKeyForBatchUpdate(PropertyType propertyType, StringBuilder sql, String key, boolean withV) {
-        String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyType);
+    private void appendKeyForBatchUpdate(PropertyDefinition propertyDefinition, StringBuilder sql, String key, boolean withV) {
+        String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyDefinition.propertyType());
         int countPerKey = 1;
         for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
             if (countPerKey > 1) {
                 if (withV) {
                     sql.append("v.");
                 }
-                sql.append(maybeWrapInQoutes(key + propertyType.getPostFixes()[countPerKey - 2]));
+                sql.append(maybeWrapInQoutes(key + propertyDefinition.propertyType().getPostFixes()[countPerKey - 2]));
             } else {
                 sql.append(maybeWrapInQoutes(key));
             }
@@ -1342,8 +1342,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         if (keys.isEmpty()) {
             //copy command needs at least one field.
             //check if the dummy field exist, if not createVertexLabel it
-            Map<String, PropertyType> columns = new HashMap<>();
-            columns.put(COPY_DUMMY, PropertyType.from(0));
+            Map<String, PropertyDefinition> columns = new HashMap<>();
+            columns.put(COPY_DUMMY, new PropertyDefinition(PropertyType.from(0)));
             sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                     schemaTable.getSchema(),
                     schemaTable.getTable(),
@@ -1389,14 +1389,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     countKeys++;
                     String key = entry.getKey();
                     Object value = entry.getValue();
-                    PropertyType propertyType;
+                    PropertyDefinition propertyDefinition;
                     //noinspection StringEquality
                     if (key == Topology.ID) {
-                        propertyType = PropertyType.LONG;
+                        propertyDefinition = new PropertyDefinition(PropertyType.LONG);
                     } else {
-                        propertyType = vertexLabel.getProperties().get(key).getPropertyType();
+                        propertyDefinition = vertexLabel.getProperties().get(key).getPropertyDefinition();
                     }
-                    valueToStreamBytes(writer, propertyType, value);
+                    valueToStreamBytes(writer, propertyDefinition, value);
                 }
             }
             writer.write("\n");
@@ -1418,13 +1418,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                     countKeys++;
                     Object value = entry.getValue();
-                    PropertyType propertyType;
+                    PropertyDefinition propertyDefinition;
                     if (value == null) {
-                        propertyType = PropertyType.STRING;
+                        propertyDefinition = new PropertyDefinition(PropertyType.STRING);
                     } else {
-                        propertyType = PropertyType.from(value);
+                        propertyDefinition = new PropertyDefinition(PropertyType.from(value));
                     }
-                    valueToStreamBytes(writer, propertyType, value);
+                    valueToStreamBytes(writer, propertyDefinition, value);
                 }
             }
             writer.write("\n");
@@ -1454,10 +1454,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 for (String identifier : outVertexLabel.getIdentifiers()) {
 //                    Object value = outVertex.value(identifier);
                     Object value = ((RecordId) outVertex.id()).getID().getIdentifiers().get(count++);
-                    PropertyType propertyType = outVertexLabel.getProperty(identifier).orElseThrow(
+                    PropertyDefinition propertyDefinition = outVertexLabel.getProperty(identifier).orElseThrow(
                             () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, outVertexLabel.getFullName()))
-                    ).getPropertyType();
-                    valueToStreamBytes(writer, propertyType, value);
+                    ).getPropertyDefinition();
+                    valueToStreamBytes(writer, propertyDefinition, value);
                     writer.write(COPY_COMMAND_DELIMITER);
                 }
             }
@@ -1469,10 +1469,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 for (String identifier : inVertexLabel.getIdentifiers()) {
 //                    Object value = inVertex.value(identifier);
                     Object value = ((RecordId) inVertex.id()).getID().getIdentifiers().get(count++);
-                    PropertyType propertyType = inVertexLabel.getProperty(identifier).orElseThrow(
+                    PropertyDefinition propertyDefinition = inVertexLabel.getProperty(identifier).orElseThrow(
                             () -> new IllegalStateException(String.format("identifier %s must be present on %s", identifier, inVertexLabel.getFullName()))
-                    ).getPropertyType();
-                    valueToStreamBytes(writer, propertyType, value);
+                    ).getPropertyDefinition();
+                    valueToStreamBytes(writer, propertyDefinition, value);
                     if (i++ < inVertexLabel.getIdentifiers().size()) {
                         writer.write(COPY_COMMAND_DELIMITER);
                     }
@@ -1482,16 +1482,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 writer.write(COPY_COMMAND_DELIMITER);
                 String key = entry.getKey();
                 Object value = entry.getValue();
-                PropertyType propertyType;
+                PropertyDefinition propertyDefinition;
                 if (key.equals(Topology.ID)) {
-                    propertyType = PropertyType.LONG;
+                    propertyDefinition = new PropertyDefinition(PropertyType.LONG);
                 } else {
-                    propertyType = edgeLabel.getProperties().get(key).getPropertyType();
+                    propertyDefinition = edgeLabel.getProperties().get(key).getPropertyDefinition();
                 }
-                if (JSON_ARRAY == propertyType) {
-                    throw SqlgExceptions.invalidPropertyType(propertyType);
+                if (JSON_ARRAY == propertyDefinition.propertyType()) {
+                    throw SqlgExceptions.invalidPropertyType(propertyDefinition.propertyType());
                 }
-                valueToStreamBytes(writer, propertyType, value);
+                valueToStreamBytes(writer, propertyDefinition, value);
             }
             writer.write("\n");
         } catch (Exception e) {
@@ -1499,8 +1499,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    private void valueToStreamBytes(Writer outputStream, PropertyType propertyType, Object value) {
-        String s = valueToStringForBulkLoad(propertyType, value);
+    private void valueToStreamBytes(Writer outputStream, PropertyDefinition propertyDefinition, Object value) {
+        String s = valueToStringForBulkLoad(propertyDefinition, value);
         try {
             outputStream.write(s);
         } catch (IOException e) {
@@ -1508,9 +1508,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    private String valueToStringForBulkLoad(PropertyType propertyType, Object value) {
+    private String valueToStringForBulkLoad(PropertyDefinition propertyDefinition, Object value) {
         String result;
-        switch (propertyType.ordinal()) {
+        switch (propertyDefinition.propertyType().ordinal()) {
             case ZONEDDATETIME_ORDINAL:
                 if (value == null) {
                     result = getBatchNull() + COPY_COMMAND_DELIMITER + getBatchNull();
@@ -1647,7 +1647,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sb.append("}");
                 return sb.toString();
             case JSON_ARRAY_ORDINAL:
-                throw SqlgExceptions.invalidPropertyType(propertyType);
+                throw SqlgExceptions.invalidPropertyType(propertyDefinition.propertyType());
             case BYTE_ARRAY_ORDINAL:
                 return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
             case byte_ARRAY_ORDINAL:
@@ -1679,7 +1679,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return BATCH_NULL;
     }
 
-    private InputStream mapVertexToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
+    private InputStream mapVertexToInputStream(Map<String, PropertyDefinition> propertyDefinitionMap, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
         //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
         int count = 1;
@@ -1689,13 +1689,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             if (!vertexCache.getLeft().isEmpty()) {
                 int countKeys = 1;
                 for (String key : vertexCache.getLeft()) {
-                    PropertyType propertyType = propertyTypeMap.get(key);
+                    PropertyDefinition propertyDefinition = propertyDefinitionMap.get(key);
                     if (countKeys > 1 && countKeys <= vertexCache.getLeft().size()) {
                         sb.append(COPY_COMMAND_DELIMITER);
                     }
                     countKeys++;
                     Object value = triple.get(key);
-                    switch (propertyType.ordinal()) {
+                    switch (propertyDefinition.propertyType().ordinal()) {
                         case BYTE_ARRAY_ORDINAL:
                             String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
                             sb.append(valueOfArrayAsString);
@@ -1705,7 +1705,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             sb.append(valueOfArrayAsString);
                             break;
                         default:
-                            sb.append(valueToStringForBulkLoad(propertyType, value));
+                            sb.append(valueToStringForBulkLoad(propertyDefinition, value));
                     }
                 }
             } else {
@@ -1717,44 +1717,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
         return new ByteArrayInputStream(sb.toString().getBytes());
     }
-
-//    private InputStream mapEdgeToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) throws SQLException {
-//        StringBuilder sb = new StringBuilder();
-//        int count = 1;
-//        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.getRight().values()) {
-//            sb.append(((RecordId) triple.getLeft().id()).getId());
-//            sb.append(COPY_COMMAND_DELIMITER);
-//            sb.append(((RecordId) triple.getMiddle().id()).getId());
-//            if (!edgeCache.getLeft().isEmpty()) {
-//                sb.append(COPY_COMMAND_DELIMITER);
-//            }
-//            int countKeys = 1;
-//            for (String key : edgeCache.getLeft()) {
-//                PropertyType propertyType = propertyTypeMap.get(key);
-//                Object value = triple.getRight().get(key);
-//                switch (propertyType) {
-//                    case BYTE_ARRAY:
-//                        String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
-//                        sb.append(valueOfArrayAsString);
-//                        break;
-//                    case byte_ARRAY:
-//                        valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
-//                        sb.append(valueOfArrayAsString);
-//                        break;
-//                    default:
-//                        sb.append(valueToStringForBulkLoad(propertyType, value));
-//                }
-//                if (countKeys < edgeCache.getLeft().size()) {
-//                    sb.append(COPY_COMMAND_DELIMITER);
-//                }
-//                countKeys++;
-//            }
-//            if (count++ < edgeCache.getRight().size()) {
-//                sb.append("\n");
-//            }
-//        }
-//        return new ByteArrayInputStream(sb.toString().getBytes());
-//    }
 
     private String escapeSpecialCharactersForArray(String s) {
         StringBuilder sb = new StringBuilder();
@@ -1805,96 +1767,52 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BOOLEAN_ORDINAL:
-                return new String[]{"BOOLEAN"};
-            case SHORT_ORDINAL:
-                return new String[]{"SMALLINT"};
-            case INTEGER_ORDINAL:
-                return new String[]{"INTEGER"};
-            case LONG_ORDINAL:
-                return new String[]{"BIGINT"};
-            case FLOAT_ORDINAL:
-                return new String[]{"REAL"};
-            case DOUBLE_ORDINAL:
-                return new String[]{"DOUBLE PRECISION"};
-            case LOCALDATE_ORDINAL:
-                return new String[]{"DATE"};
-            case LOCALDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP"};
-            case ZONEDDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP", "TEXT"};
-            case LOCALTIME_ORDINAL:
-                return new String[]{"TIME"};
-            case PERIOD_ORDINAL:
-                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
-            case DURATION_ORDINAL:
-                return new String[]{"BIGINT", "INTEGER"};
-            case STRING_ORDINAL:
-                return new String[]{"TEXT"};
-            case JSON_ORDINAL:
-                return new String[]{"JSONB"};
-            case POINT_ORDINAL:
-                return new String[]{"geometry(POINT)"};
-            case LINESTRING_ORDINAL:
-                return new String[]{"geometry(LINESTRING)"};
-            case POLYGON_ORDINAL:
-                return new String[]{"geometry(POLYGON)"};
-            case GEOGRAPHY_POINT_ORDINAL:
-                return new String[]{"geography(POINT, 4326)"};
-            case GEOGRAPHY_POLYGON_ORDINAL:
-                return new String[]{"geography(POLYGON, 4326)"};
-            case byte_ARRAY_ORDINAL:
-                return new String[]{"BYTEA"};
-            case boolean_ARRAY_ORDINAL:
-                return new String[]{"BOOLEAN[]"};
-            case short_ARRAY_ORDINAL:
-                return new String[]{"SMALLINT[]"};
-            case int_ARRAY_ORDINAL:
-                return new String[]{"INTEGER[]"};
-            case long_ARRAY_ORDINAL:
-                return new String[]{"BIGINT[]"};
-            case float_ARRAY_ORDINAL:
-                return new String[]{"REAL[]"};
-            case double_ARRAY_ORDINAL:
-                return new String[]{"DOUBLE PRECISION[]"};
-            case STRING_ARRAY_ORDINAL:
-                return new String[]{"TEXT[]"};
-            case LOCALDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP[]"};
-            case LOCALDATE_ARRAY_ORDINAL:
-                return new String[]{"DATE[]"};
-            case LOCALTIME_ARRAY_ORDINAL:
-                return new String[]{"TIME[]"};
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP[]", "TEXT[]"};
-            case DURATION_ARRAY_ORDINAL:
-                return new String[]{"BIGINT[]", "INTEGER[]"};
-            case PERIOD_ARRAY_ORDINAL:
-                return new String[]{"INTEGER[]", "INTEGER[]", "INTEGER[]"};
-            case INTEGER_ARRAY_ORDINAL:
-                return new String[]{"INTEGER[]"};
-            case BOOLEAN_ARRAY_ORDINAL:
-                return new String[]{"BOOLEAN[]"};
-            case BYTE_ARRAY_ORDINAL:
-                return new String[]{"BYTEA"};
-            case SHORT_ARRAY_ORDINAL:
-                return new String[]{"SMALLINT[]"};
-            case LONG_ARRAY_ORDINAL:
-                return new String[]{"BIGINT[]"};
-            case FLOAT_ARRAY_ORDINAL:
-                return new String[]{"REAL[]"};
-            case DOUBLE_ARRAY_ORDINAL:
-                return new String[]{"DOUBLE PRECISION[]"};
-            case JSON_ARRAY_ORDINAL:
-                return new String[]{"JSONB[]"};
-            case VARCHAR_ORDINAL:
-                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
-            case UUID_ORDINAL:
-                return new String[]{"UUID"};
-            default:
-                throw SqlgExceptions.invalidPropertyType(propertyType);
-        }
+        return switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL -> new String[]{"BOOLEAN"};
+            case SHORT_ORDINAL -> new String[]{"SMALLINT"};
+            case INTEGER_ORDINAL -> new String[]{"INTEGER"};
+            case LONG_ORDINAL -> new String[]{"BIGINT"};
+            case FLOAT_ORDINAL -> new String[]{"REAL"};
+            case DOUBLE_ORDINAL -> new String[]{"DOUBLE PRECISION"};
+            case LOCALDATE_ORDINAL -> new String[]{"DATE"};
+            case LOCALDATETIME_ORDINAL -> new String[]{"TIMESTAMP"};
+            case ZONEDDATETIME_ORDINAL -> new String[]{"TIMESTAMP", "TEXT"};
+            case LOCALTIME_ORDINAL -> new String[]{"TIME"};
+            case PERIOD_ORDINAL -> new String[]{"INTEGER", "INTEGER", "INTEGER"};
+            case DURATION_ORDINAL -> new String[]{"BIGINT", "INTEGER"};
+            case STRING_ORDINAL -> new String[]{"TEXT"};
+            case JSON_ORDINAL -> new String[]{"JSONB"};
+            case POINT_ORDINAL -> new String[]{"geometry(POINT)"};
+            case LINESTRING_ORDINAL -> new String[]{"geometry(LINESTRING)"};
+            case POLYGON_ORDINAL -> new String[]{"geometry(POLYGON)"};
+            case GEOGRAPHY_POINT_ORDINAL -> new String[]{"geography(POINT, 4326)"};
+            case GEOGRAPHY_POLYGON_ORDINAL -> new String[]{"geography(POLYGON, 4326)"};
+            case byte_ARRAY_ORDINAL -> new String[]{"BYTEA"};
+            case boolean_ARRAY_ORDINAL -> new String[]{"BOOLEAN[]"};
+            case short_ARRAY_ORDINAL -> new String[]{"SMALLINT[]"};
+            case int_ARRAY_ORDINAL -> new String[]{"INTEGER[]"};
+            case long_ARRAY_ORDINAL -> new String[]{"BIGINT[]"};
+            case float_ARRAY_ORDINAL -> new String[]{"REAL[]"};
+            case double_ARRAY_ORDINAL -> new String[]{"DOUBLE PRECISION[]"};
+            case STRING_ARRAY_ORDINAL -> new String[]{"TEXT[]"};
+            case LOCALDATETIME_ARRAY_ORDINAL -> new String[]{"TIMESTAMP[]"};
+            case LOCALDATE_ARRAY_ORDINAL -> new String[]{"DATE[]"};
+            case LOCALTIME_ARRAY_ORDINAL -> new String[]{"TIME[]"};
+            case ZONEDDATETIME_ARRAY_ORDINAL -> new String[]{"TIMESTAMP[]", "TEXT[]"};
+            case DURATION_ARRAY_ORDINAL -> new String[]{"BIGINT[]", "INTEGER[]"};
+            case PERIOD_ARRAY_ORDINAL -> new String[]{"INTEGER[]", "INTEGER[]", "INTEGER[]"};
+            case INTEGER_ARRAY_ORDINAL -> new String[]{"INTEGER[]"};
+            case BOOLEAN_ARRAY_ORDINAL -> new String[]{"BOOLEAN[]"};
+            case BYTE_ARRAY_ORDINAL -> new String[]{"BYTEA"};
+            case SHORT_ARRAY_ORDINAL -> new String[]{"SMALLINT[]"};
+            case LONG_ARRAY_ORDINAL -> new String[]{"BIGINT[]"};
+            case FLOAT_ARRAY_ORDINAL -> new String[]{"REAL[]"};
+            case DOUBLE_ARRAY_ORDINAL -> new String[]{"DOUBLE PRECISION[]"};
+            case JSON_ARRAY_ORDINAL -> new String[]{"JSONB[]"};
+            case VARCHAR_ORDINAL -> new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case UUID_ORDINAL -> new String[]{"UUID"};
+            default -> throw SqlgExceptions.invalidPropertyType(propertyType);
+        };
     }
 
     /**
@@ -1926,17 +1844,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case Types.OTHER:
                 //this is a f up as only JSON can be used for other.
                 //means all the gis data types which are also OTHER are not supported
-                switch (typeName) {
-                    case "jsonb":
-                        return PropertyType.JSON;
-                    case "geometry":
-                        return getPostGisGeometryType(sqlgGraph, schema, table, column);
-                    case "geography":
-                        return getPostGisGeographyType(sqlgGraph, schema, table, column);
-                    default:
-                        throw new RuntimeException("Other type not supported " + typeName);
-
-                }
+                return switch (typeName) {
+                    case "jsonb" -> PropertyType.JSON;
+                    case "geometry" -> getPostGisGeometryType(sqlgGraph, schema, table, column);
+                    case "geography" -> getPostGisGeographyType(sqlgGraph, schema, table, column);
+                    default -> throw new RuntimeException("Other type not supported " + typeName);
+                };
             case Types.BINARY:
                 return BYTE_ARRAY;
             case Types.ARRAY:
@@ -1986,83 +1899,47 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BYTE_ORDINAL:
-                return new int[]{Types.BOOLEAN};
-            case BOOLEAN_ORDINAL:
-                return new int[]{Types.BOOLEAN};
-            case SHORT_ORDINAL:
-                return new int[]{Types.SMALLINT};
-            case INTEGER_ORDINAL:
-                return new int[]{Types.INTEGER};
-            case LONG_ORDINAL:
-                return new int[]{Types.BIGINT};
-            case FLOAT_ORDINAL:
-                return new int[]{Types.REAL};
-            case DOUBLE_ORDINAL:
-                return new int[]{Types.DOUBLE};
-            case STRING_ORDINAL:
-                return new int[]{Types.CLOB};
-            case LOCALDATETIME_ORDINAL:
-                return new int[]{Types.TIMESTAMP};
-            case LOCALDATE_ORDINAL:
-                return new int[]{Types.DATE};
-            case LOCALTIME_ORDINAL:
-                return new int[]{Types.TIME};
-            case ZONEDDATETIME_ORDINAL:
-                return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case PERIOD_ORDINAL:
-                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case DURATION_ORDINAL:
-                return new int[]{Types.BIGINT, Types.INTEGER};
-            case JSON_ORDINAL:
-                //TODO support other others like Geometry...
-                return new int[]{Types.OTHER};
-            case byte_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case boolean_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case BOOLEAN_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case short_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case SHORT_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case int_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case INTEGER_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case long_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case LONG_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case float_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case FLOAT_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case double_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case DOUBLE_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case STRING_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case LOCALDATETIME_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case LOCALDATE_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case LOCALTIME_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY, Types.ARRAY};
-            case PERIOD_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
-            case DURATION_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY, Types.ARRAY};
-            case JSON_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
-        }
+        return switch (propertyType.ordinal()) {
+            case BYTE_ORDINAL -> new int[]{Types.BOOLEAN};
+            case BOOLEAN_ORDINAL -> new int[]{Types.BOOLEAN};
+            case SHORT_ORDINAL -> new int[]{Types.SMALLINT};
+            case INTEGER_ORDINAL -> new int[]{Types.INTEGER};
+            case LONG_ORDINAL -> new int[]{Types.BIGINT};
+            case FLOAT_ORDINAL -> new int[]{Types.REAL};
+            case DOUBLE_ORDINAL -> new int[]{Types.DOUBLE};
+            case STRING_ORDINAL -> new int[]{Types.CLOB};
+            case LOCALDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP};
+            case LOCALDATE_ORDINAL -> new int[]{Types.DATE};
+            case LOCALTIME_ORDINAL -> new int[]{Types.TIME};
+            case ZONEDDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP, Types.CLOB};
+            case PERIOD_ORDINAL -> new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
+            case DURATION_ORDINAL -> new int[]{Types.BIGINT, Types.INTEGER};
+            case JSON_ORDINAL ->
+                    //TODO support other others like Geometry...
+                    new int[]{Types.OTHER};
+            case byte_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case boolean_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case BOOLEAN_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case short_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case SHORT_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case int_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case INTEGER_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case long_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case LONG_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case float_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case FLOAT_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case double_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case DOUBLE_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case STRING_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case LOCALDATETIME_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case LOCALDATE_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case LOCALTIME_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY_ORDINAL -> new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY_ORDINAL -> new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY_ORDINAL -> new int[]{Types.ARRAY, Types.ARRAY};
+            case JSON_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            default -> throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        };
     }
 
     @Override
@@ -2464,7 +2341,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
     }
 
-    private <L, R> void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, Collection<Pair<L, R>> uids, PropertyType inPropertyType, PropertyType outPropertyType) {
+    private <L, R> void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, Collection<Pair<L, R>> uids, PropertyDefinition inPropertyDefinition, PropertyDefinition outPropertyDefinition) {
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("COPY ");
@@ -2493,9 +2370,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             Writer writer = streamSql(sqlgGraph, sql.toString());
             for (Pair<L, R> uid : uids) {
-                valueToStreamBytes(writer, inPropertyType, uid.getLeft());
+                valueToStreamBytes(writer, inPropertyDefinition, uid.getLeft());
                 writer.write(COPY_COMMAND_DELIMITER);
-                valueToStreamBytes(writer, outPropertyType, uid.getRight());
+                valueToStreamBytes(writer, outPropertyDefinition, uid.getRight());
                 writer.write("\n");
             }
             writer.close();
@@ -2505,36 +2382,36 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable out, SchemaTable in, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids, Map<String, PropertyType> edgeColumns, Map<String, Object> edgePropertyMap) {
+    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable out, SchemaTable in, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids, Map<String, PropertyDefinition> edgeColumns, Map<String, Object> edgePropertyMap) {
         if (!sqlgGraph.tx().isInStreamingBatchMode() && !sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         if (!uids.isEmpty()) {
             //createVertexLabel temp table and copy the uids into it
-            Map<String, PropertyType> columns = new HashMap<>();
-            Map<String, PropertyType> outProperties = sqlgGraph.getTopology().getTableFor(out.withPrefix(VERTEX_PREFIX));
-            Map<String, PropertyType> inProperties = sqlgGraph.getTopology().getTableFor(in.withPrefix(VERTEX_PREFIX));
-            PropertyType outPropertyType;
+            Map<String, PropertyDefinition> columns = new HashMap<>();
+            Map<String, PropertyDefinition> outProperties = sqlgGraph.getTopology().getTableFor(out.withPrefix(VERTEX_PREFIX));
+            Map<String, PropertyDefinition> inProperties = sqlgGraph.getTopology().getTableFor(in.withPrefix(VERTEX_PREFIX));
+            PropertyDefinition outPropertyDefinition;
             if (idFields.getLeft().equals(Topology.ID)) {
-                outPropertyType = PropertyType.INTEGER;
+                outPropertyDefinition = new PropertyDefinition(PropertyType.INTEGER);
             } else {
-                outPropertyType = outProperties.get(idFields.getLeft());
+                outPropertyDefinition = outProperties.get(idFields.getLeft());
             }
-            PropertyType inPropertyType;
+            PropertyDefinition inPropertyDefinition;
             if (idFields.getRight().equals(Topology.ID)) {
-                inPropertyType = PropertyType.INTEGER;
+                inPropertyDefinition = new PropertyDefinition(PropertyType.INTEGER);
             } else {
-                inPropertyType = inProperties.get(idFields.getRight());
+                inPropertyDefinition = inProperties.get(idFields.getRight());
             }
-            columns.put("out", outPropertyType);
-            columns.put("in", inPropertyType);
+            columns.put("out", outPropertyDefinition);
+            columns.put("in", inPropertyDefinition);
             SecureRandom random = new SecureRandom();
             byte[] bytes = new byte[6];
             random.nextBytes(bytes);
             String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
             tmpTableIdentified = Topology.BULK_TEMP_EDGE + tmpTableIdentified;
             sqlgGraph.getTopology().getPublicSchema().createTempTable(tmpTableIdentified, columns);
-            this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(out.getSchema(), tmpTableIdentified), uids, outPropertyType, inPropertyType);
+            this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(out.getSchema(), tmpTableIdentified), uids, outPropertyDefinition, inPropertyDefinition);
             //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
 
             Optional<VertexLabel> outVertexLabelOptional = sqlgGraph.getTopology().getVertexLabel(out.getSchema(), out.getTable());
@@ -2683,7 +2560,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
             edgePropertyMap.forEach((k, v) -> {
                 sql.append(',');
-                sql.append(this.valueToValuesString(edgeColumns.get(k), v));
+                sql.append(this.valueToValuesString(edgeColumns.get(k).propertyType(), v));
                 sql.append(" as ");
                 sql.append(this.maybeWrapInQoutes(k));
             });

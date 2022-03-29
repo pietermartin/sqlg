@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
@@ -61,10 +62,10 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertEquals(4, this.sqlgGraph.getTopology().getAllTables().size());
         assertEquals(2, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_person").size());
         assertEquals(2, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_software").size());
-        assertEquals(PropertyType.STRING, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_person").get("name"));
-        assertEquals(PropertyType.INTEGER, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_person").get("age"));
-        assertEquals(PropertyType.STRING, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_software").get("name"));
-        assertEquals(PropertyType.STRING, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_software").get("lang"));
+        assertEquals(PropertyDefinition.of(PropertyType.STRING), this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_person").get("name"));
+        assertEquals(PropertyType.INTEGER, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_person").get("age").propertyType());
+        assertEquals(PropertyDefinition.of(PropertyType.STRING), this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_software").get("name"));
+        assertEquals(PropertyDefinition.of(PropertyType.STRING), this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_software").get("lang"));
         //test this by turning sql logging on and watch for create statements.
         loadModern();
     }
@@ -76,9 +77,9 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertEquals(1, this.sqlgGraph.getTopology().getAllTables().size());
         assertTrue(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_A").isEmpty());
 
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name", PropertyType.STRING);
-        properties.put("age", PropertyType.INTEGER);
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
+        properties.put("age", PropertyDefinition.of(PropertyType.INTEGER));
         assertTrue(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_A").isEmpty());
         this.sqlgGraph.getTopology().ensureVertexLabelPropertiesExist("A", properties);
         this.sqlgGraph.tx().rollback();
@@ -88,8 +89,8 @@ public class TestSchemaEagerCreation extends BaseTest {
         this.sqlgGraph.tx().commit();
         assertEquals(1, this.sqlgGraph.getTopology().getAllTables().size());
         assertEquals(2, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_A").size());
-        assertEquals(PropertyType.STRING, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_A").get("name"));
-        assertEquals(PropertyType.INTEGER, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_A").get("age"));
+        assertEquals(PropertyDefinition.of(PropertyType.STRING), this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_A").get("name"));
+        assertEquals(PropertyType.INTEGER, this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".V_A").get("age").propertyType());
     }
 
     @Test
@@ -98,9 +99,9 @@ public class TestSchemaEagerCreation extends BaseTest {
         VertexLabel inVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("B");
         this.sqlgGraph.getTopology().ensureEdgeLabelExist("ab", outVertexLabel, inVertexLabel, Collections.emptyMap());
         this.sqlgGraph.tx().commit();
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name", PropertyType.STRING);
-        properties.put("age", PropertyType.INTEGER);
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
+        properties.put("age", PropertyDefinition.of(PropertyType.INTEGER));
         assertTrue(this.sqlgGraph.getTopology().getAllTables().entrySet().stream().allMatch((entry) -> entry.getValue().isEmpty()));
         assertTrue(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_ab").isEmpty());
         this.sqlgGraph.getTopology().ensureEdgePropertiesExist("ab", properties);
@@ -130,9 +131,9 @@ public class TestSchemaEagerCreation extends BaseTest {
 
         vertexLabel = schema.getVertexLabel("Person");
         assertTrue(vertexLabel.isPresent());
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name", PropertyType.STRING);
-        properties.put("age", PropertyType.INTEGER);
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
+        properties.put("age", PropertyDefinition.of(PropertyType.INTEGER));
         vertexLabel.get().ensurePropertiesExist(properties);
         assertEquals(2, vertexLabel.get().getProperties().size());
         this.sqlgGraph.tx().rollback();
@@ -145,7 +146,7 @@ public class TestSchemaEagerCreation extends BaseTest {
         PropertyColumn propertyColumnAge = vertexLabel.get().getProperties().get("age");
         assertNotNull(propertyColumnName);
         assertNotNull(propertyColumnAge);
-        assertEquals(PropertyType.STRING, propertyColumnName.getPropertyType());
+        assertEquals(PropertyDefinition.of(PropertyType.STRING), propertyColumnName.getPropertyDefinition());
         assertEquals(PropertyType.INTEGER, propertyColumnAge.getPropertyType());
     }
 
@@ -164,9 +165,9 @@ public class TestSchemaEagerCreation extends BaseTest {
         Optional<EdgeLabel> edgeLabelOptional = vertexLabelAOptional.get().getOutEdgeLabel("ab");
         assertTrue(edgeLabelOptional.isPresent());
 
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name", PropertyType.STRING);
-        properties.put("age", PropertyType.INTEGER);
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
+        properties.put("age", PropertyDefinition.of(PropertyType.INTEGER));
         EdgeLabel edgeLabel = edgeLabelOptional.get();
         edgeLabel.ensurePropertiesExist(properties);
         this.sqlgGraph.tx().rollback();
@@ -269,16 +270,16 @@ public class TestSchemaEagerCreation extends BaseTest {
     }
 
     private void createModernSchema() {
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name", PropertyType.STRING);
-        properties.put("age", PropertyType.INTEGER);
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
+        properties.put("age", PropertyDefinition.of(PropertyType.INTEGER));
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("person", properties);
         properties.remove("age");
-        properties.put("name", PropertyType.STRING);
-        properties.put("lang", PropertyType.STRING);
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
+        properties.put("lang", PropertyDefinition.of(PropertyType.STRING));
         VertexLabel softwareVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("software", properties);
         properties.clear();
-        properties.put("weight", PropertyType.DOUBLE);
+        properties.put("weight", PropertyDefinition.of(PropertyType.DOUBLE));
         this.sqlgGraph.getTopology().ensureEdgeLabelExist("knows", personVertexLabel, personVertexLabel, properties);
         this.sqlgGraph.getTopology().ensureEdgeLabelExist("created", personVertexLabel, softwareVertexLabel, properties);
     }

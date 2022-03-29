@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -26,30 +27,30 @@ public class TestLoadEdge extends BaseTest {
         VertexLabel personVertexLabel1 = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "Person",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("id1", PropertyType.INTEGER);
-                    put("id2", PropertyType.INTEGER);
-                    put("name", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("id1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("id2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("id1", "id2"))
         );
         VertexLabel addressVertexLabel1 = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "Address",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("addressId1", PropertyType.INTEGER);
-                    put("addressId2", PropertyType.INTEGER);
-                    put("name", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("addressId1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("addressId2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("addressId1", "addressId2"))
         );
         VertexLabel carVertexLabel1 = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "Car",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("carId1", PropertyType.INTEGER);
-                    put("carId2", PropertyType.INTEGER);
-                    put("name", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("carId1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("carId2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("carId1", "carId2"))
         );

@@ -114,11 +114,11 @@ public class TestBulkWithin extends BaseTest {
     @Test
     public void testBulkWithinByte() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteValues());
-        this.sqlgGraph.addVertex(T.label, "A", "name", (byte)1);
-        this.sqlgGraph.addVertex(T.label, "A", "name", (byte)2);
-        this.sqlgGraph.addVertex(T.label, "A", "name", (byte)3);
+        this.sqlgGraph.addVertex(T.label, "A", "name", (byte) 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", (byte) 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", (byte) 3);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("name", P.within((byte)1, (byte)2, (byte)3)).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("name", P.within((byte) 1, (byte) 2, (byte) 3)).toList();
         Assert.assertEquals(3, vertices.size());
     }
 
@@ -158,11 +158,11 @@ public class TestBulkWithin extends BaseTest {
 
     @Test
     public void testBulkWithinShort() {
-        this.sqlgGraph.addVertex(T.label, "A", "name", (short)1);
-        this.sqlgGraph.addVertex(T.label, "A", "name", (short)2);
-        this.sqlgGraph.addVertex(T.label, "A", "name", (short)3);
+        this.sqlgGraph.addVertex(T.label, "A", "name", (short) 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", (short) 2);
+        this.sqlgGraph.addVertex(T.label, "A", "name", (short) 3);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("name", P.within((short)1, (short)2, (short)3)).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("name", P.within((short) 1, (short) 2, (short) 3)).toList();
         Assert.assertEquals(3, vertices.size());
     }
 
@@ -410,11 +410,9 @@ public class TestBulkWithin extends BaseTest {
         LocalDateTime localDateTime1 = LocalDateTime.now();
         LocalDateTime localDateTime2 = LocalDateTime.now().minusDays(1);
         LocalDateTime localDateTime3 = LocalDateTime.now().minusDays(2);
-        if (isHsqldb() || isMariaDb()) {
-            localDateTime1 = localDateTime1.truncatedTo(ChronoUnit.MILLIS);
-            localDateTime2 = localDateTime2.truncatedTo(ChronoUnit.MILLIS);
-            localDateTime3 = localDateTime3.truncatedTo(ChronoUnit.MILLIS);
-        }
+        localDateTime1 = localDateTime1.truncatedTo(ChronoUnit.MILLIS);
+        localDateTime2 = localDateTime2.truncatedTo(ChronoUnit.MILLIS);
+        localDateTime3 = localDateTime3.truncatedTo(ChronoUnit.MILLIS);
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime1);
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime2);
         this.sqlgGraph.addVertex(T.label, "A", "name", localDateTime3);
@@ -427,7 +425,7 @@ public class TestBulkWithin extends BaseTest {
     //TODO https://sourceforge.net/p/hsqldb/bugs/1495/
     @Test
     public void testBulkWithin_LocalDateTimeArray() {
-        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isHsqldb());
+        Assume.assumeFalse(isHsqldb() || isH2());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         LocalDateTime[] localDateTimeArray1 = new LocalDateTime[]{LocalDateTime.now().minusDays(1), LocalDateTime.now().minusDays(2), LocalDateTime.now().minusDays(3)};
         LocalDateTime[] localDateTimeArray2 = new LocalDateTime[]{LocalDateTime.now().minusDays(4), LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(6)};
@@ -636,7 +634,7 @@ public class TestBulkWithin extends BaseTest {
                 .hasLabel("God")
                 .out()
                 .has("name", "pete")
-                .has("idNumber", P.within(1,2,3))
+                .has("idNumber", P.within(1, 2, 3))
                 .toList();
         Assert.assertEquals(2, persons.size());
     }

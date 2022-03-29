@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -21,9 +22,9 @@ public class TestTraversalPerformance extends BaseTest {
     public void testSpeedWithLargeSchemaFastQuery1() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        Map<String, PropertyType> columns = new HashMap<>();
+        Map<String, PropertyDefinition> columns = new HashMap<>();
         for (int i = 0; i < 100; i++) {
-            columns.put("property_" + i, PropertyType.STRING);
+            columns.put("property_" + i, PropertyDefinition.of(PropertyType.STRING));
         }
         //Create a large schema, it slows the maps  down
         int NUMBER_OF_SCHEMA_ELEMENTS = 1_000;
@@ -140,7 +141,7 @@ public class TestTraversalPerformance extends BaseTest {
 //
 //        Thread.sleep(5_000);
 //
-//        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+//        Map<String, PropertyType> properties = new HashMap<>() {{
 //           put("name", PropertyType.STRING);
 //        }};
 //        VertexLabel godVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("God", properties);

@@ -6,6 +6,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.test.BaseTest;
@@ -95,10 +96,10 @@ public class TestLargeSchemaPerformance extends BaseTest {
         Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1000").orElseThrow().getProperties().size());
     }
 
-    private Map<String, PropertyType> columns() {
-        Map<String, PropertyType> result = new LinkedHashMap<>();
+    private Map<String, PropertyDefinition> columns() {
+        Map<String, PropertyDefinition> result = new LinkedHashMap<>();
         for (int i = 1; i <= 100; i++) {
-            result.put("column" + i, PropertyType.STRING);
+            result.put("column" + i, PropertyDefinition.of(PropertyType.STRING));
         }
         return result;
     }

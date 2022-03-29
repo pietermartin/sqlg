@@ -3,6 +3,7 @@ package org.umlg.sqlg.structure.topology;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyInf;
 
@@ -13,23 +14,24 @@ import org.umlg.sqlg.structure.TopologyInf;
 public class PropertyColumn implements TopologyInf {
 
     private final AbstractLabel abstractLabel;
-    private String name;
+    private final String name;
     private boolean committed = true;
-    private final PropertyType propertyType;
-    private final boolean isForeignPropertyColumn;;
+    private final PropertyDefinition propertyDefinition;
+    @SuppressWarnings("unused")
+    private final boolean isForeignPropertyColumn;
 
-    PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
+    PropertyColumn(AbstractLabel abstractLabel, String name, PropertyDefinition propertyDefinition) {
         this.abstractLabel = abstractLabel;
         this.name = name;
-        this.propertyType = propertyType;
+        this.propertyDefinition = propertyDefinition;
         this.isForeignPropertyColumn = false;
     }
 
-    private PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType, boolean isForeignPropertyColumn) {
+    private PropertyColumn(AbstractLabel abstractLabel, String name, PropertyDefinition propertyDefinition, boolean isForeignPropertyColumn) {
         Preconditions.checkState(isForeignPropertyColumn);
         this.abstractLabel = abstractLabel;
         this.name = name;
-        this.propertyType = propertyType;
+        this.propertyDefinition = propertyDefinition;
         this.isForeignPropertyColumn = true;
     }
 
@@ -43,7 +45,11 @@ public class PropertyColumn implements TopologyInf {
     }
 
     public PropertyType getPropertyType() {
-        return propertyType;
+        return propertyDefinition.propertyType();
+    }
+
+    public PropertyDefinition getPropertyDefinition() {
+        return propertyDefinition;
     }
 
     public AbstractLabel getParentLabel() {
@@ -66,7 +72,7 @@ public class PropertyColumn implements TopologyInf {
     ObjectNode toNotifyJson() {
         ObjectNode propertyObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         propertyObjectNode.put("name", this.name);
-        propertyObjectNode.put("propertyType", this.propertyType.name());
+        propertyObjectNode.put("propertyType", this.propertyDefinition.propertyType().name());
         return propertyObjectNode;
     }
 
@@ -74,16 +80,16 @@ public class PropertyColumn implements TopologyInf {
        String pt = jsonNode.get("propertyType").asText();
        if (pt.equals("VARCHAR")) {
            //This is not ideal, however Sqlg only uses VARCHAR when creating the column.
-           //For the rest is is considered the same as STRING
+           //For the rest it is considered the same as STRING
            return new PropertyColumn(
                    abstractLabel,
                    jsonNode.get("name").asText(),
-                   PropertyType.STRING);
+                   new PropertyDefinition(PropertyType.STRING));
        } else {
            return new PropertyColumn(
                    abstractLabel,
                    jsonNode.get("name").asText(),
-                   PropertyType.valueOf(pt));
+                   new PropertyDefinition(PropertyType.valueOf(pt)));
        }
     }
 
@@ -97,10 +103,9 @@ public class PropertyColumn implements TopologyInf {
         if (o == null) {
             return false;
         }
-        if (!(o instanceof PropertyColumn)) {
+        if (!(o instanceof PropertyColumn other)) {
             return false;
         }
-        PropertyColumn other = (PropertyColumn) o;
         if (this.abstractLabel.getSchema().getName().equals(other.abstractLabel.getSchema().getName())) {
             if (this.abstractLabel.getLabel().equals(other.abstractLabel.getLabel())) {
                 return this.getName().equals(other.getName()) && this.getPropertyType() == other.getPropertyType();
@@ -128,15 +133,7 @@ public class PropertyColumn implements TopologyInf {
         this.abstractLabel.renameProperty(name, this);
     }
 
-    /**
-     * Only called from afterRollback to reset the property's name.
-     * @param name The old name  of the property.
-     */
-    void setName(String name) {
-        this.name = name;
-    }
-
     PropertyColumn readOnlyCopy(AbstractLabel abstractLabel) {
-        return new PropertyColumn(abstractLabel, this.name, this.propertyType, true);
+        return new PropertyColumn(abstractLabel, this.name, this.propertyDefinition, true);
     }
 }

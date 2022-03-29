@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
@@ -37,7 +38,7 @@ public class TestIndexOnPartition extends BaseTest {
         VertexLabel vertexLabel = schema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
@@ -50,7 +51,7 @@ public class TestIndexOnPartition extends BaseTest {
         vertexLabel = schema.ensurePartitionedVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
@@ -90,7 +91,7 @@ public class TestIndexOnPartition extends BaseTest {
         VertexLabel vertexLabel = schema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
@@ -101,7 +102,7 @@ public class TestIndexOnPartition extends BaseTest {
         vertexLabel = schema.ensurePartitionedVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
@@ -148,7 +149,7 @@ public class TestIndexOnPartition extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
@@ -199,7 +200,7 @@ public class TestIndexOnPartition extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("int1")),
                 PartitionType.RANGE,
@@ -245,10 +246,10 @@ public class TestIndexOnPartition extends BaseTest {
         Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel vertexLabel = schema.ensurePartitionedVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
-                    put("int4", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int4", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2", "int3")),
                 PartitionType.RANGE,
@@ -311,10 +312,10 @@ public class TestIndexOnPartition extends BaseTest {
         Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel vertexLabel = schema.ensurePartitionedVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
-                    put("int4", PropertyType.INTEGER);
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int4", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("int1", "int2", "int3")),
                 PartitionType.RANGE,
@@ -380,11 +381,11 @@ public class TestIndexOnPartition extends BaseTest {
         VertexLabel a = aSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
-                    put("int4", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int4", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
@@ -392,11 +393,11 @@ public class TestIndexOnPartition extends BaseTest {
         VertexLabel b = bSchema.ensurePartitionedVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
-                    put("int4", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int4", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,
@@ -406,11 +407,11 @@ public class TestIndexOnPartition extends BaseTest {
                 "ab",
                 b,
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
-                    put("int4", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int4", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3", "int4")),
                 PartitionType.LIST,
@@ -491,16 +492,16 @@ public class TestIndexOnPartition extends BaseTest {
         String IS_DELETED = "isDeleted";
         String VIRTUAL_GROUP_ROOT_REAL_WORKSPACE_ELEMENT_LABEL = "VGReal";
 
-        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
-        attributeMap.put(VIRTUAL_GROUP_PARENT_NAME, PropertyType.STRING);
-        attributeMap.put(VIRTUAL_GROUP_NAME, PropertyType.STRING);
-        attributeMap.put(VIRTUAL_GROUP_ID, PropertyType.LONG);
-        attributeMap.put(vendorTechnology, PropertyType.STRING);
-        attributeMap.put(etlElementName, PropertyType.STRING);
-        attributeMap.put(cmUid, PropertyType.STRING);
-        attributeMap.put(internal_cm_name, PropertyType.STRING);
-        attributeMap.put(IS_CALCULATED, PropertyType.BOOLEAN);
-        attributeMap.put(IS_DELETED, PropertyType.BOOLEAN);
+        LinkedHashMap<String, PropertyDefinition> attributeMap = new LinkedHashMap<>();
+        attributeMap.put(VIRTUAL_GROUP_PARENT_NAME, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(VIRTUAL_GROUP_NAME, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(VIRTUAL_GROUP_ID, PropertyDefinition.of(PropertyType.LONG));
+        attributeMap.put(vendorTechnology, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(etlElementName, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(cmUid, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(internal_cm_name, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(IS_CALCULATED, PropertyDefinition.of(PropertyType.BOOLEAN));
+        attributeMap.put(IS_DELETED, PropertyDefinition.of(PropertyType.BOOLEAN));
 
         VertexLabel virtualGroupRootRealWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 VIRTUAL_GROUP_ROOT_REAL_WORKSPACE_ELEMENT_LABEL,
@@ -560,16 +561,16 @@ public class TestIndexOnPartition extends BaseTest {
         String IS_DELETED = "isDeleted";
         String VIRTUAL_GROUP_ROOT_REAL_WORKSPACE_ELEMENT_LABEL = "VGReal";
 
-        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
-        attributeMap.put(VIRTUAL_GROUP_PARENT_NAME, PropertyType.STRING);
-        attributeMap.put(VIRTUAL_GROUP_NAME, PropertyType.STRING);
-        attributeMap.put(VIRTUAL_GROUP_ID, PropertyType.LONG);
-        attributeMap.put(vendorTechnology, PropertyType.STRING);
-        attributeMap.put(etlElementName, PropertyType.STRING);
-        attributeMap.put(cmUid, PropertyType.STRING);
-        attributeMap.put(internal_cm_name, PropertyType.STRING);
-        attributeMap.put(IS_CALCULATED, PropertyType.BOOLEAN);
-        attributeMap.put(IS_DELETED, PropertyType.BOOLEAN);
+        LinkedHashMap<String, PropertyDefinition> attributeMap = new LinkedHashMap<>();
+        attributeMap.put(VIRTUAL_GROUP_PARENT_NAME, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(VIRTUAL_GROUP_NAME, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(VIRTUAL_GROUP_ID, PropertyDefinition.of(PropertyType.LONG));
+        attributeMap.put(vendorTechnology, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(etlElementName, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(cmUid, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(internal_cm_name, PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put(IS_CALCULATED, PropertyDefinition.of(PropertyType.BOOLEAN));
+        attributeMap.put(IS_DELETED, PropertyDefinition.of(PropertyType.BOOLEAN));
 
         VertexLabel virtualGroupRootRealWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 VIRTUAL_GROUP_ROOT_REAL_WORKSPACE_ELEMENT_LABEL,

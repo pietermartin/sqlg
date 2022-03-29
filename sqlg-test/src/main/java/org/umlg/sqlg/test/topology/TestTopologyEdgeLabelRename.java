@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
@@ -65,13 +66,13 @@ public class TestTopologyEdgeLabelRename extends BaseTest {
         Schema schema2 = this.sqlgGraph.getTopology().ensureSchemaExist(this.schema2);
 
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         EdgeLabel abEdgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.tx().commit();
 

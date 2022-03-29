@@ -13,10 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyChangeAction;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.ThreadLocalMap;
 
 import java.sql.Connection;
@@ -55,18 +52,18 @@ public class VertexLabel extends AbstractLabel {
         EDGE_ROLE
     }
 
-    static VertexLabel createSqlgSchemaVertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
+    static VertexLabel createSqlgSchemaVertexLabel(Schema schema, String label, Map<String, PropertyDefinition> columns) {
         Preconditions.checkArgument(schema.isSqlgSchema(), "createSqlgSchemaVertexLabel may only be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, label);
         //Add the properties directly. As they are pre-created do not add them to uncommittedProperties.
-        for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
+        for (Map.Entry<String, PropertyDefinition> propertyEntry : columns.entrySet()) {
             PropertyColumn property = new PropertyColumn(vertexLabel, propertyEntry.getKey(), propertyEntry.getValue());
             vertexLabel.properties.put(propertyEntry.getKey(), property);
         }
         return vertexLabel;
     }
 
-    static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+    static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers) {
         Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns, identifiers);
         vertexLabel.createVertexLabelOnDb(columns, identifiers);
@@ -80,7 +77,7 @@ public class VertexLabel extends AbstractLabel {
             Schema schema,
             String oldLabel,
             String newLabel,
-            Map<String, PropertyType> columns,
+            Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers) {
 
         Preconditions.checkArgument(!schema.isSqlgSchema(), "renameVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
@@ -95,7 +92,7 @@ public class VertexLabel extends AbstractLabel {
             SqlgGraph sqlgGraph,
             Schema schema,
             String label,
-            Map<String, PropertyType> columns,
+            Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression,
@@ -129,7 +126,7 @@ public class VertexLabel extends AbstractLabel {
      * @param label      The vertex's label.
      * @param properties The vertex's properties.
      */
-    private VertexLabel(Schema schema, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+    private VertexLabel(Schema schema, String label, Map<String, PropertyDefinition> properties, ListOrderedSet<String> identifiers) {
         super(schema.getSqlgGraph(), label, properties, identifiers);
         this.schema = schema;
     }
@@ -155,7 +152,7 @@ public class VertexLabel extends AbstractLabel {
      * @param identifiers   The vertex's identifiers.
      * @param partitionType The vertex's partition strategy. i.e. RANGE or LIST.
      */
-    VertexLabel(Schema schema, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
+    VertexLabel(Schema schema, String label, Map<String, PropertyDefinition> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
         super(schema.getSqlgGraph(), label, properties, identifiers, partitionType, partitionExpression);
         this.schema = schema;
     }
@@ -288,7 +285,7 @@ public class VertexLabel extends AbstractLabel {
      * @param inVertexLabel The edge's in {@link VertexLabel}. 'this' is the out {@link VertexLabel}.
      * @param properties    A map of the edge's properties.
      */
-    void loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    void loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyDefinition> properties) {
         Preconditions.checkState(this.schema.isSqlgSchema(), "loadSqlgSchemaEdgeLabel must be called for \"%s\" found \"%s\"", SQLG_SCHEMA, this.schema.getName());
         EdgeLabel edgeLabel = EdgeLabel.loadSqlgSchemaEdgeLabel(edgeLabelName, this, inVertexLabel, properties);
         this.outEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
@@ -318,7 +315,7 @@ public class VertexLabel extends AbstractLabel {
      * @param properties    The EdgeLabel's properties
      * @return The EdgeLabel
      */
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyDefinition> properties) {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties);
     }
 
@@ -333,14 +330,14 @@ public class VertexLabel extends AbstractLabel {
      * @param identifiers   The EdgeLabel's identifiers.
      * @return The EdgeLabel
      */
-    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyDefinition> properties, ListOrderedSet<String> identifiers) {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties, identifiers);
     }
 
     public EdgeLabel ensurePartitionedEdgeLabelExist(
             final String edgeLabelName,
             final VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
+            Map<String, PropertyDefinition> properties,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression,
@@ -361,7 +358,7 @@ public class VertexLabel extends AbstractLabel {
     public EdgeLabel ensurePartitionedEdgeLabelExist(
             final String edgeLabelName,
             final VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
+            Map<String, PropertyDefinition> properties,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression) {
@@ -379,7 +376,7 @@ public class VertexLabel extends AbstractLabel {
     EdgeLabel addPartitionedEdgeLabel(
             final String edgeLabelName,
             final VertexLabel inVertexLabel,
-            final Map<String, PropertyType> properties,
+            final Map<String, PropertyDefinition> properties,
             final ListOrderedSet<String> identifiers,
             final PartitionType partitionType,
             final String partitionExpression,
@@ -416,7 +413,7 @@ public class VertexLabel extends AbstractLabel {
     EdgeLabel addEdgeLabel(
             String edgeLabelName,
             VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties) {
+            Map<String, PropertyDefinition> properties) {
         return addEdgeLabel(edgeLabelName, inVertexLabel, properties, new ListOrderedSet<>());
     }
 
@@ -433,7 +430,7 @@ public class VertexLabel extends AbstractLabel {
     EdgeLabel addEdgeLabel(
             String edgeLabelName,
             VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
+            Map<String, PropertyDefinition> properties,
             ListOrderedSet<String> identifiers) {
 
         EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(edgeLabelName, this, inVertexLabel, properties, identifiers);
@@ -448,8 +445,8 @@ public class VertexLabel extends AbstractLabel {
     }
 
     //    @Override
-    public void ensurePropertiesExist(Map<String, PropertyType> columns) {
-        for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
+    public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
+        for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign VertexLabel!", this.label);
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
@@ -478,7 +475,7 @@ public class VertexLabel extends AbstractLabel {
         ensureDistributed(-1, distributionPropertyColumn, colocate);
     }
 
-    private void createVertexLabelOnDb(Map<String, PropertyType> columns, ListOrderedSet<String> identifiers) {
+    private void createVertexLabelOnDb(Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers) {
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
         sql.append(".");
@@ -537,7 +534,7 @@ public class VertexLabel extends AbstractLabel {
         }
     }
 
-    private void createPartitionedVertexLabelOnDb(Map<String, PropertyType> columns, ListOrderedSet<String> identifiers, boolean addPrimaryKeyConstraint) {
+    private void createPartitionedVertexLabelOnDb(Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers, boolean addPrimaryKeyConstraint) {
         Preconditions.checkState(!identifiers.isEmpty(), "Partitioned table must have identifiers.");
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
@@ -905,7 +902,7 @@ public class VertexLabel extends AbstractLabel {
                     // fire if we didn't create the edge label
                     edgeLabel.fromPropertyNotifyJson(uncommittedOutEdgeLabel, edgeLabelOptional.isPresent());
                     //Babysit the cache
-                    this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyTypeMap());
+                    this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyDefinitionMap());
                     this.getSchema().addToAllEdgeCache(edgeLabel);
                     this.getSchema().getTopology().addOutForeignKeysToVertexLabel(this, edgeLabel);
                     ForeignKey foreignKey;
@@ -1172,7 +1169,7 @@ public class VertexLabel extends AbstractLabel {
         Pair<String, String> namePair = Pair.of(oldName, name);
         if (!this.uncommittedRemovedProperties.contains(name)) {
             this.uncommittedRemovedProperties.add(oldName);
-            PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyType());
+            PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyDefinition());
             this.uncommittedProperties.put(name, copy);
             TopologyManager.renameVertexLabelPropertyColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
             renameColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);

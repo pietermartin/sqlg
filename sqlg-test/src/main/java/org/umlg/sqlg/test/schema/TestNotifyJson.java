@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
@@ -43,8 +44,8 @@ public class TestNotifyJson extends BaseTest {
 
     @Test
     public void testNotifyJson() {
-        Map<String, PropertyType> properties  = new HashMap<>();
-        properties.put("name", PropertyType.STRING);
+        Map<String, PropertyDefinition> properties  = new HashMap<>();
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
         this.sqlgGraph.getTopology().ensureSchemaExist("A").ensureVertexLabelExist("A", properties);
         this.sqlgGraph.tx().commit();
         List<Vertex> logs = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_LOG).toList();

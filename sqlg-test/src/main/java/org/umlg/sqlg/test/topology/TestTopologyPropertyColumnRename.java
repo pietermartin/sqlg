@@ -31,7 +31,7 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
-                    put("column1", PropertyType.varChar(10));
+                    put("column1", PropertyDefinition.of(PropertyType.varChar(10)));
                 }});
         this.sqlgGraph.tx().commit();
         Optional<VertexLabel> aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
@@ -78,7 +78,7 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("B", new LinkedHashMap<>());
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("column1", PropertyType.STRING);
+            put("column1", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.tx().commit();
         Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
@@ -120,8 +120,8 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
     public void testRenameIdentifier() {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
-                    put("column1", PropertyType.varChar(10));
-                    put("column2", PropertyType.varChar(10));
+                    put("column1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("column2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }}, ListOrderedSet.listOrderedSet(List.of("column1")));
         this.sqlgGraph.tx().commit();
         Optional<VertexLabel> aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
@@ -171,16 +171,16 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
     public void testRenameIdentifierWithEdgeRoles() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B", new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );

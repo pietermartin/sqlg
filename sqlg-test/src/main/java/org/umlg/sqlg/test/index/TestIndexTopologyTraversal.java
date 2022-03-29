@@ -2,7 +2,8 @@ package org.umlg.sqlg.test.index;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -24,8 +25,8 @@ public class TestIndexTopologyTraversal extends BaseTest {
         Schema schemaA = this.sqlgGraph.getTopology().ensureSchemaExist("A");
         VertexLabel aVertexLabel = schemaA.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = schemaA.ensureVertexLabelExist("B");
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("name", PropertyType.STRING);
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("name", PropertyDefinition.of(PropertyType.STRING));
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist("ab", aVertexLabel, bVertexLabel, properties);
         edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
         this.sqlgGraph.tx().commit();

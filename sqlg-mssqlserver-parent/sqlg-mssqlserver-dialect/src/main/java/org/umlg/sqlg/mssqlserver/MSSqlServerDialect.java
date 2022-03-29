@@ -910,8 +910,8 @@ public class MSSqlServerDialect extends BaseSqlDialect {
             }
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = entry.getValue();
             if (vertices.getLeft().isEmpty()) {
-                Map<String, PropertyType> columns = new HashMap<>();
-                columns.put("dummy", PropertyType.from(0));
+                Map<String, PropertyDefinition> columns = new HashMap<>();
+                columns.put("dummy", PropertyDefinition.of(PropertyType.from(0)));
                 sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                         schemaTable.getSchema(),
                         schemaTable.getTable(),

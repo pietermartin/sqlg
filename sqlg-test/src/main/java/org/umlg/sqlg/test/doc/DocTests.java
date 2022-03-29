@@ -342,19 +342,19 @@ public class DocTests extends BaseTest {
 //    @Test
 //    public void createModernUpfront() {
 //        Topology topology = this.sqlgGraph.getTopology();
-//        VertexLabel personVertexLabel = topology.ensureVertexLabelExist("public", "person", new HashMap<String, PropertyType>() {{
+//        VertexLabel personVertexLabel = topology.ensureVertexLabelExist("public", "person", new HashMap<>() {{
 //            put("name", PropertyType.STRING);
 //            put("age", PropertyType.INTEGER);
 //        }});
-//        VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist("public", "software", new HashMap<String, PropertyType>() {{
+//        VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist("public", "software", new HashMap<>() {{
 //            put("name", PropertyType.STRING);
 //            put("lang", PropertyType.STRING);
 //        }});
-//        EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist("created", softwareVertexLabel, new HashMap<String, PropertyType>() {{
-//            put("weight", PropertyType.DOUBLE);
+//        EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist("created", softwareVertexLabel, new HashMap<>() {{
+//            put("weight", PropertyDefinition.of(PropertyType.DOUBLE));
 //        }});
-//        EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap<String, PropertyType>() {{
-//            put("weight", PropertyType.DOUBLE);
+//        EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist("knows", personVertexLabel, new HashMap<>() {{
+//            put("weight", PropertyDefinition.of(PropertyType.DOUBLE));
 //        }});
 //        this.sqlgGraph.tx().commit();
 //    }
@@ -362,9 +362,9 @@ public class DocTests extends BaseTest {
 //    @Test
 //    public void generalTopologyCreationWithSchema() {
 //        Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist("Humans");
-//        VertexLabel personVertexLabel = schema.ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+//        VertexLabel personVertexLabel = schema.ensureVertexLabelExist("Person", new HashMap<>() {{
 //            put("name", PropertyType.STRING);
-//            put("date", PropertyType.LOCALDATE);
+//            put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
 //        }});
 //        this.sqlgGraph.tx().commit();
 //    }
@@ -509,7 +509,7 @@ public class DocTests extends BaseTest {
 //
 //    @Test
 //    public void testIndex() {
-//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<>() {{
 //            put("name", PropertyType.STRING);
 //        }});
 //        Optional<PropertyColumn> namePropertyOptional = personVertexLabel.getProperty("name");
@@ -527,7 +527,7 @@ public class DocTests extends BaseTest {
 //
 //    @Test
 //    public void testCompositeIndex() {
-//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new HashMap<>() {{
 //            put("firstName", PropertyType.STRING);
 //            put("lastName", PropertyType.STRING);
 //        }});
@@ -544,7 +544,7 @@ public class DocTests extends BaseTest {
 //
 //    @Test
 //    public void testPersonAndDogDoNotHaveTheSameName() {
-//        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+//        Map<String, PropertyType> properties = new HashMap<>() {{
 //            put("name", PropertyType.STRING);
 //        }};
 //        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties);

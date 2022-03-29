@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -70,13 +71,13 @@ public class TestTopologyVertexLabelRenameDistributed extends BaseTest {
     public void renameBeforeCommit() throws InterruptedException {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             VertexLabel aVertexLabel = sqlgGraph1.getTopology().ensureSchemaExist(this.schema1).ensureVertexLabelExist("A", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             VertexLabel bVertexLabel = sqlgGraph1.getTopology().ensureSchemaExist(this.schema2).ensureVertexLabelExist("B", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             Vertex a = sqlgGraph1.addVertex(T.label, this.schema1 + ".A", "a", "haloA");
             Vertex b = sqlgGraph1.addVertex(T.label, this.schema2 + ".B", "a", "haloB");
@@ -126,7 +127,7 @@ public class TestTopologyVertexLabelRenameDistributed extends BaseTest {
     public void testDistributedNameChange2() throws InterruptedException {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             sqlgGraph1.tx().commit();
             Thread.sleep(1_000);
@@ -154,7 +155,7 @@ public class TestTopologyVertexLabelRenameDistributed extends BaseTest {
     public void testDistributedNameChangeWithQuery() throws InterruptedException {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             sqlgGraph1.addVertex(T.label, "A", "a", "halo");
             VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
@@ -182,10 +183,10 @@ public class TestTopologyVertexLabelRenameDistributed extends BaseTest {
     public void testDistributedVertexLabelRenameAsEdgeRole() throws InterruptedException {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             VertexLabel aVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             VertexLabel bVertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensureVertexLabelExist("B", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
             aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel);
             sqlgGraph1.tx().commit();

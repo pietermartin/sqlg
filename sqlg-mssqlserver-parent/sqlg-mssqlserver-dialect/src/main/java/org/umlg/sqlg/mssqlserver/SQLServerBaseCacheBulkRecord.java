@@ -3,6 +3,7 @@ package org.umlg.sqlg.mssqlserver;
 import com.microsoft.sqlserver.jdbc.ISQLServerBulkRecord;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -29,7 +30,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
     SortedSet<String> columns;
     Map<String, PropertyColumn> propertyColumns;
     //Used for temp tables.
-    Map<String, PropertyType> properties;
+    Map<String, PropertyDefinition> properties;
 
     class ColumnMetadata {
         final String columnName;
@@ -57,24 +58,24 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
     int addMetaData(SQLServerBulkCopy bulkCopy, SqlgGraph sqlgGraph) throws SQLServerException {
         int i = 1;
         for (String column : this.columns) {
-            PropertyType propertyType;
+            PropertyDefinition propertyDefinition;
             if (this.propertyColumns != null) {
                 PropertyColumn propertyColumn = propertyColumns.get(column);
-                propertyType = propertyColumn.getPropertyType();
+                propertyDefinition = propertyColumn.getPropertyDefinition();
             } else {
-                propertyType = this.properties.get(column);
+                propertyDefinition = this.properties.get(column);
             }
-            switch (propertyType.ordinal()) {
+            switch (propertyDefinition.propertyType().ordinal()) {
                 case BOOLEAN_ORDINAL:
                     //Add the column mappings, skipping the first identity column.
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             0,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 case BYTE_ORDINAL:
@@ -89,11 +90,11 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             0,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 case VARCHAR_ORDINAL:
@@ -101,44 +102,44 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             0,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 case LOCALDATE_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             0,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 case LOCALDATETIME_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             0,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 case LOCALTIME_ORDINAL:
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             0,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 case ZONEDDATETIME_ORDINAL:
@@ -215,11 +216,11 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             8000,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 case BYTE_ARRAY_ORDINAL:
@@ -227,15 +228,15 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                     bulkCopy.addColumnMapping(i, column);
                     this.columnMetadata.put(i++, new ColumnMetadata(
                             column,
-                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType)[0],
+                            sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyDefinition.propertyType())[0],
                             8000,
                             0,
                             null,
-                            propertyType
+                            propertyDefinition.propertyType()
                     ));
                     break;
                 default:
-                    throw SqlgExceptions.invalidPropertyType(propertyType);
+                    throw SqlgExceptions.invalidPropertyType(propertyDefinition.propertyType());
             }
         }
         return i;
@@ -275,14 +276,14 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
 
     void addValues(List<Object> values) {
         for (String column : this.columns) {
-            PropertyType propertyType;
+            PropertyDefinition propertyDefinition;
             if (this.propertyColumns != null) {
-                propertyType = this.propertyColumns.get(column).getPropertyType();
+                propertyDefinition = this.propertyColumns.get(column).getPropertyDefinition();
             } else {
-                propertyType = this.properties.get(column);
+                propertyDefinition = this.properties.get(column);
             }
             Object value = getValue(column);
-            switch (propertyType.ordinal()) {
+            switch (propertyDefinition.propertyType().ordinal()) {
                 case BOOLEAN_ORDINAL:
                     if (value != null) {
                         values.add(value);
@@ -381,7 +382,7 @@ abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {
                     }
                     break;
                 default:
-                    throw SqlgExceptions.invalidPropertyType(propertyType);
+                    throw SqlgExceptions.invalidPropertyType(propertyDefinition.propertyType());
 
             }
         }

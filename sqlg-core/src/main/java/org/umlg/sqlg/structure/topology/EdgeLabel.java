@@ -12,10 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyChangeAction;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.ThreadLocalSet;
 
 import java.sql.*;
@@ -46,7 +43,7 @@ public class EdgeLabel extends AbstractLabel {
             String edgeLabelName,
             VertexLabel outVertexLabel,
             VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties) {
+            Map<String, PropertyDefinition> properties) {
 
         //edges are created in the out vertex's schema.
         return new EdgeLabel(true, edgeLabelName, outVertexLabel, inVertexLabel, properties, new ListOrderedSet<>());
@@ -56,7 +53,7 @@ public class EdgeLabel extends AbstractLabel {
             String edgeLabelName,
             VertexLabel outVertexLabel,
             VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
+            Map<String, PropertyDefinition> properties,
             ListOrderedSet<String> identifiers) {
 
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
@@ -71,7 +68,7 @@ public class EdgeLabel extends AbstractLabel {
             final String edgeLabelName,
             final VertexLabel outVertexLabel,
             final VertexLabel inVertexLabel,
-            final Map<String, PropertyType> properties,
+            final Map<String, PropertyDefinition> properties,
             final ListOrderedSet<String> identifiers,
             final PartitionType partitionType,
             final String partitionExpression,
@@ -106,7 +103,7 @@ public class EdgeLabel extends AbstractLabel {
             final String edgeLabelName,
             final VertexLabel outVertexLabel,
             final VertexLabel inVertexLabel,
-            final Map<String, PropertyType> properties,
+            final Map<String, PropertyDefinition> properties,
             final ListOrderedSet<String> identifiers,
             final PartitionType partitionType,
             final String partitionExpression) {
@@ -135,7 +132,7 @@ public class EdgeLabel extends AbstractLabel {
             String edgeLabelName,
             VertexLabel outVertexLabel,
             VertexLabel inVertexLabel,
-            Map<String, PropertyType> properties,
+            Map<String, PropertyDefinition> properties,
             ListOrderedSet<String> identifiers) {
 
         super(outVertexLabel.getSchema().getSqlgGraph(), edgeLabelName, properties, identifiers);
@@ -157,7 +154,7 @@ public class EdgeLabel extends AbstractLabel {
         this.topology = outVertexLabel.getSchema().getTopology();
     }
 
-    EdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+    EdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, Map<String, PropertyDefinition> properties, ListOrderedSet<String> identifiers) {
         super(sqlgGraph, edgeLabelName, properties, identifiers);
         this.topology = sqlgGraph.getTopology();
     }
@@ -197,16 +194,26 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     //    @Override
-    public void ensurePropertiesExist(Map<String, PropertyType> columns) {
-        for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
+    public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
+        for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.getSchema().isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
                     this.getSchema().getTopology().startSchemaChange();
                     if (getProperty(column.getKey()).isEmpty()) {
-                        TopologyManager.addEdgeColumn(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), column, new ListOrderedSet<>());
-                        addColumn(this.getSchema().getName(), EDGE_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
+                        TopologyManager.addEdgeColumn(
+                                this.sqlgGraph,
+                                this.getSchema().getName(),
+                                EDGE_PREFIX + getLabel(),
+                                column,
+                                new ListOrderedSet<>()
+                        );
+                        addColumn(
+                                this.getSchema().getName(),
+                                EDGE_PREFIX + getLabel(),
+                                ImmutablePair.of(column.getKey(), column.getValue())
+                        );
                         PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
@@ -220,7 +227,7 @@ public class EdgeLabel extends AbstractLabel {
     private void createEdgeTableOnDb(
             VertexLabel outVertexLabel,
             VertexLabel inVertexLabel,
-            Map<String, PropertyType> columns,
+            Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
             boolean isForeignKeyPartition) {
 
@@ -1004,10 +1011,9 @@ public class EdgeLabel extends AbstractLabel {
         if (!super.equals(other)) {
             return false;
         }
-        if (!(other instanceof EdgeLabel)) {
+        if (!(other instanceof EdgeLabel otherEdgeLabel)) {
             return false;
         }
-        EdgeLabel otherEdgeLabel = (EdgeLabel) other;
         if (isValid()) {
             if (this.topology.isSchemaChanged() && !this.uncommittedInVertexLabels.isEmpty()) {
                 VertexLabel vertexLabel = this.uncommittedOutVertexLabels.iterator().next();
@@ -1199,7 +1205,7 @@ public class EdgeLabel extends AbstractLabel {
         Pair<String, String> namePair = Pair.of(oldName, name);
         if (!this.uncommittedRemovedProperties.contains(name)) {
             this.uncommittedRemovedProperties.add(oldName);
-            PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyType());
+            PropertyColumn copy = new PropertyColumn(this, name, propertyColumn.getPropertyDefinition());
             this.uncommittedProperties.put(name, copy);
             TopologyManager.renameEdgeLabelPropertyColumn(this.sqlgGraph, getSchema().getName(), EDGE_PREFIX + getLabel(), oldName, name);
             renameColumn(getSchema().getName(), EDGE_PREFIX + getLabel(), oldName, name);
@@ -1410,7 +1416,7 @@ public class EdgeLabel extends AbstractLabel {
             String newLabel,
             Set<VertexLabel> outVertexLabels,
             Set<VertexLabel> inVertexLabels,
-            Map<String, PropertyType> properties,
+            Map<String, PropertyDefinition> properties,
             ListOrderedSet<String> identifiers) {
 
         Preconditions.checkArgument(!schema.isSqlgSchema(), "renameEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);

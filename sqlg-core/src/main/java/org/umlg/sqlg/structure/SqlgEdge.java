@@ -148,8 +148,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(EDGE_PREFIX + this.table));
         sql.append(" (");
 
-        Map<String, Pair<PropertyType, Object>> propertyTypeValueMap = new HashMap<>();
-        Map<String, PropertyColumn> propertyColumns = null;
+        Map<String, Pair<PropertyDefinition, Object>> propertyDefinitionValueMap = new HashMap<>();
+        Map<String, PropertyColumn> propertyColumns;
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology()
                 .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
                 .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found in schema %s", this.table, this.schema)));
@@ -165,11 +165,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
                 PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
-                Pair<PropertyType, Object> propertyColumnObjectPair = Pair.of(propertyColumn.getPropertyType(), keyValueEntry.getValue());
-                propertyTypeValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
+                Pair<PropertyDefinition, Object> propertyColumnObjectPair = Pair.of(propertyColumn.getPropertyDefinition(), keyValueEntry.getValue());
+                propertyDefinitionValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
             }
         }
-        writeColumnNames(propertyTypeValueMap, sql);
+        writeColumnNames(propertyDefinitionValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -217,7 +217,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             }
         }
         sql.append(") VALUES (");
-        writeColumnParameters(propertyTypeValueMap, sql);
+        writeColumnParameters(propertyDefinitionValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -234,7 +234,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyTypeValueMap);
+            i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyDefinitionValueMap);
 
             if (inVertexLabel.getIdentifiers().isEmpty()) {
                 preparedStatement.setLong(i++, this.inVertex.recordId.sequenceId());
@@ -246,7 +246,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                                 false,
                                 i,
                                 preparedStatement,
-                                ImmutablePair.of(inVertexLabel.getProperty(identifier).orElseThrow(() -> new IllegalStateException(String.format("identifier %s not a property.", identifier))).getPropertyType(), inVertex.value(identifier)));
+                                ImmutablePair.of(inVertexLabel.getProperty(identifier).orElseThrow(() -> new IllegalStateException(String.format("identifier %s not a property.", identifier))).getPropertyDefinition(), inVertex.value(identifier)));
                     }
                 }
             }
@@ -260,7 +260,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                                 false,
                                 i,
                                 preparedStatement,
-                                ImmutablePair.of(outVertexLabel.getProperty(identifier).orElseThrow(() -> new IllegalStateException(String.format("identifier %s not a property.", identifier))).getPropertyType(), outVertex.value(identifier)));
+                                ImmutablePair.of(outVertexLabel.getProperty(identifier).orElseThrow(() -> new IllegalStateException(String.format("identifier %s not a property.", identifier))).getPropertyDefinition(), outVertex.value(identifier)));
                     }
                 }
             }
@@ -276,7 +276,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 List<Comparable> identifiers = new ArrayList<>();
                 for (String identifier : edgeLabel.getIdentifiers()) {
                     //noinspection unchecked
-                    identifiers.add((Comparable<Object>) propertyTypeValueMap.get(identifier).getRight());
+                    identifiers.add((Comparable<Object>) propertyDefinitionValueMap.get(identifier).getRight());
                 }
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
             }

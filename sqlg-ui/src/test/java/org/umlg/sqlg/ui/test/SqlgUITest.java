@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
@@ -32,11 +33,11 @@ public class SqlgUITest extends BaseTest {
         aVertex.addEdge("diesAt", nowhere, "createdOn", LocalDateTime.now());
 
         VertexLabel test1VertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Test1", new LinkedHashMap<>() {{
-                    put("name1", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
-                    put("name3", PropertyType.STRING);
-                    put("surname", PropertyType.STRING);
-                    put("age", PropertyType.LONG);
+                    put("name1", PropertyDefinition.of(PropertyType.STRING));
+                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name3", PropertyDefinition.of(PropertyType.STRING));
+                    put("surname", PropertyDefinition.of(PropertyType.STRING));
+                    put("age", PropertyDefinition.of(PropertyType.LONG));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2", "name3"))
         );
@@ -44,11 +45,11 @@ public class SqlgUITest extends BaseTest {
         test1VertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(name1PropertyColumnOpt.get()));
 
         VertexLabel test2VertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Test2", new LinkedHashMap<>() {{
-                    put("name1", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
-                    put("name3", PropertyType.STRING);
-                    put("surname", PropertyType.STRING);
-                    put("age", PropertyType.LONG);
+                    put("name1", PropertyDefinition.of(PropertyType.STRING));
+                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name3", PropertyDefinition.of(PropertyType.STRING));
+                    put("surname", PropertyDefinition.of(PropertyType.STRING));
+                    put("age", PropertyDefinition.of(PropertyType.LONG));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2", "name3"))
         );
@@ -57,8 +58,8 @@ public class SqlgUITest extends BaseTest {
         test1VertexLabel.ensureIndexExists(IndexType.UNIQUE, List.of(name1PropertyColumnOpt.get(), name2PropertyColumnOpt.get()));
 
         EdgeLabel loveEdgeLabel = test1VertexLabel.ensureEdgeLabelExist("loves", test2VertexLabel, new HashMap<>() {{
-            put("p1", PropertyType.STRING);
-            put("p2", PropertyType.STRING);
+            put("p1", PropertyDefinition.of(PropertyType.STRING));
+            put("p2", PropertyDefinition.of(PropertyType.STRING));
         }});
         Optional<PropertyColumn> p1PropertyColumn = loveEdgeLabel.getProperty("p1");
         Optional<PropertyColumn> p2PropertyColumn = loveEdgeLabel.getProperty("p2");
@@ -70,10 +71,10 @@ public class SqlgUITest extends BaseTest {
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.LIST,

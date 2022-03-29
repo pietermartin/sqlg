@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -37,8 +38,8 @@ public class TestDeletedVertex extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("name", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
                 );
@@ -57,9 +58,9 @@ public class TestDeletedVertex extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("name", PropertyType.varChar(100));
-                            put("uid", PropertyType.varChar(100));
+                        new HashMap<>() {{
+                            put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("name", "uid"))
                 );
@@ -90,28 +91,28 @@ public class TestDeletedVertex extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Dog",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "friend",
                 dogVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -139,28 +140,28 @@ public class TestDeletedVertex extends BaseTest {
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Dog",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid1", PropertyType.varChar(100));
-                            put("uid2", PropertyType.varChar(100));
-                            put("name", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("uid2", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "uid2"))
                 );
         personVertexLabel.ensureEdgeLabelExist(
                 "friend",
                 dogVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );

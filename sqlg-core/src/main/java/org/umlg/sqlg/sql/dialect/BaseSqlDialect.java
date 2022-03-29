@@ -130,7 +130,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
             VertexLabel vertexLabel = null;
             Map<String, PropertyColumn> propertyColumns = null;
-            Map<String, PropertyType> properties = null;
+            Map<String, PropertyDefinition> properties = null;
             if (!schemaTable.isTemporary()) {
                 vertexLabel = sqlgGraph.getTopology()
                         .getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", schemaTable.getSchema())))
@@ -140,25 +140,25 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 properties = sqlgGraph.getTopology().getPublicSchema().getTemporaryTable(VERTEX_PREFIX + schemaTable.getTable());
             }
             if (!columns.isEmpty()) {
-                Map<String, PropertyType> propertyTypeMap = new HashMap<>();
+                Map<String, PropertyDefinition> propertyDefinitionMap = new HashMap<>();
                 for (String column : columns) {
                     if (!schemaTable.isTemporary()) {
                         PropertyColumn propertyColumn = propertyColumns.get(column);
-                        propertyTypeMap.put(column, propertyColumn.getPropertyType());
+                        propertyDefinitionMap.put(column, propertyColumn.getPropertyDefinition());
                     } else {
-                        propertyTypeMap.put(column, properties.get(column));
+                        propertyDefinitionMap.put(column, properties.get(column));
                     }
                 }
                 sql.append(" (");
                 int i = 1;
                 //noinspection Duplicates
                 for (String column : columns) {
-                    PropertyType propertyType = propertyTypeMap.get(column);
-                    String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                    PropertyDefinition propertyDefinition = propertyDefinitionMap.get(column);
+                    String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyDefinition.propertyType());
                     int count = 1;
                     for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
                         if (count > 1) {
-                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
+                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyDefinition.propertyType().getPostFixes()[count - 2]));
                         } else {
                             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
                         }
@@ -175,8 +175,8 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                 i = 1;
                 //noinspection Duplicates
                 for (String column : columns) {
-                    PropertyType propertyType = propertyTypeMap.get(column);
-                    String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                    PropertyDefinition propertyDefinition = propertyDefinitionMap.get(column);
+                    String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyDefinition.propertyType());
                     int count = 1;
                     //noinspection Duplicates
                     for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
@@ -212,11 +212,11 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                     sqlgVertices.add(sqlgVertex);
                     if (!columns.isEmpty()) {
                         Map<String, Object> parameterValueMap = rowEntry.getValue();
-                        List<Pair<PropertyType, Object>> typeAndValues = new ArrayList<>();
+                        List<Pair<PropertyDefinition, Object>> typeAndValues = new ArrayList<>();
                         for (String column : columns) {
                             if (!schemaTable.isTemporary()) {
                                 PropertyColumn propertyColumn = propertyColumns.get(column);
-                                typeAndValues.add(Pair.of(propertyColumn.getPropertyType(), parameterValueMap.get(column)));
+                                typeAndValues.add(Pair.of(propertyColumn.getPropertyDefinition(), parameterValueMap.get(column)));
                             } else {
                                 typeAndValues.add(Pair.of(properties.get(column), parameterValueMap.get(column)));
                             }
@@ -258,7 +258,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
             VertexLabel inVertexLabel = sqlgGraph.getTopology().getVertexLabel(inSchemaTable.getSchema(), inSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel not found for %s.%s", inSchemaTable.getSchema(), inSchemaTable.getTable())));
 
             Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
+            Map<String, PropertyDefinition> propertyDefinitionMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
             SortedSet<String> columns = triples.getLeft();
             Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> rows = triples.getRight();
 
@@ -275,12 +275,12 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
             int i = 1;
             for (String column : columns) {
-                PropertyType propertyType = propertyTypeMap.get(column);
-                String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                PropertyDefinition propertyDefinition = propertyDefinitionMap.get(column);
+                String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyDefinition.propertyType());
                 int count = 1;
                 for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
                     if (count > 1) {
-                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
+                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyDefinition.propertyType().getPostFixes()[count - 2]));
                     } else {
                         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
                     }
@@ -322,8 +322,8 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
 
             i = 1;
             for (String column : columns) {
-                PropertyType propertyType = propertyTypeMap.get(column);
-                String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                PropertyDefinition propertyDefinition = propertyDefinitionMap.get(column);
+                String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyDefinition.propertyType());
                 int count = 1;
                 //noinspection Duplicates
                 for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
@@ -381,10 +381,10 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                     SqlgEdge sqlgEdge = rowEntry.getKey();
                     sqlgEdges.add(sqlgEdge);
                     Triple<SqlgVertex, SqlgVertex, Map<String, Object>> parameterValueMap = rowEntry.getValue();
-                    List<Pair<PropertyType, Object>> typeAndValues = new ArrayList<>();
+                    List<Pair<PropertyDefinition, Object>> typeAndValues = new ArrayList<>();
                     for (String column : columns) {
                         PropertyColumn propertyColumn = propertyColumns.get(column);
-                        typeAndValues.add(Pair.of(propertyColumn.getPropertyType(), parameterValueMap.getRight().get(column)));
+                        typeAndValues.add(Pair.of(propertyColumn.getPropertyDefinition(), parameterValueMap.getRight().get(column)));
                     }
                     i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, typeAndValues);
 
@@ -399,7 +399,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                                     preparedStatement,
                                     ImmutablePair.of(outVertexLabel.getProperty(identifier).orElseThrow(
                                             () -> new IllegalStateException(String.format("Property for identifier %s not found", identifier))
-                                    ).getPropertyType(), parameterValueMap.getLeft().value(identifier)));
+                                    ).getPropertyDefinition(), parameterValueMap.getLeft().value(identifier)));
                         }
                     }
                     if (inVertexLabel.hasIDPrimaryKey()) {
@@ -413,7 +413,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                                     preparedStatement,
                                     ImmutablePair.of(inVertexLabel.getProperty(identifier).orElseThrow(
                                             () -> new IllegalStateException(String.format("Property for identifier %s not found", identifier))
-                                    ).getPropertyType(), parameterValueMap.getMiddle().value(identifier)));
+                                    ).getPropertyDefinition(), parameterValueMap.getMiddle().value(identifier)));
                         }
                     }
                     if (!edgeLabel.hasIDPrimaryKey()) {
@@ -460,21 +460,21 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                     .getVertexLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", schemaTable.getTable())));
             Map<String, PropertyColumn> propertyColumns = vertexLabel.getProperties();
             if (!columns.isEmpty()) {
-                Map<String, PropertyType> propertyTypeMap = new HashMap<>();
+                Map<String, PropertyDefinition> propertyDefinitionMap = new HashMap<>();
                 for (String column : columns) {
                     PropertyColumn propertyColumn = propertyColumns.get(column);
-                    propertyTypeMap.put(column, propertyColumn.getPropertyType());
+                    propertyDefinitionMap.put(column, propertyColumn.getPropertyDefinition());
                 }
                 sql.append(" ");
                 int i = 1;
                 //noinspection Duplicates
                 for (String column : columns) {
-                    PropertyType propertyType = propertyTypeMap.get(column);
-                    String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                    PropertyDefinition propertyDefinition = propertyDefinitionMap.get(column);
+                    String[] sqlDefinitions = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyDefinition.propertyType());
                     int count = 1;
                     for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
                         if (count > 1) {
-                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
+                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyDefinition.propertyType().getPostFixes()[count - 2]));
                             sql.append(" = ?");
                         } else {
                             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
@@ -512,7 +512,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                     SqlgVertex sqlgVertex = rowEntry.getKey();
                     if (!columns.isEmpty()) {
                         Map<String, Object> parameterValueMap = rowEntry.getValue();
-                        List<Pair<PropertyType, Object>> typeAndValues = new ArrayList<>();
+                        List<Pair<PropertyDefinition, Object>> typeAndValues = new ArrayList<>();
                         for (String column : columns) {
                             PropertyColumn propertyColumn = propertyColumns.get(column);
                             Object value = parameterValueMap.get(column);
@@ -524,7 +524,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                                     value = null;
                                 }
                             }
-                            typeAndValues.add(Pair.of(propertyColumn.getPropertyType(), value));
+                            typeAndValues.add(Pair.of(propertyColumn.getPropertyDefinition(), value));
                         }
                         i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, typeAndValues);
                         RecordId recordId = ((RecordId) sqlgVertex.id());
@@ -617,7 +617,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                     SqlgEdge sqlgEdge = rowEntry.getKey();
                     if (!columns.isEmpty()) {
                         Map<String, Object> parameterValueMap = rowEntry.getValue();
-                        List<Pair<PropertyType, Object>> typeAndValues = new ArrayList<>();
+                        List<Pair<PropertyDefinition, Object>> typeAndValues = new ArrayList<>();
                         for (String column : columns) {
                             PropertyColumn propertyColumn = propertyColumns.get(column);
                             Object value = parameterValueMap.get(column);
@@ -629,7 +629,7 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                                     value = null;
                                 }
                             }
-                            typeAndValues.add(Pair.of(propertyColumn.getPropertyType(), value));
+                            typeAndValues.add(Pair.of(propertyColumn.getPropertyDefinition(), value));
                         }
                         i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, typeAndValues);
                         RecordId recordId = (RecordId) sqlgEdge.id();

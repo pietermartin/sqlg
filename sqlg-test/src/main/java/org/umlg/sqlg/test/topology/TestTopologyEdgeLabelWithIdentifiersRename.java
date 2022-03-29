@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.TopologyChangeAction;
 import org.umlg.sqlg.structure.TopologyInf;
@@ -66,23 +67,23 @@ public class TestTopologyEdgeLabelWithIdentifiersRename extends BaseTest {
         Schema schema2 = this.sqlgGraph.getTopology().ensureSchemaExist(this.schema2);
 
         VertexLabel aVertexLabel = schema1.ensureVertexLabelExist("A", new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = schema2.ensureVertexLabelExist("B", new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         EdgeLabel abEdgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                    put("id1", PropertyType.varChar(10));
-                    put("id2", PropertyType.varChar(10));
-                    put("a", PropertyType.varChar(10));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );

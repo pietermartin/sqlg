@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -23,10 +24,10 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
     public void testSimpleVertexInsertAndUpdateAndQuery() {
         this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
@@ -68,25 +69,25 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "B",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
@@ -112,25 +113,25 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "B",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(100));
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );
         aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(100));
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("name"))
         );

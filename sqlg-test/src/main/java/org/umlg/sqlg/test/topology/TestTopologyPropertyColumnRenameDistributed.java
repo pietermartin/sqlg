@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
@@ -44,7 +45,7 @@ public class TestTopologyPropertyColumnRenameDistributed extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             sqlgGraph1.getTopology().getPublicSchema()
                     .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
-                        put("column1", PropertyType.STRING);
+                        put("column1", PropertyDefinition.of(PropertyType.STRING));
                     }});
             sqlgGraph1.tx().commit();
             Optional<VertexLabel> aVertexLabelOptional = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A");
@@ -70,8 +71,8 @@ public class TestTopologyPropertyColumnRenameDistributed extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             sqlgGraph1.getTopology().getPublicSchema()
                     .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
-                        put("column1", PropertyType.STRING);
-                        put("column2", PropertyType.STRING);
+                        put("column1", PropertyDefinition.of(PropertyType.STRING));
+                        put("column2", PropertyDefinition.of(PropertyType.STRING));
                     }}, ListOrderedSet.listOrderedSet(List.of("column1")));
             sqlgGraph1.tx().commit();
 

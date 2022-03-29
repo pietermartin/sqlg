@@ -8,9 +8,7 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import static org.apache.tinkerpop.gremlin.AbstractGremlinTest.assertVertexEdgeCounts;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/09/24

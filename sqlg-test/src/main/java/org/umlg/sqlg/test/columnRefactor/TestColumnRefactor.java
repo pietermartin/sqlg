@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -98,11 +99,11 @@ public class TestColumnRefactor extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid", PropertyType.varChar(100));
-                            put("name1", PropertyType.STRING);
-                            put("name2", PropertyType.STRING);
-                            put("name3", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name1", PropertyDefinition.of(PropertyType.STRING));
+                            put("name2", PropertyDefinition.of(PropertyType.STRING));
+                            put("name3", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
                 );
@@ -176,9 +177,9 @@ public class TestColumnRefactor extends BaseTest {
     public void testDuplicatePath() {
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new HashMap<String, PropertyType>(){{
-                    put("name", PropertyType.varChar(100));
-                    put("surname", PropertyType.varChar(100));
+                new HashMap<>(){{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("surname", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("name", "surname"))
         );
@@ -186,8 +187,8 @@ public class TestColumnRefactor extends BaseTest {
         EdgeLabel livesAt = person.ensureEdgeLabelExist(
                 "loves",
                 person,
-                new HashMap<String, PropertyType>() {{
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraph.tx().commit();

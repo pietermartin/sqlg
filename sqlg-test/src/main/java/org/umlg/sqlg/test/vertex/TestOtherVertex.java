@@ -1,15 +1,5 @@
 package org.umlg.sqlg.test.vertex;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -18,6 +8,13 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.BatchManager.BatchModeType;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import static org.junit.Assert.*;
 
 /**
  * Date: 2015/11/19

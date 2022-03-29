@@ -11,6 +11,7 @@ import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -261,7 +262,7 @@ public class TestBatchStreamEdge extends BaseTest {
         List<Vertex> men = this.sqlgGraph.traversal().V().hasLabel("Man").toList();
         List<Vertex> females = this.sqlgGraph.traversal().V().hasLabel("Female").toList();
         LinkedHashMap<String, Object> edgeKeyValues = new LinkedHashMap<>();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         edgeKeyValues.put("localDateTime", now);
         for (Vertex man : men) {
             SqlgVertex female = (SqlgVertex) females.get(count++);
@@ -387,7 +388,7 @@ public class TestBatchStreamEdge extends BaseTest {
         List<Vertex> men = this.sqlgGraph.traversal().V().hasLabel("Man").toList();
         List<Vertex> females = this.sqlgGraph.traversal().V().hasLabel("Female").toList();
         LinkedHashMap<String, Object> edgeKeyValues = new LinkedHashMap<>();
-        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        ZonedDateTime zonedDateTime = ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         edgeKeyValues.put("zonedDateTime", zonedDateTime);
         for (Vertex man : men) {
             SqlgVertex female = (SqlgVertex) females.get(count++);

@@ -278,29 +278,14 @@ public interface SqlDialect {
                     Array array = (Array) o;
                     int baseType = array.getBaseType();
                     switch (baseType) {
-                        case Types.BIT:
-                            metaNode.put("type", PropertyType.boolean_ARRAY.name());
-                            break;
-                        case Types.SMALLINT:
-                            metaNode.put("type", PropertyType.short_ARRAY.name());
-                            break;
-                        case Types.INTEGER:
-                            metaNode.put("type", PropertyType.int_ARRAY.name());
-                            break;
-                        case Types.BIGINT:
-                            metaNode.put("type", PropertyType.long_ARRAY.name());
-                            break;
-                        case Types.REAL:
-                            metaNode.put("type", PropertyType.float_ARRAY.name());
-                            break;
-                        case Types.DOUBLE:
-                            metaNode.put("type", PropertyType.double_ARRAY.name());
-                            break;
-                        case Types.VARCHAR:
-                            metaNode.put("type", PropertyType.STRING_ARRAY.name());
-                            break;
-                        default:
-                            throw new IllegalStateException("Unknown array sqlType " + sqlType);
+                        case Types.BIT -> metaNode.put("type", PropertyType.boolean_ARRAY.name());
+                        case Types.SMALLINT -> metaNode.put("type", PropertyType.short_ARRAY.name());
+                        case Types.INTEGER -> metaNode.put("type", PropertyType.int_ARRAY.name());
+                        case Types.BIGINT -> metaNode.put("type", PropertyType.long_ARRAY.name());
+                        case Types.REAL -> metaNode.put("type", PropertyType.float_ARRAY.name());
+                        case Types.DOUBLE -> metaNode.put("type", PropertyType.double_ARRAY.name());
+                        case Types.VARCHAR -> metaNode.put("type", PropertyType.STRING_ARRAY.name());
+                        default -> throw new IllegalStateException("Unknown array sqlType " + sqlType);
                     }
                     break;
                 default:

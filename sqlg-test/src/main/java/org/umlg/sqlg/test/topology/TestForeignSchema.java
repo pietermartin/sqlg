@@ -16,6 +16,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -191,7 +192,7 @@ public class TestForeignSchema extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraph.tx().commit();
@@ -201,7 +202,7 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel bVertexLabel = b.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("b", PropertyType.STRING);
+                    put("b", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraphFdw.tx().commit();
@@ -232,7 +233,7 @@ public class TestForeignSchema extends BaseTest {
         try {
             foreignSchema.ensureVertexLabelExist("D",
                     new LinkedHashMap<>() {{
-                        put("d", PropertyType.STRING);
+                        put("d", PropertyDefinition.of(PropertyType.STRING));
                     }});
         } catch (Exception e) {
             Assert.assertTrue(e instanceof IllegalStateException);
@@ -244,12 +245,12 @@ public class TestForeignSchema extends BaseTest {
         try {
             bVertexLabel = foreignSchema.getVertexLabel("B").orElseThrow();
             Map<String, PropertyColumn> properties = bVertexLabel.getProperties();
-            Map<String, PropertyType> propertyTypeMap = new HashMap<>();
+            Map<String, PropertyDefinition> propertyDefinitionMap = new HashMap<>();
             for (String p : properties.keySet()) {
-                propertyTypeMap.put(p, properties.get(p).getPropertyType());
+                propertyDefinitionMap.put(p, properties.get(p).getPropertyDefinition());
             }
-            propertyTypeMap.put("bb", PropertyType.STRING);
-            bVertexLabel.ensurePropertiesExist(propertyTypeMap);
+            propertyDefinitionMap.put("bb", PropertyDefinition.of(PropertyType.STRING));
+            bVertexLabel.ensurePropertiesExist(propertyDefinitionMap);
         } catch (Exception e) {
             Assert.assertTrue(e instanceof IllegalStateException);
             Assert.assertEquals("'B' is a read only foreign VertexLabel!", e.getMessage());
@@ -267,7 +268,7 @@ public class TestForeignSchema extends BaseTest {
         List<Vertex> aVertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(1, aVertices.size());
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C", new LinkedHashMap<>() {{
-            put("c", PropertyType.STRING);
+            put("c", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.tx().commit();
 
@@ -288,17 +289,17 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = aSchema.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraphFdw.tx().commit();
         Vertex a = this.sqlgGraphFdw.addVertex(T.label, "A.A", "a", "haloA");
@@ -360,7 +361,7 @@ public class TestForeignSchema extends BaseTest {
         boolean failed = false;
         try {
             aForeignSchema.ensureVertexLabelExist("C", new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
         } catch (Exception e) {
             Assert.assertTrue(e instanceof IllegalStateException);
@@ -373,11 +374,11 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel cVertexLabel = aSchema.ensureVertexLabelExist(
                 "C",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ac", cVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraphFdw.tx().commit();
 
@@ -385,7 +386,7 @@ public class TestForeignSchema extends BaseTest {
         failed = false;
         try {
             aForeignVertexLabel.ensureEdgeLabelExist("bc", cVertexLabel, new HashMap<>() {{
-                put("a", PropertyType.STRING);
+                put("a", PropertyDefinition.of(PropertyType.STRING));
             }});
         } catch (Exception e) {
             Assert.assertTrue(e instanceof IllegalStateException);
@@ -463,17 +464,17 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = aSchema.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraphFdw.tx().commit();
         this.sqlgGraph.getTopology().importForeignSchemas(Set.of(aSchema));
@@ -491,17 +492,17 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraphFdw.tx().commit();
         Vertex a = this.sqlgGraphFdw.addVertex(T.label, "A.A", "a", "haloA");
@@ -547,17 +548,17 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraphFdw.tx().commit();
         Vertex a = this.sqlgGraphFdw.addVertex(T.label, "A.A", "a", "haloA");
@@ -603,17 +604,17 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraphFdw.tx().commit();
         Vertex a = this.sqlgGraphFdw.addVertex(T.label, "A.A", "a", "haloA");
@@ -691,18 +692,18 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraphFdw.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = this.sqlgGraphFdw.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         @SuppressWarnings("unused")
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         Vertex a = this.sqlgGraphFdw.addVertex(T.label, "A", "a", "halo A");
         Vertex b = this.sqlgGraphFdw.addVertex(T.label, "B", "a", "halo B");
@@ -755,22 +756,22 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraphFdw.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = this.sqlgGraphFdw.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         @SuppressWarnings("unused")
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         @SuppressWarnings("unused")
         EdgeLabel baEdgeLabel = bVertexLabel.ensureEdgeLabelExist("ba", aVertexLabel, new HashMap<>() {{
-            put("a", PropertyType.STRING);
+            put("a", PropertyDefinition.of(PropertyType.STRING));
         }});
         Vertex a = this.sqlgGraphFdw.addVertex(T.label, "A", "a", "halo A");
         Vertex b = this.sqlgGraphFdw.addVertex(T.label, "B", "a", "halo B");
@@ -977,7 +978,7 @@ public class TestForeignSchema extends BaseTest {
         this.sqlgGraphFdw.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("a", PropertyType.STRING);
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         this.sqlgGraphFdw.tx().commit();
@@ -1028,8 +1029,8 @@ public class TestForeignSchema extends BaseTest {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uuid", PropertyType.UUID);
-                    put("a", PropertyType.STRING);
+                    put("uuid", PropertyDefinition.of(PropertyType.UUID));
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uuid"))
         );
@@ -1040,8 +1041,8 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel bVertexLabel = b.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uuid", PropertyType.UUID);
-                    put("b", PropertyType.STRING);
+                    put("uuid", PropertyDefinition.of(PropertyType.UUID));
+                    put("b", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uuid"))
         );
@@ -1073,7 +1074,7 @@ public class TestForeignSchema extends BaseTest {
         try {
             foreignSchema.ensureVertexLabelExist("D",
                     new LinkedHashMap<>() {{
-                        put("d", PropertyType.STRING);
+                        put("d", PropertyDefinition.of(PropertyType.STRING));
                     }});
         } catch (Exception e) {
             Assert.assertTrue(e instanceof IllegalStateException);
@@ -1085,12 +1086,12 @@ public class TestForeignSchema extends BaseTest {
         try {
             bVertexLabel = foreignSchema.getVertexLabel("B").orElseThrow();
             Map<String, PropertyColumn> properties = bVertexLabel.getProperties();
-            Map<String, PropertyType> propertyTypeMap = new HashMap<>();
+            Map<String, PropertyDefinition> propertyDefinitionMap = new HashMap<>();
             for (String p : properties.keySet()) {
-                propertyTypeMap.put(p, properties.get(p).getPropertyType());
+                propertyDefinitionMap.put(p, properties.get(p).getPropertyDefinition());
             }
-            propertyTypeMap.put("bb", PropertyType.STRING);
-            bVertexLabel.ensurePropertiesExist(propertyTypeMap);
+            propertyDefinitionMap.put("bb", PropertyDefinition.of(PropertyType.STRING));
+            bVertexLabel.ensurePropertiesExist(propertyDefinitionMap);
         } catch (Exception e) {
             Assert.assertTrue(e instanceof IllegalStateException);
             Assert.assertEquals("'B' is a read only foreign VertexLabel!", e.getMessage());
@@ -1108,7 +1109,7 @@ public class TestForeignSchema extends BaseTest {
         List<Vertex> aVertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(1, aVertices.size());
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C", new LinkedHashMap<>() {{
-            put("c", PropertyType.STRING);
+            put("c", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.tx().commit();
 
@@ -1133,22 +1134,22 @@ public class TestForeignSchema extends BaseTest {
         VertexLabel aVertexLabel = a.ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uuid", PropertyType.UUID);
-                    put("name", PropertyType.STRING);
+                    put("uuid", PropertyDefinition.of(PropertyType.UUID));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uuid"))
         );
         VertexLabel bVertexLabel = a.ensureVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uuid", PropertyType.UUID);
-                    put("name", PropertyType.STRING);
+                    put("uuid", PropertyDefinition.of(PropertyType.UUID));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uuid"))
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new HashMap<>() {{
-                    put("uuid", PropertyType.UUID);
+                    put("uuid", PropertyDefinition.of(PropertyType.UUID));
                 }},
                 ListOrderedSet.listOrderedSet(Set.of("uuid"))
         );

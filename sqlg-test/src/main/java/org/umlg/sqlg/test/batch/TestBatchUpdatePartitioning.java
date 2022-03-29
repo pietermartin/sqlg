@@ -4,6 +4,7 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.PartitionType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -38,11 +39,11 @@ public class TestBatchUpdatePartitioning extends BaseTest {
     public void updatePartitionedTable() {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "A",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("uid1", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
-                    put("other", PropertyType.STRING);
-                    put("other2", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("other", PropertyDefinition.of(PropertyType.STRING));
+                    put("other2", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid1", "name")),
                 PartitionType.LIST,

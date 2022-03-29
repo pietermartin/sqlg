@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.PropertyColumn;
@@ -51,11 +52,11 @@ public class TestShardingGremlin extends BaseTest {
         @SuppressWarnings("Duplicates")
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new HashMap<String, PropertyType>(){{
-                    put("uid", PropertyType.STRING);
-                    put("name", PropertyType.STRING);
-                    put("surname", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>(){{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("surname", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );
@@ -64,11 +65,11 @@ public class TestShardingGremlin extends BaseTest {
 
         VertexLabel address = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Address",
-                new HashMap<String, PropertyType>(){{
-                    put("uid", PropertyType.STRING);
-                    put("street", PropertyType.STRING);
-                    put("suburb", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>(){{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("street", PropertyDefinition.of(PropertyType.STRING));
+                    put("suburb", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );
@@ -79,9 +80,9 @@ public class TestShardingGremlin extends BaseTest {
         EdgeLabel livesAt = person.ensureEdgeLabelExist(
                 "livesAt",
                 address,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );
@@ -158,11 +159,11 @@ public class TestShardingGremlin extends BaseTest {
         @SuppressWarnings("Duplicates")
         VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "Person",
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("name", PropertyType.STRING);
-                    put("surname", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("surname", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );
@@ -171,9 +172,9 @@ public class TestShardingGremlin extends BaseTest {
         EdgeLabel livesAt = person.ensureEdgeLabelExist(
                 "loves",
                 person,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );
@@ -215,22 +216,22 @@ public class TestShardingGremlin extends BaseTest {
     public void testDuplicatePath2() throws InterruptedException {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
-                new HashMap<String, PropertyType>(){{
-                    put("uid", PropertyType.STRING);
-                    put("name", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>(){{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );
         aVertexLabel.ensureDistributed(4, aVertexLabel.getProperty("country").orElseThrow(IllegalStateException::new));
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
-                new HashMap<String, PropertyType>(){{
-                    put("uid", PropertyType.STRING);
-                    put("name", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>(){{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );
@@ -239,9 +240,9 @@ public class TestShardingGremlin extends BaseTest {
         EdgeLabel livesAt = aVertexLabel.ensureEdgeLabelExist(
                 "ab",
                 bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.STRING);
-                    put("country", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("country", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "country"))
         );

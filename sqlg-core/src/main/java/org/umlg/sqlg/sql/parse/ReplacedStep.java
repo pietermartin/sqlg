@@ -19,7 +19,6 @@ import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.strategy.TopologyStrategy;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.ForeignKey;
 import org.umlg.sqlg.structure.topology.Topology;
@@ -88,8 +87,8 @@ public class ReplacedStep<S, E> {
     /**
      * Used for SqlgVertexStepStrategy. It is a fake ReplacedStep to simulate the incoming vertex from which the traversal continues.
      *
-     * @param topology
-     * @return
+     * @param topology A reference to the topology
+     * @return The ReplacedStep
      */
     public static ReplacedStep from(Topology topology) {
         ReplacedStep replacedStep = new ReplacedStep<>();
@@ -167,7 +166,7 @@ public class ReplacedStep<S, E> {
     private Set<SchemaTableTree> appendPathForVertexStep(SchemaTableTree schemaTableTree) {
         Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found " + schemaTableTree.getSchemaTable().getTable());
 
-        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
+        Map<String, Map<String, PropertyDefinition>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
 
         Set<SchemaTableTree> result = new HashSet<>();
         Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.topology.getTableLabels(schemaTableTree.getSchemaTable());
@@ -182,20 +181,19 @@ public class ReplacedStep<S, E> {
         Set<SchemaTable> inEdgeLabelsToTraversers;
         Set<SchemaTable> outEdgeLabelsToTraversers;
         switch (vertexStep.getDirection()) {
-            case IN:
+            case IN -> {
                 inEdgeLabelsToTraversers = filterVertexStepOnEdgeLabels(inEdgeLabels, edgeLabels);
                 outEdgeLabelsToTraversers = new HashSet<>();
-                break;
-            case OUT:
+            }
+            case OUT -> {
                 outEdgeLabelsToTraversers = filterVertexStepOnEdgeLabels(outEdgeLabels, edgeLabels);
                 inEdgeLabelsToTraversers = new HashSet<>();
-                break;
-            case BOTH:
+            }
+            case BOTH -> {
                 inEdgeLabelsToTraversers = edgeLabels.length > 0 ? filterVertexStepOnEdgeLabels(inEdgeLabels, edgeLabels) : inEdgeLabels;
                 outEdgeLabelsToTraversers = edgeLabels.length > 0 ? filterVertexStepOnEdgeLabels(outEdgeLabels, edgeLabels) : outEdgeLabels;
-                break;
-            default:
-                throw new IllegalStateException("Unknown direction " + direction.name());
+            }
+            default -> throw new IllegalStateException("Unknown direction " + direction.name());
         }
 
         Map<SchemaTable, List<Multimap<BiPredicate<?, ?>, RecordId>>> groupedIds = groupIdsBySchemaTable();
@@ -483,7 +481,7 @@ public class ReplacedStep<S, E> {
         }
 
         //All tables depending on the strategy, topology tables only or the rest.
-        Map<String, Map<String, PropertyType>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
+        Map<String, Map<String, PropertyDefinition>> filteredAllTables = this.topology.getAllTables(this.isForSqlgSchema);
 
         //Optimization for the simple case of only one label specified.
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
@@ -606,13 +604,13 @@ public class ReplacedStep<S, E> {
         });
     }
 
-    private boolean passesRestrictedProperties(Map<String, PropertyType> propertyTypeMap) {
+    private boolean passesRestrictedProperties(Map<String, PropertyDefinition> propertyDefinitionMap) {
         if (this.isIdOnly() || this.restrictedProperties == null) {
             return true;
         }
         for (String restrictedProperty : this.restrictedProperties) {
-            //or logic, if any property is present its a go
-            if (!Graph.Hidden.isHidden(restrictedProperty) && propertyTypeMap.containsKey(restrictedProperty)) {
+            //or logic, if any property is present it is a go
+            if (!Graph.Hidden.isHidden(restrictedProperty) && propertyDefinitionMap.containsKey(restrictedProperty)) {
                 return true;
             }
         }

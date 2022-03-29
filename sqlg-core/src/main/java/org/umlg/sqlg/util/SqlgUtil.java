@@ -304,39 +304,39 @@ public class SqlgUtil {
                 andOrHasContainer.setParameterOnStatement(keyValueMap, schemaTableTree);
             }
         }
-        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValueMap);
+        List<ImmutablePair<PropertyDefinition, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValueMap);
         //This is for selects
         setKeyValuesAsParameter(sqlgGraph, false, parameterIndex, preparedStatement, typeAndValues);
     }
 
     //This is called for inserts
-    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, int i, PreparedStatement preparedStatement, Map<String, Pair<PropertyType, Object>> properties) throws SQLException {
+    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, int i, PreparedStatement preparedStatement, Map<String, Pair<PropertyDefinition, Object>> properties) throws SQLException {
         i = setKeyValuesAsParameterUsingPropertyColumn(sqlgGraph, true, i, preparedStatement, properties.values());
         return i;
     }
 
-    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<Pair<PropertyType, Object>> typeAndValues) throws SQLException {
-        for (Pair<PropertyType, Object> pair : typeAndValues) {
+    public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<Pair<PropertyDefinition, Object>> typeAndValues) throws SQLException {
+        for (Pair<PropertyDefinition, Object> pair : typeAndValues) {
             parameterStartIndex = setKeyValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, ImmutablePair.of(pair.getLeft(), pair.getRight()));
         }
         return parameterStartIndex;
     }
 
-    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
-        for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
+    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<ImmutablePair<PropertyDefinition, Object>> typeAndValues) throws SQLException {
+        for (ImmutablePair<PropertyDefinition, Object> pair : typeAndValues) {
             parameterStartIndex = setKeyValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, pair);
         }
         return parameterStartIndex;
     }
 
-    public static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, ImmutablePair<PropertyType, Object> pair) throws SQLException {
+    public static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, ImmutablePair<PropertyDefinition, Object> pair) throws SQLException {
         if (pair.right == null) {
-            int[] sqlTypes = sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(pair.left);
+            int[] sqlTypes = sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(pair.left.propertyType());
             for (int sqlType : sqlTypes) {
                 preparedStatement.setNull(parameterStartIndex++, sqlType);
             }
         } else {
-            switch (pair.left.ordinal()) {
+            switch (pair.left.propertyType().ordinal()) {
                 case BOOLEAN_ORDINAL:
                     preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
                     break;
@@ -488,7 +488,7 @@ public class SqlgUtil {
                 case ZONEDDATETIME_ARRAY_ORDINAL:
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     if (mod) {
-                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, Arrays.stream((ZonedDateTime[]) pair.right).map(z -> z.getZone().getId()).toArray()));
+                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(new PropertyDefinition(PropertyType.STRING_ARRAY), Arrays.stream((ZonedDateTime[]) pair.right).map(z -> z.getZone().getId()).toArray()));
                     }
                     break;
                 case DURATION_ARRAY_ORDINAL:
@@ -507,7 +507,7 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
                     break;
                 default:
-                    throw new IllegalStateException("Unhandled type " + pair.left.name());
+                    throw new IllegalStateException("Unhandled type " + pair.left.propertyType().name());
             }
         }
         return parameterStartIndex;
@@ -566,10 +566,10 @@ public class SqlgUtil {
 
     }
 
-    public static ConcurrentHashMap<String, PropertyType> transformToColumnDefinitionMap(Object... keyValues) {
+    public static ConcurrentHashMap<String, PropertyDefinition> transformToColumnDefinitionMap(Object... keyValues) {
         //This is to ensure the keys are unique
         Set<String> keys = new HashSet<>();
-        ConcurrentHashMap<String, PropertyType> result = new ConcurrentHashMap<>();
+        ConcurrentHashMap<String, PropertyDefinition> result = new ConcurrentHashMap<>();
         int i = 1;
         Object key = null;
         for (Object keyValue : keyValues) {
@@ -586,9 +586,9 @@ public class SqlgUtil {
                 keys.add((String) key);
                 if (keyValue == null) {
                     //assume a String for null
-                    result.put((String) key, PropertyType.STRING);
+                    result.put((String) key, new PropertyDefinition(PropertyType.STRING));
                 } else {
-                    result.put((String) key, PropertyType.from(keyValue));
+                    result.put((String) key, new PropertyDefinition(PropertyType.from(keyValue)));
                 }
             }
         }
@@ -605,10 +605,10 @@ public class SqlgUtil {
      * @param keyValues  The key value pairs.
      * @return A Triple with 3 maps.
      */
-    public static Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues) {
+    public static Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues) {
         Map<String, Object> resultAllValues = new LinkedHashMap<>();
         Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
-        Map<String, PropertyType> keyPropertyTypeMap = new LinkedHashMap<>();
+        Map<String, PropertyDefinition> keyPropertyTypeMap = new LinkedHashMap<>();
 
         if (keyValues.length % 2 != 0)
             throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
@@ -628,9 +628,9 @@ public class SqlgUtil {
                 sqlDialect.validateProperty(key, value);
                 if (value != null) {
                     resultNotNullValues.put(key, value);
-                    keyPropertyTypeMap.put(key, PropertyType.from(value));
+                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
                 } else {
-                    keyPropertyTypeMap.put(key, PropertyType.STRING);
+                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.STRING));
                 }
                 resultAllValues.put(key, value);
             }
@@ -638,10 +638,10 @@ public class SqlgUtil {
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
     }
 
-    public static Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
+    public static Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
         Map<String, Object> resultAllValues = new LinkedHashMap<>();
         Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
-        Map<String, PropertyType> keyPropertyTypeMap = new LinkedHashMap<>();
+        Map<String, PropertyDefinition> keyPropertyTypeMap = new LinkedHashMap<>();
 
         if (keyValues.length % 2 != 0)
             throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
@@ -664,9 +664,9 @@ public class SqlgUtil {
                 }
                 if (value != null) {
                     resultNotNullValues.put(key, value);
-                    keyPropertyTypeMap.put(key, PropertyType.from(value));
+                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
                 } else {
-                    keyPropertyTypeMap.put(key, PropertyType.STRING);
+                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.STRING));
                 }
                 resultAllValues.put(key, value);
 
@@ -678,8 +678,8 @@ public class SqlgUtil {
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
     }
 
-    private static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
-        List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
+    private static List<ImmutablePair<PropertyDefinition, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
+        List<ImmutablePair<PropertyDefinition, Object>> result = new ArrayList<>();
         for (Map.Entry<String, Object> entry : keyValues.entries()) {
             Object value = entry.getValue();
             String key = entry.getKey();
@@ -692,7 +692,7 @@ public class SqlgUtil {
             // we transform id in ID
             if (key.equals(T.id.getAccessor()) || "ID".equals(key)) {
                 if (value instanceof Long) {
-                    result.add(ImmutablePair.of(PropertyType.LONG, value));
+                    result.add(ImmutablePair.of(new PropertyDefinition(PropertyType.LONG), value));
                 } else {
                     RecordId id;
                     if (!(value instanceof RecordId)) {
@@ -700,17 +700,17 @@ public class SqlgUtil {
                     } else {
                         id = (RecordId) value;
                     }
-                    result.add(ImmutablePair.of(PropertyType.LONG, id.sequenceId()));
+                    result.add(ImmutablePair.of(new PropertyDefinition(PropertyType.LONG), id.sequenceId()));
                 }
             } else {
-                result.add(ImmutablePair.of(PropertyType.from(value), value));
+                result.add(ImmutablePair.of(new PropertyDefinition(PropertyType.from(value)), value));
             }
         }
         return result;
     }
 
-    public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Map<String, Object> keyValues) {
-        List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
+    public static List<ImmutablePair<PropertyDefinition, Object>> transformToTypeAndValue(Map<String, Object> keyValues) {
+        List<ImmutablePair<PropertyDefinition, Object>> result = new ArrayList<>();
         for (Map.Entry<String, Object> entry : keyValues.entrySet()) {
             Object value = entry.getValue();
             //value
@@ -718,7 +718,7 @@ public class SqlgUtil {
             if (entry.getKey().equals(label)) {
                 continue;
             }
-            result.add(ImmutablePair.of(PropertyType.from(value), value));
+            result.add(ImmutablePair.of(new PropertyDefinition(PropertyType.from(value)), value));
         }
         return result;
     }
@@ -726,19 +726,19 @@ public class SqlgUtil {
     /**
      * This only gets called for array properties
      *
-     * @param propertyType
+     * @param propertyDefinition
      * @param value
      * @return
      */
-    private static Object[] transformArrayToInsertValue(PropertyType propertyType, Object value) {
-        return getArray(propertyType, value);
+    private static Object[] transformArrayToInsertValue(PropertyDefinition propertyDefinition, Object value) {
+        return getArray(propertyDefinition, value);
     }
 
-    private static Object[] getArray(PropertyType propertyType, Object val) {
+    private static Object[] getArray(PropertyDefinition propertyDefinition, Object val) {
         int arrlength = Array.getLength(val);
         Object[] outputArray = new Object[arrlength];
         for (int i = 0; i < arrlength; ++i) {
-            switch (propertyType.ordinal()) {
+            switch (propertyDefinition.propertyType().ordinal()) {
                 case LOCALDATETIME_ARRAY_ORDINAL:
                     outputArray[i] = Timestamp.valueOf((LocalDateTime) Array.get(val, i));
                     break;
@@ -1188,8 +1188,8 @@ public class SqlgUtil {
         List<Comparable> result = new ArrayList<>();
         try {
             for (ColumnList.Column column : columns) {
-                PropertyType propertyType = column.getPropertyType();
-                switch (propertyType.ordinal()) {
+                PropertyDefinition propertyDefinition = column.getPropertyDefinition();
+                switch (propertyDefinition.propertyType().ordinal()) {
                     case STRING_ORDINAL:
                         String s = resultSet.getString(column.getColumnIndex());
                         if (!resultSet.wasNull()) {
@@ -1215,7 +1215,7 @@ public class SqlgUtil {
                         }
                         break;
                     default:
-                        throw new IllegalStateException(String.format("PropertyType %s is not implemented.", propertyType.name()));
+                        throw new IllegalStateException(String.format("PropertyType %s is not implemented.", propertyDefinition.propertyType().name()));
                 }
             }
             return result;

@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.test.BaseTest;
@@ -29,7 +30,7 @@ public class TestMatch extends BaseTest {
         Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();
         aSchema.ensureVertexLabelExist("person",
                 new HashMap<>() {{
-                    put("personid", PropertyType.varChar(100));
+                    put("personid", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("personid"))
         );
@@ -56,8 +57,8 @@ public class TestMatch extends BaseTest {
         Schema aSchema = this.sqlgGraph.getTopology().getPublicSchema();
         aSchema.ensureVertexLabelExist("person",
                 new HashMap<>() {{
-                    put("personid1", PropertyType.varChar(100));
-                    put("personid2", PropertyType.varChar(100));
+                    put("personid1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("personid2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("personid1", "personid2"))
         );

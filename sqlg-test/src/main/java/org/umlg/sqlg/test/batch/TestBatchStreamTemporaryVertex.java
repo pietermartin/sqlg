@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.batch;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -63,8 +64,8 @@ public class TestBatchStreamTemporaryVertex extends BaseTest {
     public void testStreamTemporaryVertexMultipleThreads() throws InterruptedException {
 
         VertexLabel haloVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("halo");
-        haloVertexLabel.ensurePropertiesExist(new HashMap<String, PropertyType>() {{
-            put("this", PropertyType.STRING);
+        haloVertexLabel.ensurePropertiesExist(new HashMap<>() {{
+            put("this", PropertyDefinition.of(PropertyType.STRING));
         }});
         this.sqlgGraph.getTopology().ensureVertexLabelExist("A");
         this.sqlgGraph.tx().commit();
@@ -76,12 +77,12 @@ public class TestBatchStreamTemporaryVertex extends BaseTest {
             @Override
             public void run() {
                 TestBatchStreamTemporaryVertex.this.sqlgGraph.tx().streamingBatchModeOn();
-                TestBatchStreamTemporaryVertex.this.sqlgGraph.streamTemporaryVertex("halo", new LinkedHashMap<String, Object>() {{
+                TestBatchStreamTemporaryVertex.this.sqlgGraph.streamTemporaryVertex("halo", new LinkedHashMap<>() {{
                     put("this", "that");
                 }});
                 countDownLatch1.countDown();
                 System.out.println("countDownLatch1 countDown");
-                TestBatchStreamTemporaryVertex.this.sqlgGraph.streamTemporaryVertex("halo", new LinkedHashMap<String, Object>() {{
+                TestBatchStreamTemporaryVertex.this.sqlgGraph.streamTemporaryVertex("halo", new LinkedHashMap<>() {{
                     put("this", "that");
                 }});
                 try {
@@ -92,7 +93,7 @@ public class TestBatchStreamTemporaryVertex extends BaseTest {
                 //If Topology.temporaryTable has been cleared then the next line will block.
                 //It will block because it will try to create the temp table but the copy command is already in progress.
                 //The copy command needs to finish before the driver will allow any other command to execute.
-                TestBatchStreamTemporaryVertex.this.sqlgGraph.streamTemporaryVertex("halo", new LinkedHashMap<String, Object>() {{
+                TestBatchStreamTemporaryVertex.this.sqlgGraph.streamTemporaryVertex("halo", new LinkedHashMap<>() {{
                     put("this", "that");
                 }});
                 TestBatchStreamTemporaryVertex.this.sqlgGraph.tx().commit();

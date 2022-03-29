@@ -89,10 +89,10 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param properties  The vertex's properties.
      * @param identifiers The vertex or edge's identifiers
      */
-    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers) {
+    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyDefinition> properties, ListOrderedSet<String> identifiers) {
         this.sqlgGraph = sqlgGraph;
         this.label = label;
-        for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
+        for (Map.Entry<String, PropertyDefinition> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
             property.setCommitted(false);
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
@@ -110,12 +110,12 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param partitionType       The partition type. i.e. RANGE or LIST.
      * @param partitionExpression The sql fragment to express the partition column or expression.
      */
-    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
+    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyDefinition> properties, ListOrderedSet<String> identifiers, PartitionType partitionType, String partitionExpression) {
         Preconditions.checkArgument(partitionType == PartitionType.RANGE || partitionType == PartitionType.LIST || partitionType == PartitionType.HASH, "Only RANGE and LIST partitions are supported. Found %s", partitionType.name());
         Preconditions.checkArgument(!partitionExpression.isEmpty(), "partitionExpression may not be an empty string.");
         this.sqlgGraph = sqlgGraph;
         this.label = label;
-        for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
+        for (Map.Entry<String, PropertyDefinition> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
             property.setCommitted(false);
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
@@ -559,14 +559,14 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    Map<String, PropertyType> getPropertyTypeMap() {
-        Map<String, PropertyType> result = new HashMap<>();
+    Map<String, PropertyDefinition> getPropertyDefinitionMap() {
+        Map<String, PropertyDefinition> result = new HashMap<>();
         for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
-            result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyType());
+            result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyDefinition());
         }
         if (getTopology().isSchemaChanged()) {
             for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
-                result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyType());
+                result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyDefinition());
             }
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
@@ -591,13 +591,13 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    static void buildColumns(SqlgGraph sqlgGraph, ListOrderedSet<String> identifiers, Map<String, PropertyType> columns, StringBuilder sql) {
+    static void buildColumns(SqlgGraph sqlgGraph, ListOrderedSet<String> identifiers, Map<String, PropertyDefinition> columns, StringBuilder sql) {
         int i = 1;
         //This is to make the columns sorted
         List<String> keys = new ArrayList<>(columns.keySet());
         //if there are identifiers, do them first.
         for (String identifier : identifiers) {
-            PropertyType propertyType = columns.get(identifier);
+            PropertyType propertyType = columns.get(identifier).propertyType();
             Preconditions.checkState(propertyType != null, "PropertyType is null for %s", identifier);
             int count = 1;
             String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
@@ -622,7 +622,7 @@ public abstract class AbstractLabel implements TopologyInf {
         }
         keys.removeAll(identifiers);
         for (String column : keys) {
-            PropertyType propertyType = columns.get(column);
+            PropertyType propertyType = columns.get(column).propertyType();
             int count = 1;
             String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             for (String sqlDefinition : propertyTypeToSqlDefinition) {
@@ -643,9 +643,9 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    void addColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
+    void addColumn(String schema, String table, ImmutablePair<String, PropertyDefinition> keyValue) {
         int count = 1;
-        String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(keyValue.getRight());
+        String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(keyValue.getRight().propertyType());
         for (String sqlDefinition : propertyTypeToSqlDefinition) {
             StringBuilder sql = new StringBuilder("ALTER TABLE ");
             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
@@ -653,7 +653,7 @@ public abstract class AbstractLabel implements TopologyInf {
             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
             sql.append(" ADD ");
             if (count > 1) {
-                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(keyValue.getLeft() + keyValue.getRight().getPostFixes()[count - 2]));
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(keyValue.getLeft() + keyValue.getRight().propertyType().getPostFixes()[count - 2]));
             } else {
                 //The first column existVertexLabel no postfix
                 sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(keyValue.getLeft()));
@@ -677,9 +677,13 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    void addProperty(Vertex propertyVertex) {
+    void addPropertyColumn(Vertex propertyVertex) {
         Preconditions.checkState(getTopology().isSchemaChanged());
-        PropertyColumn property = new PropertyColumn(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
+        PropertyColumn property = new PropertyColumn(
+                this,
+                propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME),
+                new PropertyDefinition(PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)))
+        );
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
@@ -701,9 +705,13 @@ public abstract class AbstractLabel implements TopologyInf {
         this.distributionColocateAbstractLabel = getSchema().getVertexLabel(colocate.value(SQLG_SCHEMA_VERTEX_LABEL_NAME)).orElseThrow(() -> new IllegalStateException("Distribution Co-locate vertex label %s not found", colocate.value(SQLG_SCHEMA_VERTEX_LABEL_NAME)));
     }
 
-    void addDistributionProperty(Vertex distributionProperty) {
+    void addDistributionPropertyColumn(Vertex distributionProperty) {
         Preconditions.checkState(this.getTopology().isSchemaChanged());
-        this.distributionPropertyColumn = new PropertyColumn(this, distributionProperty.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(distributionProperty.value(SQLG_SCHEMA_PROPERTY_TYPE)));
+        this.distributionPropertyColumn = new PropertyColumn(
+                this,
+                distributionProperty.value(SQLG_SCHEMA_PROPERTY_NAME),
+                new PropertyDefinition(PropertyType.valueOf(distributionProperty.value(SQLG_SCHEMA_PROPERTY_TYPE)))
+        );
     }
 
     Partition addPartition(Vertex partitionVertex) {
@@ -976,7 +984,7 @@ public abstract class AbstractLabel implements TopologyInf {
         ArrayNode renamedIdentifiersNode = (ArrayNode) vertexLabelJson.get("renamedIdentifiers");
         if (renamedIdentifiersNode != null) {
             for (JsonNode identifierNode : renamedIdentifiersNode) {
-                ObjectNode identifierObjectNode = (ObjectNode)identifierNode;
+                ObjectNode identifierObjectNode = (ObjectNode) identifierNode;
                 String oldIdentifier = identifierObjectNode.get("old").asText();
                 String newIdentifier = identifierObjectNode.get("new").asText();
                 this.identifiers.remove(oldIdentifier);
@@ -1068,10 +1076,9 @@ public abstract class AbstractLabel implements TopologyInf {
         if (o == null) {
             return false;
         }
-        if (!(o instanceof AbstractLabel)) {
+        if (!(o instanceof AbstractLabel other)) {
             return false;
         }
-        AbstractLabel other = (AbstractLabel) o;
         return this.label.equals(other.label);
     }
 
@@ -1133,9 +1140,9 @@ public abstract class AbstractLabel implements TopologyInf {
     /**
      * rename a column of the table
      *
-     * @param schema the schema
-     * @param table  the table name
-     * @param column the column to rename
+     * @param schema  the schema
+     * @param table   the table name
+     * @param column  the column to rename
      * @param newName the column to rename to
      */
     void removeColumn(String schema, String table, String column, String newName) {

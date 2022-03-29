@@ -108,13 +108,13 @@ public class PropertyType {
         return new PropertyType(String.class.getName(), new String[]{}, length);
     }
 
-    private String name;
+    private final String name;
     private final int ordinal;
-    private String javaClassName;
+    private final String javaClassName;
     //This postfix is for composite properties where one java type maps to multiple columns.
     //This columns' type is specified in the dialect, SqlDialect.propertyTypeToSqlDefinition.
     //The number of postfix must match the number of types - 1 as the first column as no postfix
-    private String[] postFixes;
+    private final String[] postFixes;
 
     private int length = -1;
     private static final Map<String, PropertyType> JAVA_CLASS_NAME_TO_ENUM = new HashMap<>();
@@ -137,6 +137,8 @@ public class PropertyType {
             NAME_TO_ENUM.put(pt.name, pt);
             JAVA_CLASS_NAME_TO_ENUM.put(pt.javaClassName, pt);
         }
+        NAME_TO_ENUM.put("VARCHAR", PropertyType.STRING);
+        JAVA_CLASS_NAME_TO_ENUM.put(String.class.getName(), PropertyType.STRING);
     }
 
     public static PropertyType from(Object o) {

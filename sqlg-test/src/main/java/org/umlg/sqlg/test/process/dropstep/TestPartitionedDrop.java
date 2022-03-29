@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.topology.*;
@@ -37,10 +38,10 @@ public class TestPartitionedDrop extends BaseTest {
     @SuppressWarnings({"unused", "UnusedAssignment"})
     @Test
     public void testPartitionEdgeOnUserDefinedForeignKey() {
-        LinkedHashMap<String, PropertyType> attributeMap = new LinkedHashMap<>();
-        attributeMap.put("name", PropertyType.STRING);
-        attributeMap.put("cmUid", PropertyType.STRING);
-        attributeMap.put("vendorTechnology", PropertyType.STRING);
+        LinkedHashMap<String, PropertyDefinition> attributeMap = new LinkedHashMap<>();
+        attributeMap.put("name", PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put("cmUid", PropertyDefinition.of(PropertyType.STRING));
+        attributeMap.put("vendorTechnology", PropertyDefinition.of(PropertyType.STRING));
 
         VertexLabel realWorkspaceElementVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "RealWorkspaceElement",
@@ -61,8 +62,8 @@ public class TestPartitionedDrop extends BaseTest {
         VertexLabel virtualGroupVertexLabel = sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "VirtualGroup",
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("name", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
@@ -72,7 +73,7 @@ public class TestPartitionedDrop extends BaseTest {
                 virtualGroupVertexLabel,
                 realWorkspaceElementVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid")),
                 PartitionType.LIST,

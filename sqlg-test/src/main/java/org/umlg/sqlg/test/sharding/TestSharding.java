@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
@@ -59,9 +60,9 @@ public class TestSharding extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -80,9 +81,9 @@ public class TestSharding extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -97,9 +98,9 @@ public class TestSharding extends BaseTest {
         VertexLabel bVertexLabel = aSchema.ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -180,9 +181,9 @@ public class TestSharding extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -190,9 +191,9 @@ public class TestSharding extends BaseTest {
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -202,9 +203,9 @@ public class TestSharding extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -308,9 +309,9 @@ public class TestSharding extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -318,9 +319,9 @@ public class TestSharding extends BaseTest {
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "B",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -330,9 +331,9 @@ public class TestSharding extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "dist"))
         );
@@ -403,10 +404,10 @@ public class TestSharding extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("dist", PropertyType.STRING);
-                    put("date", PropertyType.LOCALDATE);
-                    put("value", PropertyType.STRING);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("dist", PropertyDefinition.of(PropertyType.STRING));
+                    put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
+                    put("value", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("uid", "date", "dist")),
                 PartitionType.RANGE,
@@ -444,20 +445,20 @@ public class TestSharding extends BaseTest {
         VertexLabel rncVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "ObjectType1",
                 new HashMap<>() {{
-                    put("rncId", PropertyType.STRING);
-                    put("cellId", PropertyType.STRING);
-                    put("dateTime", PropertyType.LOCALDATETIME);
-                    put("date", PropertyType.LOCALDATE);
-                    put("count1", PropertyType.LONG);
-                    put("count2", PropertyType.LONG);
-                    put("count3", PropertyType.LONG);
-                    put("count4", PropertyType.LONG);
-                    put("count5", PropertyType.LONG);
-                    put("count6", PropertyType.LONG);
-                    put("count7", PropertyType.LONG);
-                    put("count8", PropertyType.LONG);
-                    put("count9", PropertyType.LONG);
-                    put("count10", PropertyType.LONG);
+                    put("rncId", PropertyDefinition.of(PropertyType.STRING));
+                    put("cellId", PropertyDefinition.of(PropertyType.STRING));
+                    put("dateTime", PropertyDefinition.of(PropertyType.LOCALDATETIME));
+                    put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
+                    put("count1", PropertyDefinition.of(PropertyType.LONG));
+                    put("count2", PropertyDefinition.of(PropertyType.LONG));
+                    put("count3", PropertyDefinition.of(PropertyType.LONG));
+                    put("count4", PropertyDefinition.of(PropertyType.LONG));
+                    put("count5", PropertyDefinition.of(PropertyType.LONG));
+                    put("count6", PropertyDefinition.of(PropertyType.LONG));
+                    put("count7", PropertyDefinition.of(PropertyType.LONG));
+                    put("count8", PropertyDefinition.of(PropertyType.LONG));
+                    put("count9", PropertyDefinition.of(PropertyType.LONG));
+                    put("count10", PropertyDefinition.of(PropertyType.LONG));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("rncId", "cellId")),
                 PartitionType.RANGE,

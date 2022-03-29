@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
@@ -20,18 +21,18 @@ public class TestVarChar extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "A",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(10));
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(10)));
                 }});
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 this.sqlgGraph.getSqlDialect().getPublicSchema(),
                 "B",
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(10));
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(10)));
                 }});
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("name", PropertyType.varChar(10));
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.varChar(10)));
                 }});
         this.sqlgGraph.tx().commit();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "halo");

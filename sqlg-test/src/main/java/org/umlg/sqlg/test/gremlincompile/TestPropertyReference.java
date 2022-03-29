@@ -1,11 +1,5 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import static org.junit.Assert.assertEquals;
-import static org.umlg.sqlg.predicate.PropertyReference.propertyRef;
-
-import java.util.List;
-import java.util.Map;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -14,6 +8,12 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.umlg.sqlg.predicate.PropertyReference.propertyRef;
 
 /**
  * Test column references

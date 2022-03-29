@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
@@ -50,10 +51,10 @@ public class TestSubSubPartition extends BaseTest {
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.RANGE,
@@ -200,10 +201,10 @@ public class TestSubSubPartition extends BaseTest {
                 "ab",
                 b,
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.RANGE,
@@ -364,10 +365,10 @@ public class TestSubSubPartition extends BaseTest {
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
                 "A",
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.LIST,
@@ -428,10 +429,10 @@ public class TestSubSubPartition extends BaseTest {
                 "ab",
                 b,
                 new HashMap<>() {{
-                    put("uid", PropertyType.STRING);
-                    put("int1", PropertyType.INTEGER);
-                    put("int2", PropertyType.INTEGER);
-                    put("int3", PropertyType.INTEGER);
+                    put("uid", PropertyDefinition.of(PropertyType.STRING));
+                    put("int1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int2", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("int3", PropertyDefinition.of(PropertyType.INTEGER));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid", "int1", "int2", "int3")),
                 PartitionType.LIST,

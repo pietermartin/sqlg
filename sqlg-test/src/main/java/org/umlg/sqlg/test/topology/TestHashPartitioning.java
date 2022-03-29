@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -59,9 +60,9 @@ public class TestHashPartitioning extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.INTEGER);
-                    put("uid2", PropertyType.LONG);
-                    put("uid3", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                    put("uid3", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                 PartitionType.HASH,
@@ -146,9 +147,9 @@ public class TestHashPartitioning extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.INTEGER);
-                    put("uid2", PropertyType.LONG);
-                    put("uid3", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                    put("uid3", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                 PartitionType.HASH,
@@ -160,9 +161,9 @@ public class TestHashPartitioning extends BaseTest {
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "B",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.INTEGER);
-                    put("uid2", PropertyType.LONG);
-                    put("uid3", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                    put("uid3", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                 PartitionType.HASH,
@@ -175,8 +176,8 @@ public class TestHashPartitioning extends BaseTest {
                 "ab",
                 bVertexLabel,
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.INTEGER);
-                    put("uid2", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2")),
                 PartitionType.HASH,
@@ -290,9 +291,9 @@ public class TestHashPartitioning extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.INTEGER);
-                    put("uid2", PropertyType.LONG);
-                    put("uid3", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                    put("uid3", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                 PartitionType.HASH,
@@ -342,9 +343,9 @@ public class TestHashPartitioning extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
-                    put("uid1", PropertyType.INTEGER);
-                    put("uid2", PropertyType.LONG);
-                    put("uid3", PropertyType.STRING);
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                    put("uid3", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                 PartitionType.HASH,
@@ -371,9 +372,9 @@ public class TestHashPartitioning extends BaseTest {
             VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                     "A",
                     new LinkedHashMap<>() {{
-                        put("uid1", PropertyType.INTEGER);
-                        put("uid2", PropertyType.LONG);
-                        put("uid3", PropertyType.STRING);
+                        put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                        put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                        put("uid3", PropertyDefinition.of(PropertyType.STRING));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                     PartitionType.HASH,
@@ -401,9 +402,9 @@ public class TestHashPartitioning extends BaseTest {
             VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                     "A",
                     new LinkedHashMap<>() {{
-                        put("uid1", PropertyType.INTEGER);
-                        put("uid2", PropertyType.LONG);
-                        put("uid3", PropertyType.STRING);
+                        put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                        put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                        put("uid3", PropertyDefinition.of(PropertyType.STRING));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                     PartitionType.LIST,
@@ -431,9 +432,9 @@ public class TestHashPartitioning extends BaseTest {
             VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                     "A",
                     new LinkedHashMap<>() {{
-                        put("uid1", PropertyType.INTEGER);
-                        put("uid2", PropertyType.LONG);
-                        put("uid3", PropertyType.STRING);
+                        put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                        put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                        put("uid3", PropertyDefinition.of(PropertyType.STRING));
                     }},
                     ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
                     PartitionType.HASH,

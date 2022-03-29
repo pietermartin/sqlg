@@ -41,10 +41,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
     public void testMultipleHasWithinUserSuppliedIds() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
                 "TestHierarchy",
-                new LinkedHashMap<String, PropertyType>() {{
-                    put("column1", PropertyType.varChar(100));
-                    put("column2", PropertyType.varChar(100));
-                    put("name", PropertyType.STRING);
+                new LinkedHashMap<>() {{
+                    put("column1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("column2", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Arrays.asList("column1", "column2"))
         );

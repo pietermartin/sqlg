@@ -6,11 +6,15 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Date: 2014/07/22
@@ -49,11 +53,11 @@ public class TestAddVertexViaMap extends BaseTest {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist(
                         "Person",
-                        new HashMap<String, PropertyType>() {{
-                            put("uid", PropertyType.varChar(100));
-                            put("name1", PropertyType.STRING);
-                            put("name2", PropertyType.STRING);
-                            put("name3", PropertyType.STRING);
+                        new HashMap<>() {{
+                            put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                            put("name1", PropertyDefinition.of(PropertyType.STRING));
+                            put("name2", PropertyDefinition.of(PropertyType.STRING));
+                            put("name3", PropertyDefinition.of(PropertyType.STRING));
                         }},
                         ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
                 );
@@ -74,11 +78,11 @@ public class TestAddVertexViaMap extends BaseTest {
         vertexLabel.ensureEdgeLabelExist(
                 "e1",
                 vertexLabel,
-                new HashMap<String, PropertyType>() {{
-                    put("uid", PropertyType.varChar(100));
-                    put("name1", PropertyType.STRING);
-                    put("name2", PropertyType.STRING);
-                    put("name3", PropertyType.STRING);
+                new HashMap<>() {{
+                    put("uid", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("name1", PropertyDefinition.of(PropertyType.STRING));
+                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name3", PropertyDefinition.of(PropertyType.STRING));
                 }},
                 ListOrderedSet.listOrderedSet(Collections.singletonList("uid"))
         );
