@@ -2770,9 +2770,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"partitionExpression\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP, " +
-                "\"name\" TEXT, " +
-                "\"type\" TEXT);");
+                "\"createdOn\" TIMESTAMP NOT NULL, " +
+                "\"name\" TEXT NOT NULL, " +
+                "\"type\" TEXT NOT NULL," +
+                "\"multiplicityLower\" BIGINT NOT NULL," +
+                "\"multiplicityUpper\" BIGINT NOT NULL," +
+                "\"defaultLiteral\" TEXT," +
+                "\"checkConstraint\" TEXT" +
+                ");");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "index\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +

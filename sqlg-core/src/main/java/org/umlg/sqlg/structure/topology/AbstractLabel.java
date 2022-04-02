@@ -623,6 +623,9 @@ public abstract class AbstractLabel implements TopologyInf {
         keys.removeAll(identifiers);
         for (String column : keys) {
             PropertyType propertyType = columns.get(column).propertyType();
+            Multiplicity multiplicity = columns.get(column).multiplicity();
+            String defaultLiteral = columns.get(column).defaultLiteral();
+            String checkConstraint = columns.get(column).checkConstraint();
             int count = 1;
             String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             for (String sqlDefinition : propertyTypeToSqlDefinition) {
@@ -632,6 +635,16 @@ public abstract class AbstractLabel implements TopologyInf {
                 } else {
                     //The first column existVertexLabel no postfix
                     sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(sqlDefinition);
+                }
+                if (defaultLiteral != null) {
+                    sql.append(" DEFAULT ");
+                    sql.append(defaultLiteral);
+                }
+                if (multiplicity.isRequired()) {
+                    sql.append(" NOT NULL");
+                }
+                if (checkConstraint != null) {
+                    sql.append(" CHECK ").append(checkConstraint);
                 }
                 if (count++ < propertyTypeToSqlDefinition.length) {
                     sql.append(", ");
@@ -679,10 +692,20 @@ public abstract class AbstractLabel implements TopologyInf {
 
     void addPropertyColumn(Vertex propertyVertex) {
         Preconditions.checkState(getTopology().isSchemaChanged());
+        VertexProperty<String> defaultLiteralProperty = propertyVertex.property(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL);
+        VertexProperty<String> checkConstraintProperty = propertyVertex.property(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT);
         PropertyColumn property = new PropertyColumn(
                 this,
                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME),
-                new PropertyDefinition(PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)))
+                new PropertyDefinition(
+                        PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)),
+                        Multiplicity.from(
+                                propertyVertex.value(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER),
+                                propertyVertex.value(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER)
+                        ),
+                        defaultLiteralProperty.isPresent() ? defaultLiteralProperty.value() : null,
+                        checkConstraintProperty.isPresent() ? checkConstraintProperty.value() : null
+                )
         );
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }

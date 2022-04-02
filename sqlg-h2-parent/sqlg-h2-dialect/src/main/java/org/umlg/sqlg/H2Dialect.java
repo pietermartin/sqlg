@@ -628,7 +628,12 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
                 "\"name\" VARCHAR, " +
-                "\"type\" VARCHAR);");
+                "\"type\" VARCHAR," +
+                "\"multiplicityLower\" INTEGER NOT NULL," +
+                "\"multiplicityUpper\" INTEGER NOT NULL," +
+                "\"defaultLiteral\" VARCHAR," +
+                "\"checkConstraint\" VARCHAR" +
+                ");");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (" +
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +

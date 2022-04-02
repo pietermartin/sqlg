@@ -57,6 +57,7 @@ import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.*;
+import org.umlg.sqlg.test.topology.propertydefinition.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestMultipleIDQuery;
@@ -287,8 +288,13 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestUUID.class,
         TestIdStep.class,
         TestTopologyLock.class,
-        TestLoadEdgeWithSpecialCharacters.class
-
+        TestLoadEdgeWithSpecialCharacters.class,
+        TestRequiredProperty.class,
+        TestRequiredPropertyDistributed.class,
+        TestDefaultValue.class,
+        TestDefaultValueDistributed.class,
+        TestPropertyCheckConstraint.class,
+        TestPropertyCheckConstraintDistributed.class
 })
 public class AllTest {
 

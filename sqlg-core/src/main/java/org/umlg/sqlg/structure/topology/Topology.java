@@ -65,7 +65,7 @@ public class Topology {
     private final Set<String> uncommittedRemovedSchemas = new ConcurrentSkipListSet<>();
     private final Map<String, Schema> metaSchemas;
 
-    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public static final String SQLG_NOTIFICATION_CHANNEL = "SQLG_NOTIFY";
 
@@ -322,6 +322,24 @@ public class Topology {
     public static final String SQLG_SCHEMA_PROPERTY_TYPE = "type";
 
     /**
+     * Lower multiplicity of the property. > 0 indicates the property is required
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER = "multiplicityLower";
+
+    /**
+     * Upper multiplicity of the property. -1 indicates the property has no upper limit
+     */
+    public static final String SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER = "multiplicityUpper";
+
+    /**
+     * The default value for the property. The value gets passed straight into the db without inspection.
+     */
+    public static final String SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL = "defaultLiteral";
+
+    public static final String SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT = "checkConstraint";
+
+    /**
      * Topology is a singleton created when the {@link SqlgGraph} is opened.
      * As the topology, i.e. sqlg_schema is created upfront the meta topology is pre-loaded.
      *
@@ -382,6 +400,10 @@ public class Topology {
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, new PropertyDefinition(PropertyType.STRING));
         columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
         columns.put(SQLG_SCHEMA_PROPERTY_TYPE, new PropertyDefinition(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, new PropertyDefinition(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, new PropertyDefinition(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, new PropertyDefinition(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, new PropertyDefinition(PropertyType.STRING));
         VertexLabel propertyVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PROPERTY, columns);
 
         columns.clear();

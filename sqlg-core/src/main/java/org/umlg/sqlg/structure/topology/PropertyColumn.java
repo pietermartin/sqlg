@@ -72,25 +72,15 @@ public class PropertyColumn implements TopologyInf {
     ObjectNode toNotifyJson() {
         ObjectNode propertyObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         propertyObjectNode.put("name", this.name);
-        propertyObjectNode.put("propertyType", this.propertyDefinition.propertyType().name());
+        propertyObjectNode.set("propertyDefinition", this.propertyDefinition.toNotifyJson());
         return propertyObjectNode;
     }
 
     static PropertyColumn fromNotifyJson(AbstractLabel abstractLabel, JsonNode jsonNode) {
-       String pt = jsonNode.get("propertyType").asText();
-       if (pt.equals("VARCHAR")) {
-           //This is not ideal, however Sqlg only uses VARCHAR when creating the column.
-           //For the rest it is considered the same as STRING
-           return new PropertyColumn(
-                   abstractLabel,
-                   jsonNode.get("name").asText(),
-                   new PropertyDefinition(PropertyType.STRING));
-       } else {
-           return new PropertyColumn(
-                   abstractLabel,
-                   jsonNode.get("name").asText(),
-                   new PropertyDefinition(PropertyType.valueOf(pt)));
-       }
+        return new PropertyColumn(
+                abstractLabel,
+                jsonNode.get("name").asText(),
+                PropertyDefinition.fromNotifyJson(jsonNode.get("propertyDefinition")));
     }
 
     @Override

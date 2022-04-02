@@ -12,6 +12,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -191,11 +192,21 @@ public class TopologyManager {
             }
             schemaVertex.addEdge(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
             for (Map.Entry<String, PropertyDefinition> columnEntry : columns.entrySet()) {
+                Map<String, Object> properties = new HashMap<>();
+                properties.put("name", columnEntry.getKey());
+                properties.put("type", columnEntry.getValue().propertyType().name());
+                properties.put(Topology.CREATED_ON, LocalDateTime.now());
+                properties.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, columnEntry.getValue().multiplicity().lower());
+                properties.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, columnEntry.getValue().multiplicity().upper());
+                if (columnEntry.getValue().defaultLiteral() != null) {
+                    properties.put(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, columnEntry.getValue().defaultLiteral());
+                }
+                if (columnEntry.getValue().checkConstraint() != null) {
+                    properties.put(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, columnEntry.getValue().checkConstraint());
+                }
                 Vertex property = sqlgGraph.addVertex(
-                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
-                        "name", columnEntry.getKey(),
-                        "type", columnEntry.getValue().propertyType().name(),
-                        Topology.CREATED_ON, LocalDateTime.now()
+                        SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
+                        properties
                 );
                 vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
 
@@ -777,11 +788,21 @@ public class TopologyManager {
             }
 
             for (Map.Entry<String, PropertyDefinition> columnEntry : columns.entrySet()) {
+                Map<String, Object> properties = new HashMap<>();
+                properties.put(SQLG_SCHEMA_PROPERTY_NAME, columnEntry.getKey());
+                properties.put(SQLG_SCHEMA_PROPERTY_TYPE, columnEntry.getValue().propertyType().name());
+                properties.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, columnEntry.getValue().multiplicity().lower());
+                properties.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, columnEntry.getValue().multiplicity().upper());
+                properties.put(CREATED_ON, LocalDateTime.now());
+                if (columnEntry.getValue().defaultLiteral() != null) {
+                    properties.put(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, columnEntry.getValue().defaultLiteral());
+                }
+                if (columnEntry.getValue().checkConstraint() != null) {
+                    properties.put(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, columnEntry.getValue().checkConstraint());
+                }
                 Vertex property = sqlgGraph.addVertex(
-                        T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
-                        "name", columnEntry.getKey(),
-                        "type", columnEntry.getValue().propertyType().name(),
-                        CREATED_ON, LocalDateTime.now()
+                        SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
+                        properties
                 );
                 edgeVertex.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
                 //add in the identifiers if there are any.
@@ -994,8 +1015,9 @@ public class TopologyManager {
 
             Vertex property = sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
-                    "name", column.getKey(),
-                    "type", column.getValue().propertyType().name(),
+                    SQLG_SCHEMA_PROPERTY_NAME, column.getKey(),
+                    SQLG_SCHEMA_PROPERTY_TYPE, column.getValue().propertyType().name(),
+                    SQLG_SCHEMA_PROPERTY, column.getValue().multiplicity().isRequired(),
                     CREATED_ON, LocalDateTime.now()
             );
             vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
@@ -1507,7 +1529,7 @@ public class TopologyManager {
                             SQLG_SCHEMA_PARTITION_PARTITION_TYPE, partitionType.name(),
                             CREATED_ON, LocalDateTime.now()
                     );
-                } else if (in != null){
+                } else if (in != null) {
                     subPartition = sqlgGraph.addVertex(
                             T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION,
                             SQLG_SCHEMA_PARTITION_NAME, partitionName,
