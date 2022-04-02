@@ -1,0 +1,58 @@
+==== Vertex Step
+
+Consecutive link:{tinkerpop-docs}#vertex-steps[`Vertex Step`] are folded into the <<Graph Step>>.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showVertexStep() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b2.addEdge("bc", c2);
+    this.sqlgGraph.tx().commit();
+
+    GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V()
+            .hasLabel("A")
+            .out()
+            .out();
+    System.out.println(traversal);
+    traversal.hasNext();
+    System.out.println(traversal);
+    List<Vertex> c = traversal.toList();
+    assertEquals(2, c.size());
+}
+----
+
+[options="nowrap"]
+.Before optimization
+----
+[GraphStep(vertex,[]), HasStep([~label.eq(A)]), VertexStep(OUT,vertex), VertexStep(OUT,vertex)]
+----
+
+.After optimization
+----
+[SqlgGraphStep(vertex,[])@[sqlgPathFakeLabel]]
+----
+
+This example is the same as the <<Graph Step>>. It shows the two `Vertex Steps` being folded into the `SqlgGraphStep`.
+
+The link:{apidocs}/org/umlg/sqlg/step/SqlgGraphStep.html[`SqlgGraphStep`] will generate the following `sql` to retrieve the data.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID"
+----
