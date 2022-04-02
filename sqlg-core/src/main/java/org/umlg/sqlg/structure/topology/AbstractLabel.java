@@ -643,8 +643,17 @@ public abstract class AbstractLabel implements TopologyInf {
                 if (multiplicity.isRequired()) {
                     sql.append(" NOT NULL");
                 }
-                if (checkConstraint != null) {
-                    sql.append(" CHECK ").append(checkConstraint);
+                if (propertyType.isArray() && multiplicity.hasLimits()) {
+                    if (checkConstraint != null) {
+                        sql.append(" CHECK ").append("((").append(checkConstraint).append(") AND (");
+                        sql.append(multiplicity.toCheckConstraint(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column))).append("))");
+                    } else {
+                        sql.append(" CHECK ").append("(").append(multiplicity.toCheckConstraint(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column))).append(")");
+                    }
+                } else {
+                    if (checkConstraint != null) {
+                        sql.append(" CHECK ").append("(").append(checkConstraint).append(")");
+                    }
                 }
                 if (count++ < propertyTypeToSqlDefinition.length) {
                     sql.append(", ");

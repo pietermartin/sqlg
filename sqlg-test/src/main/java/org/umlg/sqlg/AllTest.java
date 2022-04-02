@@ -294,7 +294,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestDefaultValue.class,
         TestDefaultValueDistributed.class,
         TestPropertyCheckConstraint.class,
-        TestPropertyCheckConstraintDistributed.class
+        TestPropertyCheckConstraintDistributed.class,
+        TestMultiplicityOnArrayTypes.class
 })
 public class AllTest {
 

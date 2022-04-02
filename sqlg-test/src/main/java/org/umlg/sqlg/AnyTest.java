@@ -15,7 +15,8 @@ import org.umlg.sqlg.test.topology.propertydefinition.*;
 //        TestDefaultValue.class,
 //        TestDefaultValueDistributed.class,
 //        TestPropertyCheckConstraint.class,
-        TestPropertyCheckConstraintDistributed.class
+//        TestPropertyCheckConstraintDistributed.class,
+        TestMultiplicityOnArrayTypes.class
 })
 public class AnyTest {
 }
