@@ -171,7 +171,7 @@ public void createModernTopology() {
 }
 ----
 <1> Get the `Topology` object.
-<2> Create the 'person' VertexLabel. The `HashMap<String, PropertyType>` defines the 'person''s properties.
+<2> Create the 'person' VertexLabel. The `HashMap<String, PropertyDefinition>` defines the 'person''s properties.
 <3> Create the 'created' EdgeLabel. The format is outVertexLabel.ensureEdgeLabelExist(name, inVertexLabel, properties)
 <4> Be sure to commit the transaction. Postgresql and MSSqlServer supports transactional schema creation. Hsqldb,H2 and MariaDB do not.
 
@@ -189,6 +189,184 @@ public void generalTopologyCreationWithSchema() {
 ----
 <1> Create the 'Humans' schema
 <2> Create the 'Person' VertexLabel via the Schema object.
+
+=== PropertyDefinition
+
+The `PropertyDefinition` class defines a Sqlg property. It is responsible for,
+
+* PropertyType
+* Multiplicity
+* defaultLiteral
+* checkConstraint
+
+==== PropertyType
+
+`PropertyType` holds all the types Sqlg supports.
+
+==== Multiplicity
+
+`Multiplicity` specifies the `lower` and `upper` limits of a property.
+
+A `lower` multiplicity of 0 indicates that the property is *not* required. +
+A `lower` multiplicity of 1 indicates that the property *is* required. Sqlg will generate a `NOT NULL` clause for the property. +
+A `upper` multiplicity > 1 only makes sense for a property with an array type. +
+A `upper` multiplicity of -1 indicates that there is *no* upper limit. +
+For a multiplicity > -1 Sqlg will generate a `CHECK` constraint to validate the multiplicity.
+
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testNameIsRequired() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap<>() {{
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1))); # <1>
+                    }}
+            );
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person"); #<2>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<3>
+        failure = true;
+    }
+    assertTrue(failure);
+}
+----
+<1> Specify a multiplicity of [1,1], i.e. the property is required.
+<2> The `name` property is *not* specified.
+<3> An exception is thrown by the database.
+```
+org.postgresql.util.PSQLException: ERROR: null value in column "name" of relation "V_Person" violates not-null constraint
+Detail: Failing row contains (1, null).
+```
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testArrayLowerMultiplicity() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap<>() {{
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<1>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person", "names", new String[]{"John"}); #<2>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<3>
+        failure = true;
+        this.sqlgGraph.tx().rollback();
+    }
+    assertTrue(failure);
+}
+----
+<1> Specify a lower multiplicity of 2. i.e. the Person must have at least 2 names.
+<2> Only one name is specified.
+<3> An exception is thrown by the database.
+```
+org.postgresql.util.PSQLException: ERROR: new row for relation "V_Person" violates check constraint "V_Person_names_check"
+  Detail: Failing row contains (1, {John}).
+```
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testArrayUpperMultiplicity() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap<>() {{
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<1>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person", "names", new String[]{"John", "Joe", "Jonathan", "James", "Peter"}); #<2>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<3>
+        failure = true;
+        this.sqlgGraph.tx().rollback();
+    }
+    assertTrue(failure);
+}
+----
+<1> upper multiplicity of 4 is specified. i.e. Person may not have more than 4 names.
+<2> 5 names are specified.
+<3> An exception is thrown by the database.
+```
+org.postgresql.util.PSQLException: ERROR: new row for relation "V_Person" violates check constraint "V_Person_names_check"
+  Detail: Failing row contains (1, {John,Joe,Jonathan,James,Peter}).
+```
+
+==== Default values
+
+Sqlg supports specifying a default value for a property. The value needs to be a valid literal as it is passed directly to the database without parsing.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testDefaultValue() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap<>() {{
+                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'John'")); #<1>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person"); #<2>
+    this.sqlgGraph.tx().commit();
+    List<String> names = this.sqlgGraph.traversal().V().hasLabel("Person").<String>values("name").toList();
+    assertEquals(1, names.size());
+    assertEquals("John", names.get(0)); #<3>
+}
+----
+<1> Specify a default literal `'John'` for the `name` property.
+<2> Not specifying a value for the `name` property.
+<3> Assert that the value is indeed the default value of `'John'`;
+
+==== Check constraints
+
+Sqlg supports adding `CHECK` constraints to any property.
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testCheckConstraints() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap<>() {{
+                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'Peter'", "name <> 'John'")); #<1>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person"); #<2>
+    this.sqlgGraph.tx().commit();
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "John"); #<3>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<4>
+        failure = true;
+    }
+    assertTrue(failure);
+}
+----
+<1> Add a `CHECK` constraint that the Person's name may not be 'John'
+<2> The default value is 'Peter'
+<3> Try to add `John'
+<4> An exception is thrown by the database.
+```
+org.postgresql.util.PSQLException: ERROR: new row for relation "V_Person" violates check constraint "V_Person_name_check"
+  Detail: Failing row contains (2, John).
+```
 
 Sqlg keeps an in-memory cache of the graphs entire topology. It is possible query this cache directly.
 
@@ -384,3 +562,4 @@ public void topologyGlobalLockTransactionUnlock() {
 <2> Unlock the topology only for the current transaction.
 <3> Create a VertexLabel 'A'. This will succeed for the current transaction.
 <4> On commit the `unlockTopology` is automatically no longer valid.
+

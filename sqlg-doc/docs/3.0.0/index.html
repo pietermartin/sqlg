@@ -2254,8 +2254,16 @@ p {
 <li><a href="#anchor-topology">12. Topology</a>
 <ul class="sectlevel2">
 <li><a href="#_topology_eager_creation">12.1. Topology eager creation</a></li>
-<li><a href="#anchor-user-supplied-identifiers">12.2. User supplied identifiers</a></li>
-<li><a href="#_lock_the_topology">12.3. Lock the topology</a></li>
+<li><a href="#_propertydefinition">12.2. PropertyDefinition</a>
+<ul class="sectlevel3">
+<li><a href="#_propertytype">12.2.1. PropertyType</a></li>
+<li><a href="#_multiplicity">12.2.2. Multiplicity</a></li>
+<li><a href="#_default_values">12.2.3. Default values</a></li>
+<li><a href="#_check_constraints">12.2.4. Check constraints</a></li>
+</ul>
+</li>
+<li><a href="#anchor-user-supplied-identifiers">12.3. User supplied identifiers</a></li>
+<li><a href="#_lock_the_topology">12.4. Lock the topology</a></li>
 </ul>
 </li>
 <li><a href="#_postgresql_partitioning">13. Postgresql Partitioning</a>
@@ -7268,7 +7276,7 @@ public void createModernTopology() {
 <p>Get the <code>Topology</code> object.</p>
 </li>
 <li>
-<p>Create the 'person' VertexLabel. The <code>HashMap&lt;String, PropertyType&gt;</code> defines the 'person''s properties.</p>
+<p>Create the 'person' VertexLabel. The <code>HashMap&lt;String, PropertyDefinition&gt;</code> defines the 'person''s properties.</p>
 </li>
 <li>
 <p>Create the 'created' EdgeLabel. The format is outVertexLabel.ensureEdgeLabelExist(name, inVertexLabel, properties)</p>
@@ -7300,6 +7308,264 @@ public void generalTopologyCreationWithSchema() {
 <p>Create the 'Person' VertexLabel via the Schema object.</p>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_propertydefinition">12.2. PropertyDefinition</h3>
+<div class="paragraph">
+<p>The <code>PropertyDefinition</code> class defines a Sqlg property. It is responsible for,</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>PropertyType</p>
+</li>
+<li>
+<p>Multiplicity</p>
+</li>
+<li>
+<p>defaultLiteral</p>
+</li>
+<li>
+<p>checkConstraint</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_propertytype">12.2.1. PropertyType</h4>
+<div class="paragraph">
+<p><code>PropertyType</code> holds all the types Sqlg supports.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_multiplicity">12.2.2. Multiplicity</h4>
+<div class="paragraph">
+<p><code>Multiplicity</code> specifies the <code>lower</code> and <code>upper</code> limits of a property.</p>
+</div>
+<div class="paragraph">
+<p>A <code>lower</code> multiplicity of 0 indicates that the property is <strong>not</strong> required.<br>
+A <code>lower</code> multiplicity of 1 indicates that the property <strong>is</strong> required. Sqlg will generate a <code>NOT NULL</code> clause for the property.<br>
+A <code>upper</code> multiplicity &gt; 1 only makes sense for a property with an array type.<br>
+A <code>upper</code> multiplicity of -1 indicates that there is <strong>no</strong> upper limit.<br>
+For a multiplicity &gt; -1 Sqlg will generate a <code>CHECK</code> constraint to validate the multiplicity.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testNameIsRequired() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap&lt;&gt;() {{
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1))); # <b class="conum">(1)</b>
+                    }}
+            );
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person"); #<b class="conum">(2)</b>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<b class="conum">(3)</b>
+        failure = true;
+    }
+    assertTrue(failure);
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Specify a multiplicity of [1,1], i.e. the property is required.</p>
+</li>
+<li>
+<p>The <code>name</code> property is <strong>not</strong> specified.</p>
+</li>
+<li>
+<p>An exception is thrown by the database.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">org.postgresql.util.PSQLException: ERROR: null value in column "name" of relation "V_Person" violates not-null constraint
+Detail: Failing row contains (1, null).</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testArrayLowerMultiplicity() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap&lt;&gt;() {{
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<b class="conum">(1)</b>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person", "names", new String[]{"John"}); #<b class="conum">(2)</b>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<b class="conum">(3)</b>
+        failure = true;
+        this.sqlgGraph.tx().rollback();
+    }
+    assertTrue(failure);
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Specify a lower multiplicity of 2. i.e. the Person must have at least 2 names.</p>
+</li>
+<li>
+<p>Only one name is specified.</p>
+</li>
+<li>
+<p>An exception is thrown by the database.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">org.postgresql.util.PSQLException: ERROR: new row for relation "V_Person" violates check constraint "V_Person_names_check"
+  Detail: Failing row contains (1, {John}).</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testArrayUpperMultiplicity() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap&lt;&gt;() {{
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<b class="conum">(1)</b>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person", "names", new String[]{"John", "Joe", "Jonathan", "James", "Peter"}); #<b class="conum">(2)</b>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<b class="conum">(3)</b>
+        failure = true;
+        this.sqlgGraph.tx().rollback();
+    }
+    assertTrue(failure);
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>upper multiplicity of 4 is specified. i.e. Person may not have more than 4 names.</p>
+</li>
+<li>
+<p>5 names are specified.</p>
+</li>
+<li>
+<p>An exception is thrown by the database.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">org.postgresql.util.PSQLException: ERROR: new row for relation "V_Person" violates check constraint "V_Person_names_check"
+  Detail: Failing row contains (1, {John,Joe,Jonathan,James,Peter}).</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_default_values">12.2.3. Default values</h4>
+<div class="paragraph">
+<p>Sqlg supports specifying a default value for a property. The value needs to be a valid literal as it is passed directly to the database without parsing.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testDefaultValue() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap&lt;&gt;() {{
+                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'John'")); #<b class="conum">(1)</b>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person"); #<b class="conum">(2)</b>
+    this.sqlgGraph.tx().commit();
+    List&lt;String&gt; names = this.sqlgGraph.traversal().V().hasLabel("Person").&lt;String&gt;values("name").toList();
+    assertEquals(1, names.size());
+    assertEquals("John", names.get(0)); #<b class="conum">(3)</b>
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Specify a default literal <code>'John'</code> for the <code>name</code> property.</p>
+</li>
+<li>
+<p>Not specifying a value for the <code>name</code> property.</p>
+</li>
+<li>
+<p>Assert that the value is indeed the default value of <code>'John'</code>;</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_check_constraints">12.2.4. Check constraints</h4>
+<div class="paragraph">
+<p>Sqlg supports adding <code>CHECK</code> constraints to any property.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testCheckConstraints() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap&lt;&gt;() {{
+                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'Peter'", "name &lt;&gt; 'John'")); #<b class="conum">(1)</b>
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person"); #<b class="conum">(2)</b>
+    this.sqlgGraph.tx().commit();
+    boolean failure = false;
+    try {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "John"); #<b class="conum">(3)</b>
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e); #<b class="conum">(4)</b>
+        failure = true;
+    }
+    assertTrue(failure);
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Add a <code>CHECK</code> constraint that the Person&#8217;s name may not be 'John'</p>
+</li>
+<li>
+<p>The default value is 'Peter'</p>
+</li>
+<li>
+<p>Try to add `John'</p>
+</li>
+<li>
+<p>An exception is thrown by the database.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">org.postgresql.util.PSQLException: ERROR: new row for relation "V_Person" violates check constraint "V_Person_name_check"
+  Detail: Failing row contains (2, John).</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Sqlg keeps an in-memory cache of the graphs entire topology. It is possible query this cache directly.</p>
@@ -7357,8 +7623,9 @@ public void queryCache() {
 </ol>
 </div>
 </div>
+</div>
 <div class="sect2">
-<h3 id="anchor-user-supplied-identifiers">12.2. User supplied identifiers</h3>
+<h3 id="anchor-user-supplied-identifiers">12.3. User supplied identifiers</h3>
 <div class="paragraph">
 <p>You can define your own identifiers for a VertexLabel or EdgeLabel. This will result in Sqlg generating primary keys on the specified identifiers instead of using an auto generated sequence.</p>
 </div>
@@ -7474,7 +7741,7 @@ FROM
 </div>
 </div>
 <div class="sect2">
-<h3 id="_lock_the_topology">12.3. Lock the topology</h3>
+<h3 id="_lock_the_topology">12.4. Lock the topology</h3>
 <div class="paragraph">
 <p>It is possible to lock the topology. This will prevent any creation of topology elements without explicitly unlocking the topology.
 The topology can only be locked globally. However, there are two ways to unlock the topology. Either globally or per transaction.

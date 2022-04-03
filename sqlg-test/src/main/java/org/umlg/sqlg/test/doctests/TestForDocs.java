@@ -1,22 +1,16 @@
 package org.umlg.sqlg.test.doctests;
 
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.topology.Index;
-import org.umlg.sqlg.structure.topology.IndexType;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -26,24 +20,47 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("Duplicates")
 public class TestForDocs extends BaseTest {
 
-    @Test
-    public void testIndex() {
-        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person",
-                new HashMap<>() {{
-            put("name", PropertyDefinition.of(PropertyType.STRING));
-        }});
-        Optional<PropertyColumn> namePropertyOptional = personVertexLabel.getProperty("name");
-        assertTrue(namePropertyOptional.isPresent());
-        Index index = personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
-        this.sqlgGraph.tx().commit();
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestForDocs.class);
 
+//    @Test
+//    public void testNameIsRequired() {
+//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+//                .ensureVertexLabelExist("Person",
+//                        new HashMap<>() {{
+//                            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1)));
+//                        }}
+//                );
+//        boolean failure = false;
+//        try {
+//            this.sqlgGraph.addVertex(T.label, "Person");
+//            this.sqlgGraph.tx().commit();
+//        } catch (Exception e) {
+//            LOGGER.error(e.getMessage(), e);
+//            failure = true;
+//        }
+//        assertTrue(failure);
+//    }
+
+@Test
+public void testCheckConstraints() {
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Person",
+                    new HashMap<>() {{
+                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'Peter'", "name <> 'John'"));
+                    }}
+            );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Person");
+    this.sqlgGraph.tx().commit();
+    boolean failure = false;
+    try {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
-        List<Vertex> johns = this.sqlgGraph.traversal().V()
-                .hasLabel("Person")
-                .has("name", "John")
-                .toList();
-
-        assertEquals(1, johns.size());
+        this.sqlgGraph.tx().commit();
+    } catch (Exception e) {
+        LOGGER.error(e.getMessage(), e);
+        failure = true;
     }
+    assertTrue(failure);
+}
 
 }

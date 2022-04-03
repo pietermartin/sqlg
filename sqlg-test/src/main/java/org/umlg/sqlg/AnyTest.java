@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.propertydefinition.*;
+import org.umlg.sqlg.test.doctests.TestForDocs;
 
 /**
  * Date: 2014/07/16
@@ -16,7 +16,8 @@ import org.umlg.sqlg.test.topology.propertydefinition.*;
 //        TestDefaultValueDistributed.class,
 //        TestPropertyCheckConstraint.class,
 //        TestPropertyCheckConstraintDistributed.class,
-        TestMultiplicityOnArrayTypes.class
+//        TestMultiplicityOnArrayTypes.class
+        TestForDocs.class
 })
 public class AnyTest {
 }
