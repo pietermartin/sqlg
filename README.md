@@ -9,6 +9,8 @@ Sqlg
 Currently [H2](http://h2database.com/), [HSQLDB](http://hsqldb.org/), [Postgresql](http://www.postgresql.org/),
 [MariaDB](https://mariadb.org/), [MySql](https://www.mysql.com/) and [MSSqlServer](https://www.microsoft.com/en-us/sql-server/sql-server-2017) are supported.
 
+2.1.6 [Documentation](http://sqlg.org/docs/2.1.6)
+
 2.1.5 [Documentation](http://sqlg.org/docs/2.1.5)
 
 2.1.4 [Documentation](http://sqlg.org/docs/2.1.4)
