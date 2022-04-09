@@ -305,6 +305,10 @@ public class VertexLabel extends AbstractLabel {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, Collections.emptyMap());
     }
 
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, EdgeDefinition edgeDefinition) {
+        return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, Collections.emptyMap(), edgeDefinition);
+    }
+
     /**
      * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exists.
      * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
@@ -351,7 +355,8 @@ public class VertexLabel extends AbstractLabel {
                 identifiers,
                 partitionType,
                 partitionExpression,
-                isForeignKeyPartition
+                isForeignKeyPartition,
+                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
         );
     }
 
@@ -401,21 +406,21 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-    /**
-     * Called via {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
-     * This is called when the {@link EdgeLabel} does not exist and needs to be created.
-     *
-     * @param edgeLabelName The edge's label.
-     * @param inVertexLabel The edge's in vertex.
-     * @param properties    The edge's properties.
-     * @return The new EdgeLabel.
-     */
-    EdgeLabel addEdgeLabel(
-            String edgeLabelName,
-            VertexLabel inVertexLabel,
-            Map<String, PropertyDefinition> properties) {
-        return addEdgeLabel(edgeLabelName, inVertexLabel, properties, new ListOrderedSet<>());
-    }
+//    /**
+//     * Called via {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
+//     * This is called when the {@link EdgeLabel} does not exist and needs to be created.
+//     *
+//     * @param edgeLabelName The edge's label.
+//     * @param inVertexLabel The edge's in vertex.
+//     * @param properties    The edge's properties.
+//     * @return The new EdgeLabel.
+//     */
+//    EdgeLabel addEdgeLabel(
+//            String edgeLabelName,
+//            VertexLabel inVertexLabel,
+//            Map<String, PropertyDefinition> properties) {
+//        return addEdgeLabel(edgeLabelName, inVertexLabel, properties, new ListOrderedSet<>());
+//    }
 
     /**
      * Called via {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
@@ -431,7 +436,8 @@ public class VertexLabel extends AbstractLabel {
             String edgeLabelName,
             VertexLabel inVertexLabel,
             Map<String, PropertyDefinition> properties,
-            ListOrderedSet<String> identifiers) {
+            ListOrderedSet<String> identifiers,
+            EdgeDefinition edgeDefinition) {
 
         EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(edgeLabelName, this, inVertexLabel, properties, identifiers);
         if (this.schema.isSqlgSchema()) {

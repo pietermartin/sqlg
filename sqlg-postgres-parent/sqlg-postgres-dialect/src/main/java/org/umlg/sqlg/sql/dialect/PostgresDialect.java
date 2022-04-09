@@ -2795,6 +2795,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "in_edges\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"lowerMultiplicity\" BIGINT, " +
+                "\"upperMultiplicity\" BIGINT, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +
@@ -2804,6 +2806,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "out_edges\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"lowerMultiplicity\" BIGINT, " +
+                "\"upperMultiplicity\" BIGINT, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +

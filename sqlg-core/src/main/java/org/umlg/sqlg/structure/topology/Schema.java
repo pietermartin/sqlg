@@ -276,6 +276,15 @@ public class Schema implements TopologyInf {
             final String edgeLabelName,
             final VertexLabel outVertexLabel,
             final VertexLabel inVertexLabel,
+            Map<String, PropertyDefinition> columns,
+            EdgeDefinition edgeDefinition) {
+        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, columns, new ListOrderedSet<>(), edgeDefinition);
+    }
+
+    public EdgeLabel ensureEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
             Map<String, PropertyDefinition> columns) {
         return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, columns, new ListOrderedSet<>());
     }
@@ -287,10 +296,22 @@ public class Schema implements TopologyInf {
             Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers) {
 
+        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1)));
+    }
+
+    public EdgeLabel ensureEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyDefinition> columns,
+            ListOrderedSet<String> identifiers,
+            EdgeDefinition edgeDefinition) {
+
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
         Objects.requireNonNull(identifiers, "Given identifiers may not be null");
+        Objects.requireNonNull(edgeDefinition, "Given edgeDefinition may not be null");
 
         this.sqlgGraph.getSqlDialect().validateTableName(edgeLabelName);
         for (String columnName : columns.keySet()) {
@@ -313,16 +334,16 @@ public class Schema implements TopologyInf {
             this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {
-                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers);
+                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, edgeDefinition);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
         }
         return edgeLabel;
     }
@@ -336,6 +357,30 @@ public class Schema implements TopologyInf {
             int shardCount,
             String distributionColumn,
             AbstractLabel colocate) {
+
+        return ensureEdgeLabelExist(
+                edgeLabelName,
+                outVertexLabel,
+                inVertexLabel,
+                columns,
+                identifiers,
+                shardCount,
+                distributionColumn,
+                colocate,
+                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+        );
+    }
+
+    public EdgeLabel ensureEdgeLabelExist(
+            final String edgeLabelName,
+            final VertexLabel outVertexLabel,
+            final VertexLabel inVertexLabel,
+            Map<String, PropertyDefinition> columns,
+            ListOrderedSet<String> identifiers,
+            int shardCount,
+            String distributionColumn,
+            AbstractLabel colocate,
+            EdgeDefinition edgeDefinition) {
 
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
@@ -356,16 +401,16 @@ public class Schema implements TopologyInf {
             this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {
-                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers);
+                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, edgeDefinition);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
         }
         return edgeLabel;
     }
@@ -426,7 +471,8 @@ public class Schema implements TopologyInf {
                 identifiers,
                 partitionType,
                 partitionExpression.toString(),
-                true
+                true,
+                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
         );
     }
 
@@ -447,7 +493,9 @@ public class Schema implements TopologyInf {
                 identifiers,
                 partitionType,
                 partitionExpression,
-                false);
+                false,
+                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+        );
     }
 
     public EdgeLabel ensurePartitionedEdgeLabelExist(
@@ -458,7 +506,8 @@ public class Schema implements TopologyInf {
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression,
-            boolean isForeignKeyPartition) {
+            boolean isForeignKeyPartition,
+            EdgeDefinition edgeDefinition) {
 
         Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsPartitioning());
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
@@ -485,17 +534,23 @@ public class Schema implements TopologyInf {
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns);
+            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
         }
         return edgeLabel;
     }
 
-    private EdgeLabel internalEnsureEdgeTableExists(EdgeLabel edgeLabel, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyDefinition> columns) {
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
+    private EdgeLabel internalEnsureEdgeTableExists(
+            EdgeLabel edgeLabel,
+            VertexLabel outVertexLabel,
+            VertexLabel inVertexLabel,
+            Map<String, PropertyDefinition> columns,
+            EdgeDefinition edgeDefinition) {
+
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel, edgeDefinition);
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel, edgeDefinition);
         edgeLabel.ensurePropertiesExist(columns);
         return edgeLabel;
     }
@@ -531,7 +586,9 @@ public class Schema implements TopologyInf {
                 columns,
                 identifiers,
                 partitionType,
-                partitionExpression);
+                partitionExpression,
+                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+        );
         if (this.sqlgGraph.getSqlDialect().needsSchemaCreationPrecommit()) {
             try {
                 this.sqlgGraph.tx().getConnection().commit();
@@ -556,7 +613,8 @@ public class Schema implements TopologyInf {
             final VertexLabel outVertexLabel,
             final VertexLabel inVertexLabel,
             final Map<String, PropertyDefinition> columns,
-            final ListOrderedSet<String> identifiers) {
+            final ListOrderedSet<String> identifiers,
+            final EdgeDefinition edgeDefinition) {
 
         Preconditions.checkArgument(this.topology.isSchemaChanged(), "Schema.createEdgeLabel must have schemaChanged = true");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
@@ -570,7 +628,15 @@ public class Schema implements TopologyInf {
         SchemaTable foreignKeyOut = SchemaTable.of(this.name, outVertexLabel.getLabel());
         SchemaTable foreignKeyIn = SchemaTable.of(inVertexSchema.name, inVertexLabel.getLabel());
 
-        TopologyManager.addEdgeLabel(this.sqlgGraph, this.getName(), EDGE_PREFIX + edgeLabelName, foreignKeyOut, foreignKeyIn, columns, identifiers);
+        TopologyManager.addEdgeLabel(
+                this.sqlgGraph,
+                this.getName(),
+                EDGE_PREFIX + edgeLabelName,
+                foreignKeyOut,
+                foreignKeyIn,
+                columns,
+                identifiers,
+                edgeDefinition);
         if (this.sqlgGraph.getSqlDialect().needsSchemaCreationPrecommit()) {
             try {
                 this.sqlgGraph.tx().getConnection().commit();
@@ -578,7 +644,7 @@ public class Schema implements TopologyInf {
                 throw new RuntimeException(e);
             }
         }
-        return outVertexLabel.addEdgeLabel(edgeLabelName, inVertexLabel, columns, identifiers);
+        return outVertexLabel.addEdgeLabel(edgeLabelName, inVertexLabel, columns, identifiers, edgeDefinition);
     }
 
     VertexLabel createSqlgSchemaVertexLabel(String vertexLabelName, Map<String, PropertyDefinition> columns) {

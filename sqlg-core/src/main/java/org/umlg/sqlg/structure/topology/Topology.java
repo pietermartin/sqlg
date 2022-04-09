@@ -241,6 +241,13 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_OUT_EDGES_EDGE = "out_edges";
+
+    public static final String SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY = "lowerMultiplicity";
+    public static final String SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY = "upperMultiplicity";
+    public static final String SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY = "lowerMultiplicity";
+    public static final String SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY = "upperMultiplicity";
+
+
     /**
      * Edge table for the vertex's properties.
      */
@@ -337,6 +344,9 @@ public class Topology {
      */
     public static final String SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL = "defaultLiteral";
 
+    /**
+     * A check constraint for the property. The value gets passed straight into the db without inspection.
+     */
     public static final String SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT = "checkConstraint";
 
     /**
@@ -414,8 +424,15 @@ public class Topology {
 
         columns.clear();
         schemaVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
+
+        columns.put(SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
+        columns.clear();
+        columns.put(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
+        columns.clear();
 
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, partitionVertexLabel, columns);
         edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PARTITION_EDGE, partitionVertexLabel, columns);

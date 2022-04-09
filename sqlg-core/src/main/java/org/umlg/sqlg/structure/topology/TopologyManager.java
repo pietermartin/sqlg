@@ -6,7 +6,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.BatchManager;
+import org.umlg.sqlg.structure.PropertyDefinition;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -697,9 +700,10 @@ public class TopologyManager {
             SchemaTable foreignKeyOut,
             SchemaTable foreignKeyIn,
             Map<String, PropertyDefinition> columns,
-            ListOrderedSet<String> identifiers) {
+            ListOrderedSet<String> identifiers,
+            EdgeDefinition edgeDefinition) {
 
-        addEdgeLabel(sqlgGraph, schema, prefixedTable, foreignKeyOut, foreignKeyIn, columns, identifiers, PartitionType.NONE, null);
+        addEdgeLabel(sqlgGraph, schema, prefixedTable, foreignKeyOut, foreignKeyIn, columns, identifiers, PartitionType.NONE, null, edgeDefinition);
     }
 
     static void addEdgeLabel(
@@ -711,7 +715,8 @@ public class TopologyManager {
             Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
             PartitionType partitionType,
-            String partitionExpression) {
+            String partitionExpression,
+            EdgeDefinition edgeDefinition) {
 
         Vertex edgeVertex = addEdgeLabel(sqlgGraph, prefixedTable, columns, identifiers, partitionType, partitionExpression);
 
@@ -752,8 +757,16 @@ public class TopologyManager {
             Preconditions.checkState(inVertices.size() == 1, "Multiple in vertices %s found in Sqlg's topology. BUG!!!", foreignKeyIn.toString());
             Vertex inVertex = inVertices.get(0);
 
-            outVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
-            inVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+            outVertex.addEdge(
+                    SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex,
+                    SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, edgeDefinition.outMultiplicity().lower(),
+                    SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper()
+            );
+            inVertex.addEdge(
+                    SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex,
+                    SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, edgeDefinition.inMultiplicity().lower(),
+                    SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper()
+            );
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
@@ -777,14 +790,16 @@ public class TopologyManager {
                         "name", prefixedTable.substring(EDGE_PREFIX.length()),
                         CREATED_ON, LocalDateTime.now(),
                         Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, partitionType.name(),
-                        Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, partitionExpression);
+                        Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, partitionExpression
+                );
             } else {
                 Preconditions.checkState(partitionType == PartitionType.NONE, "If the partitionExpression is null then the PartitionType must be NONE. Found %s", partitionType.name());
                 edgeVertex = sqlgGraph.addVertex(
                         T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL,
                         "name", prefixedTable.substring(EDGE_PREFIX.length()),
                         CREATED_ON, LocalDateTime.now(),
-                        Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PartitionType.NONE.name());
+                        Topology.SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PartitionType.NONE.name()
+                );
             }
 
             for (Map.Entry<String, PropertyDefinition> columnEntry : columns.entrySet()) {
@@ -883,7 +898,7 @@ public class TopologyManager {
         }
     }
 
-    public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
+    public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey, EdgeDefinition edgeDefinition) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
@@ -919,10 +934,8 @@ public class TopologyManager {
 
             String foreignKeyVertexTable;
             if (in) {
-//                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.IN_VERTEX_COLUMN_END.length());
                 foreignKeyVertexTable = foreignKey.getTable();
             } else {
-//                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - Topology.OUT_VERTEX_COLUMN_END.length());
                 foreignKeyVertexTable = foreignKey.getTable();
             }
             List<Vertex> foreignKeyVertices = traversalSource.V(foreignKeySchemaVertex)
@@ -935,9 +948,19 @@ public class TopologyManager {
             Vertex foreignKeyVertex = foreignKeyVertices.get(0);
 
             if (in) {
-                foreignKeyVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+                foreignKeyVertex.addEdge(
+                        SQLG_SCHEMA_IN_EDGES_EDGE,
+                        edgeVertex,
+                        SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, edgeDefinition.outMultiplicity().lower(),
+                        SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper()
+                );
             } else {
-                foreignKeyVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
+                foreignKeyVertex.addEdge(
+                        SQLG_SCHEMA_OUT_EDGES_EDGE,
+                        edgeVertex,
+                        SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, edgeDefinition.outMultiplicity().lower(),
+                        SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper()
+                );
             }
 
         } finally {

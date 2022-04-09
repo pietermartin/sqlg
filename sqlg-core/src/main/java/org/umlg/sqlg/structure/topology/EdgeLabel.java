@@ -803,6 +803,10 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     public void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel) {
+        ensureEdgeVertexLabelExist(direction, vertexLabel, new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1)));
+    }
+
+    public void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel, EdgeDefinition edgeDefinition) {
         //if the direction is OUT then the vertexLabel must be in the same schema as the edgeLabel (this)
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
@@ -813,7 +817,14 @@ public class EdgeLabel extends AbstractLabel {
             schema.getTopology().startSchemaChange();
             if (!foreignKeysContains(direction, vertexLabel)) {
                 SchemaTable foreignKeySchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
-                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKeySchemaTable);
+                TopologyManager.addLabelToEdge(
+                        this.sqlgGraph,
+                        this.getSchema().getName(),
+                        EDGE_PREFIX + getLabel(),
+                        direction == Direction.IN,
+                        foreignKeySchemaTable,
+                        edgeDefinition
+                );
                 if (direction == Direction.IN) {
                     this.uncommittedInVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedInEdgeLabels(schema, this);
