@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicity;
+import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -17,7 +17,8 @@ import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicity;
 //        TestPropertyCheckConstraint.class,
 //        TestPropertyCheckConstraintDistributed.class,
 //        TestMultiplicityOnArrayTypes.class
-        TestEdgeMultiplicity.class
+//        TestEdgeMultiplicity.class
+        TestTopologyUpgrade.class
 })
 public class AnyTest {
 }

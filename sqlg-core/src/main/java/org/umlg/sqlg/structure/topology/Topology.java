@@ -1128,6 +1128,19 @@ public class Topology {
             schema.loadVertexIndices(traversalSource, schemaVertex);
             schema.loadEdgeIndices(traversalSource, schemaVertex);
         }
+//        for (Vertex schemaVertex : schemaVertices) {
+//            String schemaName = schemaVertex.value("name");
+//            Optional<Schema> schemaOptional = getSchema(schemaName);
+//            Schema schema;
+//            if (schemaOptional.isEmpty()) {
+//                schema = Schema.loadUserSchema(this, schemaName);
+//                this.schemas.put(schemaName, schema);
+//            } else {
+//                schema = schemaOptional.get();
+//            }
+//            schema.loadVertexIndices(traversalSource, schemaVertex);
+//            schema.loadEdgeIndices(traversalSource, schemaVertex);
+//        }
         //Now load the in edges
         schemaVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {

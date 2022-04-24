@@ -776,6 +776,26 @@ public class EdgeLabel extends AbstractLabel {
         return Collections.unmodifiableSet(result);
     }
 
+    public Set<EdgeRole> getOutEdgeRoles(VertexLabel vertexLabel) {
+        Set<EdgeRole> result = new HashSet<>();
+        for (EdgeRole outEdgeRole : getOutEdgeRoles()) {
+            if (outEdgeRole.getVertexLabel().equals(vertexLabel)) {
+                result.add(outEdgeRole);
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    public Set<EdgeRole> getInEdgeRoles(VertexLabel vertexLabel) {
+        Set<EdgeRole> result = new HashSet<>();
+        for (EdgeRole inEdgeRole : getInEdgeRoles()) {
+            if (inEdgeRole.getVertexLabel().equals(vertexLabel)) {
+                result.add(inEdgeRole);
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
 //    public Set<EdgeRole> getOutEdgeRoles() {
 //        Set<EdgeRole> result = new HashSet<>();
 //        for (VertexLabel lbl : this.outEdgeRoles) {
@@ -1513,4 +1533,5 @@ public class EdgeLabel extends AbstractLabel {
             throw new RuntimeException(e);
         }
     }
+
 }

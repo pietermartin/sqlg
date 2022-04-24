@@ -1187,7 +1187,7 @@ public class Schema implements TopologyInf {
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
                 //a vertex does not necessarily have properties so use optional.
                 .optional(
-                        __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
+                        __.outE(SQLG_SCHEMA_OUT_EDGES_EDGE).as("out_edge").otherV().as("outEdgeVertex")
                                 .optional(
                                         __.outE(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
                                                         SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE,
@@ -1206,6 +1206,7 @@ public class Schema implements TopologyInf {
         for (Path outEdgePath : outEdges) {
             List<Set<String>> labelsList = outEdgePath.labels();
             Vertex vertexVertex = null;
+            Edge outEdge = null;
             Vertex outEdgeVertex = null;
             Vertex edgePropertyPartitionVertex = null;
             Vertex partitionParentVertex = null;
@@ -1217,6 +1218,9 @@ public class Schema implements TopologyInf {
                     switch (label) {
                         case "vertex":
                             vertexVertex = outEdgePath.get("vertex");
+                            break;
+                        case "out_edge":
+                            outEdge = outEdgePath.get("out_edge");
                             break;
                         case "outEdgeVertex":
                             outEdgeVertex = outEdgePath.get("outEdgeVertex");
@@ -1262,10 +1266,26 @@ public class Schema implements TopologyInf {
                         Preconditions.checkState(partitionExpression.isPresent());
                         edgeLabel = EdgeLabel.loadFromDb(vertexLabel.getSchema().getTopology(), edgeLabelName, partitionType, partitionExpression.value());
                     }
-                    vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, Multiplicity.from(0, -1)));
+                    Property<Long> lowerMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY);
+                    Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
+                    Multiplicity multiplicity;
+                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
+                        multiplicity = Multiplicity.from(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                    } else {
+                        multiplicity = Multiplicity.from(0, -1);
+                    }
+                    vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, multiplicity));
                 } else {
                     edgeLabel = edgeLabelOptional.get();
-                    vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, Multiplicity.from(0, -1)));
+                    Property<Long> lowerMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY);
+                    Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
+                    Multiplicity multiplicity;
+                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
+                        multiplicity = Multiplicity.from(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                    } else {
+                        multiplicity = Multiplicity.from(0, -1);
+                    }
+                    vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, multiplicity));
                 }
                 if (shardCount.isPresent()) {
                     edgeLabel.setShardCount(shardCount.value());
@@ -1381,7 +1401,7 @@ public class Schema implements TopologyInf {
                 //a vertex does not necessarily have properties so use optional.
                 .optional(
                         __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
-                                .in(SQLG_SCHEMA_IN_EDGES_EDGE).as("inVertex")
+                                .inE(SQLG_SCHEMA_IN_EDGES_EDGE).as("in_edge").otherV().as("inVertex")
                                 .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("inSchema")
                 )
                 .path()
@@ -1389,6 +1409,7 @@ public class Schema implements TopologyInf {
         for (Path inEdgePath : inEdges) {
             List<Set<String>> labelsList = inEdgePath.labels();
             Vertex vertexVertex = null;
+            Edge inEdge = null;
             Vertex outEdgeVertex = null;
             Vertex inVertex = null;
             Vertex inSchemaVertex = null;
@@ -1397,6 +1418,9 @@ public class Schema implements TopologyInf {
                     switch (label) {
                         case "vertex":
                             vertexVertex = inEdgePath.get("vertex");
+                            break;
+                        case "in_edge":
+                            inEdge = inEdgePath.get("in_edge");
                             break;
                         case "outEdgeVertex":
                             outEdgeVertex = inEdgePath.get("outEdgeVertex");
@@ -1437,7 +1461,15 @@ public class Schema implements TopologyInf {
                 Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: VertexLabel not found for schema %s and label %s", inSchemaVertexLabelName, inVertexLabelName);
                 VertexLabel inVertexLabel = vertexLabelOptional.get();
 
-                inVertexLabel.addToInEdgeRoles(new EdgeRole(inVertexLabel, outEdgeLabel, Direction.IN, true, Multiplicity.from(0, -1)));
+                Property<Long> lowerMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY);
+                Property<Long> upperMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY);
+                Multiplicity multiplicity;
+                if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
+                    multiplicity = Multiplicity.from(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                } else {
+                    multiplicity = Multiplicity.from(0, -1);
+                }
+                inVertexLabel.addToInEdgeRoles(new EdgeRole(inVertexLabel, outEdgeLabel, Direction.IN, true, multiplicity));
             }
         }
     }
@@ -1943,7 +1975,7 @@ public class Schema implements TopologyInf {
             }
         }
         for (EdgeLabel edgeLabel : edgeLabels) {
-            for (EdgeRole inEdgeRole: edgeLabel.inEdgeRoles) {
+            for (EdgeRole inEdgeRole : edgeLabel.inEdgeRoles) {
                 Preconditions.checkState(fullVertexLabels.contains(inEdgeRole.getVertexLabel().getFullName()), "'%s' is not present in the foreign VertexLabels", this.name + "." + VERTEX_PREFIX + inEdgeRole.getVertexLabel().getFullName());
             }
         }
@@ -1954,8 +1986,8 @@ public class Schema implements TopologyInf {
         }
         for (EdgeLabel edgeLabel : edgeLabels) {
             EdgeLabel foreignEdgeLabel = edgeLabel.readOnlyCopy(topology, this, Set.of(this));
-            Set<EdgeRole> outEdgeRoles= foreignEdgeLabel.getOutEdgeRoles();
-            for (EdgeRole outEdgeRole: outEdgeRoles) {
+            Set<EdgeRole> outEdgeRoles = foreignEdgeLabel.getOutEdgeRoles();
+            for (EdgeRole outEdgeRole : outEdgeRoles) {
                 String l = this.getName() + "." + VERTEX_PREFIX + outEdgeRole.getVertexLabel().getLabel();
                 Preconditions.checkState(this.vertexLabels.containsKey(l), "VertexLabel '%s' not found in schema '%s'.", l, this.getName());
                 List<EdgeRole> vertexEdgeRoles = this.vertexLabels.get(l).getOutEdgeRoles().values().stream().filter(edgeRole -> edgeRole.getEdgeLabel().equals(edgeLabel)).toList();
@@ -2003,13 +2035,13 @@ public class Schema implements TopologyInf {
         for (Schema foreignSchema : originalSchemas) {
             for (String label : foreignSchema.outEdgeLabels.keySet()) {
                 EdgeLabel edgeLabel = foreignSchema.outEdgeLabels.get(label);
-                for (EdgeRole inEdgeRole: edgeLabel.inEdgeRoles) {
+                for (EdgeRole inEdgeRole : edgeLabel.inEdgeRoles) {
                     //Is the inVertexLabel in the current schema being imported or in an already imported schema
                     if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(inEdgeRole.getVertexLabel().getLabel()).isPresent())) {
                         throw new IllegalStateException(String.format("EdgeLabel '%s' has a inVertexLabel '%s' that is not present in a foreign schema", label, inEdgeRole.getVertexLabel().getLabel()));
                     }
                 }
-                for (EdgeRole outEdgeRole: edgeLabel.outEdgeRoles) {
+                for (EdgeRole outEdgeRole : edgeLabel.outEdgeRoles) {
                     //Is the outVertexLabel in the current schema being imported or in an already imported schema
                     if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(outEdgeRole.getVertexLabel().getLabel()).isPresent())) {
                         throw new IllegalStateException(String.format("EdgeLabel '%s' has a outVertexLabel '%s' that is not present in a foreign schema", label, outEdgeRole.getVertexLabel().getLabel()));
