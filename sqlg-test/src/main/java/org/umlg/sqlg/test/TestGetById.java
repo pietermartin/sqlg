@@ -56,16 +56,16 @@ public class TestGetById extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("insert: " + stopWatch.toString());
+        System.out.println("insert: " + stopWatch);
         stopWatch.reset();
         stopWatch.start();
         Assert.assertEquals(count, this.sqlgGraph.traversal().V(recordIds).count().next().intValue());
         stopWatch.stop();
-        System.out.println("read 1: " + stopWatch.toString());
+        System.out.println("read 1: " + stopWatch);
         stopWatch.reset();
         stopWatch.start();
         Assert.assertEquals(count, this.sqlgGraph.traversal().V().hasId(recordIds).count().next().intValue());
         stopWatch.stop();
-        System.out.println("read 2: " + stopWatch.toString());
+        System.out.println("read 2: " + stopWatch);
     }
 }

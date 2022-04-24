@@ -226,8 +226,8 @@ public class Schema implements TopologyInf {
                 this,
                 edgeLabel,
                 label,
-                outVertexLabels,
-                inVertexLabels,
+                outVertexLabels.stream().flatMap(vertexLabel -> vertexLabel.getOutEdgeRoles().values().stream()).collect(Collectors.toSet()),
+                inVertexLabels.stream().flatMap(vertexLabel -> vertexLabel.getInEdgeRoles().values().stream()).collect(Collectors.toSet()),
                 edgeLabel.getPropertyDefinitionMap(),
                 edgeLabel.getIdentifiers()
         );
@@ -528,7 +528,8 @@ public class Schema implements TopologyInf {
                         identifiers,
                         partitionType,
                         partitionExpression,
-                        isForeignKeyPartition);
+                        isForeignKeyPartition,
+                        edgeDefinition);
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
@@ -563,7 +564,8 @@ public class Schema implements TopologyInf {
             final ListOrderedSet<String> identifiers,
             PartitionType partitionType,
             String partitionExpression,
-            boolean isForeignKeyPartition) {
+            boolean isForeignKeyPartition,
+            EdgeDefinition edgeDefinition) {
 
         Preconditions.checkArgument(this.topology.isSchemaChanged(), "Schema.createPartitionedEdgeLabel must have schemaChanged = true");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
@@ -587,7 +589,7 @@ public class Schema implements TopologyInf {
                 identifiers,
                 partitionType,
                 partitionExpression,
-                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+                edgeDefinition
         );
         if (this.sqlgGraph.getSqlDialect().needsSchemaCreationPrecommit()) {
             try {
@@ -603,7 +605,8 @@ public class Schema implements TopologyInf {
                 identifiers,
                 partitionType,
                 partitionExpression,
-                isForeignKeyPartition
+                isForeignKeyPartition,
+                edgeDefinition
         );
 
     }
@@ -1259,10 +1262,10 @@ public class Schema implements TopologyInf {
                         Preconditions.checkState(partitionExpression.isPresent());
                         edgeLabel = EdgeLabel.loadFromDb(vertexLabel.getSchema().getTopology(), edgeLabelName, partitionType, partitionExpression.value());
                     }
-                    vertexLabel.addToOutEdgeLabels(schemaName, edgeLabel);
+                    vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, Multiplicity.from(0, -1)));
                 } else {
                     edgeLabel = edgeLabelOptional.get();
-                    vertexLabel.addToOutEdgeLabels(schemaName, edgeLabel);
+                    vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, Multiplicity.from(0, -1)));
                 }
                 if (shardCount.isPresent()) {
                     edgeLabel.setShardCount(shardCount.value());
@@ -1434,7 +1437,7 @@ public class Schema implements TopologyInf {
                 Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: VertexLabel not found for schema %s and label %s", inSchemaVertexLabelName, inVertexLabelName);
                 VertexLabel inVertexLabel = vertexLabelOptional.get();
 
-                inVertexLabel.addToInEdgeLabels(outEdgeLabel);
+                inVertexLabel.addToInEdgeRoles(new EdgeRole(inVertexLabel, outEdgeLabel, Direction.IN, true, Multiplicity.from(0, -1)));
             }
         }
     }
@@ -1638,10 +1641,10 @@ public class Schema implements TopologyInf {
                 if (lbl != null) {
                     this.getTopology().removeVertexLabel(lbl);
                     for (EdgeRole er : lbl.getOutEdgeRoles().values()) {
-                        er.getEdgeLabel().outVertexLabels.remove(lbl);
+                        er.getEdgeLabel().outEdgeRoles.remove(er);
                     }
                     for (EdgeRole er : lbl.getInEdgeRoles().values()) {
-                        er.getEdgeLabel().inVertexLabels.remove(lbl);
+                        er.getEdgeLabel().inEdgeRoles.remove(er);
                     }
                     this.getTopology().fire(lbl, lbl, TopologyChangeAction.DELETE);
 
@@ -1658,12 +1661,12 @@ public class Schema implements TopologyInf {
                 if (edgeLabel != null) {
                     for (VertexLabel lbl : edgeLabel.getOutVertexLabels()) {
                         if (edgeLabel.isValid()) {
-                            lbl.outEdgeLabels.remove(edgeLabel.getFullName());
+                            lbl.outEdgeRoles.remove(edgeLabel.getFullName());
                         }
                     }
                     for (VertexLabel lbl : edgeLabel.getInVertexLabels()) {
                         if (edgeLabel.isValid()) {
-                            lbl.inEdgeLabels.remove(edgeLabel.getFullName());
+                            lbl.inEdgeRoles.remove(edgeLabel.getFullName());
                         }
                     }
                     this.getTopology().fire(edgeLabel, edgeLabel, TopologyChangeAction.DELETE);
@@ -1932,16 +1935,16 @@ public class Schema implements TopologyInf {
         Set<String> fullEdgeLabels = edgeLabels.stream().map(AbstractLabel::getFullName).collect(Collectors.toSet());
 
         for (VertexLabel vertexLabel : vertexLabels) {
-            for (EdgeLabel inEdgeLabel : vertexLabel.inEdgeLabels.values()) {
-                Preconditions.checkState(fullEdgeLabels.contains(inEdgeLabel.getFullName()), "'%s' is not present in the foreign EdgeLabels", this.name + "." + EDGE_PREFIX + inEdgeLabel.getFullName());
+            for (EdgeRole inEdgeRole : vertexLabel.inEdgeRoles.values()) {
+                Preconditions.checkState(fullEdgeLabels.contains(inEdgeRole.getEdgeLabel().getFullName()), "'%s' is not present in the foreign EdgeLabels", this.name + "." + EDGE_PREFIX + inEdgeRole.getEdgeLabel().getFullName());
             }
-            for (EdgeLabel outEdgeLabel : vertexLabel.outEdgeLabels.values()) {
-                Preconditions.checkState(fullEdgeLabels.contains(outEdgeLabel.getFullName()), "'%s' is not present in the foreign EdgeLabels", this.name + "." + EDGE_PREFIX + outEdgeLabel.getFullName());
+            for (EdgeRole outEdgeRole : vertexLabel.outEdgeRoles.values()) {
+                Preconditions.checkState(fullEdgeLabels.contains(outEdgeRole.getEdgeLabel().getFullName()), "'%s' is not present in the foreign EdgeLabels", this.name + "." + EDGE_PREFIX + outEdgeRole.getEdgeLabel().getFullName());
             }
         }
         for (EdgeLabel edgeLabel : edgeLabels) {
-            for (VertexLabel vertexLabel : edgeLabel.inVertexLabels) {
-                Preconditions.checkState(fullVertexLabels.contains(vertexLabel.getFullName()), "'%s' is not present in the foreign VertexLabels", this.name + "." + VERTEX_PREFIX + vertexLabel.getFullName());
+            for (EdgeRole inEdgeRole: edgeLabel.inEdgeRoles) {
+                Preconditions.checkState(fullVertexLabels.contains(inEdgeRole.getVertexLabel().getFullName()), "'%s' is not present in the foreign VertexLabels", this.name + "." + VERTEX_PREFIX + inEdgeRole.getVertexLabel().getFullName());
             }
         }
 
@@ -1951,17 +1954,21 @@ public class Schema implements TopologyInf {
         }
         for (EdgeLabel edgeLabel : edgeLabels) {
             EdgeLabel foreignEdgeLabel = edgeLabel.readOnlyCopy(topology, this, Set.of(this));
-            Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
-            for (VertexLabel outVertexLabel : outVertexLabels) {
-                String l = this.getName() + "." + VERTEX_PREFIX + outVertexLabel.getLabel();
+            Set<EdgeRole> outEdgeRoles= foreignEdgeLabel.getOutEdgeRoles();
+            for (EdgeRole outEdgeRole: outEdgeRoles) {
+                String l = this.getName() + "." + VERTEX_PREFIX + outEdgeRole.getVertexLabel().getLabel();
                 Preconditions.checkState(this.vertexLabels.containsKey(l), "VertexLabel '%s' not found in schema '%s'.", l, this.getName());
-                foreignEdgeLabel.outVertexLabels.add(this.vertexLabels.get(l));
+                List<EdgeRole> vertexEdgeRoles = this.vertexLabels.get(l).getOutEdgeRoles().values().stream().filter(edgeRole -> edgeRole.getEdgeLabel().equals(edgeLabel)).toList();
+                Preconditions.checkState(vertexEdgeRoles.size() == 1);
+                foreignEdgeLabel.outEdgeRoles.add(vertexEdgeRoles.get(0));
             }
             Set<VertexLabel> inVertexLabels = edgeLabel.getInVertexLabels();
             for (VertexLabel inVertexLabel : inVertexLabels) {
                 String l = this.getName() + "." + VERTEX_PREFIX + inVertexLabel.getLabel();
                 Preconditions.checkState(this.vertexLabels.containsKey(l), "VertexLabel '%s' not found in schema '%s'.", l, this.getName());
-                foreignEdgeLabel.inVertexLabels.add(this.vertexLabels.get(l));
+                List<EdgeRole> vertexEdgeRoles = this.vertexLabels.get(l).getInEdgeRoles().values().stream().filter(edgeRole -> edgeRole.getEdgeLabel().equals(edgeLabel)).toList();
+                Preconditions.checkState(vertexEdgeRoles.size() == 1);
+                foreignEdgeLabel.inEdgeRoles.add(vertexEdgeRoles.get(0));
             }
             this.addToAllEdgeCache(foreignEdgeLabel);
             this.outEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabel.getLabel(), foreignEdgeLabel);
@@ -1972,20 +1979,20 @@ public class Schema implements TopologyInf {
         for (Schema foreignSchema : originalSchemas) {
             for (String label : foreignSchema.vertexLabels.keySet()) {
                 VertexLabel vertexLabel = foreignSchema.vertexLabels.get(label);
-                for (EdgeLabel edgeLabel : vertexLabel.outEdgeLabels.values()) {
-                    Schema edgeSchema = edgeLabel.getSchema();
+                for (EdgeRole edgeRole : vertexLabel.outEdgeRoles.values()) {
+                    Schema edgeSchema = edgeRole.getEdgeLabel().getSchema();
                     if (originalSchemas.stream().noneMatch(s -> s.getName().equals(edgeSchema.getName()))) {
                         throw new IllegalStateException(String.format(
                                 "VertexLabel '%s' has an outEdgeLabel '%s' that is not present in a foreign schema",
-                                label, edgeLabel.getLabel()));
+                                label, edgeRole.getEdgeLabel().getLabel()));
                     }
                 }
-                for (EdgeLabel edgeLabel : vertexLabel.inEdgeLabels.values()) {
-                    Schema edgeSchema = edgeLabel.getSchema();
+                for (EdgeRole edgeRole : vertexLabel.inEdgeRoles.values()) {
+                    Schema edgeSchema = edgeRole.getEdgeLabel().getSchema();
                     if (originalSchemas.stream().noneMatch(s -> s.getName().equals(edgeSchema.getName()))) {
                         throw new IllegalStateException(String.format(
                                 "VertexLabel '%s' has an inEdgeLabel '%s' that is not present in a foreign schema",
-                                label, edgeLabel.getLabel()));
+                                label, edgeRole.getEdgeLabel().getLabel()));
                     }
                 }
             }
@@ -1996,16 +2003,16 @@ public class Schema implements TopologyInf {
         for (Schema foreignSchema : originalSchemas) {
             for (String label : foreignSchema.outEdgeLabels.keySet()) {
                 EdgeLabel edgeLabel = foreignSchema.outEdgeLabels.get(label);
-                for (VertexLabel inVertexLabel : edgeLabel.inVertexLabels) {
+                for (EdgeRole inEdgeRole: edgeLabel.inEdgeRoles) {
                     //Is the inVertexLabel in the current schema being imported or in an already imported schema
-                    if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(inVertexLabel.getLabel()).isPresent())) {
-                        throw new IllegalStateException(String.format("EdgeLabel '%s' has a inVertexLabel '%s' that is not present in a foreign schema", label, inVertexLabel.getLabel()));
+                    if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(inEdgeRole.getVertexLabel().getLabel()).isPresent())) {
+                        throw new IllegalStateException(String.format("EdgeLabel '%s' has a inVertexLabel '%s' that is not present in a foreign schema", label, inEdgeRole.getVertexLabel().getLabel()));
                     }
                 }
-                for (VertexLabel outVertexLabel : edgeLabel.outVertexLabels) {
+                for (EdgeRole outEdgeRole: edgeLabel.outEdgeRoles) {
                     //Is the outVertexLabel in the current schema being imported or in an already imported schema
-                    if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(outVertexLabel.getLabel()).isPresent())) {
-                        throw new IllegalStateException(String.format("EdgeLabel '%s' has a outVertexLabel '%s' that is not present in a foreign schema", label, outVertexLabel.getLabel()));
+                    if (originalSchemas.stream().noneMatch(s -> s.getVertexLabel(outEdgeRole.getVertexLabel().getLabel()).isPresent())) {
+                        throw new IllegalStateException(String.format("EdgeLabel '%s' has a outVertexLabel '%s' that is not present in a foreign schema", label, outEdgeRole.getVertexLabel().getLabel()));
                     }
                 }
             }

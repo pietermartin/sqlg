@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure.topology;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.TopologyInf;
 
 /**
@@ -28,12 +29,15 @@ public class EdgeRole implements TopologyInf {
      */
     private final boolean committed;
 
-    EdgeRole(VertexLabel vertexLabel, EdgeLabel edgeLabel, Direction direction, boolean committed) {
+    private final Multiplicity multiplicity;
+
+    EdgeRole(VertexLabel vertexLabel, EdgeLabel edgeLabel, Direction direction, boolean committed, Multiplicity multiplicity) {
         super();
         this.vertexLabel = vertexLabel;
         this.edgeLabel = edgeLabel;
         this.direction = direction;
         this.committed = committed;
+        this.multiplicity = multiplicity;
     }
 
     public VertexLabel getVertexLabel() {
@@ -44,12 +48,16 @@ public class EdgeRole implements TopologyInf {
         return edgeLabel;
     }
 
+    public Multiplicity getMultiplicity() {
+        return multiplicity;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((direction == null) ? 0 : direction.hashCode());
-        result = prime * result + ((edgeLabel == null) ? 0 : edgeLabel.hashCode());
+        result = prime * result + ((edgeLabel == null) ? 0 : edgeLabel.getLabel().hashCode());
         result = prime * result + ((vertexLabel == null) ? 0 : vertexLabel.hashCode());
         return result;
     }

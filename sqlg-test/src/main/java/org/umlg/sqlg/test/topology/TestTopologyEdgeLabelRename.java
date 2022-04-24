@@ -39,7 +39,7 @@ public class TestTopologyEdgeLabelRename extends BaseTest {
         String[] schema1s = new String[]{"public", "A"};
         String[] schema2s = new String[]{"public", "B"};
         boolean[] rollback = new boolean[]{true, false};
-//        String[] schema1s = new String[]{"A"};
+//        String[] schema1s = new String[]{"public"};
 //        String[] schema2s = new String[]{"public"};
 //        boolean[] rollback = new boolean[]{false};
         for (String s1 : schema1s) {

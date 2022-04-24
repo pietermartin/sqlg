@@ -8,10 +8,7 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyInf;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.ThreadLocalList;
 
 import java.sql.*;
@@ -214,10 +211,9 @@ public class Index implements TopologyInf {
         List<PropertyColumn> properties = new ArrayList<>();
         for (JsonNode propertyNode : propertiesNode) {
             String propertyName = propertyNode.get("name").asText();
-            PropertyType propertyType = PropertyType.valueOf(propertyNode.get("propertyType").asText());
+            PropertyDefinition propertyDefinition = PropertyDefinition.fromNotifyJson(propertyNode.get("propertyDefinition"));
             Optional<PropertyColumn> propertyColumnOptional = abstractLabel.getProperty(propertyName);
-            Preconditions.checkState(propertyColumnOptional.isPresent(), "BUG: property %s for PropertyType %s not found.", propertyName, propertyType.name());
-            //noinspection OptionalGetWithoutIsPresent
+            Preconditions.checkState(propertyColumnOptional.isPresent(), "BUG: property %s for PropertyDefinition %s not found.", propertyName, propertyDefinition.toString());
             properties.add(propertyColumnOptional.get());
         }
         return new Index(name, indexType, abstractLabel, properties);

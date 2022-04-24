@@ -144,7 +144,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
         if (!complete && keyValueMapTriple.getRight().size() != keyValueMapTriple.getMiddle().size()) {
-//            throw Property.Exceptions.propertyValueCanNotBeNull();
             throw Property.Exceptions.propertyKeyCanNotBeNull();
         }
         final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());

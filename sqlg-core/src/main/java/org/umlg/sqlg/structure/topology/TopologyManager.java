@@ -1040,7 +1040,8 @@ public class TopologyManager {
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                     SQLG_SCHEMA_PROPERTY_NAME, column.getKey(),
                     SQLG_SCHEMA_PROPERTY_TYPE, column.getValue().propertyType().name(),
-                    SQLG_SCHEMA_PROPERTY, column.getValue().multiplicity().isRequired(),
+                    SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, column.getValue().multiplicity().lower(),
+                    SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, column.getValue().multiplicity().upper(),
                     CREATED_ON, LocalDateTime.now()
             );
             vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
@@ -1341,7 +1342,9 @@ public class TopologyManager {
             Vertex property = sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                     "name", column.getKey(),
-                    "type", column.getValue().propertyType().name(),
+                    SQLG_SCHEMA_PROPERTY_TYPE, column.getValue().propertyType().name(),
+                    SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, column.getValue().multiplicity().lower(),
+                    SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, column.getValue().multiplicity().upper(),
                     CREATED_ON, LocalDateTime.now()
             );
             edge.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);

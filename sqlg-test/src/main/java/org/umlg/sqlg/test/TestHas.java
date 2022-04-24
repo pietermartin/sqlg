@@ -15,8 +15,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-
 /**
  * Date: 2014/07/13
  * Time: 6:36 PM
@@ -202,7 +200,7 @@ public class TestHas extends BaseTest {
         final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V().has("k", P.within("轉注", "✦", "♠")).values("k");
         printTraversalForm(traversal);
         checkResults(Arrays.asList("轉注", "✦", "♠"), traversal);
-        assertFalse(traversal.hasNext());
+        Assert.assertFalse(traversal.hasNext());
     }
 
     @Test

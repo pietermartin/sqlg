@@ -49,8 +49,8 @@ public class TestTopologyDelete extends BaseTest {
         boolean[] preserve = new boolean[]{true, false};
         boolean[] rollback = new boolean[]{true, false};
 //        String[] schemas = new String[]{"MySchema"};
-//        boolean[] preserve = new boolean[]{true};
-//        boolean[] rollback = new boolean[]{true};
+//        boolean[] preserve = new boolean[]{false};
+//        boolean[] rollback = new boolean[]{false};
         for (String s : schemas) {
             for (boolean p : preserve) {
                 for (boolean r : rollback) {
@@ -400,12 +400,11 @@ public class TestTopologyDelete extends BaseTest {
                 TopologyListenerTest tlt1 = new TopologyListenerTest();
                 sqlgGraph1.getTopology().registerListener(tlt1);
 
-
                 this.sqlgGraph.tx().commit();
                 checkIndexExistenceAfterDeletion(this.sqlgGraph, schema, i1, i2);
 
 
-                Thread.sleep(1_000);
+                Thread.sleep(5_000);
                 checkIndexExistenceAfterDeletion(sqlgGraph1, schema, i1, i2);
                 assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
                 assertTrue(tlt1.receivedEvent(i2, TopologyChangeAction.DELETE));
@@ -860,9 +859,9 @@ public class TestTopologyDelete extends BaseTest {
     }
 
     private void checkEdgeRoleExistenceAfterRoleDeletion(SqlgGraph g, String schemaOut, String schemaIn) throws Exception {
-        Optional<EdgeLabel> olbl = g.getTopology().getEdgeLabel(schemaOut, "E1");
-        assertNotNull(olbl);
-        assertTrue(olbl.isPresent());
+        Optional<EdgeLabel> optionalEdgeLabel = g.getTopology().getEdgeLabel(schemaOut, "E1");
+        assertNotNull(optionalEdgeLabel);
+        assertTrue(optionalEdgeLabel.isPresent());
 
         VertexLabel a = g.getTopology().getVertexLabel(schemaOut, "A").orElseThrow(IllegalStateException::new);
         VertexLabel b = g.getTopology().getVertexLabel(schemaOut, "B").orElseThrow(IllegalStateException::new);
@@ -873,22 +872,22 @@ public class TestTopologyDelete extends BaseTest {
         assertEquals(1, pb.getInEdgeLabels().size());
         assertEquals(0, pa.getInEdgeLabels().size());
 
-        Set<VertexLabel> inLbls = olbl.get().getInVertexLabels();
+        Set<VertexLabel> inLbls = optionalEdgeLabel.get().getInVertexLabels();
         assertEquals(1, inLbls.size());
         assertFalse(inLbls.contains(pa));
         assertTrue(inLbls.contains(pb));
 
-        Set<EdgeRole> inRoles = olbl.get().getInEdgeRoles();
+        Set<EdgeRole> inRoles = optionalEdgeLabel.get().getInEdgeRoles();
         assertEquals(1, inRoles.size());
         assertEquals("B", inRoles.iterator().next().getVertexLabel().getName());
 
 
-        Set<VertexLabel> outLbls = olbl.get().getOutVertexLabels();
+        Set<VertexLabel> outLbls = optionalEdgeLabel.get().getOutVertexLabels();
         assertEquals(1, outLbls.size());
         assertTrue(outLbls.contains(a));
         assertFalse(outLbls.contains(b));
 
-        Set<EdgeRole> outRoles = olbl.get().getOutEdgeRoles();
+        Set<EdgeRole> outRoles = optionalEdgeLabel.get().getOutEdgeRoles();
         assertEquals(1, outRoles.size());
         assertEquals("A", outRoles.iterator().next().getVertexLabel().getName());
 
@@ -944,7 +943,7 @@ public class TestTopologyDelete extends BaseTest {
             } else {
                 this.sqlgGraph.tx().commit();
                 checkEdgeRoleExistenceAfterRoleDeletion(this.sqlgGraph, schemaOut, schemaIn);
-                Thread.sleep(1_000);
+                Thread.sleep(10_000);
                 checkEdgeRoleExistenceAfterRoleDeletion(sqlgGraph1, schemaOut, schemaIn);
 
                 assertFalse(b1.edges(Direction.OUT, "E1").hasNext());
