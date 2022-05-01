@@ -855,9 +855,11 @@ public class VertexLabel extends AbstractLabel {
         if (this.schema.getTopology().isSchemaChanged() && !this.uncommittedOutEdgeRoles.isEmpty()) {
             ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (EdgeRole edgeRole : this.uncommittedOutEdgeRoles.values()) {
-                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
-                outEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+                Optional<JsonNode> edgeRoleJsonOptional = edgeRole.toNotifyJson();
+                Preconditions.checkState(edgeRoleJsonOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
+//                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
+//                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
+                outEdgeLabelsArrayNode.add(edgeRoleJsonOptional.get());
             }
             vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
         }
@@ -877,9 +879,13 @@ public class VertexLabel extends AbstractLabel {
         if (this.schema.getTopology().isSchemaChanged() && !this.uncommittedInEdgeRoles.isEmpty()) {
             ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (EdgeRole edgeRole : this.uncommittedInEdgeRoles.values()) {
-                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
-                inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+                Optional<JsonNode> edgeRoleJsonNodeOptional = edgeRole.toNotifyJson();
+                Preconditions.checkState(edgeRoleJsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
+                inEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
+
+//                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
+//                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
+//                inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
             }
             vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
         }
@@ -899,11 +905,16 @@ public class VertexLabel extends AbstractLabel {
         ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         boolean foundOutEdgeLabel = false;
         for (EdgeRole edgeRole : this.outEdgeRoles.values()) {
-            Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-            if (jsonNodeOptional.isPresent()) {
+            Optional<JsonNode> edgeRoleJsonNodeOptional = edgeRole.toNotifyJson();
+            if (edgeRoleJsonNodeOptional.isPresent()) {
                 foundOutEdgeLabel = true;
-                outEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+                outEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
             }
+//            Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
+//            if (jsonNodeOptional.isPresent()) {
+//                foundOutEdgeLabel = true;
+//                outEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+//            }
         }
         if (foundOutEdgeLabel) {
             vertexLabelNode.set("outEdgeLabels", outEdgeLabelsArrayNode);
@@ -913,11 +924,16 @@ public class VertexLabel extends AbstractLabel {
         boolean foundInEdgeLabels = false;
         for (EdgeRole edgeRole : this.inEdgeRoles.values()) {
             if (edgeRole.getEdgeLabel().isValid()) {
-                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-                if (jsonNodeOptional.isPresent()) {
+                Optional<JsonNode> edgeRoleJsonNodeOptional = edgeRole.toNotifyJson();
+                if (edgeRoleJsonNodeOptional.isPresent()) {
                     foundInEdgeLabels = true;
-                    inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+                    inEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
                 }
+//                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
+//                if (jsonNodeOptional.isPresent()) {
+//                    foundInEdgeLabels = true;
+//                    inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+//                }
             }
         }
         if (foundInEdgeLabels) {
@@ -933,9 +949,15 @@ public class VertexLabel extends AbstractLabel {
     void fromNotifyJsonOutEdge(JsonNode vertexLabelJson, boolean fire) {
         super.fromPropertyNotifyJson(vertexLabelJson, fire);
         for (String s : Arrays.asList("uncommittedOutEdgeLabels", "outEdgeLabels")) {
-            ArrayNode uncommittedOutEdgeLabels = (ArrayNode) vertexLabelJson.get(s);
-            if (uncommittedOutEdgeLabels != null) {
-                for (JsonNode uncommittedOutEdgeLabel : uncommittedOutEdgeLabels) {
+            ArrayNode uncommittedOutEdgeRoles = (ArrayNode) vertexLabelJson.get(s);
+            if (uncommittedOutEdgeRoles != null) {
+                for (JsonNode uncommittedOutEdgeRole : uncommittedOutEdgeRoles) {
+
+                    Direction direction = Direction.valueOf(uncommittedOutEdgeRole.get("direction").asText());
+                    Preconditions.checkState(direction == Direction.OUT);
+                    Multiplicity multiplicity = Multiplicity.fromNotifyJson(uncommittedOutEdgeRole.get("multiplicity"));
+                    JsonNode uncommittedOutEdgeLabel = uncommittedOutEdgeRole.get("edgeLabel");
+
                     String schemaName = uncommittedOutEdgeLabel.get("schema").asText();
                     Preconditions.checkState(schemaName.equals(getSchema().getName()), "out edges must be for the same schema that the edge specifies");
                     String edgeLabelName = uncommittedOutEdgeLabel.get("label").asText();
@@ -952,7 +974,7 @@ public class VertexLabel extends AbstractLabel {
                     } else {
                         edgeLabel = edgeLabelOptional.get();
                     }
-                    EdgeRole edgeRole = new EdgeRole(this, edgeLabel, Direction.OUT, true, EdgeDefinition.of().outMultiplicity());
+                    EdgeRole edgeRole = new EdgeRole(this, edgeLabel, Direction.OUT, true, multiplicity);
                     edgeLabel.addToOutEdgeRole(edgeRole);
                     //TODO get EdgeDefinition from json
                     this.outEdgeRoles.put(schemaName + "." + edgeLabel.getLabel(), edgeRole);
@@ -1024,9 +1046,15 @@ public class VertexLabel extends AbstractLabel {
 
     void fromNotifyJsonInEdge(JsonNode vertexLabelJson) {
         for (String s : Arrays.asList("uncommittedInEdgeLabels", "inEdgeLabels")) {
-            ArrayNode uncommittedInEdgeLabels = (ArrayNode) vertexLabelJson.get(s);
-            if (uncommittedInEdgeLabels != null) {
-                for (JsonNode uncommittedInEdgeLabel : uncommittedInEdgeLabels) {
+            ArrayNode uncommittedInEdgeRoles = (ArrayNode) vertexLabelJson.get(s);
+            if (uncommittedInEdgeRoles != null) {
+                for (JsonNode uncommittedInEdgeRole : uncommittedInEdgeRoles) {
+
+                    Direction direction = Direction.valueOf(uncommittedInEdgeRole.get("direction").asText());
+                    Preconditions.checkState(direction == Direction.IN);
+                    Multiplicity multiplicity = Multiplicity.fromNotifyJson(uncommittedInEdgeRole.get("multiplicity"));
+                    JsonNode uncommittedInEdgeLabel = uncommittedInEdgeRole.get("edgeLabel");
+                    
                     String schemaName = uncommittedInEdgeLabel.get("schema").asText();
                     String edgeLabelName = uncommittedInEdgeLabel.get("label").asText();
                     Optional<Schema> schemaOptional = getSchema().getTopology().getSchema(schemaName);
@@ -1035,9 +1063,8 @@ public class VertexLabel extends AbstractLabel {
                     //The edgeLabel could have been deleted
                     if (edgeLabelOptional.isPresent()) {
                         EdgeLabel edgeLabel = edgeLabelOptional.get();
-                        EdgeRole edgeRole = new EdgeRole(this, edgeLabel, Direction.IN, true, EdgeDefinition.of().inMultiplicity());
+                        EdgeRole edgeRole = new EdgeRole(this, edgeLabel, Direction.IN, true, multiplicity);
                         edgeLabel.addToInEdgeRole(edgeRole);
-                        //TODO get EdgeDefinition from json
                         this.inEdgeRoles.put(schemaName + "." + edgeLabel.getLabel(), edgeRole);
                         edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel, false);
                         this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);

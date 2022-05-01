@@ -1,8 +1,12 @@
 package org.umlg.sqlg.structure.topology;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.TopologyInf;
+
+import java.util.Optional;
 
 /**
  * Represent a pair VertexLabel and EdgeLabel
@@ -57,6 +61,7 @@ public class EdgeRole implements TopologyInf {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((direction == null) ? 0 : direction.hashCode());
+        result = prime * result + ((multiplicity == null) ? 0 : multiplicity.hashCode());
         result = prime * result + ((edgeLabel == null) ? 0 : edgeLabel.getLabel().hashCode());
         result = prime * result + ((vertexLabel == null) ? 0 : vertexLabel.hashCode());
         return result;
@@ -73,6 +78,9 @@ public class EdgeRole implements TopologyInf {
         EdgeRole other = (EdgeRole) obj;
         if (direction != other.direction)
             return false;
+        if (!multiplicity.equals(other.multiplicity)) {
+            return false;
+        }
         if (edgeLabel == null) {
             if (other.edgeLabel != null)
                 return false;
@@ -103,22 +111,26 @@ public class EdgeRole implements TopologyInf {
 
     @Override
     public String getName() {
-        String dir;
-        switch (direction) {
-            case BOTH:
-                dir = "<->";
-                break;
-            case IN:
-                dir = "<-";
-                break;
-            case OUT:
-                dir = "->";
-                break;
-            default:
-                dir = "unknown";
-                break;
-        }
+        String dir = switch (direction) {
+            case BOTH -> "<->";
+            case IN -> "<-";
+            case OUT -> "->";
+            default -> "unknown";
+        };
         return vertexLabel.getName() + dir + edgeLabel.getName();
+    }
+
+    Optional<JsonNode> toNotifyJson() {
+        ObjectNode edgeRoleNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        edgeRoleNode.put("direction", direction.name());
+        edgeRoleNode.set("multiplicity", multiplicity.toNotifyJson());
+        Optional<JsonNode> edgeLabel = getEdgeLabel().toNotifyJson();
+        if (edgeLabel.isPresent()) {
+            edgeRoleNode.set("edgeLabel", edgeLabel.get());
+            return Optional.of(edgeRoleNode);
+        } else {
+            return Optional.empty();
+        }
     }
 
     @Override

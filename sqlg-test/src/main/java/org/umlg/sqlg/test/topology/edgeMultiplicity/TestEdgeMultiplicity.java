@@ -12,46 +12,46 @@ import java.util.Set;
 
 public class TestEdgeMultiplicity extends BaseTest {
 
-//    @Test
-//    public void testMultiplicity() {
-//        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
-//        VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A");
-//        VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
-//        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-//                new EdgeDefinition(
-//                        Multiplicity.from(1, 1),
-//                        Multiplicity.from(5, 5)
-//                )
-//        );
-//        VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
-//        aVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel,
-//                new EdgeDefinition(
-//                        Multiplicity.from(0, -1),
-//                        Multiplicity.from(0, -1)
-//                )
-//        );
-//
-//        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
-//        VertexLabel aaVertexLabel = aSchema.ensureVertexLabelExist("A");
-//        VertexLabel bbVertexLabel = aSchema.ensureVertexLabelExist("B");
-//        aaVertexLabel.ensureEdgeLabelExist("ab", bbVertexLabel, new EdgeDefinition(Multiplicity.from(1, 1), Multiplicity.from(1, 1)));
-//        this.sqlgGraph.tx().commit();
-//
-//        Optional<EdgeLabel> abEdgeLabelOptional = aVertexLabel.getOutEdgeLabel("ab");
-//        Assert.assertTrue(abEdgeLabelOptional.isPresent());
-//        EdgeLabel abEdgeLabel = abEdgeLabelOptional.get();
-//        Set<EdgeRole> inEdgeRoles = abEdgeLabel.getInEdgeRoles();
-//        Assert.assertEquals(2, inEdgeRoles.size());
-//        Set<EdgeRole> outEdgeRoles = abEdgeLabel.getOutEdgeRoles();
-//        Assert.assertEquals(1, outEdgeRoles.size());
-//        Assert.assertEquals(0, abEdgeLabel.getProperties().size());
-//        Set<EdgeRole> outEdgeRolesForVertexLabel = abEdgeLabel.getOutEdgeRoles(aVertexLabel);
-//        Assert.assertEquals(1, outEdgeRolesForVertexLabel.size());
-//        Assert.assertEquals(Multiplicity.from(1, 1), outEdgeRolesForVertexLabel.iterator().next().getMultiplicity());
-//        Set<EdgeRole> inEdgeRolesForVertexLabel = abEdgeLabel.getInEdgeRoles(bVertexLabel);
-//        Assert.assertEquals(1, inEdgeRolesForVertexLabel.size());
-//        Assert.assertEquals(Multiplicity.from(5, 5), inEdgeRolesForVertexLabel.iterator().next().getMultiplicity());
-//    }
+    @Test
+    public void testMultiplicity() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A");
+        VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
+        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
+                new EdgeDefinition(
+                        Multiplicity.from(1, 1),
+                        Multiplicity.from(5, 5)
+                )
+        );
+        VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
+        aVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel,
+                new EdgeDefinition(
+                        Multiplicity.from(0, -1),
+                        Multiplicity.from(0, -1)
+                )
+        );
+
+        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        VertexLabel aaVertexLabel = aSchema.ensureVertexLabelExist("A");
+        VertexLabel bbVertexLabel = aSchema.ensureVertexLabelExist("B");
+        aaVertexLabel.ensureEdgeLabelExist("ab", bbVertexLabel, new EdgeDefinition(Multiplicity.from(1, 1), Multiplicity.from(1, 1)));
+        this.sqlgGraph.tx().commit();
+
+        Optional<EdgeLabel> abEdgeLabelOptional = aVertexLabel.getOutEdgeLabel("ab");
+        Assert.assertTrue(abEdgeLabelOptional.isPresent());
+        EdgeLabel abEdgeLabel = abEdgeLabelOptional.get();
+        Set<EdgeRole> inEdgeRoles = abEdgeLabel.getInEdgeRoles();
+        Assert.assertEquals(2, inEdgeRoles.size());
+        Set<EdgeRole> outEdgeRoles = abEdgeLabel.getOutEdgeRoles();
+        Assert.assertEquals(1, outEdgeRoles.size());
+        Assert.assertEquals(0, abEdgeLabel.getProperties().size());
+        Set<EdgeRole> outEdgeRolesForVertexLabel = abEdgeLabel.getOutEdgeRoles(aVertexLabel);
+        Assert.assertEquals(1, outEdgeRolesForVertexLabel.size());
+        Assert.assertEquals(Multiplicity.from(1, 1), outEdgeRolesForVertexLabel.iterator().next().getMultiplicity());
+        Set<EdgeRole> inEdgeRolesForVertexLabel = abEdgeLabel.getInEdgeRoles(bVertexLabel);
+        Assert.assertEquals(1, inEdgeRolesForVertexLabel.size());
+        Assert.assertEquals(Multiplicity.from(5, 5), inEdgeRolesForVertexLabel.iterator().next().getMultiplicity());
+    }
 
     @Test
     public void testLoadMultiplicity() {

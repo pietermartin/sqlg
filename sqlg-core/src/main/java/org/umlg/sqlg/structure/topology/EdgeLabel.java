@@ -608,18 +608,33 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private boolean foreignKeysContains(Direction direction, VertexLabel vertexLabel) {
-        EdgeRole outEdgeRole = new EdgeRole(vertexLabel, this, Direction.OUT, true, Multiplicity.from(0, -1));
-        EdgeRole inEdgeRole = new EdgeRole(vertexLabel, this, Direction.IN, true, Multiplicity.from(0, -1));
+    private boolean foreignKeysContains(Direction direction, VertexLabel vertexLabel, EdgeDefinition edgeDefinition) {
+        EdgeRole outEdgeRole = new EdgeRole(vertexLabel, this, Direction.OUT, true, edgeDefinition.outMultiplicity());
+        EdgeRole inEdgeRole = new EdgeRole(vertexLabel, this, Direction.IN, true, edgeDefinition.inMultiplicity());
         switch (direction) {
             case OUT:
                 if (this.outEdgeRoles.contains(outEdgeRole)) {
                     return true;
+                } else {
+                    //Check if the EdgeRole exist with a different multiplicity.
+                    for (EdgeRole edgeRole : this.outEdgeRoles) {
+                        if (edgeRole.getVertexLabel().equals(vertexLabel) && this.equals(edgeRole.getEdgeLabel())) {
+                            throw new RuntimeException("Different multiplicity");
+                        }
+                    }
                 }
                 break;
             case IN:
                 if (this.inEdgeRoles.contains(inEdgeRole)) {
                     return true;
+                } else {
+                    //Check if the EdgeRole exist with a different multiplicity.
+                    for (EdgeRole edgeRole : this.inEdgeRoles) {
+                        if (edgeRole.getVertexLabel().equals(vertexLabel) && this.equals(edgeRole.getEdgeLabel())) {
+                            throw new RuntimeException("Different multiplicity");
+                        }
+                    }
+
                 }
                 break;
             case BOTH:
@@ -630,11 +645,25 @@ public class EdgeLabel extends AbstractLabel {
                 case OUT:
                     if (this.uncommittedOutEdgeRoles.contains(outEdgeRole)) {
                         return true;
+                    } else {
+                        //Check if the EdgeRole exist with a different multiplicity.
+                        for (EdgeRole edgeRole : this.uncommittedOutEdgeRoles) {
+                            if (edgeRole.getVertexLabel().equals(vertexLabel) && this.equals(edgeRole.getEdgeLabel())) {
+                                throw new RuntimeException(String.format("EdgeRole [%s][%s][%s] already exists with a multiplicity of %s", this.getLabel(), direction.name(), vertexLabel.getLabel(), edgeRole.getMultiplicity().toString()));
+                            }
+                        }
                     }
                     break;
                 case IN:
                     if (this.uncommittedInEdgeRoles.contains(inEdgeRole)) {
                         return true;
+                    } else {
+                        //Check if the EdgeRole exist with a different multiplicity.
+                        for (EdgeRole edgeRole : this.uncommittedInEdgeRoles) {
+                            if (edgeRole.getVertexLabel().equals(vertexLabel) && this.equals(edgeRole.getEdgeLabel())) {
+                                throw new RuntimeException(String.format("EdgeRole [%s][%s][%s] already exists with a multiplicity of %s", this.getLabel(), direction.name(), vertexLabel.getLabel(), edgeRole.getMultiplicity().toString()));
+                            }
+                        }
                     }
                     break;
             }
@@ -857,11 +886,11 @@ public class EdgeLabel extends AbstractLabel {
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
         }
-        if (!foreignKeysContains(direction, vertexLabel)) {
+        if (!foreignKeysContains(direction, vertexLabel, edgeDefinition)) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
             schema.getTopology().startSchemaChange();
-            if (!foreignKeysContains(direction, vertexLabel)) {
+            if (!foreignKeysContains(direction, vertexLabel, edgeDefinition)) {
                 SchemaTable foreignKeySchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
                 TopologyManager.addLabelToEdge(
                         this.sqlgGraph,
