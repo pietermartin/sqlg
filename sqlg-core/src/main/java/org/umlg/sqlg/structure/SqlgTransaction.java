@@ -1,14 +1,16 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.TransactionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.EdgeRole;
 import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -63,20 +65,20 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     if (applicationName.length() > 63) {
                         String first = applicationName.substring(0, 30);
                         String last = applicationName.substring(applicationName.length() - 30);
-                        applicationName =  first + "..." + last;
+                        applicationName = first + "..." + last;
                     }
                     connection.setClientInfo("ApplicationName", applicationName);
                 }
                 // read default setting for laziness
                 boolean lazy = this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY, true);
-                TransactionCache tc;
+                TransactionCache transactionCache;
                 if (supportsBatchMode()) {
-                    tc = TransactionCache.of(connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect) this.sqlgGraph.getSqlDialect())), lazy);
+                    transactionCache = TransactionCache.of(connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect) this.sqlgGraph.getSqlDialect())), lazy);
                 } else {
-                    tc = TransactionCache.of(connection, lazy);
+                    transactionCache = TransactionCache.of(connection, lazy);
                 }
-                tc.setFetchSize(getDefaultFetchSize());
-                this.threadLocalTx.set(tc);
+                transactionCache.setFetchSize(getDefaultFetchSize());
+                this.threadLocalTx.set(transactionCache);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -98,6 +100,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             if (this.beforeCommitFunction != null) {
                 this.beforeCommitFunction.doBeforeCommit();
             }
+
             connection.commit();
             connection.setAutoCommit(true);
             if (this.afterCommitFunction != null) {
@@ -208,21 +211,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     public void batchMode(BatchManager.BatchModeType batchModeType) {
         if (supportsBatchMode()) {
             switch (batchModeType) {
-                case NONE:
+                case NONE -> {
                     readWrite();
                     this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NONE);
-                    break;
-                case NORMAL:
-                    this.normalBatchModeOn();
-                    break;
-                case STREAMING:
-                    this.streamingBatchModeOn();
-                    break;
-                case STREAMING_WITH_LOCK:
-                    this.streamingWithLockBatchModeOn();
-                    break;
-                default:
-                    throw new IllegalStateException("unhandled BatchModeType " + batchModeType.name());
+                }
+                case NORMAL -> this.normalBatchModeOn();
+                case STREAMING -> this.streamingBatchModeOn();
+                case STREAMING_WITH_LOCK -> this.streamingWithLockBatchModeOn();
+                default -> throw new IllegalStateException("unhandled BatchModeType " + batchModeType.name());
             }
         }
     }
@@ -384,5 +380,28 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     public void setWriteTransaction(boolean b) {
         this.threadLocalTx.get().setWriteTransaction(b);
+    }
+
+    public void checkMultiplicity(Vertex vertex, Direction direction, EdgeLabel edgeLabel, VertexLabel otherSide) {
+        EdgeRole edgeRole = null;
+        switch (direction) {
+            case OUT -> edgeRole = edgeLabel.getInEdgeRoles(otherSide);
+            case IN -> edgeRole = edgeLabel.getOutEdgeRoles(otherSide);
+            case BOTH -> throw new IllegalStateException("checkMultiplicity requires IN or OUT Direction, not BOTH");
+        }
+        Preconditions.checkNotNull(edgeRole, String.format("'%s' EdgeRole not found for '%s' and '%s'", direction.name(), edgeLabel.getLabel(), otherSide.getLabel()));
+        Multiplicity multiplicity = edgeRole.getMultiplicity();
+        if (multiplicity.hasLimits()) {
+            long upper = multiplicity.upper();
+            long lower = multiplicity.lower();
+            long count = this.sqlgGraph.traversal().V(vertex).to(direction, edgeLabel.getLabel())
+                    .has(T.label, otherSide.getFullName())
+                    .count().next();
+            if (count > upper) {
+                throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nUpper multiplicity is %d current multiplicity is %d", edgeLabel.getLabel(), upper, count));
+            } else if (count < lower) {
+                throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nLower multiplicity is %d current multiplicity is %d", edgeLabel.getLabel(), lower, count));
+            }
+        }
     }
 }

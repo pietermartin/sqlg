@@ -478,28 +478,31 @@ public class VertexLabel extends AbstractLabel {
 
         EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(edgeLabelName, this, inVertexLabel, properties, identifiers, edgeDefinition);
         if (this.schema.isSqlgSchema()) {
+            EdgeRole outEdgeRole = new EdgeRole(this, edgeLabel, Direction.OUT, true, edgeDefinition.outMultiplicity());
             this.outEdgeRoles.put(
                     this.schema.getName() + "." + edgeLabel.getLabel(),
-                    new EdgeRole(this, edgeLabel, Direction.OUT, true, edgeDefinition.outMultiplicity())
+                    outEdgeRole
             );
+            EdgeRole inEdgeRole = new EdgeRole(inVertexLabel, edgeLabel, Direction.IN, true, edgeDefinition.inMultiplicity());
             inVertexLabel.inEdgeRoles.put(
                     this.schema.getName() + "." + edgeLabel.getLabel(),
-                    new EdgeRole(inVertexLabel, edgeLabel, Direction.IN, true, edgeDefinition.inMultiplicity())
+                    inEdgeRole
             );
         } else {
+            EdgeRole outEdgeRole = new EdgeRole(this, edgeLabel, Direction.OUT, false, edgeDefinition.outMultiplicity());
             this.uncommittedOutEdgeRoles.put(
                     this.schema.getName() + "." + edgeLabel.getLabel(),
-                    new EdgeRole(this, edgeLabel, Direction.OUT, false, edgeDefinition.outMultiplicity())
+                    outEdgeRole
             );
+            EdgeRole inEdgeRole = new EdgeRole(inVertexLabel, edgeLabel, Direction.IN, false, edgeDefinition.inMultiplicity());
             inVertexLabel.uncommittedInEdgeRoles.put(
                     this.schema.getName() + "." + edgeLabel.getLabel(),
-                    new EdgeRole(inVertexLabel, edgeLabel, Direction.IN, false, edgeDefinition.inMultiplicity())
+                    inEdgeRole
             );
         }
         return edgeLabel;
     }
 
-    //    @Override
     public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
         for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
@@ -1054,7 +1057,7 @@ public class VertexLabel extends AbstractLabel {
                     Preconditions.checkState(direction == Direction.IN);
                     Multiplicity multiplicity = Multiplicity.fromNotifyJson(uncommittedInEdgeRole.get("multiplicity"));
                     JsonNode uncommittedInEdgeLabel = uncommittedInEdgeRole.get("edgeLabel");
-                    
+
                     String schemaName = uncommittedInEdgeLabel.get("schema").asText();
                     String edgeLabelName = uncommittedInEdgeLabel.get("label").asText();
                     Optional<Schema> schemaOptional = getSchema().getTopology().getSchema(schemaName);

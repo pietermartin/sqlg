@@ -20,6 +20,7 @@ import java.util.UUID;
  * Date: 2014/07/22
  * Time: 10:41 AM
  */
+@SuppressWarnings("DuplicatedCode")
 public class TestAddVertexViaMap extends BaseTest {
 
     @Test
@@ -98,6 +99,5 @@ public class TestAddVertexViaMap extends BaseTest {
         Assert.assertEquals("p2", e1.property("name2").value());
         Assert.assertEquals("p3", e1.property("name3").value());
     }
-
 
 }

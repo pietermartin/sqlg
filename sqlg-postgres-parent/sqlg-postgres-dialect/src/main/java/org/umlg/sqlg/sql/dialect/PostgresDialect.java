@@ -3857,13 +3857,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(
+    public List<SqlgSqlExecutor.DropQuery> drop(
             SqlgGraph sqlgGraph,
             String leafElementsToDelete,
             String edgesToDelete,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
+        List<SqlgSqlExecutor.DropQuery> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
         SchemaTableTree lastEdge = null;
@@ -3925,7 +3925,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+                    sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
                 }
             }
             for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
@@ -3954,16 +3954,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+                    sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
                 }
             }
         }
 
         //Need to defer foreign key constraint checks.
         if (queryTraversesEdge) {
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, "SET CONSTRAINTS ALL DEFERRED", false));
+            sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, "SET CONSTRAINTS ALL DEFERRED", false));
         }
-        //Delete the leaf vertices, if there are foreign keys then its been deferred.
+        //Delete the leaf vertices, if there are foreign keys then it's been deferred.
         StringBuilder sb = new StringBuilder();
         sb.append("WITH todelete AS (");
         sb.append(leafElementsToDelete);
@@ -4021,7 +4021,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             }
         }
         triple.setMiddle(sb.toString());
-        sqls.add(triple);
+        sqls.add(new SqlgSqlExecutor.DropQuery(triple.getLeft(), leafElementsToDelete, triple.getMiddle(), triple.getRight()));
 
         if (queryTraversesEdge) {
             sb = new StringBuilder();
@@ -4047,11 +4047,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                 }
             }
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), false));
+            sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.EDGE, leafElementsToDelete, sb.toString(), false));
         }
         //Enable the foreign key constraint
         if (queryTraversesEdge) {
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, "SET CONSTRAINTS ALL IMMEDIATE", false));
+            sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, "SET CONSTRAINTS ALL IMMEDIATE", false));
         }
         return sqls;
     }
@@ -4282,9 +4282,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    public List<SqlgSqlExecutor.DropQuery> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
         Preconditions.checkState(schemaTable.isWithPrefix(), "SqlDialect.sqlTruncate' schemaTable must start with a prefix %s or %s", Topology.VERTEX_PREFIX, Topology.EDGE_PREFIX);
-        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> result = new ArrayList<>();
+        List<SqlgSqlExecutor.DropQuery> result = new ArrayList<>();
         Optional<Schema> schemaOptional = sqlgGraph.getTopology().getSchema(schemaTable.getSchema());
         Preconditions.checkState(schemaOptional.isPresent(), "BUG: %s not found in the topology.", schemaTable.getSchema());
         Schema schema = schemaOptional.get();
@@ -4297,7 +4297,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             Collection<EdgeLabel> outEdgeLabels = vertexLabel.getOutEdgeLabels().values();
             for (EdgeLabel edgeLabel : outEdgeLabels) {
                 if (edgeLabel.getOutVertexLabels().size() == 1) {
-                    //The edgeLabel is the vertexTable being deleted's only edge so we can truncate it.
+                    //The edgeLabel is, the vertexTable being deleted's, only edgeLabel, so we can truncate it.
                     edgesToTruncate.add(maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." + maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                 } else {
                     throw new IllegalStateException("BUG: sqlTruncate should not be called when an edge has more than one out edge labels.");
@@ -4306,7 +4306,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             Collection<EdgeLabel> inEdgeLabels = vertexLabel.getInEdgeLabels().values();
             for (EdgeLabel edgeLabel : inEdgeLabels) {
                 if (edgeLabel.getInVertexLabels().size() == 1) {
-                    //The edgeLabel is the vertexTable being deleted's only edge so we can truncate it.
+                    //The edgeLabel is, the vertexTable being deleted's, only edgeLabel, so we can truncate it.
                     edgesToTruncate.add(maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." + maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
                 } else {
                     throw new IllegalStateException("BUG: sqlTruncate should not be called when an edge has more than one in edge labels.");
@@ -4321,8 +4321,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         }
         sql.append(maybeWrapInQoutes(schemaTable.getSchema())).append(".").append(maybeWrapInQoutes(schemaTable.getTable()));
         result.add(
-                Triple.of(
+                new SqlgSqlExecutor.DropQuery(
                         SqlgSqlExecutor.DROP_QUERY.TRUNCATE,
+                        null,
                         sql.toString(),
                         false
                 )

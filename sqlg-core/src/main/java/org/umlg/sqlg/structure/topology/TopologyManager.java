@@ -951,8 +951,8 @@ public class TopologyManager {
                 foreignKeyVertex.addEdge(
                         SQLG_SCHEMA_IN_EDGES_EDGE,
                         edgeVertex,
-                        SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, edgeDefinition.outMultiplicity().lower(),
-                        SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper()
+                        SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, edgeDefinition.inMultiplicity().lower(),
+                        SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper()
                 );
             } else {
                 foreignKeyVertex.addEdge(

@@ -359,8 +359,10 @@ public class EdgeLabel extends AbstractLabel {
         }
 
         //foreign key definition start
-        if (inVertexLabel.getPartitionType().isNone() && outVertexLabel.getPartitionType().isNone() &&
-                this.partitionType.isNone() && this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
+        if (inVertexLabel.getPartitionType().isNone() &&
+                outVertexLabel.getPartitionType().isNone() &&
+                this.partitionType.isNone() &&
+                this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
 
             sql.append(",\n\t");
             sql.append("FOREIGN KEY (");
@@ -479,7 +481,7 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(";");
         }
 
-        if (partitionType.isNone() && sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
+        if (this.partitionType.isNone() && sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
             sql.append("\n\tCREATE INDEX");
             if (sqlDialect.requiresIndexName()) {
                 sql.append(" ");
@@ -805,42 +807,39 @@ public class EdgeLabel extends AbstractLabel {
         return Collections.unmodifiableSet(result);
     }
 
-    public Set<EdgeRole> getOutEdgeRoles(VertexLabel vertexLabel) {
-        Set<EdgeRole> result = new HashSet<>();
-        for (EdgeRole outEdgeRole : getOutEdgeRoles()) {
+    public EdgeRole getOutEdgeRoles(VertexLabel vertexLabel) {
+        //Optimized to not call getOutEdgeRoles()
+        for (EdgeRole outEdgeRole : this.outEdgeRoles) {
             if (outEdgeRole.getVertexLabel().equals(vertexLabel)) {
-                result.add(outEdgeRole);
+                return outEdgeRole;
             }
         }
-        return Collections.unmodifiableSet(result);
+        Set<EdgeRole> result = new HashSet<>(this.uncommittedOutEdgeRoles);
+        result.removeAll(this.uncommittedRemovedOutEdgeRoles);
+        for (EdgeRole uncommittedOutEdgeRole : result) {
+            if (uncommittedOutEdgeRole.getVertexLabel().equals(vertexLabel)) {
+                return uncommittedOutEdgeRole;
+            }
+        }
+        return null;
     }
 
-    public Set<EdgeRole> getInEdgeRoles(VertexLabel vertexLabel) {
-        Set<EdgeRole> result = new HashSet<>();
-        for (EdgeRole inEdgeRole : getInEdgeRoles()) {
+    public EdgeRole getInEdgeRoles(VertexLabel vertexLabel) {
+        //Optimized to not call getInEdgeRoles()
+        for (EdgeRole inEdgeRole : this.inEdgeRoles) {
             if (inEdgeRole.getVertexLabel().equals(vertexLabel)) {
-                result.add(inEdgeRole);
+                return inEdgeRole;
             }
         }
-        return Collections.unmodifiableSet(result);
+        Set<EdgeRole> result = new HashSet<>(this.uncommittedInEdgeRoles);
+        result.removeAll(this.uncommittedRemovedInEdgeRoles);
+        for (EdgeRole uncommittedInEdgeRole : result) {
+            if (uncommittedInEdgeRole.getVertexLabel().equals(vertexLabel)) {
+                return uncommittedInEdgeRole;
+            }
+        }
+        return null;
     }
-
-//    public Set<EdgeRole> getOutEdgeRoles() {
-//        Set<EdgeRole> result = new HashSet<>();
-//        for (VertexLabel lbl : this.outEdgeRoles) {
-//            if (!this.topology.isSchemaChanged() || !this.uncommittedRemovedOutEdgeRoles.contains(lbl)) {
-//                result.add(new EdgeRole(lbl, this, Direction.OUT, true));
-//            }
-//        }
-//        if (this.topology.isSchemaChanged()) {
-//            for (VertexLabel lbl : this.uncommittedOutEdgeRoles) {
-//                if (!this.uncommittedRemovedOutEdgeRoles.contains(lbl)) {
-//                    result.add(new EdgeRole(lbl, this, Direction.OUT, false));
-//                }
-//            }
-//        }
-//        return Collections.unmodifiableSet(result);
-//    }
 
     public Set<VertexLabel> getInVertexLabels() {
         Set<VertexLabel> result = new HashSet<>();
@@ -859,29 +858,7 @@ public class EdgeLabel extends AbstractLabel {
         return Collections.unmodifiableSet(result);
     }
 
-//    public Set<EdgeRole> getInEdgeRoles() {
-//        Set<EdgeRole> result = new HashSet<>();
-//        for (VertexLabel lbl : this.inEdgeRoles) {
-//            if (!this.topology.isSchemaChanged() || !this.uncommittedRemovedInEdgeRoles.contains(lbl)) {
-//                result.add(new EdgeRole(lbl, this, Direction.IN, true));
-//            }
-//        }
-//
-//        if (this.topology.isSchemaChanged()) {
-//            for (VertexLabel lbl : this.uncommittedInEdgeRoles) {
-//                if (!this.uncommittedRemovedInEdgeRoles.contains(lbl)) {
-//                    result.add(new EdgeRole(lbl, this, Direction.IN, false));
-//                }
-//            }
-//        }
-//        return Collections.unmodifiableSet(result);
-//    }
-
-    public void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel) {
-        ensureEdgeVertexLabelExist(direction, vertexLabel, EdgeDefinition.of());
-    }
-
-    public void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel, EdgeDefinition edgeDefinition) {
+    void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel, VertexLabel otherSide, EdgeDefinition edgeDefinition) {
         //if the direction is OUT then the vertexLabel must be in the same schema as the edgeLabel (this)
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
@@ -1405,6 +1382,7 @@ public class EdgeLabel extends AbstractLabel {
             Optional<VertexLabel> foreignOutVertexLabelOptional = foreignSchema.getVertexLabel(outEdgeRole.getVertexLabel().getLabel());
             Preconditions.checkState(foreignOutVertexLabelOptional.isPresent());
             VertexLabel foreignOutVertexLabel = foreignOutVertexLabelOptional.get();
+
             EdgeRole copyEdgeRole = new EdgeRole(foreignOutVertexLabel, copy, Direction.OUT, true, outEdgeRole.getMultiplicity());
             copy.outEdgeRoles.add(copyEdgeRole);
             foreignOutVertexLabel.outEdgeRoles.put(copy.getFullName(), copyEdgeRole);
@@ -1416,6 +1394,7 @@ public class EdgeLabel extends AbstractLabel {
                     .findAny();
             Preconditions.checkState(foreignInVertexLabelOptional.isPresent());
             VertexLabel foreignInVertexLabel = foreignInVertexLabelOptional.get();
+
             EdgeRole copyEdgeRole = new EdgeRole(foreignInVertexLabel, copy, Direction.IN, true, inEdgeRole.getMultiplicity());
             copy.inEdgeRoles.add(copyEdgeRole);
             foreignInVertexLabel.inEdgeRoles.put(copy.getFullName(), copyEdgeRole);
@@ -1454,6 +1433,8 @@ public class EdgeLabel extends AbstractLabel {
                 edgeRole -> edgeRole.getVertexLabel().equals(oldVertexLabel) && edgeRole.getEdgeLabel().equals(this)
         ).toList();
         Preconditions.checkState(edgeRoles.size() == 1);
+        EdgeRole edgeRole = edgeRoles.get(0);
+
         EdgeRole renamedEdgeRole = new EdgeRole(renamedVertexLabel, this, Direction.OUT, false, edgeRoles.get(0).getMultiplicity());
         this.uncommittedOutEdgeRoles.add(renamedEdgeRole);
         renamedVertexLabel.addToUncommittedOutEdgeRoles(renamedVertexLabel.getSchema(), renamedEdgeRole);
@@ -1479,7 +1460,8 @@ public class EdgeLabel extends AbstractLabel {
     void renameInVertexLabel(VertexLabel renamedVertexLabel, VertexLabel oldVertexLabel) {
         List<EdgeRole> oldEdgeRoles = oldVertexLabel.getInEdgeRoles().values().stream().filter(edgeRole -> edgeRole.getEdgeLabel().equals(this)).toList();
         Preconditions.checkState(oldEdgeRoles.size() == 1);
-        this.uncommittedRemovedInEdgeRoles.add(oldEdgeRoles.get(0));
+        EdgeRole oldEdgeRole = oldEdgeRoles.get(0);
+        this.uncommittedRemovedInEdgeRoles.add(oldEdgeRole);
         EdgeRole renamedEdgeRole = new EdgeRole(renamedVertexLabel, this, Direction.IN, false, oldEdgeRoles.get(0).getMultiplicity());
         this.uncommittedInEdgeRoles.add(renamedEdgeRole);
         renamedVertexLabel.addToUncommittedInEdgeRoles(renamedVertexLabel.getSchema(), renamedEdgeRole);

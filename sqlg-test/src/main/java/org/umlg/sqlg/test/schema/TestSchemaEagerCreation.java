@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.schema;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
@@ -181,75 +180,6 @@ public class TestSchemaEagerCreation extends BaseTest {
 
         edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
         assertEquals(2, edgeLabel.getProperties().size());
-    }
-
-    @Test
-    public void testEdgeLabelAddVertexLabels() {
-        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
-        a.addEdge("ab", b);
-        this.sqlgGraph.tx().commit();
-
-        Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
-        assertTrue(edgeLabelOptional.isPresent());
-        EdgeLabel edgeLabel = edgeLabelOptional.get();
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(1, edgeLabel.getInVertexLabels().size());
-
-        VertexLabel inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-        this.sqlgGraph.tx().rollback();
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(1, edgeLabel.getInVertexLabels().size());
-
-        edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
-        assertTrue(edgeLabelOptional.isPresent());
-        edgeLabel = edgeLabelOptional.get();
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(1, edgeLabel.getInVertexLabels().size());
-
-        inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-        this.sqlgGraph.tx().commit();
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-
-        VertexLabel outVertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("D").ensureVertexLabelExist("D");
-        try {
-            edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
-            fail("Should fail as the out vertex is in a different schema to the edgeLabel");
-        } catch (IllegalStateException e) {
-            //swallow
-        }
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-        this.sqlgGraph.tx().rollback();
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-
-        outVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("D");
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
-        assertEquals(2, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-        this.sqlgGraph.tx().rollback();
-        assertEquals(1, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-
-        outVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("D");
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
-        assertEquals(2, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-        this.sqlgGraph.tx().commit();
-        assertEquals(2, edgeLabel.getOutVertexLabels().size());
-        assertEquals(2, edgeLabel.getInVertexLabels().size());
-
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")

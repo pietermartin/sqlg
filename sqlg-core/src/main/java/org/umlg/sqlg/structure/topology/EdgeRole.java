@@ -3,6 +3,8 @@ package org.umlg.sqlg.structure.topology;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.TopologyInf;
 
@@ -14,6 +16,9 @@ import java.util.Optional;
  * @author jpmoresmau
  */
 public class EdgeRole implements TopologyInf {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EdgeRole.class);
+
     /**
      * the vertex label
      */
@@ -111,15 +116,14 @@ public class EdgeRole implements TopologyInf {
 
     @Override
     public String getName() {
-        String dir = switch (direction) {
+        String direction = switch (this.direction) {
             case BOTH -> "<->";
             case IN -> "<-";
             case OUT -> "->";
-            default -> "unknown";
         };
-        return vertexLabel.getName() + dir + edgeLabel.getName();
+        return vertexLabel.getName() + direction + edgeLabel.getName();
     }
-
+    
     Optional<JsonNode> toNotifyJson() {
         ObjectNode edgeRoleNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         edgeRoleNode.put("direction", direction.name());

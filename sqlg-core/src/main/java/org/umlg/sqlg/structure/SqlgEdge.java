@@ -33,25 +33,25 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * Called from @link {@link SqlgVertex} to create a brand new edge.
      *
      * @param sqlgGraph       The graph.
-     * @param streaming       If in batch mode this indicates if its streaming or not.
+     * @param streaming       If in batch mode this indicates if it's streaming or not.
      * @param schema          The schema the edge is in.
      * @param table           The edge's label which translates to a table name.
      * @param inVertex        The edge's in vertex.
      * @param outVertex       The edge's out vertex.
      * @param keyValueMapPair A pair of properties of the edge. Left contains all the properties and right the null valued properties.
      */
-    public SqlgEdge(
+    SqlgEdge(
             SqlgGraph sqlgGraph,
             boolean streaming,
             String schema,
             String table,
-            SqlgVertex inVertex,
             SqlgVertex outVertex,
+            SqlgVertex inVertex,
             Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
 
         super(sqlgGraph, schema, table);
-        this.inVertex = inVertex;
         this.outVertex = outVertex;
+        this.inVertex = inVertex;
         try {
             insertEdge(streaming, keyValueMapPair);
         } catch (SQLException e) {
@@ -71,7 +71,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * @param schema    The schema the edge is in.
      * @param table     The table the edge is in. This translates to its label.
      */
-    public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
+    private SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
     }
 
@@ -92,9 +92,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
     public void remove() {
         this.sqlgGraph.tx().readWrite();
         this.sqlgGraph.getTopology().threadWriteLock();
-        if (this.removed)
+        if (this.removed) {
             throw new IllegalStateException(String.format("Edge with id %s was removed.", id().toString()));
-
+        }
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeEdge(this.schema, this.table, this);
         } else {

@@ -41,6 +41,7 @@ public class Topology {
     public static final String LABEL_SEPARATOR = ":::";
     public static final String IN_VERTEX_COLUMN_END = "__I";
     public static final String OUT_VERTEX_COLUMN_END = "__O";
+    public static final String EDGE_ROLE_COUNT = "_cnt";
     public static final String ZONEID = "~~~ZONEID";
     public static final String MONTHS = "~~~MONTHS";
     public static final String DAYS = "~~~DAYS";
@@ -52,7 +53,7 @@ public class Topology {
 
     private final Map<String, Map<String, PropertyDefinition>> allTableCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, PropertyDefinition>> sqlgSchemaTableCache = new ConcurrentHashMap<>();
-    //This cache is needed as to much time is taken building it on the fly.
+    //This cache is needed as too much time is taken building it on the fly.
     //The cache is invalidated on every topology change
     private final Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new ConcurrentHashMap<>();
     private final Map<String, Set<ForeignKey>> edgeForeignKeyCache;

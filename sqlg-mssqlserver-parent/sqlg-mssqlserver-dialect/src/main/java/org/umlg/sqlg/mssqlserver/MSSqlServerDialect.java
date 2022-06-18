@@ -1113,13 +1113,13 @@ public class MSSqlServerDialect extends BaseSqlDialect {
 
     @SuppressWarnings("Duplicates")
     @Override
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(
+    public List<SqlgSqlExecutor.DropQuery> drop(
             SqlgGraph sqlgGraph,
             String leafElementsToDelete,
-            @Nullable  String edgesToDelete,
+            @Nullable String edgesToDelete,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
+        List<SqlgSqlExecutor.DropQuery> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
         SchemaTableTree lastEdge = null;
@@ -1177,7 +1177,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+                    sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
                 }
             }
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
@@ -1216,7 +1216,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                             }
                         }
                     }
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+                    sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
                 }
             }
         }
@@ -1224,12 +1224,12 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         //Need to defer foreign key constraint checks.
         if (queryTraversesEdge) {
             for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
-                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." +  maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
+                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
+                sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
             }
             for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
                 String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
+                sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
             }
         }
         //Delete the leaf vertices, if there are foreign keys then its been deferred.
@@ -1261,7 +1261,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 }
             }
         }
-        sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+        sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
 
         if (queryTraversesEdge) {
             sb = new StringBuilder();
@@ -1293,17 +1293,17 @@ public class MSSqlServerDialect extends BaseSqlDialect {
                 }
             }
 
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), false));
+            sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.EDGE, leafElementsToDelete, sb.toString(), false));
         }
         //Enable the foreign key constraint
         if (queryTraversesEdge) {
             for (EdgeLabel edgeLabel : lastVertexLabel.getOutEdgeLabels().values()) {
-                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." +  maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
+                String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
+                sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
             }
             for (EdgeLabel edgeLabel : lastVertexLabel.getInEdgeLabels().values()) {
                 String edgeTableName = (maybeWrapInQoutes(edgeLabel.getSchema().getName())) + "." + maybeWrapInQoutes(EDGE_PREFIX + edgeLabel.getLabel());
-                sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
+                sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
             }
         }
         return sqls;

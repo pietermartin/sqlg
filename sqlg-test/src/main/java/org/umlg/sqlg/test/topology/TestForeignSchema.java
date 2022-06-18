@@ -357,6 +357,9 @@ public class TestForeignSchema extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals("haloB", vertices.get(0).value("a"));
 
+        //This is important, postgres_fdw runs fetch queries which will dead lock on alter statements.
+        this.sqlgGraph.tx().rollback();
+
         //Check its readOnly
         boolean failed = false;
         try {
@@ -401,6 +404,7 @@ public class TestForeignSchema extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A.A", "a", "haloAgain");
         } catch (IllegalStateException e) {
             failed = true;
+            Assert.assertEquals("Foreign VertexLabel must have user defined identifiers to support addition.", e.getMessage());
         }
         Assert.assertTrue(failed);
         this.sqlgGraph.tx().rollback();
@@ -418,6 +422,7 @@ public class TestForeignSchema extends BaseTest {
             this.sqlgGraph.tx().commit();
         } catch (IllegalStateException e) {
             failed = true;
+            Assert.assertEquals("Foreign EdgeLabel must have user defined identifiers to support addition.", e.getMessage());
         }
         Assert.assertTrue(failed);
         this.sqlgGraph.tx().rollback();
@@ -1163,7 +1168,7 @@ public class TestForeignSchema extends BaseTest {
             );
             statement.execute(sql);
             sql = String.format(
-                    "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\";",
+                    "IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER \"%s\" INTO \"%s\" OPTIONS (import_default 'true');",
                     "A",
                     "sqlgraph_fwd_server",
                     "A"

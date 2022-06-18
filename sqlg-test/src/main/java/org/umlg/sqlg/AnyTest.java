@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicityDistributed;
+import org.umlg.sqlg.test.topology.TestForeignSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,15 +10,7 @@ import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicityDistribu
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestRequiredProperty.class,
-//        TestRequiredPropertyDistributed.class,
-//        TestDefaultValue.class,
-//        TestDefaultValueDistributed.class,
-//        TestPropertyCheckConstraint.class,
-//        TestPropertyCheckConstraintDistributed.class,
-//        TestMultiplicityOnArrayTypes.class
-//        TestEdgeMultiplicity.class,
-        TestEdgeMultiplicityDistributed.class
+        TestForeignSchema.class
 })
 public class AnyTest {
 }

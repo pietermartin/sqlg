@@ -35,7 +35,7 @@ public class TestSchema extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A.A", "name", "a");
         this.sqlgGraph.tx().commit();
         Optional<Schema> schema = this.sqlgGraph.getTopology().getSchema(null);
-        Assert.assertTrue(!schema.isPresent());
+        Assert.assertFalse(schema.isPresent());
         schema = this.sqlgGraph.getTopology().getSchema("A");
         Assert.assertTrue(schema.isPresent());
     }
@@ -109,7 +109,7 @@ public class TestSchema extends BaseTest {
         Assert.assertEquals(tom, vertexTraversal(this.sqlgGraph, john).out("friend").next());
         Assert.assertEquals(john, vertexTraversal(this.sqlgGraph, tom).in("friend").next());
         Assert.assertEquals(2, this.sqlgGraph.traversal().E().count().next(), 0);
-        this.sqlgGraph.traversal().E().<Edge>has(T.label, "friend").forEachRemaining(
+        this.sqlgGraph.traversal().E().has(T.label, "friend").forEachRemaining(
                 a -> {
                     Assert.assertEquals(john, edgeTraversal(this.sqlgGraph, a).outV().next());
                     Assert.assertEquals(tom, edgeTraversal(this.sqlgGraph, a).inV().next());
@@ -160,7 +160,7 @@ public class TestSchema extends BaseTest {
         person.addEdge("person_address", address);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertTrue(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")) != null);
+        Assert.assertNotNull(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
 
         Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
         Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));

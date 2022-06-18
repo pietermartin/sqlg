@@ -30,6 +30,7 @@ import java.lang.reflect.Array;
 import java.sql.Date;
 import java.sql.*;
 import java.time.*;
+import java.util.UUID;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
@@ -195,7 +196,7 @@ public class SqlgUtil {
                             schemaTableTree.loadProperty(resultSet, sqlgElement);
                         } else {
                             String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
-                            sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                            sqlgElement = (E) SqlgEdge.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                             schemaTableTree.loadProperty(resultSet, sqlgElement);
                             schemaTableTree.loadEdgeInOutVertices(resultSet, (SqlgEdge) sqlgElement);
                         }
@@ -1225,17 +1226,12 @@ public class SqlgUtil {
     }
 
     public static Object stringValueToType(PropertyType propertyType, String value) {
-        switch (propertyType.ordinal()) {
-            case STRING_ORDINAL:
-            case VARCHAR_ORDINAL:
-                return value;
-            case LONG_ORDINAL:
-                return Long.valueOf(value);
-            case INTEGER_ORDINAL:
-                return Integer.valueOf(value);
-            default:
-                throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
-        }
+        return switch (propertyType.ordinal()) {
+            case STRING_ORDINAL, VARCHAR_ORDINAL -> value;
+            case LONG_ORDINAL -> Long.valueOf(value);
+            case INTEGER_ORDINAL -> Integer.valueOf(value);
+            default -> throw new IllegalStateException(String.format("Unhandled propertyType %s", propertyType));
+        };
     }
 
 }

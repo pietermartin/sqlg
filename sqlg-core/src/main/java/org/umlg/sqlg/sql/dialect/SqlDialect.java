@@ -803,9 +803,9 @@ public interface SqlDialect {
      * @return
      */
     @SuppressWarnings("Duplicates")
-    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    default List<SqlgSqlExecutor.DropQuery> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqls = new ArrayList<>();
+        List<SqlgSqlExecutor.DropQuery> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();
 
         SchemaTableTree lastEdge = null;
@@ -860,7 +860,8 @@ public interface SqlDialect {
                     sb.append(" IN\n\t(");
                     sb.append(leafElementsToDelete);
                     sb.append(")");
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+//                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+                    sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
                 }
             }
             for (Map.Entry<String, EdgeLabel> edgeLabelEntry : lastVertexLabel.getInEdgeLabels().entrySet()) {
@@ -889,7 +890,8 @@ public interface SqlDialect {
                     sb.append(" IN\n\t(");
                     sb.append(leafElementsToDelete);
                     sb.append(")");
-                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+//                    sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+                    sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
                 }
             }
         }
@@ -897,7 +899,8 @@ public interface SqlDialect {
         //Need to defer foreign key constraint checks.
         if (queryTraversesEdge) {
             String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
+//            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
+            sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, this.sqlToTurnOffReferentialConstraintCheck(edgeTableName), false));
         }
         //Delete the leaf vertices, if there are foreign keys then its been deferred.
         StringBuilder sb = new StringBuilder();
@@ -920,7 +923,8 @@ public interface SqlDialect {
         }
         sb.append(leafElementsToDelete);
         sb.append(")");
-        sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+//        sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.NORMAL, sb.toString(), false));
+        sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.NORMAL, leafElementsToDelete, sb.toString(), false));
 
         if (queryTraversesEdge) {
             sb = new StringBuilder();
@@ -943,12 +947,14 @@ public interface SqlDialect {
             }
             sb.append(edgesToDelete);
             sb.append(")");
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), false));
+//            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.EDGE, sb.toString(), false));
+            sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.EDGE, leafElementsToDelete, sb.toString(), false));
         }
         //Enable the foreign key constraint
         if (queryTraversesEdge) {
             String edgeTableName = (maybeWrapInQoutes(lastEdge.getSchemaTable().getSchema())) + "." + maybeWrapInQoutes(lastEdge.getSchemaTable().getTable());
-            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
+//            sqls.add(Triple.of(SqlgSqlExecutor.DROP_QUERY.ALTER, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
+            sqls.add(new SqlgSqlExecutor.DropQuery(SqlgSqlExecutor.DROP_QUERY.ALTER, leafElementsToDelete, this.sqlToTurnOnReferentialConstraintCheck(edgeTableName), false));
         }
         return sqls;
     }
@@ -1134,11 +1140,12 @@ public interface SqlDialect {
         throw new IllegalStateException("alterForeignKeyToDeferrable is not supported.");
     }
 
-    default List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    default List<SqlgSqlExecutor.DropQuery> sqlTruncate(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
         Preconditions.checkState(schemaTable.isWithPrefix(), "SqlDialect.sqlTruncate' schemaTable must start with a prefix %s or %s", Topology.VERTEX_PREFIX, Topology.EDGE_PREFIX);
         return Collections.singletonList(
-                Triple.of(
+                new SqlgSqlExecutor.DropQuery(
                         SqlgSqlExecutor.DROP_QUERY.TRUNCATE,
+                        null,
                         "TRUNCATE TABLE " + maybeWrapInQoutes(schemaTable.getSchema()) + "." + maybeWrapInQoutes(schemaTable.getTable()),
                         false
                 )

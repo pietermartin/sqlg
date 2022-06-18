@@ -26,6 +26,8 @@ public class SqlgSqlExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(SqlgSqlExecutor.class);
 
+    public record DropQuery(SqlgSqlExecutor.DROP_QUERY dropQuery, String leafSql, String sql, Boolean addAdditionalPartitionHasContainer) {}
+
     private SqlgSqlExecutor() {
     }
 
@@ -33,7 +35,8 @@ public class SqlgSqlExecutor {
         ALTER,
         EDGE,
         NORMAL,
-        TRUNCATE
+        TRUNCATE,
+        MULTIPLICITY
     }
 
     public static void executeDropQuery(
@@ -42,26 +45,21 @@ public class SqlgSqlExecutor {
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
         sqlgGraph.getTopology().threadWriteLock();
-        List<Triple<DROP_QUERY, String, Boolean>> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
-        for (Triple<DROP_QUERY, String, Boolean> sqlPair : sqls) {
-            DROP_QUERY dropQuery = sqlPair.getLeft();
-            String sql = sqlPair.getMiddle();
-            Boolean addAdditionalPartitionHasContainer = sqlPair.getRight();
+        List<DropQuery> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
+//        List<Triple<DROP_QUERY, String, Boolean>> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
+        for (DropQuery sqlPair : sqls) {
+            DROP_QUERY dropQuery = sqlPair.dropQuery();
+            String sql = sqlPair.sql();
+            Boolean addAdditionalPartitionHasContainer = sqlPair.addAdditionalPartitionHasContainer();
             switch (dropQuery) {
-                case ALTER:
-                case TRUNCATE:
-                    executeDropQuery(sqlgGraph, sql, new LinkedList<>(), false);
-                    break;
-                case EDGE:
+                case ALTER, TRUNCATE -> executeDropQuery(sqlgGraph, sql, new LinkedList<>(), false);
+                case EDGE -> {
                     LinkedList<SchemaTableTree> tmp = new LinkedList<>(distinctQueryStack);
                     tmp.removeLast();
                     executeDropQuery(sqlgGraph, sql, tmp, false);
-                    break;
-                case NORMAL:
-                    executeDropQuery(sqlgGraph, sql, distinctQueryStack, addAdditionalPartitionHasContainer);
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery);
+                }
+                case NORMAL -> executeDropQuery(sqlgGraph, sql, distinctQueryStack, addAdditionalPartitionHasContainer);
+                default -> throw new IllegalStateException("Unknown DROP_QUERY " + dropQuery);
             }
         }
     }
@@ -96,9 +94,10 @@ public class SqlgSqlExecutor {
         if (sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().flush();
         }
+        //noinspection CommentedOutCode
         try {
-            if (distinctQueryStack.peekFirst().getStepType() != SchemaTableTree.STEP_TYPE.GRAPH_STEP) {
-                Preconditions.checkState(!distinctQueryStack.peekFirst().getParentIdsAndIndexes().isEmpty());
+            if (!distinctQueryStack.isEmpty() && distinctQueryStack.peekFirst().getStepType() != SchemaTableTree.STEP_TYPE.GRAPH_STEP) {
+                Preconditions.checkState(!distinctQueryStack.isEmpty() && !distinctQueryStack.peekFirst().getParentIdsAndIndexes().isEmpty());
             }
             Connection conn = sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {

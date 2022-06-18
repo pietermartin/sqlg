@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
@@ -109,6 +108,7 @@ public class SchemaTableTree {
 
     //Indicates a IdStep, only the element id must be returned.
     private final boolean idOnly;
+
 
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth) {
         this.sqlgGraph = sqlgGraph;
@@ -765,7 +765,7 @@ public class SchemaTableTree {
         }
     }
 
-    public List<Triple<SqlgSqlExecutor.DROP_QUERY, String, Boolean>> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
+    public List<SqlgSqlExecutor.DropQuery> constructDropSql(LinkedList<SchemaTableTree> distinctQueryStack) {
         Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
         Preconditions.checkState(distinctQueryStack.getLast().drop);
         Preconditions.checkState(!duplicatesInStack(distinctQueryStack));
@@ -1916,7 +1916,7 @@ public class SchemaTableTree {
                 schemaTableTree.printLabeledEdgeInOutVertexIdFromClauseFor(columnList);
             }
         } else {
-            List<SchemaTableTree> labeled = distinctQueryStack.stream().filter(d -> !d.getLabels().isEmpty()).collect(Collectors.toList());
+            List<SchemaTableTree> labeled = distinctQueryStack.stream().filter(d -> !d.getLabels().isEmpty()).toList();
             for (SchemaTableTree schemaTableTree : labeled) {
                 if (!schemaTableTree.hasAggregateFunction()) {
                     printLabeledIDFromClauseFor(schemaTableTree, columnList);
@@ -2125,7 +2125,7 @@ public class SchemaTableTree {
         String previousRawLabel = previousSchemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
         String result = this.stepDepth + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() +
                 ALIAS_SEPARATOR + previousSchemaTableTree.getSchemaTable().getSchema() +
-                //This must be a dot as its the foreign key column, i.e. blah__I
+                //This must be a dot as it's the foreign key column, i.e. blah__I
                 "." + previousRawLabel + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END);
         String alias = rootAliasAndIncrement();
         this.getColumnNameAliasMap().put(result, alias);

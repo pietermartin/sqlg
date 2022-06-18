@@ -161,7 +161,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         } else if (edgeLabel.isForeign()) {
             throw SqlgExceptions.invalidMode("Foreign EdgeLabel must have user defined identifiers to support addition.");
         }
-        return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValueMapPair);
+        return new SqlgEdge(
+                this.sqlgGraph,
+                complete,
+                this.schema,
+                label,
+                this,
+                (SqlgVertex) inVertex,
+                keyValueMapPair);
     }
 
     @SuppressWarnings("unchecked")
@@ -534,7 +541,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return SchemaTable.of(this.getSchema(), VERTEX_PREFIX + this.getTable());
     }
 
-    SchemaTable getSchemaTable() {
+    public SchemaTable getSchemaTable() {
         return SchemaTable.of(this.getSchema(), this.getTable());
     }
 

@@ -296,7 +296,7 @@ public class Schema implements TopologyInf {
             Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers) {
 
-        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1)));
+        return ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, null);
     }
 
     public EdgeLabel ensureEdgeLabelExist(
@@ -311,7 +311,6 @@ public class Schema implements TopologyInf {
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
         Objects.requireNonNull(identifiers, "Given identifiers may not be null");
-        Objects.requireNonNull(edgeDefinition, "Given edgeDefinition may not be null");
 
         this.sqlgGraph.getSqlDialect().validateTableName(edgeLabelName);
         for (String columnName : columns.keySet()) {
@@ -334,16 +333,54 @@ public class Schema implements TopologyInf {
             this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {
-                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, edgeDefinition);
+                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, edgeDefinition != null ? edgeDefinition : EdgeDefinition.of());
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
+                EdgeRole outEdgeRole = edgeLabelOptional.get().getOutEdgeRoles(outVertexLabel);
+                Multiplicity outMultiplicity;
+                if (outEdgeRole != null) {
+                    outMultiplicity = outEdgeRole.getMultiplicity();
+                } else {
+                    outMultiplicity = Multiplicity.from(0, -1);
+                }
+                EdgeRole inEdgeRole = edgeLabelOptional.get().getInEdgeRoles(inVertexLabel);
+                Multiplicity inMultiplicity;
+                if (inEdgeRole != null) {
+                    inMultiplicity = inEdgeRole.getMultiplicity();
+                } else {
+                    inMultiplicity = Multiplicity.from(0, -1);
+                }
+                edgeLabel = edgeLabelOptional.get();
+                internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, new EdgeDefinition(outMultiplicity, inMultiplicity));
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
+            edgeLabel = edgeLabelOptional.get();
+            EdgeRole outEdgeRole = edgeLabel.getOutEdgeRoles(outVertexLabel);
+            Multiplicity outMultiplicity;
+            if (outEdgeRole != null) {
+                outMultiplicity = outEdgeRole.getMultiplicity();
+            } else {
+                if (edgeDefinition != null) {
+                    outMultiplicity = edgeDefinition.outMultiplicity();
+                } else {
+                    outMultiplicity = Multiplicity.from(0, -1);
+                }
+            }
+            EdgeRole inEdgeRole = edgeLabelOptional.get().getInEdgeRoles(inVertexLabel);
+            Multiplicity inMultiplicity;
+            if (inEdgeRole != null) {
+                inMultiplicity = inEdgeRole.getMultiplicity();
+            } else {
+                if (edgeDefinition != null) {
+                    inMultiplicity = edgeDefinition.inMultiplicity();
+                } else {
+                    inMultiplicity = Multiplicity.from(0, -1);
+                }
+            }
+            internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, new EdgeDefinition(outMultiplicity, inMultiplicity));
         }
         return edgeLabel;
     }
@@ -407,10 +444,12 @@ public class Schema implements TopologyInf {
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
+                edgeLabel = edgeLabelOptional.get();
+                internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, edgeDefinition);
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
+            edgeLabel = edgeLabelOptional.get();
+            internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, edgeDefinition);
         }
         return edgeLabel;
     }
@@ -535,25 +574,27 @@ public class Schema implements TopologyInf {
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
+                edgeLabel = edgeLabelOptional.get();
+                internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, edgeDefinition);
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(edgeLabelOptional.get(), outVertexLabel, inVertexLabel, columns, edgeDefinition);
+            edgeLabel = edgeLabelOptional.get();
+            internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, edgeDefinition);
         }
         return edgeLabel;
     }
 
-    private EdgeLabel internalEnsureEdgeTableExists(
+    private void internalEnsureEdgeTableExists(
             EdgeLabel edgeLabel,
             VertexLabel outVertexLabel,
             VertexLabel inVertexLabel,
             Map<String, PropertyDefinition> columns,
             EdgeDefinition edgeDefinition) {
 
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel, edgeDefinition);
-        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel, edgeDefinition);
+        Preconditions.checkNotNull(edgeLabel);
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel, inVertexLabel, edgeDefinition);
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel, outVertexLabel, edgeDefinition);
         edgeLabel.ensurePropertiesExist(columns);
-        return edgeLabel;
     }
 
     private EdgeLabel createPartitionedEdgeLabel(

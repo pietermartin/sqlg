@@ -234,4 +234,8 @@ public class PropertyType {
         return this.ordinal;
     }
 
+    @Override
+    public String toString() {
+        return this.name;
+    }
 }

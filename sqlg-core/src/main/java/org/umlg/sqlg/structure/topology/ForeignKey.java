@@ -64,10 +64,9 @@ public class ForeignKey {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof ForeignKey)) {
+        if (!(o instanceof ForeignKey other)) {
             return false;
         }
-        ForeignKey other = (ForeignKey) o;
         return this.concatenatedIdentifiers.equals(other.concatenatedIdentifiers);
     }
 
