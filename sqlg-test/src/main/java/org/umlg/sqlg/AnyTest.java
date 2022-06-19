@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestForeignSchema;
+import org.umlg.sqlg.test.idstep.TestIdStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,12 @@ import org.umlg.sqlg.test.topology.TestForeignSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestForeignSchema.class
+//        TestEdgeMultiplicity.class,
+//        TestEdgeMultiplicityDistributed.class,
+//        TestEdgeRole.class,
+//        TestPropertyCheckConstraint.class,
+//        TestMultiplicityOnArrayTypes.class,
+        TestIdStep.class
 })
 public class AnyTest {
 }

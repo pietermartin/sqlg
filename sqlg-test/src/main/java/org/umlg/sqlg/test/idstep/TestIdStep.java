@@ -93,7 +93,7 @@ public class TestIdStep extends BaseTest {
                     "FROM\n" +
                     "\t`PUBLIC`.`E_ab`\n" +
                     "WHERE\n" +
-                    "\t( `PUBLIC`.`E_ab`.`ID` = ?) COLLATE latin1_general_cs", sql);
+                    "\t( `PUBLIC`.`E_ab`.`ID` = ?)", sql);
         }
         List<Object> recordIdList = traversal.toList();
         Assert.assertEquals(1, recordIdList.size());

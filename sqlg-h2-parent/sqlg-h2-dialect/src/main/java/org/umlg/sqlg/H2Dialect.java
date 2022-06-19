@@ -648,12 +648,16 @@ public class H2Dialect extends BaseSqlDialect {
                 "FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(" +
                 "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"lowerMultiplicity\" BIGINT, " +
+                "\"upperMultiplicity\" BIGINT, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +
                 "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(" +
                 "\"ID\" IDENTITY PRIMARY KEY, " +
+                "\"lowerMultiplicity\" BIGINT, " +
+                "\"upperMultiplicity\" BIGINT, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +

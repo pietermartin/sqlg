@@ -650,7 +650,12 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`createdOn` DATETIME, " +
                 "`name` TEXT, " +
-                "`type` TEXT);");
+                "`type` TEXT, " +
+                "`multiplicityLower` INTEGER NOT NULL," +
+                "`multiplicityUpper` INTEGER NOT NULL," +
+                "`defaultLiteral` TEXT," +
+                "`checkConstraint` TEXT" +
+                ");");
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_index` (" +
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`createdOn` DATETIME, " +
@@ -667,6 +672,8 @@ public class MariadbDialect extends BaseSqlDialect {
 
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_in_edges`(" +
                 "`ID` SERIAL PRIMARY KEY, " +
+                "`lowerMultiplicity` BIGINT, " +
+                "`upperMultiplicity` BIGINT, " +
                 "`sqlg_schema.edge__I` BIGINT UNSIGNED, " +
                 "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
                 "FOREIGN KEY (`sqlg_schema.edge__I`) REFERENCES `sqlg_schema`.`V_edge` (`ID`), " +
@@ -675,6 +682,8 @@ public class MariadbDialect extends BaseSqlDialect {
 
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_out_edges`(" +
                 "`ID` SERIAL PRIMARY KEY, " +
+                "`lowerMultiplicity` BIGINT, " +
+                "`upperMultiplicity` BIGINT, " +
                 "`sqlg_schema.edge__I` BIGINT UNSIGNED, " +
                 "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
                 "FOREIGN KEY (`sqlg_schema.edge__I`) REFERENCES `sqlg_schema`.`V_edge` (`ID`), " +

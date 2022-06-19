@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.topology.propertydefinition;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
@@ -15,6 +16,7 @@ public class TestMultiplicityOnArrayTypes extends BaseTest {
 
     @Test
     public void testMultiplicityOnArrayOnVertexLabel() {
+        Assume.assumeTrue(sqlgGraph.getSqlDialect().supportsStringArrayValues());
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
@@ -55,10 +57,11 @@ public class TestMultiplicityOnArrayTypes extends BaseTest {
 
     @Test
     public void testMultiplicityOnArrayAndCheckConstraintOnVertexLabel() {
+        Assume.assumeTrue(isPostgres());
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("a", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 3), null, "a @> ARRAY['1', '2']"));
+                    put("a", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 3), null, "" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("a") + " @> ARRAY['1', '2']"));
                 }}
         );
         this.sqlgGraph.tx().commit();
