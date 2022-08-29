@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestMultiplicityAddRemoveEdgeUserDefinedID;
+import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -11,7 +11,8 @@ import org.umlg.sqlg.test.topology.edgeMultiplicity.TestMultiplicityAddRemoveEdg
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestMultiplicityAddRemoveEdge.class,
-        TestMultiplicityAddRemoveEdgeUserDefinedID.class
+//        TestMultiplicityAddRemoveEdgeUserDefinedID.class,
+        TestTopologyUpgrade.class
 })
 public class AnyTest {
 }
