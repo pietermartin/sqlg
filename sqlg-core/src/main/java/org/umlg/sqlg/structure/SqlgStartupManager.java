@@ -51,7 +51,7 @@ class SqlgStartupManager {
             logger.debug("SchemaManager.loadSqlgSchema()...");
             boolean canUserCreateSchemas = this.sqlgGraph.getSqlDialect().canUserCreateSchemas(this.sqlgGraph);
 
-            //We need Connection.TRANSACTION_SERIALIZABLE here as the SqlgGraph can startup while other graphs are
+            //We need Connection.TRANSACTION_SERIALIZABLE here as the SqlgGraph can start up while other graphs are
             //creating schema objects concurrently.
             Connection connection = this.sqlgGraph.tx().getConnection();
             connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -68,7 +68,7 @@ class SqlgStartupManager {
                 createSqlgSchemaTablesAndIndexes();
             }
             //The default schema is generally called 'public' and is created upfront by the db.
-            //But what if its been deleted, so check.
+            //But what if it's been deleted, so check.
             if (canUserCreateSchemas && !existDefaultSchema()) {
                 createDefaultSchema();
             }
