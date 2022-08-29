@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -43,18 +44,18 @@ public class TestAggregate extends BaseTest {
             final Path path = traversal.next();
             final String first = path.get(0).toString();
             final String second = path.get(1).toString();
-            Assert.assertThat(first, CoreMatchers.not(second));
+            MatcherAssert.assertThat(first, CoreMatchers.not(second));
             MapHelper.incr(firstStepCounts, first, 1L);
             MapHelper.incr(secondStepCounts, second, 1L);
         }
         Assert.assertEquals(6, count);
         Assert.assertEquals(3, firstStepCounts.size());
         Assert.assertEquals(4, secondStepCounts.size());
-        Assert.assertTrue(firstStepCounts.values().contains(3L));
-        Assert.assertTrue(firstStepCounts.values().contains(2L));
-        Assert.assertTrue(firstStepCounts.values().contains(1L));
-        Assert.assertTrue(secondStepCounts.values().contains(3L));
-        Assert.assertTrue(secondStepCounts.values().contains(1L));
+        Assert.assertTrue(firstStepCounts.containsValue(3L));
+        Assert.assertTrue(firstStepCounts.containsValue(2L));
+        Assert.assertTrue(firstStepCounts.containsValue(1L));
+        Assert.assertTrue(secondStepCounts.containsValue(3L));
+        Assert.assertTrue(secondStepCounts.containsValue(1L));
 
     }
 }
