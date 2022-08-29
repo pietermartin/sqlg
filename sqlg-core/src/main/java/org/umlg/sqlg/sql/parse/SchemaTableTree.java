@@ -1912,9 +1912,6 @@ public class SchemaTableTree {
             SchemaTableTree schemaTableTree = distinctQueryStack.getLast();
             printLabeledIDFromClauseFor(schemaTableTree, columnList);
             printLabeledFromClauseFor(schemaTableTree, columnList);
-            if (schemaTableTree.getSchemaTable().isEdgeTable()) {
-                schemaTableTree.printLabeledEdgeInOutVertexIdFromClauseFor(columnList);
-            }
         } else {
             List<SchemaTableTree> labeled = distinctQueryStack.stream().filter(d -> !d.getLabels().isEmpty()).toList();
             for (SchemaTableTree schemaTableTree : labeled) {
