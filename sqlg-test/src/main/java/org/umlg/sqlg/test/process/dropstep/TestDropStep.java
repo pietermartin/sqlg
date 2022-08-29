@@ -22,6 +22,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.EdgeDefinition;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -80,6 +83,50 @@ public class TestDropStep extends BaseTest {
         } else {
             this.dropTraversal = this.sqlgGraph.traversal();
         }
+    }
+
+    @Test
+    public void testMultiplicityWithCountAcrossSchemasDropEdges_1() {
+        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        Schema bSchema = this.sqlgGraph.getTopology().ensureSchemaExist("B");
+        VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A",
+                new HashMap<>() {{
+                    put("id1", PropertyDefinition.of(PropertyType.STRING));
+                    put("id2", PropertyDefinition.of(PropertyType.STRING));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
+        );
+        VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B",
+                new HashMap<>() {{
+                    put("di1", PropertyDefinition.of(PropertyType.STRING));
+                    put("di2", PropertyDefinition.of(PropertyType.STRING));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("di1", "di2"))
+        );
+        EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
+                new EdgeDefinition(
+                        Multiplicity.of(0, 1),
+                        Multiplicity.of(4, 5))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A.A", "id1", "1", "id2", "1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "di1", "1", "di2", "1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B.B", "di1", "1", "di2", "2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B.B", "di1", "1", "di2", "3");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B.B", "di1", "1", "di2", "4");
+        Vertex b5 = this.sqlgGraph.addVertex(T.label, "B.B", "di1", "1", "di2", "5");
+        Edge edge1 = a.addEdge("ab", b1);
+        Edge edge2 = a.addEdge("ab", b2);
+        Edge edge3 = a.addEdge("ab", b3);
+        a.addEdge("ab", b4);
+        a.addEdge("ab", b5);
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.traversal().V().hasLabel("A.A").out().toList();
+
+        this.sqlgGraph.traversal().V().hasLabel("A.A").outE().hasId(P.within(edge1.id(), edge2.id(), edge3.id())).drop().iterate();
+        this.sqlgGraph.tx().rollback();
     }
 
     @Test
