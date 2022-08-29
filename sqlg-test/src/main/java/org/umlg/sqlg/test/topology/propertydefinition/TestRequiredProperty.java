@@ -20,7 +20,7 @@ public class TestRequiredProperty extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1)));
+                    put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
                 }}
         );
         this.sqlgGraph.tx().commit();
@@ -58,7 +58,7 @@ public class TestRequiredProperty extends BaseTest {
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1)));
+            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
         }});
         this.sqlgGraph.tx().commit();
 
@@ -73,6 +73,7 @@ public class TestRequiredProperty extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         Assert.assertTrue(failure);
+        failure = false;
 
         this.sqlgGraph.tx().normalBatchModeOn();
         a = this.sqlgGraph.addVertex(T.label, "A");

@@ -19,7 +19,7 @@ public class TestPropertyCheckConstraint extends BaseTest {
     public void testVertexLabelCheckConstraint() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')"));
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')"));
         }});
         this.sqlgGraph.tx().commit();
         boolean failure = false;
@@ -46,13 +46,13 @@ public class TestPropertyCheckConstraint extends BaseTest {
     public void testEdgeLabelCheckConstraint() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')"));
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')"));
         }});
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B", new HashMap<>() {{
-            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')"));
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')"));
         }});
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + "<> 'a')"));
+            put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + "<> 'a')"));
         }});
         this.sqlgGraph.tx().commit();
         boolean failure = false;

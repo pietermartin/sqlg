@@ -112,11 +112,11 @@ public class EdgeLabel extends AbstractLabel {
 
         super(outVertexLabel.getSchema().getSqlgGraph(), edgeLabelName, properties, identifiers, partitionType, partitionExpression);
         if (forSqlgSchema) {
-            this.outEdgeRoles.add(new EdgeRole(outVertexLabel, this, Direction.OUT, true, Multiplicity.from(0, -1)));
-            this.inEdgeRoles.add(new EdgeRole(inVertexLabel, this, Direction.IN, true, Multiplicity.from(0, -1)));
+            this.outEdgeRoles.add(new EdgeRole(outVertexLabel, this, Direction.OUT, true, Multiplicity.of(0, -1)));
+            this.inEdgeRoles.add(new EdgeRole(inVertexLabel, this, Direction.IN, true, Multiplicity.of(0, -1)));
         } else {
-            this.uncommittedOutEdgeRoles.add(new EdgeRole(outVertexLabel, this, Direction.OUT, false, Multiplicity.from(0, -1)));
-            this.uncommittedInEdgeRoles.add(new EdgeRole(inVertexLabel, this, Direction.IN, false, Multiplicity.from(0, -1)));
+            this.uncommittedOutEdgeRoles.add(new EdgeRole(outVertexLabel, this, Direction.OUT, false, Multiplicity.of(0, -1)));
+            this.uncommittedInEdgeRoles.add(new EdgeRole(inVertexLabel, this, Direction.IN, false, Multiplicity.of(0, -1)));
         }
         // this is a topology edge label, the columns exist
         if (forSqlgSchema) {

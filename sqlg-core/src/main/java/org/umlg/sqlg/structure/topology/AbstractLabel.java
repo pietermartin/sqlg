@@ -708,7 +708,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME),
                 new PropertyDefinition(
                         PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)),
-                        Multiplicity.from(
+                        Multiplicity.of(
                                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER),
                                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER)
                         ),

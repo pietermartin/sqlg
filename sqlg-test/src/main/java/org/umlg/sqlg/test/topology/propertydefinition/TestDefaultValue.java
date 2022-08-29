@@ -20,7 +20,7 @@ public class TestDefaultValue extends BaseTest  {
     public void testVertexLabelDefaultValue() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), "'aaa'"));
+            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'aaa'"));
         }});
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.addVertex(T.label, "A");
@@ -34,13 +34,13 @@ public class TestDefaultValue extends BaseTest  {
     public void testEdgeLabelDefaultValue() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), "'aaa'"));
+            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'aaa'"));
         }});
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B", new HashMap<>() {{
-            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), "'aaa'"));
+            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'aaa'"));
         }});
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), "'aaa'"));
+            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'aaa'"));
         }});
         this.sqlgGraph.tx().commit();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A");

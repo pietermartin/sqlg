@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.idstep.TestIdStep;
+import org.umlg.sqlg.test.topology.edgeMultiplicity.TestMultiplicityAddRemoveEdgeUserDefinedID;
 
 /**
  * Date: 2014/07/16
@@ -10,12 +10,8 @@ import org.umlg.sqlg.test.idstep.TestIdStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestEdgeMultiplicity.class,
-//        TestEdgeMultiplicityDistributed.class,
-//        TestEdgeRole.class,
-//        TestPropertyCheckConstraint.class,
-//        TestMultiplicityOnArrayTypes.class,
-        TestIdStep.class
+//        TestMultiplicityAddRemoveEdge.class,
+        TestMultiplicityAddRemoveEdgeUserDefinedID.class
 })
 public class AnyTest {
 }

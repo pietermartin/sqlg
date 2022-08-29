@@ -16,7 +16,7 @@ public record Multiplicity(long lower, long upper) {
         }
     }
 
-    public static Multiplicity from(long lower, long higher) {
+    public static Multiplicity of(long lower, long higher) {
         return new Multiplicity(lower, higher);
     }
 
@@ -61,7 +61,7 @@ public record Multiplicity(long lower, long upper) {
     }
 
     public static Multiplicity fromNotifyJson(JsonNode jsonNode) {
-        return Multiplicity.from(jsonNode.get("lower").asLong(), jsonNode.get("upper").asLong());
+        return Multiplicity.of(jsonNode.get("lower").asLong(), jsonNode.get("upper").asLong());
     }
 
 

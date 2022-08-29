@@ -19,6 +19,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
+@SuppressWarnings("DuplicatedCode")
 public class TestRequiredPropertyDistributed extends BaseTest {
 
     @BeforeClass
@@ -42,42 +43,42 @@ public class TestRequiredPropertyDistributed extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
             VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-                put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1)));
+                put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
             }});
             VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B", new HashMap<>() {{
-                put("b", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1)));
+                put("b", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
             }});
             aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1)));
+                put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
             }});
             this.sqlgGraph.tx().commit();
             Thread.sleep(3_000);
             assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
             Assert.assertEquals(
-                    Multiplicity.from(1, 1),
+                    Multiplicity.of(1, 1),
                     sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").orElseThrow().getPropertyDefinition().multiplicity()
             );
             Assert.assertEquals(
-                    Multiplicity.from(1, 1),
+                    Multiplicity.of(1, 1),
                     sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("b").orElseThrow().getPropertyDefinition().multiplicity()
             );
             Assert.assertEquals(
-                    Multiplicity.from(1, 1),
+                    Multiplicity.of(1, 1),
                     sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow().getProperty("a").orElseThrow().getPropertyDefinition().multiplicity()
             );
         }
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
             Assert.assertEquals(
-                    Multiplicity.from(1, 1),
+                    Multiplicity.of(1, 1),
                     sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a").orElseThrow().getPropertyDefinition().multiplicity()
             );
             Assert.assertEquals(
-                    Multiplicity.from(1, 1),
+                    Multiplicity.of(1, 1),
                     sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("b").orElseThrow().getPropertyDefinition().multiplicity()
             );
             Assert.assertEquals(
-                    Multiplicity.from(1, 1),
+                    Multiplicity.of(1, 1),
                     sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow().getProperty("a").orElseThrow().getPropertyDefinition().multiplicity()
             );
         }

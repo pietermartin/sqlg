@@ -12,6 +12,7 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashMap;
 
+@SuppressWarnings("DuplicatedCode")
 public class TestMultiplicityOnArrayTypes extends BaseTest {
 
     @Test
@@ -20,7 +21,7 @@ public class TestMultiplicityOnArrayTypes extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("a", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 3)));
+                    put("a", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 3)));
                 }}
         );
         this.sqlgGraph.tx().commit();
@@ -61,7 +62,7 @@ public class TestMultiplicityOnArrayTypes extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         publicSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("a", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 3), null, "" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("a") + " @> ARRAY['1', '2']"));
+                    put("a", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 3), null, "" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("a") + " @> ARRAY['1', '2']"));
                 }}
         );
         this.sqlgGraph.tx().commit();

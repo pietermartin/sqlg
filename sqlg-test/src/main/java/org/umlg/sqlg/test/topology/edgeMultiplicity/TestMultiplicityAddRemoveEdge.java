@@ -14,6 +14,7 @@ import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
+@SuppressWarnings("DuplicatedCode")
 public class TestMultiplicityAddRemoveEdge extends BaseTest {
 
     @Test
@@ -23,8 +24,8 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new EdgeDefinition(
-                        Multiplicity.from(1, 1),
-                        Multiplicity.from(1, 5))
+                        Multiplicity.of(1, 1),
+                        Multiplicity.of(1, 5))
         );
         this.sqlgGraph.tx().commit();
 
@@ -35,21 +36,35 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         } catch (IllegalStateException e) {
             //noop
         }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
         Vertex b = this.sqlgGraph.addVertex(T.label, "B");
         a.addEdge("ab", b);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
 
         a.addEdge("ab", b);
         a.addEdge("ab", b);
         a.addEdge("ab", b);
         a.addEdge("ab", b);
         this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
 
         this.sqlgGraph.tx().commit();
         a.addEdge("ab", b);
         try {
             this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
             Assert.fail("Expected multiplicity failure.");
         } catch (IllegalStateException e) {
             //noop
@@ -65,8 +80,8 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new EdgeDefinition(
-                        Multiplicity.from(1, 1),
-                        Multiplicity.from(5, 5))
+                        Multiplicity.of(1, 1),
+                        Multiplicity.of(5, 5))
         );
         this.sqlgGraph.tx().commit();
 
@@ -82,10 +97,17 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         a.addEdge("ab", b4);
         a.addEdge("ab", b5);
         this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
         this.sqlgGraph.tx().commit();
         a.addEdge("ab", b5);
         try {
             this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
             Assert.fail("Expected multiplicity failure.");
         } catch (IllegalStateException e) {
             //noop
@@ -101,8 +123,8 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new EdgeDefinition(
-                        Multiplicity.from(1, 1),
-                        Multiplicity.from(4, 5))
+                        Multiplicity.of(1, 1),
+                        Multiplicity.of(4, 5))
         );
         this.sqlgGraph.tx().commit();
 
@@ -113,10 +135,22 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         } catch (IllegalStateException e) {
             //noop
         }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(bVertexLabel, Direction.IN, edgeLabel, aVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
 
         Vertex a = this.sqlgGraph.addVertex(T.label, "A.A");
         try {
             this.sqlgGraph.tx().checkMultiplicity(b1, Direction.IN, edgeLabel, aVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(bVertexLabel, Direction.IN, edgeLabel, aVertexLabel);
             Assert.fail("Expected multiplicity failure.");
         } catch (IllegalStateException e) {
             //noop
@@ -132,6 +166,7 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         Edge edge4 = a.addEdge("ab", b4);
         Edge edge5 = a.addEdge("ab", b5);
         this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
         this.sqlgGraph.tx().commit();
 
         edge4.remove();
@@ -142,7 +177,15 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         } catch (IllegalStateException e) {
             //noop
         }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
         this.sqlgGraph.tx().rollback();
+        this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
     }
 
     @Test
@@ -154,19 +197,25 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel cVertexLabel = bSchema.ensureVertexLabelExist("C");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new EdgeDefinition(
-                        Multiplicity.from(0, 1),
-                        Multiplicity.from(4, 5))
+                        Multiplicity.of(0, 1),
+                        Multiplicity.of(4, 5))
         );
-        EdgeLabel cTobEdgeLabel = cVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
+        cVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new EdgeDefinition(
-                        Multiplicity.from(0, -1),
-                        Multiplicity.from(0, -1))
+                        Multiplicity.of(0, -1),
+                        Multiplicity.of(0, -1))
         );
         this.sqlgGraph.tx().commit();
 
         Vertex a = this.sqlgGraph.addVertex(T.label, "A.A");
         try {
             this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
             Assert.fail("Expected multiplicity failure.");
         } catch (IllegalStateException e) {
             //noop
@@ -186,17 +235,39 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         } catch (IllegalStateException e) {
             //noop
         }
-        Edge edge4 = a.addEdge("ab", b4);
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        a.addEdge("ab", b4);
         this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
-        Edge edge5 = a.addEdge("ab", b5);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
+        a.addEdge("ab", b5);
         this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
         c1.addEdge("ab", b5);
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.traversal().V().hasLabel("A.A").out().toList();
 
         this.sqlgGraph.traversal().V().hasLabel("A.A").outE().hasId(P.within(edge1.id(), edge2.id(), edge3.id())).drop().iterate();
-        this.sqlgGraph.tx().commit();
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, edgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
     }
 
     @Test
@@ -207,12 +278,12 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
         EdgeLabel ab = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
                 new EdgeDefinition(
-                        Multiplicity.from(1, 1),
-                        Multiplicity.from(2, 2)));
+                        Multiplicity.of(1, 1),
+                        Multiplicity.of(2, 2)));
         bVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel,
                 new EdgeDefinition(
-                        Multiplicity.from(3, 3),
-                        Multiplicity.from(4, 4)));
+                        Multiplicity.of(3, 3),
+                        Multiplicity.of(4, 4)));
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.getTopology().lock();
@@ -227,7 +298,54 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         } catch (IllegalStateException e) {
             //noop
         }
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, ab, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
         this.sqlgGraph.tx().rollback();
+        a = this.sqlgGraph.addVertex(T.label, "A");
+        b = this.sqlgGraph.addVertex(T.label, "B");
+        a.addEdge("ab", b);
+        a.addEdge("ab", b);
+        this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, ab, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, ab, bVertexLabel);
     }
 
+    @Test
+    public void testCheckMultiplicityForAllEdges() {
+        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        Schema bSchema = this.sqlgGraph.getTopology().ensureSchemaExist("B");
+
+        VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A");
+        VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
+        EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
+                new EdgeDefinition(Multiplicity.of(1, 1), Multiplicity.of(1, 5))
+        );
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B");
+        a1.addEdge("ab", b1);
+
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A");
+
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        a2.addEdge("ab", b1);
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(bVertexLabel, Direction.IN, edgeLabel, aVertexLabel);
+            Assert.fail("Expected multiplicity failure.");
+        } catch (IllegalStateException e) {
+            //noop
+        }
+        this.sqlgGraph.tx().commit();
+
+    }
 }

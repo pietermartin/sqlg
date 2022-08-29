@@ -312,8 +312,8 @@ public class VertexLabel extends AbstractLabel {
     void loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyDefinition> properties) {
         Preconditions.checkState(this.schema.isSqlgSchema(), "loadSqlgSchemaEdgeLabel must be called for \"%s\" found \"%s\"", SQLG_SCHEMA, this.schema.getName());
         EdgeLabel edgeLabel = EdgeLabel.loadSqlgSchemaEdgeLabel(edgeLabelName, this, inVertexLabel, properties);
-        this.outEdgeRoles.put(this.schema.getName() + "." + edgeLabel.getLabel(), new EdgeRole(this, edgeLabel, Direction.OUT, true, Multiplicity.from(0, -1)));
-        inVertexLabel.inEdgeRoles.put(this.schema.getName() + "." + edgeLabel.getLabel(), new EdgeRole(this, edgeLabel, Direction.IN, true, Multiplicity.from(0, -1)));
+        this.outEdgeRoles.put(this.schema.getName() + "." + edgeLabel.getLabel(), new EdgeRole(this, edgeLabel, Direction.OUT, true, Multiplicity.of(0, -1)));
+        inVertexLabel.inEdgeRoles.put(this.schema.getName() + "." + edgeLabel.getLabel(), new EdgeRole(this, edgeLabel, Direction.IN, true, Multiplicity.of(0, -1)));
     }
 
     /**
@@ -380,7 +380,7 @@ public class VertexLabel extends AbstractLabel {
                 partitionType,
                 partitionExpression,
                 isForeignKeyPartition,
-                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 

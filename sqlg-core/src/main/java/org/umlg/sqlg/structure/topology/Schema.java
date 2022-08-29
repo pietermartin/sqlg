@@ -344,14 +344,14 @@ public class Schema implements TopologyInf {
                 if (outEdgeRole != null) {
                     outMultiplicity = outEdgeRole.getMultiplicity();
                 } else {
-                    outMultiplicity = Multiplicity.from(0, -1);
+                    outMultiplicity = Multiplicity.of(0, -1);
                 }
                 EdgeRole inEdgeRole = edgeLabelOptional.get().getInEdgeRoles(inVertexLabel);
                 Multiplicity inMultiplicity;
                 if (inEdgeRole != null) {
                     inMultiplicity = inEdgeRole.getMultiplicity();
                 } else {
-                    inMultiplicity = Multiplicity.from(0, -1);
+                    inMultiplicity = Multiplicity.of(0, -1);
                 }
                 edgeLabel = edgeLabelOptional.get();
                 internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, new EdgeDefinition(outMultiplicity, inMultiplicity));
@@ -366,7 +366,7 @@ public class Schema implements TopologyInf {
                 if (edgeDefinition != null) {
                     outMultiplicity = edgeDefinition.outMultiplicity();
                 } else {
-                    outMultiplicity = Multiplicity.from(0, -1);
+                    outMultiplicity = Multiplicity.of(0, -1);
                 }
             }
             EdgeRole inEdgeRole = edgeLabelOptional.get().getInEdgeRoles(inVertexLabel);
@@ -377,7 +377,7 @@ public class Schema implements TopologyInf {
                 if (edgeDefinition != null) {
                     inMultiplicity = edgeDefinition.inMultiplicity();
                 } else {
-                    inMultiplicity = Multiplicity.from(0, -1);
+                    inMultiplicity = Multiplicity.of(0, -1);
                 }
             }
             internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, new EdgeDefinition(outMultiplicity, inMultiplicity));
@@ -404,7 +404,7 @@ public class Schema implements TopologyInf {
                 shardCount,
                 distributionColumn,
                 colocate,
-                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 
@@ -511,7 +511,7 @@ public class Schema implements TopologyInf {
                 partitionType,
                 partitionExpression.toString(),
                 true,
-                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 
@@ -533,7 +533,7 @@ public class Schema implements TopologyInf {
                 partitionType,
                 partitionExpression,
                 false,
-                new EdgeDefinition(Multiplicity.from(0, -1), Multiplicity.from(0, -1))
+                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 
@@ -1311,9 +1311,9 @@ public class Schema implements TopologyInf {
                     Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
                     Multiplicity multiplicity;
                     if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
-                        multiplicity = Multiplicity.from(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                        multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
                     } else {
-                        multiplicity = Multiplicity.from(0, -1);
+                        multiplicity = Multiplicity.of(0, -1);
                     }
                     vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, multiplicity));
                 } else {
@@ -1322,9 +1322,9 @@ public class Schema implements TopologyInf {
                     Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
                     Multiplicity multiplicity;
                     if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
-                        multiplicity = Multiplicity.from(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                        multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
                     } else {
-                        multiplicity = Multiplicity.from(0, -1);
+                        multiplicity = Multiplicity.of(0, -1);
                     }
                     vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, multiplicity));
                 }
@@ -1506,9 +1506,9 @@ public class Schema implements TopologyInf {
                 Property<Long> upperMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY);
                 Multiplicity multiplicity;
                 if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
-                    multiplicity = Multiplicity.from(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                    multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
                 } else {
-                    multiplicity = Multiplicity.from(0, -1);
+                    multiplicity = Multiplicity.of(0, -1);
                 }
                 inVertexLabel.addToInEdgeRoles(new EdgeRole(inVertexLabel, outEdgeLabel, Direction.IN, true, multiplicity));
             }

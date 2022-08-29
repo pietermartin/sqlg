@@ -12,9 +12,9 @@ import org.umlg.sqlg.structure.topology.EdgeRole;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -398,9 +398,146 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     .has(T.label, otherSide.getFullName())
                     .count().next();
             if (count > upper) {
-                throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nUpper multiplicity is %d current multiplicity is %d", edgeLabel.getLabel(), upper, count));
+                throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nUpper multiplicity is %d current upper multiplicity is %d", edgeLabel.getLabel(), upper, count));
             } else if (count < lower) {
-                throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nLower multiplicity is %d current multiplicity is %d", edgeLabel.getLabel(), lower, count));
+                throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nLower multiplicity is %d current lower multiplicity is %d", edgeLabel.getLabel(), lower, count));
+            }
+        }
+    }
+
+    /**
+     * Utilizes LEFT JOIN but COUNT on the far side.
+     */
+    public void checkMultiplicity(VertexLabel vertexLabel, Direction direction, EdgeLabel edgeLabel, VertexLabel otherSide) {
+        EdgeRole edgeRole = null;
+        switch (direction) {
+            case OUT -> edgeRole = edgeLabel.getInEdgeRoles(otherSide);
+            case IN -> edgeRole = edgeLabel.getOutEdgeRoles(otherSide);
+            case BOTH -> throw new IllegalStateException("checkMultiplicity requires IN or OUT Direction, not BOTH");
+        }
+        Preconditions.checkNotNull(edgeRole, String.format("'%s' EdgeRole not found for '%s' and '%s'", direction.name(), edgeLabel.getLabel(), otherSide.getLabel()));
+        Multiplicity multiplicity = edgeRole.getMultiplicity();
+        if (multiplicity.hasLimits()) {
+            StringBuilder sql = new StringBuilder();
+            sql.append("SELECT\n\t");
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append("a.");
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+            } else {
+                int count = 1;
+                for (String identifier : vertexLabel.getIdentifiers()) {
+                    sql.append("a.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    if (count++ < vertexLabel.getIdentifiers().size()) {
+                        sql.append(", ");
+                    }
+                }
+            }
+            sql.append(", COUNT(");
+            if (otherSide.hasIDPrimaryKey()) {
+                sql.append("b.");
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                sql.append(")\n");
+            } else {
+                String identifier = otherSide.getIdentifiers().get(0);
+                sql.append("b.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                sql.append(")\n");
+            }
+            sql.append("FROM\n\t");
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName()));
+            sql.append(".");
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + vertexLabel.getName()));
+            sql.append(" a LEFT JOIN\n\t");
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabel.getSchema().getName()));
+            sql.append(".");
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.EDGE_PREFIX + edgeLabel.getName()));
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append(" ab ON a.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+                sql.append(" = ab.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getFullName() +
+                        (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+            } else {
+                sql.append(" ab ON ");
+                int count = 1;
+                for (String identifier : vertexLabel.getIdentifiers()) {
+                    sql.append("a.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    sql.append(" = ab.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getFullName() + "." + identifier +
+                            (direction == Direction.OUT ? Topology.OUT_VERTEX_COLUMN_END : Topology.IN_VERTEX_COLUMN_END)));
+                    if (count++ < vertexLabel.getIdentifiers().size()) {
+                        sql.append(" AND ");
+                    }
+                }
+            }
+            sql.append(" LEFT JOIN\n\t");
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(otherSide.getSchema().getName()));
+            sql.append(".");
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + otherSide.getName()));
+            if (otherSide.hasIDPrimaryKey()) {
+                sql.append(" b ON ab.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(otherSide.getFullName() +
+                        (direction == Direction.OUT ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END)));
+                sql.append(" = b.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+            } else {
+                sql.append(" b ON ");
+                int count = 1;
+                for (String identifier : otherSide.getIdentifiers()) {
+                    sql.append("ab.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(otherSide.getFullName() + "." + identifier +
+                            (direction == Direction.OUT ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END)));
+                    sql.append(" = b.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    if (count++ < otherSide.getIdentifiers().size()) {
+                        sql.append(" AND ");
+                    }
+                }
+            }
+            sql.append("\nGROUP BY\n\t");
+            if (vertexLabel.hasIDPrimaryKey()) {
+                sql.append("a.");
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.ID));
+            } else {
+                StringBuilder sb = new StringBuilder();
+                int count = 1;
+                for (String identifier : vertexLabel.getIdentifiers()) {
+                    sb.append("a.").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    if (count++ < vertexLabel.getIdentifiers().size()) {
+                        sb.append(", ");
+                    }
+                }
+                sql.append(sb);
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql.toString());
+            }
+            long upper = multiplicity.upper();
+            long lower = multiplicity.lower();
+            Connection connection = this.sqlgGraph.tx().getConnection();
+            try (Statement statement = connection.createStatement()) {
+                ResultSet rs = statement.executeQuery(sql.toString());
+                if (vertexLabel.hasIDPrimaryKey()) {
+                    while (rs.next()) {
+                        long id = rs.getLong(1);
+                        long count = rs.getLong(2);
+                        RecordId recordId = RecordId.from(SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getName()), id);
+                        if (count > upper) {
+                            throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nUpper multiplicity is [%d] current multiplicity is [%d]", edgeLabel.getLabel(), recordId, upper, count));
+                        } else if (count < lower) {
+                            throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nLower multiplicity is [%d] current multiplicity is [%d]", edgeLabel.getLabel(), recordId, lower, count));
+                        }
+                    }
+                } else {
+                    while (rs.next()) {
+                        List<Comparable> identifiers = new ArrayList<>();
+                        for (String identifier : vertexLabel.getIdentifiers()) {
+                            Comparable id = (Comparable)rs.getObject(identifier);
+                            identifiers.add(id);
+                        }
+                        long count = rs.getLong(vertexLabel.getIdentifiers().size() + 1);
+                        RecordId recordId = RecordId.from(SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getName()), identifiers);
+                        if (count > upper) {
+                            throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nUpper multiplicity is [%d] current upper multiplicity is [%d]", edgeLabel.getLabel(), recordId, upper, count));
+                        } else if (count < lower) {
+                            throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nLower multiplicity is [%d] current lower multiplicity is [%d]", edgeLabel.getLabel(), recordId, lower, count));
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
     }

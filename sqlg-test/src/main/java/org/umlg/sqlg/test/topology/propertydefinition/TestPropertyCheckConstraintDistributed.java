@@ -19,6 +19,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
+@SuppressWarnings("DuplicatedCode")
 public class TestPropertyCheckConstraintDistributed extends BaseTest {
     
     @BeforeClass
@@ -42,34 +43,34 @@ public class TestPropertyCheckConstraintDistributed extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
             VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(name <> 'a')"));
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(name <> 'a')"));
             }});
             VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B", new HashMap<>() {{
-                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(name <> 'a')"));
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(name <> 'a')"));
             }});
             aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
-                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(name <> 'a')"));
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(name <> 'a')"));
             }});
             this.sqlgGraph.tx().commit();
             Thread.sleep(3_000);
             assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
             Assert.assertEquals(
-                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(name <> 'a')"),
+                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(name <> 'a')"),
                     sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("name").orElseThrow().getPropertyDefinition()
             );
         }
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             assertEquals(this.sqlgGraph.getTopology(), sqlgGraph1.getTopology());
             Assert.assertEquals(
-                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(name <> 'a')"),
+                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(name <> 'a')"),
                     sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("name").orElseThrow().getPropertyDefinition()
             );
             Assert.assertEquals(
-                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(name <> 'a')"),
+                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(name <> 'a')"),
                     sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("name").orElseThrow().getPropertyDefinition()
             );
             Assert.assertEquals(
-                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1), null, "(name <> 'a')"),
+                    PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), null, "(name <> 'a')"),
                     sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow().getProperty("name").orElseThrow().getPropertyDefinition()
             );
         }
