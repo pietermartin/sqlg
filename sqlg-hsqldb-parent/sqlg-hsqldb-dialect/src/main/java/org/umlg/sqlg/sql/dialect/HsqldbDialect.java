@@ -1077,7 +1077,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public boolean isSystemIndex(String indexName) {
-        return indexName.startsWith("SYS_IDX_") || indexName.startsWith("SYS_PK") || indexName.endsWith("SYS_FK");
+        return indexName.startsWith("SYS_IDX_") || indexName.startsWith("SYS_PK") || indexName.startsWith("SYS_FK");
     }
 
     @Override
