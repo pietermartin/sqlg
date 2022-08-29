@@ -11,19 +11,19 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.*;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Date: 2015/05/19
  * Time: 9:34 PM
  */
+@SuppressWarnings({"DuplicatedCode", "SpellCheckingInspection"})
 public class TestBatchStreamVertex extends BaseTest {
 
     @BeforeClass
@@ -37,6 +37,36 @@ public class TestBatchStreamVertex extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
+    }
+
+    @Test
+    public void testDuplicateLabel() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C", new HashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        aVertexLabel.ensureEdgeLabelExist("abc", bVertexLabel);
+        aVertexLabel.ensureEdgeLabelExist("abc", cVertexLabel);
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        a1.addEdge("abc", b1);
+        a2.addEdge("abc", c1);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertexList = this.sqlgGraph.traversal().V().hasLabel("A")
+                .out("abc").hasLabel("B")
+                .toList();
+        Assert.assertEquals(1, vertexList.size());
     }
 
     @Test(expected = SqlgExceptions.InvalidTableException.class)
@@ -221,7 +251,7 @@ public class TestBatchStreamVertex extends BaseTest {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "test");
-        SqlgVertex v2 = (SqlgVertex)this.sqlgGraph.addVertex("A", keyValues);
+        this.sqlgGraph.addVertex("A", keyValues);
         Assert.fail();
     }
 
@@ -356,12 +386,12 @@ public class TestBatchStreamVertex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        System.out.println(stopWatch);
         stopWatch.reset();
         stopWatch.start();
         Assert.assertEquals(100_000L, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        System.out.println(stopWatch);
         if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
             Assert.assertEquals(100_000L, this.sqlgGraph1.traversal().V().has(T.label, "Person").count().next().longValue());
@@ -816,9 +846,7 @@ public class TestBatchStreamVertex extends BaseTest {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(11, vertices.size());
         List<ZonedDateTime> zonedDateTimes1 = new ArrayList<>();
-        for (ZonedDateTime zonedDateTime : zonedDateTimes) {
-            zonedDateTimes1.add(zonedDateTime);
-        }
+        Collections.addAll(zonedDateTimes1, zonedDateTimes);
         Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(0).<ZonedDateTime[]>value("names"));
         Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(1).<ZonedDateTime[]>value("names"));
         Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(2).<ZonedDateTime[]>value("names"));
@@ -853,9 +881,7 @@ public class TestBatchStreamVertex extends BaseTest {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(11, vertices.size());
         List<Duration> durations1 = new ArrayList<>();
-        for (Duration duration: durations) {
-            durations1.add(duration);
-        }
+        Collections.addAll(durations1, durations);
         Assert.assertArrayEquals(durations1.toArray(), vertices.get(0).<Duration[]>value("names"));
         Assert.assertArrayEquals(durations1.toArray(), vertices.get(1).<Duration[]>value("names"));
         Assert.assertArrayEquals(durations1.toArray(), vertices.get(2).<Duration[]>value("names"));
@@ -890,9 +916,7 @@ public class TestBatchStreamVertex extends BaseTest {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(11, vertices.size());
         List<Period> periods1 = new ArrayList<>();
-        for (Period period: periods) {
-            periods1.add(period);
-        }
+        Collections.addAll(periods1, periods);
         Assert.assertArrayEquals(periods1.toArray(), vertices.get(0).<Duration[]>value("names"));
         Assert.assertArrayEquals(periods1.toArray(), vertices.get(1).<Duration[]>value("names"));
         Assert.assertArrayEquals(periods1.toArray(), vertices.get(2).<Duration[]>value("names"));
