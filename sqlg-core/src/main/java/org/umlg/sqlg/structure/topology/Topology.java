@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -74,7 +75,7 @@ public class Topology {
     private final Set<Integer> ownPids = Collections.synchronizedSet(new HashSet<>());
 
     private final List<TopologyValidationError> validationErrors = new ArrayList<>();
-    private final List<TopologyListener> topologyListeners = new ArrayList<>();
+    private final List<TopologyListener> topologyListeners = new CopyOnWriteArrayList<>();
 
     @SuppressWarnings("WeakerAccess")
     public static final String CREATED_ON = "createdOn";
