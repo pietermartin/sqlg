@@ -452,7 +452,6 @@ public class TestTopologyDelete extends BaseTest {
                 this.sqlgGraph.tx().commit();
                 checkEdgeIndexExistenceAfterDeletion(this.sqlgGraph, schema, i1, i2);
 
-
                 Thread.sleep(1_000);
                 checkEdgeIndexExistenceAfterDeletion(sqlgGraph1, schema, i1, i2);
                 assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
