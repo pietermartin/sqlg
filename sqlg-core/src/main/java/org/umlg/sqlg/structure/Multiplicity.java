@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.umlg.sqlg.structure.topology.Topology;
 
-public record Multiplicity(long lower, long upper) {
+public record Multiplicity(long lower, long upper, boolean unique, boolean ordered) {
 
     public Multiplicity {
         if (lower < -1) {
@@ -16,16 +16,28 @@ public record Multiplicity(long lower, long upper) {
         }
     }
 
-    public static Multiplicity of(long lower, long higher) {
-        return new Multiplicity(lower, higher);
+    public static Multiplicity of() {
+        return new Multiplicity(0, 1, false, false);
     }
 
-    public Multiplicity() {
-        this(0, 1);
+    public static Multiplicity of(long lower, long higher) {
+        return new Multiplicity(lower, higher, false, false);
+    }
+
+    public static Multiplicity of(long lower, long higher, boolean unique) {
+        return new Multiplicity(lower, higher, unique, false);
+    }
+
+    private static Multiplicity of(long lower, long higher, boolean unique, boolean ordered) {
+        return new Multiplicity(lower, higher, unique, ordered);
     }
 
     public boolean isMany() {
         return upper > 1 || upper == -1;
+    }
+
+    public boolean isOne() {
+        return !isMany();
     }
 
     public boolean isRequired() {
@@ -57,16 +69,22 @@ public record Multiplicity(long lower, long upper) {
         ObjectNode multiplicityObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         multiplicityObjectNode.put("lower", lower);
         multiplicityObjectNode.put("upper", upper);
+        multiplicityObjectNode.put("unique", unique);
+        multiplicityObjectNode.put("ordered", ordered);
         return multiplicityObjectNode;
     }
 
     public static Multiplicity fromNotifyJson(JsonNode jsonNode) {
-        return Multiplicity.of(jsonNode.get("lower").asLong(), jsonNode.get("upper").asLong());
+        return Multiplicity.of(
+                jsonNode.get("lower").asLong(),
+                jsonNode.get("upper").asLong(),
+                jsonNode.get("unique").asBoolean(),
+                jsonNode.get("ordered").asBoolean());
     }
 
 
     @Override
     public String toString() {
-        return "[" + lower + ", " + upper + "]";
+        return "[" + lower + ", " + upper + "][unique:" + unique + "][ordered:" + ordered + "]";
     }
 }

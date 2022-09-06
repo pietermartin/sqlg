@@ -18,14 +18,14 @@ public class TestEdgeMultiplicity extends BaseTest {
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(5, 5)
                 )
         );
         VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
         aVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(0, -1)
                 )
@@ -36,7 +36,7 @@ public class TestEdgeMultiplicity extends BaseTest {
         VertexLabel bbVertexLabel = aSchema.ensureVertexLabelExist("B");
         aaVertexLabel.ensureEdgeLabelExist("ab",
                 bbVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(1, 1))
         );
@@ -64,7 +64,7 @@ public class TestEdgeMultiplicity extends BaseTest {
             VertexLabel aVertexLabel = sqlgGraph2.getTopology().getPublicSchema().ensureVertexLabelExist("A");
             VertexLabel bVertexLabel = sqlgGraph2.getTopology().getPublicSchema().ensureVertexLabelExist("B");
             aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                    new EdgeDefinition(
+                    EdgeDefinition.of(
                             Multiplicity.of(5, 5),
                             Multiplicity.of(5, 5))
             );

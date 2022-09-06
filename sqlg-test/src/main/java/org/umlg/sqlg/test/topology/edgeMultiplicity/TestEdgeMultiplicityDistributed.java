@@ -40,8 +40,8 @@ public class TestEdgeMultiplicityDistributed extends BaseTest {
             VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("A");
             VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("B");
             VertexLabel cVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("C");
-            aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new EdgeDefinition(Multiplicity.of(2, 2), Multiplicity.of(3, 3)));
-            aVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel, new EdgeDefinition(Multiplicity.of(2, 2), Multiplicity.of(1, 1)));
+            aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, EdgeDefinition.of(Multiplicity.of(2, 2), Multiplicity.of(3, 3)));
+            aVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel, EdgeDefinition.of(Multiplicity.of(2, 2), Multiplicity.of(1, 1)));
             this.sqlgGraph.tx().commit();
 
             EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
@@ -105,8 +105,8 @@ public class TestEdgeMultiplicityDistributed extends BaseTest {
             VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("A");
             VertexLabel bVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("B");
             VertexLabel cVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("C");
-            bVertexLabel.ensureEdgeLabelExist("ab", aVertexLabel, new EdgeDefinition(Multiplicity.of(2, 2), Multiplicity.of(4, 5)));
-            cVertexLabel.ensureEdgeLabelExist("ab", aVertexLabel, new EdgeDefinition(Multiplicity.of(3, 3), Multiplicity.of(4, 5)));
+            bVertexLabel.ensureEdgeLabelExist("ab", aVertexLabel, EdgeDefinition.of(Multiplicity.of(2, 2), Multiplicity.of(4, 5)));
+            cVertexLabel.ensureEdgeLabelExist("ab", aVertexLabel, EdgeDefinition.of(Multiplicity.of(3, 3), Multiplicity.of(4, 5)));
             this.sqlgGraph.tx().commit();
 
             EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();

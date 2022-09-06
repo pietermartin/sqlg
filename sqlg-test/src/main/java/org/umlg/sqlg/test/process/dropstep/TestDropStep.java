@@ -104,7 +104,7 @@ public class TestDropStep extends BaseTest {
                 ListOrderedSet.listOrderedSet(List.of("di1", "di2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, 1),
                         Multiplicity.of(4, 5))
         );

@@ -650,6 +650,8 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"lowerMultiplicity\" BIGINT, " +
                 "\"upperMultiplicity\" BIGINT, " +
+                "\"unique\" BOOLEAN, " +
+                "\"ordered\" BOOLEAN, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +
@@ -658,6 +660,8 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"lowerMultiplicity\" BIGINT, " +
                 "\"upperMultiplicity\" BIGINT, " +
+                "\"unique\" BOOLEAN, " +
+                "\"ordered\" BOOLEAN, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  " +

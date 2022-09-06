@@ -429,48 +429,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     private void appendSqlValue(StringBuilder sql, Object value, PropertyType propertyType) {
         switch (propertyType.ordinal()) {
             case BOOLEAN_ORDINAL:
-                if (value != null) {
-                    sql.append(value);
-                } else {
-                    sql.append("null");
-                }
-                break;
-            case BYTE_ORDINAL:
-                if (value != null) {
-                    sql.append(value);
-                } else {
-                    sql.append("null");
-                }
-                break;
-            case SHORT_ORDINAL:
-                if (value != null) {
-                    sql.append(value);
-                } else {
-                    sql.append("null");
-                }
-                break;
-            case INTEGER_ORDINAL:
-                if (value != null) {
-                    sql.append(value);
-                } else {
-                    sql.append("null");
-                }
-                break;
-            case LONG_ORDINAL:
-                if (value != null) {
-                    sql.append(value);
-                } else {
-                    sql.append("null");
-                }
-                break;
-            case FLOAT_ORDINAL:
-                if (value != null) {
-                    sql.append(value);
-                } else {
-                    sql.append("null");
-                }
-                break;
             case DOUBLE_ORDINAL:
+            case FLOAT_ORDINAL:
+            case LONG_ORDINAL:
+            case INTEGER_ORDINAL:
+            case SHORT_ORDINAL:
+            case BYTE_ORDINAL:
                 if (value != null) {
                     sql.append(value);
                 } else {
@@ -954,13 +918,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case POINT_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
             case LINESTRING_ORDINAL:
-                throw new IllegalStateException("JSON Arrays are not supported.");
+                throw new IllegalStateException("line strings are not supported.");
             case POLYGON_ORDINAL:
-                throw new IllegalStateException("JSON Arrays are not supported.");
+                throw new IllegalStateException("polygons are not supported.");
             case GEOGRAPHY_POINT_ORDINAL:
-                throw new IllegalStateException("JSON Arrays are not supported.");
+                throw new IllegalStateException("geography points are not supported.");
             case GEOGRAPHY_POLYGON_ORDINAL:
-                throw new IllegalStateException("JSON Arrays are not supported.");
+                throw new IllegalStateException("geography polygons are not supported.");
             case JSON_ARRAY_ORDINAL:
                 throw new IllegalStateException("JSON Arrays are not supported.");
             default:
@@ -971,54 +935,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @SuppressWarnings("Duplicates")
     private void sqlCastArray(StringBuilder sql, PropertyType propertyType) {
         switch (propertyType.ordinal()) {
-            case boolean_ARRAY_ORDINAL:
-                sql.append("::boolean[]");
-                break;
-            case byte_ARRAY_ORDINAL:
-                sql.append("::bytea");
-                break;
-            case short_ARRAY_ORDINAL:
-                sql.append("::smallint[]");
-                break;
-            case int_ARRAY_ORDINAL:
-                sql.append("::int[]");
-                break;
-            case long_ARRAY_ORDINAL:
-                sql.append("::bigint[]");
-                break;
-            case float_ARRAY_ORDINAL:
-                sql.append("::real[]");
-                break;
-            case double_ARRAY_ORDINAL:
-                sql.append("::double precision[]");
-                break;
-            case STRING_ARRAY_ORDINAL:
-                sql.append("::text[]");
-                break;
-            case BOOLEAN_ARRAY_ORDINAL:
-                sql.append("::boolean[]");
-                break;
-            case BYTE_ARRAY_ORDINAL:
-                sql.append("::bytea");
-                break;
-            case SHORT_ARRAY_ORDINAL:
-                sql.append("::smallint[]");
-                break;
-            case INTEGER_ARRAY_ORDINAL:
-                sql.append("::int[]");
-                break;
-            case LONG_ARRAY_ORDINAL:
-                sql.append("::bigint[]");
-                break;
-            case FLOAT_ARRAY_ORDINAL:
-                sql.append("::real[]");
-                break;
-            case DOUBLE_ARRAY_ORDINAL:
-                sql.append("::double precision[]");
-                break;
-            default:
-                // noop
-                break;
+            case boolean_ARRAY_ORDINAL, BOOLEAN_ARRAY_ORDINAL -> sql.append("::boolean[]");
+            case byte_ARRAY_ORDINAL, BYTE_ARRAY_ORDINAL -> sql.append("::bytea");
+            case short_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL -> sql.append("::smallint[]");
+            case int_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL -> sql.append("::int[]");
+            case long_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL -> sql.append("::bigint[]");
+            case float_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL -> sql.append("::real[]");
+            case double_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL -> sql.append("::double precision[]");
+            case STRING_ARRAY_ORDINAL -> sql.append("::text[]");
+            default -> {
+            }
+            // noop
         }
     }
 
@@ -2797,6 +2724,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"lowerMultiplicity\" BIGINT, " +
                 "\"upperMultiplicity\" BIGINT, " +
+                "\"unique\" BOOLEAN, " +
+                "\"ordered\" BOOLEAN, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +
@@ -2808,6 +2737,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"lowerMultiplicity\" BIGINT, " +
                 "\"upperMultiplicity\" BIGINT, " +
+                "\"unique\" BOOLEAN, " +
+                "\"ordered\" BOOLEAN, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +

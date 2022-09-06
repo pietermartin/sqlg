@@ -46,7 +46,7 @@ public void testCheckConstraints() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap<>() {{
-                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'Peter'", "name <> 'John'"));
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), "'Peter'", "name <> 'John'"));
                     }}
             );
     this.sqlgGraph.tx().commit();

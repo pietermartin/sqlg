@@ -19,6 +19,7 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.ThreadLocalMap;
 import org.umlg.sqlg.util.ThreadLocalSet;
 
+import javax.annotation.CheckForNull;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -305,7 +306,7 @@ public class Schema implements TopologyInf {
             final VertexLabel inVertexLabel,
             Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
-            EdgeDefinition edgeDefinition) {
+            @CheckForNull  EdgeDefinition edgeDefinition) {
 
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
@@ -333,7 +334,14 @@ public class Schema implements TopologyInf {
             this.topology.startSchemaChange();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (edgeLabelOptional.isEmpty()) {
-                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns, identifiers, edgeDefinition != null ? edgeDefinition : EdgeDefinition.of());
+                edgeLabel = this.createEdgeLabel(
+                        edgeLabelName,
+                        outVertexLabel,
+                        inVertexLabel,
+                        columns,
+                        identifiers,
+                        edgeDefinition != null ? edgeDefinition : EdgeDefinition.of()
+                );
                 this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
@@ -354,7 +362,7 @@ public class Schema implements TopologyInf {
                     inMultiplicity = Multiplicity.of(0, -1);
                 }
                 edgeLabel = edgeLabelOptional.get();
-                internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, new EdgeDefinition(outMultiplicity, inMultiplicity));
+                internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, EdgeDefinition.of(outMultiplicity, inMultiplicity));
             }
         } else {
             edgeLabel = edgeLabelOptional.get();
@@ -380,7 +388,7 @@ public class Schema implements TopologyInf {
                     inMultiplicity = Multiplicity.of(0, -1);
                 }
             }
-            internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, new EdgeDefinition(outMultiplicity, inMultiplicity));
+            internalEnsureEdgeTableExists(edgeLabel, outVertexLabel, inVertexLabel, columns, EdgeDefinition.of(outMultiplicity, inMultiplicity));
         }
         return edgeLabel;
     }
@@ -404,7 +412,7 @@ public class Schema implements TopologyInf {
                 shardCount,
                 distributionColumn,
                 colocate,
-                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
+                EdgeDefinition.of(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 
@@ -511,7 +519,7 @@ public class Schema implements TopologyInf {
                 partitionType,
                 partitionExpression.toString(),
                 true,
-                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
+                EdgeDefinition.of(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 
@@ -533,7 +541,7 @@ public class Schema implements TopologyInf {
                 partitionType,
                 partitionExpression,
                 false,
-                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
+                EdgeDefinition.of(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 
@@ -658,7 +666,7 @@ public class Schema implements TopologyInf {
             final VertexLabel inVertexLabel,
             final Map<String, PropertyDefinition> columns,
             final ListOrderedSet<String> identifiers,
-            final EdgeDefinition edgeDefinition) {
+            @CheckForNull final EdgeDefinition edgeDefinition) {
 
         Preconditions.checkArgument(this.topology.isSchemaChanged(), "Schema.createEdgeLabel must have schemaChanged = true");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
@@ -1309,9 +1317,10 @@ public class Schema implements TopologyInf {
                     }
                     Property<Long> lowerMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY);
                     Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
+                    Property<Boolean> uniqueProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UNIQUE);
                     Multiplicity multiplicity;
-                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
-                        multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent() && uniqueProperty.isPresent()) {
+                        multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value(), uniqueProperty.value());
                     } else {
                         multiplicity = Multiplicity.of(0, -1);
                     }
@@ -1320,9 +1329,10 @@ public class Schema implements TopologyInf {
                     edgeLabel = edgeLabelOptional.get();
                     Property<Long> lowerMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY);
                     Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
+                    Property<Boolean> uniqueProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UNIQUE);
                     Multiplicity multiplicity;
-                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
-                        multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent() && uniqueProperty.isPresent()) {
+                        multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value(), uniqueProperty.value());
                     } else {
                         multiplicity = Multiplicity.of(0, -1);
                     }
@@ -1504,9 +1514,10 @@ public class Schema implements TopologyInf {
 
                 Property<Long> lowerMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY);
                 Property<Long> upperMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY);
+                Property<Boolean> uniqueMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UNIQUE);
                 Multiplicity multiplicity;
-                if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent()) {
-                    multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value());
+                if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent() && uniqueMultiplicityProperty.isPresent()) {
+                    multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value(), uniqueMultiplicityProperty.value());
                 } else {
                     multiplicity = Multiplicity.of(0, -1);
                 }

@@ -760,12 +760,16 @@ public class TopologyManager {
             outVertex.addEdge(
                     SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex,
                     SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, edgeDefinition.outMultiplicity().lower(),
-                    SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper()
+                    SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper(),
+                    SQLG_SCHEMA_OUT_EDGES_UNIQUE, edgeDefinition.outMultiplicity().unique(),
+                    SQLG_SCHEMA_OUT_EDGES_ORDERED, edgeDefinition.outMultiplicity().ordered()
             );
             inVertex.addEdge(
                     SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex,
                     SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, edgeDefinition.inMultiplicity().lower(),
-                    SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper()
+                    SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper(),
+                    SQLG_SCHEMA_IN_EDGES_UNIQUE, edgeDefinition.inMultiplicity().unique(),
+                    SQLG_SCHEMA_IN_EDGES_ORDERED, edgeDefinition.inMultiplicity().ordered()
             );
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
@@ -952,14 +956,18 @@ public class TopologyManager {
                         SQLG_SCHEMA_IN_EDGES_EDGE,
                         edgeVertex,
                         SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, edgeDefinition.inMultiplicity().lower(),
-                        SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper()
+                        SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper(),
+                        SQLG_SCHEMA_IN_EDGES_UNIQUE, edgeDefinition.inMultiplicity().unique(),
+                        SQLG_SCHEMA_IN_EDGES_ORDERED, edgeDefinition.inMultiplicity().ordered()
                 );
             } else {
                 foreignKeyVertex.addEdge(
                         SQLG_SCHEMA_OUT_EDGES_EDGE,
                         edgeVertex,
                         SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, edgeDefinition.outMultiplicity().lower(),
-                        SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper()
+                        SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, edgeDefinition.outMultiplicity().upper(),
+                        SQLG_SCHEMA_OUT_EDGES_UNIQUE, edgeDefinition.outMultiplicity().unique(),
+                        SQLG_SCHEMA_OUT_EDGES_ORDERED, edgeDefinition.outMultiplicity().ordered()
                 );
             }
 

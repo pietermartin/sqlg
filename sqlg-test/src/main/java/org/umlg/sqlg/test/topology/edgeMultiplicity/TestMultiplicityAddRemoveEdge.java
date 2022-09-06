@@ -23,7 +23,7 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(1, 5))
         );
@@ -79,7 +79,7 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(5, 5))
         );
@@ -122,7 +122,7 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(4, 5))
         );
@@ -196,12 +196,12 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         VertexLabel cVertexLabel = bSchema.ensureVertexLabelExist("C");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, 1),
                         Multiplicity.of(4, 5))
         );
         cVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, -1),
                         Multiplicity.of(0, -1))
         );
@@ -277,11 +277,11 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
         VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
         EdgeLabel ab = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(2, 2)));
         bVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(3, 3),
                         Multiplicity.of(4, 4)));
         this.sqlgGraph.tx().commit();
@@ -321,7 +321,7 @@ public class TestMultiplicityAddRemoveEdge extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(Multiplicity.of(1, 1), Multiplicity.of(1, 5))
+                EdgeDefinition.of(Multiplicity.of(1, 1), Multiplicity.of(1, 5))
         );
         this.sqlgGraph.tx().commit();
 

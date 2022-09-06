@@ -61,7 +61,7 @@ public class EdgeLabel extends AbstractLabel {
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties, identifiers, edgeDefinition);
-        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, false);
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, false, edgeDefinition);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -74,7 +74,8 @@ public class EdgeLabel extends AbstractLabel {
             final ListOrderedSet<String> identifiers,
             final PartitionType partitionType,
             final String partitionExpression,
-            boolean isForeignKeyPartition) {
+            boolean isForeignKeyPartition,
+            EdgeDefinition edgeDefinition) {
 
         Preconditions.checkState(!inVertexLabel.getSchema().isSqlgSchema(), "You may not create an edge to %s", Topology.SQLG_SCHEMA);
         //edges are created in the out vertex's schema.
@@ -87,7 +88,7 @@ public class EdgeLabel extends AbstractLabel {
                 identifiers,
                 partitionType,
                 partitionExpression);
-        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, isForeignKeyPartition);
+        edgeLabel.createEdgeTableOnDb(outVertexLabel, inVertexLabel, properties, identifiers, isForeignKeyPartition, edgeDefinition);
         edgeLabel.committed = false;
         return edgeLabel;
     }
@@ -232,53 +233,54 @@ public class EdgeLabel extends AbstractLabel {
             VertexLabel inVertexLabel,
             Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
-            boolean isForeignKeyPartition) {
+            boolean isForeignKeyPartition,
+            EdgeDefinition edgeDefinition) {
 
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
 
         SqlDialect sqlDialect = this.sqlgGraph.getSqlDialect();
         sqlDialect.assertTableName(tableName);
-        StringBuilder sql = new StringBuilder(sqlDialect.createTableStatement());
-        sql.append(sqlDialect.maybeWrapInQoutes(schema));
-        sql.append(".");
-        sql.append(sqlDialect.maybeWrapInQoutes(tableName));
+        StringBuilder createTableSql = new StringBuilder(sqlDialect.createTableStatement());
+        createTableSql.append(sqlDialect.maybeWrapInQoutes(schema));
+        createTableSql.append(".");
+        createTableSql.append(sqlDialect.maybeWrapInQoutes(tableName));
         if (identifiers.isEmpty()) {
-            sql.append("(\n\t");
-            sql.append(sqlDialect.maybeWrapInQoutes("ID"));
-            sql.append(" ");
+            createTableSql.append("(\n\t");
+            createTableSql.append(sqlDialect.maybeWrapInQoutes("ID"));
+            createTableSql.append(" ");
             if (this.partitionType.isNone()) {
-                sql.append(sqlDialect.getAutoIncrementPrimaryKeyConstruct());
+                createTableSql.append(sqlDialect.getAutoIncrementPrimaryKeyConstruct());
             } else {
-                sql.append(sqlDialect.getAutoIncrement());
+                createTableSql.append(sqlDialect.getAutoIncrement());
             }
             if (columns.size() > 0) {
-                sql.append(", ");
+                createTableSql.append(", ");
             }
         } else {
-            sql.append("(\n\t");
+            createTableSql.append("(\n\t");
         }
-        buildColumns(this.sqlgGraph, identifiers, columns, sql);
+        buildColumns(this.sqlgGraph, identifiers, columns, createTableSql);
         if (!isForeignKeyPartition && !identifiers.isEmpty()) {
-            sql.append(",\n\tPRIMARY KEY(");
+            createTableSql.append(",\n\tPRIMARY KEY(");
             int count = 1;
             for (String identifier : identifiers) {
-                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                createTableSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                 if (count++ < identifiers.size()) {
-                    sql.append(", ");
+                    createTableSql.append(", ");
                 }
             }
-            sql.append(")");
+            createTableSql.append(")");
         }
 
-        sql.append(",");
+        createTableSql.append(",");
         if (inVertexLabel.hasIDPrimaryKey()) {
-            sql.append("\n\t");
-            sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
-            sql.append(" ");
-            sql.append(sqlDialect.getForeignKeyTypeDefinition());
+            createTableSql.append("\n\t");
+            createTableSql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
+            createTableSql.append(" ");
+            createTableSql.append(sqlDialect.getForeignKeyTypeDefinition());
         } else {
-            sql.append("\n\t");
+            createTableSql.append("\n\t");
             int i = 1;
             for (String identifier : inVertexLabel.getIdentifiers()) {
                 PropertyColumn propertyColumn = inVertexLabel.getProperty(identifier).orElseThrow(
@@ -292,36 +294,36 @@ public class EdgeLabel extends AbstractLabel {
                     int count = 1;
                     for (String sqlDefinition : propertyTypeToSqlDefinition) {
                         if (count > 1) {
-                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.IN_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
+                            createTableSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.IN_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
                         } else {
                             //The first column existVertexLabel no postfix
-                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
+                            createTableSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
                         }
                         if (count++ < propertyTypeToSqlDefinition.length) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                     if (outVertexLabel.isDistributed()) {
                         if (i++ < inVertexLabel.getIdentifiers().size() - 1) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     } else {
                         if (i++ < inVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                 }
             }
         }
-        sql.append(",");
+        createTableSql.append(",");
         if (outVertexLabel.hasIDPrimaryKey()) {
-            sql.append("\n\t");
-            sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
-            sql.append(" ");
-            sql.append(sqlDialect.getForeignKeyTypeDefinition());
+            createTableSql.append("\n\t");
+            createTableSql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
+            createTableSql.append(" ");
+            createTableSql.append(sqlDialect.getForeignKeyTypeDefinition());
         } else {
             int i = 1;
-            sql.append("\n\t");
+            createTableSql.append("\n\t");
 
             for (String identifier : outVertexLabel.getIdentifiers()) {
                 PropertyColumn propertyColumn = outVertexLabel.getProperty(identifier).orElseThrow(
@@ -335,22 +337,22 @@ public class EdgeLabel extends AbstractLabel {
                     int count = 1;
                     for (String sqlDefinition : propertyTypeToSqlDefinition) {
                         if (count > 1) {
-                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.OUT_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
+                            createTableSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.OUT_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
                         } else {
                             //The first column existVertexLabel no postfix
-                            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
+                            createTableSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END)).append(" ").append(sqlDefinition);
                         }
                         if (count++ < propertyTypeToSqlDefinition.length) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                     if (outVertexLabel.isDistributed()) {
                         if (i++ < outVertexLabel.getIdentifiers().size() - 1) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     } else {
                         if (i++ < outVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                 }
@@ -364,128 +366,138 @@ public class EdgeLabel extends AbstractLabel {
                 this.partitionType.isNone() &&
                 this.sqlgGraph.getTopology().isImplementingForeignKeys()) {
 
-            sql.append(",\n\t");
-            sql.append("FOREIGN KEY (");
+            createTableSql.append(",\n\t");
+            createTableSql.append("FOREIGN KEY (");
             if (inVertexLabel.hasIDPrimaryKey()) {
-                sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
+                createTableSql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
             } else {
                 int i = 1;
                 for (String identifier : inVertexLabel.getIdentifiers()) {
                     if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        createTableSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         if (i++ < inVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     } else {
-                        sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                        createTableSql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
                         if (i++ < inVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                 }
             }
-            sql.append(") REFERENCES ");
-            sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName()));
-            sql.append(".");
-            sql.append(sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + inVertexLabel.getLabel()));
-            sql.append(" (");
+            createTableSql.append(") REFERENCES ");
+            createTableSql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName()));
+            createTableSql.append(".");
+            createTableSql.append(sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + inVertexLabel.getLabel()));
+            createTableSql.append(" (");
             if (inVertexLabel.hasIDPrimaryKey()) {
-                sql.append(sqlDialect.maybeWrapInQoutes("ID"));
+                createTableSql.append(sqlDialect.maybeWrapInQoutes("ID"));
             } else {
                 int i = 1;
                 for (String identifier : inVertexLabel.getIdentifiers()) {
                     if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        createTableSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         if (i++ < inVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     } else {
-                        sql.append(sqlDialect.maybeWrapInQoutes(identifier));
+                        createTableSql.append(sqlDialect.maybeWrapInQoutes(identifier));
                         if (i++ < inVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                 }
             }
-            sql.append(") ");
+            createTableSql.append(") ");
             if (sqlDialect.supportsDeferrableForeignKey()) {
-                sql.append("DEFERRABLE");
+                createTableSql.append("DEFERRABLE");
             }
-            sql.append(",\n\tFOREIGN KEY (");
+            createTableSql.append(",\n\tFOREIGN KEY (");
             if (outVertexLabel.hasIDPrimaryKey()) {
-                sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
+                createTableSql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
             } else {
                 int i = 1;
                 for (String identifier : outVertexLabel.getIdentifiers()) {
                     if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        createTableSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         if (i++ < outVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     } else {
-                        sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                        createTableSql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
                         if (i++ < outVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                 }
             }
-            sql.append(") REFERENCES ");
-            sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName()));
-            sql.append(".");
-            sql.append(sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + outVertexLabel.getLabel()));
-            sql.append(" (");
+            createTableSql.append(") REFERENCES ");
+            createTableSql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName()));
+            createTableSql.append(".");
+            createTableSql.append(sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + outVertexLabel.getLabel()));
+            createTableSql.append(" (");
             if (outVertexLabel.hasIDPrimaryKey()) {
-                sql.append(sqlDialect.maybeWrapInQoutes("ID"));
+                createTableSql.append(sqlDialect.maybeWrapInQoutes("ID"));
             } else {
                 int i = 1;
                 for (String identifier : outVertexLabel.getIdentifiers()) {
                     if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        createTableSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         if (i++ < outVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     } else {
-                        sql.append(sqlDialect.maybeWrapInQoutes(identifier));
+                        createTableSql.append(sqlDialect.maybeWrapInQoutes(identifier));
                         if (i++ < outVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createTableSql.append(", ");
                         }
                     }
                 }
             }
-            sql.append(") ");
+            createTableSql.append(") ");
             if (sqlDialect.supportsDeferrableForeignKey()) {
-                sql.append("DEFERRABLE");
+                createTableSql.append("DEFERRABLE");
             }
             if (sqlDialect.needForeignKeyIndex() && sqlDialect.isIndexPartOfCreateTable()) {
                 //This is true for Cockroachdb
-                sql.append(", INDEX (");
-                sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END));
-                sql.append("), INDEX (");
-                sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName() + "." + outVertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END));
-                sql.append(")");
+                createTableSql.append(", INDEX (");
+                createTableSql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END));
+                createTableSql.append("), INDEX (");
+                createTableSql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName() + "." + outVertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END));
+                createTableSql.append(")");
             }
         }
         //foreign key definition end
 
-        sql.append("\n)");
+        createTableSql.append("\n)");
         if (!partitionType.isNone()) {
-            sql.append(" PARTITION BY ");
-            sql.append(this.partitionType.name());
-            sql.append(" (");
-            sql.append(this.partitionExpression);
-            sql.append(")");
+            createTableSql.append(" PARTITION BY ");
+            createTableSql.append(this.partitionType.name());
+            createTableSql.append(" (");
+            createTableSql.append(this.partitionExpression);
+            createTableSql.append(")");
         }
 
         if (sqlDialect.needsSemicolon()) {
-            sql.append(";");
+            createTableSql.append(";");
         }
 
-        if (this.partitionType.isNone() && sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
-            sql.append("\n\tCREATE INDEX");
+        StringBuilder createIndexIn = new StringBuilder();
+        StringBuilder createIndexOut = new StringBuilder();
+        Multiplicity outMultiplicity = edgeDefinition.outMultiplicity();
+        Multiplicity inMultiplicity = edgeDefinition.outMultiplicity();
+        if (this.partitionType.isNone() && sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable() ||
+                (this.partitionType.isNone() && isMultiplicityOneToOneAndUnique(outMultiplicity, inMultiplicity))) {
+
+            createIndexIn.append("\n\tCREATE ");
+            if (isMultiplicityOneToOneAndUnique(outMultiplicity, inMultiplicity)) {
+                createIndexIn.append("UNIQUE ");
+            }
+            createIndexIn.append("INDEX");
             if (sqlDialect.requiresIndexName()) {
-                sql.append(" ");
-                sql.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(
+                createIndexIn.append(" ");
+                createIndexIn.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(
                         SchemaTable.of(schema, tableName).withOutPrefix(),
                         EDGE_PREFIX,
                         "_idx",
@@ -493,35 +505,41 @@ public class EdgeLabel extends AbstractLabel {
                                 inVertexLabel.getSchema().getName() + "_" + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END
                         ))));
             }
-            sql.append(" ON ");
-            sql.append(sqlDialect.maybeWrapInQoutes(schema));
-            sql.append(".");
-            sql.append(sqlDialect.maybeWrapInQoutes(tableName));
-            sql.append(" (");
+            createIndexIn.append(" ON ");
+            createIndexIn.append(sqlDialect.maybeWrapInQoutes(schema));
+            createIndexIn.append(".");
+            createIndexIn.append(sqlDialect.maybeWrapInQoutes(tableName));
+            createIndexIn.append(" (");
             if (inVertexLabel.hasIDPrimaryKey()) {
-                sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
+                createIndexIn.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
             } else {
                 int i = 1;
                 for (String identifier : inVertexLabel.getIdentifiers()) {
                     if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        createIndexIn.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         if (i++ < inVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createIndexIn.append(", ");
                         }
                     } else {
-                        sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                        createIndexIn.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
                         if (i++ < inVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createIndexIn.append(", ");
                         }
                     }
                 }
             }
-            sql.append(");");
+            createIndexIn.append(");");
 
-            sql.append("\n\tCREATE INDEX");
+            createIndexOut.append("\n\tCREATE ");
+            outMultiplicity = edgeDefinition.outMultiplicity();
+            inMultiplicity = edgeDefinition.outMultiplicity();
+            if (isMultiplicityOneToOneAndUnique(outMultiplicity, inMultiplicity)) {
+                createIndexOut.append("UNIQUE ");
+            }
+            createIndexOut.append("INDEX");
             if (sqlDialect.requiresIndexName()) {
-                sql.append(" ");
-                sql.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(
+                createIndexOut.append(" ");
+                createIndexOut.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(
                         SchemaTable.of(schema, tableName).withOutPrefix(),
                         EDGE_PREFIX,
                         "_idx",
@@ -529,40 +547,126 @@ public class EdgeLabel extends AbstractLabel {
                                 outVertexLabel.getSchema().getName() + "_" + outVertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END
                         ))));
             }
-            sql.append(" ON ");
-            sql.append(sqlDialect.maybeWrapInQoutes(schema));
-            sql.append(".");
-            sql.append(sqlDialect.maybeWrapInQoutes(tableName));
-            sql.append(" (");
+            createIndexOut.append(" ON ");
+            createIndexOut.append(sqlDialect.maybeWrapInQoutes(schema));
+            createIndexOut.append(".");
+            createIndexOut.append(sqlDialect.maybeWrapInQoutes(tableName));
+            createIndexOut.append(" (");
             if (outVertexLabel.hasIDPrimaryKey()) {
-                sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
+                createIndexOut.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
             } else {
                 int i = 1;
                 for (String identifier : outVertexLabel.getIdentifiers()) {
                     if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        createIndexOut.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
                         if (i++ < outVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createIndexOut.append(", ");
                         }
                     } else {
-                        sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                        createIndexOut.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
                         if (i++ < outVertexLabel.getIdentifiers().size()) {
-                            sql.append(", ");
+                            createIndexOut.append(", ");
                         }
                     }
                 }
             }
-            sql.append(");");
+            createIndexOut.append(");");
         }
+
+        //Multiplicity unique constraints
+        //one to one case
+        StringBuilder createIndexInAndOut = new StringBuilder();
+        if ((outMultiplicity.isOne() && inMultiplicity.isMany() && inMultiplicity.unique()) ||
+                (outMultiplicity.isMany() && inMultiplicity.isOne() && outMultiplicity.unique()) ||
+                (outMultiplicity.isMany() && inMultiplicity.isMany() && outMultiplicity.unique() && inMultiplicity.unique())) {
+
+            //Create 1 unique constraints over both foreign key columns
+            createIndexInAndOut.append("\n\tCREATE UNIQUE INDEX");
+            if (sqlDialect.requiresIndexName()) {
+                createIndexInAndOut.append(" ");
+                createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(
+                        SchemaTable.of(schema, tableName).withOutPrefix(),
+                        EDGE_PREFIX,
+                        "_idx",
+                        List.of(
+                                outVertexLabel.getSchema().getName() + "_" + outVertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END,
+                                inVertexLabel.getSchema().getName() + "_" + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END
+                        ))));
+            }
+            createIndexInAndOut.append(" ON ");
+            createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(schema));
+            createIndexInAndOut.append(".");
+            createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(tableName));
+            createIndexInAndOut.append(" (");
+            if (outVertexLabel.hasIDPrimaryKey()) {
+                createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
+                createIndexInAndOut.append(", ");
+                createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
+            } else {
+                int i = 1;
+                for (String identifier : outVertexLabel.getIdentifiers()) {
+                    if (outVertexLabel.isDistributed() && outVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                        createIndexInAndOut.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        if (i++ < outVertexLabel.getIdentifiers().size()) {
+                            createIndexInAndOut.append(", ");
+                        }
+                    } else {
+                        createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + "." + identifier + Topology.OUT_VERTEX_COLUMN_END));
+                        if (i++ < outVertexLabel.getIdentifiers().size()) {
+                            createIndexInAndOut.append(", ");
+                        }
+                    }
+                }
+                i = 1;
+                for (String identifier : inVertexLabel.getIdentifiers()) {
+                    if (inVertexLabel.isDistributed() && inVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
+                        createIndexInAndOut.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                        if (i++ < inVertexLabel.getIdentifiers().size()) {
+                            createIndexInAndOut.append(", ");
+                        }
+                    } else {
+                        createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + "." + identifier + Topology.IN_VERTEX_COLUMN_END));
+                        if (i++ < inVertexLabel.getIdentifiers().size()) {
+                            createIndexInAndOut.append(", ");
+                        }
+                    }
+                }
+                createIndexInAndOut.append(", ");
+            }
+            createIndexInAndOut.append(");");
+        }
+
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(sql.toString());
+            LOGGER.debug(createTableSql.toString());
+            if (createIndexIn.length() > 0) {
+                LOGGER.debug(createIndexIn.toString());
+            }
+            if (createIndexOut.length() > 0) {
+                LOGGER.debug(createIndexOut.toString());
+            }
+            if (createIndexInAndOut.length() > 0) {
+                LOGGER.debug(createIndexInAndOut.toString());
+            }
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
+            stmt.execute(createTableSql.toString());
+            if (createIndexIn.length() > 0) {
+                stmt.execute(createIndexIn.toString());
+            }
+            if (createIndexOut.length() > 0) {
+                stmt.execute(createIndexOut.toString());
+            }
+            if (createIndexInAndOut.length() > 0) {
+                stmt.execute(createIndexInAndOut.toString());
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean isMultiplicityOneToOneAndUnique(Multiplicity outMultiplicity, Multiplicity inMultiplicity) {
+        return outMultiplicity.isOne() && inMultiplicity.isOne() && (outMultiplicity.unique() || inMultiplicity.unique());
     }
 
     void afterCommit() {

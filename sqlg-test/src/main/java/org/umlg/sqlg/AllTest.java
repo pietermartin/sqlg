@@ -57,10 +57,7 @@ import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.*;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicity;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicityDistributed;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestMultiplicityAddRemoveEdge;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestMultiplicityAddRemoveEdgeUserDefinedID;
+import org.umlg.sqlg.test.topology.edgeMultiplicity.*;
 import org.umlg.sqlg.test.topology.propertydefinition.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
@@ -304,7 +301,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestEdgeMultiplicity.class,
         TestMultiplicityAddRemoveEdge.class,
         TestEdgeMultiplicityDistributed.class,
-        TestMultiplicityAddRemoveEdgeUserDefinedID.class
+        TestMultiplicityAddRemoveEdgeUserDefinedID.class,
+        TestEdgeMultiplicityUnique.class,
+        TestEdgeMultiplicityUniqueDistributed.class
 })
 public class AllTest {
 

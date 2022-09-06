@@ -380,7 +380,7 @@ public class VertexLabel extends AbstractLabel {
                 partitionType,
                 partitionExpression,
                 isForeignKeyPartition,
-                new EdgeDefinition(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
+                EdgeDefinition.of(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
         );
     }
 
@@ -420,7 +420,8 @@ public class VertexLabel extends AbstractLabel {
                 identifiers,
                 partitionType,
                 partitionExpression,
-                isForeignKeyPartition);
+                isForeignKeyPartition,
+                edgeDefinition);
         if (this.schema.isSqlgSchema()) {
             this.outEdgeRoles.put(
                     this.schema.getName() + "." + edgeLabel.getLabel(),

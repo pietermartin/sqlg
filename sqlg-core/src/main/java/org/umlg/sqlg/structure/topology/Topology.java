@@ -246,8 +246,12 @@ public class Topology {
 
     public static final String SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY = "lowerMultiplicity";
     public static final String SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY = "upperMultiplicity";
+    public static final String SQLG_SCHEMA_IN_EDGES_UNIQUE = "unique";
+    public static final String SQLG_SCHEMA_IN_EDGES_ORDERED = "ordered";
     public static final String SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY = "lowerMultiplicity";
     public static final String SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY = "upperMultiplicity";
+    public static final String SQLG_SCHEMA_OUT_EDGES_UNIQUE = "unique";
+    public static final String SQLG_SCHEMA_OUT_EDGES_ORDERED = "ordered";
 
 
     /**
@@ -429,10 +433,14 @@ public class Topology {
 
         columns.put(SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
         columns.put(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_IN_EDGES_UNIQUE, new PropertyDefinition(PropertyType.BOOLEAN));
+        columns.put(SQLG_SCHEMA_IN_EDGES_ORDERED, new PropertyDefinition(PropertyType.BOOLEAN));
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
         columns.clear();
         columns.put(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
         columns.put(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_OUT_EDGES_UNIQUE, new PropertyDefinition(PropertyType.BOOLEAN));
+        columns.put(SQLG_SCHEMA_OUT_EDGES_ORDERED, new PropertyDefinition(PropertyType.BOOLEAN));
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
         columns.clear();
 

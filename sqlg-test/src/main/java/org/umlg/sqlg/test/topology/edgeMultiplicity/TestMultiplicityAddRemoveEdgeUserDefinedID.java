@@ -48,7 +48,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         );
 
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(1, 5))
         );
@@ -112,7 +112,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
 
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(1, 5))
         );
@@ -176,7 +176,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         );
 
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(1, 5))
         );
@@ -246,7 +246,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(Set.of("di1", "di2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(5, 5))
         );
@@ -297,7 +297,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(5, 5))
         );
@@ -348,7 +348,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(Set.of("di1", "di2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(5, 5))
         );
@@ -405,7 +405,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(Set.of("id1", "id2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(4, 5))
         );
@@ -484,7 +484,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(4, 5))
         );
@@ -563,7 +563,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(Set.of("id1", "id2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(4, 5))
         );
@@ -655,12 +655,12 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(List.of("i1", "i2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, 1),
                         Multiplicity.of(4, 5))
         );
         cVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, -1),
                         Multiplicity.of(0, -1))
         );
@@ -748,12 +748,12 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(List.of("i1", "i2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, 1),
                         Multiplicity.of(4, 5))
         );
         cVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, -1),
                         Multiplicity.of(0, -1))
         );
@@ -841,12 +841,12 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(List.of("i1", "i2"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, 1),
                         Multiplicity.of(4, 5))
         );
         cVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(0, -1),
                         Multiplicity.of(0, -1))
         );
@@ -934,11 +934,11 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         );
         VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
         EdgeLabel ab = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(2, 2)));
         bVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(3, 3),
                         Multiplicity.of(4, 4)));
         this.sqlgGraph.tx().commit();
@@ -978,11 +978,11 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         );
         VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
         EdgeLabel ab = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(1, 1),
                         Multiplicity.of(2, 2)));
         bVertexLabel.ensureEdgeLabelExist("ab", cVertexLabel,
-                new EdgeDefinition(
+                EdgeDefinition.of(
                         Multiplicity.of(3, 3),
                         Multiplicity.of(4, 4)));
         this.sqlgGraph.tx().commit();
@@ -1027,7 +1027,7 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
                 ListOrderedSet.listOrderedSet(List.of("c", "d"))
         );
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
-                new EdgeDefinition(Multiplicity.of(1, 1), Multiplicity.of(1, 5))
+                EdgeDefinition.of(Multiplicity.of(1, 1), Multiplicity.of(1, 5))
         );
         this.sqlgGraph.tx().commit();
 

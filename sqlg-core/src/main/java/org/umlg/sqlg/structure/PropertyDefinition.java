@@ -13,7 +13,7 @@ public record PropertyDefinition(PropertyType propertyType, Multiplicity multipl
     }
 
     public PropertyDefinition(PropertyType propertyType) {
-        this(propertyType, (propertyType.isArray() ? new Multiplicity(0, -1) : new Multiplicity()), null, null);
+        this(propertyType, (propertyType.isArray() ? Multiplicity.of(0, -1) : Multiplicity.of()), null, null);
     }
 
     public PropertyDefinition(PropertyType propertyType, Multiplicity multiplicity) {

@@ -81,10 +81,9 @@ public class Index implements TopologyInf {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof Index)) {
+        if (!(other instanceof Index otherIndex)) {
             return false;
         }
-        Index otherIndex = (Index) other;
         return this.abstractLabel.equals(otherIndex.abstractLabel) && this.name.equals(otherIndex.name);
     }
 
@@ -136,7 +135,6 @@ public class Index implements TopologyInf {
         sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
         sql.append(".");
         sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getTable()));
-
 
         if (this.indexType.isGIN()) {
             sql.append(" USING GIN");
