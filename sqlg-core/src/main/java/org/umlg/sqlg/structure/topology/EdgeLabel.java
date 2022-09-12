@@ -601,7 +601,6 @@ public class EdgeLabel extends AbstractLabel {
             if (outVertexLabel.hasIDPrimaryKey()) {
                 createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + Topology.OUT_VERTEX_COLUMN_END));
                 createIndexInAndOut.append(", ");
-                createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
             } else {
                 int i = 1;
                 for (String identifier : outVertexLabel.getIdentifiers()) {
@@ -617,7 +616,12 @@ public class EdgeLabel extends AbstractLabel {
                         }
                     }
                 }
-                i = 1;
+                createIndexInAndOut.append(", ");
+            }
+            if (inVertexLabel.hasIDPrimaryKey()) {
+                createIndexInAndOut.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END));
+            } else {
+                int i = 1;
                 for (String identifier : inVertexLabel.getIdentifiers()) {
                     if (inVertexLabel.isDistributed() && inVertexLabel.getDistributionPropertyColumn().getName().equals(identifier)) {
                         createIndexInAndOut.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
@@ -631,7 +635,6 @@ public class EdgeLabel extends AbstractLabel {
                         }
                     }
                 }
-                createIndexInAndOut.append(", ");
             }
             createIndexInAndOut.append(");");
         }
