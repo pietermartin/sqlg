@@ -1,12 +1,13 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -22,8 +23,35 @@ import java.util.List;
 @SuppressWarnings({"DuplicatedCode", "unused"})
 public class TestHas extends BaseTest {
 
+    @SuppressWarnings("RedundantArrayCreation")
     @Test
-    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
+    public void g_V_hasXnull_testnullkeyX() {
+        loadModern();
+        Traversal<Vertex, Vertex> traversal =  this.sqlgGraph.traversal().V(new Object[0]);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(6, vertices.size());
+        traversal =  this.sqlgGraph.traversal().V(new Object[0]).has((String)null, "test-null-key");
+        this.printTraversalForm(traversal);
+        MatcherAssert.assertThat(traversal.hasNext(), CoreMatchers.is(false));
+    }
+
+    @Test
+    public void g_V_hasLabelXnullX() {
+        loadModern();
+        Traversal<Vertex, Vertex> traversal =  this.sqlgGraph.traversal().V(new Object[0]).hasLabel(null);
+        this.printTraversalForm(traversal);
+        MatcherAssert.assertThat(traversal.hasNext(), CoreMatchers.is(false));
+
+        traversal =  this.sqlgGraph.traversal().V(new Object[0]).hasLabel(null, null, "xxx");
+        this.printTraversalForm(traversal);
+        MatcherAssert.assertThat(traversal.hasNext(), CoreMatchers.is(false));
+
+        traversal =  this.sqlgGraph.traversal().V(new Object[0]).hasLabel(null, null, "person");
+        this.printTraversalForm(traversal);
+        MatcherAssert.assertThat(traversal.hasNext(), CoreMatchers.is(true));
+    }
+
+    @Test
     public void g_V_bothE_properties_dedup_hasKeyXweightX_hasValueXltX0d3XX_value() {
         loadModern();
         final Traversal<Vertex, Double> traversal = this.sqlgGraph.traversal()

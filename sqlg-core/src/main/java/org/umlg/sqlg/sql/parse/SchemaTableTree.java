@@ -1110,7 +1110,7 @@ public class SchemaTableTree {
                 //https://jira.mariadb.org/browse/MDEV-16771
                 //Need to use a randomized name here else the temp table gets reused within the same transaction.
                 SecureRandom random = new SecureRandom();
-                byte bytes[] = new byte[6];
+                byte[] bytes = new byte[6];
                 random.nextBytes(bytes);
                 String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
                 this.sqlgGraph.tx().normalBatchModeOn();

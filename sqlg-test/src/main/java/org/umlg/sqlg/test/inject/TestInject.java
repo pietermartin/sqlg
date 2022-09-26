@@ -1,7 +1,9 @@
 package org.umlg.sqlg.test.inject;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MutablePath;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.MatcherAssert;
@@ -11,9 +13,53 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class TestInject extends BaseTest {
+
+    @Test
+    public void g_VX1X_valuesXageX_injectXnullX() {
+        loadModern();
+        Object vid1 = this.convertToVertexId("marko");
+        Traversal<Vertex, Object> traversal = this.sqlgGraph.traversal().V(vid1).values("age").inject(null);
+        this.printTraversalForm(traversal);
+        checkResults(Arrays.asList(29, null), traversal);
+    }
+
+    @Test
+    public void g_injectXnullX() {
+        loadModern();
+        Traversal<Integer, Integer> traversal =  this.sqlgGraph.traversal().inject(null);
+        this.printTraversalForm(traversal);
+        checkResults(Collections.singletonList(null), traversal);
+    }
+
+    @Test
+    public void g_VX1X_valuesXageX_injectXnull_nullX() {
+        loadModern();
+        Object vid1 = convertToVertexId("marko");
+        final Traversal<Vertex, Object> traversal =  this.sqlgGraph.traversal().V(vid1).values("age").inject(null, null);
+        printTraversalForm(traversal);
+        checkResults(Arrays.asList(29, null, null), traversal);
+    }
+
+    @Test
+    public void g_injectXnull_nullX() {
+        loadModern();
+        final Traversal<Integer, Integer> traversal =  this.sqlgGraph.traversal().inject(null, null);
+        printTraversalForm(traversal);
+        checkResults(Arrays.asList(null, null), traversal);
+    }
+
+    @Test
+    public void g_injectX1_null_nullX_path() {
+        loadModern();
+        Traversal<Integer, Path> traversal =  this.sqlgGraph.traversal().inject(new Integer[]{1, null, null}).path();
+        this.printTraversalForm(traversal);
+        checkResults(Arrays.asList(MutablePath.make().extend(1, Collections.emptySet()), MutablePath.make().extend((Object)null, Collections.emptySet()), MutablePath.make().extend((Object)null, Collections.emptySet())), traversal);
+    }
 
     @Test
     public void testInjectWithChoose() {

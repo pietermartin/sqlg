@@ -1,10 +1,10 @@
 package org.umlg.sqlg.strategy.barrier;
 
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimization.MessagePassingReductionStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.Pick;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.LambdaFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
@@ -16,10 +16,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.Path
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.RepeatUnrollStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.javatuples.Pair;
+import org.umlg.sqlg.step.SqlgHasNextStep;
 import org.umlg.sqlg.step.SqlgLambdaFilterStep;
 import org.umlg.sqlg.step.barrier.SqlgBranchStepBarrier;
 import org.umlg.sqlg.step.barrier.SqlgChooseStepBarrier;
-import org.umlg.sqlg.step.SqlgHasNextStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
@@ -53,7 +53,7 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
         }
         List<ChooseStep> chooseSteps = TraversalHelper.getStepsOfAssignableClass(ChooseStep.class, traversal);
         for (ChooseStep<S, E, M> chooseStep : chooseSteps) {
-            Traversal.Admin<S, M> predicateTraversal = chooseStep.getLocalChildren().get(0);
+            Traversal.Admin<?, ?> predicateTraversal = chooseStep.getLocalChildren().get(0);
 
             //The predicate branch step is a local traversal.
             //As such if it contains a ReducingBarrierStep the SqlgBranchStepBarrier will not work.
@@ -94,15 +94,15 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                 traversalOptionsField.setAccessible(true);
                 List<Pair<Traversal.Admin, Traversal.Admin<S, E>>> traversalOptions = (List<Pair<Traversal.Admin, Traversal.Admin<S, E>>>)traversalOptionsField.get(chooseStep);
                 for (Pair<Traversal.Admin, Traversal.Admin<S, E>> traversalOptionPair : traversalOptions) {
-                    sqlgBranchStepBarrier.addGlobalChildOption(traversalOptionPair.getValue0(), traversalOptionPair.getValue1());
+                    sqlgBranchStepBarrier.addChildOption(traversalOptionPair.getValue0(), traversalOptionPair.getValue1());
                 }
                 //protected Map<Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = new HashMap<>();
                 Field traversalPickOptionsField = chooseStep.getClass().getSuperclass().getDeclaredField("traversalPickOptions");
                 traversalPickOptionsField.setAccessible(true);
-                Map<TraversalOptionParent.Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = (Map<TraversalOptionParent.Pick, List<Traversal.Admin<S, E>>>)traversalPickOptionsField.get(chooseStep);
-                for (TraversalOptionParent.Pick pick : traversalPickOptions.keySet()) {
+                Map<Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = (Map<Pick, List<Traversal.Admin<S, E>>>)traversalPickOptionsField.get(chooseStep);
+                for (Pick pick : traversalPickOptions.keySet()) {
                     for (Traversal.Admin<S, E> admin : traversalPickOptions.get(pick)) {
-                        sqlgBranchStepBarrier.addGlobalChildOption(pick, admin);
+                        sqlgBranchStepBarrier.addChildOption(pick, admin);
                     }
                 }
             } catch (NoSuchFieldException | IllegalAccessException e) {

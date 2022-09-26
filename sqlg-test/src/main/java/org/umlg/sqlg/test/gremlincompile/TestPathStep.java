@@ -268,16 +268,18 @@ public class TestPathStep extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Map<String, Object>> result = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
-        Assert.assertEquals(3, result.size());
-        Object o1 = result.get(0).get("a");
-        Assert.assertTrue(o1 instanceof List);
-        @SuppressWarnings("unchecked") List<Vertex> ass = (List<Vertex>) o1;
-        Assert.assertEquals(a1, ass.get(0));
-        Assert.assertEquals("a1", ass.get(0).value("name"));
-        Assert.assertEquals(b1, ass.get(1));
-        Assert.assertEquals("b1", ass.get(1).value("name"));
-        Assert.assertEquals(a1, ass.get(2));
-        Assert.assertEquals("a1", ass.get(2).value("name"));
+
+        //This used to return values at TinkerPop 3.5.1
+        Assert.assertEquals(0, result.size());
+//        Object o1 = result.get(0).get("a");
+//        Assert.assertTrue(o1 instanceof List);
+//        @SuppressWarnings("unchecked") List<Vertex> ass = (List<Vertex>) o1;
+//        Assert.assertEquals(a1, ass.get(0));
+//        Assert.assertEquals("a1", ass.get(0).value("name"));
+//        Assert.assertEquals(b1, ass.get(1));
+//        Assert.assertEquals("b1", ass.get(1).value("name"));
+//        Assert.assertEquals(a1, ass.get(2));
+//        Assert.assertEquals("a1", ass.get(2).value("name"));
 
     }
 

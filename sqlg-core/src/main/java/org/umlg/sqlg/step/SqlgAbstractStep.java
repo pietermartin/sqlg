@@ -109,7 +109,7 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
             while (true) {
                 if (Thread.interrupted()) throw new TraversalInterruptedException();
                 final Traverser.Admin<E> traverser = this.processNextStart();
-                if (null != traverser.get() && 0 != traverser.bulk())
+                if (traverser.bulk() > 0)
                     return this.prepareTraversalForNextStep(traverser);
             }
         }
@@ -124,7 +124,9 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
                 while (true) {
                     if (Thread.interrupted()) throw new TraversalInterruptedException();
                     this.nextEnd = this.processNextStart();
-                    if (null != this.nextEnd.get() && 0 != this.nextEnd.bulk())
+//                    if (null != this.nextEnd.get() && 0 != this.nextEnd.bulk())
+//                        return true;
+                    if (0 != this.nextEnd.bulk())
                         return true;
                     else
                         this.nextEnd = null;

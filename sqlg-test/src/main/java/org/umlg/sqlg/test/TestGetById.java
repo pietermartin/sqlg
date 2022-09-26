@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgExceptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,11 +19,43 @@ import java.util.List;
 public class TestGetById extends BaseTest {
 
     @Test
+    public void testFailures() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Edge e1 = a1.addEdge("ab", a2);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1.id(), a2).toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.containsAll(List.of(a1, a2)));
+
+        try {
+            this.sqlgGraph.traversal().V(a1.id(), "lala").toList();
+            Assert.fail("Expected failure");
+        } catch (SqlgExceptions.InvalidIdException e) {
+            //noop
+        }
+        List<Vertex> vertexList = this.sqlgGraph.traversal().V(e1).toList();
+        Assert.assertTrue(vertexList.isEmpty());
+    }
+
+    @Test
+    public void shouldAllowIdsOfMixedTypes() {
+        loadModern();
+        final List<Vertex> vertices = this.sqlgGraph.traversal().V().toList();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V(vertices.get(0), vertices.get(1).id()).count().next().intValue());
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V(vertices.get(0).id(), vertices.get(1)).count().next().intValue());
+    }
+
+    @Test
     public void testGetVertexById() {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         this.sqlgGraph.tx().commit();
+        Vertex vMarko = this.sqlgGraph.traversal().V(marko).next();
+        Assert.assertEquals(marko, vMarko);
         Vertex v = this.sqlgGraph.traversal().V(marko.id()).next();
         Assert.assertEquals(marko, v);
         v = this.sqlgGraph.traversal().V(john.id()).next();
@@ -56,16 +89,16 @@ public class TestGetById extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("insert: " + stopWatch);
+//        System.out.println("insert: " + stopWatch);
         stopWatch.reset();
         stopWatch.start();
         Assert.assertEquals(count, this.sqlgGraph.traversal().V(recordIds).count().next().intValue());
         stopWatch.stop();
-        System.out.println("read 1: " + stopWatch);
+//        System.out.println("read 1: " + stopWatch);
         stopWatch.reset();
         stopWatch.start();
         Assert.assertEquals(count, this.sqlgGraph.traversal().V().hasId(recordIds).count().next().intValue());
         stopWatch.stop();
-        System.out.println("read 2: " + stopWatch);
+//        System.out.println("read 2: " + stopWatch);
     }
 }

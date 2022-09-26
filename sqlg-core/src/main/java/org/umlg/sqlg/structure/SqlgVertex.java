@@ -533,7 +533,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
-//        SqlgVertex.this.sqlgGraph.tx().readWrite();
         return SqlgVertex.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicityUnique;
+import org.umlg.sqlg.test.TestGetById;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,11 @@ import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicityUnique;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestEdgeMultiplicityUnique.class,
+        TestGetById.class,
+//        TestForeignSchema.class,
+//        TestColumnNameTranslation.class,
+//        TestPathStep.class
+//        TestEdgeMultiplicityUnique.class,
 //        TestEdgeMultiplicityUniqueDistributed.class
 })
 public class AnyTest {

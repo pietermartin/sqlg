@@ -12,6 +12,10 @@ public class SqlgExceptions {
 
     private SqlgExceptions() {}
 
+    public static IllegalArgumentException idArgsMustBeEitherIdOrElement() {
+        return new IllegalArgumentException("id arguments must be either ids or Elements");
+    }
+
     public static UnsupportedOperationException topologyRenameNotSupported(String type) {
         return new UnsupportedOperationException(String.format(TOPOLOGY_RENAME_NOT_SUPPORTED, type));
     }

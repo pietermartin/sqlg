@@ -27,7 +27,7 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
     private Iterator<Traverser.Admin<S>> resultIterator;
     private final Traversal.Admin<S, ?> notTraversal;
 
-    public SqlgNotStepBarrier(final Traversal.Admin traversal, final Traversal<S, ?> notTraversal) {
+    public SqlgNotStepBarrier(final Traversal.Admin<?, ?> traversal, final Traversal<S, ?> notTraversal) {
         super(traversal);
         this.notTraversal = this.integrateChild(notTraversal.asAdmin());
     }
@@ -40,7 +40,7 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 if (start instanceof SqlgTraverser) {
-                    ((SqlgTraverser) start).setRequiresOneBulk(true);
+                    ((SqlgTraverser<?>) start).setRequiresOneBulk(true);
                 }
                 List<Object> startObjects = start.path().objects();
                 StringBuilder recordIdConcatenated = new StringBuilder();
@@ -57,8 +57,8 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
             }
 
             while (this.notTraversal.hasNext()) {
-                Traverser.Admin<?> orTraverser = this.notTraversal.nextTraverser();
-                List<Object> filterTraverserObjects = orTraverser.path().objects();
+                Traverser.Admin<?> traverser = this.notTraversal.nextTraverser();
+                List<Object> filterTraverserObjects = traverser.path().objects();
                 String startId = "";
                 for (Object filteredTraverserObject : filterTraverserObjects) {
                     if (filteredTraverserObject instanceof Element) {
@@ -73,10 +73,11 @@ public class SqlgNotStepBarrier<S> extends SqlgFilterStep<S> implements Traversa
                     }
                 }
             }
+
             this.results.addAll(startRecordIds.values());
             this.results.sort((o1, o2) -> {
-                SqlgTraverser x = (SqlgTraverser) o1;
-                SqlgTraverser y = (SqlgTraverser) o2;
+                SqlgTraverser<?> x = (SqlgTraverser<?>) o1;
+                SqlgTraverser<?> y = (SqlgTraverser<?>) o2;
                 return Long.compare(x.getStartElementIndex(), y.getStartElementIndex());
             });
             this.resultIterator = this.results.iterator();

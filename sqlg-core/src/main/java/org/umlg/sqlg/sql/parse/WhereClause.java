@@ -25,6 +25,7 @@ import java.util.Collection;
 /**
  * Created by pieter on 2015/08/03.
  */
+@SuppressWarnings("UnnecessaryDefault")
 public class WhereClause {
 
     private static final String LIKE = " like ?";
@@ -218,51 +219,38 @@ public class WhereClause {
 
 
     private static String containsToSql(Contains contains, int size) {
-        String result;
+        StringBuilder result;
         if (size == 1) {
-            switch (contains) {
-                case within:
-                    result = " = ?";
-                    break;
-                case without:
-                    result = " <> ?";
-                    break;
-                default:
-                    throw new RuntimeException("Unknown Contains" + contains.name());
-            }
+            result = new StringBuilder(switch (contains) {
+                case within -> " = ?";
+                case without -> " <> ?";
+                default -> throw new RuntimeException("Unknown Contains" + contains.name());
+            });
         } else {
-            switch (contains) {
-                case within:
-                    result = " in (";
-                    break;
-                case without:
-                    result = " not in (";
-                    break;
-                default:
-                    throw new RuntimeException("Unknown Contains" + contains.name());
-            }
+            result = new StringBuilder(switch (contains) {
+                case within -> " in (";
+                case without -> " not in (";
+                default -> throw new RuntimeException("Unknown Contains" + contains.name());
+            });
             for (int i = 0; i < size; i++) {
-                result += "?";
-                if (i < size - 1 && size > 1) {
-                    result += ", ";
+                result.append("?");
+//                if (i < size - 1 && size > 1) {
+                if (i < size - 1) {
+                    result.append(", ");
 
                 }
             }
-            result += ")";
+            result.append(")");
         }
-        return result;
+        return result.toString();
     }
 
     private static String textToSql(SqlDialect sqlDialect, String prefix, Text text) {
         String result;
         switch (text) {
-            case contains:
-                result = LIKE;
-                break;
-            case ncontains:
-                result = NOT_LIKE;
-                break;
-            case containsCIS:
+            case contains -> result = LIKE;
+            case ncontains -> result = NOT_LIKE;
+            case containsCIS -> {
                 if (!sqlDialect.supportsILike()) {
                     prefix = "lower(" + prefix + ")";
                 }
@@ -271,8 +259,8 @@ public class WhereClause {
                 } else {
                     result = " like lower(?)";
                 }
-                break;
-            case ncontainsCIS:
+            }
+            case ncontainsCIS -> {
                 if (!sqlDialect.supportsILike()) {
                     prefix = "lower(" + prefix + ")";
                 }
@@ -281,35 +269,24 @@ public class WhereClause {
                 } else {
                     result = " not like lower(?)";
                 }
-                break;
-            case startsWith:
-                result = LIKE;
-                break;
-            case nstartsWith:
-                result = NOT_LIKE;
-                break;
-            case endsWith:
-                result = LIKE;
-                break;
-            case nendsWith:
-                result = NOT_LIKE;
-                break;
-            default:
-                throw new RuntimeException("Unknown Contains " + text.name());
+            }
+            case startsWith -> result = LIKE;
+            case nstartsWith -> result = NOT_LIKE;
+            case endsWith -> result = LIKE;
+            case nendsWith -> result = NOT_LIKE;
+            default -> throw new RuntimeException("Unknown Contains " + text.name());
         }
         return prefix + result;
     }
 
     public void putKeyValueMap(HasContainer hasContainer, Multimap<String, Object> keyValueMap, SchemaTableTree schemaTableTree) {
-        if (p instanceof OrP) {
-            OrP<?> orP = (OrP<?>) p;
+        if (p instanceof OrP<?> orP) {
             Preconditions.checkState(orP.getPredicates().size() == 2, "Only handling OrP with 2 predicates!");
             P<?> p1 = orP.getPredicates().get(0);
             P<?> p2 = orP.getPredicates().get(1);
             keyValueMap.put(hasContainer.getKey(), p1.getValue());
             keyValueMap.put(hasContainer.getKey(), p2.getValue());
-        } else if (p instanceof AndP) {
-            AndP<?> andP = (AndP<?>) p;
+        } else if (p instanceof AndP<?> andP) {
             Preconditions.checkState(andP.getPredicates().size() == 2, "Only handling AndP with 2 predicates!");
             P<?> p1 = andP.getPredicates().get(0);
             P<?> p2 = andP.getPredicates().get(1);
@@ -360,10 +337,9 @@ public class WhereClause {
         } else if (p.getBiPredicate() instanceof Existence) {
             // no value
         } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
-                hasContainer.getValue() instanceof RecordId &&
+                hasContainer.getValue() instanceof RecordId recordId &&
                 !((RecordId) hasContainer.getValue()).hasSequenceId()) {
 
-            RecordId recordId = (RecordId) hasContainer.getValue();
             int i = 0;
             for (Object identifier : recordId.getIdentifiers()) {
                 keyValueMap.put(schemaTableTree.getIdentifiers().get(i++), identifier);

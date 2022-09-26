@@ -1,9 +1,9 @@
 package org.umlg.sqlg.step.barrier;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Pick;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
@@ -37,7 +37,7 @@ public class SqlgStartStepBarrier<S> extends SqlgAbstractStep<S, S> implements T
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<Traversal.Admin<S, TraversalOptionParent.Pick>> getLocalChildren() {
+    public List<Traversal.Admin<S, Pick>> getLocalChildren() {
         return Collections.emptyList();
     }
 

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.step.barrier;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.traversal.Pick;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.PredicateTraversal;
@@ -43,7 +44,7 @@ public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S,
     }
 
     @Override
-    public void addGlobalChildOption(final M pickToken, final Traversal.Admin<S, E> traversalOption) {
+    public void addChildOption(final M pickToken, final Traversal.Admin<S, E> traversalOption) {
 
         if (pickToken instanceof Pick) {
             if (this.traversalPickOptions.containsKey(pickToken))

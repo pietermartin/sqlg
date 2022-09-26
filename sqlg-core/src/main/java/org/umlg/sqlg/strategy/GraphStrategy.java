@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -18,11 +17,10 @@ import org.umlg.sqlg.step.SqlgStep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.stream.Stream;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
- *         Date: 2017/03/04
+ * Date: 2017/03/04
  */
 @SuppressWarnings("rawtypes")
 public class GraphStrategy extends BaseStrategy {
@@ -49,17 +47,30 @@ public class GraphStrategy extends BaseStrategy {
             this.sqlgGraph.tx().flush();
         }
 
-        if (originalGraphStep.getIds().length > 0) {
-            Object id = originalGraphStep.getIds()[0];
-            if (id != null) {
-                Class clazz = id.getClass();
-                //noinspection unchecked
-                if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> clazz.isAssignableFrom(i.getClass())))
-                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-            }
-        }
+//        if (originalGraphStep.getIds().length > 0) {
+//            Object id = originalGraphStep.getIds()[0];
+//            if (id != null) {
+////                Class clazz = id.getClass();
+//                //noinspection unchecked
+//                if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> {
+//                    if (Vertex.class.isAssignableFrom(i.getClass()) || Edge.class.isAssignableFrom(i.getClass()) || RecordId.class.isAssignableFrom(i.getClass())) {
+//                        return true;
+//                    } else if (i instanceof String) {
+//                        try {
+//                            RecordId.from(i);
+//                            return true;
+//                        } catch (Exception e) {
+//                            return false;
+//                        }
+//                    } else {
+//                        return false;
+//                    }
+//                }))
+//                    throw SqlgExceptions.idArgsMustBeEitherIdOrElement();
+//            }
+//        }
         if (this.canNotBeOptimized()) {
-            logger.debug("gremlin not optimized due to path or tree step. " + this.traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            logger.debug("gremlin not optimized due to path or tree step. " + this.traversal + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
         combineSteps();

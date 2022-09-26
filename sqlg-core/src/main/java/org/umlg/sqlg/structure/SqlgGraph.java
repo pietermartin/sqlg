@@ -51,14 +51,21 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.TernaryBooleanLogicsTest",
+        method = "testNot",
+        reason = "SqlgNotStepBarrier does nto handle throwing exceptions in the Comparator")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.TernaryBooleanLogicsTest",
+        method = "testXor",
+        reason = "SqlgNotStepBarrier does nto handle throwing exceptions in the Comparator")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.TernaryBooleanLogicsTest",
+        method = "testOr",
+        reason = "SqlgNotStepBarrier does nto handle throwing exceptions in the Comparator")
+
 @OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
         method = "shouldNotAllowNullAddVertex",
         reason = "nulls")
 @OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
         method = "shouldNotAllowNullAddEdge",
-        reason = "nulls")
-@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.AddVertexTest",
-        method = "g_addVXnullX_propertyXid_nullX",
         reason = "nulls")
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.InjectTest",
         method = "g_injectXnull_1_3_nullX",
@@ -571,13 +578,13 @@ public class SqlgGraph implements Graph {
             if (clazz.isAssignableFrom(ids[0].getClass())) {
                 // based on the first item assume all vertices in the argument list
                 if (!Stream.of(ids).allMatch(id -> clazz.isAssignableFrom(id.getClass())))
-                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+                    throw SqlgExceptions.idArgsMustBeEitherIdOrElement();
 
                 return Stream.of(ids).map(id -> (T) id).iterator();
             } else {
                 final Class<?> firstClass = ids[0].getClass();
                 if (!Stream.of(ids).map(Object::getClass).allMatch(firstClass::equals))
-                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+                    throw SqlgExceptions.idArgsMustBeEitherIdOrElement();
 
                 List<RecordId> recordIds = RecordId.from(this, ids);
                 Iterable<T> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);

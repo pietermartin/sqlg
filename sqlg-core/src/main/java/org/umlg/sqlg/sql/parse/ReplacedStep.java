@@ -487,6 +487,10 @@ public class ReplacedStep<S, E> {
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
             HasContainer labelHasContainer = this.labelHasContainers.get(0);
             String table = (String) labelHasContainer.getValue();
+            if (table == null) {
+                //bs case
+                table = UUID.randomUUID() + "_fake_null";
+            }
             SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(VERTEX_PREFIX);
             if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
                 collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
@@ -575,6 +579,9 @@ public class ReplacedStep<S, E> {
                 Collection<String> predicateValues = (Collection<String>) predicateValue;
                 SchemaTable schemaTableWithOutPrefix = SchemaTable.from(sqlgGraph, table).withOutPrefix();
                 for (String value : predicateValues) {
+                    if (value == null) {
+                        value = UUID.randomUUID() + "_fake_null";
+                    }
                     if (!isVertex && !value.contains(".")) {
                         //edges usually don't have schema, so we're matching any table with any schema if we weren't given any
                         edgeTableWithoutSchemaAndPrefixes.add(value);
@@ -591,6 +598,9 @@ public class ReplacedStep<S, E> {
                     return biPredicate.test(table, tableWithPrefixes) || biPredicate.test(schemaTableWithOutPrefix.getTable(), edgeTableWithoutSchemaAndPrefixes);
                 }
             } else {
+                if (predicateValue == null) {
+                    predicateValue = UUID.randomUUID() + "_fake_null";
+                }
                 Preconditions.checkState(predicateValue instanceof String, "Label HasContainer's value must be an Collection of Strings or a String. Found " + predicateValue.getClass().toString());
                 if (!isVertex && !((String) predicateValue).contains(".")) {
                     //edges usually don't have schema, so we're matching any table with any schema if we weren't given any
@@ -724,8 +734,7 @@ public class ReplacedStep<S, E> {
             Collection<Object> ids = (Collection<Object>) rawId;
             Set<String> idLabels = new HashSet<>();
             for (Object id : ids) {
-                if (id instanceof RecordId) {
-                    RecordId recordId = (RecordId) id;
+                if (id instanceof RecordId recordId) {
                     idLabels.add(recordId.getSchemaTable().toString());
                 } else if (id instanceof Element) {
                     SqlgElement sqlgElement = (SqlgElement) id;

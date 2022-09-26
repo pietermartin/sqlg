@@ -575,8 +575,7 @@ public abstract class BaseStrategy {
             countToGoPrevious++;
             String notNullKey;
             String nullKey;
-            if (currentStep instanceof HasContainerHolder) {
-                HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
+            if (currentStep instanceof HasContainerHolder hasContainerHolder) {
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
                 if (isNotWithMultipleColumnValue(hasContainerHolder)) {
@@ -645,7 +644,7 @@ public abstract class BaseStrategy {
 
     private List<HasContainer> isForSqlgSchema(ReplacedStep<?, ?> currentReplacedStep, List<HasContainer> hasContainers) {
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)) {
+            if (hasContainer.getKey() != null && hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA)) {
                 currentReplacedStep.markForSqlgSchema();
                 return Collections.singletonList(hasContainer);
             }
@@ -990,14 +989,22 @@ public abstract class BaseStrategy {
     }
 
     private boolean hasContainerKeyNotIdOrLabel(HasContainer hasContainer) {
-        return !(hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) || hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX) ||
-                hasContainer.getKey().equals(T.id.getAccessor()) || (hasContainer.getKey().equals(T.label.getAccessor())));
+        return hasContainer.getKey() != null &&
+                !(
+                        hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) ||
+                                hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX) ||
+                                hasContainer.getKey().equals(T.id.getAccessor()) ||
+                                hasContainer.getKey().equals(T.label.getAccessor())
+                );
     }
 
     private List<HasContainer> optimizeIdHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(T.id.getAccessor()) && SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+            if (hasContainer.getKey() != null &&
+                    hasContainer.getKey().equals(T.id.getAccessor()) &&
+                    SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+
                 replacedStep.addIdHasContainer(hasContainer);
                 result.add(hasContainer);
             }
@@ -1008,7 +1015,10 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeLabelHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getKey().equals(T.label.getAccessor()) && SUPPORTED_LABEL_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+            if (hasContainer.getKey() != null &&
+                    hasContainer.getKey().equals(T.label.getAccessor()) &&
+                    SUPPORTED_LABEL_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+
                 replacedStep.addLabelHasContainer(hasContainer);
                 result.add(hasContainer);
             }

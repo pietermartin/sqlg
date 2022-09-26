@@ -3,7 +3,6 @@ package org.umlg.sqlg.step.barrier;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.UnionStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
@@ -22,7 +21,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
 
     private boolean first = true;
     private final List<Traversal.Admin<S, E>> globalTraversals;
-    private final List<Traversal.Admin<S, TraversalOptionParent.Pick>> localTraversals;
+    private final List<Traversal.Admin<?, ?>> localTraversals;
     private final List<Traverser.Admin<E>> results = new ArrayList<>();
     private Iterator<Traverser.Admin<E>> resultIterator;
     private boolean hasStarts = false;
@@ -43,7 +42,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<Traversal.Admin<S, TraversalOptionParent.Pick>> getLocalChildren() {
+    public List<Traversal.Admin<?, ?>> getLocalChildren() {
         return this.localTraversals;
     }
 
@@ -55,7 +54,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
     @Override
     public Set<TraverserRequirement> getRequirements() {
         Set<TraverserRequirement> requirements = new HashSet<>();
-        for (Traversal.Admin<S, TraversalOptionParent.Pick> localTraversal : this.localTraversals) {
+        for (Traversal.Admin<?, ?> localTraversal : this.localTraversals) {
             requirements.addAll(localTraversal.getTraverserRequirements());
         }
         for (Traversal.Admin<S, E> globalTraversal : this.globalTraversals) {
@@ -104,7 +103,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
     @Override
     public SqlgUnionStepBarrier<S, E> clone() {
         final SqlgUnionStepBarrier<S, E> clone = (SqlgUnionStepBarrier<S, E>) super.clone();
-        for (Traversal.Admin<S, TraversalOptionParent.Pick> localTraversal : localTraversals) {
+        for (Traversal.Admin<?, ?> localTraversal : localTraversals) {
             clone.localTraversals.add(localTraversal.clone());
         }
         for (Traversal.Admin<S, E> globalTraversal : globalTraversals) {

@@ -1,11 +1,11 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.Pick;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -78,7 +78,7 @@ public class TestGremlinCompileChoose extends BaseTest {
         final Traversal<Vertex, Map<String, Long>> traversal =  this.sqlgGraph.traversal()
                 .V().hasLabel("person").choose(__.values("age"))
                 .option(27, __.constant("young"))
-                .option(TraversalOptionParent.Pick.none, __.constant("old"))
+                .option(Pick.none, __.constant("old"))
                 .groupCount();
 
         printTraversalForm(traversal);
@@ -132,7 +132,7 @@ public class TestGremlinCompileChoose extends BaseTest {
         DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal().V().choose(__.label())
                 .option("blah", __.out("knows"))
                 .option("bleep", __.out("created"))
-                .option(TraversalOptionParent.Pick.none, __.identity()).<String>values("name");
+                .option(Pick.none, __.identity()).<String>values("name");
 
         Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);

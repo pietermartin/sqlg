@@ -391,7 +391,7 @@ public abstract class SqlgElement implements Element {
         //Check the propertyKeys parameter
         if (propertyKeys.length > 0) {
             for (String propertyKey : propertyKeys) {
-                if (!propertyKey.equals(Topology.ID)) {
+                if (propertyKey != null && !propertyKey.equals(Topology.ID)) {
                     @SuppressWarnings("unchecked")
                     V propertyValue = (V) this.properties.get(propertyKey);
                     if (propertyValue != null) {
