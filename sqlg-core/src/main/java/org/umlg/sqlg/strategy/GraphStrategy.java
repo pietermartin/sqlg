@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -100,8 +101,14 @@ public class GraphStrategy extends BaseStrategy {
     protected SqlgStep constructSqlgStep(Step startStep) {
         Preconditions.checkArgument(startStep instanceof GraphStep, "Expected a GraphStep, found instead a " + startStep.getClass().getName());
         GraphStep<?, ?> graphStep = (GraphStep) startStep;
+        Object[] ids = graphStep.getIds();
+        Object[] fixedUpIds = new Object[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            Object id = ids[i];
+            fixedUpIds[i] = id instanceof ReferenceElement<?> ? ((ReferenceElement)id).id() : id;
+        }
         //noinspection unchecked
-        return new SqlgGraphStep(this.sqlgGraph, this.traversal, graphStep.getReturnClass(), graphStep.isStartStep(), graphStep.getIds());
+        return new SqlgGraphStep(this.sqlgGraph, this.traversal, graphStep.getReturnClass(), graphStep.isStartStep(), fixedUpIds);
     }
 
     @Override
