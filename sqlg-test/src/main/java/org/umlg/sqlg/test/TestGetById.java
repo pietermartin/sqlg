@@ -1,9 +1,12 @@
 package org.umlg.sqlg.test;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceEdge;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -17,6 +20,26 @@ import java.util.List;
  * Time: 5:08 PM
  */
 public class TestGetById extends BaseTest {
+
+    @Test
+    public void testGetByReferencedId() {
+        final Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        final Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Edge e = a1.addEdge("ab", a2);
+        this.sqlgGraph.tx().commit();
+        Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(new ReferenceVertex(a1.id()));
+        Assert.assertTrue(traversal.hasNext());
+        Vertex other = traversal.next();
+        Assert.assertEquals(a1, other);
+        traversal = this.sqlgGraph.traversal().V(new ReferenceVertex(a2.id()));
+        Assert.assertTrue(traversal.hasNext());
+        other = traversal.next();
+        Assert.assertEquals(a2, other);
+        Traversal<Edge, Edge> traversalEdge = this.sqlgGraph.traversal().E(new ReferenceEdge(e));
+        Assert.assertTrue(traversalEdge.hasNext());
+        Edge otherEdge = traversalEdge.next();
+        Assert.assertEquals(e, otherEdge);
+    }
 
     @Test
     public void testFailures() {
