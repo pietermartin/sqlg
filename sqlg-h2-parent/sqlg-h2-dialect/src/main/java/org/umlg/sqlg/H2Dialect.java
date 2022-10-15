@@ -17,6 +17,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
@@ -153,6 +154,9 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public void validateProperty(Object key, Object value) {
+        if (value == null) {
+            return;
+        }
         if (value instanceof String || value instanceof String[]) {
             return;
         }
@@ -175,6 +179,9 @@ public class H2Dialect extends BaseSqlDialect {
             return;
         }
         if (value instanceof Double || value instanceof Double[] || value instanceof double[]) {
+            return;
+        }
+        if (value instanceof BigDecimal  || value instanceof BigDecimal[]) {
             return;
         }
         if (value instanceof Float || value instanceof Float[] || value instanceof float[]) {
@@ -224,165 +231,86 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BOOLEAN_ORDINAL:
-                return new String[]{"BOOLEAN"};
-            case BYTE_ORDINAL:
-                return new String[]{"TINYINT"};
-            case byte_ARRAY_ORDINAL:
-                return new String[]{"VARBINARY"};
-            case BYTE_ARRAY_ORDINAL:
-                return new String[]{"VARBINARY"};
-            case DOUBLE_ORDINAL:
-                return new String[]{"DOUBLE"};
-            case DURATION_ORDINAL:
-                return new String[]{"BIGINT", "INT"};
-            case FLOAT_ORDINAL:
-                return new String[]{"REAL"};
-            case INTEGER_ORDINAL:
-                return new String[]{"INT"};
-            case LOCALDATE_ORDINAL:
-                return new String[]{"DATE"};
-            case LOCALDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP"};
-            case LOCALTIME_ORDINAL:
-                return new String[]{"TIME"};
-            case LONG_ORDINAL:
-                return new String[]{"BIGINT"};
-            case PERIOD_ORDINAL:
-                return new String[]{"INT", "INT", "INT"};
-            case SHORT_ORDINAL:
-                return new String[]{"SMALLINT"};
-            case STRING_ORDINAL:
-                return new String[]{"VARCHAR"};
-            case VARCHAR_ORDINAL:
-                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
-            case UUID_ORDINAL:
-                return new String[]{"UUID"};
-            case ZONEDDATETIME_ORDINAL:
-                return new String[]{"TIMESTAMP", "VARCHAR"};
-            case BOOLEAN_ARRAY_ORDINAL:
-                return new String[]{"BOOLEAN ARRAY"};
-            case boolean_ARRAY_ORDINAL:
-                return new String[]{"BOOLEAN ARRAY"};
-            case DOUBLE_ARRAY_ORDINAL:
-                return new String[]{"DOUBLE ARRAY"};
-            case double_ARRAY_ORDINAL:
-                return new String[]{"DOUBLE ARRAY"};
-            case FLOAT_ARRAY_ORDINAL:
-                return new String[]{"REAL ARRAY"};
-            case float_ARRAY_ORDINAL:
-                return new String[]{"REAL ARRAY"};
-            case int_ARRAY_ORDINAL:
-                return new String[]{"INT ARRAY"};
-            case INTEGER_ARRAY_ORDINAL:
-                return new String[]{"INT ARRAY"};
-            case LOCALDATE_ARRAY_ORDINAL:
-                return new String[]{"DATE ARRAY"};
-            case LOCALDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP ARRAY"};
-            case LOCALTIME_ARRAY_ORDINAL:
-                return new String[]{"TIME ARRAY"};
-            case LONG_ARRAY_ORDINAL:
-                return new String[]{"BIGINT ARRAY"};
-            case long_ARRAY_ORDINAL:
-                return new String[]{"BIGINT ARRAY"};
-            case SHORT_ARRAY_ORDINAL:
-                return new String[]{"SMALLINT ARRAY"};
-            case short_ARRAY_ORDINAL:
-                return new String[]{"SMALLINT ARRAY"};
-            case STRING_ARRAY_ORDINAL:
-                return new String[]{"VARCHAR ARRAY"};
-            case DURATION_ARRAY_ORDINAL:
-                return new String[]{"BIGINT ARRAY", "INT ARRAY"};
-            case PERIOD_ARRAY_ORDINAL:
-                return new String[]{"INT ARRAY", "INT ARRAY", "INT ARRAY"};
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new String[]{"TIMESTAMP ARRAY", "VARCHAR ARRAY"};
-            case JSON_ORDINAL:
-                return new String[]{"VARCHAR"};
-            case JSON_ARRAY_ORDINAL:
-                return new String[]{"VARCHAR ARRAY"};
-            case POINT_ORDINAL:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case POLYGON_ORDINAL:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case GEOGRAPHY_POINT_ORDINAL:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case GEOGRAPHY_POLYGON_ORDINAL:
-                throw new IllegalStateException("H2 does not support gis types!");
-            case LINESTRING_ORDINAL:
-                throw new IllegalStateException("H2 does not support gis types!");
-            default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
-        }
+        return switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL -> new String[]{"BOOLEAN"};
+            case BYTE_ORDINAL -> new String[]{"TINYINT"};
+            case byte_ARRAY_ORDINAL -> new String[]{"VARBINARY"};
+            case BYTE_ARRAY_ORDINAL -> new String[]{"VARBINARY"};
+            case DOUBLE_ORDINAL -> new String[]{"DOUBLE"};
+            case BIG_DECIMAL_ORDINAL -> new String[]{"DOUBLE"};
+            case DURATION_ORDINAL -> new String[]{"BIGINT", "INT"};
+            case FLOAT_ORDINAL -> new String[]{"REAL"};
+            case INTEGER_ORDINAL -> new String[]{"INT"};
+            case LOCALDATE_ORDINAL -> new String[]{"DATE"};
+            case LOCALDATETIME_ORDINAL -> new String[]{"TIMESTAMP"};
+            case LOCALTIME_ORDINAL -> new String[]{"TIME"};
+            case LONG_ORDINAL -> new String[]{"BIGINT"};
+            case PERIOD_ORDINAL -> new String[]{"INT", "INT", "INT"};
+            case SHORT_ORDINAL -> new String[]{"SMALLINT"};
+            case STRING_ORDINAL -> new String[]{"VARCHAR"};
+            case VARCHAR_ORDINAL -> new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case UUID_ORDINAL -> new String[]{"UUID"};
+            case ZONEDDATETIME_ORDINAL -> new String[]{"TIMESTAMP", "VARCHAR"};
+            case BOOLEAN_ARRAY_ORDINAL -> new String[]{"BOOLEAN ARRAY"};
+            case boolean_ARRAY_ORDINAL -> new String[]{"BOOLEAN ARRAY"};
+            case DOUBLE_ARRAY_ORDINAL -> new String[]{"DOUBLE ARRAY"};
+            case BIG_DECIMAL_ARRAY_ORDINAL -> new String[]{"DOUBLE ARRAY"};
+            case double_ARRAY_ORDINAL -> new String[]{"DOUBLE ARRAY"};
+            case FLOAT_ARRAY_ORDINAL -> new String[]{"REAL ARRAY"};
+            case float_ARRAY_ORDINAL -> new String[]{"REAL ARRAY"};
+            case int_ARRAY_ORDINAL -> new String[]{"INT ARRAY"};
+            case INTEGER_ARRAY_ORDINAL -> new String[]{"INT ARRAY"};
+            case LOCALDATE_ARRAY_ORDINAL -> new String[]{"DATE ARRAY"};
+            case LOCALDATETIME_ARRAY_ORDINAL -> new String[]{"TIMESTAMP ARRAY"};
+            case LOCALTIME_ARRAY_ORDINAL -> new String[]{"TIME ARRAY"};
+            case LONG_ARRAY_ORDINAL -> new String[]{"BIGINT ARRAY"};
+            case long_ARRAY_ORDINAL -> new String[]{"BIGINT ARRAY"};
+            case SHORT_ARRAY_ORDINAL -> new String[]{"SMALLINT ARRAY"};
+            case short_ARRAY_ORDINAL -> new String[]{"SMALLINT ARRAY"};
+            case STRING_ARRAY_ORDINAL -> new String[]{"VARCHAR ARRAY"};
+            case DURATION_ARRAY_ORDINAL -> new String[]{"BIGINT ARRAY", "INT ARRAY"};
+            case PERIOD_ARRAY_ORDINAL -> new String[]{"INT ARRAY", "INT ARRAY", "INT ARRAY"};
+            case ZONEDDATETIME_ARRAY_ORDINAL -> new String[]{"TIMESTAMP ARRAY", "VARCHAR ARRAY"};
+            case JSON_ORDINAL -> new String[]{"VARCHAR"};
+            case JSON_ARRAY_ORDINAL -> new String[]{"VARCHAR ARRAY"};
+            case POINT_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
+            case POLYGON_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
+            case GEOGRAPHY_POINT_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
+            case GEOGRAPHY_POLYGON_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
+            case LINESTRING_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
+            default -> throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        };
     }
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BOOLEAN_ORDINAL:
-                return new int[]{Types.BOOLEAN};
-            case BYTE_ORDINAL:
-                return new int[]{Types.TINYINT};
-            case SHORT_ORDINAL:
-                return new int[]{Types.SMALLINT};
-            case INTEGER_ORDINAL:
-                return new int[]{Types.INTEGER};
-            case LONG_ORDINAL:
-                return new int[]{Types.BIGINT};
-            case FLOAT_ORDINAL:
-                return new int[]{Types.REAL};
-            case DOUBLE_ORDINAL:
-                return new int[]{Types.DOUBLE};
-            case STRING_ORDINAL:
-                return new int[]{Types.CLOB};
-            case LOCALDATETIME_ORDINAL:
-                return new int[]{Types.TIMESTAMP};
-            case LOCALDATE_ORDINAL:
-                return new int[]{Types.DATE};
-            case LOCALTIME_ORDINAL:
-                return new int[]{Types.TIME};
-            case ZONEDDATETIME_ORDINAL:
-                return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case DURATION_ORDINAL:
-                return new int[]{Types.BIGINT, Types.INTEGER};
-            case PERIOD_ORDINAL:
-                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case JSON_ORDINAL:
-                return new int[]{Types.VARCHAR};
-            case byte_ARRAY_ORDINAL:
-                return new int[]{Types.BINARY};
-            case BYTE_ARRAY_ORDINAL:
-                return new int[]{Types.BINARY};
-            case BOOLEAN_ARRAY_ORDINAL:
-            case boolean_ARRAY_ORDINAL:
-            case DOUBLE_ARRAY_ORDINAL:
-            case double_ARRAY_ORDINAL:
-            case FLOAT_ARRAY_ORDINAL:
-            case float_ARRAY_ORDINAL:
-            case int_ARRAY_ORDINAL:
-            case INTEGER_ARRAY_ORDINAL:
-            case LOCALDATE_ARRAY_ORDINAL:
-            case LOCALDATETIME_ARRAY_ORDINAL:
-            case LOCALTIME_ARRAY_ORDINAL:
-            case LONG_ARRAY_ORDINAL:
-            case long_ARRAY_ORDINAL:
-            case SHORT_ARRAY_ORDINAL:
-            case short_ARRAY_ORDINAL:
-            case STRING_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY, Types.ARRAY};
-            case DURATION_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY, Types.ARRAY};
-            case PERIOD_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
-            case JSON_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
-        }
+        return switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL -> new int[]{Types.BOOLEAN};
+            case BYTE_ORDINAL -> new int[]{Types.TINYINT};
+            case SHORT_ORDINAL -> new int[]{Types.SMALLINT};
+            case INTEGER_ORDINAL -> new int[]{Types.INTEGER};
+            case LONG_ORDINAL -> new int[]{Types.BIGINT};
+            case FLOAT_ORDINAL -> new int[]{Types.REAL};
+            case DOUBLE_ORDINAL -> new int[]{Types.DOUBLE};
+            case BIG_DECIMAL_ORDINAL -> new int[]{Types.DOUBLE};
+            case STRING_ORDINAL -> new int[]{Types.CLOB};
+            case LOCALDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP};
+            case LOCALDATE_ORDINAL -> new int[]{Types.DATE};
+            case LOCALTIME_ORDINAL -> new int[]{Types.TIME};
+            case ZONEDDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP, Types.CLOB};
+            case DURATION_ORDINAL -> new int[]{Types.BIGINT, Types.INTEGER};
+            case PERIOD_ORDINAL -> new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
+            case JSON_ORDINAL -> new int[]{Types.VARCHAR};
+            case byte_ARRAY_ORDINAL -> new int[]{Types.BINARY};
+            case BYTE_ARRAY_ORDINAL -> new int[]{Types.BINARY};
+            case BOOLEAN_ARRAY_ORDINAL, boolean_ARRAY_ORDINAL, BIG_DECIMAL_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, double_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, float_ARRAY_ORDINAL, int_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, LOCALDATE_ARRAY_ORDINAL, LOCALDATETIME_ARRAY_ORDINAL, LOCALTIME_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, long_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL, short_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL ->
+                    new int[]{Types.ARRAY};
+            case ZONEDDATETIME_ARRAY_ORDINAL -> new int[]{Types.ARRAY, Types.ARRAY};
+            case DURATION_ARRAY_ORDINAL -> new int[]{Types.ARRAY, Types.ARRAY};
+            case PERIOD_ARRAY_ORDINAL -> new int[]{Types.ARRAY, Types.ARRAY, Types.ARRAY};
+            case JSON_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            default -> throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        };
     }
 
     @Override
@@ -799,6 +727,8 @@ public class H2Dialect extends BaseSqlDialect {
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
             case DOUBLE_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoubleArray((Object[]) array.getArray());
+            case BIG_DECIMAL_ARRAY_ORDINAL:
+                return SqlgUtil.convertObjectOfDoublesArrayToBigDecimalArray((Object[]) array.getArray());
             case double_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
             case FLOAT_ARRAY_ORDINAL:

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.topology.Topology;
 
+import java.math.BigDecimal;
 import java.time.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,6 +105,11 @@ public class PropertyType {
     public static final int UUID_ORDINAL = 43;
     public static final PropertyType UUID = new PropertyType("UUID", UUID_ORDINAL, java.util.UUID.class.getName(), new String[]{});
 
+    public static final int BIG_DECIMAL_ORDINAL = 44;
+    public static final PropertyType BIG_DECIMAL = new PropertyType("BIG_DECIMAL", BIG_DECIMAL_ORDINAL, BigDecimal.class.getName(), new String[]{});
+    public static final int BIG_DECIMAL_ARRAY_ORDINAL = 45;
+    public static final PropertyType BIG_DECIMAL_ARRAY = new PropertyType("BIG_DECIMAL_ARRAY", BIG_DECIMAL_ARRAY_ORDINAL, BigDecimal[].class.getName(), new String[]{});
+
     public static PropertyType varChar(int length) {
         return new PropertyType(String.class.getName(), new String[]{}, length);
     }
@@ -187,6 +193,7 @@ public class PropertyType {
                 PropertyType.LONG,
                 PropertyType.FLOAT,
                 PropertyType.DOUBLE,
+                PropertyType.BIG_DECIMAL,
                 PropertyType.STRING,
                 PropertyType.LOCALDATE,
                 PropertyType.LOCALDATETIME,
@@ -215,6 +222,7 @@ public class PropertyType {
                 PropertyType.FLOAT_ARRAY,
                 PropertyType.double_ARRAY,
                 PropertyType.DOUBLE_ARRAY,
+                PropertyType.BIG_DECIMAL_ARRAY,
                 PropertyType.STRING_ARRAY,
                 PropertyType.LOCALDATETIME_ARRAY,
                 PropertyType.LOCALDATE_ARRAY,

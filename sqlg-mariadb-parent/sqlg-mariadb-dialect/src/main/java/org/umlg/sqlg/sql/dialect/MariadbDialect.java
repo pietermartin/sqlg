@@ -332,97 +332,59 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BOOLEAN_ORDINAL:
-                return new String[]{"BOOLEAN"};
-            case BYTE_ORDINAL:
-                return new String[]{"TINYINT"};
-            case SHORT_ORDINAL:
-                return new String[]{"SMALLINT"};
-            case INTEGER_ORDINAL:
-                return new String[]{"INTEGER"};
-            case LONG_ORDINAL:
-                return new String[]{"BIGINT"};
-            case DOUBLE_ORDINAL:
-                return new String[]{"DOUBLE"};
-            case LOCALDATE_ORDINAL:
-                return new String[]{"DATE"};
-            case LOCALDATETIME_ORDINAL:
+        return switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL -> new String[]{"BOOLEAN"};
+            case BYTE_ORDINAL -> new String[]{"TINYINT"};
+            case SHORT_ORDINAL -> new String[]{"SMALLINT"};
+            case INTEGER_ORDINAL -> new String[]{"INTEGER"};
+            case LONG_ORDINAL -> new String[]{"BIGINT"};
+            case DOUBLE_ORDINAL -> new String[]{"DOUBLE"};
+            case BIG_DECIMAL_ORDINAL -> new String[]{"DOUBLE"};
+            case LOCALDATE_ORDINAL -> new String[]{"DATE"};
+            case LOCALDATETIME_ORDINAL ->
                 //3 microseconds maps nicely to java's LocalDateTIme
-                return new String[]{"DATETIME(3)"};
-            case ZONEDDATETIME_ORDINAL:
-                return new String[]{"DATETIME(3)", "TINYTEXT"};
-            case LOCALTIME_ORDINAL:
-                return new String[]{"TIME"};
-            case PERIOD_ORDINAL:
-                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
-            case DURATION_ORDINAL:
-                return new String[]{"BIGINT", "INTEGER"};
-            case STRING_ORDINAL:
-                return new String[]{"LONGTEXT"};
-            case VARCHAR_ORDINAL:
-                return new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
-            case JSON_ORDINAL:
-                return new String[]{"LONGTEXT"};
-            case UUID_ORDINAL:
-                return new String[]{"UUID"};
-            case POINT_ORDINAL:
-                throw new IllegalStateException("MariaDb does not support gis types!");
-            case POLYGON_ORDINAL:
-                throw new IllegalStateException("MariaDb does not support gis types!");
-            case GEOGRAPHY_POINT_ORDINAL:
-                throw new IllegalStateException("MariaDb does not support gis types!");
-            case GEOGRAPHY_POLYGON_ORDINAL:
-                throw new IllegalStateException("MariaDb does not support gis types!");
-            case BYTE_ARRAY_ORDINAL:
-                return new String[]{"BLOB"};
-            case byte_ARRAY_ORDINAL:
-                return new String[]{"BLOB"};
-            case boolean_ARRAY_ORDINAL:
-                return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
-            default:
-                throw SqlgExceptions.invalidPropertyType(propertyType);
-        }
+                    new String[]{"DATETIME(3)"};
+            case ZONEDDATETIME_ORDINAL -> new String[]{"DATETIME(3)", "TINYTEXT"};
+            case LOCALTIME_ORDINAL -> new String[]{"TIME"};
+            case PERIOD_ORDINAL -> new String[]{"INTEGER", "INTEGER", "INTEGER"};
+            case DURATION_ORDINAL -> new String[]{"BIGINT", "INTEGER"};
+            case STRING_ORDINAL -> new String[]{"LONGTEXT"};
+            case VARCHAR_ORDINAL -> new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
+            case JSON_ORDINAL -> new String[]{"LONGTEXT"};
+            case UUID_ORDINAL -> new String[]{"UUID"};
+            case POINT_ORDINAL -> throw new IllegalStateException("MariaDb does not support gis types!");
+            case POLYGON_ORDINAL -> throw new IllegalStateException("MariaDb does not support gis types!");
+            case GEOGRAPHY_POINT_ORDINAL -> throw new IllegalStateException("MariaDb does not support gis types!");
+            case GEOGRAPHY_POLYGON_ORDINAL -> throw new IllegalStateException("MariaDb does not support gis types!");
+            case BYTE_ARRAY_ORDINAL -> new String[]{"BLOB"};
+            case byte_ARRAY_ORDINAL -> new String[]{"BLOB"};
+            case boolean_ARRAY_ORDINAL -> new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
+            default -> throw SqlgExceptions.invalidPropertyType(propertyType);
+        };
     }
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BOOLEAN_ORDINAL:
-                return new int[]{Types.BOOLEAN};
-            case BYTE_ORDINAL:
-                return new int[]{Types.TINYINT};
-            case SHORT_ORDINAL:
-                return new int[]{Types.SMALLINT};
-            case INTEGER_ORDINAL:
-                return new int[]{Types.INTEGER};
-            case LONG_ORDINAL:
-                return new int[]{Types.BIGINT};
-            case DOUBLE_ORDINAL:
-                return new int[]{Types.DOUBLE};
-            case STRING_ORDINAL:
-                return new int[]{Types.CLOB};
-            case LOCALDATETIME_ORDINAL:
-                return new int[]{Types.TIMESTAMP};
-            case LOCALDATE_ORDINAL:
-                return new int[]{Types.DATE};
-            case LOCALTIME_ORDINAL:
-                return new int[]{Types.TIME};
-            case ZONEDDATETIME_ORDINAL:
-                return new int[]{Types.TIMESTAMP, Types.CLOB};
-            case PERIOD_ORDINAL:
-                return new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
-            case DURATION_ORDINAL:
-                return new int[]{Types.BIGINT, Types.INTEGER};
-            case JSON_ORDINAL:
-                return new int[]{Types.OTHER};
-            case byte_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            case BYTE_ARRAY_ORDINAL:
-                return new int[]{Types.ARRAY};
-            default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
-        }
+        return switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL -> new int[]{Types.BOOLEAN};
+            case BYTE_ORDINAL -> new int[]{Types.TINYINT};
+            case SHORT_ORDINAL -> new int[]{Types.SMALLINT};
+            case INTEGER_ORDINAL -> new int[]{Types.INTEGER};
+            case LONG_ORDINAL -> new int[]{Types.BIGINT};
+            case DOUBLE_ORDINAL -> new int[]{Types.DOUBLE};
+            case BIG_DECIMAL_ORDINAL -> new int[]{Types.DOUBLE};
+            case STRING_ORDINAL -> new int[]{Types.CLOB};
+            case LOCALDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP};
+            case LOCALDATE_ORDINAL -> new int[]{Types.DATE};
+            case LOCALTIME_ORDINAL -> new int[]{Types.TIME};
+            case ZONEDDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP, Types.CLOB};
+            case PERIOD_ORDINAL -> new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
+            case DURATION_ORDINAL -> new int[]{Types.BIGINT, Types.INTEGER};
+            case JSON_ORDINAL -> new int[]{Types.OTHER};
+            case byte_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case BYTE_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            default -> throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        };
     }
 
     @Override
@@ -902,6 +864,11 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsDoubleArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsBigDecimalArrayValues() {
         return false;
     }
 
