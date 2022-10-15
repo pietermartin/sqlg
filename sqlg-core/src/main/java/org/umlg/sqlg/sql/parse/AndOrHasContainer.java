@@ -11,10 +11,7 @@ import org.umlg.sqlg.predicate.Existence;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -94,53 +91,47 @@ public class AndOrHasContainer {
         if (!this.hasContainers.isEmpty()) {
             boolean first = true;
             for (HasContainer h : this.hasContainers) {
-//                if (!SqlgUtil.isBulkWithin(sqlgGraph, h)) {
-                    if (first) {
-                        first = false;
-                        result.append("(");
-                    } else {
-                        result.append(" AND ");
-                    }
-                    String k = h.getKey();
-                    WhereClause whereClause = WhereClause.from(h.getPredicate());
+                if (first) {
+                    first = false;
+                    result.append("(");
+                } else {
+                    result.append(" AND ");
+                }
+                String k = h.getKey();
+                WhereClause whereClause = WhereClause.from(h.getPredicate());
 
-                    // check if property exists
-                    String bool = null;
-                    if (!k.equals(T.id.getAccessor())) {
-                        Map<String, PropertyDefinition> pts = sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
-                        if (pts != null && !pts.containsKey(k)) {
-                            // verify if we have a value
-                            Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
-                            whereClause.putKeyValueMap(h, keyValueMap, schemaTableTree);
-                            // we do
-                            if (keyValueMap.size() > 0) {
-                                bool = "? is null";
+                // check if property exists
+                String bool = null;
+                if (!k.equals(T.id.getAccessor())) {
+                    Map<String, PropertyDefinition> pts = sqlgGraph.getTopology().getTableFor(schemaTableTree.getSchemaTable());
+                    if (pts != null && !pts.containsKey(k)) {
+                        // verify if we have a value
+                        Multimap<PropertyDefinition, Object> keyValueMapAgain = LinkedListMultimap.create();
+                        whereClause.putKeyValueMap(h, schemaTableTree, keyValueMapAgain);
+                        // we do
+                        if (keyValueMapAgain.size() > 0) {
+                            bool = "? is null";
+                        } else {
+                            if (Existence.NULL.equals(h.getBiPredicate())) {
+                                bool = "1=1";
                             } else {
-                                if (Existence.NULL.equals(h.getBiPredicate())) {
-                                    bool = "1=1";
-                                } else {
-                                    bool = "1=0";
-                                }
+                                bool = "1=0";
                             }
                         }
                     }
-                    if (bool != null) {
-                        result.append(bool);
-                    } else {
-                        result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h, true));
-                    }
-//                }
+                }
+                if (bool != null) {
+                    result.append(bool);
+                } else {
+                    result.append(whereClause.toSql(sqlgGraph, schemaTableTree, h, true));
+                }
             }
-            if (!first) {
-                result.append(")");
-            }
+            result.append(")");
         }
         int count = 1;
         if (!this.andOrHasContainers.isEmpty()) {
             result.append("\n");
-            for (int i = 0; i < depth; i++) {
-                result.append("\t");
-            }
+            result.append("\t".repeat(Math.max(0, depth)));
             if (this.hasContainers.isEmpty()) {
                 result.append("(");
             } else {
@@ -164,20 +155,18 @@ public class AndOrHasContainer {
         }
         if (!this.andOrHasContainers.isEmpty()) {
             result.append("\n");
-            for (int i = 0; i < depth - 1; i++) {
-                result.append("\t");
-            }
+            result.append("\t".repeat(Math.max(0, depth - 1)));
             result.append(")");
         }
     }
 
-    public void setParameterOnStatement(Multimap<String, Object> keyValueMap, SchemaTableTree schemaTableTree) {
+    public void setParameterOnStatement(Multimap<PropertyDefinition, Object> keyValueMapAgain, SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : this.hasContainers) {
             WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-            whereClause.putKeyValueMap(hasContainer, keyValueMap, schemaTableTree);
+            whereClause.putKeyValueMap(hasContainer, schemaTableTree, keyValueMapAgain);
         }
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
-            andOrHasContainer.setParameterOnStatement(keyValueMap, schemaTableTree);
+            andOrHasContainer.setParameterOnStatement(keyValueMapAgain, schemaTableTree);
         }
     }
 }

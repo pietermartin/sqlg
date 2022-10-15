@@ -9,18 +9,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.umlg.sqlg.predicate.ArrayContains;
-import org.umlg.sqlg.predicate.ArrayOverlaps;
-import org.umlg.sqlg.predicate.PropertyReference;
-import org.umlg.sqlg.predicate.Existence;
-import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.predicate.Text;
+import org.umlg.sqlg.predicate.*;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.structure.PropertyDefinition;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.util.Collection;
+import java.util.*;
 
 /**
  * Created by pieter on 2015/08/03.
@@ -84,7 +81,7 @@ public class WhereClause {
             }
             return result.toString();
         } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer)) || isInAndOrHsContainer) &&
-                        p.getBiPredicate() instanceof Contains) {
+                p.getBiPredicate() instanceof Contains) {
 
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 if (schemaTableTree.isHasIDPrimaryKey()) {
@@ -93,7 +90,7 @@ public class WhereClause {
                 } else {
                     int i = 1;
                     Collection<?> recordIds = ((Collection<?>) p.getValue());
-                    for (Object ignore: recordIds) {
+                    for (Object ignore : recordIds) {
                         int j = 1;
                         result.append("(");
                         for (String identifier : schemaTableTree.getIdentifiers()) {
@@ -279,29 +276,52 @@ public class WhereClause {
         return prefix + result;
     }
 
-    public void putKeyValueMap(HasContainer hasContainer, Multimap<String, Object> keyValueMap, SchemaTableTree schemaTableTree) {
-        if (p instanceof OrP<?> orP) {
+    public void putKeyValueMap(
+            HasContainer hasContainer,
+            SchemaTableTree schemaTableTree,
+            Multimap<PropertyDefinition, Object> keyValueMapAgain) {
+
+        if (hasContainer.getValue() instanceof PropertyReference) {
+            return;
+        }
+        if (this.p instanceof OrP<?> orP) {
             Preconditions.checkState(orP.getPredicates().size() == 2, "Only handling OrP with 2 predicates!");
             P<?> p1 = orP.getPredicates().get(0);
             P<?> p2 = orP.getPredicates().get(1);
-            keyValueMap.put(hasContainer.getKey(), p1.getValue());
-            keyValueMap.put(hasContainer.getKey(), p2.getValue());
-        } else if (p instanceof AndP<?> andP) {
+            PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+            if (propertyDefinition == null) {
+                propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+            }
+            keyValueMapAgain.put(propertyDefinition, p1.getValue());
+            keyValueMapAgain.put(propertyDefinition, p2.getValue());
+        } else if (this.p instanceof AndP<?> andP) {
             Preconditions.checkState(andP.getPredicates().size() == 2, "Only handling AndP with 2 predicates!");
             P<?> p1 = andP.getPredicates().get(0);
             P<?> p2 = andP.getPredicates().get(1);
-            keyValueMap.put(hasContainer.getKey(), p1.getValue());
-            keyValueMap.put(hasContainer.getKey(), p2.getValue());
-        } else if (p.getBiPredicate() == Contains.within || p.getBiPredicate() == Contains.without) {
+            PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+            if (propertyDefinition == null) {
+                propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+            }
+            keyValueMapAgain.put(propertyDefinition, p1.getValue());
+            keyValueMapAgain.put(propertyDefinition, p2.getValue());
+        } else if (this.p.getBiPredicate() == Contains.within || this.p.getBiPredicate() == Contains.without) {
             Collection<?> values = (Collection<?>) hasContainer.getValue();
             if (schemaTableTree.isHasIDPrimaryKey()) {
                 for (Object value : values) {
                     if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                        if (schemaTableTree.isHasIDPrimaryKey()) {
-                            keyValueMap.put("ID", value);
+                        RecordId recordId;
+                        if (!(value instanceof RecordId)) {
+                            recordId = RecordId.from(value);
+                        } else {
+                            recordId = (RecordId) value;
                         }
+                        keyValueMapAgain.put(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId());
                     } else {
-                        keyValueMap.put(hasContainer.getKey(), value);
+                        PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+                        if (propertyDefinition == null) {
+                            propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+                        }
+                        keyValueMapAgain.put(propertyDefinition, value);
                     }
                 }
             } else {
@@ -309,32 +329,40 @@ public class WhereClause {
                     if (hasContainer.getKey().equals(T.id.getAccessor())) {
                         int i = 0;
                         for (String identifier : schemaTableTree.getIdentifiers()) {
-                            keyValueMap.put(identifier, ((RecordId) value).getIdentifiers().get(i++));
+                            Comparable<?> comparable = ((RecordId) value).getIdentifiers().get(i++);
+                            PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(identifier);
+                            Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + identifier);
+                            keyValueMapAgain.put(propertyDefinition, comparable);
                         }
                     } else {
-                        keyValueMap.put(hasContainer.getKey(), value);
+                        PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+                        if (propertyDefinition == null) {
+                            propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+                        }
+                        keyValueMapAgain.put(propertyDefinition, value);
                     }
                 }
-//                for (String identifier : schemaTableTree.getIdentifiers()) {
-//                    for (Object value : values) {
-//                        if (hasContainer.getKey().equals(T.id.getAccessor())) {
-//                            keyValueMap.put(identifier, ((RecordId) value).getIdentifiers().get(i));
-//                            break;
-//                        } else {
-//                            keyValueMap.put(hasContainer.getKey(), value);
-//                        }
-//                    }
-//                    i++;
-//                }
             }
-        } else if (p.getBiPredicate() == Text.contains || p.getBiPredicate() == Text.ncontains ||
-                p.getBiPredicate() == Text.containsCIS || p.getBiPredicate() == Text.ncontainsCIS) {
-            keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue() + "%");
-        } else if (p.getBiPredicate() == Text.startsWith || p.getBiPredicate() == Text.nstartsWith) {
-            keyValueMap.put(hasContainer.getKey(), hasContainer.getValue() + "%");
-        } else if (p.getBiPredicate() == Text.endsWith || p.getBiPredicate() == Text.nendsWith) {
-            keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue());
-        } else if (p.getBiPredicate() instanceof Existence) {
+        } else if (this.p.getBiPredicate() == Text.contains || this.p.getBiPredicate() == Text.ncontains ||
+                this.p.getBiPredicate() == Text.containsCIS || this.p.getBiPredicate() == Text.ncontainsCIS) {
+            PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+            if (propertyDefinition == null) {
+                propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+            }
+            keyValueMapAgain.put(propertyDefinition, "%" + hasContainer.getValue() + "%");
+        } else if (this.p.getBiPredicate() == Text.startsWith || this.p.getBiPredicate() == Text.nstartsWith) {
+            PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+            if (propertyDefinition == null) {
+                propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+            }
+            keyValueMapAgain.put(propertyDefinition, hasContainer.getValue() + "%");
+        } else if (this.p.getBiPredicate() == Text.endsWith || this.p.getBiPredicate() == Text.nendsWith) {
+            PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+            if (propertyDefinition == null) {
+                propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+            }
+            keyValueMapAgain.put(propertyDefinition, "%" + hasContainer.getValue());
+        } else if (this.p.getBiPredicate() instanceof Existence) {
             // no value
         } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
                 hasContainer.getValue() instanceof RecordId recordId &&
@@ -342,10 +370,28 @@ public class WhereClause {
 
             int i = 0;
             for (Object identifier : recordId.getIdentifiers()) {
-                keyValueMap.put(schemaTableTree.getIdentifiers().get(i++), identifier);
+                String schemaTableTreeIdentifier = schemaTableTree.getIdentifiers().get(i++);
+                PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(schemaTableTreeIdentifier);
+                Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + schemaTableTreeIdentifier);
+                keyValueMapAgain.put(propertyDefinition, identifier);
             }
         } else {
-            keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
+            if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                Object value = hasContainer.getValue();
+                RecordId recordId;
+                if (!(value instanceof RecordId)) {
+                    recordId = RecordId.from(value);
+                } else {
+                    recordId = (RecordId) value;
+                }
+                keyValueMapAgain.put(PropertyDefinition.of(PropertyType.LONG), recordId.sequenceId());
+            } else {
+                PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+                if (propertyDefinition == null) {
+                    propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
+                }
+                keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
+            }
         }
     }
 }

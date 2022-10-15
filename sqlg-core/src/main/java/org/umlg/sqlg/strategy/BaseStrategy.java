@@ -964,8 +964,8 @@ public abstract class BaseStrategy {
         return SqlgTraversalUtil.anyStepRecursively(p, traversal);
     }
 
-    void addHasContainerForIds(SqlgGraphStep sqlgGraphStep) {
-        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(sqlgGraphStep.getIds()));
+    void addHasContainerForIds(SqlgGraphStep sqlgGraphStep, Object[] ids) {
+        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
         this.currentReplacedStep.addIdHasContainer(idHasContainer);
         sqlgGraphStep.clearIds();
     }
@@ -1002,6 +1002,7 @@ public abstract class BaseStrategy {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainer.getKey() != null &&
+                    hasContainer.getValue() != null &&
                     hasContainer.getKey().equals(T.id.getAccessor()) &&
                     SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
 
@@ -1151,7 +1152,8 @@ public abstract class BaseStrategy {
     }
 
     boolean canNotBeOptimized() {
-        @SuppressWarnings("unchecked") final List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
+        @SuppressWarnings("unchecked")
+        final List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
         final ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         List<Step<?, ?>> toCome = steps.subList(stepIterator.nextIndex(), steps.size());
         return toCome.stream().anyMatch(s ->

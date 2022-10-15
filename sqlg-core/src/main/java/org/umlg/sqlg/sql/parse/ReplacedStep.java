@@ -651,7 +651,12 @@ public class ReplacedStep<S, E> {
                 @SuppressWarnings("unchecked")
                 Collection<Object> ids = (Collection<Object>) idPredicate.getValue();
                 for (Object id : ids) {
-                    RecordId recordId = RecordId.from(id);
+                    RecordId recordId;
+                    if (id == null) {
+                        recordId = RecordId.from(SchemaTable.of("fake", UUID.randomUUID().toString()), 0L);
+                    } else {
+                        recordId = RecordId.from(id);
+                    }
                     List<Multimap<BiPredicate<?, ?>, RecordId>> biPredicateRecordIdList = result.get(recordId.getSchemaTable());
                     Boolean newHasContainer = newHasContainerMap.get(recordId.getSchemaTable());
                     if (biPredicateRecordIdList == null) {
@@ -727,7 +732,7 @@ public class ReplacedStep<S, E> {
      * @param hasContainer A hasContainer with {@link T#id} as key for this step. Copied from the original step.
      */
     public void addIdHasContainer(HasContainer hasContainer) {
-        Preconditions.checkState(BaseStrategy.SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate()), "Only " + BaseStrategy.SUPPORTED_ID_BI_PREDICATE.toString() + " is supported, found " + hasContainer.getBiPredicate().getClass().toString());
+        Preconditions.checkState(BaseStrategy.SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate()), "Only " + BaseStrategy.SUPPORTED_ID_BI_PREDICATE + " is supported, found " + hasContainer.getBiPredicate().getClass().toString());
         Object rawId = hasContainer.getValue();
         if (rawId instanceof Collection) {
             @SuppressWarnings("unchecked")
@@ -742,6 +747,9 @@ public class ReplacedStep<S, E> {
                     idLabels.add(recordId.getSchemaTable().toString());
                 } else if (id instanceof String) {
                     RecordId recordId = RecordId.from(id);
+                    idLabels.add(recordId.getSchemaTable().toString());
+                } else if (id == null) {
+                    RecordId recordId = RecordId.from(SchemaTable.of("fake", UUID.randomUUID().toString()), 0L);
                     idLabels.add(recordId.getSchemaTable().toString());
                 } else {
                     throw new IllegalStateException("id must be an Element or a RecordId, found " + id.getClass().toString());

@@ -14,10 +14,13 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
+import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SchemaTable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.UUID;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -38,38 +41,12 @@ public class GraphStrategy extends BaseStrategy {
 
     void apply() {
         final Step<?, ?> startStep = traversal.getStartStep();
-
         if (!(startStep instanceof GraphStep)) {
             return;
         }
-        final GraphStep originalGraphStep = (GraphStep) startStep;
-
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
             this.sqlgGraph.tx().flush();
         }
-
-//        if (originalGraphStep.getIds().length > 0) {
-//            Object id = originalGraphStep.getIds()[0];
-//            if (id != null) {
-////                Class clazz = id.getClass();
-//                //noinspection unchecked
-//                if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> {
-//                    if (Vertex.class.isAssignableFrom(i.getClass()) || Edge.class.isAssignableFrom(i.getClass()) || RecordId.class.isAssignableFrom(i.getClass())) {
-//                        return true;
-//                    } else if (i instanceof String) {
-//                        try {
-//                            RecordId.from(i);
-//                            return true;
-//                        } catch (Exception e) {
-//                            return false;
-//                        }
-//                    } else {
-//                        return false;
-//                    }
-//                }))
-//                    throw SqlgExceptions.idArgsMustBeEitherIdOrElement();
-//            }
-//        }
         if (this.canNotBeOptimized()) {
             logger.debug("gremlin not optimized due to path or tree step. " + this.traversal + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
@@ -126,7 +103,16 @@ public class GraphStrategy extends BaseStrategy {
         this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         replaceStepInTraversal(step, this.sqlgStep);
         if (this.sqlgStep instanceof SqlgGraphStep && ((SqlgGraphStep) this.sqlgStep).getIds().length > 0) {
-            addHasContainerForIds((SqlgGraphStep) this.sqlgStep);
+            Object[] ids = ((SqlgGraphStep) this.sqlgStep).getIds();
+            Object[] transformedIds = new Object[ids.length];
+            for (int i = 0; i < ids.length; i++) {
+                if (ids[i] == null) {
+                    transformedIds[i] = RecordId.from(SchemaTable.of("fake", UUID.randomUUID().toString()), 0L);
+                } else {
+                    transformedIds[i] = ids[i];
+                }
+            }
+            addHasContainerForIds((SqlgGraphStep) this.sqlgStep, transformedIds);
         }
         if (!this.currentReplacedStep.hasLabels()) {
             //CountGlobalStep is special, as the select statement will contain no properties

@@ -27,7 +27,6 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.label;
 import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
@@ -672,6 +671,10 @@ public class SchemaTableTree {
         return getRoot().filteredAllTables;
     }
 
+    public Map<String, PropertyDefinition> getPropertyDefinitions() {
+        return this.getFilteredAllTables().get(this.schemaTable.toString());
+    }
+
     void initializeAliasColumnNameMaps() {
         this.aliasMapHolder = new AliasMapHolder();
     }
@@ -932,7 +935,7 @@ public class SchemaTableTree {
         //The SqlgVertexStep's incoming/parent element index and ids
         //dropStep must not have the index as it uses 'delete from where in (select...)' or 'WITH (SELECT) DELETE...'
         //the first column in the select must be the ID.
-        //As its a DELETE there is no need for the 'index' to order on.
+        //As it's a DELETE there is no need for the 'index' to order on.
         if (!dropStep && lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             //if there is only 1 incoming start/traverser we use a where clause as its faster.
             //ms sql server does not support alias's in the group by clause.
@@ -942,7 +945,7 @@ public class SchemaTableTree {
                 singlePathSql.append(" as ");
                 singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
             } else if (this.sqlgGraph.getSqlDialect().supportsValuesExpression()) {
-                //Hardcoding here for H2
+                //Hard-coding here for H2
                 if (this.sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
                     singlePathSql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
                 } else {
@@ -1252,7 +1255,7 @@ public class SchemaTableTree {
     @SuppressWarnings("unchecked")
     private String bulkWithJoin() {
         StringBuilder sb = new StringBuilder();
-        List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(this.sqlgGraph, h)).collect(Collectors.toList());
+        List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(this.sqlgGraph, h)).toList();
         for (HasContainer hasContainer : bulkHasContainers) {
             P<List<Object>> predicate = (P<List<Object>>) hasContainer.getPredicate();
             Collection<Object> withInList = predicate.getValue();
@@ -1268,14 +1271,16 @@ public class SchemaTableTree {
             boolean first = true;
             int identifierCount = 1;
             for (Object withInOutValue : withInOuts) {
+                if (withInOutValue == null) {
+                    continue;
+                }
                 identifierCount = 1;
                 if (!first) {
                     sb.append(", ");
                 }
                 first = false;
                 sb.append("(");
-                if (withInOutValue instanceof RecordId) {
-                    RecordId recordId = (RecordId) withInOutValue;
+                if (withInOutValue instanceof RecordId recordId) {
                     if (!this.hasIDPrimaryKey) {
                         int count = 1;
                         for (Object identifier : recordId.getIdentifiers()) {

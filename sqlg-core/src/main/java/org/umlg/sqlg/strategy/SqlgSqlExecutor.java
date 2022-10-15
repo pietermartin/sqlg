@@ -129,8 +129,7 @@ public class SqlgSqlExecutor {
 //            }
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
             sqlgGraph.tx().add(preparedStatement);
-            int parameterCount = 1;
-            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount);
+            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, false);
             // https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor
             // this is critical to use a cursor, otherwise we load everything into memory
             if (sqlgGraph.tx().getFetchSize() != null) {
@@ -159,8 +158,7 @@ public class SqlgSqlExecutor {
             }
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
             sqlgGraph.tx().add(preparedStatement);
-            int parameterCount = 1;
-            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount, includeAdditionalPartitionHasContainer);
+            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, includeAdditionalPartitionHasContainer);
             int deleteCount;
             if (distinctQueryStack.isEmpty()) {
                 deleteCount = preparedStatement.executeUpdate();
