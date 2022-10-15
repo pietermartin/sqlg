@@ -93,6 +93,9 @@ public interface SqlDialect {
         return true;
     }
 
+    default boolean supportsBigDecimal() {
+        return true;
+    }
     default boolean supportsByteValues() {
         return false;
     }
@@ -110,6 +113,10 @@ public interface SqlDialect {
     }
 
     default boolean supportsDoubleArrayValues() {
+        return true;
+    }
+
+    default boolean supportsBigDecimalArrayValues() {
         return true;
     }
 
