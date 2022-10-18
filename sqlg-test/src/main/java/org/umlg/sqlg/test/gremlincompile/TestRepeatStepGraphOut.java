@@ -17,11 +17,13 @@ import org.umlg.sqlg.step.barrier.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * Date: 2015/10/21
  * Time: 8:18 PM
  */
+@SuppressWarnings({"resource", "rawtypes"})
 public class TestRepeatStepGraphOut extends BaseTest {
 
     @Test
@@ -897,8 +899,8 @@ public class TestRepeatStepGraphOut extends BaseTest {
             }
             Assert.assertEquals(2, pathLengths.size());
             Assert.assertEquals(8, counter);
-            Assert.assertEquals(new Long(6), pathLengths.get(2));
-            Assert.assertEquals(new Long(2), pathLengths.get(3));
+            Assert.assertEquals(6L, pathLengths.get(2), 0L);
+            Assert.assertEquals(2L, pathLengths.get(3), 0L);
         });
     }
 
@@ -1694,6 +1696,6 @@ public class TestRepeatStepGraphOut extends BaseTest {
                 .tree()
                 .next();
         stopWatch1.stop();
-        System.out.println(stopWatch1.toString());
+        System.out.println(stopWatch1);
     }
 }
