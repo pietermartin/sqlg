@@ -10,6 +10,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.math.BigDecimal;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -538,6 +539,48 @@ public class TestBatchStreamEdge extends BaseTest {
         Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
         Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("doc").count().next(), 1);
         Assert.assertEquals(json, sqlgGraph.traversal().E().hasLabel("married").values("doc").next());
+    }
+
+    @Test
+    public void testStreamBigDecimal() throws InterruptedException {
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
+        keyValues.put("name", "halo");
+        keyValues.put("surname", "halo");
+        for (int i = 0; i < 10; i++) {
+            keyValues.put("age", i);
+            this.sqlgGraph.streamVertex("Man", keyValues);
+        }
+        this.sqlgGraph.tx().flush();
+        for (int i = 0; i < 10; i++) {
+            keyValues.put("age", i);
+            this.sqlgGraph.streamVertex("Female", keyValues);
+        }
+        this.sqlgGraph.tx().flush();
+        int count = 0;
+        List<Vertex> men = this.sqlgGraph.traversal().V().hasLabel("Man").toList();
+        List<Vertex> females = this.sqlgGraph.traversal().V().hasLabel("Female").toList();
+        LinkedHashMap<String, Object> edgeKeyValues = new LinkedHashMap<>();
+        BigDecimal bigDecimal = BigDecimal.valueOf(1.1D);
+        edgeKeyValues.put("bigDecimal", bigDecimal);
+        for (Vertex man : men) {
+            SqlgVertex female = (SqlgVertex) females.get(count++);
+            ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
+        }
+        this.sqlgGraph.tx().commit();
+        testStreamBigDecimal_assert(this.sqlgGraph, bigDecimal);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamBigDecimal_assert(this.sqlgGraph1, bigDecimal);
+        }
+    }
+
+    private void testStreamBigDecimal_assert(SqlgGraph sqlgGraph, BigDecimal bigDecimal) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("bigDecimal").count().next(), 1);
+        Assert.assertEquals(bigDecimal, sqlgGraph.traversal().E().hasLabel("married").values("bigDecimal").next());
     }
 
     private ArrayList<SqlgVertex> createMilPersonVertex() {

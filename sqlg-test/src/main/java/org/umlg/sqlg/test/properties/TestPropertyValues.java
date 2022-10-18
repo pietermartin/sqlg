@@ -263,8 +263,8 @@ public class TestPropertyValues extends BaseTest {
             Assert.assertTrue(m.containsKey("a"));
             Assert.assertTrue(m.containsKey("b"));
             Vertex v = (Vertex) m.get("a");
-            Assert.assertTrue(v.property("name").isPresent());
-            Assert.assertTrue(v.property("age").isPresent());
+            Assert.assertNotNull(v.property("name").value());
+            Assert.assertNotNull(v.property("age").value());
             names1.add((String) v.property("name").value());
             ages.add((Integer) v.property("age").value());
 

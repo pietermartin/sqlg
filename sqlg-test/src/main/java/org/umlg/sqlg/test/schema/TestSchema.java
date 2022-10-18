@@ -63,11 +63,11 @@ public class TestSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         ab1.property("test", "halo");
         this.sqlgGraph.tx().commit();
-        Assert.assertTrue(this.sqlgGraph.traversal().E(ab1.id()).next().property("test").isPresent());
+        Assert.assertNotNull(this.sqlgGraph.traversal().E(ab1.id()).next().property("test").value());
         Assert.assertFalse(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
         bc1.property("test", "halo");
         this.sqlgGraph.tx().commit();
-        Assert.assertTrue(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
+        Assert.assertNotNull(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").value());
     }
 
     @Test
@@ -192,9 +192,9 @@ public class TestSchema extends BaseTest {
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(3, vertices.size());
-        Assert.assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
-        Assert.assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
-        Assert.assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
+        Assert.assertNotNull(vertices.get(0).property("TRX Group ID").value());
+        Assert.assertNotNull(vertices.get(1).property("TRX Group ID").value());
+        Assert.assertNotNull(vertices.get(2).property("TRX Group ID").value());
     }
 
     @Test

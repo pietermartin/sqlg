@@ -27,9 +27,9 @@ public class TestLocalDate extends BaseTest {
 
         //Create a new sqlgGraph
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("dateTime").toList();
+            List<? extends Property<?>> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("dateTime").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Assert.assertEquals(now, properties.get(0).value());
         }
     }
@@ -47,7 +47,7 @@ public class TestLocalDate extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<?>> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("dateTime").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Assert.assertEquals(now.plusHours(1), properties.get(0).value());
         }
     }
@@ -60,9 +60,9 @@ public class TestLocalDate extends BaseTest {
 
         //Create a new sqlgGraph
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("date").toList();
+            List<? extends Property<?>> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("date").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Assert.assertEquals(now, properties.get(0).value());
         }
     }
@@ -77,8 +77,8 @@ public class TestLocalDate extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<LocalTime>> properties = sqlgGraph1.traversal().V().hasLabel("A").<LocalTime>properties("time").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
-            LocalTime value = properties.get(0).<LocalTime>value();
+            Assert.assertNotNull(properties.get(0).value());
+            LocalTime value = properties.get(0).value();
             Assert.assertEquals(now.toSecondOfDay(), value.toSecondOfDay());
         }
     }
@@ -95,8 +95,8 @@ public class TestLocalDate extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<ZonedDateTime>> properties = sqlgGraph1.traversal().V().hasLabel("A").<ZonedDateTime>properties("zonedDateTime").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
-            ZonedDateTime value = properties.get(0).<ZonedDateTime>value();
+            Assert.assertNotNull(properties.get(0).value());
+            ZonedDateTime value = properties.get(0).value();
             Assert.assertEquals(zonedDateTimeAGT, value);
         }
     }
@@ -109,9 +109,9 @@ public class TestLocalDate extends BaseTest {
 
         //Create a new sqlgGraph
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("duration").toList();
+            List<? extends Property<?>> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("duration").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Assert.assertEquals(duration, properties.get(0).value());
         }
     }
@@ -124,9 +124,9 @@ public class TestLocalDate extends BaseTest {
 
         //Create a new sqlgGraph
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("period").toList();
+            List<? extends Property<?>> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("period").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Assert.assertEquals(period, properties.get(0).value());
         }
     }

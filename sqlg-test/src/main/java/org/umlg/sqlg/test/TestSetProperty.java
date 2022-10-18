@@ -7,19 +7,81 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyDefinition;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 
 /**
  * Date: 2014/07/13
  * Time: 7:48 PM
  */
-@SuppressWarnings("UnnecessaryBoxing")
 public class TestSetProperty extends BaseTest {
 
+    @Test (expected = IllegalStateException.class)
+    public void shouldNotAllowDifferentTypesOnVertex() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.DOUBLE));
+        }});
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "asd");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldNotAllowDifferentTypesOnEdge() {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A");
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B");
+        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.DOUBLE));
+        }});
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "A");
+        a.addEdge("ab", b, "name", "asd");
+    }
+
+    @Test
+    public void shouldAllowNullAddVertexPrecreated() {
+        final Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", null);
+        Assert.assertNull(v.value("name"));
+    }
+
+    @Test
+    public void shouldAllowNullAddVertex() {
+        final Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", null);
+        Assert.assertNull(v.value("name"));
+    }
+
+    @Test
+    public void shouldAllowNullAddEdge() {
+        final Vertex v = this.sqlgGraph.addVertex();
+        final Edge e = v.addEdge("self", v, "name", null);
+        Assert.assertNull(e.value("name"));
+    }
+
+    @Test
+    public void testSetBigDecimal() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBigDecimal());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "age", BigDecimal.valueOf(1.2D));
+        marko.property("age", BigDecimal.valueOf(1.2D));
+        this.sqlgGraph.tx().commit();
+        assertProperty(marko, "age", BigDecimal.valueOf(1.2D));
+    }
+
+    @Test
+    public void testSetBigDecimalArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBigDecimalArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("bd", new BigDecimal[]{BigDecimal.valueOf(1.0), BigDecimal.valueOf(2.2)});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new BigDecimal[]{BigDecimal.valueOf(1.0), BigDecimal.valueOf(2.2)}, (BigDecimal[]) marko.property("bd").value());
+    }
+
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testSetByteProperty() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteValues());
@@ -198,6 +260,7 @@ public class TestSetProperty extends BaseTest {
 
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testSetObjectProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
@@ -288,6 +351,7 @@ public class TestSetProperty extends BaseTest {
         assertProperty(v, "ok", true);
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testObjectProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
@@ -308,6 +372,7 @@ public class TestSetProperty extends BaseTest {
         assertProperty(v, "ok", Boolean.TRUE);
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testObjectPropertiesNoFloat() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",

@@ -15,6 +15,7 @@ import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.math.BigDecimal;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -37,6 +38,28 @@ public class TestBatchStreamVertex extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
+    }
+
+    @Test
+    public void testStreamBigDecimal() throws InterruptedException {
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (double i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "names", BigDecimal.valueOf(i));
+        }
+        this.sqlgGraph.tx().commit();
+        List<BigDecimal> bigDecimalList = this.sqlgGraph.traversal().V().hasLabel("Person").<BigDecimal>values("names").toList();
+        for (double i = 0; i < 10; i++) {
+            BigDecimal test = BigDecimal.valueOf(i);
+            Assert.assertEquals(1, bigDecimalList.stream().filter(bd -> bd.equals(test)).toList().size());
+        }
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            bigDecimalList = this.sqlgGraph1.traversal().V().hasLabel("Person").<BigDecimal>values("names").toList();
+            for (double i = 0; i < 10; i++) {
+                BigDecimal test = BigDecimal.valueOf(i);
+                Assert.assertEquals(1, bigDecimalList.stream().filter(bd -> bd.equals(test)).toList().size());
+            }
+        }
     }
 
     @Test

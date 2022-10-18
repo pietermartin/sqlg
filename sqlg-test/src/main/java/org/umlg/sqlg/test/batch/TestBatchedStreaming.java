@@ -77,13 +77,13 @@ public class TestBatchedStreaming extends BaseTest {
 
     private void testNullProperties_assert(SqlgGraph sqlgGraph) {
         Vertex john1 = sqlgGraph.traversal().V().hasLabel("Person").has("name", "John1").next();
-        assertFalse(john1.property("surname").isPresent());
-        assertTrue(john1.property("age").isPresent());
+        assertNull(john1.property("surname").value());
+        assertNotNull(john1.property("age").value());
         Vertex john2 = sqlgGraph.traversal().V().hasLabel("Person").has("name", "John2").next();
-        assertTrue(john2.property("surname").isPresent());
-        assertFalse(john2.property("age").isPresent());
+        assertNotNull(john2.property("surname").value());
+        assertNull(john2.property("age").value());
         Vertex john3 = sqlgGraph.traversal().V().hasLabel("Person").has("name", "John3").next();
-        assertTrue(john3.property("surname").isPresent());
+        assertNotNull(john3.property("surname").value());
         assertEquals("", john3.value("surname"));
     }
 
@@ -123,7 +123,6 @@ public class TestBatchedStreaming extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
 
         testStreamingWithBatchSize(this.sqlgGraph, uuidCache1, uuidCache2);
         if (this.sqlgGraph1 != null) {
@@ -183,7 +182,6 @@ public class TestBatchedStreaming extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
 
         testStreamingWithBatchSizeNonDefaultSchema_assert(this.sqlgGraph, uuidCache1, uuidCache2);
         if (this.sqlgGraph1 != null) {

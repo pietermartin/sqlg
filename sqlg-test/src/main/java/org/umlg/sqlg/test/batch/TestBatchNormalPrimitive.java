@@ -13,6 +13,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -91,15 +92,16 @@ public class TestBatchNormalPrimitive extends BaseTest {
         assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testBoolean() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Set<Vertex> vertexSet = new HashSet<>();
         Set<Boolean> vertexNameSet = new HashSet<>();
         for (int i = 0; i < 10; i++) {
-            Boolean b = i % 2 == 0;
-            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", new Boolean(b)));
-            vertexNameSet.add(new Boolean(b));
+            boolean b = i % 2 == 0;
+            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", Boolean.valueOf(b)));
+            vertexNameSet.add(Boolean.valueOf(b));
         }
         this.sqlgGraph.tx().commit();
         testBoolean_assert(this.sqlgGraph, vertexSet, vertexNameSet);
@@ -117,17 +119,18 @@ public class TestBatchNormalPrimitive extends BaseTest {
         assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testBooleanEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Set<Edge> edgeSet = new HashSet<>();
         Set<Boolean> edgeNameSet = new HashSet<>();
         for (int i = 0; i < 10; i++) {
-            Boolean b = i % 2 == 0;
+            boolean b = i % 2 == 0;
             Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "A");
-            edgeSet.add(vertex1.addEdge("test", vertex2, "name", new Boolean(b)));
-            edgeNameSet.add(new Boolean(b));
+            edgeSet.add(vertex1.addEdge("test", vertex2, "name", Boolean.valueOf(b)));
+            edgeNameSet.add(Boolean.valueOf(b));
         }
         this.sqlgGraph.tx().commit();
         testBooleanEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);
@@ -413,6 +416,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
         assertArrayEquals(edgeNameArray, edgeNameArrayToTest);
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testLong() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -438,6 +442,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
         assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testLongEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -519,6 +524,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
         assertArrayEquals(edgeNameArray, edgeNameArrayToTest);
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testFloat() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
@@ -545,6 +551,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
         assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testFloatEdge() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
@@ -629,6 +636,7 @@ public class TestBatchNormalPrimitive extends BaseTest {
         assertArrayEquals(edgeNameArray, edgeNameArrayToTest, 0F);
     }
 
+    @SuppressWarnings("UnnecessaryBoxing")
     @Test
     public void testDouble() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -655,6 +663,32 @@ public class TestBatchNormalPrimitive extends BaseTest {
     }
 
     @Test
+    public void testBigDecimal() throws InterruptedException {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Set<Vertex> vertexSet = new HashSet<>();
+        Set<BigDecimal> vertexNameSet = new HashSet<>();
+        for (double i = 0; i < 10; i++) {
+            vertexSet.add(this.sqlgGraph.addVertex(T.label, "A", "name", BigDecimal.valueOf(i)));
+            vertexNameSet.add(BigDecimal.valueOf(i));
+        }
+        this.sqlgGraph.tx().commit();
+        testBigDecimal_assert(this.sqlgGraph, vertexSet, vertexNameSet);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBigDecimal_assert(this.sqlgGraph1, vertexSet, vertexNameSet);
+        }
+    }
+
+    private void testBigDecimal_assert(SqlgGraph sqlgGraph, Set<Vertex> vertexSet, Set<BigDecimal> vertexNameSet) {
+        Set<Vertex> vertices = sqlgGraph.traversal().V().toSet();
+        Set<BigDecimal> verticesName = sqlgGraph.traversal().V().<BigDecimal>values("name").toSet();
+        assertEquals(10, vertices.size(), 0);
+        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));
+        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));
+    }
+
+    @SuppressWarnings("UnnecessaryBoxing")
+    @Test
     public void testDoubleEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Set<Edge> edgeSet = new HashSet<>();
@@ -676,6 +710,33 @@ public class TestBatchNormalPrimitive extends BaseTest {
     private void testDoubleEdge_assert(SqlgGraph sqlgGraph, Set<Edge> edgeSet, Set<Double> edgeNameSet) {
         Set<Edge> edges = sqlgGraph.traversal().E().toSet();
         Set<Double> edgesName = sqlgGraph.traversal().E().<Double>values("name").toSet();
+        assertEquals(10, edges.size(), 0);
+        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));
+        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));
+    }
+
+    @Test
+    public void testBigDecimalEdge() throws InterruptedException {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Set<Edge> edgeSet = new HashSet<>();
+        Set<BigDecimal> edgeNameSet = new HashSet<>();
+        for (double i = 0; i < 10; i++) {
+            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "A");
+            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "A");
+            edgeSet.add(vertex1.addEdge("test", vertex2, "name", BigDecimal.valueOf(i)));
+            edgeNameSet.add(BigDecimal.valueOf(i));
+        }
+        this.sqlgGraph.tx().commit();
+        testBigDecimalEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBigDecimalEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);
+        }
+    }
+
+    private void testBigDecimalEdge_assert(SqlgGraph sqlgGraph, Set<Edge> edgeSet, Set<BigDecimal> edgeNameSet) {
+        Set<Edge> edges = sqlgGraph.traversal().E().toSet();
+        Set<BigDecimal> edgesName = sqlgGraph.traversal().E().<BigDecimal>values("name").toSet();
         assertEquals(10, edges.size(), 0);
         assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));
         assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));

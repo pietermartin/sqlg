@@ -7,11 +7,11 @@ import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
 import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/11/17
@@ -23,14 +23,14 @@ public class TestDetachedEdge extends BaseTest {
     @Test
     public void shouldConstructDetachedEdge() {
         loadModern();
-        Object edgeId = convertToEdgeId("marko", "knows", "vadas");
+        Object edgeId = convertToEdgeId();
         this.sqlgGraph.traversal().E(edgeId).next().property("year", 2002);
         Edge next = this.sqlgGraph.traversal().E(edgeId).next();
 
-        assertTrue(this.sqlgGraph.traversal().E(edgeId).next().property("year").isPresent());
+        Assert.assertNotNull(this.sqlgGraph.traversal().E(edgeId).next().property("year").value());
 
         final DetachedEdge detachedEdge = DetachedFactory.detach(next, true);
-        assertEquals(convertToEdgeId("marko", "knows", "vadas"), detachedEdge.id());
+        assertEquals(convertToEdgeId(), detachedEdge.id());
         assertEquals("knows", detachedEdge.label());
         assertEquals(DetachedVertex.class, detachedEdge.vertices(Direction.OUT).next().getClass());
         assertEquals(convertToVertexId("marko"), detachedEdge.vertices(Direction.OUT).next().id());
@@ -44,8 +44,8 @@ public class TestDetachedEdge extends BaseTest {
         assertEquals(0.5d, detachedEdge.properties("weight").next().value());
     }
 
-    private Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
-        return convertToEdgeId(this.sqlgGraph, outVertexName, edgeLabel, inVertexName);
+    private Object convertToEdgeId() {
+        return convertToEdgeId(this.sqlgGraph, "marko", "knows", "vadas");
     }
 
     public Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {

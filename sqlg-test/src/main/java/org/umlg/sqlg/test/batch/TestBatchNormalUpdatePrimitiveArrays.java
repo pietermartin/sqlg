@@ -56,15 +56,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(localDateTimeAgain, a1.value("stringArray1"));
-        Assert.assertFalse(a1.property("stringArray2").isPresent());
-        Assert.assertFalse(a1.property("stringArray3").isPresent());
+        Assert.assertNull(a1.property("stringArray2").value());
+        Assert.assertNull(a1.property("stringArray3").value());
 
-        Assert.assertFalse(a2.property("stringArray1").isPresent());
+        Assert.assertNull(a2.property("stringArray1").value());
         Assert.assertArrayEquals(localDateTimeAgain, a2.value("stringArray2"));
-        Assert.assertFalse(a2.property("stringArray3").isPresent());
+        Assert.assertNull(a2.property("stringArray3").value());
 
-        Assert.assertFalse(a3.property("stringArray1").isPresent());
-        Assert.assertFalse(a3.property("stringArray2").isPresent());
+        Assert.assertNull(a3.property("stringArray1").value());
+        Assert.assertNull(a3.property("stringArray2").value());
         Assert.assertArrayEquals(localDateTimeAgain, a3.value("stringArray3"));
     }
 
@@ -98,15 +98,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(shortArrayAgain, a1.value("shortArray1"));
-        Assert.assertFalse(a1.property("shortArray2").isPresent());
-        Assert.assertFalse(a1.property("shortArray3").isPresent());
+        Assert.assertNull(a1.property("shortArray2").value());
+        Assert.assertNull(a1.property("shortArray3").value());
 
-        Assert.assertFalse(a2.property("shortArray1").isPresent());
+        Assert.assertNull(a2.property("shortArray1").value());
         Assert.assertArrayEquals(shortArrayAgain, a2.value("shortArray2"));
-        Assert.assertFalse(a2.property("shortArray3").isPresent());
+        Assert.assertNull(a2.property("shortArray3").value());
 
-        Assert.assertFalse(a3.property("shortArray1").isPresent());
-        Assert.assertFalse(a3.property("shortArray2").isPresent());
+        Assert.assertNull(a3.property("shortArray1").value());
+        Assert.assertNull(a3.property("shortArray2").value());
         Assert.assertArrayEquals(shortArrayAgain, a3.value("shortArray3"));
     }
 
@@ -139,15 +139,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(shortArrayAgain, a1.value("shortArray1"));
-        Assert.assertFalse(a1.property("shortArray2").isPresent());
-        Assert.assertFalse(a1.property("shortArray3").isPresent());
+        Assert.assertNull(a1.property("shortArray2").value());
+        Assert.assertNull(a1.property("shortArray3").value());
 
-        Assert.assertFalse(a2.property("shortArray1").isPresent());
+        Assert.assertNull(a2.property("shortArray1").value());
         Assert.assertArrayEquals(shortArrayAgain, a2.value("shortArray2"));
-        Assert.assertFalse(a2.property("shortArray3").isPresent());
+        Assert.assertNull(a2.property("shortArray3").value());
 
-        Assert.assertFalse(a3.property("shortArray1").isPresent());
-        Assert.assertFalse(a3.property("shortArray2").isPresent());
+        Assert.assertNull(a3.property("shortArray1").value());
+        Assert.assertNull(a3.property("shortArray2").value());
         Assert.assertArrayEquals(shortArrayAgain, a3.value("shortArray3"));
     }
 
@@ -181,15 +181,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(intArrayAgain, a1.value("intArray1"));
-        Assert.assertFalse(a1.property("intArray2").isPresent());
-        Assert.assertFalse(a1.property("intArray3").isPresent());
+        Assert.assertNull(a1.property("intArray2").value());
+        Assert.assertNull(a1.property("intArray3").value());
 
-        Assert.assertFalse(a2.property("intArray1").isPresent());
+        Assert.assertNull(a2.property("intArray1").value());
         Assert.assertArrayEquals(intArrayAgain, a2.value("intArray2"));
-        Assert.assertFalse(a2.property("intArray3").isPresent());
+        Assert.assertNull(a2.property("intArray3").value());
 
-        Assert.assertFalse(a3.property("intArray1").isPresent());
-        Assert.assertFalse(a3.property("intArray2").isPresent());
+        Assert.assertNull(a3.property("intArray1").value());
+        Assert.assertNull(a3.property("intArray2").value());
         Assert.assertArrayEquals(intArrayAgain, a3.value("intArray3"));
     }
 
@@ -222,15 +222,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(integerArrayAgain, a1.value("integerArray1"));
-        Assert.assertFalse(a1.property("integerArray2").isPresent());
-        Assert.assertFalse(a1.property("integerArray3").isPresent());
+        Assert.assertNull(a1.property("integerArray2").value());
+        Assert.assertNull(a1.property("integerArray3").value());
 
-        Assert.assertFalse(a2.property("integerArray1").isPresent());
+        Assert.assertNull(a2.property("integerArray1").value());
         Assert.assertArrayEquals(integerArrayAgain, a2.value("integerArray2"));
-        Assert.assertFalse(a2.property("integerArray3").isPresent());
+        Assert.assertNull(a2.property("integerArray3").value());
 
-        Assert.assertFalse(a3.property("integerArray1").isPresent());
-        Assert.assertFalse(a3.property("integerArray2").isPresent());
+        Assert.assertNull(a3.property("integerArray1").value());
+        Assert.assertNull(a3.property("integerArray2").value());
         Assert.assertArrayEquals(integerArrayAgain, a3.value("integerArray3"));
     }
 
@@ -264,15 +264,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(booleanArrayAgain, a1.value("booleanArray1"));
-        Assert.assertFalse(a1.property("booleanArray2").isPresent());
-        Assert.assertFalse(a1.property("booleanArray3").isPresent());
+        Assert.assertNull(a1.property("booleanArray2").value());
+        Assert.assertNull(a1.property("booleanArray3").value());
 
-        Assert.assertFalse(a2.property("booleanArray1").isPresent());
+        Assert.assertNull(a2.property("booleanArray1").value());
         Assert.assertArrayEquals(booleanArrayAgain, a2.value("booleanArray2"));
-        Assert.assertFalse(a2.property("booleanArray3").isPresent());
+        Assert.assertNull(a2.property("booleanArray3").value());
 
-        Assert.assertFalse(a3.property("booleanArray1").isPresent());
-        Assert.assertFalse(a3.property("booleanArray2").isPresent());
+        Assert.assertNull(a3.property("booleanArray1").value());
+        Assert.assertNull(a3.property("booleanArray2").value());
         Assert.assertArrayEquals(booleanArrayAgain, a3.value("booleanArray3"));
     }
 
@@ -306,15 +306,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(booleanArrayAgain, a1.value("booleanArray1"));
-        Assert.assertFalse(a1.property("booleanArray2").isPresent());
-        Assert.assertFalse(a1.property("booleanArray3").isPresent());
+        Assert.assertNull(a1.property("booleanArray2").value());
+        Assert.assertNull(a1.property("booleanArray3").value());
 
-        Assert.assertFalse(a2.property("booleanArray1").isPresent());
+        Assert.assertNull(a2.property("booleanArray1").value());
         Assert.assertArrayEquals(booleanArrayAgain, a2.value("booleanArray2"));
-        Assert.assertFalse(a2.property("booleanArray3").isPresent());
+        Assert.assertNull(a2.property("booleanArray3").value());
 
-        Assert.assertFalse(a3.property("booleanArray1").isPresent());
-        Assert.assertFalse(a3.property("booleanArray2").isPresent());
+        Assert.assertNull(a3.property("booleanArray1").value());
+        Assert.assertNull(a3.property("booleanArray2").value());
         Assert.assertArrayEquals(booleanArrayAgain, a3.value("booleanArray3"));
     }
 
@@ -348,15 +348,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(byteArrayAgain, a1.value("byteArray1"));
-        Assert.assertFalse(a1.property("byteArray2").isPresent());
-        Assert.assertFalse(a1.property("byteArray3").isPresent());
+        Assert.assertNull(a1.property("byteArray2").value());
+        Assert.assertNull(a1.property("byteArray3").value());
 
-        Assert.assertFalse(a2.property("byteArray1").isPresent());
+        Assert.assertNull(a2.property("byteArray1").value());
         Assert.assertArrayEquals(byteArrayAgain, a2.value("byteArray2"));
-        Assert.assertFalse(a2.property("byteArray3").isPresent());
+        Assert.assertNull(a2.property("byteArray3").value());
 
-        Assert.assertFalse(a3.property("byteArray1").isPresent());
-        Assert.assertFalse(a3.property("byteArray2").isPresent());
+        Assert.assertNull(a3.property("byteArray1").value());
+        Assert.assertNull(a3.property("byteArray2").value());
         Assert.assertArrayEquals(byteArrayAgain, a3.value("byteArray3"));
     }
 
@@ -389,15 +389,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(byteArrayAgain, a1.value("byteArray1"));
-        Assert.assertFalse(a1.property("byteArray2").isPresent());
-        Assert.assertFalse(a1.property("byteArray3").isPresent());
+        Assert.assertNull(a1.property("byteArray2").value());
+        Assert.assertNull(a1.property("byteArray3").value());
 
-        Assert.assertFalse(a2.property("byteArray1").isPresent());
+        Assert.assertNull(a2.property("byteArray1").value());
         Assert.assertArrayEquals(byteArrayAgain, a2.value("byteArray2"));
-        Assert.assertFalse(a2.property("byteArray3").isPresent());
+        Assert.assertNull(a2.property("byteArray3").value());
 
-        Assert.assertFalse(a3.property("byteArray1").isPresent());
-        Assert.assertFalse(a3.property("byteArray2").isPresent());
+        Assert.assertNull(a3.property("byteArray1").value());
+        Assert.assertNull(a3.property("byteArray2").value());
         Assert.assertArrayEquals(byteArrayAgain, a3.value("byteArray3"));
     }
 
@@ -431,15 +431,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(longArrayAgain, a1.value("longArray1"));
-        Assert.assertFalse(a1.property("longArray2").isPresent());
-        Assert.assertFalse(a1.property("longArray3").isPresent());
+        Assert.assertNull(a1.property("longArray2").value());
+        Assert.assertNull(a1.property("longArray3").value());
 
-        Assert.assertFalse(a2.property("longArray1").isPresent());
+        Assert.assertNull(a2.property("longArray1").value());
         Assert.assertArrayEquals(longArrayAgain, a2.value("longArray2"));
-        Assert.assertFalse(a2.property("longArray3").isPresent());
+        Assert.assertNull(a2.property("longArray3").value());
 
-        Assert.assertFalse(a3.property("longArray1").isPresent());
-        Assert.assertFalse(a3.property("longArray2").isPresent());
+        Assert.assertNull(a3.property("longArray1").value());
+        Assert.assertNull(a3.property("longArray2").value());
         Assert.assertArrayEquals(longArrayAgain, a3.value("longArray3"));
     }
 
@@ -473,15 +473,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(longArrayAgain, a1.value("longArray1"));
-        Assert.assertFalse(a1.property("longArray2").isPresent());
-        Assert.assertFalse(a1.property("longArray3").isPresent());
+        Assert.assertNull(a1.property("longArray2").value());
+        Assert.assertNull(a1.property("longArray3").value());
 
-        Assert.assertFalse(a2.property("longArray1").isPresent());
+        Assert.assertNull(a2.property("longArray1").value());
         Assert.assertArrayEquals(longArrayAgain, a2.value("longArray2"));
-        Assert.assertFalse(a2.property("longArray3").isPresent());
+        Assert.assertNull(a2.property("longArray3").value());
 
-        Assert.assertFalse(a3.property("longArray1").isPresent());
-        Assert.assertFalse(a3.property("longArray2").isPresent());
+        Assert.assertNull(a3.property("longArray1").value());
+        Assert.assertNull(a3.property("longArray2").value());
         Assert.assertArrayEquals(longArrayAgain, a3.value("longArray3"));
     }
 
@@ -515,15 +515,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(floatArrayAgain, a1.value("floatArray1"), 0F);
-        Assert.assertFalse(a1.property("floatArray2").isPresent());
-        Assert.assertFalse(a1.property("floatArray3").isPresent());
+        Assert.assertNull(a1.property("floatArray2").value());
+        Assert.assertNull(a1.property("floatArray3").value());
 
-        Assert.assertFalse(a2.property("floatArray1").isPresent());
+        Assert.assertNull(a2.property("floatArray1").value());
         Assert.assertArrayEquals(floatArrayAgain, a2.value("floatArray2"), 0F);
-        Assert.assertFalse(a2.property("floatArray3").isPresent());
+        Assert.assertNull(a2.property("floatArray3").value());
 
-        Assert.assertFalse(a3.property("floatArray1").isPresent());
-        Assert.assertFalse(a3.property("floatArray2").isPresent());
+        Assert.assertNull(a3.property("floatArray1").value());
+        Assert.assertNull(a3.property("floatArray2").value());
         Assert.assertArrayEquals(floatArrayAgain, a3.value("floatArray3"), 0F);
     }
 
@@ -557,15 +557,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(floatArrayAgain, a1.value("floatArray1"));
-        Assert.assertFalse(a1.property("floatArray2").isPresent());
-        Assert.assertFalse(a1.property("floatArray3").isPresent());
+        Assert.assertNull(a1.property("floatArray2").value());
+        Assert.assertNull(a1.property("floatArray3").value());
 
-        Assert.assertFalse(a2.property("floatArray1").isPresent());
+        Assert.assertNull(a2.property("floatArray1").value());
         Assert.assertArrayEquals(floatArrayAgain, a2.value("floatArray2"));
-        Assert.assertFalse(a2.property("floatArray3").isPresent());
+        Assert.assertNull(a2.property("floatArray3").value());
 
-        Assert.assertFalse(a3.property("floatArray1").isPresent());
-        Assert.assertFalse(a3.property("floatArray2").isPresent());
+        Assert.assertNull(a3.property("floatArray1").value());
+        Assert.assertNull(a3.property("floatArray2").value());
         Assert.assertArrayEquals(floatArrayAgain, a3.value("floatArray3"));
     }
 
@@ -599,15 +599,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(doubleArrayAgain, a1.value("doubleArray1"), 0D);
-        Assert.assertFalse(a1.property("doubleArray2").isPresent());
-        Assert.assertFalse(a1.property("doubleArray3").isPresent());
+        Assert.assertNull(a1.property("doubleArray2").value());
+        Assert.assertNull(a1.property("doubleArray3").value());
 
-        Assert.assertFalse(a2.property("doubleArray1").isPresent());
+        Assert.assertNull(a2.property("doubleArray1").value());
         Assert.assertArrayEquals(doubleArrayAgain, a2.value("doubleArray2"), 0D);
-        Assert.assertFalse(a2.property("doubleArray3").isPresent());
+        Assert.assertNull(a2.property("doubleArray3").value());
 
-        Assert.assertFalse(a3.property("doubleArray1").isPresent());
-        Assert.assertFalse(a3.property("doubleArray2").isPresent());
+        Assert.assertNull(a3.property("doubleArray1").value());
+        Assert.assertNull(a3.property("doubleArray2").value());
         Assert.assertArrayEquals(doubleArrayAgain, a3.value("doubleArray3"), 0D);
     }
 
@@ -641,15 +641,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(doubleArrayAgain, a1.value("doubleArray1"));
-        Assert.assertFalse(a1.property("doubleArray2").isPresent());
-        Assert.assertFalse(a1.property("doubleArray3").isPresent());
+        Assert.assertNull(a1.property("doubleArray2").value());
+        Assert.assertNull(a1.property("doubleArray3").value());
 
-        Assert.assertFalse(a2.property("doubleArray1").isPresent());
+        Assert.assertNull(a2.property("doubleArray1").value());
         Assert.assertArrayEquals(doubleArrayAgain, a2.value("doubleArray2"));
-        Assert.assertFalse(a2.property("doubleArray3").isPresent());
+        Assert.assertNull(a2.property("doubleArray3").value());
 
-        Assert.assertFalse(a3.property("doubleArray1").isPresent());
-        Assert.assertFalse(a3.property("doubleArray2").isPresent());
+        Assert.assertNull(a3.property("doubleArray1").value());
+        Assert.assertNull(a3.property("doubleArray2").value());
         Assert.assertArrayEquals(doubleArrayAgain, a3.value("doubleArray3"));
     }
 

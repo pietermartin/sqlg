@@ -8,8 +8,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2015/12/14
@@ -24,10 +23,10 @@ public class TestAlias extends BaseTest {
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
         assertEquals(1, vertices.size());
         assertEquals("a", vertices.get(0).value("test.1"));
-        assertTrue(vertices.get(0).property("test.1").isPresent());
+        assertNotNull(vertices.get(0).property("test.1").value());
     }
 
-//    @Test
+    @Test
     public void testAlias() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");

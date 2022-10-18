@@ -183,8 +183,8 @@ public class TestTopologyDelete extends BaseTest {
             String fullLabel = getLabel(schema, "A");
             Vertex a1 = this.sqlgGraph.addVertex(T.label, fullLabel, "name", "A", "p1", "val1", "p2", "val2");
 
-            assertTrue(a1.property("p1").isPresent());
-            assertTrue(a1.property("p2").isPresent());
+            assertNotNull(a1.property("p1").value());
+            assertNotNull(a1.property("p2").value());
             checkPropertyExistenceBeforeDeletion(schema);
             this.sqlgGraph.tx().commit();
 
@@ -192,8 +192,8 @@ public class TestTopologyDelete extends BaseTest {
 
             checkPropertyExistenceBeforeDeletion(schema);
             a1 = this.sqlgGraph.traversal().V(aid).next();
-            assertTrue(a1.property("p1").isPresent());
-            assertTrue(a1.property("p2").isPresent());
+            assertNotNull(a1.property("p1").value());
+            assertNotNull(a1.property("p2").value());
 
             TopologyListenerTest tlt = new TopologyListenerTest();
             this.sqlgGraph.getTopology().registerListener(tlt);
@@ -255,8 +255,8 @@ public class TestTopologyDelete extends BaseTest {
 
             Vertex a1 = this.sqlgGraph.addVertex(T.label, fullLabel, "name", "A", "p1", "val1", "p2", "val2");
 
-            assertTrue(a1.property("p1").isPresent());
-            assertTrue(a1.property("p2").isPresent());
+            assertNotNull(a1.property("p1").value());
+            assertNotNull(a1.property("p2").value());
             checkPropertyExistenceBeforeDeletion(schema, i1);
             this.sqlgGraph.tx().commit();
 
@@ -264,8 +264,8 @@ public class TestTopologyDelete extends BaseTest {
 
             checkPropertyExistenceBeforeDeletion(schema, i1);
             a1 = this.sqlgGraph.traversal().V(aid).next();
-            assertTrue(a1.property("p1").isPresent());
-            assertTrue(a1.property("p2").isPresent());
+            assertNotNull(a1.property("p1").value());
+            assertNotNull(a1.property("p2").value());
 
             TopologyListenerTest tlt = new TopologyListenerTest();
             this.sqlgGraph.getTopology().registerListener(tlt);
@@ -316,15 +316,15 @@ public class TestTopologyDelete extends BaseTest {
             Vertex b1 = this.sqlgGraph.addVertex(T.label, fullLabelB, "name", "B");
             Edge e1 = a1.addEdge("E", b1, "p1", "val1", "p2", "val2");
 
-            assertTrue(e1.property("p1").isPresent());
-            assertTrue(e1.property("p2").isPresent());
+            assertNotNull(e1.property("p1").value());
+            assertNotNull(e1.property("p2").value());
             checkEdgePropertyExistenceBeforeDeletion(schema);
             sqlgGraph.tx().commit();
             Object eid = e1.id();
             checkEdgePropertyExistenceBeforeDeletion(schema);
             e1 = this.sqlgGraph.traversal().E(eid).next();
-            assertTrue(e1.property("p1").isPresent());
-            assertTrue(e1.property("p2").isPresent());
+            assertNotNull(e1.property("p1").value());
+            assertNotNull(e1.property("p2").value());
 
             TopologyListenerTest tlt = new TopologyListenerTest();
             this.sqlgGraph.getTopology().registerListener(tlt);

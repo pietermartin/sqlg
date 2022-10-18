@@ -34,7 +34,7 @@ public class TestUpdateVertex extends BaseTest {
     @Test
     public void testPropertyIsPresent() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        Assert.assertTrue(v.property("name").isPresent());
+        Assert.assertNotNull(v.property("name").value());
     }
 
     @Test

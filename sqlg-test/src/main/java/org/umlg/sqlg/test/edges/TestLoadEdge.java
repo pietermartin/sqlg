@@ -106,8 +106,8 @@ public class TestLoadEdge extends BaseTest {
         Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person");
         Edge friend = person1.addEdge("friend", person2, "name", "edge1");
         this.sqlgGraph.tx().commit();
-        Property p = this.sqlgGraph.traversal().E(friend).next().property("name", "edge2");
-        Assert.assertTrue(p.isPresent());
+        Property<?> p = this.sqlgGraph.traversal().E(friend).next().property("name", "edge2");
+        Assert.assertNotNull(p.value());
     }
 
     @Test
@@ -116,8 +116,8 @@ public class TestLoadEdge extends BaseTest {
         Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person");
         Edge friend = person1.addEdge("friend", person2, "name.A", "edge1");
         this.sqlgGraph.tx().commit();
-        Property p = this.sqlgGraph.traversal().E(friend).next().property("name.A");
-        Assert.assertTrue(p.isPresent());
+        Property<?> p = this.sqlgGraph.traversal().E(friend).next().property("name.A");
+        Assert.assertNotNull(p.value());
         Assert.assertEquals("edge1", p.value());
     }
 

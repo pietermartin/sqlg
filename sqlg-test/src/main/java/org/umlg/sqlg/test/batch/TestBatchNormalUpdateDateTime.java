@@ -62,15 +62,15 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertEquals(localDateTimeAgain, a1.value("localDateTime1"));
-        Assert.assertFalse(a1.property("localDateTime2").isPresent());
-        Assert.assertFalse(a1.property("localDateTime3").isPresent());
+        Assert.assertNull(a1.property("localDateTime2").value());
+        Assert.assertNull(a1.property("localDateTime3").value());
 
-        Assert.assertFalse(a2.property("localDateTime1").isPresent());
+        Assert.assertNull(a2.property("localDateTime1").value());
         Assert.assertEquals(localDateTimeAgain, a2.value("localDateTime2"));
-        Assert.assertFalse(a2.property("localDateTime3").isPresent());
+        Assert.assertNull(a2.property("localDateTime3").value());
 
-        Assert.assertFalse(a3.property("localDateTime1").isPresent());
-        Assert.assertFalse(a3.property("localDateTime2").isPresent());
+        Assert.assertNull(a3.property("localDateTime1").value());
+        Assert.assertNull(a3.property("localDateTime2").value());
         Assert.assertEquals(localDateTimeAgain, a3.value("localDateTime3"));
     }
 
@@ -102,15 +102,15 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertEquals(localDateAgain, a1.value("localDate1"));
-        Assert.assertFalse(a1.property("localDate2").isPresent());
-        Assert.assertFalse(a1.property("localDate3").isPresent());
+        Assert.assertNull(a1.property("localDate2").value());
+        Assert.assertNull(a1.property("localDate3").value());
 
-        Assert.assertFalse(a2.property("localDate1").isPresent());
+        Assert.assertNull(a2.property("localDate1").value());
         Assert.assertEquals(localDateAgain, a2.value("localDate2"));
-        Assert.assertFalse(a2.property("localDate3").isPresent());
+        Assert.assertNull(a2.property("localDate3").value());
 
-        Assert.assertFalse(a3.property("localDate1").isPresent());
-        Assert.assertFalse(a3.property("localDate2").isPresent());
+        Assert.assertNull(a3.property("localDate1").value());
+        Assert.assertNull(a3.property("localDate2").value());
         Assert.assertEquals(localDateAgain, a3.value("localDate3"));
     }
 
@@ -142,15 +142,15 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertEquals(localTimeAgain.toSecondOfDay(), a1.<LocalTime>value("localTime1").toSecondOfDay());
-        Assert.assertFalse(a1.property("localTime2").isPresent());
-        Assert.assertFalse(a1.property("localTime3").isPresent());
+        Assert.assertNull(a1.property("localTime2").value());
+        Assert.assertNull(a1.property("localTime3").value());
 
-        Assert.assertFalse(a2.property("localTime1").isPresent());
+        Assert.assertNull(a2.property("localTime1").value());
         Assert.assertEquals(localTimeAgain.toSecondOfDay(), a2.<LocalTime>value("localTime2").toSecondOfDay());
-        Assert.assertFalse(a2.property("localTime3").isPresent());
+        Assert.assertNull(a2.property("localTime3").value());
 
-        Assert.assertFalse(a3.property("localTime1").isPresent());
-        Assert.assertFalse(a3.property("localTime2").isPresent());
+        Assert.assertNull(a3.property("localTime1").value());
+        Assert.assertNull(a3.property("localTime2").value());
         Assert.assertEquals(localTimeAgain.toSecondOfDay(), a3.<LocalTime>value("localTime3").toSecondOfDay());
     }
 
@@ -184,15 +184,15 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertEquals(zonedDateTimeAgain, a1.value("zonedDateTime1"));
-        Assert.assertFalse(a1.property("zonedDateTime2").isPresent());
-        Assert.assertFalse(a1.property("zonedDateTime3").isPresent());
+        Assert.assertNull(a1.property("zonedDateTime2").value());
+        Assert.assertNull(a1.property("zonedDateTime3").value());
 
-        Assert.assertFalse(a2.property("zonedDateTime1").isPresent());
+        Assert.assertNull(a2.property("zonedDateTime1").value());
         Assert.assertEquals(zonedDateTimeAgain, a2.value("zonedDateTime2"));
-        Assert.assertFalse(a2.property("zonedDateTime3").isPresent());
+        Assert.assertNull(a2.property("zonedDateTime3").value());
 
-        Assert.assertFalse(a3.property("zonedDateTime1").isPresent());
-        Assert.assertFalse(a3.property("zonedDateTime2").isPresent());
+        Assert.assertNull(a3.property("zonedDateTime1").value());
+        Assert.assertNull(a3.property("zonedDateTime2").value());
         Assert.assertEquals(zonedDateTimeAgain, a3.value("zonedDateTime3"));
     }
 
@@ -224,15 +224,15 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertEquals(durationAgain, a1.value("duration1"));
-        Assert.assertFalse(a1.property("duration2").isPresent());
-        Assert.assertFalse(a1.property("duration3").isPresent());
+        Assert.assertNull(a1.property("duration2").value());
+        Assert.assertNull(a1.property("duration3").value());
 
-        Assert.assertFalse(a2.property("duration1").isPresent());
+        Assert.assertNull(a2.property("duration1").value());
         Assert.assertEquals(durationAgain, a2.value("duration2"));
-        Assert.assertFalse(a2.property("duration3").isPresent());
+        Assert.assertNull(a2.property("duration3").value());
 
-        Assert.assertFalse(a3.property("duration1").isPresent());
-        Assert.assertFalse(a3.property("duration2").isPresent());
+        Assert.assertNull(a3.property("duration1").value());
+        Assert.assertNull(a3.property("duration2").value());
         Assert.assertEquals(durationAgain, a3.value("duration3"));
     }
 
@@ -264,15 +264,15 @@ public class TestBatchNormalUpdateDateTime extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertEquals(periodAgain, a1.value("period1"));
-        Assert.assertFalse(a1.property("period2").isPresent());
-        Assert.assertFalse(a1.property("period3").isPresent());
+        Assert.assertNull(a1.property("period2").value());
+        Assert.assertNull(a1.property("period3").value());
 
-        Assert.assertFalse(a2.property("period1").isPresent());
+        Assert.assertNull(a2.property("period1").value());
         Assert.assertEquals(periodAgain, a2.value("period2"));
-        Assert.assertFalse(a2.property("period3").isPresent());
+        Assert.assertNull(a2.property("period3").value());
 
-        Assert.assertFalse(a3.property("period1").isPresent());
-        Assert.assertFalse(a3.property("period2").isPresent());
+        Assert.assertNull(a3.property("period1").value());
+        Assert.assertNull(a3.property("period2").value());
         Assert.assertEquals(periodAgain, a3.value("period3"));
     }
 

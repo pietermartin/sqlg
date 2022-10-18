@@ -55,12 +55,12 @@ public class TestSimpleVertexEdgeGremlin extends BaseTest {
         Assert.assertEquals("Smith", recordId.getIdentifiers().get(1));
         Assert.assertEquals("John", person.property("name").value());
         Assert.assertEquals("Smith", person.property("surname").value());
-        Assert.assertFalse(person.property("country").isPresent());
+        Assert.assertNull(person.property("country").value());
 
         person.property("country", "moon");
         this.sqlgGraph.tx().commit();
         person = this.sqlgGraph.traversal().V().hasLabel("Person").toList().get(0);
-        Assert.assertTrue(person.property("country").isPresent());
+        Assert.assertNotNull(person.property("country").value());
         Assert.assertEquals("moon", person.value("country"));
     }
 

@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.RecordId;
@@ -65,7 +66,7 @@ public class TestAllVertices extends BaseTest {
     }
 
     private static void validateException(final Throwable expected, final Throwable actual) {
-        Assert.assertThat(actual, instanceOf(expected.getClass()));
+        MatcherAssert.assertThat(actual, instanceOf(expected.getClass()));
     }
 
     @Test

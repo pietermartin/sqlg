@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -185,6 +186,23 @@ public class TestArrayProperties extends BaseTest {
         assertArrayEquals(new Double[]{1D, 2D, 3D, 4D, 5D}, (Double[]) v.property("age").value());
         Edge e = this.sqlgGraph.traversal().E().next();
         assertArrayEquals(new Double[]{1D, 2D, 3D, 4D, 5D}, (Double[]) e.property("age").value());
+    }
+
+    @Test
+    public void testBigDecimalArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBigDecimalArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new BigDecimal[]{BigDecimal.valueOf(1D), BigDecimal.valueOf(2D), BigDecimal.valueOf(3D), BigDecimal.valueOf(4D), BigDecimal.valueOf(5D)});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new BigDecimal[]{BigDecimal.valueOf(1D), BigDecimal.valueOf(2D), BigDecimal.valueOf(3D), BigDecimal.valueOf(4D), BigDecimal.valueOf(5D)});
+        vertex1.addEdge("test", vertex2, "age", new BigDecimal[]{BigDecimal.valueOf(1D), BigDecimal.valueOf(2D), BigDecimal.valueOf(3D), BigDecimal.valueOf(4D), BigDecimal.valueOf(5D)});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertArrayEquals(
+                new BigDecimal[]{BigDecimal.valueOf(1D), BigDecimal.valueOf(2D), BigDecimal.valueOf(3D), BigDecimal.valueOf(4D), BigDecimal.valueOf(5D)},
+                (BigDecimal[]) v.property("age").value());
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertArrayEquals(
+                new BigDecimal[]{BigDecimal.valueOf(1D), BigDecimal.valueOf(2D), BigDecimal.valueOf(3D), BigDecimal.valueOf(4D), BigDecimal.valueOf(5D)},
+                (BigDecimal[]) e.property("age").value());
     }
 
     @Test

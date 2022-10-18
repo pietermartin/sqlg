@@ -17,7 +17,6 @@ import org.umlg.sqlg.step.barrier.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 /**
  * Date: 2015/10/21
@@ -487,7 +486,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(14, paths.size());
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1) && ((Vertex)p.get(0)).value("name.AA").equals("a1")));
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1) && ((Vertex) p.get(0)).value("name.AA").equals("a1")));
         paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a1)).findAny().orElseThrow(IllegalStateException::new));
 
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)));
@@ -1027,8 +1026,8 @@ public class TestRepeatStepGraphOut extends BaseTest {
         Graph graph = this.sqlgGraph;
         GraphTraversalSource g = graph.traversal();
         final List<DefaultGraphTraversal<Vertex, Path>> traversals = Arrays.asList(
-                (DefaultGraphTraversal<Vertex, Path>)g.V().emit().times(2).repeat(__.out()).path(),
-                (DefaultGraphTraversal<Vertex, Path>)g.V().emit().repeat(__.out()).times(2).path()
+                (DefaultGraphTraversal<Vertex, Path>) g.V().emit().times(2).repeat(__.out()).path(),
+                (DefaultGraphTraversal<Vertex, Path>) g.V().emit().repeat(__.out()).times(2).path()
         );
         traversals.forEach(traversal -> {
             Assert.assertEquals(3, traversal.getSteps().size());
@@ -1644,12 +1643,12 @@ public class TestRepeatStepGraphOut extends BaseTest {
         network.addEdge("network_networkSoftwareVersion", huaweiLte);
 
 
-        Vertex ericssonGsmNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonGsmNetworkNodeGroup");
-        Vertex ericssonUmtsNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonUmtsNetworkNodeGroup");
-        Vertex ericssonLteNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonLteNetworkNodeGroup");
-        Vertex huaweiGsmNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiGsmNetworkNodeGroup");
-        Vertex huaweiUmtsNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiUmtsNetworkNodeGroup");
-        Vertex huaweiLteNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiLteNetworkNodeGroup");
+        Vertex ericssonGsmNetworkNodeGroup = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonGsmNetworkNodeGroup");
+        Vertex ericssonUmtsNetworkNodeGroup = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonUmtsNetworkNodeGroup");
+        Vertex ericssonLteNetworkNodeGroup = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonLteNetworkNodeGroup");
+        Vertex huaweiGsmNetworkNodeGroup = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiGsmNetworkNodeGroup");
+        Vertex huaweiUmtsNetworkNodeGroup = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiUmtsNetworkNodeGroup");
+        Vertex huaweiLteNetworkNodeGroup = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiLteNetworkNodeGroup");
 
         ericssonGsm.addEdge("networkSoftwareVersion_networkNodeGroup", ericssonGsmNetworkNodeGroup);
         ericssonUmts.addEdge("networkSoftwareVersion_networkNodeGroup", ericssonUmtsNetworkNodeGroup);

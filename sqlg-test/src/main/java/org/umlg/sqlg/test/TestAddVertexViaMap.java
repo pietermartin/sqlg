@@ -31,7 +31,7 @@ public class TestAddVertexViaMap extends BaseTest {
         map.put("name3", "p3");
         Vertex v1 = this.sqlgGraph.addVertex("Person", map);
         this.sqlgGraph.tx().commit();
-        Vertex v2 = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").next();
+        Vertex v2 = this.sqlgGraph.traversal().V().has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertEquals("p1", v2.property("name1").value());
         Assert.assertEquals("p2", v2.property("name2").value());
@@ -69,12 +69,11 @@ public class TestAddVertexViaMap extends BaseTest {
         map.put("name3", "p3");
         Vertex v1 = this.sqlgGraph.addVertex("Person", map);
         this.sqlgGraph.tx().commit();
-        Vertex v2 = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").next();
+        Vertex v2 = this.sqlgGraph.traversal().V().has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertEquals("p1", v2.property("name1").value());
         Assert.assertEquals("p2", v2.property("name2").value());
         Assert.assertEquals("p3", v2.property("name3").value());
-
 
         vertexLabel.ensureEdgeLabelExist(
                 "e1",

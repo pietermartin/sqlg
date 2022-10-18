@@ -7,8 +7,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/10/04
@@ -23,12 +22,12 @@ public class TestEdgeCache extends BaseTest {
         Edge e = a1.addEdge("ab", b1, "name", "test");
         this.sqlgGraph.tx().commit();
         e.property("test", "this");
-        assertTrue(this.sqlgGraph.traversal().E(e.id()).next().property("name").isPresent());
-        assertTrue(this.sqlgGraph.traversal().E(e.id()).next().property("test").isPresent());
+        assertNotNull(this.sqlgGraph.traversal().E(e.id()).next().property("name").value());
+        assertNotNull(this.sqlgGraph.traversal().E(e.id()).next().property("test").value());
         this.sqlgGraph.traversal().E(e.id()).next().property("name1", "test");
         this.sqlgGraph.traversal().E(e.id()).next().property("test1", "test2");
-        assertTrue(this.sqlgGraph.traversal().E(e.id()).next().property("name1").isPresent());
-        assertTrue(this.sqlgGraph.traversal().E(e.id()).next().property("test1").isPresent());
+        assertNotNull(this.sqlgGraph.traversal().E(e.id()).next().property("name1").value());
+        assertNotNull(this.sqlgGraph.traversal().E(e.id()).next().property("test1").value());
     }
 
     @Test

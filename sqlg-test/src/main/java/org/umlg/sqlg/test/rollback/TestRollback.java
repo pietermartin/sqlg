@@ -69,7 +69,7 @@ public class TestRollback extends BaseTest {
         try {
             this.sqlgGraph.tx().rollback();
             fail("An exception should be thrown when read/write behavior is manual and no transaction is opened");
-        } catch (Exception ex) {
+        } catch (Exception ignore) {
         }
     }
 
@@ -79,7 +79,12 @@ public class TestRollback extends BaseTest {
         this.sqlgGraph.tx().commit();
         v1.property("name", "john");
         this.sqlgGraph.tx().rollback();
-        assertFalse(v1.property("name").isPresent());
+        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+            assertFalse(v1.property("name").isPresent());
+        } else {
+            assertTrue(v1.property("name").isPresent());
+            assertNull(v1.property("name").value());
+        }
     }
 
 }

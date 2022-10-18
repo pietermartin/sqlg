@@ -63,15 +63,15 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(localDateTimeArrayAgain, a1.value("localDateTimeArray1"));
-        Assert.assertFalse(a1.property("localDateTimeArray2").isPresent());
-        Assert.assertFalse(a1.property("localDateTimeArray3").isPresent());
+        Assert.assertNull(a1.property("localDateTimeArray2").value());
+        Assert.assertNull(a1.property("localDateTimeArray3").value());
 
-        Assert.assertFalse(a2.property("localDateTimeArray1").isPresent());
+        Assert.assertNull(a2.property("localDateTimeArray1").value());
         Assert.assertArrayEquals(localDateTimeArrayAgain, a2.value("localDateTimeArray2"));
-        Assert.assertFalse(a2.property("localDateTimeArray3").isPresent());
+        Assert.assertNull(a2.property("localDateTimeArray3").value());
 
-        Assert.assertFalse(a3.property("localDateTimeArray1").isPresent());
-        Assert.assertFalse(a3.property("localDateTimeArray2").isPresent());
+        Assert.assertNull(a3.property("localDateTimeArray1").value());
+        Assert.assertNull(a3.property("localDateTimeArray2").value());
         Assert.assertArrayEquals(localDateTimeArrayAgain, a3.value("localDateTimeArray3"));
     }
 
@@ -105,15 +105,15 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(localDateArrayAgain, a1.value("localDateArray1"));
-        Assert.assertFalse(a1.property("localDateArray2").isPresent());
-        Assert.assertFalse(a1.property("localDateArray3").isPresent());
+        Assert.assertNull(a1.property("localDateArray2").value());
+        Assert.assertNull(a1.property("localDateArray3").value());
 
-        Assert.assertFalse(a2.property("localDateArray1").isPresent());
+        Assert.assertNull(a2.property("localDateArray1").value());
         Assert.assertArrayEquals(localDateArrayAgain, a2.value("localDateArray2"));
-        Assert.assertFalse(a2.property("localDateArray3").isPresent());
+        Assert.assertNull(a2.property("localDateArray3").value());
 
-        Assert.assertFalse(a3.property("localDateArray1").isPresent());
-        Assert.assertFalse(a3.property("localDateArray2").isPresent());
+        Assert.assertNull(a3.property("localDateArray1").value());
+        Assert.assertNull(a3.property("localDateArray2").value());
         Assert.assertArrayEquals(localDateArrayAgain, a3.value("localDateArray3"));
     }
 
@@ -148,15 +148,15 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
             localTimes1.add(localTime.minusNanos(localTime.getNano()));
         }
         Assert.assertArrayEquals(localTimes1.toArray(), a1.value("localTimeArray1"));
-        Assert.assertFalse(a1.property("localTimeArray2").isPresent());
-        Assert.assertFalse(a1.property("localTimeArray3").isPresent());
+        Assert.assertNull(a1.property("localTimeArray2").value());
+        Assert.assertNull(a1.property("localTimeArray3").value());
 
-        Assert.assertFalse(a2.property("localTimeArray1").isPresent());
+        Assert.assertNull(a2.property("localTimeArray1").value());
         Assert.assertArrayEquals(localTimes1.toArray(), a2.value("localTimeArray2"));
-        Assert.assertFalse(a2.property("localTimeArray3").isPresent());
+        Assert.assertNull(a2.property("localTimeArray3").value());
 
-        Assert.assertFalse(a3.property("localTimeArray1").isPresent());
-        Assert.assertFalse(a3.property("localTimeArray2").isPresent());
+        Assert.assertNull(a3.property("localTimeArray1").value());
+        Assert.assertNull(a3.property("localTimeArray2").value());
         Assert.assertArrayEquals(localTimes1.toArray(), a3.value("localTimeArray3"));
     }
 
@@ -193,15 +193,15 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         Assert.assertArrayEquals(zonedDateTimeArrayAgain, a1.value("zonedDateTimeArray1"));
-        Assert.assertFalse(a1.property("zonedDateTimeArray2").isPresent());
-        Assert.assertFalse(a1.property("zonedDateTimeArray3").isPresent());
+        Assert.assertNull(a1.property("zonedDateTimeArray2").value());
+        Assert.assertNull(a1.property("zonedDateTimeArray3").value());
 
-        Assert.assertFalse(a2.property("zonedDateTimeArray1").isPresent());
+        Assert.assertNull(a2.property("zonedDateTimeArray1").value());
         Assert.assertArrayEquals(zonedDateTimeArrayAgain, a2.value("zonedDateTimeArray2"));
-        Assert.assertFalse(a2.property("zonedDateTimeArray3").isPresent());
+        Assert.assertNull(a2.property("zonedDateTimeArray3").value());
 
-        Assert.assertFalse(a3.property("zonedDateTimeArray1").isPresent());
-        Assert.assertFalse(a3.property("zonedDateTimeArray2").isPresent());
+        Assert.assertNull(a3.property("zonedDateTimeArray1").value());
+        Assert.assertNull(a3.property("zonedDateTimeArray2").value());
         Assert.assertArrayEquals(zonedDateTimeArrayAgain, a3.value("zonedDateTimeArray3"));
     }
 
@@ -235,15 +235,15 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         Assert.assertArrayEquals(durationArrayAgain, a1.value("durationArray1"));
-        Assert.assertFalse(a1.property("durationArray2").isPresent());
-        Assert.assertFalse(a1.property("durationArray3").isPresent());
+        Assert.assertNull(a1.property("durationArray2").value());
+        Assert.assertNull(a1.property("durationArray3").value());
 
-        Assert.assertFalse(a2.property("durationArray1").isPresent());
+        Assert.assertNull(a2.property("durationArray1").value());
         Assert.assertArrayEquals(durationArrayAgain, a2.value("durationArray2"));
-        Assert.assertFalse(a2.property("durationArray3").isPresent());
+        Assert.assertNull(a2.property("durationArray3").value());
 
-        Assert.assertFalse(a3.property("durationArray1").isPresent());
-        Assert.assertFalse(a3.property("durationArray2").isPresent());
+        Assert.assertNull(a3.property("durationArray1").value());
+        Assert.assertNull(a3.property("durationArray2").value());
         Assert.assertArrayEquals(durationArrayAgain, a3.value("durationArray3"));
     }
 
@@ -277,15 +277,15 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         Assert.assertArrayEquals(periodArrayAgain, a1.value("periodArray1"));
-        Assert.assertFalse(a1.property("periodArray2").isPresent());
-        Assert.assertFalse(a1.property("periodArray3").isPresent());
+        Assert.assertNull(a1.property("periodArray2").value());
+        Assert.assertNull(a1.property("periodArray3").value());
 
-        Assert.assertFalse(a2.property("periodArray1").isPresent());
+        Assert.assertNull(a2.property("periodArray1").value());
         Assert.assertArrayEquals(periodArrayAgain, a2.value("periodArray2"));
-        Assert.assertFalse(a2.property("periodArray3").isPresent());
+        Assert.assertNull(a2.property("periodArray3").value());
 
-        Assert.assertFalse(a3.property("periodArray1").isPresent());
-        Assert.assertFalse(a3.property("periodArray2").isPresent());
+        Assert.assertNull(a3.property("periodArray1").value());
+        Assert.assertNull(a3.property("periodArray2").value());
         Assert.assertArrayEquals(periodArrayAgain, a3.value("periodArray3"));
     }
 }

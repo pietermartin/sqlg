@@ -17,7 +17,7 @@ import java.util.List;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/11/05
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "resource"})
 public class TestAndandOrStep extends BaseTest {
 
     @SuppressWarnings("unused")

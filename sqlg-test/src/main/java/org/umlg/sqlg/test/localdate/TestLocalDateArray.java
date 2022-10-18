@@ -34,7 +34,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<LocalDateTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<LocalDateTime[]>properties("localDateTimes").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             LocalDateTime[] localDateTimesFromDb = properties.get(0).value();
             Assert.assertArrayEquals(localDateTimes, localDateTimesFromDb);
         }
@@ -56,7 +56,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<LocalDateTime[]>> properties = sqlgGraph1.traversal().E().hasLabel("aa").<LocalDateTime[]>properties("localDateTimes").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             LocalDateTime[] localDateTimesFromDb = properties.get(0).value();
             Assert.assertArrayEquals(localDateTimes, localDateTimesFromDb);
         }
@@ -73,7 +73,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<LocalDate[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<LocalDate[]>properties("localDates").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Assert.assertArrayEquals(localDates, properties.get(0).value());
         }
     }
@@ -91,7 +91,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<LocalDate[]>> properties = sqlgGraph1.traversal().E().hasLabel("aa").<LocalDate[]>properties("localDates").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Assert.assertArrayEquals(localDates, properties.get(0).value());
         }
     }
@@ -107,8 +107,8 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<LocalTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<LocalTime[]>properties("localTimes").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
-            LocalTime[] value = properties.get(0).<LocalTime[]>value();
+            Assert.assertNotNull(properties.get(0).value());
+            LocalTime[] value = properties.get(0).value();
             List<LocalTime> localTimes1 = new ArrayList<>();
             for (LocalTime localTime : value) {
                 localTimes1.add(localTime.minusNanos(localTime.getNano()));
@@ -129,8 +129,8 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<LocalTime[]>> properties = sqlgGraph1.traversal().E().hasLabel("aa").<LocalTime[]>properties("localTimes").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
-            LocalTime[] value = properties.get(0).<LocalTime[]>value();
+            Assert.assertNotNull(properties.get(0).value());
+            LocalTime[] value = properties.get(0).value();
             List<LocalTime> localTimes1 = new ArrayList<>();
             for (LocalTime localTime : value) {
                 localTimes1.add(localTime.minusNanos(localTime.getNano()));
@@ -155,8 +155,8 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<ZonedDateTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<ZonedDateTime[]>properties("zonedDateTimes").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
-            ZonedDateTime[] value = properties.get(0).<ZonedDateTime[]>value();
+            Assert.assertNotNull(properties.get(0).value());
+            ZonedDateTime[] value = properties.get(0).value();
             Assert.assertArrayEquals(zonedDateTimes, value);
         }
     }
@@ -179,7 +179,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<ZonedDateTime[]>> properties = sqlgGraph1.traversal().E().hasLabel("aa").<ZonedDateTime[]>properties("zonedDateTimes").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             ZonedDateTime[] localDateTimesFromDb = properties.get(0).value();
             Assert.assertArrayEquals(zonedDateTimes, localDateTimesFromDb);
         }
@@ -196,7 +196,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<Duration[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<Duration[]>properties("durations").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Duration[] durationsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(durations, durationsFromDb);
         }
@@ -215,7 +215,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<Duration[]>> properties = sqlgGraph1.traversal().E().hasLabel("aa").<Duration[]>properties("duration").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Duration[] durationsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(durations, durationsFromDb);
         }
@@ -232,7 +232,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<Period[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<Period[]>properties("periods").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Period[] periodsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(periods, periodsFromDb);
         }
@@ -251,7 +251,7 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<Period[]>> properties = sqlgGraph1.traversal().E().hasLabel("aa").<Period[]>properties("periods").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertNotNull(properties.get(0).value());
             Period[] periodsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(periods, periodsFromDb);
         }
@@ -273,8 +273,8 @@ public class TestLocalDateArray extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<ZonedDateTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<ZonedDateTime[]>properties("zonedDateTimes").toList();
             Assert.assertEquals(1, properties.size());
-            Assert.assertTrue(properties.get(0).isPresent());
-            ZonedDateTime[] value = properties.get(0).<ZonedDateTime[]>value();
+            Assert.assertNotNull(properties.get(0).value());
+            ZonedDateTime[] value = properties.get(0).value();
             Assert.assertArrayEquals(zonedDateTimes, value);
         }
     }

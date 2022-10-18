@@ -27,12 +27,12 @@ public class TestGroupCount extends BaseTest {
         final Map<Vertex, Long> map = traversal.next();
         assertFalse(traversal.hasNext());
         assertEquals(6, map.size());
-        assertEquals(6l, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
-        assertEquals(2l, map.get(convertToVertex(this.sqlgGraph, "vadas")).longValue());
-        assertEquals(6l, map.get(convertToVertex(this.sqlgGraph, "lop")).longValue());
-        assertEquals(6l, map.get(convertToVertex(this.sqlgGraph, "josh")).longValue());
-        assertEquals(2l, map.get(convertToVertex(this.sqlgGraph, "ripple")).longValue());
-        assertEquals(6l, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
+        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
+        assertEquals(2L, map.get(convertToVertex(this.sqlgGraph, "vadas")).longValue());
+        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "lop")).longValue());
+        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "josh")).longValue());
+        assertEquals(2L, map.get(convertToVertex(this.sqlgGraph, "ripple")).longValue());
+        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
 //        checkSideEffects(traversal.asAdmin().getSideEffects(), "a", HashMap.class);
     }
     

@@ -147,15 +147,15 @@ public class TestBatchJson extends BaseTest {
         a2 = sqlgGraph.traversal().V(a2.id()).next();
         a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertEquals(jsonAgain, a1.value("doc1"));
-        Assert.assertFalse(a1.property("doc2").isPresent());
-        Assert.assertFalse(a1.property("doc3").isPresent());
+        Assert.assertNull(a1.property("doc2").value());
+        Assert.assertNull(a1.property("doc3").value());
 
-        Assert.assertFalse(a2.property("doc1").isPresent());
+        Assert.assertNull(a2.property("doc1").value());
         Assert.assertEquals(jsonAgain, a2.value("doc2"));
-        Assert.assertFalse(a2.property("doc3").isPresent());
+        Assert.assertNull(a2.property("doc3").value());
 
-        Assert.assertFalse(a3.property("doc1").isPresent());
-        Assert.assertFalse(a3.property("doc2").isPresent());
+        Assert.assertNull(a3.property("doc1").value());
+        Assert.assertNull(a3.property("doc2").value());
         Assert.assertEquals(jsonAgain, a3.value("doc3"));
     }
 

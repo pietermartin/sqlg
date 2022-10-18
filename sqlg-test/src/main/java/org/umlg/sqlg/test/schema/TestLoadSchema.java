@@ -45,7 +45,7 @@ public class TestLoadSchema extends BaseTest {
         //noinspection Duplicates
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
-            Assert.assertTrue(vv.property("createOn").isPresent());
+            Assert.assertNotNull(vv.property("createOn").value());
             Map<String, PropertyDefinition> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
@@ -61,7 +61,7 @@ public class TestLoadSchema extends BaseTest {
         //noinspection Duplicates
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
-            Assert.assertTrue(vv.property("createOn").isPresent());
+            Assert.assertNotNull(vv.property("createOn").value());
             Map<String, PropertyDefinition> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
@@ -77,7 +77,7 @@ public class TestLoadSchema extends BaseTest {
         //noinspection Duplicates
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
-            Assert.assertTrue(vv.property("createOn").isPresent());
+            Assert.assertNotNull(vv.property("createOn").value());
             Map<String, PropertyDefinition> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
@@ -95,7 +95,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v1.id()).next();
-            Assert.assertTrue(vv.property("doc").isPresent());
+            Assert.assertNotNull(vv.property("doc").value());
             Map<String, PropertyDefinition> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             Assert.assertTrue(propertyTypeMap.containsKey("doc"));

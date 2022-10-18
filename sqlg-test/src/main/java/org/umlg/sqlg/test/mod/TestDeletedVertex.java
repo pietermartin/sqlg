@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.mod;
 
 import org.apache.commons.collections4.set.ListOrderedSet;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -174,24 +175,24 @@ public class TestDeletedVertex extends BaseTest {
         Assert.assertEquals(0, this.sqlgGraph.traversal().E().toList().size());
     }
 
-//    @Test
-//    public void testPerf() {
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        Vertex person = this.sqlgGraph.addVertex(T.label, "Person");
-//        for (int i = 0; i < 1000000; i++) {
-//            Vertex dog = this.sqlgGraph.addVertex(T.label, "Dog");
-//            person.addEdge("friend", dog);
-//        }
-//        this.sqlgGraph.tx().commit();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//        stopWatch.reset();
-//        stopWatch.start();
-//        person.remove();
-//        this.sqlgGraph.tx().commit();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//    }
+    @Test
+    public void testPerf() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person");
+        for (int i = 0; i < 1000000; i++) {
+            Vertex dog = this.sqlgGraph.addVertex(T.label, "Dog");
+            person.addEdge("friend", dog);
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+        person.remove();
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch);
+    }
 }

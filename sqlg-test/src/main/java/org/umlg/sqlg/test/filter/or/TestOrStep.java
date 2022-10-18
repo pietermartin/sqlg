@@ -22,7 +22,7 @@ import java.util.List;
  * @author Pieter Martin (https://github.com/pietermartin)
  * Date: 2017/10/30
  */
-@SuppressWarnings({"DuplicatedCode", "unused"})
+@SuppressWarnings({"DuplicatedCode", "unused", "resource"})
 public class TestOrStep extends BaseTest {
 
     @Test
@@ -348,7 +348,7 @@ public class TestOrStep extends BaseTest {
         vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(1, vertices.size());
-        Assert.assertTrue(vertices.containsAll(List.of(v1)));
+        Assert.assertTrue(vertices.contains(v1));
     }
 
     @Test
