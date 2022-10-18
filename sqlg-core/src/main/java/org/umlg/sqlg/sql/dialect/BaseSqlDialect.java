@@ -518,11 +518,12 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                             Object value = parameterValueMap.get(column);
                             if (value == null) {
                                 //if the value is not present update it to what is currently is.
-                                if (sqlgVertex.property(column).isPresent()) {
-                                    value = sqlgVertex.value(column);
-                                } else {
-                                    value = null;
-                                }
+                                value = sqlgVertex.value(column);
+//                                if (sqlgVertex.property(column).isPresent()) {
+//                                    value = sqlgVertex.value(column);
+//                                } else {
+//                                    value = null;
+//                                }
                             }
                             typeAndValues.add(Pair.of(propertyColumn.getPropertyDefinition(), value));
                         }
@@ -623,11 +624,12 @@ public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlS
                             Object value = parameterValueMap.get(column);
                             if (value == null) {
                                 //if the value is not present update it to what is currently is.
-                                if (sqlgEdge.property(column).isPresent()) {
-                                    value = sqlgEdge.value(column);
-                                } else {
-                                    value = null;
-                                }
+                                value = sqlgEdge.value(column);
+//                                if (sqlgEdge.property(column).isPresent()) {
+//                                    value = sqlgEdge.value(column);
+//                                } else {
+//                                    value = null;
+//                                }
                             }
                             typeAndValues.add(Pair.of(propertyColumn.getPropertyDefinition(), value));
                         }

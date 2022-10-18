@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.util.SqlgUtil;
 import org.umlg.sqlg.util.ThreadLocalSet;
 
 import java.sql.*;
@@ -200,10 +201,13 @@ public class EdgeLabel extends AbstractLabel {
     //    @Override
     public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
         for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
-            if (!this.properties.containsKey(column.getKey())) {
+            PropertyType incomingPropertyType = column.getValue().propertyType();
+            PropertyColumn propertyColumn = this.properties.get(column.getKey());
+            if (propertyColumn == null) {
                 Preconditions.checkState(!this.getSchema().isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
-                if (!this.uncommittedProperties.containsKey(column.getKey())) {
+                propertyColumn = this.uncommittedProperties.get(column.getKey());
+                if (propertyColumn == null) {
                     this.getSchema().getTopology().startSchemaChange();
                     if (getProperty(column.getKey()).isEmpty()) {
                         TopologyManager.addEdgeColumn(
@@ -218,12 +222,20 @@ public class EdgeLabel extends AbstractLabel {
                                 EDGE_PREFIX + getLabel(),
                                 ImmutablePair.of(column.getKey(), column.getValue())
                         );
-                        PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
+                        propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
                         this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
                     }
+                } else {
+                    //Set the proper definition in the map;
+                    SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
+                    columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
                 }
+            } else {
+                //Set the proper definition in the map;
+                SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
+                columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }
         }
     }

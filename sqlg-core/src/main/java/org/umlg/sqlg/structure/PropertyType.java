@@ -246,4 +246,5 @@ public class PropertyType {
     public String toString() {
         return this.name;
     }
+
 }

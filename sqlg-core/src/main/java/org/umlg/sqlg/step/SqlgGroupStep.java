@@ -4,7 +4,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
-import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.umlg.sqlg.step.barrier.SqlgReducingStepBarrier;
@@ -66,12 +65,17 @@ public class SqlgGroupStep<K, V> extends SqlgReducingStepBarrier<SqlgElement, Ma
         }
         if (this.groupBy.size() == 1) {
             if (this.groupBy.get(0).equals(T.label.getAccessor())) {
-                Property<?> property = sqlgElement.property(this.aggregateOn);
-                if (property.isPresent()) {
+                if (sqlgElement.value(this.aggregateOn) != null) {
                     end.put((K) sqlgElement.label(), value);
                 } else {
                     end.put((K) sqlgElement.label(), (V) Integer.valueOf(1));
                 }
+//                Property<?> property = sqlgElement.property(this.aggregateOn);
+//                if (property.isPresent()) {
+//                    end.put((K) sqlgElement.label(), value);
+//                } else {
+//                    end.put((K) sqlgElement.label(), (V) Integer.valueOf(1));
+//                }
             } else {
                 K key = sqlgElement.value(this.groupBy.get(0));
                 V currentValue = end.get(key);

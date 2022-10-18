@@ -72,7 +72,7 @@ public class SqlgUtil {
     }
 
     /**
-     * @param forParent           Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
+     * @param forParent Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
      * @return A list of @{@link Emit}s that represent a single @{@link org.apache.tinkerpop.gremlin.process.traversal.Path}
      */
     public static List<Emit<SqlgElement>> loadResultSetIntoResultIterator(
@@ -357,8 +357,8 @@ public class SqlgUtil {
                 }
                 case BIG_DECIMAL_ORDINAL ->
                         preparedStatement.setDouble(parameterStartIndex++, ((BigDecimal) pair.right).doubleValue());
-                case STRING_ORDINAL -> preparedStatement.setString(parameterStartIndex++, (String) pair.right);
-                case VARCHAR_ORDINAL -> preparedStatement.setString(parameterStartIndex++, (String) pair.right);
+                case STRING_ORDINAL, VARCHAR_ORDINAL ->
+                        preparedStatement.setString(parameterStartIndex++, (String) pair.right);
                 case LOCALDATE_ORDINAL ->
                         preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDate) pair.right).atStartOfDay()));
                 case LOCALDATETIME_ORDINAL -> {
@@ -400,7 +400,7 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
                     parameterStartIndex++;
                 }
-                case POINT_ORDINAL -> {
+                case POINT_ORDINAL, GEOGRAPHY_POINT_ORDINAL -> {
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                 }
@@ -408,15 +408,7 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setLineString(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                 }
-                case POLYGON_ORDINAL -> {
-                    sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
-                    parameterStartIndex++;
-                }
-                case GEOGRAPHY_POINT_ORDINAL -> {
-                    sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
-                    parameterStartIndex++;
-                }
-                case GEOGRAPHY_POLYGON_ORDINAL -> {
+                case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> {
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                 }
@@ -542,7 +534,7 @@ public class SqlgUtil {
                 //value
                 //key
                 //skip the label as that is not a property but the table
-                if (key == label || keys.contains((String)key)) {
+                if (key == label || keys.contains((String) key)) {
                     continue;
                 }
                 keys.add((String) key);
@@ -567,9 +559,8 @@ public class SqlgUtil {
      * @param keyValues  The key value pairs.
      * @return A Triple with 3 maps.
      */
-    public static Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues) {
+    public static Pair<Map<String, PropertyDefinition>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues) {
         Map<String, Object> resultAllValues = new LinkedHashMap<>();
-        Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
         Map<String, PropertyDefinition> keyPropertyTypeMap = new LinkedHashMap<>();
 
         if (keyValues.length % 2 != 0)
@@ -589,7 +580,6 @@ public class SqlgUtil {
                 ElementHelper.validateProperty(key, value);
                 sqlDialect.validateProperty(key, value);
                 if (value != null) {
-                    resultNotNullValues.put(key, value);
                     keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
                 } else {
                     keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.STRING));
@@ -597,12 +587,11 @@ public class SqlgUtil {
                 resultAllValues.put(key, value);
             }
         }
-        return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
+        return Pair.of(keyPropertyTypeMap, resultAllValues);
     }
 
-    public static Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
+    public static Pair<Map<String, PropertyDefinition>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
         Map<String, Object> resultAllValues = new LinkedHashMap<>();
-        Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
         Map<String, PropertyDefinition> keyPropertyTypeMap = new LinkedHashMap<>();
 
         if (keyValues.length % 2 != 0)
@@ -625,7 +614,6 @@ public class SqlgUtil {
                     sqlDialect.validateProperty(key, value);
                 }
                 if (value != null) {
-                    resultNotNullValues.put(key, value);
                     keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
                 } else {
                     keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.STRING));
@@ -637,7 +625,7 @@ public class SqlgUtil {
                 }
             }
         }
-        return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
+        return Pair.of(keyPropertyTypeMap, resultAllValues);
     }
 
     public static List<ImmutablePair<PropertyDefinition, Object>> transformToTypeAndValue(Map<String, Object> keyValues) {
@@ -1171,4 +1159,12 @@ public class SqlgUtil {
         };
     }
 
+    public static void validateIncomingPropertyType(PropertyType incomingPropertyType, PropertyType propertyType) {
+        switch (incomingPropertyType.ordinal()) {
+            case STRING_ORDINAL, VARCHAR_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+            case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+            default -> Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+        }
+
+    }
 }

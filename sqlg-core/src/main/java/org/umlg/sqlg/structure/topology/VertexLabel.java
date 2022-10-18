@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.util.SqlgUtil;
 import org.umlg.sqlg.util.ThreadLocalMap;
 
 import java.sql.Connection;
@@ -283,16 +284,6 @@ public class VertexLabel extends AbstractLabel {
         }
     }
 
-    Optional<EdgeLabel> getUncommittedOutEdgeLabel(String edgeLabelName) {
-        if (this.schema.getTopology().isSchemaChanged()) {
-            EdgeLabel edgeLabel = this.getUncommittedOutEdgeLabels().get(edgeLabelName);
-            if (edgeLabel != null) {
-                return Optional.of(edgeLabel);
-            }
-        }
-        return Optional.empty();
-    }
-
     void addToUncommittedInEdgeRoles(Schema schema, EdgeRole edgeRole) {
         this.uncommittedInEdgeRoles.put(schema.getName() + "." + edgeRole.getEdgeLabel().getLabel(), edgeRole);
     }
@@ -360,28 +351,6 @@ public class VertexLabel extends AbstractLabel {
      */
     public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyDefinition> properties, ListOrderedSet<String> identifiers) {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties, identifiers);
-    }
-
-    public EdgeLabel ensurePartitionedEdgeLabelExist(
-            final String edgeLabelName,
-            final VertexLabel inVertexLabel,
-            Map<String, PropertyDefinition> properties,
-            ListOrderedSet<String> identifiers,
-            PartitionType partitionType,
-            String partitionExpression,
-            boolean isForeignKeyPartition) {
-
-        return this.getSchema().ensurePartitionedEdgeLabelExist(
-                edgeLabelName,
-                this,
-                inVertexLabel,
-                properties,
-                identifiers,
-                partitionType,
-                partitionExpression,
-                isForeignKeyPartition,
-                EdgeDefinition.of(Multiplicity.of(0, -1), Multiplicity.of(0, -1))
-        );
     }
 
     public EdgeLabel ensurePartitionedEdgeLabelExist(
@@ -506,32 +475,38 @@ public class VertexLabel extends AbstractLabel {
 
     public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
         for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
-            if (!this.properties.containsKey(column.getKey())) {
+            PropertyType incomingPropertyType = column.getValue().propertyType();
+            PropertyColumn propertyColumn = this.properties.get(column.getKey());
+            if (propertyColumn == null) {
                 Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign VertexLabel!", this.label);
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
-                if (!this.uncommittedProperties.containsKey(column.getKey())) {
+                propertyColumn = this.uncommittedProperties.get(column.getKey());
+                if (propertyColumn == null) {
                     this.schema.getTopology().startSchemaChange();
                     if (getProperty(column.getKey()).isEmpty()) {
                         TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
-                        PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
+                        propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
                         this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
                     }
+                } else {
+                    //Set the proper definition in the map;
+                    SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
+                    columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
                 }
+            } else {
+                //Set the proper definition in the map;
+                SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
+                columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }
         }
     }
 
     public void ensureDistributed(int shardCount, PropertyColumn distributionPropertyColumn) {
         ensureDistributed(shardCount, distributionPropertyColumn, null);
-    }
-
-
-    public void ensureDistributed(PropertyColumn distributionPropertyColumn, AbstractLabel colocate) {
-        ensureDistributed(-1, distributionPropertyColumn, colocate);
     }
 
     private void createVertexLabelOnDb(Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers) {
@@ -1139,10 +1114,9 @@ public class VertexLabel extends AbstractLabel {
         if (!super.equals(other)) {
             return false;
         }
-        if (!(other instanceof VertexLabel)) {
+        if (!(other instanceof VertexLabel otherVertexLabel)) {
             return false;
         }
-        VertexLabel otherVertexLabel = (VertexLabel) other;
         return this.schema.equals(otherVertexLabel.getSchema()) && super.equals(otherVertexLabel);
     }
 
@@ -1304,7 +1278,6 @@ public class VertexLabel extends AbstractLabel {
             case BOTH -> throw new IllegalStateException("BOTH is not a supported direction");
             case IN -> edgeRole.getEdgeLabel().getInVertexLabels();
             case OUT -> edgeRole.getEdgeLabel().getOutVertexLabels();
-            default -> throw new IllegalStateException("Unknown direction!");
         };
         if (!inOutVertexLabels.contains(this)) {
             throw new IllegalStateException("Trying to remove a EdgeRole from a non owner VertexLabel");

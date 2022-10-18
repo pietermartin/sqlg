@@ -2,7 +2,6 @@ package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -32,7 +31,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param streaming       Indicates if the vertex is being streamed in. This only works if the transaction is in streaming mode.
      * @param schema          The database schema.
      * @param table           The table name.
-     * @param keyValueMapPair The properties.
+     * @param keyValueMap     The properties.
      */
     public SqlgVertex(
             SqlgGraph sqlgGraph,
@@ -40,10 +39,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             boolean streaming,
             String schema,
             String table,
-            Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+            Map<String, Object> keyValueMap) {
 
         super(sqlgGraph, schema, table);
-        insertVertex(temporary, streaming, keyValueMapPair);
+        insertVertex(temporary, streaming, keyValueMap);
     }
 
     SqlgVertex(SqlgGraph sqlgGraph, String table, Map<String, Object> keyValueMap) {
@@ -142,12 +141,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         } else {
             previousBatchModeKeys = Collections.emptyList();
         }
-        Triple<Map<String, PropertyDefinition>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
-        if (!complete && keyValueMapTriple.getRight().size() != keyValueMapTriple.getMiddle().size()) {
+        Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
+        if (!complete && keyValueMapPair.getRight().size() != keyValueMapPair.getRight().size()) {
             throw Property.Exceptions.propertyKeyCanNotBeNull();
         }
-        final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
-        final Map<String, PropertyDefinition> columns = keyValueMapTriple.getLeft();
+        final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
         Optional<VertexLabel> outVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.schema, this.table);
         Optional<VertexLabel> inVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(((SqlgVertex) inVertex).schema, ((SqlgVertex) inVertex).table);
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", this.schema + "." + this.table);
@@ -168,7 +166,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 label,
                 this,
                 (SqlgVertex) inVertex,
-                keyValueMapPair);
+                keyValueMapPair.getRight());
     }
 
     @SuppressWarnings("unchecked")
@@ -320,16 +318,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    private void insertVertex(boolean temporary, boolean streaming, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
-        Map<String, Object> keyAllValueMap = keyValueMapPair.getLeft();
-        Map<String, Object> keyNotNullValueMap = keyValueMapPair.getRight();
+    private void insertVertex(boolean temporary, boolean streaming, Map<String, Object> keyValueMap) {
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddVertex(temporary, streaming, keyAllValueMap);
+            internalBatchAddVertex(temporary, streaming, keyValueMap);
         } else {
-            internalAddVertex(temporary, keyNotNullValueMap);
+            internalAddVertex(temporary, keyValueMap);
         }
         //Cache the properties
-        this.properties.putAll(keyNotNullValueMap);
+        this.properties.putAll(keyValueMap);
     }
 
     private void internalBatchAddVertex(boolean temporary, boolean streaming, Map<String, Object> keyValueMap) {

@@ -1285,10 +1285,10 @@ public class Partition implements TopologyInf {
         VertexProperty<String> partitionType = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_TYPE);
         VertexProperty<String> partitionExpression = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION);
         Partition partition;
-        if (from.isPresent()) {
-            Preconditions.checkState(to.isPresent());
-            Preconditions.checkState(!in.isPresent());
-            if (partitionExpression.isPresent()) {
+        if (from.value() != null) {
+            Preconditions.checkState(to.value() != null);
+            Preconditions.checkState(in.value() == null);
+            if (partitionExpression.value() != null) {
                 PartitionType partitionType1 = PartitionType.from(partitionType.value());
                 Preconditions.checkState(!partitionType1.isNone());
                 partition = new Partition(
@@ -1312,10 +1312,10 @@ public class Partition implements TopologyInf {
                         null);
 
             }
-        } else if (in.isPresent()) {
-            Preconditions.checkState(!to.isPresent());
-            Preconditions.checkState(!from.isPresent());
-            if (partitionExpression.isPresent()) {
+        } else if (in.value() != null) {
+            Preconditions.checkState(to.value() == null);
+            Preconditions.checkState(from.value() == null);
+            if (partitionExpression.value() != null) {
                 PartitionType partitionType1 = PartitionType.from(partitionType.value());
                 Preconditions.checkState(!partitionType1.isNone());
                 partition = new Partition(
@@ -1337,9 +1337,9 @@ public class Partition implements TopologyInf {
                         null);
             }
         } else {
-            Preconditions.checkState(modulus.isPresent());
-            Preconditions.checkState(remainder.isPresent());
-            if (partitionExpression.isPresent()) {
+            Preconditions.checkState(modulus.value() != null);
+            Preconditions.checkState(remainder.value() != null);
+            if (partitionExpression.value() != null) {
                 PartitionType partitionType1 = PartitionType.from(partitionType.value());
                 Preconditions.checkState(!partitionType1.isNone());
                 partition = new Partition(

@@ -49,7 +49,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
 
     @Override
     public boolean isPresent() {
-        return this.value != null;
+        return true;
     }
 
     @Override
@@ -76,8 +76,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
                 abstractLabel = this.sqlgGraph.getTopology().getSchema(this.element.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found.", this.element.schema)))
                         .getEdgeLabel(this.element.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found.", this.element.table)));
             }
-
-            PropertyType propertyType = PropertyType.from(value);
+            PropertyType propertyType = abstractLabel.getProperty(this.key).orElseThrow().getPropertyDefinition().propertyType();
             String[] postfixes = propertyType.getPostFixes();
 
             StringBuilder sql = new StringBuilder("UPDATE ");

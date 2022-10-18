@@ -31,6 +31,7 @@ import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Date;
@@ -147,42 +148,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @SuppressWarnings("Duplicates")
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BYTE_ARRAY_ORDINAL:
-            case byte_ARRAY_ORDINAL:
-                return "bytea";
-            case boolean_ARRAY_ORDINAL:
-            case BOOLEAN_ARRAY_ORDINAL:
-                return "bool";
-            case SHORT_ARRAY_ORDINAL:
-            case short_ARRAY_ORDINAL:
-                return "int2";
-            case INTEGER_ARRAY_ORDINAL:
-            case int_ARRAY_ORDINAL:
-                return "int4";
-            case LONG_ARRAY_ORDINAL:
-            case long_ARRAY_ORDINAL:
-                return "int8";
-            case FLOAT_ARRAY_ORDINAL:
-            case float_ARRAY_ORDINAL:
-                return "float4";
-            case double_ARRAY_ORDINAL:
-            case DOUBLE_ARRAY_ORDINAL:
-                return "float8";
-            case STRING_ARRAY_ORDINAL:
-                return "text";
-            case LOCALDATETIME_ARRAY_ORDINAL:
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return "timestamp";
-            case LOCALDATE_ARRAY_ORDINAL:
-                return "date";
-            case LOCALTIME_ARRAY_ORDINAL:
-                return "time";
-            case JSON_ARRAY_ORDINAL:
-                return "jsonb";
-            default:
-                throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
-        }
+        return switch (propertyType.ordinal()) {
+            case BYTE_ARRAY_ORDINAL, byte_ARRAY_ORDINAL -> "bytea";
+            case boolean_ARRAY_ORDINAL, BOOLEAN_ARRAY_ORDINAL -> "bool";
+            case SHORT_ARRAY_ORDINAL, short_ARRAY_ORDINAL -> "int2";
+            case INTEGER_ARRAY_ORDINAL, int_ARRAY_ORDINAL -> "int4";
+            case LONG_ARRAY_ORDINAL, long_ARRAY_ORDINAL -> "int8";
+            case FLOAT_ARRAY_ORDINAL, float_ARRAY_ORDINAL -> "float4";
+            case double_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, BIG_DECIMAL_ARRAY_ORDINAL -> "float8";
+            case STRING_ARRAY_ORDINAL -> "text";
+            case LOCALDATETIME_ARRAY_ORDINAL, ZONEDDATETIME_ARRAY_ORDINAL -> "timestamp";
+            case LOCALDATE_ARRAY_ORDINAL -> "date";
+            case LOCALTIME_ARRAY_ORDINAL -> "time";
+            case JSON_ARRAY_ORDINAL -> "jsonb";
+            default -> throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
+        };
     }
 
     @SuppressWarnings("Duplicates")
@@ -429,7 +409,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     private void appendSqlValue(StringBuilder sql, Object value, PropertyType propertyType) {
         switch (propertyType.ordinal()) {
             case BOOLEAN_ORDINAL:
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null::boolean");
+                }
+                break;
             case DOUBLE_ORDINAL:
+            case BIG_DECIMAL_ORDINAL:
             case FLOAT_ORDINAL:
             case LONG_ORDINAL:
             case INTEGER_ORDINAL:
@@ -438,7 +425,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 if (value != null) {
                     sql.append(value);
                 } else {
-                    sql.append("null");
+                    sql.append("null::int");
                 }
                 break;
             case VARCHAR_ORDINAL:
@@ -457,7 +444,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(value);
                     sql.append("'::TIMESTAMP");
                 } else {
-                    sql.append("null");
+                    sql.append("null::TIMESTAMP");
                 }
                 break;
             case LOCALDATE_ORDINAL:
@@ -466,7 +453,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(value);
                     sql.append("'::DATE");
                 } else {
-                    sql.append("null");
+                    sql.append("null::DATE");
                 }
                 break;
             case LOCALTIME_ORDINAL:
@@ -475,7 +462,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(Time.valueOf((LocalTime) value));
                     sql.append("'::TIME");
                 } else {
-                    sql.append("null");
+                    sql.append("null::TIME");
                 }
                 break;
             case ZONEDDATETIME_ORDINAL:
@@ -490,7 +477,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(timeZone.getID());
                     sql.append("'");
                 } else {
-                    sql.append("null,null");
+                    sql.append("null::TIMESTAMP,null::TEXT");
                 }
                 break;
             case DURATION_ORDINAL:
@@ -503,7 +490,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(duration.getNano());
                     sql.append("'::INTEGER");
                 } else {
-                    sql.append("null,null");
+                    sql.append("null::BIGINT,null::INTEGER");
                 }
                 break;
             case PERIOD_ORDINAL:
@@ -519,7 +506,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(period.getDays());
                     sql.append("'::INTEGER");
                 } else {
-                    sql.append("null,null,null");
+                    sql.append("null::INTEGER,null::INTEGER,null::INTEGER");
                 }
                 break;
             case JSON_ORDINAL:
@@ -528,7 +515,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append(escapeQuotes(value));
                     sql.append("'::JSONB");
                 } else {
-                    sql.append("null");
+                    sql.append("null::JSONB");
                 }
                 break;
             case boolean_ARRAY_ORDINAL:
@@ -717,6 +704,22 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     for (Double d : doubleArray) {
                         sql.append(d);
                         if (countDoubleArray++ < doubleArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
+                }
+                break;
+            case BIG_DECIMAL_ARRAY_ORDINAL:
+                if (value != null) {
+                    sql.append("'{");
+                    BigDecimal[] bigDecimalArray = (BigDecimal[]) value;
+                    int countBigDecimalArray = 1;
+                    for (BigDecimal d : bigDecimalArray) {
+                        sql.append(d);
+                        if (countBigDecimalArray++ < bigDecimalArray.length) {
                             sql.append(",");
                         }
                     }
@@ -1025,11 +1028,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 }
                 int countProperties = 1;
                 for (String key : keys) {
-                    Object value = properties.get(key);
-                    if (value == null) {
-                        if (sqlgElement.property(key).isPresent()) {
-                            value = sqlgElement.value(key);
-                        }
+                    Object value;
+                    if (properties.containsKey(key)) {
+                        value = properties.get(key);
+                    } else {
+                        //missing properties are set to their existing value
+                        value = sqlgElement.value(key);
                     }
                     PropertyDefinition propertyDefinition = keyPropertyDefinitionMap.get(key);
                     appendSqlValue(sql, value, propertyDefinition.propertyType());
@@ -1701,6 +1705,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LONG_ORDINAL -> new String[]{"BIGINT"};
             case FLOAT_ORDINAL -> new String[]{"REAL"};
             case DOUBLE_ORDINAL -> new String[]{"DOUBLE PRECISION"};
+            case BIG_DECIMAL_ORDINAL -> new String[]{"DOUBLE PRECISION"};
             case LOCALDATE_ORDINAL -> new String[]{"DATE"};
             case LOCALDATETIME_ORDINAL -> new String[]{"TIMESTAMP"};
             case ZONEDDATETIME_ORDINAL -> new String[]{"TIMESTAMP", "TEXT"};
@@ -1735,6 +1740,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LONG_ARRAY_ORDINAL -> new String[]{"BIGINT[]"};
             case FLOAT_ARRAY_ORDINAL -> new String[]{"REAL[]"};
             case DOUBLE_ARRAY_ORDINAL -> new String[]{"DOUBLE PRECISION[]"};
+            case BIG_DECIMAL_ARRAY_ORDINAL -> new String[]{"DOUBLE PRECISION[]"};
             case JSON_ARRAY_ORDINAL -> new String[]{"JSONB[]"};
             case VARCHAR_ORDINAL -> new String[]{"VARCHAR(" + propertyType.getLength() + ")"};
             case UUID_ORDINAL -> new String[]{"UUID"};
@@ -1834,6 +1840,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LONG_ORDINAL -> new int[]{Types.BIGINT};
             case FLOAT_ORDINAL -> new int[]{Types.REAL};
             case DOUBLE_ORDINAL -> new int[]{Types.DOUBLE};
+            case BIG_DECIMAL_ORDINAL -> new int[]{Types.DOUBLE};
             case STRING_ORDINAL -> new int[]{Types.CLOB};
             case LOCALDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP};
             case LOCALDATE_ORDINAL -> new int[]{Types.DATE};
@@ -1857,6 +1864,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case FLOAT_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case double_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case DOUBLE_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
+            case BIG_DECIMAL_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case STRING_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case LOCALDATETIME_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case LOCALDATE_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
@@ -1873,6 +1881,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     public void validateProperty(Object key, Object value) {
         if (key instanceof String && ((String) key).length() > 63) {
             validateColumnName((String) key);
+        }
+        if (value == null) {
+            return;
         }
         if (value instanceof String) {
             return;
@@ -1932,6 +1943,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             return;
         }
         if (value instanceof UUID) {
+            return;
+        }
+        if (value instanceof BigDecimal) {
             return;
         }
         if (value instanceof byte[]) {
@@ -2004,6 +2018,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             return;
         }
         if (value instanceof JsonNode[]) {
+            return;
+        }
+        if (value instanceof BigDecimal[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -3012,6 +3029,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 case FLOAT_ARRAY_ORDINAL:
                 case double_ARRAY_ORDINAL:
                 case DOUBLE_ARRAY_ORDINAL:
+                case BIG_DECIMAL_ARRAY_ORDINAL:
                 case boolean_ARRAY_ORDINAL:
                 case BOOLEAN_ARRAY_ORDINAL:
                 case LOCALDATETIME_ARRAY_ORDINAL:
@@ -3048,6 +3066,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
             case DOUBLE_ARRAY_ORDINAL:
                 return array.getArray();
+            case BIG_DECIMAL_ARRAY_ORDINAL:
+                return SqlgUtil.convertObjectOfDoublesArrayToBigDecimalArray((Object[]) array.getArray());
             case double_ARRAY_ORDINAL:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
             case FLOAT_ARRAY_ORDINAL:

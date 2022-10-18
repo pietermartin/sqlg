@@ -712,8 +712,8 @@ public abstract class AbstractLabel implements TopologyInf {
                                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER),
                                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER)
                         ),
-                        defaultLiteralProperty.isPresent() ? defaultLiteralProperty.value() : null,
-                        checkConstraintProperty.isPresent() ? checkConstraintProperty.value() : null
+                        defaultLiteralProperty.value(),
+                        checkConstraintProperty.value()
                 )
         );
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
@@ -756,11 +756,11 @@ public abstract class AbstractLabel implements TopologyInf {
         VertexProperty<String> partitionType = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_TYPE);
         VertexProperty<String> partitionExpression = partitionVertex.property(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION);
         Partition partition;
-        if (from.isPresent()) {
-            Preconditions.checkState(to.isPresent());
-            Preconditions.checkState(!in.isPresent());
-            Preconditions.checkState(!modulus.isPresent());
-            Preconditions.checkState(!remainder.isPresent());
+        if (from.value() != null) {
+            Preconditions.checkState(to.value() != null);
+            Preconditions.checkState(in.value() == null);
+            Preconditions.checkState(modulus.value() == null);
+            Preconditions.checkState(remainder.value() == null);
             partition = new Partition(
                     this.sqlgGraph,
                     this,
@@ -768,22 +768,22 @@ public abstract class AbstractLabel implements TopologyInf {
                     from.value(),
                     to.value(),
                     PartitionType.from(partitionType.value()),
-                    partitionExpression.isPresent() ? partitionExpression.value() : null);
-        } else if (in.isPresent()) {
-            Preconditions.checkState(in.isPresent());
-            Preconditions.checkState(!to.isPresent());
-            Preconditions.checkState(!modulus.isPresent());
-            Preconditions.checkState(!remainder.isPresent());
+                    partitionExpression.value());
+        } else if (in.value() != null) {
+            Preconditions.checkState(in.value() != null);
+            Preconditions.checkState(to.value() == null);
+            Preconditions.checkState(modulus.value() == null);
+            Preconditions.checkState(remainder.value() == null);
             partition = new Partition(
                     this.sqlgGraph,
                     this,
                     partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME),
                     in.value(),
                     PartitionType.from(partitionType.value()),
-                    partitionExpression.isPresent() ? partitionExpression.value() : null);
+                    partitionExpression.value());
         } else {
-            Preconditions.checkState(modulus.isPresent());
-            Preconditions.checkState(remainder.isPresent());
+            Preconditions.checkState(modulus.value() != null);
+            Preconditions.checkState(remainder.value() != null);
             partition = new Partition(
                     this.sqlgGraph,
                     this,
@@ -791,7 +791,7 @@ public abstract class AbstractLabel implements TopologyInf {
                     modulus.value(),
                     remainder.value(),
                     PartitionType.from(partitionType.value()),
-                    partitionExpression.isPresent() ? partitionExpression.value() : null);
+                    partitionExpression.value());
         }
         this.partitions.put(partitionVertex.value(SQLG_SCHEMA_PARTITION_NAME), partition);
         return partition;

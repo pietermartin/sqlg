@@ -47,7 +47,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             String table,
             SqlgVertex outVertex,
             SqlgVertex inVertex,
-            Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
+            Map<String, Object> keyValueMapPair) {
 
         super(sqlgGraph, schema, table);
         this.outVertex = outVertex;
@@ -124,16 +124,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
         return StringFactory.edgeString(this);
     }
 
-    private void insertEdge(boolean complete, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) throws SQLException {
-        Map<String, Object> allKeyValueMap = keyValueMapPair.getLeft();
-        Map<String, Object> notNullKeyValueMap = keyValueMapPair.getRight();
+    private void insertEdge(boolean complete, Map<String, Object> keyValueMap) throws SQLException {
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddEdge(complete, allKeyValueMap);
+            internalBatchAddEdge(complete, keyValueMap);
         } else {
-            internalAddEdge(notNullKeyValueMap);
+            internalAddEdge(keyValueMap);
         }
         //Cache the properties
-        this.properties.putAll(notNullKeyValueMap);
+        this.properties.putAll(keyValueMap);
     }
 
     private void internalBatchAddEdge(boolean streaming, Map<String, Object> keyValueMap) {

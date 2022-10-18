@@ -1193,7 +1193,7 @@ public class Schema implements TopologyInf {
                 } else {
                     vertexLabel = new VertexLabel(this, tableName);
                 }
-                if (shardCount.isPresent()) {
+                if (shardCount.value() != null) {
                     vertexLabel.setShardCount(shardCount.value());
                 }
                 this.vertexLabels.put(schemaName + "." + VERTEX_PREFIX + tableName, vertexLabel);
@@ -1312,14 +1312,14 @@ public class Schema implements TopologyInf {
                     if (partitionType.isNone()) {
                         edgeLabel = EdgeLabel.loadFromDb(vertexLabel.getSchema().getTopology(), edgeLabelName);
                     } else {
-                        Preconditions.checkState(partitionExpression.isPresent());
+                        Preconditions.checkState(partitionExpression.value() != null);
                         edgeLabel = EdgeLabel.loadFromDb(vertexLabel.getSchema().getTopology(), edgeLabelName, partitionType, partitionExpression.value());
                     }
                     Property<Long> lowerMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY);
                     Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
                     Property<Boolean> uniqueProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UNIQUE);
                     Multiplicity multiplicity;
-                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent() && uniqueProperty.isPresent()) {
+                    if (lowerMultiplicityProperty.value() != null && upperMultiplicityProperty.value() != null && uniqueProperty.value() != null) {
                         multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value(), uniqueProperty.value());
                     } else {
                         multiplicity = Multiplicity.of(0, -1);
@@ -1331,14 +1331,14 @@ public class Schema implements TopologyInf {
                     Property<Long> upperMultiplicityProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY);
                     Property<Boolean> uniqueProperty = outEdge.property(SQLG_SCHEMA_OUT_EDGES_UNIQUE);
                     Multiplicity multiplicity;
-                    if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent() && uniqueProperty.isPresent()) {
+                    if (lowerMultiplicityProperty.value() != null && upperMultiplicityProperty.value() != null && uniqueProperty.value() != null) {
                         multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value(), uniqueProperty.value());
                     } else {
                         multiplicity = Multiplicity.of(0, -1);
                     }
                     vertexLabel.addToOutEdgeRoles(schemaName, new EdgeRole(vertexLabel, edgeLabel, Direction.OUT, true, multiplicity));
                 }
-                if (shardCount.isPresent()) {
+                if (shardCount.value() != null) {
                     edgeLabel.setShardCount(shardCount.value());
                 }
                 if (edgePropertyPartitionVertex != null) {
@@ -1516,7 +1516,7 @@ public class Schema implements TopologyInf {
                 Property<Long> upperMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY);
                 Property<Boolean> uniqueMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UNIQUE);
                 Multiplicity multiplicity;
-                if (lowerMultiplicityProperty.isPresent() && upperMultiplicityProperty.isPresent() && uniqueMultiplicityProperty.isPresent()) {
+                if (lowerMultiplicityProperty.value() != null && upperMultiplicityProperty.value() != null && uniqueMultiplicityProperty.value() != null) {
                     multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value(), uniqueMultiplicityProperty.value());
                 } else {
                     multiplicity = Multiplicity.of(0, -1);
