@@ -51,7 +51,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     private Map<SchemaTable, List<Pair<RecordId.ID, Long>>> schemaTableParentIds = new LinkedHashMap<>();
 
     private final List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
-    private ReplacedStepTree replacedStepTree;
+    private ReplacedStepTree<?, ?> replacedStepTree;
 
     private Emit<E> toEmit = null;
     private ListIterator<List<Emit<E>>> elementIterator;
@@ -66,7 +66,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     private boolean hasAggregateFunction;
 
     private Traverser.Admin<E> currentHead;
-    private boolean isSqlgLocalStepBarrierChild;
+    private final boolean isSqlgLocalStepBarrierChild;
     private boolean first = true;
     private boolean hasStarts = false;
 
@@ -103,7 +103,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
             if (!this.eagerLoad && (this.elementIterator != null)) {
                 if (this.elementIterator.hasNext()) {
                     this.traversers.clear();
-                    this.traversersListIterator = internalLoad();
+                    this.traversersListIterator = internalLoad(this.elementIterator);
                 }
             }
             if (this.traversersListIterator != null && this.traversersListIterator.hasNext()) {
@@ -114,24 +114,36 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 }
                 return emit.getTraverser();
             } else {
-                Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entries().iterator();
-                if (schemaTableIteratorEntry.hasNext()) {
-                    this.elementIterator = schemaTableIteratorEntry.next().getValue();
-                    schemaTableIteratorEntry.remove();
-                    if (this.eagerLoad) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("eager load is true");
+                if (this.eagerLoad) {
+                    if (!this.schemaTableElements.isEmpty()) {
+                        this.traversers.clear();
+                        for (Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>> entry : this.schemaTableElements.entries()) {
+                            ListIterator<List<Emit<E>>> values = entry.getValue();
+                            eagerLoad(values);
                         }
-                        eagerLoad();
+                        this.schemaTableElements.clear();
                         Collections.sort(this.traversers);
                         this.traversersListIterator = this.traversers.listIterator();
-                    }
-                    this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
-                } else {
-                    if (!this.starts.hasNext()) {
-                        throw FastNoSuchElementException.instance();
+                        this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                     } else {
-                        throw new IllegalStateException("BUG: this should never happen.");
+                        if (!this.starts.hasNext()) {
+                            throw FastNoSuchElementException.instance();
+                        } else {
+                            throw new IllegalStateException("BUG: this should never happen.");
+                        }
+                    }
+                } else {
+                    Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entries().iterator();
+                    if (schemaTableIteratorEntry.hasNext()) {
+                        this.elementIterator = schemaTableIteratorEntry.next().getValue();
+                        schemaTableIteratorEntry.remove();
+                        this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
+                    } else {
+                        if (!this.starts.hasNext()) {
+                            throw FastNoSuchElementException.instance();
+                        } else {
+                            throw new IllegalStateException("BUG: this should never happen.");
+                        }
                     }
                 }
             }
@@ -166,16 +178,15 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
     }
 
     //B_LP_O_P_S_SE_SL_Traverser
-    private void eagerLoad() {
-        this.traversers.clear();
-        while (this.elementIterator.hasNext()) {
+    private void eagerLoad(ListIterator<List<Emit<E>>> elementIterator) {
+        while (elementIterator.hasNext()) {
             //can ignore the result as the result gets sorted before the iterator is set.
-            internalLoad();
+            internalLoad(elementIterator);
         }
     }
 
-    private ListIterator<Emit<E>> internalLoad() {
-        List<Emit<E>> emits = this.elementIterator.next();
+    private ListIterator<Emit<E>> internalLoad(ListIterator<List<Emit<E>>> elementIterator) {
+        List<Emit<E>> emits = elementIterator.next();
         if (this.isSqlgLocalStepBarrierChild || !this.hasAggregateFunction) {
             Emit<E> emitToGetEmit = emits.get(0);
             Traverser.Admin<E> head = this.startIndexTraverserAdminMap.get(emitToGetEmit.getParentIndex());
@@ -186,7 +197,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
             if (this.currentHead != null && !this.currentHead.equals(head)) {
                 for (Object step : getTraversal().getSteps()) {
                     if ((step instanceof SqlgGroupStep)) {
-                        ((Step<?, ?>)step).reset();
+                        ((Step<?, ?>) step).reset();
                     }
                 }
             }
@@ -267,6 +278,9 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
                 }
             }
             this.schemaTableElements.put(schemaTable, elements(schemaTable, rootSchemaTableTree));
+        }
+        if (this.heads.size() > 1 && this.replacedStepTree.hasOrderBy()) {
+            setEagerLoad(true);
         }
     }
 

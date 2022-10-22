@@ -59,6 +59,7 @@ import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.*;
 import org.umlg.sqlg.test.topology.edgeMultiplicity.*;
 import org.umlg.sqlg.test.topology.propertydefinition.*;
+import org.umlg.sqlg.test.tpfeature.TestTinkerPopFeatureTests;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestMultipleIDQuery;
@@ -84,7 +85,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestDeletedVertex.class,
         TestEdgeCreation.class,
         TestEdgeToDifferentLabeledVertexes.class,
-        TestGetById.class,
         TestHas.class,
         TestHasLabelAndId.class,
         TestLoadArrayProperties.class,
@@ -303,7 +303,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestEdgeMultiplicityDistributed.class,
         TestMultiplicityAddRemoveEdgeUserDefinedID.class,
         TestEdgeMultiplicityUnique.class,
-        TestEdgeMultiplicityUniqueDistributed.class
+        TestEdgeMultiplicityUniqueDistributed.class,
+        TestTinkerPopFeatureTests.class
 })
 public class AllTest {
 
