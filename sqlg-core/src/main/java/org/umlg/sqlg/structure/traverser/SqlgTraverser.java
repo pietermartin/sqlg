@@ -37,20 +37,6 @@ public class SqlgTraverser<T> extends B_LP_NL_O_P_S_SE_SL_Traverser<T> implement
         }
     }
 
-//    @Override
-//    public <R> Traverser.Admin<R> split(final R r, final Step<T, R> step) {
-//        final SqlgTraverser<R> clone = (SqlgTraverser<R>) super.split(r, step);
-//        clone.path = clone.path.clone().extend(r, step.getLabels());
-//        return clone;
-//    }
-//
-//    @Override
-//    public Traverser.Admin<T> split() {
-//        final SqlgTraverser<T> clone = (SqlgTraverser<T>) super.split();
-//        clone.path = clone.path.clone();
-//        return clone;
-//    }
-
     @Override
     public void merge(final Traverser.Admin<?> other) {
         if (this.requiresOneBulk) {
