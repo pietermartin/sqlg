@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.WithOptions;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalProduct;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalRing;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -69,8 +70,16 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
             }
         }
         if (!traversalRing.isEmpty()) {
-            for (final Object key : map.keySet()) {
-                map.compute(key, (k, v) -> TraversalUtil.applyNullable(v, (Traversal.Admin) this.traversalRing.next()));
+            final Set<Object> keys = new HashSet<>(map.keySet());
+            for (final Object key : keys) {
+                map.compute(key, (k, v) -> {
+                    TraversalProduct traversalProduct = TraversalUtil.produce(v, (Traversal.Admin) this.traversalRing.next());
+                    if (traversalProduct.isProductive()) {
+                        return traversalProduct.get();
+                    } else {
+                        return null;
+                    }
+                });
             }
             this.traversalRing.reset();
         }
