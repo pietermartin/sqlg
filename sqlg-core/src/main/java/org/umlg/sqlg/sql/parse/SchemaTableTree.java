@@ -2908,6 +2908,7 @@ public class SchemaTableTree {
     public boolean shouldSelectProperty(String property) {
         // no restriction
         if (getRoot().eagerLoad) {
+            //this is set to true for in-memory order by clauses where the property being ordered on needs to be in the result-set.
             return true;
         } else if (this.getAggregateFunction() != null && this.getAggregateFunction().getLeft().equals(GraphTraversal.Symbols.count)) {
             if (this.groupBy == null || this.groupBy.contains(T.label.getAccessor())) {
