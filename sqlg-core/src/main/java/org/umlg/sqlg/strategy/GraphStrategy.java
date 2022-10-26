@@ -15,12 +15,10 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.UUID;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -107,7 +105,7 @@ public class GraphStrategy extends BaseStrategy {
             Object[] transformedIds = new Object[ids.length];
             for (int i = 0; i < ids.length; i++) {
                 if (ids[i] == null) {
-                    transformedIds[i] = RecordId.from(SchemaTable.of("fake", UUID.randomUUID().toString()), 0L);
+                    transformedIds[i] = RecordId.fake();
                 } else {
                     transformedIds[i] = ids[i];
                 }
