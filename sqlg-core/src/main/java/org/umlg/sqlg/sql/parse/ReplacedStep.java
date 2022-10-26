@@ -90,8 +90,8 @@ public class ReplacedStep<S, E> {
      * @param topology A reference to the topology
      * @return The ReplacedStep
      */
-    public static ReplacedStep from(Topology topology) {
-        ReplacedStep replacedStep = new ReplacedStep<>();
+    public static <S, E> ReplacedStep<S, E> from(Topology topology) {
+        ReplacedStep<S, E> replacedStep = new ReplacedStep<>();
         replacedStep.step = null;
         replacedStep.labels = new HashSet<>();
         replacedStep.topology = topology;
@@ -99,8 +99,8 @@ public class ReplacedStep<S, E> {
         return replacedStep;
     }
 
-    public static <S, E> ReplacedStep from(Topology topology, AbstractStep<S, E> step, int pathCount) {
-        ReplacedStep replacedStep = new ReplacedStep<>();
+    public static <S, E> ReplacedStep<S, E> from(Topology topology, AbstractStep<S, E> step, int pathCount) {
+        ReplacedStep<S, E> replacedStep = new ReplacedStep<>();
         replacedStep.step = step;
         replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
         replacedStep.topology = topology;
@@ -470,8 +470,8 @@ public class ReplacedStep<S, E> {
     Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph, int replacedStepDepth) {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         Set<SchemaTableTree> result = new HashSet<>();
-        final GraphStep graphStep = (GraphStep) this.step;
-        @SuppressWarnings("unchecked") final boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
+        final GraphStep<S, Element> graphStep = (GraphStep<S, Element>) this.step;
+        final boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
         final boolean isEdge = !isVertex;
 
         //RecordIds grouped by SchemaTable
@@ -630,8 +630,6 @@ public class ReplacedStep<S, E> {
     /**
      * Groups the idHasContainers by SchemaTable.
      * Each SchemaTable has a list representing the idHasContainers with the relevant BiPredicate and RecordId
-     *
-     * @return
      */
     private Map<SchemaTable, List<Multimap<BiPredicate<?, ?>, RecordId>>> groupIdsBySchemaTable() {
         Map<SchemaTable, List<Multimap<BiPredicate<?, ?>, RecordId>>> result = new HashMap<>();
@@ -642,7 +640,7 @@ public class ReplacedStep<S, E> {
             P<Object> idPredicate = (P<Object>) idHasContainer.getPredicate();
             BiPredicate<?, ?> biPredicate = idHasContainer.getBiPredicate();
             //This is statement is for g.V().hasId(Collection) where the logic is actually P.within not P.eq
-            if (biPredicate == Compare.eq && idPredicate.getValue() instanceof Collection && ((Collection) idPredicate.getValue()).size() > 1) {
+            if (biPredicate == Compare.eq && idPredicate.getValue() instanceof Collection && ((Collection<?>) idPredicate.getValue()).size() > 1) {
                 biPredicate = Contains.within;
             }
             Multimap<BiPredicate<?, ?>, RecordId> biPredicateRecordIdMultimap;
@@ -653,7 +651,7 @@ public class ReplacedStep<S, E> {
                 for (Object id : ids) {
                     RecordId recordId;
                     if (id == null) {
-                        recordId = RecordId.from(SchemaTable.of("fake", UUID.randomUUID().toString()), 0L);
+                        recordId = RecordId.fake();
                     } else {
                         recordId = RecordId.from(id);
                     }
@@ -749,7 +747,7 @@ public class ReplacedStep<S, E> {
                     RecordId recordId = RecordId.from(id);
                     idLabels.add(recordId.getSchemaTable().toString());
                 } else if (id == null) {
-                    RecordId recordId = RecordId.from(SchemaTable.of("fake", UUID.randomUUID().toString()), 0L);
+                    RecordId recordId = RecordId.fake();
                     idLabels.add(recordId.getSchemaTable().toString());
                 } else {
                     throw new IllegalStateException("id must be an Element or a RecordId, found " + id.getClass().toString());

@@ -65,6 +65,9 @@ public class RecordId implements KryoSerializable, Comparable {
     public static List<RecordId> from(SqlgGraph sqlgGraph, Object... elementId) {
         List<RecordId> result = new ArrayList<>(elementId.length);
         for (Object o : elementId) {
+            if (o == null) {
+                o = RecordId.fake();
+            }
             if (o instanceof RecordId) {
                 result.add((RecordId) o);
             } else {
@@ -146,6 +149,10 @@ public class RecordId implements KryoSerializable, Comparable {
             }
         }
         return RecordId.from(schemaTable, identifierValues);
+    }
+
+    public static RecordId fake() {
+        return RecordId.from(SchemaTable.of("fake", UUID.randomUUID().toString()), 0L);
     }
 
     public static RecordId from(Object vertexId) {
