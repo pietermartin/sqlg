@@ -53,15 +53,34 @@ public class PostgresFeatureTest {
 
 
     private final static Set<String> OPT_IN = Set.of(
-//            "g_VXv1X_hasXage_gt_30X", "g_V_hasLabelXpersonX_asXp1X_chooseXoutEXknowsX__outXknowsXX_asXp2X_selectXp1_p2X_byXnameX"
-            "g_VX1X_outE_hasXweight_inside_0_06X_inV"
+//            "g_V_repeatXoutX_timesX8X_count"
+//            "g_injectX1X_VX1_nullX"
+//            "g_V_playlist_paths"
+//            g_V_shortestpath
     );
 
-    private final static Map<String, String> OPT_OUT = Map.of(
-            "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX", "To slow",
-            "g_VX3X_repeatXbothX_createdXX_untilXloops_is_40XXemit_repeatXin_knowsXX_emit_loopsXisX1Xdedup_values", "To slow",
-            "g_V_repeatXoutX_timesX8X_count", "To slow",
-            "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count", "To slow"
+    private final static Map<String, String> OPT_OUT = Map.ofEntries(
+            Map.entry("g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX", "To slow"),
+            Map.entry("g_VX3X_repeatXbothX_createdXX_untilXloops_is_40XXemit_repeatXin_knowsXX_emit_loopsXisX1Xdedup_values", "To slow"),
+            Map.entry("g_V_repeatXoutX_timesX8X_count", "To slow"),
+            Map.entry("g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count", "To slow"),
+            Map.entry("g_V_repeatXout_repeatXoutX_timesX1XX_timesX1X_limitX1X_path_by_name", "TINKERPOP-2816"),
+            Map.entry("g_V_both_both_dedup_byXoutE_countX_name", "TINKERPOP-2816"),
+            Map.entry("g_V_playlist_paths", "TINKERPOP-2816"),
+            Map.entry("g_withStrategiesXReadOnlyStrategyX_addVXpersonX_fromXVX1XX_toXVX2XX", "TINKERPOP-2816"),
+            Map.entry("g_withStrategiesXReadOnlyStrategyX_V_addVXpersonX_fromXVX1XX", "TINKERPOP-2816"),
+            Map.entry("g_withSideEffectXa_g_VX2XX_VX1X_out_whereXneqXaXX", "unknown"),
+            Map.entry("g_V_shortestpath", "too complex to bother"),
+            Map.entry("g_V_order_byXlangX_count", "discord question"),
+            Map.entry("g_V_order_byXnoX_count", "discord question"),
+            Map.entry("g_V_order_byXageX", "discord question"),
+            Map.entry("g_withStrategiesXProductiveByStrategyX_V_groupCount_byXageX", "discord question"),
+            Map.entry("InjectX1dX_orXfalse_errorX", "GremlinTypeErrorException"),
+            Map.entry("InjectX1dX_orXerror_trueX", "GremlinTypeErrorException"),
+            Map.entry("InjectX1dX_orXerror_falseX", "GremlinTypeErrorException"),
+            Map.entry("InjectX1dX_orXerror_errorX", "GremlinTypeErrorException"),
+            Map.entry("InjectX1dX_notXerrorX", "GremlinTypeErrorException"),
+            Map.entry("g_injectX10_20_null_20_10_10X_groupCountXxX_dedup_asXyX_projectXa_bX_by_byXselectXxX_selectXselectXyXXX", "Sqlg, requires a barrier step after the groupCount. //TODO a SqlgGroupCountStep one day")
     );
 
     private static void readIntoGraph(final Graph graph, final GraphData graphData) {
