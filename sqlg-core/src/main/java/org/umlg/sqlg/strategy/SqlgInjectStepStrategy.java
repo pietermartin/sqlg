@@ -10,6 +10,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.List;
 
+@SuppressWarnings("resource")
 public class SqlgInjectStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     public SqlgInjectStepStrategy() {
@@ -37,9 +38,4 @@ public class SqlgInjectStepStrategy extends AbstractTraversalStrategy<TraversalS
         }
     }
 
-//    @Override
-//    public Set<Class<? extends OptimizationStrategy>> applyPrior() {
-//        return Stream.of(
-//        ).collect(Collectors.toSet());
-//    }
 }
