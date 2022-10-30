@@ -194,6 +194,8 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                         this.comparatorValues.add(Pair.with(new Random().nextInt(), Order.asc));
                     } else if (traversal instanceof ValueTraversal) {
                         ValueTraversal elementValueTraversal = (ValueTraversal) traversal;
+                        //Fat discussion with Stephan regarding this.
+                        //TinkerPop allows ordering on bs fields. Sqlg does not.
                         this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
                     } else if (traversal instanceof TokenTraversal) {
                         TokenTraversal tokenTraversal = (TokenTraversal) traversal;
