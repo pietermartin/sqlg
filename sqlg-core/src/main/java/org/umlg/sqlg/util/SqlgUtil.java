@@ -15,7 +15,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.predicate.PropertyReference;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ColumnList;
@@ -560,6 +559,7 @@ public class SqlgUtil {
      * @return A Triple with 3 maps.
      */
     public static Pair<Map<String, PropertyDefinition>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues) {
+        Objects.requireNonNull(keyValues, "keyValues may not be null");
         Map<String, Object> resultAllValues = new LinkedHashMap<>();
         Map<String, PropertyDefinition> keyPropertyTypeMap = new LinkedHashMap<>();
 
@@ -582,7 +582,7 @@ public class SqlgUtil {
                 if (value != null) {
                     keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
                 } else {
-                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.STRING));
+                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.NULL));
                 }
                 resultAllValues.put(key, value);
             }
@@ -591,6 +591,7 @@ public class SqlgUtil {
     }
 
     public static Pair<Map<String, PropertyDefinition>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
+        Objects.requireNonNull(keyValues, "keyValues may not be null");
         Map<String, Object> resultAllValues = new LinkedHashMap<>();
         Map<String, PropertyDefinition> keyPropertyTypeMap = new LinkedHashMap<>();
 
@@ -616,7 +617,7 @@ public class SqlgUtil {
                 if (value != null) {
                     keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
                 } else {
-                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.STRING));
+                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.NULL));
                 }
                 resultAllValues.put(key, value);
 
@@ -628,25 +629,11 @@ public class SqlgUtil {
         return Pair.of(keyPropertyTypeMap, resultAllValues);
     }
 
-    public static List<ImmutablePair<PropertyDefinition, Object>> transformToTypeAndValue(Map<String, Object> keyValues) {
-        List<ImmutablePair<PropertyDefinition, Object>> result = new ArrayList<>();
-        for (Map.Entry<String, Object> entry : keyValues.entrySet()) {
-            Object value = entry.getValue();
-            //value
-            //skip the label as that is not a property but the table
-            if (entry.getKey().equals(label)) {
-                continue;
-            }
-            result.add(ImmutablePair.of(new PropertyDefinition(PropertyType.from(value)), value));
-        }
-        return result;
-    }
-
     /**
      * This only gets called for array properties
      *
-     * @param propertyDefinition
-     * @param value
+     * @param propertyDefinition The property's definition
+     * @param value The value
      * @return
      */
     private static Object[] transformArrayToInsertValue(PropertyDefinition propertyDefinition, Object value) {
@@ -1163,6 +1150,7 @@ public class SqlgUtil {
         switch (incomingPropertyType.ordinal()) {
             case STRING_ORDINAL, VARCHAR_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
             case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+            case NULL_ORDINAL -> Preconditions.checkState(true);
             default -> Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
         }
 
