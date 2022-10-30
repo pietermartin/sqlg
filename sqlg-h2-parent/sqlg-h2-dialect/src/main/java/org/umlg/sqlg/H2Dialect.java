@@ -12,6 +12,7 @@ import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.sql.parse.ColumnList;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -20,6 +21,7 @@ import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
+import java.util.UUID;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.PropertyType.*;
@@ -278,7 +280,7 @@ public class H2Dialect extends BaseSqlDialect {
             case GEOGRAPHY_POINT_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
             case GEOGRAPHY_POLYGON_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
             case LINESTRING_ORDINAL -> throw new IllegalStateException("H2 does not support gis types!");
-            default -> throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+            default -> throw SqlgExceptions.invalidPropertyType(propertyType);
         };
     }
 

@@ -413,7 +413,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case PERIOD_ARRAY_ORDINAL ->
                     new String[]{"INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
             case JSON_ARRAY_ORDINAL -> new String[]{"LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
-            default -> throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+            default -> throw SqlgExceptions.invalidPropertyType(propertyType);
         };
     }
 
