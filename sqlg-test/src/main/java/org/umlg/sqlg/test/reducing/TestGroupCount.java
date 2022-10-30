@@ -4,12 +4,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Column;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Map;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -25,14 +24,14 @@ public class TestGroupCount extends BaseTest {
         printTraversalForm(traversal);
         //  [{v[1]=6, v[2]=2, v[3]=6, v[4]=6, v[5]=2, v[6]=2}]
         final Map<Vertex, Long> map = traversal.next();
-        assertFalse(traversal.hasNext());
-        assertEquals(6, map.size());
-        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
-        assertEquals(2L, map.get(convertToVertex(this.sqlgGraph, "vadas")).longValue());
-        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "lop")).longValue());
-        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "josh")).longValue());
-        assertEquals(2L, map.get(convertToVertex(this.sqlgGraph, "ripple")).longValue());
-        assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(6, map.size());
+        Assert.assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
+        Assert.assertEquals(2L, map.get(convertToVertex(this.sqlgGraph, "vadas")).longValue());
+        Assert.assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "lop")).longValue());
+        Assert.assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "josh")).longValue());
+        Assert.assertEquals(2L, map.get(convertToVertex(this.sqlgGraph, "ripple")).longValue());
+        Assert.assertEquals(6L, map.get(convertToVertex(this.sqlgGraph, "marko")).longValue());
 //        checkSideEffects(traversal.asAdmin().getSideEffects(), "a", HashMap.class);
     }
     
@@ -41,11 +40,11 @@ public class TestGroupCount extends BaseTest {
     	loadModern();
     	final Traversal<Vertex, Map<Object, Long>> traversal = this.sqlgGraph.traversal().V().groupCount().by(T.label);
     	printTraversalForm(traversal);
-    	assertTrue(traversal.hasNext());
+    	Assert.assertTrue(traversal.hasNext());
     	Map<Object, Long> map=traversal.next();
-    	assertFalse(traversal.hasNext());
-        assertEquals(2, map.size());
-        assertEquals(Long.valueOf(4),map.get("person"));
-        assertEquals(Long.valueOf(2),map.get("software"));
+    	Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, map.size());
+        Assert.assertEquals(Long.valueOf(4),map.get("person"));
+        Assert.assertEquals(Long.valueOf(2),map.get("software"));
     }
 }

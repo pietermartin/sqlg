@@ -11,6 +11,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgPropertiesStep;
+import org.umlg.sqlg.step.barrier.SqlgCountGlobalStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -19,11 +22,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Created by pieter on 2015/08/22.
  */
+@SuppressWarnings("resource")
 public class TestGraphStepOrderBy extends BaseTest {
 
     @BeforeClass
@@ -31,6 +33,77 @@ public class TestGraphStepOrderBy extends BaseTest {
         BaseTest.beforeClass();
         if (isPostgres()) {
             configuration.addProperty("distributed", true);
+        }
+    }
+
+    @Test
+    public void testCount() {
+        loadModern();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().has("lang").order().by("lang");
+        printTraversalForm(traversal);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(2L, vertices.size(), 0);
+        GraphTraversal<Vertex, Long> countTraversal = this.sqlgGraph.traversal().V().has("lang").count();
+        printTraversalForm(countTraversal);
+        Long count = countTraversal.next();
+        Assert.assertEquals(2L, count, 0);
+        GraphTraversal<Vertex, Long> countOrderByTraversal = this.sqlgGraph.traversal().V().has("lang").order().by("lang").count();
+        printTraversalForm(countOrderByTraversal);
+        count = countOrderByTraversal.next();
+        Assert.assertEquals(2L, count, 0);
+        try {
+            this.sqlgGraph.traversal().V().order().by("lang").count();
+        } catch (IllegalStateException e) {
+            //noop
+            Assert.assertEquals("The property does not exist as the key has no associated value for the provided element: v[public.person:::1]:lang", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testUnoptimizedOrderBy() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "missing1", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b1", "missing2", "b");
+        this.sqlgGraph.tx().commit();
+        try {
+            this.sqlgGraph.traversal().V().order().by("missing1");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("The property does not exist as the key has no associated value for the provided element: v[public.B:::1]:missing1", e.getMessage());
+        }
+        try {
+            this.sqlgGraph.traversal().V().order().by("missing2");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("The property does not exist as the key has no associated value for the provided element: v[public.B:::1]:missing2", e.getMessage());
+        }
+        DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) sqlgGraph.traversal().V().count();
+        printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep<?, ?>);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgPropertiesStep<?>);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgCountGlobalStep);
+        Long l = traversal.next();
+        Assert.assertEquals(2L, l, 0);
+        try {
+            sqlgGraph.traversal().V().order().by("lang").count();
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("The property does not exist as the key has no associated value for the provided element: v[public.A:::1]:lang", e.getMessage());
+
+        }
+    }
+
+    @Test
+    public void testUnoptimizedOrderByX() {
+        loadModern();
+        GraphTraversal<Vertex, Vertex> t2 = this.sqlgGraph.traversal().V().order().by("name");
+        printTraversalForm(t2);
+        try {
+            this.sqlgGraph.traversal().V().order().by("lang");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("The property does not exist as the key has no associated value for the provided element: v[public.person:::1]:lang", e.getMessage());
+        }
+        try {
+            this.sqlgGraph.traversal().V().order().by("lang").count();
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("The property does not exist as the key has no associated value for the provided element: v[public.person:::1]:lang", e.getMessage());
         }
     }
 
@@ -109,40 +182,40 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order", Order.desc);
-        assertEquals(4, traversal.getSteps().size());
+        Assert.assertEquals(4, traversal.getSteps().size());
         List<Edge> edges = traversal.toList();
-        assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         assertStep(traversal.getSteps().get(0), true, false, false, false);
-        assertEquals(3, edges.size());
-        assertEquals(e3, edges.get(0));
-        assertEquals(e2, edges.get(1));
-        assertEquals(e1, edges.get(2));
+        Assert.assertEquals(3, edges.size());
+        Assert.assertEquals(e3, edges.get(0));
+        Assert.assertEquals(e2, edges.get(1));
+        Assert.assertEquals(e1, edges.get(2));
 
         traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order", Order.asc);
-        assertEquals(4, traversal.getSteps().size());
+        Assert.assertEquals(4, traversal.getSteps().size());
         edges = traversal.toList();
-        assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         assertStep(traversal.getSteps().get(0), true, false, false, false);
-        assertEquals(3, edges.size());
-        assertEquals(e1, edges.get(0));
-        assertEquals(e2, edges.get(1));
-        assertEquals(e3, edges.get(2));
+        Assert.assertEquals(3, edges.size());
+        Assert.assertEquals(e1, edges.get(0));
+        Assert.assertEquals(e2, edges.get(1));
+        Assert.assertEquals(e3, edges.get(2));
 
         traversal = (DefaultGraphTraversal<Vertex, Edge>) this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .outE()
                 .order().by("order");
-        assertEquals(4, traversal.getSteps().size());
+        Assert.assertEquals(4, traversal.getSteps().size());
         edges = traversal.toList();
-        assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         assertStep(traversal.getSteps().get(0), true, false, false, false);
-        assertEquals(3, edges.size());
-        assertEquals(e1, edges.get(0));
-        assertEquals(e2, edges.get(1));
-        assertEquals(e3, edges.get(2));
+        Assert.assertEquals(3, edges.size());
+        Assert.assertEquals(e1, edges.get(0));
+        Assert.assertEquals(e2, edges.get(1));
+        Assert.assertEquals(e3, edges.get(2));
     }
 
     @Test
@@ -193,36 +266,36 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .outE("ab")
                 .order().by("order", Order.desc)
                 .inV();
-        assertEquals(4, traversal.getSteps().size());
+        Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
-        assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         assertStep(traversal.getSteps().get(0), true, false, false, false);
-        assertEquals(3, vertices.size());
-        assertEquals(b2, vertices.get(0));
-        assertEquals(b3, vertices.get(1));
-        assertEquals(b1, vertices.get(2));
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals(b2, vertices.get(0));
+        Assert.assertEquals(b3, vertices.get(1));
+        Assert.assertEquals(b1, vertices.get(2));
 
         traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
                 .order().by("order", Order.asc)
                 .inV();
-        assertEquals(4, traversal.getSteps().size());
+        Assert.assertEquals(4, traversal.getSteps().size());
         vertices = traversal.toList();
-        assertEquals(1, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         assertStep(traversal.getSteps().get(0), true, false, false, false);
-        assertEquals(3, vertices.size());
-        assertEquals(b1, vertices.get(0));
-        assertEquals(b3, vertices.get(1));
-        assertEquals(b2, vertices.get(2));
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals(b1, vertices.get(0));
+        Assert.assertEquals(b3, vertices.get(1));
+        Assert.assertEquals(b2, vertices.get(2));
     }
 
     @Test
     public void testOrderOnEdgeWithInVValues() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "A","name","b1");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "A","name","b2");
-        Vertex b3 = this.sqlgGraph.addVertex(T.label, "A","name","b3");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "A", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "A", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b3");
         a1.addEdge("ab", b1, "order", 0);
         a1.addEdge("ab", b2, "order", 11);
         a1.addEdge("ab", b3, "order", 2);
@@ -232,28 +305,28 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .outE("ab")
                 .order().by("order", Order.desc)
                 .inV().values("name");
-        assertEquals(5, traversal.getSteps().size());
+        Assert.assertEquals(5, traversal.getSteps().size());
         List<Object> vertices = traversal.toList();
-        assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(2, traversal.getSteps().size());
         assertStep(traversal.getSteps().get(0), true, false, false, false);
-        assertEquals(3, vertices.size());
-        assertEquals("b2", vertices.get(0));
-        assertEquals("b3", vertices.get(1));
-        assertEquals("b1", vertices.get(2));
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals("b2", vertices.get(0));
+        Assert.assertEquals("b3", vertices.get(1));
+        Assert.assertEquals("b1", vertices.get(2));
 
         traversal = (DefaultGraphTraversal<Vertex, Object>) this.sqlgGraph.traversal()
                 .V(a1.id())
                 .outE("ab")
                 .order().by("order", Order.asc)
                 .inV().values("name");
-        assertEquals(5, traversal.getSteps().size());
+        Assert.assertEquals(5, traversal.getSteps().size());
         vertices = traversal.toList();
-        assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(2, traversal.getSteps().size());
         assertStep(traversal.getSteps().get(0), true, false, false, false);
-        assertEquals(3, vertices.size());
-        assertEquals("b1", vertices.get(0));
-        assertEquals("b3", vertices.get(1));
-        assertEquals("b2", vertices.get(2));
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals("b1", vertices.get(0));
+        Assert.assertEquals("b3", vertices.get(1));
+        Assert.assertEquals("b2", vertices.get(2));
     }
 
     @Test
@@ -301,7 +374,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a1.addEdge("ab", b2, "weight", 2);
         a1.addEdge("ab", b3, "weight", 1);
         this.sqlgGraph.tx().commit();
-        List<String> names =  this.sqlgGraph.traversal()
+        List<String> names = this.sqlgGraph.traversal()
                 .V()
                 .outE().as("e")
                 .inV().as("v")
@@ -656,27 +729,27 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOutEOrderID(){
-    	 Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-    	 for (int i = 0; i < 2; i++) {
-             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
-             a.addEdge("ab", b);
-         }
-         this.sqlgGraph.tx().commit();
-         GraphTraversal<Vertex, Map<String,Object>> gt=this.sqlgGraph.traversal().V().hasLabel("A").as("a")
-         	.outE("ab").order().by(T.id).as("e")
-         	.inV().as("b")
-         	.select("a","e","b");
-         while (gt.hasNext()){
-        	 Map<String,Object> m=gt.next();
-        	 assertEquals(a,m.get("a"));
-         }
+    public void testOutEOrderID() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        for (int i = 0; i < 2; i++) {
+            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            a.addEdge("ab", b);
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Map<String, Object>> gt = this.sqlgGraph.traversal().V().hasLabel("A").as("a")
+                .outE("ab").order().by(T.id).as("e")
+                .inV().as("b")
+                .select("a", "e", "b");
+        while (gt.hasNext()) {
+            Map<String, Object> m = gt.next();
+            Assert.assertEquals(a, m.get("a"));
+        }
     }
 
     @Test
     public void g_withSideEffectXk_nameX_V_order_byXvalueMap_selectXkX_unfoldX_name() {
         loadModern();
-        Traversal<Vertex, String> traversal =  this.sqlgGraph.traversal()
+        Traversal<Vertex, String> traversal = this.sqlgGraph.traversal()
                 .V().order().by(__.valueMap().select("name").unfold())
                 .values("name");
         checkOrderedResults(Arrays.asList("josh", "lop", "marko", "peter", "ripple", "vadas"), traversal);

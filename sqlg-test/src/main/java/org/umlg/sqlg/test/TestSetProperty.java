@@ -9,6 +9,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
@@ -44,23 +45,20 @@ public class TestSetProperty extends BaseTest {
         a.addEdge("ab", b, "name", "asd");
     }
 
-    @Test
+    @Test(expected = SqlgExceptions.InvalidPropertyTypeException.class)
     public void shouldAllowNullAddVertexPrecreated() {
-        final Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", null);
-        Assert.assertNull(v.value("name"));
+        this.sqlgGraph.addVertex(T.label, "Person", "name", null);
     }
 
-    @Test
+    @Test(expected = SqlgExceptions.InvalidPropertyTypeException.class)
     public void shouldAllowNullAddVertex() {
-        final Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", null);
-        Assert.assertNull(v.value("name"));
+        this.sqlgGraph.addVertex(T.label, "Person", "name", null);
     }
 
-    @Test
+    @Test(expected = SqlgExceptions.InvalidPropertyTypeException.class)
     public void shouldAllowNullAddEdge() {
         final Vertex v = this.sqlgGraph.addVertex();
-        final Edge e = v.addEdge("self", v, "name", null);
-        Assert.assertNull(e.value("name"));
+        v.addEdge("self", v, "name", null);
     }
 
     @Test

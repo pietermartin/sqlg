@@ -5,10 +5,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.umlg.sqlg.structure.PropertyDefinition;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -64,6 +64,23 @@ public class TestBatchedStreaming extends BaseTest {
     public void testNullProperties() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         //surname is null, that bad-ass means null
+        try {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John1", "surname", null, "age", 1);
+        } catch (SqlgExceptions.InvalidPropertyTypeException e) {
+            Assert.assertEquals("Property of type NULL is not supported", e.getMessage());
+        }
+        try {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John2", "surname", "Smith", "age", null);
+        } catch (SqlgExceptions.InvalidPropertyTypeException e) {
+            Assert.assertEquals("Property of type NULL is not supported", e.getMessage());
+        }
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(
+                "Person",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("surname", PropertyDefinition.of(PropertyType.STRING));
+                    put("age", PropertyDefinition.of(PropertyType.INTEGER));
+                }});
         this.sqlgGraph.streamVertex(T.label, "Person", "name", "John1", "surname", null, "age", 1);
         this.sqlgGraph.streamVertex(T.label, "Person", "name", "John2", "surname", "Smith", "age", null);
         this.sqlgGraph.streamVertex(T.label, "Person", "name", "John3", "surname", "", "age", 1);

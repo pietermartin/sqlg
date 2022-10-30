@@ -85,9 +85,9 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         int count = 0;
         List<Pair<String, String>> uids = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
-            this.sqlgGraph.addVertex(T.label, "A", "index", Integer.toString(i));
+            this.sqlgGraph.addVertex(T.label, "A", "index", i);
             for (int j = 0; j < 10; j++) {
-                this.sqlgGraph.addVertex(T.label, "B", "index", Integer.toString(count));
+                this.sqlgGraph.addVertex(T.label, "B", "index", count);
                 uids.add(Pair.of(Integer.toString(i), Integer.toString(count++)));
             }
         }
