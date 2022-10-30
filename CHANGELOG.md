@@ -1,3 +1,7 @@
+##3.0.0
+
+* !!!Breaking Release.
+
 ##2.1.6
 
 * Added tests for inserting via fdw on postgres for user identified elements
