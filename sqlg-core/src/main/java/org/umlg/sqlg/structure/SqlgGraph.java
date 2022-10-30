@@ -38,7 +38,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.structure.Graph.OptIn;
 import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
@@ -569,21 +568,9 @@ public class SqlgGraph implements Graph {
         if (0 == ids.length) {
             return (Iterator<T>) elements(Vertex.class.isAssignableFrom(clazz), Collections.EMPTY_LIST).iterator();
         } else {
-            if (clazz.isAssignableFrom(ids[0].getClass())) {
-                // based on the first item assume all vertices in the argument list
-                if (!Stream.of(ids).allMatch(id -> clazz.isAssignableFrom(id.getClass())))
-                    throw SqlgExceptions.idArgsMustBeEitherIdOrElement();
-
-                return Stream.of(ids).map(id -> (T) id).iterator();
-            } else {
-                final Class<?> firstClass = ids[0].getClass();
-                if (!Stream.of(ids).map(Object::getClass).allMatch(firstClass::equals))
-                    throw SqlgExceptions.idArgsMustBeEitherIdOrElement();
-
-                List<RecordId> recordIds = RecordId.from(this, ids);
-                Iterable<T> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);
-                return elementIterable.iterator();
-            }
+            List<RecordId> recordIds = RecordId.from(this, ids);
+            Iterable<T> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);
+            return elementIterable.iterator();
         }
     }
 
