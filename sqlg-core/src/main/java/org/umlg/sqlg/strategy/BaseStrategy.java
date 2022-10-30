@@ -233,6 +233,11 @@ public abstract class BaseStrategy {
             } else if (step instanceof MeanGlobalStep) {
                 return handleAggregateGlobalStep(this.currentReplacedStep, step, "avg");
             } else if (step instanceof CountGlobalStep) {
+                //this indicates that the count step is preceded with an `order.by` step
+                //order by steps include the order on fields in the select clause which conflicts with the `count` and `group by` sql
+                if (this.currentReplacedStep.getSqlgComparatorHolder().hasComparators()) {
+                    return false;
+                }
                 int stepIndex = TraversalHelper.stepIndex(step, this.traversal);
                 Step previous = this.traversal.getSteps().get(stepIndex - 1);
                 if (!(previous instanceof SqlgPropertiesStep)) {
@@ -659,14 +664,12 @@ public abstract class BaseStrategy {
      * @return the property which should be not null
      */
     private String isNotNullStep(Step<?, ?> currentStep) {
-        if (currentStep instanceof TraversalFilterStep<?>) {
-            TraversalFilterStep<?> tfs = (TraversalFilterStep<?>) currentStep;
+        if (currentStep instanceof TraversalFilterStep<?> tfs) {
             List<?> c = tfs.getLocalChildren();
-            if (c != null && c.size() == 1) {
+            if (c.size() == 1) {
                 Traversal.Admin<?, ?> a = (Traversal.Admin<?, ?>) c.iterator().next();
                 Step<?, ?> s = a.getEndStep();
-                if (a.getSteps().size() == 1 && s instanceof PropertiesStep<?>) {
-                    PropertiesStep<?> ps = (PropertiesStep<?>) s;
+                if (a.getSteps().size() == 1 && s instanceof PropertiesStep<?> ps) {
                     String[] keys = ps.getPropertyKeys();
                     if (keys != null && keys.length == 1) {
                         return keys[0];
@@ -684,14 +687,12 @@ public abstract class BaseStrategy {
      * @return the property which should be not null
      */
     private String isNullStep(Step<?, ?> currentStep) {
-        if (currentStep instanceof NotStep<?>) {
-            NotStep<?> tfs = (NotStep<?>) currentStep;
+        if (currentStep instanceof NotStep<?> tfs) {
             List<?> c = tfs.getLocalChildren();
-            if (c != null && c.size() == 1) {
+            if (c.size() == 1) {
                 Traversal.Admin<?, ?> a = (Traversal.Admin<?, ?>) c.iterator().next();
                 Step<?, ?> s = a.getEndStep();
-                if (a.getSteps().size() == 1 && s instanceof PropertiesStep<?>) {
-                    PropertiesStep<?> ps = (PropertiesStep<?>) s;
+                if (a.getSteps().size() == 1 && s instanceof PropertiesStep<?> ps) {
                     String[] keys = ps.getPropertyKeys();
                     if (keys != null && keys.length == 1) {
                         return keys[0];
@@ -756,7 +757,6 @@ public abstract class BaseStrategy {
                             this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     } else {
-                        @SuppressWarnings("unchecked")
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
                         this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                         //add a label if the step does not yet have one and is not a leaf node
@@ -894,9 +894,6 @@ public abstract class BaseStrategy {
             if (!lambdaMapSteps.isEmpty()) {
                 return false;
             }
-//            if (comparator.getValue1().toString().contains("$Lambda")) {
-//                return false;
-//            }
         }
         return true;
     }
@@ -1157,9 +1154,7 @@ public abstract class BaseStrategy {
         final ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         List<Step<?, ?>> toCome = steps.subList(stepIterator.nextIndex(), steps.size());
         return toCome.stream().anyMatch(s ->
-                s.getClass().equals(Order.class) ||
-                        s.getClass().equals(LambdaCollectingBarrierStep.class) ||
-                        s.getClass().equals(SackValueStep.class)
+                s.getClass().equals(LambdaCollectingBarrierStep.class) || s.getClass().equals(SackValueStep.class)
         );
     }
 
@@ -1341,23 +1336,23 @@ public abstract class BaseStrategy {
     protected boolean handleAggregateGlobalStep(ReplacedStep<?, ?> replacedStep, Step aggregateStep, String aggr) {
         replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(aggr, Collections.emptyList()));
         switch (aggr) {
-            case sum:
+            case sum -> {
                 SqlgSumGlobalStep sqlgSumGlobalStep = new SqlgSumGlobalStep(this.traversal);
                 TraversalHelper.replaceStep(aggregateStep, sqlgSumGlobalStep, this.traversal);
-                break;
-            case max:
+            }
+            case max -> {
                 SqlgMaxGlobalStep sqlgMaxGlobalStep = new SqlgMaxGlobalStep(this.traversal);
                 TraversalHelper.replaceStep(aggregateStep, sqlgMaxGlobalStep, this.traversal);
-                break;
-            case min:
+            }
+            case min -> {
                 SqlgMinGlobalStep sqlgMinGlobalStep = new SqlgMinGlobalStep(this.traversal);
                 TraversalHelper.replaceStep(aggregateStep, sqlgMinGlobalStep, this.traversal);
-                break;
-            case "avg":
+            }
+            case "avg" -> {
                 SqlgAvgGlobalStep sqlgAvgGlobalStep = new SqlgAvgGlobalStep(this.traversal);
                 TraversalHelper.replaceStep(aggregateStep, sqlgAvgGlobalStep, this.traversal);
-                break;
-            case count:
+            }
+            case count -> {
                 SqlgCountGlobalStep sqlgCountGlobalStep = new SqlgCountGlobalStep(this.traversal);
                 TraversalHelper.replaceStep(aggregateStep, sqlgCountGlobalStep, this.traversal);
                 int stepIndex = TraversalHelper.stepIndex(sqlgCountGlobalStep, this.traversal);
@@ -1371,9 +1366,8 @@ public abstract class BaseStrategy {
                     sqlgCountGlobalStep.addLabel(label);
                 }
                 this.traversal.addStep(stepIndex, sqlgPropertiesStep);
-                break;
-            default:
-                throw new IllegalStateException("Unhandled aggregation " + aggr);
+            }
+            default -> throw new IllegalStateException("Unhandled aggregation " + aggr);
         }
         //aggregate queries do not have select clauses so we clear all the labels
         ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
