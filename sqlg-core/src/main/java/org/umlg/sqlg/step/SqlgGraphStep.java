@@ -56,7 +56,6 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
     private final boolean requiresSack;
     private final boolean requiresOneBulk;
 
-    @SuppressWarnings("unchecked")
     public SqlgGraphStep(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
@@ -64,7 +63,6 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         this.requiresOneBulk = SqlgTraversalUtil.hasOneBulkRequirement(traversal);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
