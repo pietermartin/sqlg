@@ -109,6 +109,8 @@ public class PropertyType {
     public static final PropertyType BIG_DECIMAL = new PropertyType("BIG_DECIMAL", BIG_DECIMAL_ORDINAL, BigDecimal.class.getName(), new String[]{});
     public static final int BIG_DECIMAL_ARRAY_ORDINAL = 45;
     public static final PropertyType BIG_DECIMAL_ARRAY = new PropertyType("BIG_DECIMAL_ARRAY", BIG_DECIMAL_ARRAY_ORDINAL, BigDecimal[].class.getName(), new String[]{});
+    public static final int NULL_ORDINAL = 46;
+    public static final PropertyType NULL = new PropertyType("NULL", NULL_ORDINAL, null, new String[]{});
 
     public static PropertyType varChar(int length) {
         return new PropertyType(String.class.getName(), new String[]{}, length);
@@ -194,6 +196,7 @@ public class PropertyType {
                 PropertyType.FLOAT,
                 PropertyType.DOUBLE,
                 PropertyType.BIG_DECIMAL,
+                PropertyType.NULL,
                 PropertyType.STRING,
                 PropertyType.LOCALDATE,
                 PropertyType.LOCALDATETIME,
