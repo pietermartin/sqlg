@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.tp3;
 
 import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -37,8 +38,17 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
     }};
 
     @Override
+    public Graph openTestGraph(final Configuration config) {
+        StopWatch stopWatch = StopWatch.createStarted();
+        Graph graph = super.openTestGraph(config);
+        stopWatch.stop();
+        logger.info("openTestGraph, time: {}", stopWatch);
+        return graph;
+    }
+
+    @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
-        logger.debug("clearing datasource " + configuration.getString("jdbc.url"));
+        StopWatch stopWatch = StopWatch.createStarted();
         SqlgDataSource sqlgDataSource = null;
         if (null != g) {
             if (g.features().graph().supportsTransactions() && g.tx().isOpen()) {
@@ -58,6 +68,8 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
                 sqlgDataSource.close();
             }
         }
+        stopWatch.stop();
+        logger.info("clearing datasource {}, time: {}", configuration.getString("jdbc.url"), stopWatch);
     }
 
     @Override
