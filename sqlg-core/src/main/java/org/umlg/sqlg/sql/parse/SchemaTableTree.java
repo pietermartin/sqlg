@@ -1497,9 +1497,9 @@ public class SchemaTableTree {
                 }
                 WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
                 result.append(" ").append(whereClause.toSql(sqlgGraph, this, hasContainer)).append(")");
-                if (sqlgGraph.getSqlDialect().isMariaDb()) {
-                    result.append(" COLLATE latin1_general_cs");
-                }
+//                if (sqlgGraph.getSqlDialect().isMariaDb()) {
+//                    result.append(" COLLATE latin1_general_cs");
+//                }
             }
         }
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
