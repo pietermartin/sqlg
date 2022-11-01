@@ -1,5 +1,5 @@
-<a href="http://teamcity.sqlg.org:8111/viewType.html?buildTypeId=Sqlg_Build&guest=1">
-    <img src="http://teamcity.sqlg.org:8111/app/rest/builds/buildType:(id:Sqlg_Build)/statusIcon"/>
+<a href="http://teamcity.sqlg.org/viewType.html?buildTypeId=Sqlg_Build&guest=1">
+    <img src="http://teamcity.sqlg.org/app/rest/builds/buildType:(id:Sqlg_Build)/statusIcon"/>
 </a>
 
 Sqlg
