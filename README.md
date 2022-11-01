@@ -1,4 +1,4 @@
-<a href="http://sqlg.org:8111/viewType.html?buildTypeId=Sqlg_Build&guest=1">
+<a href="http://teamcity.sqlg.org:8111/viewType.html?buildTypeId=Sqlg_Build&guest=1">
     <img src="http://teamcity.sqlg.org:8111/app/rest/builds/buildType:(id:Sqlg_Build)/statusIcon"/>
 </a>
 
