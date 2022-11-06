@@ -1,6 +1,6 @@
 = Sqlg Documentation
 Pieter Martin
-Version 3.0.0, April 2022:
+Version 3.0.0, November 2022:
 :sectnums:
 :toc: left
 :toclevels: 4
@@ -15,8 +15,7 @@ Version 3.0.0, April 2022:
 https://github.com/pietermartin/sqlg[*Sqlg*] image:github/SVG/mark-github.svg[] is a implementation of http://tinkerpop.apache.org/[Apache TinkerPop] on a
 http://en.wikipedia.org/wiki/Relational_database_management_system[RDBMS].
 Currently http://www.postgresql.org/[Postgresql], http://hsqldb.org/[HSQLDB], http://h2database.com[H2],
-https://mariadb.org/[MariaDB], https://www.mysql.com/[MySQL] and
-https://www.microsoft.com/en-us/sql-server/sql-server-2017[MSSqlServer] are supported.
+https://mariadb.org/[MariaDB], https://www.mysql.com/[MySQL] are supported.
 
 Sqlg has a github https://github.com/pietermartin/sqlg/discussions[discussions] page.
 

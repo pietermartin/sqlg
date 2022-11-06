@@ -2,9 +2,9 @@
 
 :version: 3.0.0
 
-Sqlg version {version} runs on https://tinkerpop.apache.org[TinkerPop 3.5.1].
+Sqlg version {version} runs on https://tinkerpop.apache.org[TinkerPop 3.6.2].
 
-Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test suites.
+Sqlg passes TinkerPop's `StructureStandardSuite`, `ProcessStandardSuite` test suites then and `Gherkin feature` tests.
 
 .Graph Features *not* implemented.
 
@@ -53,6 +53,9 @@ Sqlg passes TinkerPop's `StructureStandardSuite` and `ProcessStandardSuite` test
 - MixedListValues
 - SerializableValues
 - UniformListValues
+
+[NOTE]
+Sqlg supports `NullPropertyValues`
 
 [NOTE]
 Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is explained <<anchor-user-supplied-identifiers, below>>.

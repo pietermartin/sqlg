@@ -1,3 +1,5 @@
 == Limitations
 
 Postgresql schema, table and column names can not be more than 63 characters long.
+
+Sqlg does not allow referencing non-existing properties in ``order().by('nonExisting')`. Unlike `TinkerGraph` `Sqlg` will throw an exception.

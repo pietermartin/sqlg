@@ -92,16 +92,7 @@ The various `Sqlg` supported databases.
      <version>{version}</version>
  </dependency>
 
-[subs="specialchars, attributes"]
-.MSSqlServer
- <dependency>
-     <groupId>org.umlg</groupId>
-     <artifactId>sqlg-mssqlserver</artifactId>
-     <version>{version}</version>
- </dependency>
-
-
-These will include `gremlin-groovy`. If you have no need for that then only include the dialect.
+The above mentioned maven coordinates will include `gremlin-groovy`. To exclude `gremlin-groovy` only include the dialect.
 
 [subs="specialchars, attributes"]
 .Postgresql
@@ -143,14 +134,6 @@ These will include `gremlin-groovy`. If you have no need for that then only incl
      <version>{version}</version>
  </dependency>
 
-[subs="specialchars, attributes"]
-.MSSqlServer
- <dependency>
-     <groupId>org.umlg</groupId>
-     <artifactId>sqlg-mssqlserver-dialect</artifactId>
-     <version>{version}</version>
- </dependency>
-
 === Start
 
 `SqlgGraph` is a singleton that can be shared among multiple threads. You instantiate `SqlgGraph` using the standard
@@ -186,12 +169,7 @@ The configuration object requires the following properties.
  jdbc.username=mysql
  jdbc.password=mysql
 
-.MSSqlServer
- jdbc.url=jdbc:sqlserver://localhost:1433;databaseName=yourdb;
- jdbc.username=SA
- jdbc.password=*****
-
-In the case of Postgresql and MSSqlServer the database must already exist.
+In the case of `Postgresql` the database must already exist.
 
 Once you have access to the graph you can use it as per normal.
 [source,java,options="nowrap"]
