@@ -112,7 +112,7 @@ public class PostgresFeatureTest {
         @Override
         public void beforeEachScenario(final Scenario scenario) {
             super.beforeEachScenario(scenario);
-            if (OPT_OUT.keySet().contains(scenario.getName())) {
+            if (OPT_OUT.containsKey(scenario.getName())) {
                 throw new AssumptionViolatedException(OPT_OUT.get(scenario.getName()));
             }
             if (!OPT_IN.isEmpty() && !OPT_IN.contains(scenario.getName())) {
