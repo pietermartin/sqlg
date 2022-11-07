@@ -123,8 +123,7 @@ public class WhereClause {
             result.append(" tmp").append(schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
             result.append(".without IS NULL");
             return result.toString();
-        } else if (p instanceof AndP) {
-            AndP<?> andP = (AndP<?>) p;
+        } else if (p instanceof AndP<?> andP) {
             Preconditions.checkState(andP.getPredicates().size() == 2, "Only handling AndP with 2 predicates!");
             P<?> p1 = andP.getPredicates().get(0);
             String key;
@@ -137,8 +136,7 @@ public class WhereClause {
             P<?> p2 = andP.getPredicates().get(1);
             result.append(" and ").append(prefix).append(key).append(compareToSql((Compare) p2.getBiPredicate()));
             return result.toString();
-        } else if (p instanceof OrP) {
-            OrP<?> orP = (OrP<?>) p;
+        } else if (p instanceof OrP<?> orP) {
             Preconditions.checkState(orP.getPredicates().size() == 2, "Only handling OrP with 2 predicates!");
             P<?> p1 = orP.getPredicates().get(0);
             String key;
@@ -155,9 +153,8 @@ public class WhereClause {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             result.append(textToSql(sqlgGraph.getSqlDialect(), prefix, (Text) p.getBiPredicate()));
             return result.toString();
-        } else if (p.getBiPredicate() instanceof FullText) {
+        } else if (p.getBiPredicate() instanceof FullText ft) {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-            FullText ft = (FullText) p.getBiPredicate();
             result.append(sqlgGraph.getSqlDialect().getFullTextQueryText(ft, prefix));
             return result.toString();
         } else if (p.getBiPredicate() instanceof Existence) {
@@ -177,41 +174,27 @@ public class WhereClause {
     }
 
     private static String compareToSql(Compare compare) {
-        switch (compare) {
-            case eq:
-                return " = ?";
-            case neq:
-                return " <> ?";
-            case gt:
-                return " > ?";
-            case gte:
-                return " >= ?";
-            case lt:
-                return " < ?";
-            case lte:
-                return " <= ?";
-            default:
-                throw new RuntimeException("Unknown Compare " + compare.name());
-        }
+        return switch (compare) {
+            case eq -> " = ?";
+            case neq -> " <> ?";
+            case gt -> " > ?";
+            case gte -> " >= ?";
+            case lt -> " < ?";
+            case lte -> " <= ?";
+            default -> throw new RuntimeException("Unknown Compare " + compare.name());
+        };
     }
 
     private static String compareToSql(Compare compare, String column) {
-        switch (compare) {
-            case eq:
-                return " = " + column;
-            case neq:
-                return " <> " + column;
-            case gt:
-                return " > " + column;
-            case gte:
-                return " >= " + column;
-            case lt:
-                return " < " + column;
-            case lte:
-                return " <= " + column;
-            default:
-                throw new RuntimeException("Unknown Compare " + compare.name());
-        }
+        return switch (compare) {
+            case eq -> " = " + column;
+            case neq -> " <> " + column;
+            case gt -> " > " + column;
+            case gte -> " >= " + column;
+            case lt -> " < " + column;
+            case lte -> " <= " + column;
+            default -> throw new RuntimeException("Unknown Compare " + compare.name());
+        };
     }
 
 
