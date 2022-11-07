@@ -1849,7 +1849,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case PERIOD_ORDINAL -> new int[]{Types.INTEGER, Types.INTEGER, Types.INTEGER};
             case DURATION_ORDINAL -> new int[]{Types.BIGINT, Types.INTEGER};
             case JSON_ORDINAL ->
-                    //TODO support other others like Geometry...
+                //TODO support other others like Geometry...
                     new int[]{Types.OTHER};
             case byte_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case boolean_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
