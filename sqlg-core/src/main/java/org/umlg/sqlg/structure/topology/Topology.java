@@ -214,7 +214,7 @@ public class Topology {
      */
     public static final String SQLG_SCHEMA_EDGE_DISTRIBUTION_COLUMN_EDGE = "edge_distribution";
     /**
-     * Edge table for the edge's colocate label. The edge's co-locate will always be to its incoming vertex label.
+     * Edge table for the edge's colocate label. The edge's colocate will always be to its incoming vertex label.
      */
     public static final String SQLG_SCHEMA_EDGE_DISTRIBUTION_COLOCATE_EDGE = "edge_colocate";
     /**
@@ -401,7 +401,7 @@ public class Topology {
 
         VertexLabel partitionVertexLabel;
         columns.clear();
-        columns.put(SQLG_SCHEMA_PROPERTY_NAME, new PropertyDefinition(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PARTITION_NAME, new PropertyDefinition(PropertyType.STRING));
         columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
         columns.put(SQLG_SCHEMA_PARTITION_FROM, new PropertyDefinition(PropertyType.STRING));
         columns.put(SQLG_SCHEMA_PARTITION_TO, new PropertyDefinition(PropertyType.STRING));

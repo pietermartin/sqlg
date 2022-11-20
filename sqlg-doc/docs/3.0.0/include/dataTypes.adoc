@@ -2,24 +2,21 @@
 
 .Table Data types
 |===
-|Java |Postgresql |HSQLDB |H2 |MariaDB | MSSqlServer
+|Java |Postgresql |HSQLDB |H2 |MariaDB
 
 |Boolean
 |BOOLEAN
 |BOOLEAN
 |BOOLEAN
 |BOOLEAN
-|BIT
 
 |Byte
 |*Not supported*
 |TINYINT
 |TINYINT
 |TINYINT
-|TINYINT
 
 |Short
-|SMALLINT
 |SMALLINT
 |SMALLINT
 |SMALLINT
@@ -30,10 +27,8 @@
 |INTEGER
 |INT
 |INTEGER
-|INT
 
 |Long
-|BIGINT
 |BIGINT
 |BIGINT
 |BIGINT
@@ -44,34 +39,35 @@
 |*Not supported*
 |REAL
 |*Not supported*
-|REAL
 
 |Double
 |DOUBLE PRECISION
 |DOUBLE
 |DOUBLE
 |DOUBLE
+
+|BigDecimal
 |DOUBLE PRECISION
+|DOUBLE
+|DOUBLE
+|DOUBLE
 
 |String
 |TEXT
 |LONGVARCHAR
 |VARCHAR
 |LONGTEXT
-|VARCHAR(2000)
 
 |String (fixed length)
 |VARCHAR(x)
 |VARCHAR(x)
 |VARCHAR(x)
 |VARCHAR(x)
-|VARCHAR(x)
 
 |UUID
 |UUID
 |UUID
 |UUID
-|*Not supported*
 |*Not supported*
 
 |Boolean[]
@@ -79,20 +75,17 @@
 |BOOLEAN ARRAY DEFAULT ARRAY[]
 |ARRAY
 |BOOLEAN ARRAY DEFAULT ARRAY[]
-|*Not supported*
 
 |Byte[]
 |BYTEA
 |LONGVARBINARY
 |BINARY
 |BLOB
-|VARBINARY(max)
 
 |Short[]
 |SMALLINT[]
 |SMALLINT ARRAY DEFAULT ARRAY[]
 |ARRAY
-|*Not supported*
 |*Not supported*
 
 |Integer[]
@@ -100,13 +93,11 @@
 |INTEGER ARRAY DEFAULT ARRAY[]
 |ARRAY
 |*Not supported*
-|*Not supported*
 
 |Long[]
 |BIGINT[]
 |BIGINT ARRAY DEFAULT ARRAY[]
 |ARRAY
-|*Not supported*
 |*Not supported*
 
 |Float[]
@@ -114,13 +105,11 @@
 |*Not supported*
 |ARRAY
 |*Not supported*
-|*Not supported*
 
 |Double[]
 |DOUBLE PRECISION[]
 |DOUBLE ARRAY DEFAULT ARRAY[]
 |ARRAY
-|*Not supported*
 |*Not supported*
 
 |String[]
@@ -128,17 +117,14 @@
 |LONGVARCHAR ARRAY DEFAULT ARRAY[]
 |ARRAY
 |*Not supported*
-|*Not supported*
 
 |java.time.LocalDateTime
 |TIMESTAMP
 |TIMESTAMP
 |TIMESTAMP
 |DATETIME(3)
-|DATETIME2(3)
 
 |java.time.LocalDate
-|DATE
 |DATE
 |DATE
 |DATE
@@ -149,34 +135,29 @@
 |TIME
 |TIME
 |TIME
-|TIME
 
 |java.time.ZonedDateTime
 |TIMESTAMP, TEXT
 |TIMESTAMP, LONGVARCHAR
 |TIMESTAMP, VARCHAR
 |DATETIME(3), TINYTEXT
-|DATETIME2(3), VARCHAR(255)
 
 |java.time.Period
 |INTEGER, INTEGER, INTEGER
 |INTEGER, INTEGER, INTEGER
 |INT, INT, INT
 |INTEGER, INTEGER, INTEGER
-|INT, INT, INT
 
 |java.time.Duration
 |BIGINT, INTEGER
 |BIGINT, INTEGER
 |BIGINT, INT
 |BIGINT, INTEGER
-|BIGINT, INT
 
 |java.time.LocalDateTime[]
 |TIMESTAMP[]
 |TIMESTAMP ARRAY DEFAULT ARRAY[]
 |ARRAY
-|*Not supported*
 |*Not supported*
 
 |java.time.LocalDate[]
@@ -184,13 +165,11 @@
 |DATE ARRAY DEFAULT ARRAY[]
 |ARRAY
 |*Not supported*
-|*Not supported*
 
 |java.time.LocalTime[]
 |TIME[]
 |TIME ARRAY DEFAULT ARRAY[]
 |ARRAY
-|*Not supported*
 |*Not supported*
 
 |java.time.ZonedDateTime[]
@@ -198,13 +177,11 @@
 |TIMESTAMP ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]
 |ARRAY
 |*Not supported*
-|*Not supported*
 
 |java.time.Period[]
 |INTEGER[], INTEGER[], INTEGER[]
 |INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
 |ARRAY
-|*Not supported*
 |*Not supported*
 
 |java.time.Duration[]
@@ -212,25 +189,21 @@
 |BIGINT ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
 |ARRAY
 |*Not supported*
-|*Not supported*
 
 |com.fasterxml.jackson.databind.JsonNode
 |JSONB
 |LONGVARCHAR
 |VARCHAR
 |LONGTEXT
-|VARCHAR(max)
 
 |com.fasterxml.jackson.databind.JsonNode[]
 |JSONB[]
 |ARRAY
 |ARRAY
 |*Not supported*
-|*Not supported*
 
 |org.postgis.Point
 |geometry(POINT)
-|*Not supported*
 |*Not supported*
 |*Not supported*
 |*Not supported*
@@ -240,11 +213,9 @@
 |*Not supported*
 |*Not supported*
 |*Not supported*
-|*Not supported*
 
 |org.postgis.LineString
 |geometry(LINESTRING)
-|*Not supported*
 |*Not supported*
 |*Not supported*
 |*Not supported*
@@ -254,11 +225,9 @@
 |*Not supported*
 |*Not supported*
 |*Not supported*
-|*Not supported*
 
 |org.umlg.sqlg.gis.GeographyPolygon
 |geography(POLYGON, 4326)
-|*Not supported*
 |*Not supported*
 |*Not supported*
 |*Not supported*

@@ -2,6 +2,10 @@
 
 Sqlg supports `postgresql` partitioning. To partition a table it needs to be created upfront using the `Topology` api.
 Sqlg currently supports `RANGE`, `LIST` and `HASH` partitions.
+Sub-partitioning is also supported.
+
+.UML diagram of Sqlg's topology.
+image:../img/uml/Package_topology_partitionClassDiagram.PNG[image of Sqlg's topology]
 
 === Range partitioning
 
@@ -12,7 +16,7 @@ public void testPartitioningRange() {
     Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema(); # <1>
     VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
             "Measurement",
-            new LinkedHashMap<String, PropertyType>() {{
+            new LinkedHashMap<>() {{
                 put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
                 put("temp", PropertyDefinition.of(PropertyType.INTEGER));
             }},
@@ -168,3 +172,81 @@ public void testPartitioningHash() {
 <3> Create a named partition for the hash entry with it `modulus` and `remainder`.
 <4> Fetch the partitions for the assertion
 <5> Assert that there are as many partitions as the `modulus`
+
+=== Sub partitioning
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testSubPartition() {
+    Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+    VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
+            "User",
+            new LinkedHashMap<>() {{
+                put("username", PropertyDefinition.of(PropertyType.STRING));
+                put("country", PropertyDefinition.of(PropertyType.STRING));
+                put("age", PropertyDefinition.of(PropertyType.INTEGER));
+                put("dateOfBirth", PropertyDefinition.of(PropertyType.LOCALDATE));
+            }},
+            ListOrderedSet.listOrderedSet(List.of("username", "country", "age")),
+            PartitionType.LIST,
+            "country"); <1>
+    Partition usa = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists("USA", "'USA'", PartitionType.RANGE, "age"); <2>
+    Partition sa = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists("SA", "'SA'", PartitionType.RANGE, "age"); <3>
+    Partition gb = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists("GB", "'GB'", PartitionType.RANGE, "age"); <4>
+    usa.ensureRangePartitionExists("usa0to10", "0", "10"); <5>
+    usa.ensureRangePartitionExists("usa10to20", "10", "20");
+    sa.ensureRangePartitionExists("sa0to10", "0", "10");
+    sa.ensureRangePartitionExists("sa10to20", "10", "20");
+    gb.ensureRangePartitionExists("gb0to10", "0", "10");
+    gb.ensureRangePartitionExists("gb10to20", "10", "20");
+    this.sqlgGraph.tx().commit();
+
+    LocalDate localDate = LocalDate.now();
+    for (int age = 0; age < 20; age++) {
+        for (String country : List.of("USA", "SA", "GB")) {
+            for (String username : List.of("John", "Peter", "David")) {
+                this.sqlgGraph.addVertex(
+                        T.label, "User",
+                        "username", username,
+                        "country", country,
+                        "age", age,
+                        "dateOfBirth", localDate.minusYears(age)
+                );
+            }
+        }
+    }
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> users = this.sqlgGraph.traversal().V()
+            .hasLabel("User")
+            .has("country", P.eq("USA"))
+            .has("age", 5)
+            .toList(); <6>
+    Assert.assertEquals(3, users.size());
+
+}
+----
+
+<1> Create a partitioned VertexLabel.
+<2> Create a partition for `USA` and together with a sub-partition on `age`.
+<3> Create a partition for `SA` and together with a sub-partition on `age`.
+<4> Create a partition for `GB` and together with a sub-partition on `age`.
+<5> Create an `RANGE` sub-partition on the `age` property of the `USA` partition.
+<6> The below sql will execute on the relevant partitions.
+
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_User"."username" AS "alias1",
+	"public"."V_User"."country" AS "alias2",
+	"public"."V_User"."age" AS "alias3",
+	"public"."V_User"."dateOfBirth" AS "alias4"
+FROM
+	"public"."V_User"
+WHERE
+	( "public"."V_User"."country" = 'USA') AND ( "public"."V_User"."age" = 5)
+----
+
+.Sub-partition and postgresql explain plan.
+image:../img/sqlg/sub-partitions.png[image of Sqlg's topology]

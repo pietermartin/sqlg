@@ -2138,7 +2138,7 @@ p {
 <div class="details">
 <span id="author" class="author">Pieter Martin</span><br>
 <span id="revnumber">version 3.0.0,</span>
-<span id="revdate">April 2022</span>
+<span id="revdate">November 2022</span>
 <br><span id="revremark"></span>
 </div>
 <div id="toc" class="toc2">
@@ -2176,7 +2176,6 @@ p {
 </ul>
 </li>
 <li><a href="#anchor-full-text-indexing">8.2. Full-text indexing</a></li>
-<li><a href="#_global_unique_indexing">8.3. Global unique indexing</a></li>
 </ul>
 </li>
 <li><a href="#_multiple_jvms">9. Multiple JVMs</a></li>
@@ -2301,8 +2300,7 @@ p {
 <p><a href="https://github.com/pietermartin/sqlg"><strong>Sqlg</strong></a> <span class="image"><img src="./img/github/SVG/mark-github.svg" alt="mark github"></span> is a implementation of <a href="http://tinkerpop.apache.org/">Apache TinkerPop</a> on a
 <a href="http://en.wikipedia.org/wiki/Relational_database_management_system">RDBMS</a>.
 Currently <a href="http://www.postgresql.org/">Postgresql</a>, <a href="http://hsqldb.org/">HSQLDB</a>, <a href="http://h2database.com">H2</a>,
-<a href="https://mariadb.org/">MariaDB</a>, <a href="https://www.mysql.com/">MySQL</a> and
-<a href="https://www.microsoft.com/en-us/sql-server/sql-server-2017">MSSqlServer</a> are supported.</p>
+<a href="https://mariadb.org/">MariaDB</a>, <a href="https://www.mysql.com/">MySQL</a> are supported.</p>
 </div>
 <div class="paragraph">
 <p>Sqlg has a github <a href="https://github.com/pietermartin/sqlg/discussions">discussions</a> page.</p>
@@ -2314,9 +2312,8 @@ Currently <a href="http://www.postgresql.org/">Postgresql</a>, <a href="http://h
 <div class="sectionbody">
 <div class="paragraph">
 <p>Sqlg primary challenge is to reduce latency by combining TinkerPop
-<a href="http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps">steps</a> into as few as possible database calls.
-The fine-grained nature of graph traversals makes this crucial,
-otherwise the database call latency has prohibitively high performance impact.</p>
+<a href="http://tinkerpop.apache.org/docs/current/reference/#graph-traversal-steps">steps</a> into as few database calls as possible.
+Without a significant reduction in latency the fine-grained nature of graph traversals has a prohibitively high performance impact.</p>
 </div>
 <div class="paragraph">
 <p>Sqlg supports various bulk modes to reduce latency when modifying the graph.</p>
@@ -2328,7 +2325,7 @@ otherwise the database call latency has prohibitively high performance impact.</
 <div class="title">Note</div>
 </td>
 <td class="content">
-Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and MariaDB as it runs embedded in the jvm.
+Hsqldb and H2 do not suffer the same latency as Postgresql and MariaDB as it runs embedded in the jvm.
 </td>
 </tr>
 </table>
@@ -2347,10 +2344,10 @@ Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and Mari
 <h2 id="_tinkerpop_supported_features">3. TinkerPop supported features</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Sqlg version 3.0.0 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.5.1</a>.</p>
+<p>Sqlg version 3.0.0 runs on <a href="https://tinkerpop.apache.org">TinkerPop 3.6.2</a>.</p>
 </div>
 <div class="paragraph">
-<p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code> and <code>ProcessStandardSuite</code> test suites.</p>
+<p>Sqlg passes TinkerPop&#8217;s <code>StructureStandardSuite</code>, <code>ProcessStandardSuite</code> test suites then and <code>Gherkin feature</code> tests.</p>
 </div>
 <div class="ulist">
 <div class="title">Graph Features <strong>not</strong> implemented.</div>
@@ -2483,6 +2480,18 @@ Hsqldb and H2 do not suffer the same latency as Postgresql, MSSqlServer and Mari
 <div class="title">Note</div>
 </td>
 <td class="content">
+Sqlg supports <code>NullPropertyValues</code>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
 Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is explained <a href="#anchor-user-supplied-identifiers">below</a>.
 </td>
 </tr>
@@ -2495,6 +2504,9 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <div class="sectionbody">
 <div class="paragraph">
 <p>Postgresql schema, table and column names can not be more than 63 characters long.</p>
+</div>
+<div class="paragraph">
+<p>Sqlg does not allow referencing non-existing properties in <code>`order().by('nonExisting')</code>. Unlike <code>TinkerGraph</code> <code>Sqlg</code> will throw an exception.</p>
 </div>
 </div>
 </div>
@@ -2616,18 +2628,8 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 &lt;/dependency&gt;</pre>
 </div>
 </div>
-<div class="literalblock">
-<div class="title">MSSqlServer</div>
-<div class="content">
-<pre>&lt;dependency&gt;
-    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
-    &lt;artifactId&gt;sqlg-mssqlserver&lt;/artifactId&gt;
-    &lt;version&gt;3.0.0&lt;/version&gt;
-&lt;/dependency&gt;</pre>
-</div>
-</div>
 <div class="paragraph">
-<p>These will include <code>gremlin-groovy</code>. If you have no need for that then only include the dialect.</p>
+<p>The above mentioned maven coordinates will include <code>gremlin-groovy</code>. To exclude <code>gremlin-groovy</code> only include the dialect.</p>
 </div>
 <div class="literalblock">
 <div class="title">Postgresql</div>
@@ -2675,16 +2677,6 @@ Sqlg supports user supplied ids but not quite as defined by TinkerPop. This is e
 <pre>&lt;dependency&gt;
     &lt;groupId&gt;org.umlg&lt;/groupId&gt;
     &lt;artifactId&gt;sqlg-mysql-dialect&lt;/artifactId&gt;
-    &lt;version&gt;3.0.0&lt;/version&gt;
-&lt;/dependency&gt;</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="title">MSSqlServer</div>
-<div class="content">
-<pre>&lt;dependency&gt;
-    &lt;groupId&gt;org.umlg&lt;/groupId&gt;
-    &lt;artifactId&gt;sqlg-mssqlserver-dialect&lt;/artifactId&gt;
     &lt;version&gt;3.0.0&lt;/version&gt;
 &lt;/dependency&gt;</pre>
 </div>
@@ -2749,16 +2741,8 @@ jdbc.username=mysql
 jdbc.password=mysql</pre>
 </div>
 </div>
-<div class="literalblock">
-<div class="title">MSSqlServer</div>
-<div class="content">
-<pre>jdbc.url=jdbc:sqlserver://localhost:1433;databaseName=yourdb;
-jdbc.username=SA
-jdbc.password=*****</pre>
-</div>
-</div>
 <div class="paragraph">
-<p>In the case of Postgresql and MSSqlServer the database must already exist.</p>
+<p>In the case of <code>Postgresql</code> the database must already exist.</p>
 </div>
 <div class="paragraph">
 <p>Once you have access to the graph you can use it as per normal.</p>
@@ -2790,7 +2774,7 @@ the connection pool will run out of connections.</p>
 <h3 id="_gremlin_console">5.3. Gremlin Console</h3>
 <div class="paragraph">
 <div class="title">Postgresql</div>
-<p>pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.5.1-bin/apache-tinkerpop-gremlin-console-3.5.1/bin/$ ./gremlin.sh</p>
+<p>pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.5.1-bin/apache-tinkerpop-gremlin-console-3.6.2/bin/$ ./gremlin.sh</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -2844,12 +2828,11 @@ gremlin&gt;</pre>
 <table class="tableblock frame-all grid-all stretch">
 <caption class="title">Table 1. Table Data types</caption>
 <colgroup>
-<col style="width: 16.6666%;">
-<col style="width: 16.6666%;">
-<col style="width: 16.6666%;">
-<col style="width: 16.6666%;">
-<col style="width: 16.6666%;">
-<col style="width: 16.667%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
+<col style="width: 20%;">
 </colgroup>
 <thead>
 <tr>
@@ -2858,7 +2841,6 @@ gremlin&gt;</pre>
 <th class="tableblock halign-left valign-top">HSQLDB</th>
 <th class="tableblock halign-left valign-top">H2</th>
 <th class="tableblock halign-left valign-top">MariaDB</th>
-<th class="tableblock halign-left valign-top">MSSqlServer</th>
 </tr>
 </thead>
 <tbody>
@@ -2868,7 +2850,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">BIT</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Byte</p></td>
@@ -2876,11 +2857,9 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TINYINT</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Short</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT</p></td>
@@ -2892,11 +2871,9 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">INT</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Long</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT</p></td>
@@ -2908,7 +2885,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">REAL</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">REAL</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Double</p></td>
@@ -2916,7 +2892,13 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BigDecimal</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE PRECISION</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
@@ -2924,7 +2906,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">LONGTEXT</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(2000)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">String (fixed length)</p></td>
@@ -2932,14 +2913,12 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(x)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">UUID</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
@@ -2948,7 +2927,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BOOLEAN ARRAY DEFAULT ARRAY[]</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Byte[]</p></td>
@@ -2956,14 +2934,12 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARBINARY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BINARY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BLOB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">VARBINARY(max)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Short[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">SMALLINT ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
@@ -2972,14 +2948,12 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Long[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
@@ -2988,14 +2962,12 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Double[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE PRECISION[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DOUBLE ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
@@ -3004,7 +2976,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime</p></td>
@@ -3012,11 +2983,9 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME(3)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME2(3)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDate</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATE</p></td>
@@ -3028,7 +2997,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TIME</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.ZonedDateTime</p></td>
@@ -3036,7 +3004,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP, LONGVARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP, VARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME(3), TINYTEXT</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">DATETIME2(3), VARCHAR(255)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Period</p></td>
@@ -3044,7 +3011,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, INTEGER, INTEGER</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INT, INT, INT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER, INTEGER, INTEGER</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">INT, INT, INT</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Duration</p></td>
@@ -3052,14 +3018,12 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INTEGER</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INT</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INTEGER</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT, INT</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalDateTime[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
@@ -3068,14 +3032,12 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">DATE ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.LocalTime[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIME ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
@@ -3084,14 +3046,12 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TIMESTAMP ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">java.time.Period[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER[], INTEGER[], INTEGER[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
@@ -3100,7 +3060,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BIGINT ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">com.fasterxml.jackson.databind.JsonNode</p></td>
@@ -3108,7 +3067,6 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">LONGVARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">LONGTEXT</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">VARCHAR(max)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">com.fasterxml.jackson.databind.JsonNode[]</p></td>
@@ -3116,12 +3074,10 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ARRAY</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.Point</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">geometry(POINT)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
@@ -3132,12 +3088,10 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">org.postgis.LineString</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">geometry(LINESTRING)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
@@ -3148,12 +3102,10 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">org.umlg.sqlg.gis.GeographyPolygon</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">geography(POLYGON, 4326)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
@@ -3179,7 +3131,7 @@ gremlin&gt;</pre>
 <div class="sectionbody">
 <div class="paragraph">
 <p>TinkerPop&#8217;s property graph semantics specifies that every vertex and edge has a single label. Modelling this in a RDBMS
-is trivial. TinkerPop has no notion of cardinality nor of order. Every relationship between vertex labels is modelled as
+is trivial. TinkerPop edges has no notion of cardinality nor of order. Every relationship between vertex labels is modelled as
 <code>many to many</code> relationship with no specified order.</p>
 </div>
 <div class="paragraph">
@@ -3201,7 +3153,7 @@ stores the vertex&#8217;s properties.</p>
 <h3 id="_edge_tables">7.2. Edge tables</h3>
 <div class="paragraph">
 <p>Every unique edge label maps to a table. Edge tables are prefixed with a <code>E_</code>. i.e. <code>E_friend</code>. The edge table stores
-each edge&#8217;s adjacent vertex ids and the edge properties. The column corresponding to each adjacent vertex id (<code>IN</code> and <code>OUT</code>)
+each edge&#8217;s adjacent vertex ids and the edge&#8217;s properties. The column corresponding to each adjacent vertex id (<code>IN</code> and <code>OUT</code>)
 has a foreign key to the adjacent vertex&#8217;s table. The foreign key is optional, instead just an index on the adjacent vertex id
 can be used.</p>
 </div>
@@ -3269,7 +3221,7 @@ Edge foreign keys are enabled by default.
 <div class="paragraph">
 <p>Many RDBMS databases have the notion of a <code>schema</code> as a namespace for tables. Sqlg supports schemas
 for vertex labels. Distinct schemas for edge tables are unnecessary as edge tables are created in the schema of the adjacent <code>out</code> vertex.
-By default schemas for vertex tables go into the underlying databases' default schema. For Postgresql, hsqldb and H2 this
+By default, schemas for vertex tables go into the underlying databases' default schema. For Postgresql, hsqldb and H2 this
 is the <code>public</code> schema.</p>
 </div>
 <div class="paragraph">
@@ -3337,7 +3289,7 @@ Table <code>E_owner</code> is in the <code>fleet</code> schema as its <code>out<
 <p>An edge label can have many different out vertex labels.
 This means that its possible for a single edge label to be stored in multiple schemas and tables.
 One for each distinct out vertex label. Gremlin queries will work as per normal.
-However it is possible to target the edges per out vertex schema directly.</p>
+However, it is possible to target the edges per out vertex schema directly.</p>
 </div>
 <div class="listingblock">
 <div class="title">eg.</div>
@@ -3478,7 +3430,7 @@ public void testCompositeIndex() {
 </div>
 <div class="paragraph">
 <div class="title">postgresql V_Person composite index sql definition</div>
-<p><span class="image"><img src="./img/sqlg/postgresql_composite_index.png" alt="image of tinkerpop-classic"></span></p>
+<p><span class="image"><img src="./sqlg/postgresql_composite_index.png" alt="image of tinkerpop-classic"></span></p>
 </div>
 <div class="paragraph">
 <p>Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
@@ -3534,75 +3486,6 @@ public void testFullTextIndex() {
 <p>Query the full-text index using Sqlg&#8217;s custom FullText predicate.</p>
 </li>
 </ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_global_unique_indexing">8.3. Global unique indexing</h3>
-<div class="paragraph">
-<p>Global unique indexing is a way of specifying that multiple properties across different labels are unique.
-For every <code>GlobalUniqueIndex</code> Sqlg maintains a separate table with a unique index defined on it.
-Every property that partakes in the GlobalUniqueIndex will have its value duplicated in this table.
-These tables are kept in the <code>gui_schema</code></p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
-public void testPersonAndDogDoNotHaveTheSameName() {
-    Map&lt;String, PropertyDefinition&gt; properties = new HashMap&lt;String, PropertyType&gt;() {{
-        put("name", PropertyDefinition.of(PropertyType.STRING));
-    }}; # <b class="conum">(1)</b>
-    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties); # <b class="conum">(2)</b>
-    VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Dog", properties); # <b class="conum">(3)</b>
-    PropertyColumn personName = personVertexLabel.getProperty("name").get(); # <b class="conum">(4)</b>
-    PropertyColumn dogName = dogVertexLabel.getProperty("name").get(); # <b class="conum">(5)</b>
-    this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet&lt;PropertyColumn&gt;() {{
-        add(personName);
-        add(dogName);
-    }}); # <b class="conum">(6)</b>
-    this.sqlgGraph.tx().commit();
-
-    this.sqlgGraph.addVertex(T.label, "Person", "name", "Tyson"); # <b class="conum">(7)</b>
-    try {
-        //This will fail
-        this.sqlgGraph.addVertex(T.label, "Dog", "name", "Tyson"); # <b class="conum">(8)</b>
-        fail("Duplicate key violation suppose to prevent this from executing");
-    } catch (RuntimeException e) {
-        //swallow
-        this.sqlgGraph.tx().rollback();
-    }
-}</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<ol>
-<li>
-<p>A map of the properties to add.</p>
-</li>
-<li>
-<p>Create the 'Person' VertexLabel with its properties.</p>
-</li>
-<li>
-<p>Create the 'Dog' VertexLabel with its properties.</p>
-</li>
-<li>
-<p>Get the <code>PropertyColumn</code> for the 'name' property of 'Person'.</p>
-</li>
-<li>
-<p>Get the <code>PropertyColumn</code> for the 'name' property of 'Dog'.</p>
-</li>
-<li>
-<p>Create the <code>GlobalUniqueIndex</code> on the 'name' property of 'Person' and 'Dog'. This will ensure that 'Person&#8217;s and 'Dog&#8217;s do not have the same name.</p>
-</li>
-<li>
-<p>Add a 'Person' with the name "Tyson".</p>
-</li>
-<li>
-<p>Try to add a 'Dog' with the name "Tyson". This will fail as the `GlobalUniqueIndex' will prevent 'Person&#8217;s and 'Dog&#8217;s from having the same name.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>GlobalUniqueIndexes do not support composite indexes.</p>
 </div>
 </div>
 </div>
@@ -8566,7 +8449,7 @@ globals &lt;&lt; [g : graph.traversal()]</pre>
 <div id="footer">
 <div id="footer-text">
 Version 3.0.0<br>
-Last updated 2022-04-02 10:11:17 +0200
+Last updated 2022-11-06 15:16:40 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>

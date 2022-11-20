@@ -5,7 +5,8 @@ Sqlg stores the graph's topology information in the graph itself as a graph.
 The topology is stored in the `sqlg_schema` schema.
 
 .UML diagram of Sqlg's topology.
-image:uml/topology Class Diagram.png[image of Sqlg's topology]
+image:../img/uml/Package_topology_propertyClassDiagramQualifier.PNG[image of Sqlg's topology]
+
 
 TinkerPop has no notion of schema or topology. However any TinkerPop graph has an implicit schema.
 Sqlg manages the schema as a first class construct.
@@ -27,7 +28,7 @@ Being able to query the topology is helpful to understand a graph's structure.
 ----
 @Test
 public void showTopologyTraversals() {
-    Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0); <1>
+    Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0);
     final GraphReader reader = sqlgGraph.io(builder).reader().create();
     try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern-v3d0.json")) {
         reader.readGraph(stream, sqlgGraph);
@@ -139,7 +140,7 @@ weight : DOUBLE
 It is often useful to create the topology upfront. The topology creation api is accessed via the `Topology` object.
 It is a singleton. `Topology topology = sqlgGraph.getTopology();`
 To create new topology objects use the `ensureXXX` methods. They will return a topology object representing the specific
-topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index`
+topology element. i.e. `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index`, `Partition`
 
 [NOTE]
 The `ensureXXX` methods will create the topology object if it does not exists.
@@ -221,7 +222,7 @@ public void testNameIsRequired() {
     VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap<>() {{
-                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1))); # <1>
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1))); # <1>
                     }}
             );
     boolean failure = false;
@@ -250,7 +251,7 @@ public void testArrayLowerMultiplicity() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap<>() {{
-                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<1>
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4))); #<1>
                     }}
             );
     this.sqlgGraph.tx().commit();
@@ -281,7 +282,7 @@ public void testArrayUpperMultiplicity() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap<>() {{
-                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<1>
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4))); #<1>
                     }}
             );
     this.sqlgGraph.tx().commit();
@@ -316,7 +317,7 @@ public void testDefaultValue() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap<>() {{
-                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'John'")); #<1>
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'John'")); #<1>
                     }}
             );
     this.sqlgGraph.tx().commit();
@@ -342,7 +343,7 @@ public void testCheckConstraints() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap<>() {{
-                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'Peter'", "name <> 'John'")); #<1>
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), "'Peter'", "name <> 'John'")); #<1>
                     }}
             );
     this.sqlgGraph.tx().commit();

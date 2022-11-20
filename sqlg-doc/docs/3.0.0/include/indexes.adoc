@@ -4,6 +4,9 @@
 
 Sqlg supports adding a unique or non-unique index to any property or properties.
 
+.UML diagram of Sqlg's topology.
+image:../img/uml/Package_topology_indexClassDiagram.PNG[image of Sqlg's topology]
+
 To add an index one has to use Sqlg's topology interface.
 
 [source,java,options="nowrap"]
@@ -46,7 +49,7 @@ public void testIndex() {
 <5> The underlying RDBMS will use the index for the executed sql.
 
 .postgresql V_Person sql definition
-image:sqlg/V_Person_name_index.png[image of tinkerpop-classic]
+image:../img/sqlg/V_Person_name_index.png[image of tinkerpop-classic]
 
 ==== Composite indexes
 
@@ -75,7 +78,7 @@ public void testCompositeIndex() {
 <2> Create a composite index on 'firstName' and 'lastName'
 
 .postgresql V_Person composite index sql definition
-image:sqlg/postgresql_composite_index.png[image of tinkerpop-classic]
+image:../sqlg/postgresql_composite_index.png[image of tinkerpop-classic]
 
 Outside of creating the index Sqlg has no further direct interaction with the index. However gremlin queries with a
 `HasStep` targeting a property with an index on it will translate to a sql `where` clause on that property and
@@ -112,50 +115,3 @@ public void testFullTextIndex() {
 ----
 <1> Create a full-text gin index.
 <2> Query the full-text index using Sqlg's custom FullText predicate.
-
-=== Global unique indexing
-
-Global unique indexing is a way of specifying that multiple properties across different labels are unique.
-For every `GlobalUniqueIndex` Sqlg maintains a separate table with a unique index defined on it.
-Every property that partakes in the GlobalUniqueIndex will have its value duplicated in this table.
-These tables are kept in the `gui_schema`
-
-[source,java,options="nowrap"]
-----
-@Test
-public void testPersonAndDogDoNotHaveTheSameName() {
-    Map<String, PropertyDefinition> properties = new HashMap<String, PropertyType>() {{
-        put("name", PropertyDefinition.of(PropertyType.STRING));
-    }}; # <1>
-    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties); # <2>
-    VertexLabel dogVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Dog", properties); # <3>
-    PropertyColumn personName = personVertexLabel.getProperty("name").get(); # <4>
-    PropertyColumn dogName = dogVertexLabel.getProperty("name").get(); # <5>
-    this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
-        add(personName);
-        add(dogName);
-    }}); # <6>
-    this.sqlgGraph.tx().commit();
-
-    this.sqlgGraph.addVertex(T.label, "Person", "name", "Tyson"); # <7>
-    try {
-        //This will fail
-        this.sqlgGraph.addVertex(T.label, "Dog", "name", "Tyson"); # <8>
-        fail("Duplicate key violation suppose to prevent this from executing");
-    } catch (RuntimeException e) {
-        //swallow
-        this.sqlgGraph.tx().rollback();
-    }
-}
-----
-<1> A map of the properties to add.
-<2> Create the 'Person' VertexLabel with its properties.
-<3> Create the 'Dog' VertexLabel with its properties.
-<4> Get the `PropertyColumn` for the 'name' property of 'Person'.
-<5> Get the `PropertyColumn` for the 'name' property of 'Dog'.
-<6> Create the `GlobalUniqueIndex` on the 'name' property of 'Person' and 'Dog'. This will ensure that 'Person's and 'Dog's do not have the same name.
-<7> Add a 'Person' with the name "Tyson".
-<8> Try to add a 'Dog' with the name "Tyson". This will fail as the `GlobalUniqueIndex' will prevent 'Person's and 'Dog's from having the same name.
-
-
-GlobalUniqueIndexes do not support composite indexes.

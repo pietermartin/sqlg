@@ -191,7 +191,7 @@ the connection pool will run out of connections.
 === Gremlin Console
 
 .Postgresql
-pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.5.1-bin/apache-tinkerpop-gremlin-console-3.5.1/bin/$ ./gremlin.sh
+pieter@pieter-Precision-7510:~/Downloads/tinkerpop-console/apache-tinkerpop-gremlin-console-3.5.1-bin/apache-tinkerpop-gremlin-console-3.6.2/bin/$ ./gremlin.sh
 [subs="specialchars, attributes"]
 
          \,,,/

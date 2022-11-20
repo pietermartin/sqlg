@@ -1,13 +1,13 @@
-<a href="http://teamcity.sqlg.org/viewType.html?buildTypeId=Sqlg_Build&guest=1">
-    <img src="http://teamcity.sqlg.org/app/rest/builds/buildType:(id:Sqlg_Build),branch:sqlg3/statusIcon"/>
-</a>
+[![Build status](https://teamcity.sqlg.org/guestAuth/app/rest/builds/buildType:(id:Sqlg_Build),branch:sqlg3/statusIcon)](https://teamcity.sqlg.org/viewType.html?buildTypeId=Sqlg_Build)
 
 Sqlg
 ====
 
 **Sqlg** is a implementation of [Tinkerpop3](https://github.com/apache/incubator-tinkerpop) on a [RDBMS](http://en.wikipedia.org/wiki/Relational_database_management_system).
 Currently [H2](http://h2database.com/), [HSQLDB](http://hsqldb.org/), [Postgresql](http://www.postgresql.org/),
-[MariaDB](https://mariadb.org/), [MySql](https://www.mysql.com/) and [MSSqlServer](https://www.microsoft.com/en-us/sql-server/sql-server-2017) are supported.
+[MariaDB](https://mariadb.org/) and [MySql](https://www.mysql.com/) are supported.
+
+3.0.0 [Documentation](http://sqlg.org/docs/3.0.0)
 
 2.1.6 [Documentation](http://sqlg.org/docs/2.1.6)
 
