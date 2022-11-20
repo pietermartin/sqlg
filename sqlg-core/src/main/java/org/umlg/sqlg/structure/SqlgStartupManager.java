@@ -173,6 +173,22 @@ class SqlgStartupManager {
             //https://github.com/pietermartin/sqlg/issues/450
             correctSqlgSchemaDDLOnForeignKeyIndexes();
         }
+        if (v.isUnknownVersion() || v.compareTo(new Version(3, 0, 0, null, null, null)) < 0) {
+            upgradeTo300();
+        }
+    }
+
+    private void upgradeTo300() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        List<String> addPartitionTables = this.sqlDialect.addProperDefinitions();
+        for (String addPartitionTable : addPartitionTables) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(addPartitionTable);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
     private void addPartitionSupportToSqlgSchema() {

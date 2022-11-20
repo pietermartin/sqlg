@@ -2717,8 +2717,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "\"createdOn\" TIMESTAMP NOT NULL, " +
                 "\"name\" TEXT NOT NULL, " +
                 "\"type\" TEXT NOT NULL," +
-                "\"multiplicityLower\" BIGINT NOT NULL," +
-                "\"multiplicityUpper\" BIGINT NOT NULL," +
+                "\"lowerMultiplicity\" BIGINT NOT NULL," +
+                "\"upperMultiplicity\" BIGINT NOT NULL," +
                 "\"defaultLiteral\" TEXT," +
                 "\"checkConstraint\" TEXT" +
                 ");");
@@ -4414,5 +4414,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             default:
                 return false;
         }
+    }
+
+    @Override
+    public List<String> addProperDefinitions() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" BIGINT NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" BIGINT NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL + "\" BIGINT NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT + "\" BIGINT NOT NULL;"
+        );
     }
 }

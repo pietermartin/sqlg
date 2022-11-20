@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.doc.DocTests;
+import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicity;
 
 /**
  * Date: 2014/07/16
@@ -10,19 +10,11 @@ import org.umlg.sqlg.test.doc.DocTests;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestIoEdge.class,
-//        TestNullProperties.class,
-//        TestBatchedStreaming.class,
-//        TestBatchServerSideEdgeCreation.class
-//        TestSetProperty.class,
-//        TestBatchNormalNullUpdate.class,
-//        TestBatchNormalUpdate.class
-//        TestBatchServerSideEdgeCreation.class
-//        TestGroupCount.class,
-//        TestTinkerPopFeatureTests.class,
-//        TestGraphStepOrderBy.class
-//        TestRepeatWithOrderAndRange.class,
-        DocTests.class
+        TestEdgeMultiplicity.class,
+//        TestEdgeMultiplicityUnique.class,
+//        TestEdgeMultiplicityDistributed.class,
+//        TestMultiplicityAddRemoveEdge.class
+//        DocTests.class
 })
 public class AnyTest {
 }

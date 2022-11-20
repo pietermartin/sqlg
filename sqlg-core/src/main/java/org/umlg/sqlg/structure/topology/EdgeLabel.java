@@ -498,12 +498,12 @@ public class EdgeLabel extends AbstractLabel {
         StringBuilder createIndexIn = new StringBuilder();
         StringBuilder createIndexOut = new StringBuilder();
         Multiplicity outMultiplicity = edgeDefinition.outMultiplicity();
-        Multiplicity inMultiplicity = edgeDefinition.outMultiplicity();
+        Multiplicity inMultiplicity = edgeDefinition.inMultiplicity();
         if (this.partitionType.isNone() && sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable() ||
-                (this.partitionType.isNone() && isMultiplicityOneToOneAndUnique(outMultiplicity, inMultiplicity))) {
+                (this.partitionType.isNone() && isMultiplicityOneToOne(outMultiplicity, inMultiplicity))) {
 
             createIndexIn.append("\n\tCREATE ");
-            if (isMultiplicityOneToOneAndUnique(outMultiplicity, inMultiplicity)) {
+            if (isMultiplicityOneToOne(outMultiplicity, inMultiplicity)) {
                 createIndexIn.append("UNIQUE ");
             }
             createIndexIn.append("INDEX");
@@ -544,8 +544,8 @@ public class EdgeLabel extends AbstractLabel {
 
             createIndexOut.append("\n\tCREATE ");
             outMultiplicity = edgeDefinition.outMultiplicity();
-            inMultiplicity = edgeDefinition.outMultiplicity();
-            if (isMultiplicityOneToOneAndUnique(outMultiplicity, inMultiplicity)) {
+            inMultiplicity = edgeDefinition.inMultiplicity();
+            if (isMultiplicityOneToOne(outMultiplicity, inMultiplicity)) {
                 createIndexOut.append("UNIQUE ");
             }
             createIndexOut.append("INDEX");
@@ -586,7 +586,6 @@ public class EdgeLabel extends AbstractLabel {
         }
 
         //Multiplicity unique constraints
-        //one to one case
         StringBuilder createIndexInAndOut = new StringBuilder();
         if ((outMultiplicity.isOne() && inMultiplicity.isMany() && inMultiplicity.unique()) ||
                 (outMultiplicity.isMany() && inMultiplicity.isOne() && outMultiplicity.unique()) ||
@@ -680,8 +679,8 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    private static boolean isMultiplicityOneToOneAndUnique(Multiplicity outMultiplicity, Multiplicity inMultiplicity) {
-        return outMultiplicity.isOne() && inMultiplicity.isOne() && (outMultiplicity.unique() || inMultiplicity.unique());
+    private static boolean isMultiplicityOneToOne(Multiplicity outMultiplicity, Multiplicity inMultiplicity) {
+        return outMultiplicity.isOne() && inMultiplicity.isOne();
     }
 
     void afterCommit() {

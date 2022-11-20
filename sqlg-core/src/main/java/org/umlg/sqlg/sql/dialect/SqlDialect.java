@@ -1179,6 +1179,12 @@ public interface SqlDialect {
         throw new IllegalStateException("Partitioning is not supported.");
     }
 
+    default List<String> addProperDefinitions() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \""+Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER +"\" BIGINT NOTNULL;"
+        );
+    }
+
     default String addDbVersionToGraph(DatabaseMetaData metadata) {
         try {
             return "ALTER TABLE \"sqlg_schema\".\"V_graph\" ADD COLUMN \"dbVersion\" TEXT DEFAULT '" + metadata.getDatabaseProductVersion() + "';";

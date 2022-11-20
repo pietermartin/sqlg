@@ -338,12 +338,12 @@ public class Topology {
      * Lower multiplicity of the property. > 0 indicates the property is required
      */
     @SuppressWarnings("WeakerAccess")
-    public static final String SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER = "multiplicityLower";
+    public static final String SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER = "lowerMultiplicity";
 
     /**
      * Upper multiplicity of the property. -1 indicates the property has no upper limit
      */
-    public static final String SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER = "multiplicityUpper";
+    public static final String SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER = "upperMultiplicity";
 
     /**
      * The default value for the property. The value gets passed straight into the db without inspection.
