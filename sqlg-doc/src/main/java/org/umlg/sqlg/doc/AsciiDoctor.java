@@ -2,13 +2,14 @@ package org.umlg.sqlg.doc;
 
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.Attributes;
-import org.asciidoctor.OptionsBuilder;
+import org.asciidoctor.Options;
 import org.asciidoctor.SafeMode;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.DocinfoProcessor;
+import org.asciidoctor.extension.Location;
+import org.asciidoctor.extension.LocationType;
 
 import java.io.File;
-import java.util.Map;
 
 import static org.asciidoctor.Asciidoctor.Factory.create;
 
@@ -23,43 +24,45 @@ public class AsciiDoctor {
     }
 
     private void createDocs() {
-//        String version = "2.0.1";
-//        String version = "2.1.6";
         String version = "3.0.0";
-        Asciidoctor asciidoctor = create();
-        try {
+        try (Asciidoctor asciidoctor = create()) {
             File file = new File("sqlg-doc/docs/" + version + "/sqlg.adoc");
             File html = new File("sqlg-doc/docs/" + version + "/index.html");
-            Attributes attributes = new Attributes();
-            attributes.setBackend("html5");
-            attributes.setStyleSheetName("asciidoctor-default.css");
-            attributes.setDocType("book");
-            attributes.setSourceHighlighter("highlightjs");
-
-            Map<String, Object> options =  OptionsBuilder.options()
+            Attributes attributes = Attributes.builder()
+                    .styleSheetName("asciidoctor-default.css")
+//                    .styleSheetName("boot-superhero.css")
+                    .docType("book")
+                    .backend("html5")
+                    .sourceHighlighter("highlightjs")
+                    .build();
+            Options options = Options.builder()
                     .attributes(attributes)
-                    .toFile(new File(html.getPath()))
                     .headerFooter(true)
+                    .toFile(new File(html.getPath()))
                     .safe(SafeMode.SERVER)
-                    .asMap();
-            options.put("location", ":footer");
-            Docinfo docinfo = new Docinfo(options);
-            asciidoctor.javaExtensionRegistry().docinfoProcessor(docinfo);
+                    .build();
+            DocinfoHeader docinfoHeader = new DocinfoHeader();
+            DocinfoFooter docinfoFooter = new DocinfoFooter();
+            asciidoctor.javaExtensionRegistry()
+                    .docinfoProcessor(docinfoHeader)
+                    .docinfoProcessor(docinfoFooter);
             asciidoctor.convertFile(
                     file,
                     options
             );
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        }
+    }
+    @Location(LocationType.HEADER)
+    private class DocinfoHeader extends DocinfoProcessor {
+
+        @Override
+        public String process(Document document) {
+            return "<script src=\"tocbot.min.js\"></script>\n<link rel=\"stylesheet\" href=\"tocbot.css\">";
         }
     }
 
-    private class Docinfo extends DocinfoProcessor {
-
-        Docinfo(Map<String, Object> config) {
-            super(config);
-        }
-
+    @Location(LocationType.FOOTER)
+    private class DocinfoFooter extends DocinfoProcessor {
 
         @Override
         public String process(Document document) {

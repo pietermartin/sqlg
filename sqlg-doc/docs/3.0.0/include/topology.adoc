@@ -34,7 +34,7 @@ public void showTopologyTraversals() {
         reader.readGraph(stream, sqlgGraph);
     } catch (IOException e) {
         Assert.fail(e.getMessage());
-    }
+    } <1>
     System.out.println("//All vertex labels");
     sqlgGraph.topology().V()
             .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <2>
@@ -593,7 +593,8 @@ Currently Sqlg does not automatically check the multiplicities as no efficient w
 
 However sqlg does provide a helper method for application code to call to validate multiplicities. There are two checks the user can call. Either for an individual vertex or for a VertexLabel.
 
-# 1
+===== 1 checkMultiplicity (per vertex)
+
 [source,java,options="nowrap"]
 ----
 @Test
@@ -657,7 +658,8 @@ An `Address` can only be associated to zero or one `Person`
 <2> Check the multiplicity of 'john's addresses. It passes as its between 1 and 3.
 <3> Check that John's home address is associated to only on `Person`. It fails as its also been associated to 'peter'.
 
-# 2
+===== 2 checkMultiplicity (per VertexLabel)
+
 [source,java,options="nowrap"]
 ----
 @Test

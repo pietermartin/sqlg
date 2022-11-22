@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.12">
+<meta name="generator" content="Asciidoctor 2.0.18">
 <meta name="description" content="Sqlg's documentation">
 <meta name="keywords" content="Sqlg, TinkerPop, Gremlin, Graph, Database">
 <meta name="author" content="Pieter Martin">
@@ -2131,6 +2131,8 @@ p {
 }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/github.min.css">
+<script src="tocbot.min.js"></script>
+<link rel="stylesheet" href="tocbot.css">
 </head>
 <body class="book toc2 toc-left">
 <div id="header">
@@ -2261,8 +2263,22 @@ p {
 <li><a href="#_check_constraints">12.2.4. Check constraints</a></li>
 </ul>
 </li>
-<li><a href="#anchor-user-supplied-identifiers">12.3. User supplied identifiers</a></li>
-<li><a href="#_lock_the_topology">12.4. Lock the topology</a></li>
+<li><a href="#_edgedefinition">12.3. EdgeDefinition</a>
+<ul class="sectlevel3">
+<li><a href="#_one_to_one">12.3.1. One-to-one</a></li>
+<li><a href="#_one_to_many">12.3.2. One-to-many</a></li>
+<li><a href="#_many_to_many_unique">12.3.3. Many-to-many (unique)</a></li>
+<li><a href="#_one_to_many_many_to_many_multiplicity">12.3.4. one-to-many, many-to-many, multiplicity</a>
+<ul class="sectlevel4">
+<li><a href="#_1_checkmultiplicity_per_vertex">1 checkMultiplicity (per vertex)</a></li>
+<li><a href="#_2_checkmultiplicity_per_vertexlabel">2 checkMultiplicity (per VertexLabel)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#_query_the_topology">12.4. Query the topology</a></li>
+<li><a href="#anchor-user-supplied-identifiers">12.5. User supplied identifiers</a></li>
+<li><a href="#_lock_the_topology">12.6. Lock the topology</a></li>
 </ul>
 </li>
 <li><a href="#_postgresql_partitioning">13. Postgresql Partitioning</a>
@@ -2270,6 +2286,7 @@ p {
 <li><a href="#_range_partitioning">13.1. Range partitioning</a></li>
 <li><a href="#_list_partitioning">13.2. List partitioning</a></li>
 <li><a href="#_hash_partitioning">13.3. Hash partitioning</a></li>
+<li><a href="#_sub_partitioning">13.4. Sub partitioning</a></li>
 </ul>
 </li>
 <li><a href="#_postgresql_foreign_data_wrappers">14. Postgresql Foreign Data Wrappers</a>
@@ -3332,6 +3349,10 @@ public void testEdgeAcrossSchema() {
 <h3 id="_basic_indexing">8.1. Basic indexing</h3>
 <div class="paragraph">
 <p>Sqlg supports adding a unique or non-unique index to any property or properties.</p>
+</div>
+<div class="paragraph">
+<div class="title">UML diagram of Sqlg&#8217;s topology.</div>
+<p><span class="image"><img src="./img/uml/Package_topology_indexClassDiagram.PNG" alt="image of Sqlg&#8217;s topology"></span></p>
 </div>
 <div class="paragraph">
 <p>To add an index one has to use Sqlg&#8217;s topology interface.</p>
@@ -6944,7 +6965,7 @@ The topology is stored in the <code>sqlg_schema</code> schema.</p>
 </div>
 <div class="paragraph">
 <div class="title">UML diagram of Sqlg&#8217;s topology.</div>
-<p><span class="image"><img src="./img/uml/topology%20Class%20Diagram.png" alt="image of Sqlg&#8217;s topology"></span></p>
+<p><span class="image"><img src="./img/uml/Package_topology_propertyClassDiagramQualifier.PNG" alt="image of Sqlg&#8217;s topology"></span></p>
 </div>
 <div class="paragraph">
 <p>TinkerPop has no notion of schema or topology. However any TinkerPop graph has an implicit schema.
@@ -6978,13 +6999,13 @@ Being able to query the topology is helpful to understand a graph&#8217;s struct
 <div class="content">
 <pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
 public void showTopologyTraversals() {
-    Io.Builder&lt;GraphSONIo&gt; builder = GraphSONIo.build(GraphSONVersion.V3_0); <b class="conum">(1)</b>
+    Io.Builder&lt;GraphSONIo&gt; builder = GraphSONIo.build(GraphSONVersion.V3_0);
     final GraphReader reader = sqlgGraph.io(builder).reader().create();
     try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern-v3d0.json")) {
         reader.readGraph(stream, sqlgGraph);
     } catch (IOException e) {
         Assert.fail(e.getMessage());
-    }
+    } <b class="conum">(1)</b>
     System.out.println("//All vertex labels");
     sqlgGraph.topology().V()
             .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL) # <b class="conum">(2)</b>
@@ -7112,7 +7133,7 @@ weight : DOUBLE</pre>
 <p>It is often useful to create the topology upfront. The topology creation api is accessed via the <code>Topology</code> object.
 It is a singleton. <code>Topology topology = sqlgGraph.getTopology();</code>
 To create new topology objects use the <code>ensureXXX</code> methods. They will return a topology object representing the specific
-topology element. i.e. <code>Schema</code>, <code>VertexLabel</code>, <code>EdgeLabel</code>, <code>PropertyColumn</code>, <code>Index</code></p>
+topology element. i.e. <code>Schema</code>, <code>VertexLabel</code>, <code>EdgeLabel</code>, <code>PropertyColumn</code>, <code>Index</code>, <code>Partition</code></p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -7222,8 +7243,17 @@ public void generalTopologyCreationWithSchema() {
 </div>
 <div class="sect3">
 <h4 id="_multiplicity">12.2.2. Multiplicity</h4>
+<div class="listingblock">
+<div class="content">
+<pre>record Multiplicity(long lower, long upper, boolean unique, boolean ordered)</pre>
+</div>
+</div>
 <div class="paragraph">
-<p><code>Multiplicity</code> specifies the <code>lower</code> and <code>upper</code> limits of a property.</p>
+<p><code>lower</code> and <code>upper</code> specifies the cardinality limits of a property.
+For a <code>PropertyDefinition</code> only <code>lower</code> and <code>upper</code> parts of <code>Multiplicity</code> is supported.</p>
+</div>
+<div class="paragraph">
+<p><code>unique</code> and <code>ordered</code> is not implemented for a <code>PropertyDefinition</code>.</p>
 </div>
 <div class="paragraph">
 <p>A <code>lower</code> multiplicity of 0 indicates that the property is <strong>not</strong> required.<br>
@@ -7239,7 +7269,7 @@ public void testNameIsRequired() {
     VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap&lt;&gt;() {{
-                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.from(1, 1))); # <b class="conum">(1)</b>
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1))); # <b class="conum">(1)</b>
                     }}
             );
     boolean failure = false;
@@ -7280,7 +7310,7 @@ public void testArrayLowerMultiplicity() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap&lt;&gt;() {{
-                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<b class="conum">(1)</b>
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4))); #<b class="conum">(1)</b>
                     }}
             );
     this.sqlgGraph.tx().commit();
@@ -7323,7 +7353,7 @@ public void testArrayUpperMultiplicity() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap&lt;&gt;() {{
-                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.from(2, 4))); #<b class="conum">(1)</b>
+                        put("names", PropertyDefinition.of(PropertyType.STRING_ARRAY, Multiplicity.of(2, 4))); #<b class="conum">(1)</b>
                     }}
             );
     this.sqlgGraph.tx().commit();
@@ -7372,7 +7402,7 @@ public void testDefaultValue() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap&lt;&gt;() {{
-                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'John'")); #<b class="conum">(1)</b>
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'John'")); #<b class="conum">(1)</b>
                     }}
             );
     this.sqlgGraph.tx().commit();
@@ -7410,7 +7440,7 @@ public void testCheckConstraints() {
     this.sqlgGraph.getTopology().getPublicSchema()
             .ensureVertexLabelExist("Person",
                     new HashMap&lt;&gt;() {{
-                        put("name", PropertyDefinition.of(PropertyType.STRING, new Multiplicity(), "'Peter'", "name &lt;&gt; 'John'")); #<b class="conum">(1)</b>
+                        put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), "'Peter'", "name &lt;&gt; 'John'")); #<b class="conum">(1)</b>
                     }}
             );
     this.sqlgGraph.tx().commit();
@@ -7450,6 +7480,409 @@ public void testCheckConstraints() {
   Detail: Failing row contains (2, John).</code></pre>
 </div>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_edgedefinition">12.3. EdgeDefinition</h3>
+<div class="listingblock">
+<div class="content">
+<pre>public record EdgeDefinition(Multiplicity outMultiplicity, Multiplicity inMultiplicity) {}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>EdgeDefinition</code> defines the <code>Multiplicity</code> of the in and out edge roles.</p>
+</div>
+<div class="paragraph">
+<p><code>TinkerPop</code> itself has no notion of multiplicity on edges labels. For <code>TinkerPop</code> all edge labels is a many-to-many relationship.
+Sqlg extends the semantics by specifying the in and out multiplicity of the edge label.</p>
+</div>
+<div class="sect3">
+<h4 id="_one_to_one">12.3.1. One-to-one</h4>
+<div class="paragraph">
+<p>One-to-one is implemented by generating a unique index on each of the <code>in</code> and <code>out</code> foreign key columns in the edge table.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testOneToOne() {
+    VertexLabel computerVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Computer",
+            new LinkedHashMap&lt;&gt;() {{
+                put("serialNo", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    VertexLabel cpuVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Cpu",
+            new LinkedHashMap&lt;&gt;() {{
+                put("serialNo", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+     computerVertexLabel.ensureEdgeLabelExist(
+            "cpu",
+            cpuVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(1, 1),
+                    Multiplicity.of(1, 1)
+            )
+    ); <b class="conum">(1)</b>
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock(); <b class="conum">(2)</b>
+    Vertex computer1 = this.sqlgGraph.addVertex(T.label, "Computer", "name", "1111");
+    Vertex cpu1 = this.sqlgGraph.addVertex(T.label, "Cpu", "name", "aaab");
+    Vertex cpu2 = this.sqlgGraph.addVertex(T.label, "Cpu", "name", "aaac");
+    computer1.addEdge("cpu", cpu1);
+    this.sqlgGraph.tx().commit();
+    try {
+        computer1.addEdge("cpu", cpu2); <b class="conum">(3)</b>
+    } catch (RuntimeException e) {
+        if (isPostgres()) {
+            Assert.assertTrue(e.getMessage().contains("duplicate key value violates unique constraint"));
+        }
+    }
+    this.sqlgGraph.tx().rollback();
+    Vertex computer2 = this.sqlgGraph.addVertex(T.label, "Computer", "name", "2222");
+    try {
+        computer2.addEdge("cpu", cpu1); <b class="conum">(4)</b>
+    } catch (RuntimeException e) {
+        if (isPostgres()) {
+            Assert.assertTrue(e.getMessage().contains("duplicate key value violates unique constraint"));
+        }
+    }
+    this.sqlgGraph.tx().rollback();
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Specified a one-to-one association between Computer and Cpu</p>
+</li>
+<li>
+<p>Lock the topology to ensure no further schema elements are created on the db.</p>
+</li>
+<li>
+<p>Fails as the computer already has a cpu.</p>
+</li>
+<li>
+<p>Fails as the cpu already has a computer.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The constraints on the edge table.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">CREATE UNIQUE INDEX IF NOT EXISTS "E_cpu_public.Computer__O_idx"
+    ON public."E_cpu" USING btree
+    ("public.Computer__O" ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "E_cpu_public.Cpu__I_idx"
+    ON public."E_cpu" USING btree
+    ("public.Cpu__I" ASC NULLS LAST)
+    TABLESPACE pg_default;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_one_to_many">12.3.2. One-to-many</h4>
+<div class="paragraph">
+<p>One-to-many can only be efficiently implemented on the database if the many side is also <code>unique</code>. <code>unique</code> implies set semantics, that no element on the many side will repeat.</p>
+</div>
+<div class="paragraph">
+<p>One-to-many is implemented by generating a unique index over both the <code>in</code> and <code>out</code> foreign key columns in the edge table.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testOneToMany() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    VertexLabel countryVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Country",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    personVertexLabel.ensureEdgeLabelExist(
+            "visited",
+            countryVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, 1),
+                    Multiplicity.of(-1, -1, true)
+            )
+    ); <b class="conum">(1)</b>
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+    Vertex sa = this.sqlgGraph.addVertex(T.label, "Country", "name", "SA");
+    john.addEdge("visited", usa);
+    john.addEdge("visited", sa); <b class="conum">(2)</b>
+    this.sqlgGraph.tx().commit();
+    try {
+        john.addEdge("visited", usa); <b class="conum">(3)</b>
+    } catch (RuntimeException e) {
+        if (isPostgres()) {
+            Assert.assertTrue(e.getMessage().contains("duplicate key value violates unique constraint"));
+        }
+    }
+    this.sqlgGraph.tx().rollback();
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    peter.addEdge("visited", usa); <b class="conum">(4)</b>
+    this.sqlgGraph.tx().commit();
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create a one-to-many edge with the many side specified as <code>unique</code>.</p>
+</li>
+<li>
+<p>Add another <code>visited</code> edge to a country.</p>
+</li>
+<li>
+<p>This fails as the john has already 'visited' the 'USA'</p>
+</li>
+<li>
+<p>Peter can visit the 'USA'</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The constraint on the edge table.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">CREATE UNIQUE INDEX IF NOT EXISTS "E_visited_public.Person__O_public.Country__I_idx"
+    ON public."E_visited" USING btree
+    ("public.Person__O" ASC NULLS LAST, "public.Country__I" ASC NULLS LAST)
+    TABLESPACE pg_default;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_many_to_many_unique">12.3.3. Many-to-many (unique)</h4>
+<div class="paragraph">
+<p>The database can efficiently check the uniqueness of a many-to-many association. This means that there can be not be more than one edge between any two vertices.</p>
+</div>
+<div class="paragraph">
+<p>many-to-many (unique) is implemented by generating a unique index over both the <code>in</code> and <code>out</code> foreign key columns in the edge table.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testUniqueManyToMany() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    VertexLabel vehicleVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Vehicle",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    personVertexLabel.ensureEdgeLabelExist(
+            "drives",
+            vehicleVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(-1, -1, true),
+                    Multiplicity.of(-1, -1, true)
+            )
+    ); <b class="conum">(1)</b>
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter");
+    Vertex toyota = this.sqlgGraph.addVertex(T.label, "Vehicle", "name", "Toyota");
+    Vertex kia = this.sqlgGraph.addVertex(T.label, "Vehicle", "name", "Kia");
+    john.addEdge("drives", toyota);
+    john.addEdge("drives", kia);
+    peter.addEdge("drives", toyota);
+    peter.addEdge("drives", kia);
+    this.sqlgGraph.tx().commit(); <b class="conum">(2)</b>
+    try {
+        john.addEdge("drives", toyota); <b class="conum">(3)</b>
+    } catch (RuntimeException e) {
+        if (isPostgres()) {
+            Assert.assertTrue(e.getMessage().contains("duplicate key value violates unique constraint"));
+        }
+    }
+    this.sqlgGraph.tx().rollback();
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create a many-to-many unique edge label.</p>
+</li>
+<li>
+<p>John drives multiple cars and Toyota has multiple drivers.</p>
+</li>
+<li>
+<p>No duplicate edges are allowed.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The constraint on the edge table.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">CREATE UNIQUE INDEX IF NOT EXISTS "E_drives_public.Person__O_public.Vehicle__I_idx"
+    ON public."E_drives" USING btree
+    ("public.Person__O" ASC NULLS LAST, "public.Vehicle__I" ASC NULLS LAST)
+    TABLESPACE pg_default;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_one_to_many_many_to_many_multiplicity">12.3.4. one-to-many, many-to-many, multiplicity</h4>
+<div class="paragraph">
+<p>Currently Sqlg does not automatically check the multiplicities as no efficient way of doing it has been found.</p>
+</div>
+<div class="paragraph">
+<p>However sqlg does provide a helper method for application code to call to validate multiplicities. There are two checks the user can call. Either for an individual vertex or for a VertexLabel.</p>
+</div>
+<div class="sect4">
+<h5 id="_1_checkmultiplicity_per_vertex">1 checkMultiplicity (per vertex)</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testCheckMultiplicitiesPerVertex() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    EdgeLabel personAddressEdgeLabel = personVertexLabel.ensureEdgeLabelExist(
+            "address",
+            addressVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, 1, true),
+                    Multiplicity.of(1, 3, true)
+            )
+    ); <b class="conum">(1)</b>
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+    Vertex johnHomeAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "home");
+    Vertex johnWorkAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "work");
+    Vertex johnVacationAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "vacation");
+    try {
+        this.sqlgGraph.tx().checkMultiplicity(john, Direction.OUT, personAddressEdgeLabel, addressVertexLabel);
+    } catch (RuntimeException e) {
+        if (isPostgres()) {
+            assertTrue(e.getMessage().contains("Multiplicity check for EdgeLabel 'address' fails.\n" +
+                    "Lower multiplicity is 1 current lower multiplicity is 0"));
+        }
+    }
+    john.addEdge("address", johnHomeAddress);
+    john.addEdge("address", johnWorkAddress);
+    john.addEdge("address", johnVacationAddress);
+    this.sqlgGraph.tx().checkMultiplicity(john, Direction.OUT, personAddressEdgeLabel, addressVertexLabel); <b class="conum">(2)</b>
+
+    peter.addEdge("address", johnHomeAddress);
+    boolean fails = false;
+    try {
+        this.sqlgGraph.tx().checkMultiplicity(johnHomeAddress, Direction.IN, personAddressEdgeLabel, personVertexLabel); <b class="conum">(3)</b>
+    } catch (RuntimeException e) {
+        fails = true;
+        if (isPostgres()) {
+            System.out.println(e.getMessage());
+            assertTrue(e.getMessage().contains("Multiplicity check for EdgeLabel 'address' fails.\n" +
+                    "Upper multiplicity is 1 current upper multiplicity is 2"));
+        }
+    }
+    assertTrue(fails);
+    this.sqlgGraph.tx().commit();
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>A <code>Person</code> must have at least one <code>Address</code> but no more than three.
+An <code>Address</code> can only be associated to zero or one <code>Person</code></p>
+</li>
+<li>
+<p>Check the multiplicity of 'john&#8217;s addresses. It passes as its between 1 and 3.</p>
+</li>
+<li>
+<p>Check that John&#8217;s home address is associated to only on <code>Person</code>. It fails as its also been associated to 'peter'.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_2_checkmultiplicity_per_vertexlabel">2 checkMultiplicity (per VertexLabel)</h5>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testCheckMultiplicitiesPerVertexLabel() {
+    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address",
+            new LinkedHashMap&lt;&gt;() {{
+                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+            }}
+    );
+    EdgeLabel personAddressEdgeLabel = personVertexLabel.ensureEdgeLabelExist(
+            "address",
+            addressVertexLabel,
+            EdgeDefinition.of(
+                    Multiplicity.of(0, 1, true),
+                    Multiplicity.of(1, 3, true)
+            )
+    );
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.getTopology().lock();
+    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+    Vertex johnHomeAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "home");
+    Vertex johnWorkAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "work");
+    Vertex johnVacationAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "vacation");
+    john.addEdge("address", johnHomeAddress);
+    john.addEdge("address", johnWorkAddress);
+    john.addEdge("address", johnVacationAddress);
+    peter.addEdge("address", johnHomeAddress);
+
+    this.sqlgGraph.tx().checkMultiplicity(personVertexLabel, Direction.OUT, personAddressEdgeLabel, addressVertexLabel);
+    boolean fails = false;
+    try {
+        this.sqlgGraph.tx().checkMultiplicity(addressVertexLabel, Direction.IN, personAddressEdgeLabel, personVertexLabel);
+    } catch (RuntimeException e) {
+        fails = true;
+        if (isPostgres()) {
+            System.out.println(e.getMessage());
+            String msg = String.format("Multiplicity check for EdgeLabel 'address' fails for '%s'.\nUpper multiplicity is [1] current multiplicity is [2]", johnHomeAddress.id().toString());
+            System.out.println(msg);
+            assertTrue(e.getMessage().contains(msg));
+        }
+    }
+    assertTrue(fails);
+    this.sqlgGraph.tx().commit();
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_query_the_topology">12.4. Query the topology</h3>
 <div class="paragraph">
 <p>Sqlg keeps an in-memory cache of the graphs entire topology. It is possible query this cache directly.</p>
 </div>
@@ -7506,9 +7939,8 @@ public void queryCache() {
 </ol>
 </div>
 </div>
-</div>
 <div class="sect2">
-<h3 id="anchor-user-supplied-identifiers">12.3. User supplied identifiers</h3>
+<h3 id="anchor-user-supplied-identifiers">12.5. User supplied identifiers</h3>
 <div class="paragraph">
 <p>You can define your own identifiers for a VertexLabel or EdgeLabel. This will result in Sqlg generating primary keys on the specified identifiers instead of using an auto generated sequence.</p>
 </div>
@@ -7624,7 +8056,7 @@ FROM
 </div>
 </div>
 <div class="sect2">
-<h3 id="_lock_the_topology">12.4. Lock the topology</h3>
+<h3 id="_lock_the_topology">12.6. Lock the topology</h3>
 <div class="paragraph">
 <p>It is possible to lock the topology. This will prevent any creation of topology elements without explicitly unlocking the topology.
 The topology can only be locked globally. However, there are two ways to unlock the topology. Either globally or per transaction.
@@ -7709,7 +8141,12 @@ public void topologyGlobalLockTransactionUnlock() {
 <div class="sectionbody">
 <div class="paragraph">
 <p>Sqlg supports <code>postgresql</code> partitioning. To partition a table it needs to be created upfront using the <code>Topology</code> api.
-Sqlg currently supports <code>RANGE</code>, <code>LIST</code> and <code>HASH</code> partitions.</p>
+Sqlg currently supports <code>RANGE</code>, <code>LIST</code> and <code>HASH</code> partitions.
+Sub-partitioning is also supported.</p>
+</div>
+<div class="paragraph">
+<div class="title">UML diagram of Sqlg&#8217;s topology.</div>
+<p><span class="image"><img src="./img/uml/Package_topology_partitionClassDiagram.PNG" alt="image of Sqlg&#8217;s topology"></span></p>
 </div>
 <div class="sect2">
 <h3 id="_range_partitioning">13.1. Range partitioning</h3>
@@ -7720,7 +8157,7 @@ public void testPartitioningRange() {
     Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema(); # <b class="conum">(1)</b>
     VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
             "Measurement",
-            new LinkedHashMap&lt;String, PropertyType&gt;() {{
+            new LinkedHashMap&lt;&gt;() {{
                 put("date", PropertyDefinition.of(PropertyType.LOCALDATE));
                 put("temp", PropertyDefinition.of(PropertyType.INTEGER));
             }},
@@ -7920,6 +8357,101 @@ public void testPartitioningHash() {
 <p>Assert that there are as many partitions as the <code>modulus</code></p>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_sub_partitioning">13.4. Sub partitioning</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testSubPartition() {
+    Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+    VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
+            "User",
+            new LinkedHashMap&lt;&gt;() {{
+                put("username", PropertyDefinition.of(PropertyType.STRING));
+                put("country", PropertyDefinition.of(PropertyType.STRING));
+                put("age", PropertyDefinition.of(PropertyType.INTEGER));
+                put("dateOfBirth", PropertyDefinition.of(PropertyType.LOCALDATE));
+            }},
+            ListOrderedSet.listOrderedSet(List.of("username", "country", "age")),
+            PartitionType.LIST,
+            "country"); <b class="conum">(1)</b>
+    Partition usa = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists("USA", "'USA'", PartitionType.RANGE, "age"); <b class="conum">(2)</b>
+    Partition sa = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists("SA", "'SA'", PartitionType.RANGE, "age"); <b class="conum">(3)</b>
+    Partition gb = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists("GB", "'GB'", PartitionType.RANGE, "age"); <b class="conum">(4)</b>
+    usa.ensureRangePartitionExists("usa0to10", "0", "10"); <b class="conum">(5)</b>
+    usa.ensureRangePartitionExists("usa10to20", "10", "20");
+    sa.ensureRangePartitionExists("sa0to10", "0", "10");
+    sa.ensureRangePartitionExists("sa10to20", "10", "20");
+    gb.ensureRangePartitionExists("gb0to10", "0", "10");
+    gb.ensureRangePartitionExists("gb10to20", "10", "20");
+    this.sqlgGraph.tx().commit();
+
+    LocalDate localDate = LocalDate.now();
+    for (int age = 0; age &lt; 20; age++) {
+        for (String country : List.of("USA", "SA", "GB")) {
+            for (String username : List.of("John", "Peter", "David")) {
+                this.sqlgGraph.addVertex(
+                        T.label, "User",
+                        "username", username,
+                        "country", country,
+                        "age", age,
+                        "dateOfBirth", localDate.minusYears(age)
+                );
+            }
+        }
+    }
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; users = this.sqlgGraph.traversal().V()
+            .hasLabel("User")
+            .has("country", P.eq("USA"))
+            .has("age", 5)
+            .toList(); <b class="conum">(6)</b>
+    Assert.assertEquals(3, users.size());
+
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create a partitioned VertexLabel.</p>
+</li>
+<li>
+<p>Create a partition for <code>USA</code> and together with a sub-partition on <code>age</code>.</p>
+</li>
+<li>
+<p>Create a partition for <code>SA</code> and together with a sub-partition on <code>age</code>.</p>
+</li>
+<li>
+<p>Create a partition for <code>GB</code> and together with a sub-partition on <code>age</code>.</p>
+</li>
+<li>
+<p>Create an <code>RANGE</code> sub-partition on the <code>age</code> property of the <code>USA</code> partition.</p>
+</li>
+<li>
+<p>The below sql will execute on the relevant partitions.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_User"."username" AS "alias1",
+	"public"."V_User"."country" AS "alias2",
+	"public"."V_User"."age" AS "alias3",
+	"public"."V_User"."dateOfBirth" AS "alias4"
+FROM
+	"public"."V_User"
+WHERE
+	( "public"."V_User"."country" = 'USA') AND ( "public"."V_User"."age" = 5)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">Sub-partition and postgresql explain plan.</div>
+<p><span class="image"><img src="./img/sqlg/sub-partitions.png" alt="image of Sqlg&#8217;s topology"></span></p>
 </div>
 </div>
 </div>
@@ -8456,7 +8988,7 @@ Last updated 2022-11-06 15:16:40 +0200
 <script>
 if (!hljs.initHighlighting.called) {
   hljs.initHighlighting.called = true
-  ;[].slice.call(document.querySelectorAll('pre.highlight > code')).forEach(function (el) { hljs.highlightBlock(el) })
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })
 }
 </script>
 <script src="tocbot.min.js"></script>
