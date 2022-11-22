@@ -6,6 +6,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -21,6 +23,8 @@ import java.util.UUID;
  * Time: 4:40 PM
  */
 public class TestDeletedVertex extends BaseTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDeletedVertex.class);
 
     @Test
     public void testDeletedVertex() {
@@ -181,18 +185,22 @@ public class TestDeletedVertex extends BaseTest {
         stopWatch.start();
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person");
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 1_000_000; i++) {
             Vertex dog = this.sqlgGraph.addVertex(T.label, "Dog");
             person.addEdge("friend", dog);
+            if (i % 10_000 == 0) {
+                LOGGER.info("added {} of 1 000 000", i);
+                this.sqlgGraph.tx().flush();
+            }
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch);
+        LOGGER.debug(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
         person.remove();
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch);
+        LOGGER.debug(stopWatch.toString());
     }
 }
