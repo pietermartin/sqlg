@@ -143,7 +143,7 @@ class SqlgStartupManager {
         } catch (Exception e) {
             this.sqlgGraph.tx().rollback();
             if (e instanceof RuntimeException) {
-                throw (RuntimeException)e;
+                throw (RuntimeException) e;
             } else {
                 throw new RuntimeException(e);
             }
@@ -180,15 +180,30 @@ class SqlgStartupManager {
 
     private void upgradeTo300() {
         Connection conn = this.sqlgGraph.tx().getConnection();
-        List<String> addPartitionTables = this.sqlDialect.addProperDefinitions();
-        for (String addPartitionTable : addPartitionTables) {
+        List<String> addPropertyDefinitions = this.sqlDialect.addPropertyDefinitions();
+        for (String addPropertyDefinition : addPropertyDefinitions) {
             try (Statement s = conn.createStatement()) {
-                s.execute(addPartitionTable);
+                s.execute(addPropertyDefinition);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
-
+        List<String> addOutEdgeDefinitions = this.sqlDialect.addOutEdgeDefinitions();
+        for (String addOutEdgeDefinition : addOutEdgeDefinitions) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(addOutEdgeDefinition);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        List<String> addInEdgeDefinitions = this.sqlDialect.addInEdgeDefinitions();
+        for (String addInEdgeDefinition : addInEdgeDefinitions) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(addInEdgeDefinition);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void addPartitionSupportToSqlgSchema() {
@@ -214,6 +229,7 @@ class SqlgStartupManager {
             }
         }
     }
+
     private void removeGlobalUniqueIndexFromSqlgSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement s = conn.createStatement()) {
@@ -256,7 +272,7 @@ class SqlgStartupManager {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
             //Hsqldb can not do this in one go
-            for (String script: result) {
+            for (String script : result) {
                 if (logger.isDebugEnabled()) {
                     logger.debug(script);
                 }
