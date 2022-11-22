@@ -60,6 +60,12 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         reason = "SqlgNotStepBarrier does nto handle throwing exceptions in the Comparator")
 
 @OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
+        method = "shouldAllowNullAddVertex",
+        reason = "PropertyType NULL not supported")
+@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
+        method = "shouldAllowNullAddEdge",
+        reason = "PropertyType NULL not supported")
+@OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
         method = "shouldNotAllowNullAddVertex",
         reason = "nulls")
 @OptOut(test = "org.apache.tinkerpop.gremlin.structure.PropertyTest$BasicPropertyTest",
