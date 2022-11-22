@@ -4,6 +4,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;
@@ -17,6 +19,8 @@ import java.sql.SQLException;
  */
 public class TestBatchTemporaryVertex extends BaseTest {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestBatchTemporaryVertex.class);
+
     @Test
     public void testBatchTempVertex() throws SQLException {
         int INSERT_COUNT = 1_000_000;
@@ -25,10 +29,13 @@ public class TestBatchTemporaryVertex extends BaseTest {
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < INSERT_COUNT; i++) {
             this.sqlgGraph.addTemporaryVertex(T.label, "A", "name", "halo");
+            if (i % 10_000 == 0) {
+                this.sqlgGraph.tx().flush();
+            }
         }
         this.sqlgGraph.tx().flush();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        LOGGER.info(stopWatch.toString());
         int count = 0;
         Connection conn = this.sqlgGraph.tx().getConnection();
         String sql = "select * from ";
