@@ -14,7 +14,7 @@ public class MariadbPlugin implements SqlgPlugin{
 
     @Override
     public boolean canWorkWith(DatabaseMetaData metaData) throws SQLException {
-        return metaData.getDatabaseProductName().toLowerCase().contains("mysql");
+        return metaData.getDatabaseProductName().equalsIgnoreCase("mariadb");
     }
 
     @Override
