@@ -91,15 +91,15 @@ public class TestDropStep extends BaseTest {
         Schema bSchema = this.sqlgGraph.getTopology().ensureSchemaExist("B");
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("id1", PropertyDefinition.of(PropertyType.STRING));
-                    put("id2", PropertyDefinition.of(PropertyType.STRING));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("di1", PropertyDefinition.of(PropertyType.STRING));
-                    put("di2", PropertyDefinition.of(PropertyType.STRING));
+                    put("di1", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("di2", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("di1", "di2"))
         );
