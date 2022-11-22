@@ -635,22 +635,22 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         Schema bSchema = this.sqlgGraph.getTopology().ensureSchemaExist("B");
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("id1", PropertyDefinition.of(PropertyType.STRING));
-                    put("id2", PropertyDefinition.of(PropertyType.STRING));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("di1", PropertyDefinition.of(PropertyType.STRING));
-                    put("di2", PropertyDefinition.of(PropertyType.STRING));
+                    put("di1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("di2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("di1", "di2"))
         );
         VertexLabel cVertexLabel = bSchema.ensureVertexLabelExist("C",
                 new HashMap<>() {{
-                    put("i1", PropertyDefinition.of(PropertyType.STRING));
-                    put("i2", PropertyDefinition.of(PropertyType.STRING));
+                    put("i1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("i2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("i1", "i2"))
         );
@@ -735,15 +735,15 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("di1", PropertyDefinition.of(PropertyType.STRING));
-                    put("di2", PropertyDefinition.of(PropertyType.STRING));
+                    put("di1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("di2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("di1", "di2"))
         );
         VertexLabel cVertexLabel = bSchema.ensureVertexLabelExist("C",
                 new HashMap<>() {{
-                    put("i1", PropertyDefinition.of(PropertyType.STRING));
-                    put("i2", PropertyDefinition.of(PropertyType.STRING));
+                    put("i1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("i2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("i1", "i2"))
         );
@@ -827,16 +827,16 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         Schema bSchema = this.sqlgGraph.getTopology().ensureSchemaExist("B");
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("id1", PropertyDefinition.of(PropertyType.STRING));
-                    put("id2", PropertyDefinition.of(PropertyType.STRING));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B");
         VertexLabel cVertexLabel = bSchema.ensureVertexLabelExist("C",
                 new HashMap<>() {{
-                    put("i1", PropertyDefinition.of(PropertyType.STRING));
-                    put("i2", PropertyDefinition.of(PropertyType.STRING));
+                    put("i1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("i2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("i1", "i2"))
         );
@@ -919,15 +919,15 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("a", PropertyDefinition.of(PropertyType.STRING));
-                    put("b", PropertyDefinition.of(PropertyType.STRING));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("b", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("a", "b"))
         );
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("c", PropertyDefinition.of(PropertyType.STRING));
-                    put("d", PropertyDefinition.of(PropertyType.STRING));
+                    put("c", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("d", PropertyDefinition.of(PropertyType.varChar(10)));
 
                 }},
                 ListOrderedSet.listOrderedSet(List.of("c", "d"))
@@ -970,8 +970,8 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("c", PropertyDefinition.of(PropertyType.STRING));
-                    put("d", PropertyDefinition.of(PropertyType.STRING));
+                    put("c", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("d", PropertyDefinition.of(PropertyType.varChar(10)));
 
                 }},
                 ListOrderedSet.listOrderedSet(List.of("c", "d"))
@@ -1014,15 +1014,15 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         Schema bSchema = this.sqlgGraph.getTopology().ensureSchemaExist("B");
 
         VertexLabel aVertexLabel = aSchema.ensureVertexLabelExist("A", new HashMap<>() {{
-                    put("a", PropertyDefinition.of(PropertyType.UUID));
-                    put("b", PropertyDefinition.of(PropertyType.UUID));
+                    put("a", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("b", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("a", "b"))
         );
         VertexLabel bVertexLabel = bSchema.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("c", PropertyDefinition.of(PropertyType.UUID));
-                    put("d", PropertyDefinition.of(PropertyType.UUID));
+                    put("c", PropertyDefinition.of(PropertyType.varChar(100)));
+                    put("d", PropertyDefinition.of(PropertyType.varChar(100)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("c", "d"))
         );
@@ -1031,11 +1031,11 @@ public class TestMultiplicityAddRemoveEdgeUserDefinedID extends BaseTest {
         );
         this.sqlgGraph.tx().commit();
 
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "a", UUID.randomUUID(), "b", UUID.randomUUID());
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "c", UUID.randomUUID(), "d", UUID.randomUUID());
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "a", UUID.randomUUID().toString(), "b", UUID.randomUUID().toString());
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "c", UUID.randomUUID().toString(), "d", UUID.randomUUID().toString());
         a1.addEdge("ab", b1);
 
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "a", UUID.randomUUID(), "b", UUID.randomUUID());
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "a", UUID.randomUUID().toString(), "b", UUID.randomUUID().toString());
 
         try {
             this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, edgeLabel, bVertexLabel);

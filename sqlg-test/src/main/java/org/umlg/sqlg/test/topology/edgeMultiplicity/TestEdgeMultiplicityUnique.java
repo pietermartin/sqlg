@@ -77,15 +77,15 @@ public class TestEdgeMultiplicityUnique extends BaseTest {
     public void testUniqueOneToManyCompositePK() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2"))
         );
@@ -176,15 +176,15 @@ public class TestEdgeMultiplicityUnique extends BaseTest {
     public void testUniqueManyToManyCompositePK() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2"))
         );
@@ -220,15 +220,15 @@ public class TestEdgeMultiplicityUnique extends BaseTest {
     public void testUniqueManyToManyOutCompositePK() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2"))
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel,
@@ -263,14 +263,14 @@ public class TestEdgeMultiplicityUnique extends BaseTest {
     public void testUniqueManyToManyInCompositePK() {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }}
         );
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("name1", PropertyDefinition.of(PropertyType.STRING));
-                    put("name2", PropertyDefinition.of(PropertyType.STRING));
+                    put("name1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("name2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("name1", "name2"))
         );
