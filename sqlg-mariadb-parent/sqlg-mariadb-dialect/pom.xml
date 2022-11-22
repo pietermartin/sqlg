@@ -34,8 +34,8 @@
             <artifactId>mariadb-java-client</artifactId>
 <!--            2.7.3 breaks the meta queries-->
             <!--suppress MavenPackageUpdate -->
-            <version>2.0.3</version>
-<!--            <version>2.7.2</version>-->
+<!--            <version>2.0.3</version>-->
+            <version>3.1.0</version>
         </dependency>
         <!--<dependency>-->
             <!--<groupId>mysql</groupId>-->
