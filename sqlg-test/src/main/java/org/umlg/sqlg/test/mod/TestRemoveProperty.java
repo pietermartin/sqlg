@@ -157,6 +157,9 @@ public class TestRemoveProperty extends BaseTest {
         if (this.value instanceof JsonNode[]) {
             Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         }
+        if (this.value instanceof BigDecimal[]) {
+            Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBigDecimalArrayValues());
+        }
     }
 
 }
