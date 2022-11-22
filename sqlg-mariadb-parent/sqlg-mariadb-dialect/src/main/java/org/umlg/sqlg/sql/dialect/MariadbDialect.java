@@ -3,6 +3,7 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.mariadb.jdbc.MariaDbBlob;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgExceptions;
@@ -12,6 +13,8 @@ import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
@@ -1150,5 +1153,15 @@ public class MariadbDialect extends BaseSqlDialect {
                 "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_IN_EDGES_ORDERED + "` BOOLEAN DEFAULT FALSE NOT NULL;",
                 "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_IN_EDGES_ORDERED + "` DROP DEFAULT;"
         );
+    }
+
+    @Override
+    public byte[] toByteArray(Object object7) {
+        MariaDbBlob blob = (MariaDbBlob) object7;
+        try (InputStream is = blob.getBinaryStream()) {
+            return is.readAllBytes();
+        } catch (IOException | SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

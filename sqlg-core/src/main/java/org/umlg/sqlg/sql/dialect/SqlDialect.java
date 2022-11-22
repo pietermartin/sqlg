@@ -1411,4 +1411,8 @@ public interface SqlDialect {
         }
         return sql.toString();
     }
+
+    default byte[] toByteArray(Object object7) {
+        return (byte[])object7;
+    }
 }

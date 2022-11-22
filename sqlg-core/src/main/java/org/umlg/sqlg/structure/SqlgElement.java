@@ -718,7 +718,8 @@ public abstract class SqlgElement implements Element {
             case byte_ARRAY_ORDINAL:
                 Object object6 = resultSet.getObject(columnIndex);
                 if (object6 != null) {
-                    this.properties.put(propertyName, object6);
+                    byte[] bytes = this.sqlgGraph.getSqlDialect().toByteArray(object6);
+                    this.properties.put(propertyName, bytes);
                     return true;
                 } else {
                     return false;
@@ -726,7 +727,8 @@ public abstract class SqlgElement implements Element {
             case BYTE_ARRAY_ORDINAL:
                 Object object7 = resultSet.getObject(columnIndex);
                 if (object7 != null) {
-                    this.properties.put(propertyName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[]) object7));
+                    byte[] bytes = this.sqlgGraph.getSqlDialect().toByteArray(object7);
+                    this.properties.put(propertyName, SqlgUtil.convertPrimitiveByteArrayToByteArray(bytes));
                     return true;
                 } else {
                     return false;
