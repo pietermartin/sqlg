@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.PropertyType.*;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * @author Lukas Krejci
@@ -559,8 +560,8 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"createdOn\" TIMESTAMP, " +
                 "\"name\" VARCHAR, " +
                 "\"type\" VARCHAR," +
-                "\"multiplicityLower\" INTEGER NOT NULL," +
-                "\"multiplicityUpper\" INTEGER NOT NULL," +
+                "\"lowerMultiplicity\" INTEGER NOT NULL," +
+                "\"upperMultiplicity\" INTEGER NOT NULL," +
                 "\"defaultLiteral\" VARCHAR," +
                 "\"checkConstraint\" VARCHAR" +
                 ");");
@@ -1016,5 +1017,61 @@ public class H2Dialect extends BaseSqlDialect {
     public boolean isTimestampz(String typeName) {
         //H2 is not using timestamps with zones
         return false;
+    }
+
+    @Override
+    public List<String> addPropertyDefinitions() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" INTEGER DEFAULT -1 NOT NULL;",
+                "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" = \n" +
+                        "CASE\n" +
+                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
+                        "  ELSE 0\n" +
+                        "END;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ALTER COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" INTEGER DEFAULT -1 NOT NULL;",
+                "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" = \n" +
+                        "CASE\n" +
+                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
+                        "  ELSE 0\n" +
+                        "END;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ALTER COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL + "\" VARCHAR;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT + "\" VARCHAR;"
+        );
+    }
+
+    @Override
+    public List<String> addOutEdgeDefinitions() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY + "\" INTEGER DEFAULT 0 NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY + "\" INTEGER DEFAULT -1 NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UNIQUE + "\" BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UNIQUE + "\" DROP DEFAULT;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_ORDERED + "\" BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_ORDERED + "\" DROP DEFAULT;"
+        );
+    }
+
+    @Override
+    public List<String> addInEdgeDefinitions() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY + "\" INTEGER DEFAULT 0 NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY + "\" INTEGER DEFAULT -1 NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UNIQUE + "\" BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UNIQUE + "\" DROP DEFAULT;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_ORDERED + "\" BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_ORDERED + "\" DROP DEFAULT;"
+        );
     }
 }

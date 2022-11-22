@@ -12,13 +12,14 @@ import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
+import java.util.UUID;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.PropertyType.*;
-import static org.umlg.sqlg.structure.topology.Topology.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -228,15 +229,13 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName) {
-        StringBuilder sb = new StringBuilder("SELECT * FROM INFORMATION_SCHEMA.SYSTEM_INDEXINFO WHERE TABLE_SCHEM = '");
-        sb.append(schemaTable.getSchema());
-        sb.append("' AND  TABLE_NAME = '");
-        sb.append(prefix);
-        sb.append(schemaTable.getTable());
-        sb.append("' AND INDEX_NAME = '");
-        sb.append(indexName);
-        sb.append("'");
-        return sb.toString();
+        return "SELECT * FROM INFORMATION_SCHEMA.SYSTEM_INDEXINFO WHERE TABLE_SCHEM = '" + schemaTable.getSchema() +
+                "' AND  TABLE_NAME = '" +
+                prefix +
+                schemaTable.getTable() +
+                "' AND INDEX_NAME = '" +
+                indexName +
+                "'";
     }
 
     @Override
@@ -246,6 +245,9 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public void validateProperty(Object key, Object value) {
+        if (value == null) {
+            return;
+        }
         if (value instanceof String) {
             return;
         }
@@ -310,6 +312,9 @@ public class MariadbDialect extends BaseSqlDialect {
             return;
         }
         if (value instanceof Byte[]) {
+            return;
+        }
+        if (value instanceof BigDecimal) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
@@ -396,39 +401,27 @@ public class MariadbDialect extends BaseSqlDialect {
             int sqlType,
             String typeName,
             ListIterator<Triple<String, Integer, String>> metaDataIter) {
-        
-        switch (sqlType) {
-            case Types.BOOLEAN:
-                return PropertyType.BOOLEAN;
-            case Types.SMALLINT:
-                return PropertyType.SHORT;
-            case Types.INTEGER:
-                return PropertyType.INTEGER;
-            case Types.BIGINT:
-                return PropertyType.LONG;
-            case Types.REAL:
-                return PropertyType.FLOAT;
-            case Types.DOUBLE:
-                return PropertyType.DOUBLE;
-            case Types.LONGVARCHAR:
-                return PropertyType.STRING;
-            case Types.VARCHAR:
+
+        return switch (sqlType) {
+            case Types.BOOLEAN -> PropertyType.BOOLEAN;
+            case Types.SMALLINT -> PropertyType.SHORT;
+            case Types.INTEGER -> PropertyType.INTEGER;
+            case Types.BIGINT -> PropertyType.LONG;
+            case Types.REAL -> PropertyType.FLOAT;
+            case Types.DOUBLE -> PropertyType.DOUBLE;
+            case Types.LONGVARCHAR -> PropertyType.STRING;
+            case Types.VARCHAR ->
                 //This is not exactly correct. Need to extract the column length and create PropertyType.varchar(x)
                 //However Sqlg does not depend on the varchar(x) except during table creation so STRING will do.
-                return PropertyType.STRING;
-            case Types.TIMESTAMP:
-                return PropertyType.LOCALDATETIME;
-            case Types.DATE:
-                return PropertyType.LOCALDATE;
-            case Types.TIME:
-                return PropertyType.LOCALTIME;
-            case Types.VARBINARY:
-                return PropertyType.BYTE_ARRAY;
-            case Types.ARRAY:
-                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
-            default:
-                throw new IllegalStateException("Unknown sqlType " + sqlType);
-        }
+                    PropertyType.STRING;
+            case Types.TIMESTAMP -> PropertyType.LOCALDATETIME;
+            case Types.DATE -> PropertyType.LOCALDATE;
+            case Types.TIME -> PropertyType.LOCALTIME;
+            case Types.VARBINARY -> PropertyType.BYTE_ARRAY;
+            case Types.ARRAY ->
+                    sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
+            default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
+        };
     }
 
     @Override
@@ -473,38 +466,23 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case boolean_ARRAY_ORDINAL:
-                return "BOOLEAN";
-            case BOOLEAN_ARRAY_ORDINAL:
-                return "BOOLEAN";
-            case SHORT_ARRAY_ORDINAL:
-                return "SMALLINT";
-            case short_ARRAY_ORDINAL:
-                return "SMALLINT";
-            case INTEGER_ARRAY_ORDINAL:
-                return "INTEGER";
-            case int_ARRAY_ORDINAL:
-                return "INTEGER";
-            case LONG_ARRAY_ORDINAL:
-                return "BIGINT";
-            case long_ARRAY_ORDINAL:
-                return "BIGINT";
-            case DOUBLE_ARRAY_ORDINAL:
-                return "DOUBLE";
-            case double_ARRAY_ORDINAL:
-                return "DOUBLE";
-            case STRING_ARRAY_ORDINAL:
-                return "VARCHAR";
-            case LOCALDATETIME_ARRAY_ORDINAL:
-                return "TIMESTAMP";
-            case LOCALDATE_ARRAY_ORDINAL:
-                return "DATE";
-            case LOCALTIME_ARRAY_ORDINAL:
-                return "TIME";
-            default:
-                throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
-        }
+        return switch (propertyType.ordinal()) {
+            case boolean_ARRAY_ORDINAL -> "BOOLEAN";
+            case BOOLEAN_ARRAY_ORDINAL -> "BOOLEAN";
+            case SHORT_ARRAY_ORDINAL -> "SMALLINT";
+            case short_ARRAY_ORDINAL -> "SMALLINT";
+            case INTEGER_ARRAY_ORDINAL -> "INTEGER";
+            case int_ARRAY_ORDINAL -> "INTEGER";
+            case LONG_ARRAY_ORDINAL -> "BIGINT";
+            case long_ARRAY_ORDINAL -> "BIGINT";
+            case DOUBLE_ARRAY_ORDINAL -> "DOUBLE";
+            case double_ARRAY_ORDINAL -> "DOUBLE";
+            case STRING_ARRAY_ORDINAL -> "VARCHAR";
+            case LOCALDATETIME_ARRAY_ORDINAL -> "TIMESTAMP";
+            case LOCALDATE_ARRAY_ORDINAL -> "DATE";
+            case LOCALTIME_ARRAY_ORDINAL -> "TIME";
+            default -> throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
+        };
     }
 
     @Override
@@ -613,8 +591,8 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`createdOn` DATETIME, " +
                 "`name` TEXT, " +
                 "`type` TEXT, " +
-                "`multiplicityLower` INTEGER NOT NULL," +
-                "`multiplicityUpper` INTEGER NOT NULL," +
+                "`lowerMultiplicity` INTEGER NOT NULL," +
+                "`upperMultiplicity` INTEGER NOT NULL," +
                 "`defaultLiteral` TEXT," +
                 "`checkConstraint` TEXT" +
                 ");");
@@ -636,6 +614,8 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`lowerMultiplicity` BIGINT, " +
                 "`upperMultiplicity` BIGINT, " +
+                "`unique` BOOLEAN, " +
+                "`ordered` BOOLEAN, " +
                 "`sqlg_schema.edge__I` BIGINT UNSIGNED, " +
                 "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
                 "FOREIGN KEY (`sqlg_schema.edge__I`) REFERENCES `sqlg_schema`.`V_edge` (`ID`), " +
@@ -646,6 +626,8 @@ public class MariadbDialect extends BaseSqlDialect {
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`lowerMultiplicity` BIGINT, " +
                 "`upperMultiplicity` BIGINT, " +
+                "`unique` BOOLEAN, " +
+                "`ordered` BOOLEAN, " +
                 "`sqlg_schema.edge__I` BIGINT UNSIGNED, " +
                 "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
                 "FOREIGN KEY (`sqlg_schema.edge__I`) REFERENCES `sqlg_schema`.`V_edge` (`ID`), " +
@@ -774,29 +756,11 @@ public class MariadbDialect extends BaseSqlDialect {
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
-            switch (propertyType.ordinal()) {
-                case LOCALTIME_ARRAY_ORDINAL:
-                case STRING_ARRAY_ORDINAL:
-                case long_ARRAY_ORDINAL:
-                case LONG_ARRAY_ORDINAL:
-                case int_ARRAY_ORDINAL:
-                case INTEGER_ARRAY_ORDINAL:
-                case short_ARRAY_ORDINAL:
-                case SHORT_ARRAY_ORDINAL:
-                case float_ARRAY_ORDINAL:
-                case FLOAT_ARRAY_ORDINAL:
-                case double_ARRAY_ORDINAL:
-                case DOUBLE_ARRAY_ORDINAL:
-                case boolean_ARRAY_ORDINAL:
-                case BOOLEAN_ARRAY_ORDINAL:
-                case LOCALDATETIME_ARRAY_ORDINAL:
-                case LOCALDATE_ARRAY_ORDINAL:
-                case ZONEDDATETIME_ARRAY_ORDINAL:
-                case JSON_ARRAY_ORDINAL:
-                    return conn.createArrayOf(getArrayDriverType(propertyType), data);
-                default:
-                    throw new IllegalStateException("Unhandled array type " + propertyType.name());
-            }
+            return switch (propertyType.ordinal()) {
+                case LOCALTIME_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL, long_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, int_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, short_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL, float_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, double_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, boolean_ARRAY_ORDINAL, BOOLEAN_ARRAY_ORDINAL, LOCALDATETIME_ARRAY_ORDINAL, LOCALDATE_ARRAY_ORDINAL, ZONEDDATETIME_ARRAY_ORDINAL, JSON_ARRAY_ORDINAL ->
+                        conn.createArrayOf(getArrayDriverType(propertyType), data);
+                default -> throw new IllegalStateException("Unhandled array type " + propertyType.name());
+            };
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1091,6 +1055,11 @@ public class MariadbDialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean requiresIndexName() {
+        return true;
+    }
+
+    @Override
     public String dropIndex(SqlgGraph sqlgGraph, AbstractLabel parentLabel, String name) {
         StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
@@ -1125,5 +1094,61 @@ public class MariadbDialect extends BaseSqlDialect {
     @Override
     public boolean supportsUUID() {
         return false;
+    }
+
+    @Override
+    public List<String> addPropertyDefinitions() {
+        return List.of(
+                "ALTER TABLE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` ADD COLUMN `" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "` INTEGER DEFAULT -1 NOT NULL;",
+                "UPDATE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` set `" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "` = \n" +
+                        "CASE\n" +
+                        "  WHEN `type` like '%_ARRAY' THEN -1\n" +
+                        "  ELSE 0\n" +
+                        "END;",
+                "ALTER TABLE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` ALTER COLUMN `" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "` DROP DEFAULT;",
+
+                "ALTER TABLE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` ADD COLUMN `" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "` INTEGER DEFAULT -1 NOT NULL;",
+                "UPDATE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` set `" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "` = \n" +
+                        "CASE\n" +
+                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
+                        "  ELSE 0\n" +
+                        "END;",
+                "ALTER TABLE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` ALTER COLUMN `" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "` DROP DEFAULT;",
+
+                "ALTER TABLE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` ADD COLUMN `" + SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL + "` TEXT;",
+                "ALTER TABLE `sqlg_schema`.`V_" + SQLG_SCHEMA_PROPERTY + "` ADD COLUMN `" + SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT + "` TEXT;"
+        );
+    }
+
+    @Override
+    public List<String> addOutEdgeDefinitions() {
+        return List.of(
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY + "` INTEGER DEFAULT 0 NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY + "` DROP DEFAULT;",
+
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY + "` INTEGER DEFAULT -1 NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY + "` DROP DEFAULT;",
+
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_OUT_EDGES_UNIQUE + "` BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_OUT_EDGES_UNIQUE + "` DROP DEFAULT;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_OUT_EDGES_ORDERED + "` BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_OUT_EDGES_ORDERED + "` DROP DEFAULT;"
+        );
+    }
+
+    @Override
+    public List<String> addInEdgeDefinitions() {
+        return List.of(
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY + "` INTEGER DEFAULT 0 NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY + "` DROP DEFAULT;",
+
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY + "` INTEGER DEFAULT -1 NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY + "` DROP DEFAULT;",
+
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_IN_EDGES_UNIQUE + "` BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_IN_EDGES_UNIQUE + "` DROP DEFAULT;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ADD COLUMN `" + SQLG_SCHEMA_IN_EDGES_ORDERED + "` BOOLEAN DEFAULT FALSE NOT NULL;",
+                "ALTER TABLE `sqlg_schema`.`E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "` ALTER COLUMN `" + SQLG_SCHEMA_IN_EDGES_ORDERED + "` DROP DEFAULT;"
+        );
     }
 }

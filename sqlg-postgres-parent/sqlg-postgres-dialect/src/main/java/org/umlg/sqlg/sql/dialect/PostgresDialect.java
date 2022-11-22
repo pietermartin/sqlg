@@ -2739,10 +2739,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "in_edges\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"lowerMultiplicity\" BIGINT, " +
-                "\"upperMultiplicity\" BIGINT, " +
-                "\"unique\" BOOLEAN, " +
-                "\"ordered\" BOOLEAN, " +
+                "\"lowerMultiplicity\" BIGINT NOT NULL, " +
+                "\"upperMultiplicity\" BIGINT NOT NULL, " +
+                "\"unique\" BOOLEAN NOT NULL, " +
+                "\"ordered\" BOOLEAN NOT NULL, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +
@@ -2752,10 +2752,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.EDGE_PREFIX + "out_edges\"(" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
-                "\"lowerMultiplicity\" BIGINT, " +
-                "\"upperMultiplicity\" BIGINT, " +
-                "\"unique\" BOOLEAN, " +
-                "\"ordered\" BOOLEAN, " +
+                "\"lowerMultiplicity\" BIGINT NOT NULL, " +
+                "\"upperMultiplicity\" BIGINT NOT NULL, " +
+                "\"unique\" BOOLEAN NOT NULL, " +
+                "\"ordered\" BOOLEAN NOT NULL, " +
                 "\"sqlg_schema.edge__I\" BIGINT, " +
                 "\"sqlg_schema.vertex__O\" BIGINT, " +
                 "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "edge\" (\"ID\") DEFERRABLE, " +
@@ -4417,12 +4417,58 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public List<String> addProperDefinitions() {
+    public List<String> addPropertyDefinitions() {
         return List.of(
-                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" BIGINT NOT NULL;",
-                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" BIGINT NOT NULL;",
-                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL + "\" BIGINT NOT NULL;",
-                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT + "\" BIGINT NOT NULL;"
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" BIGINT NOT NULL DEFAULT -1;",
+                "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" = \n" +
+                        "CASE\n" +
+                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
+                        "  ELSE 0\n" +
+                        "END;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ALTER COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" BIGINT NOT NULL DEFAULT -1;",
+                "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" = \n" +
+                        "CASE\n" +
+                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
+                        "  ELSE 0\n" +
+                        "END;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ALTER COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL + "\" TEXT;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT + "\" TEXT;"
+        );
+    }
+
+    @Override
+    public List<String> addOutEdgeDefinitions() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY + "\" BIGINT NOT NULL DEFAULT 0;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY + "\" BIGINT NOT NULL DEFAULT -1;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UNIQUE + "\" BOOLEAN NOT NULL DEFAULT false;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_UNIQUE + "\" DROP DEFAULT;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_ORDERED + "\" BOOLEAN NOT NULL DEFAULT false;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_OUT_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_OUT_EDGES_ORDERED + "\" DROP DEFAULT;"
+        );
+    }
+
+    @Override
+    public List<String> addInEdgeDefinitions() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY + "\" BIGINT NOT NULL DEFAULT 0;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY + "\" BIGINT NOT NULL DEFAULT -1;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY + "\" DROP DEFAULT;",
+
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UNIQUE + "\" BOOLEAN NOT NULL DEFAULT false;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_UNIQUE + "\" DROP DEFAULT;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ADD COLUMN \"" + SQLG_SCHEMA_IN_EDGES_ORDERED + "\" BOOLEAN NOT NULL DEFAULT false;",
+                "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_ORDERED + "\" DROP DEFAULT;"
         );
     }
 }
