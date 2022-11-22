@@ -25,6 +25,15 @@ import java.util.LinkedHashMap;
  */
 public class TestSetProperty extends BaseTest {
 
+    @Test
+    public void shouldAllowNullAddVertexVertexLabelPreCreated() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
+            put("name", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        final Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", null);
+        Assert.assertNull(v.value("name"));
+    }
+
     @Test (expected = IllegalStateException.class)
     public void shouldNotAllowDifferentTypesOnVertex() {
         this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", new LinkedHashMap<>() {{
