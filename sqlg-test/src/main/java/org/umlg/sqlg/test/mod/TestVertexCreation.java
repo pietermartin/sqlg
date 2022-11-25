@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.mod;
 
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -18,6 +19,28 @@ import java.sql.Statement;
  * Time: 2:26 PM
  */
 public class TestVertexCreation extends BaseTest {
+
+    @Test
+    public void testAddV() {
+        GraphTraversalSource g = this.sqlgGraph.traversal();
+        g.addV("person").property("name", "marko").property("age", 29).as("marko").
+                addV("person").property("name", "vadas").property("age", 27).as("vadas").
+                addV("software").property("name", "lop").property("lang", "java").as("lop").
+                addV("person").property("name", "josh").property("age", 32).as("josh").
+                addV("software").property("name", "ripple").property("lang", "java").as("ripple").
+                addV("person").property("name", "peter").property("age", 35).as("peter").
+                addE("knows").from("marko").to("vadas").property("weight", 0.5d).
+                addE("knows").from("marko").to("josh").property("weight", 1.0d).
+                addE("created").from("marko").to("lop").property("weight", 0.4d).
+                addE("created").from("josh").to("ripple").property("weight", 1.0d).
+                addE("created").from("josh").to("lop").property("weight", 0.4d).
+                addE("created").from("peter").to("lop").property("weight", 0.2d)
+                .iterate();
+        Assert.assertEquals(6, this.sqlgGraph.traversal().V().count().next(), 0);
+        g.V().addV("animal").property("age", 0).iterate();
+        Assert.assertEquals(12, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(6, this.sqlgGraph.traversal().V().has("animal", "age", 0).count().next(), 0);
+    }
 
     @Test
     public void testCreateEmptyVertex() throws SQLException {

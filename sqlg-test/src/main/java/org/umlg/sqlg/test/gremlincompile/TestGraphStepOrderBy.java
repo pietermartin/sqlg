@@ -36,6 +36,31 @@ public class TestGraphStepOrderBy extends BaseTest {
         }
     }
 
+    @SuppressWarnings("unused")
+    @Test
+    public void testOrderByCount() {
+        loadModern();
+//      | v[marko] |
+//      | v[josh]   |
+//      | v[peter] |
+//      | v[vadas] |
+//      | v[lop] |
+//      | v[ripple] |
+        Vertex marko = convertToVertex(sqlgGraph, "marko");
+        Vertex josh = convertToVertex(sqlgGraph, "josh");
+        Vertex peter = convertToVertex(sqlgGraph, "peter");
+        Vertex vadas = convertToVertex(sqlgGraph, "vadas");
+        Vertex lop = convertToVertex(sqlgGraph, "lop");
+        Vertex ripple = convertToVertex(sqlgGraph, "ripple");
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().order().by(__.outE().count(), Order.desc).toList();
+        Assert.assertEquals(marko, vertices.get(0));
+        Assert.assertEquals(josh, vertices.get(1));
+        Assert.assertEquals(peter, vertices.get(2));
+//        Assert.assertEquals(vadas, vertices.get(3));
+//        Assert.assertEquals(lop, vertices.get(4));
+//        Assert.assertEquals(ripple, vertices.get(5));
+    }
+
     @Test
     public void testCount() {
         loadModern();
@@ -59,6 +84,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         }
     }
 
+    @SuppressWarnings("unused")
     @Test
     public void testUnoptimizedOrderBy() {
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "missing1", "a");
