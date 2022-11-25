@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.io;
 
+import org.umlg.sqlg.structure.PropertyType;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.tinkerpop.gremlin.TestHelper;
 import org.apache.tinkerpop.gremlin.process.traversal.IO;
@@ -10,10 +11,12 @@ import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.GraphWriter;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.Is;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyDefinition;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgIoRegistryV3;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
@@ -28,9 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -48,20 +48,26 @@ public class TestIo extends BaseTest {
 
     private Function<Graph, GraphWriter> writerMaker;
 
+    @Test
+    public void testLoadClassic() {
+        Assume.assumeTrue(sqlgGraph.getSqlDialect().supportsFloatValues());
+        loadClassic();
+    }
+
     //Test are copied from ProcessStandardSuite. They fail there as the registery is not registered.
     @Test
     public void g_io_write_withXwrite_gryoX() throws IOException {
         loadModern();
         final String fileToWrite = TestHelper.generateTempFile(WriteTest.class, "tinkerpop-modern-v3d0", ".kryo").getAbsolutePath().replace('\\', '/');
         final File f = new File(fileToWrite);
-        assertThat(f.length() == 0, is(true));
+        MatcherAssert.assertThat(f.length() == 0, Is.is(true));
         final Traversal<Object, Object> traversal = this.sqlgGraph.traversal().io(fileToWrite)
                 .with(IO.writer, IO.gryo)
                 .with(IO.registry, SqlgIoRegistryV3.instance())
                 .write();
         printTraversalForm(traversal);
         traversal.iterate();
-        assertThat(f.length() > 0, is(true));
+        MatcherAssert.assertThat(f.length() > 0, Is.is(true));
     }
 
     @Test
@@ -70,7 +76,7 @@ public class TestIo extends BaseTest {
         final String fileToWrite = TestHelper.generateTempFile(WriteTest.class, "tinkerpop-modern-v3d0", ".json").getAbsolutePath().replace('\\', '/');
 
         final File f = new File(fileToWrite);
-        assertThat(f.length() == 0, is(true));
+        MatcherAssert.assertThat(f.length() == 0, Is.is(true));
 
         final Traversal<Object, Object> traversal = this.sqlgGraph.traversal().io(fileToWrite)
                 .with(IO.writer, IO.graphson)
@@ -79,7 +85,7 @@ public class TestIo extends BaseTest {
         printTraversalForm(traversal);
         traversal.iterate();
 
-        assertThat(f.length() > 0, is(true));
+        MatcherAssert.assertThat(f.length() > 0, Is.is(true));
     }
 
     @Test
@@ -88,7 +94,7 @@ public class TestIo extends BaseTest {
         final String fileToWrite = TestHelper.generateTempFile(WriteTest.class,"tinkerpop-modern-v3d0", ".json").getAbsolutePath().replace('\\', '/');
 
         final File f = new File(fileToWrite);
-        assertThat(f.length() == 0, is(true));
+        MatcherAssert.assertThat(f.length() == 0, Is.is(true));
 
         final Traversal<Object,Object> traversal =  this.sqlgGraph.traversal()
                 .io(fileToWrite)
@@ -98,7 +104,7 @@ public class TestIo extends BaseTest {
         printTraversalForm(traversal);
         traversal.iterate();
 
-        assertThat(f.length() > 0, is(true));
+        MatcherAssert.assertThat(f.length() > 0, Is.is(true));
     }
 
     @Test
@@ -107,7 +113,7 @@ public class TestIo extends BaseTest {
         final String fileToWrite = TestHelper.generateTempFile(WriteTest.class, "tinkerpop-modern-v3d0", ".kryo").getAbsolutePath().replace('\\', '/');
 
         final File f = new File(fileToWrite);
-        assertThat(f.length() == 0, is(true));
+        MatcherAssert.assertThat(f.length() == 0, Is.is(true));
 
         final Traversal<Object,Object> traversal = this.sqlgGraph.traversal()
                 .io(fileToWrite)
@@ -117,7 +123,7 @@ public class TestIo extends BaseTest {
         printTraversalForm(traversal);
         traversal.iterate();
 
-        assertThat(f.length() > 0, is(true));
+        MatcherAssert.assertThat(f.length() > 0, Is.is(true));
     }
 
     @Test

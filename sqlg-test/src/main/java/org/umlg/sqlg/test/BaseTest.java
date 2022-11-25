@@ -309,6 +309,20 @@ public abstract class BaseTest {
         loadModern(this.sqlgGraph);
     }
 
+    protected void loadClassic() {
+        loadClassic(this.sqlgGraph);
+    }
+
+    protected void loadClassic(SqlgGraph sqlgGraph) {
+        Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0);
+        final GraphReader reader = sqlgGraph.io(builder).reader().create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-classic-v3d0.json")) {
+            reader.readGraph(stream, sqlgGraph);
+        } catch (IOException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
     protected void loadGratefulDead(SqlgGraph sqlgGraph) {
         Io.Builder<GraphSONIo> builder = GraphSONIo.build(GraphSONVersion.V3_0);
         final GraphReader reader = sqlgGraph.io(builder).reader().create();
