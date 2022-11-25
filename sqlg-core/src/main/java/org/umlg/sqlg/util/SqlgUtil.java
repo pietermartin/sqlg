@@ -607,6 +607,7 @@ public class SqlgUtil {
                 throw Vertex.Exceptions.userSuppliedIdsNotSupported();
             }
             if (!keyValues[i].equals(T.label)) {
+                Preconditions.checkState(keyValues[i] instanceof String);
                 String key = (String) keyValues[i];
                 sqlDialect.validateColumnName(key);
                 Object value = keyValues[i + 1];

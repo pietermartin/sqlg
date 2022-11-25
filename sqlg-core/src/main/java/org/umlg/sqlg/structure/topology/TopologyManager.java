@@ -976,7 +976,7 @@ public class TopologyManager {
         }
     }
 
-    public static void addLabelToEdge(SqlgGraph sqlgGraph, Vertex edgeVertex, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
+    public static void addLabelToEdgeFromInformationSchema(SqlgGraph sqlgGraph, Vertex edgeVertex, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
@@ -1013,10 +1013,25 @@ public class TopologyManager {
             Preconditions.checkState(prefixedTable.startsWith(EDGE_PREFIX));
             Vertex foreignKeyVertex = foreignKeyVertices.get(0);
 
+            EdgeDefinition edgeDefinition = EdgeDefinition.of();
             if (in) {
-                foreignKeyVertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+                foreignKeyVertex.addEdge(
+                        SQLG_SCHEMA_IN_EDGES_EDGE,
+                        edgeVertex,
+                        SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, edgeDefinition.inMultiplicity().lower(),
+                        SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper(),
+                        SQLG_SCHEMA_IN_EDGES_UNIQUE, edgeDefinition.inMultiplicity().unique(),
+                        SQLG_SCHEMA_IN_EDGES_ORDERED, edgeDefinition.inMultiplicity().ordered()
+                );
             } else {
-                foreignKeyVertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
+                foreignKeyVertex.addEdge(
+                        SQLG_SCHEMA_OUT_EDGES_EDGE,
+                        edgeVertex,
+                        SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, edgeDefinition.inMultiplicity().lower(),
+                        SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, edgeDefinition.inMultiplicity().upper(),
+                        SQLG_SCHEMA_OUT_EDGES_UNIQUE, edgeDefinition.inMultiplicity().unique(),
+                        SQLG_SCHEMA_OUT_EDGES_ORDERED, edgeDefinition.inMultiplicity().ordered()
+                );
             }
 
         } finally {

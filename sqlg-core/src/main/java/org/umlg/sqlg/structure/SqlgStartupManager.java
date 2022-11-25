@@ -534,10 +534,10 @@ class SqlgStartupManager {
                     }
                 }
                 for (SchemaTable inForeignKey : inForeignKeys) {
-                    TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, true, inForeignKey);
+                    TopologyManager.addLabelToEdgeFromInformationSchema(this.sqlgGraph, edgeVertex, schema, table, true, inForeignKey);
                 }
                 for (SchemaTable outForeignKey : outForeignKeys) {
-                    TopologyManager.addLabelToEdge(this.sqlgGraph, edgeVertex, schema, table, false, outForeignKey);
+                    TopologyManager.addLabelToEdgeFromInformationSchema(this.sqlgGraph, edgeVertex, schema, table, false, outForeignKey);
                 }
             }
 
