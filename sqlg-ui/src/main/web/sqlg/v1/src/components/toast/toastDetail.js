@@ -1,7 +1,6 @@
 import m from "mithril";
 
 import {Toast} from "bootstrap";
-import Utils from "../../utils/utils";
 
 function ToastDetail(ignore) {
 
@@ -14,7 +13,6 @@ function ToastDetail(ignore) {
                 actions.removeMessage(item);
             });
         },
-        // id: Utils.uniqueId(), message: e.message, autohide
         view: ({attrs: {item}}) => {
             const {id, message, autohide, type} = item;
             let background;
@@ -40,7 +38,6 @@ function ToastDetail(ignore) {
             ])
         }
     }
-
 }
 
 export default ToastDetail;

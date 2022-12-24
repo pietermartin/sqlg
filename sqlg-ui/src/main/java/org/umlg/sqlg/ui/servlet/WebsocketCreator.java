@@ -1,13 +1,13 @@
 package org.umlg.sqlg.ui.servlet;
 
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 
-public class WebsocketCreator implements WebSocketCreator {
+public class WebsocketCreator implements JettyWebSocketCreator {
 
     @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
+    public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp) {
         try {
             return new SqlgServletWebsocket();
         } catch (Exception e) {

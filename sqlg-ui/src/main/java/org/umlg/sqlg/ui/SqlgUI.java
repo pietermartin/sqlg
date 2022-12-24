@@ -1,8 +1,8 @@
 package org.umlg.sqlg.ui;
 
+import io.javalin.Javalin;
+import io.javalin.http.staticfiles.Location;
 import org.umlg.sqlg.structure.SqlgGraph;
-import spark.Service;
-import spark.Spark;
 
 public class SqlgUI {
 
@@ -11,14 +11,27 @@ public class SqlgUI {
 
     public static void initialize(int port) {
         if (INSTANCE == null) {
-            Service http = Service.ignite();
-            SparkResources.staticResources(http);
-            if (port != -1) {
-                http.port(port);
-            }
-            SparkResources.websocket(http);
-            SparkResources.resources(http);
-            http.awaitInitialization();
+            var app = Javalin.create(config -> {
+                        config.staticFiles.add(staticFiles -> {
+//                            staticFiles.hostedPath = "/home/pieter/Projects/sqlg/";
+                            staticFiles.directory = "/home/pieter/Projects/sqlg/sqlg-ui/src/main/web/dist/dist";
+                            staticFiles.location = Location.EXTERNAL;
+                        });
+                    });
+            SparkResources.resources(app);
+            app.start(7070);
+//            app.get("/path/*", ctx -> { // will match anything starting with /path/
+//                ctx.result("You are here because " + ctx.path() + " matches " + ctx.matchedPath());
+//            });
+
+//            Service http = Service.ignite();
+//            SparkResources.staticResources(http);
+//            if (port != -1) {
+//                http.port(port);
+//            }
+//            SparkResources.websocket(http);
+//            SparkResources.resources(http);
+//            http.awaitInitialization();
         }
     }
 
@@ -35,7 +48,6 @@ public class SqlgUI {
 
     public static void stop() {
         INSTANCE = null;
-        Spark.stop();
     }
 
     private SqlgUI() {

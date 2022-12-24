@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicity;
+import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.topology.edgeMultiplicity.TestEdgeMultiplicity;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestEdgeMultiplicity.class,
+        TestTopologyUpgrade.class
+//        TestEdgeMultiplicity.class,
 //        TestEdgeMultiplicityUnique.class,
 //        TestEdgeMultiplicityDistributed.class,
 //        TestMultiplicityAddRemoveEdge.class
