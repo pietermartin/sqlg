@@ -12,8 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^6.2.1",
-    "@popperjs/core": "^2.11.6",
     "autoprefixer": "^10.4.13",
     "bootstrap": "^5.2.3",
     "file-loader": "^6.2.0",

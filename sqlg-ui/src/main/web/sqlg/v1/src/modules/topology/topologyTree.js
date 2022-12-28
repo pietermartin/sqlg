@@ -96,13 +96,14 @@ function TopologyTree(ignore) {
         onupdate: ({attrs: {actions}}) => {
             actions.setTreeRefresh(false);
         },
-        view: ({attrs: {state}}) => {
+        view: ({attrs: {state, actions}}) => {
             let {treeData} = state;
             defaultOptions.data.dataNormal = treeData.data;
             defaultOptions.refreshData = treeData.refreshData;
             defaultOptions.showSpinner = treeData.spin;
             defaultOptions.selectedItem = treeData.selectedTreeItem;
-            defaultOptions.refresh = treeData;
+            defaultOptions.refresh = actions.retrieveTopologyTree;
+            // actions.retrieveTopologyTree(message["selectedTreeId"]);
             defaultOptions.refreshActive = treeData.refreshActive;
             return m(SlickLazyTree, defaultOptions)
         }

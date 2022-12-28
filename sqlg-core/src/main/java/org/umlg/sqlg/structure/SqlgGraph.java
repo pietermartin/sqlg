@@ -521,6 +521,13 @@ public class SqlgGraph implements Graph {
         Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
         final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
         this.tx().readWrite();
+        //The VertexLabel must exist, streaming mode no longer supports lazily creating the table
+//        String schemaName = schemaTablePair.getSchema();
+//        Objects.requireNonNull(schemaName, "Given tables must not be null");
+//        Objects.requireNonNull(label, "Given table must not be null");
+//        Preconditions.checkArgument(!label.startsWith(Topology.VERTEX_PREFIX), "label may not be prefixed with %s", Topology.VERTEX_PREFIX);
+//        Preconditions.checkState(this.getTopology().getSchema(schemaName).isPresent());
+//        Preconditions.checkState(this.getTopology().getSchema(schemaName).get().getVertexLabel(label).isPresent());
         this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         return new SqlgVertex(this, false, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair.getRight());
     }

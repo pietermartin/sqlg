@@ -498,11 +498,16 @@ public class VertexLabel extends AbstractLabel {
                     columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
                 }
             } else {
+                if (!sqlgGraph.tx().isInStreamingBatchMode()) {
+                    //Postgres will check if the types.
+                    //For streaming the data may come csv in which case the csv must specify the correct literal.
+                    SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
+                }
                 //Set the proper definition in the map;
-                SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
                 columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }
         }
+
     }
 
     public void ensureDistributed(int shardCount, PropertyColumn distributionPropertyColumn) {

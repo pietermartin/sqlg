@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
+import org.umlg.sqlg.test.batch.*;
 
 /**
  * Date: 2014/07/16
@@ -10,12 +10,16 @@ import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyUpgrade.class
-//        TestEdgeMultiplicity.class,
-//        TestEdgeMultiplicityUnique.class,
-//        TestEdgeMultiplicityDistributed.class,
-//        TestMultiplicityAddRemoveEdge.class
-//        DocTests.class
+        TestStreamingFromCsvImport.class,
+//        TestBatchStreamEdge.class,
+//        TestBatchedStreaming.class,
+//        TestBatch.class,
+//        TestBatchJson.class,
+//        TestBatchEdgeDateTime.class,
+//        TestBatchEdgeWithMultipleOutLabels.class,
+//        TestBatchModeMultipleGraphs.class,
+//        TestBatchNormalDateTime.class,
+//        TestBatchNormalPrimitive.class
 })
 public class AnyTest {
 }

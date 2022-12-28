@@ -19,9 +19,7 @@ public class SqlgUITest extends BaseTest {
     @Before
     public void before() throws Exception {
         super.before();
-//        SqlgUI.initialize(8181);
-        SqlgUI.initialize();
-        SqlgUI.set(this.sqlgGraph);
+        SqlgUI.initialize(this.sqlgGraph);
     }
 
     @Test

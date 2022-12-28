@@ -20,7 +20,7 @@ const TopologyManager = {
     checkUserAllowedToEdit: (callBack, callBackError) => {
         m.request({
             method: "GET",
-            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "/userAllowedToEdit"
+            url: SqlgGlobal.url + SqlgGlobal.CONTEXT + "userAllowedToEdit"
         }).then(function (data) {
             callBack(data);
         }).catch(function (e) {

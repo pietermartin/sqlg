@@ -1,6 +1,26 @@
 ##3.0.0
 
-* !!!Breaking Release.
+* **!!!Breaking Release.** 
+* Sqlg will automatically upgrade its own schema. However, it is important to make a **backup** and **test** the upgrade!!!
+
+### Upgrade instructions
+
+* TinkerPop added `supportsNullPropertyValues` which Sqlg supports. i.e. `supportsNullPropertyValues = true`. Before `3.0.0` client code had to call 
+ `Property.isPresent()` to check for null values. `isPresent` will now return `true` if the property exist in the schema, regardless of the value. To do a null check call `(property.isPresent() && property.value() != null)`. A request has been made to TinkerPop to add a `isNull` to the `Property` interface.
+ 
+* Properties are now specified using a `PropertyDefinition`. Before 3.0.0 a VertexLabel/EdgeLabel property would be defined with just a name and a `PropertyType`. 
+  ```
+  schema.ensureVertexLabelExist("LabelName", new LinkedHashMap<>() {{
+      put("propertyName", PropertyType.STRING);
+  }});
+  ```
+  this now needs to be refactored to,
+  ```
+  schema.ensureVertexLabelExist("LabelName", new LinkedHashMap<>() {{
+      put("propertyName", PropertyDefinition.of(PropertyType.STRING));
+  }});
+  ```
+  i.e. wrapping the `PropertyType` with a `PropertyDefinition`
 
 ##2.1.6
 

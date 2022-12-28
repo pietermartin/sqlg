@@ -144,6 +144,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestLocalDateArray.class,
         TestBatchStreamVertex.class,
         TestBatchStreamEdge.class,
+        TestStreamingFromCsvImport.class,
         TestJson.class,
         TestSchemaManagerGetTablesFor.class,
         TestBatchServerSideEdgeCreation.class,

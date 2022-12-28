@@ -1,5 +1,6 @@
 package org.umlg.sqlg.ui;
 
+import com.google.common.base.Preconditions;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -9,37 +10,31 @@ public class SqlgUI {
     private SqlgGraph sqlgGraph;
     public static SqlgUI INSTANCE = null;
 
-    public static void initialize(int port) {
-        if (INSTANCE == null) {
-            var app = Javalin.create(config -> {
-                        config.staticFiles.add(staticFiles -> {
-//                            staticFiles.hostedPath = "/home/pieter/Projects/sqlg/";
-                            staticFiles.directory = "/home/pieter/Projects/sqlg/sqlg-ui/src/main/web/dist/dist";
-                            staticFiles.location = Location.EXTERNAL;
-                        });
-                    });
-            SparkResources.resources(app);
-            app.start(7070);
-//            app.get("/path/*", ctx -> { // will match anything starting with /path/
-//                ctx.result("You are here because " + ctx.path() + " matches " + ctx.matchedPath());
-//            });
-
-//            Service http = Service.ignite();
-//            SparkResources.staticResources(http);
-//            if (port != -1) {
-//                http.port(port);
-//            }
-//            SparkResources.websocket(http);
-//            SparkResources.resources(http);
-//            http.awaitInitialization();
-        }
+    public static void initialize(SqlgGraph sqlgGraph, int port) {
+        Preconditions.checkState(INSTANCE == null);
+        set(sqlgGraph);
+        var app = Javalin.create(config -> {
+            config.staticFiles.add(staticFiles -> {
+                staticFiles.directory = "/home/pieter/Projects/sqlg/sqlg-ui/src/main/web/dist/dist";
+                staticFiles.location = Location.EXTERNAL;
+            });
+            config.compression.gzipOnly();
+        });
+        app.after(ctx -> SqlgUI.INSTANCE.getSqlgGraph().tx().rollback());
+        JavalinResources.resources(app);
+        app.ws("/sqlg/data/v1/websocket", ws -> {
+            ws.onConnect(ctx -> NotificationManager.INSTANCE.add(ctx.session));
+            ws.onClose(ctx -> NotificationManager.INSTANCE.remove(ctx.session));
+        });
+        app.wsAfter(wsConfig -> SqlgUI.INSTANCE.getSqlgGraph().tx().rollback());
+        app.start(port);
     }
 
-    public static void initialize() {
-        initialize(-1);
+    public static void initialize(SqlgGraph sqlgGraph) {
+        initialize(sqlgGraph, 8181);
     }
 
-    public static void set(SqlgGraph sqlgGraph) {
+    private static void set(SqlgGraph sqlgGraph) {
         if (INSTANCE == null) {
             INSTANCE = new SqlgUI();
         }

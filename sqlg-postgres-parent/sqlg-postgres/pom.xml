@@ -39,6 +39,14 @@
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-lang3</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -55,10 +63,10 @@
             <artifactId>sqlg-c3p0</artifactId>
             <scope>test</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.umlg</groupId>-->
-<!--            <artifactId>sqlg-hikari</artifactId>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.umlg</groupId>-->
+        <!--            <artifactId>sqlg-hikari</artifactId>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
     </dependencies>
 </project>

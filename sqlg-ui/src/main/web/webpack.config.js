@@ -1,6 +1,7 @@
 const path = require('path');
 let webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const {template} = require("underscore");
 
 module.exports = {
     mode: 'development',
@@ -14,7 +15,10 @@ module.exports = {
             "jQuery": "jquery",
             Popper: ['popper.js', 'default']
         }),
-        new HtmlWebpackPlugin({favicon: "sqlg/v1/src/favicon/favicon-16x16.png"})
+        new HtmlWebpackPlugin({
+            favicon: "sqlg/v1/src/favicon/favicon-16x16.png",
+            template: 'sqlg/v1/src/index.html'
+        })
     ],
     output: {
         path: path.resolve(__dirname, 'dist/dist/sqlg/v1'),
