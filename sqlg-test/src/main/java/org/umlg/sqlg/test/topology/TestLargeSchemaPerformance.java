@@ -1,17 +1,23 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.PartitionType;
 import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,34 +29,22 @@ public class TestLargeSchemaPerformance extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestLargeSchemaPerformance.class);
 
-//    @Test
-//    public void testSmallQueryLatency() {
-//        LOGGER.info("started testSmallQueryLatency");
-//        for (int i = 1; i <= 1_000_000; i++) {
-//            List<Vertex> vertices = this.sqlgGraph.traversal().V()
-//                    .has("R_5.T_100")
-//                    .has("column10", P.eq("value_10"))
-//                    .limit(1)
-//                    .toList();
-//            Assert.assertEquals(1, vertices.size());
-//            if (i % 10 == 0) {
-//                LOGGER.info(String.format("completed %d queries", i));
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void testInsertData() {
-//        this.sqlgGraph.tx().streamingBatchModeOn();
-//        LinkedHashMap<String, Object> values = values();
-//        for (int i = 0; i < 1_000_000; i++) {
-//            this.sqlgGraph.streamVertex("R_5.T_100", values);
-//        }
-//        this.sqlgGraph.tx().commit();
-//    }
+    @Before
+    public void before() throws Exception {
+        System.out.println("before");
+    }
 
     @Test
+    public void load() {
+        StopWatch stopWatch = StopWatch.createStarted();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        stopWatch.stop();
+        LOGGER.info("time taken: {}", stopWatch);
+    }
+
+//    @Test
     public void testPerformance() {
+//        this.sqlgGraph = SqlgGraph.open(configuration);
         Assume.assumeFalse(isMariaDb());
         //100 schemas
         //500 000 tables
@@ -63,7 +57,7 @@ public class TestLargeSchemaPerformance extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        LOGGER.info(String.format("create schema %s", stopWatch.toString()));
+        LOGGER.info("create schema {}", stopWatch);
         stopWatch = StopWatch.createStarted();
         StopWatch stopWatch2 = StopWatch.createStarted();
         int count = 1;
@@ -73,13 +67,26 @@ public class TestLargeSchemaPerformance extends BaseTest {
             Schema schema = schemaOptional.get();
             for (int j = 1; j <= 1000; j++) {
                 //100 columns
-                schema.ensureVertexLabelExist("T" + j, columns());
+//                schema.ensureVertexLabelExist("T" + j, columns());
                 if (count % 1000 == 0) {
                     this.sqlgGraph.tx().commit();
                     stopWatch2.stop();
-                    LOGGER.info(String.format("created %d for far in %s", count, stopWatch2.toString()));
+                    LOGGER.info("created {} for far in {}", count, stopWatch2);
                     stopWatch2.reset();
                     stopWatch2.start();
+                }
+                VertexLabel vertexLabel = schema.ensurePartitionedVertexLabelExist(
+                        "T" + j,
+                        columns(),
+                        ListOrderedSet.listOrderedSet(List.of("column1")),
+                        PartitionType.LIST,
+                        "column1"
+                );
+                for (int k = 0; k < 10; k++) {
+                    vertexLabel.ensureListPartitionExists(
+                            "test" + j + k,
+                            "'test" + j + k + "'"
+                    );
                 }
                 count++;
             }
@@ -87,13 +94,26 @@ public class TestLargeSchemaPerformance extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        LOGGER.info(String.format("create table %s", stopWatch.toString()));
+        LOGGER.info("create table {}", stopWatch);
         Assert.assertEquals(numberOfSchemas + 1, sqlgGraph.getTopology().getSchemas().size());
         Assert.assertEquals(1000, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabels().size());
         Assert.assertEquals(1000, sqlgGraph.getTopology().getSchema("R_2").orElseThrow().getVertexLabels().size());
         Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1").orElseThrow().getProperties().size());
         Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T100").orElseThrow().getProperties().size());
         Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1000").orElseThrow().getProperties().size());
+
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(numberOfSchemas + 1, sqlgGraph1.getTopology().getSchemas().size());
+            Assert.assertEquals(1000, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabels().size());
+            Assert.assertEquals(1000, sqlgGraph1.getTopology().getSchema("R_2").orElseThrow().getVertexLabels().size());
+            Assert.assertEquals(100, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1").orElseThrow().getProperties().size());
+            Assert.assertEquals(100, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T100").orElseThrow().getProperties().size());
+            Assert.assertEquals(100, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1000").orElseThrow().getProperties().size());
+
+        }
+
     }
 
     private Map<String, PropertyDefinition> columns() {
