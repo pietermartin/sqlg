@@ -2,16 +2,14 @@ package org.umlg.sqlg.test;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.Stage;
 import io.cucumber.guice.CucumberModules;
-import io.cucumber.guice.GuiceFactory;
-import io.cucumber.guice.InjectorSource;
 import io.cucumber.java.Scenario;
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
 import org.apache.commons.configuration2.MapConfiguration;
 import org.apache.tinkerpop.gremlin.TestHelper;
+import org.apache.tinkerpop.gremlin.features.AbstractGuiceFactory;
 import org.apache.tinkerpop.gremlin.features.World;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoResourceAccess;
@@ -32,8 +30,7 @@ import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData;
 @CucumberOptions(
         tags = "not @RemoteOnly and not @MultiMetaProperties and not @GraphComputerOnly and not @AllowNullPropertyValues and not @UserSuppliedVertexPropertyIds and not @UserSuppliedEdgeIds and not @UserSuppliedVertexIds and not @TinkerServiceRegistry",
         glue = {"org.apache.tinkerpop.gremlin.features"},
-        objectFactory = GuiceFactory.class,
-//        features = { "../../features" },
+        objectFactory = PostgresFeatureTest.SqlgGraphGuiceFactory.class,
         features = {"classpath:/features"},
         plugin = {"progress", "junit:target/cucumber.xml"})
 public class PostgresFeatureTest {
@@ -87,8 +84,13 @@ public class PostgresFeatureTest {
         try {
             graph.traversal().V().drop().iterate();
             graph.tx().commit();
-            final String dataFile = TestHelper.generateTempFileFromResource(graph.getClass(),
-                    GryoResourceAccess.class, graphData.location().substring(graphData.location().lastIndexOf(File.separator) + 1), "", false).getAbsolutePath();
+            final String dataFile = TestHelper.generateTempFileFromResource(
+                    graph.getClass(),
+                    GryoResourceAccess.class,
+                    graphData.location().substring(graphData.location().lastIndexOf(File.separator) + 1),
+                    "",
+                    false
+            ).getAbsolutePath();
             graph.traversal().io(dataFile).read().iterate();
             graph.tx().commit();
         } catch (IOException ioe) {
@@ -128,11 +130,17 @@ public class PostgresFeatureTest {
         }
     }
 
-    public static final class WorldInjectorSource implements InjectorSource {
-        @Override
-        public Injector getInjector() {
-            return Guice.createInjector(Stage.PRODUCTION, CucumberModules.createScenarioModule(), new ServiceModule());
+    public static final class SqlgGraphGuiceFactory extends AbstractGuiceFactory {
+        public SqlgGraphGuiceFactory() {
+            super(Guice.createInjector(Stage.PRODUCTION, CucumberModules.createScenarioModule(), new ServiceModule()));
         }
     }
+
+//    public static final class WorldInjectorSource implements InjectorSource {
+//        @Override
+//        public Injector getInjector() {
+//            return Guice.createInjector(Stage.PRODUCTION, CucumberModules.createScenarioModule(), new ServiceModule());
+//        }
+//    }
 
 }
