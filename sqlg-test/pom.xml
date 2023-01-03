@@ -69,6 +69,11 @@
             <version>${junit.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-groovysh</artifactId>
+            <version>4.0.7</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-test</artifactId>
             <exclusions>
@@ -105,8 +110,6 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-            <version>5.1.0</version>
-<!--            <version>4.2.3</version>-->
         </dependency>
     </dependencies>
 

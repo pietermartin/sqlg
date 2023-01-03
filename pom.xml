@@ -41,9 +41,6 @@
             <email>pieter.martin@riseup.net</email>
         </developer>
     </developers>
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
 
     <repositories>
         <repository>
@@ -74,7 +71,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0-M3</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>enforce-all</id>
@@ -87,6 +84,9 @@
                                 <requireJavaVersion>
                                     <version>[17,)</version>
                                 </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>3.0</version>
+                                </requireMavenVersion>
                             </rules>
                         </configuration>
                     </execution>
@@ -95,7 +95,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>3.0.0-M7</version>
                 <configuration>
                     <includes>
 <!--                        <include>**/H2AllTest.java</include>-->
@@ -109,7 +109,8 @@
 
 <!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
 <!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
-                        <include>**/PostgresAllTest.java</include>
+<!--                        <include>**/PostgresAllTest.java</include>-->
+                        <include>**/TestSqlgGremlinServer.java</include>
 <!--                        <include>**/PostgresFeatureTest.java</include>-->
 
 <!--                        <include>**/SqlgMariaDBProcessStandardTest.java</include>-->
@@ -149,6 +150,7 @@
                         <configuration>
                             <failOnError>false</failOnError>
                             <excludePackageNames>*.test.*</excludePackageNames>
+                            <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
                         </configuration>
                     </execution>
                 </executions>
@@ -201,7 +203,8 @@
         <module>sqlg-mariadb-parent</module>
         <module>sqlg-mysql-parent</module>
         <module>sqlg-mssqlserver-parent</module>
-        <module>sqlg-doc</module>
+        <!-- sqlg-doc is failing the enforcer, some rubygem dependencies are not resolving. -->
+<!--        <module>sqlg-doc</module>-->
         <module>sqlg-ui</module>
         <module>sqlg-gremlin-server</module>
         <module>sqlg-jdbc-pool</module>
@@ -293,16 +296,6 @@
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
-                <artifactId>sqlg-cockroachdb</artifactId>
-                <version>${sqlg.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.umlg</groupId>
-                <artifactId>sqlg-cockroachdb-dialect</artifactId>
-                <version>${sqlg.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.umlg</groupId>
                 <artifactId>sqlg-mariadb</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
@@ -341,11 +334,6 @@
                 <artifactId>sqlg-test</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.umlg</groupId>
-                <artifactId>sqlg-benchmark</artifactId>
-                <version>${sqlg.version}</version>
-            </dependency>
 
             <!-- external dependencies -->
             <dependency>
@@ -361,7 +349,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>[30.0-jre,)</version>
+                <version>30.0-jre</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -420,6 +408,40 @@
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-slf4j2-impl</artifactId>
                 <version>2.19.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>5.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>3.18.2</version>
+            </dependency>
+            <dependency>
+                <groupId>io.javalin</groupId>
+                <artifactId>javalin</artifactId>
+                <version>5.2.0</version>
+                <exclusions>
+                    <!-- conflicts with groovy -->
+                    <exclusion>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-analysis</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-util</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-tree</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>

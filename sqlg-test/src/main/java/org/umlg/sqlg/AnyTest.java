@@ -10,7 +10,12 @@ import org.umlg.sqlg.test.topology.TestLargeSchemaPerformance;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+//        TestUserSuppliedPKTopology.class,
+//        TestAddVertexViaMap.class,
+//        TestSchema.class,
+//        TestIndex.class
         TestLargeSchemaPerformance.class,
+//        TestGroovy.class
 })
 public class AnyTest {
 }

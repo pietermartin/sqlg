@@ -468,7 +468,7 @@ public class RecordId implements KryoSerializable, Comparable {
 
         @Override
         public String toString() {
-            return this.sequenceId != null ? this.sequenceId.toString() : this.identifiers.toString();
+            return this.sequenceId != null ? String.valueOf(this.sequenceId.longValue()) : this.identifiers.toString();
         }
 
         @Override

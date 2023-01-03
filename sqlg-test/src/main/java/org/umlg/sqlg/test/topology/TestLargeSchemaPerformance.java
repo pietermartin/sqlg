@@ -4,7 +4,6 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,30 +28,30 @@ public class TestLargeSchemaPerformance extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestLargeSchemaPerformance.class);
 
-    @Before
-    public void before() throws Exception {
-        System.out.println("before");
-    }
+    private final static int NUMBER_OF_SCHEMAS = 10;
+    private final static int NUMBER_OF_TABLES = 100;
+    private final static int NUMBER_OF_PARTITIONS = 10;
+    private final static int NUMBER_OF_COLUMNS = 100;
+
+//    @Before
+//    public void before() throws Exception {
+//        System.out.println("before");
+//    }
+//
+//    @Test
+//    public void load() {
+//        StopWatch stopWatch = StopWatch.createStarted();
+//        this.sqlgGraph = SqlgGraph.open(configuration);
+//        stopWatch.stop();
+//        LOGGER.info("time taken: {}", stopWatch);
+//    }
 
     @Test
-    public void load() {
-        StopWatch stopWatch = StopWatch.createStarted();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        stopWatch.stop();
-        LOGGER.info("time taken: {}", stopWatch);
-    }
-
-//    @Test
     public void testPerformance() {
-//        this.sqlgGraph = SqlgGraph.open(configuration);
-        Assume.assumeFalse(isMariaDb());
-        //100 schemas
-        //500 000 tables
-        //100 columns in each table
-        int numberOfSchemas = 10;
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPartitioning());
         StopWatch stopWatch = StopWatch.createStarted();
 
-        for (int i = 1; i <= numberOfSchemas; i++) {
+        for (int i = 1; i <= NUMBER_OF_SCHEMAS; i++) {
             this.sqlgGraph.getTopology().ensureSchemaExist("R_" + i);
         }
         this.sqlgGraph.tx().commit();
@@ -61,14 +60,12 @@ public class TestLargeSchemaPerformance extends BaseTest {
         stopWatch = StopWatch.createStarted();
         StopWatch stopWatch2 = StopWatch.createStarted();
         int count = 1;
-        for (int i = 1; i <= numberOfSchemas; i++) {
+        for (int i = 1; i <= NUMBER_OF_SCHEMAS; i++) {
             Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("R_" + i);
             Assert.assertTrue(schemaOptional.isPresent());
             Schema schema = schemaOptional.get();
-            for (int j = 1; j <= 1000; j++) {
-                //100 columns
-//                schema.ensureVertexLabelExist("T" + j, columns());
-                if (count % 1000 == 0) {
+            for (int j = 1; j <= NUMBER_OF_TABLES; j++) {
+                if (count % NUMBER_OF_TABLES == 0) {
                     this.sqlgGraph.tx().commit();
                     stopWatch2.stop();
                     LOGGER.info("created {} for far in {}", count, stopWatch2);
@@ -82,7 +79,7 @@ public class TestLargeSchemaPerformance extends BaseTest {
                         PartitionType.LIST,
                         "column1"
                 );
-                for (int k = 0; k < 10; k++) {
+                for (int k = 0; k < NUMBER_OF_PARTITIONS; k++) {
                     vertexLabel.ensureListPartitionExists(
                             "test" + j + k,
                             "'test" + j + k + "'"
@@ -95,22 +92,22 @@ public class TestLargeSchemaPerformance extends BaseTest {
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         LOGGER.info("create table {}", stopWatch);
-        Assert.assertEquals(numberOfSchemas + 1, sqlgGraph.getTopology().getSchemas().size());
-        Assert.assertEquals(1000, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabels().size());
-        Assert.assertEquals(1000, sqlgGraph.getTopology().getSchema("R_2").orElseThrow().getVertexLabels().size());
-        Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1").orElseThrow().getProperties().size());
-        Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T100").orElseThrow().getProperties().size());
-        Assert.assertEquals(100, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1000").orElseThrow().getProperties().size());
+        Assert.assertEquals(NUMBER_OF_SCHEMAS + 1, sqlgGraph.getTopology().getSchemas().size());
+        Assert.assertEquals(NUMBER_OF_TABLES, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabels().size());
+        Assert.assertEquals(NUMBER_OF_TABLES, sqlgGraph.getTopology().getSchema("R_2").orElseThrow().getVertexLabels().size());
+        Assert.assertEquals(NUMBER_OF_COLUMNS, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1").orElseThrow().getProperties().size());
+        Assert.assertEquals(NUMBER_OF_COLUMNS, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T100").orElseThrow().getProperties().size());
+//        Assert.assertEquals(NUMBER_OF_COLUMNS, sqlgGraph.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1000").orElseThrow().getProperties().size());
 
         this.sqlgGraph.close();
 
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            Assert.assertEquals(numberOfSchemas + 1, sqlgGraph1.getTopology().getSchemas().size());
-            Assert.assertEquals(1000, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabels().size());
-            Assert.assertEquals(1000, sqlgGraph1.getTopology().getSchema("R_2").orElseThrow().getVertexLabels().size());
-            Assert.assertEquals(100, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1").orElseThrow().getProperties().size());
-            Assert.assertEquals(100, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T100").orElseThrow().getProperties().size());
-            Assert.assertEquals(100, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1000").orElseThrow().getProperties().size());
+            Assert.assertEquals(NUMBER_OF_SCHEMAS + 1, sqlgGraph1.getTopology().getSchemas().size());
+            Assert.assertEquals(NUMBER_OF_TABLES, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabels().size());
+            Assert.assertEquals(NUMBER_OF_TABLES, sqlgGraph1.getTopology().getSchema("R_2").orElseThrow().getVertexLabels().size());
+            Assert.assertEquals(NUMBER_OF_COLUMNS, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1").orElseThrow().getProperties().size());
+            Assert.assertEquals(NUMBER_OF_COLUMNS, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T100").orElseThrow().getProperties().size());
+//            Assert.assertEquals(NUMBER_OF_COLUMNS, sqlgGraph1.getTopology().getSchema("R_1").orElseThrow().getVertexLabel("T1000").orElseThrow().getProperties().size());
 
         }
 
@@ -118,7 +115,7 @@ public class TestLargeSchemaPerformance extends BaseTest {
 
     private Map<String, PropertyDefinition> columns() {
         Map<String, PropertyDefinition> result = new LinkedHashMap<>();
-        for (int i = 1; i <= 100; i++) {
+        for (int i = 1; i <= NUMBER_OF_COLUMNS; i++) {
             result.put("column" + i, PropertyDefinition.of(PropertyType.STRING));
         }
         return result;

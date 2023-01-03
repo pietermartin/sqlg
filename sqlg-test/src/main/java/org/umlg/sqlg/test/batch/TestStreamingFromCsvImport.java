@@ -2,6 +2,8 @@ package org.umlg.sqlg.test.batch;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -15,6 +17,11 @@ import java.util.LinkedHashMap;
  * This test checks that streaming mode works with string literals
  */
 public class TestStreamingFromCsvImport extends BaseTest {
+
+    @Before
+    public void beforeTest() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStreamingBatchMode());
+    }
 
     @Test
     public void testStreamCsvEdge() {
