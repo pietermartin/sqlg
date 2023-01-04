@@ -1238,9 +1238,9 @@ public class SchemaResource {
     }
 
     private static class AbstractLabelHolder {
-        String schemaName;
-        String abstractLabel;
-        String vertexOrEdge;
+        final String schemaName;
+        final String abstractLabel;
+        final String vertexOrEdge;
 
         private AbstractLabelHolder(String schemaName, String abstractLabel, String vertexOrEdge) {
             this.schemaName = schemaName;
@@ -1264,11 +1264,11 @@ public class SchemaResource {
     }
 
     private static class PropertyHolder {
-        String schemaName;
-        String abstractLabel;
-        String vertexOrEdge;
-        Set<String> propertiesToRemove;
-        String propertiesConcatenated;
+        final String schemaName;
+        final String abstractLabel;
+        final String vertexOrEdge;
+        final Set<String> propertiesToRemove;
+        final String propertiesConcatenated;
 
         private PropertyHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<String> propertiesToRemove) {
             this.schemaName = schemaName;
@@ -1295,11 +1295,11 @@ public class SchemaResource {
     }
 
     private static class PropertyRenameHolder {
-        String schemaName;
-        String abstractLabel;
-        String vertexOrEdge;
-        Set<Pair<String, String>> propertiesToRename;
-        String propertiesConcatenated;
+        final String schemaName;
+        final String abstractLabel;
+        final String vertexOrEdge;
+        final Set<Pair<String, String>> propertiesToRename;
+        final String propertiesConcatenated;
 
         private PropertyRenameHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<Pair<String, String>> propertiesToRename) {
             this.schemaName = schemaName;
@@ -1326,11 +1326,11 @@ public class SchemaResource {
     }
 
     private static class IndexesHolder {
-        String schemaName;
-        String abstractLabel;
-        String vertexOrEdge;
-        Set<String> indexesToRemove;
-        String indexesConcatenated;
+        final String schemaName;
+        final String abstractLabel;
+        final String vertexOrEdge;
+        final Set<String> indexesToRemove;
+        final String indexesConcatenated;
 
         private IndexesHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<String> indexesToRemove) {
             this.schemaName = schemaName;
@@ -1357,10 +1357,10 @@ public class SchemaResource {
     }
 
     private static class EdgeLabelHolder {
-        String schemaName;
-        String abstractLabel;
-        Set<String> edgeLabelsToRemove;
-        String edgeLabelsConcatenated;
+        final String schemaName;
+        final String abstractLabel;
+        final Set<String> edgeLabelsToRemove;
+        final String edgeLabelsConcatenated;
 
         private EdgeLabelHolder(String schemaName, String abstractLabel, Set<String> edgeLabelsToRemove) {
             this.schemaName = schemaName;
@@ -1386,9 +1386,9 @@ public class SchemaResource {
     }
 
     private static class RenameVertexLabelHolder {
-        String schemaName;
-        String vertexLabel;
-        String newVertexLabel;
+        final String schemaName;
+        final String vertexLabel;
+        final String newVertexLabel;
 
         public RenameVertexLabelHolder(String schemaName, String vertexLabel, String newVertexLabel) {
             this.schemaName = schemaName;
@@ -1413,11 +1413,11 @@ public class SchemaResource {
     }
 
     private static class PartitionsHolder {
-        String schemaName;
-        String abstractLabel;
-        String vertexOrEdge;
-        Set<String> partitionsToRemove;
-        String partitionsConcatenated;
+        final String schemaName;
+        final String abstractLabel;
+        final String vertexOrEdge;
+        final Set<String> partitionsToRemove;
+        final String partitionsConcatenated;
 
         private PartitionsHolder(String schemaName, String abstractLabel, String vertexOrEdge, Set<String> partitionsToRemove) {
             this.schemaName = schemaName;

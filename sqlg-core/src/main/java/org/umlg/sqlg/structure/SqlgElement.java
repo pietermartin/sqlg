@@ -38,7 +38,7 @@ public abstract class SqlgElement implements Element {
     RecordId recordId;
     final SqlgGraph sqlgGraph;
     //Multiple threads can access the same element but should not modify it
-    Map<String, Object> properties = new HashMap<>();
+    final Map<String, Object> properties = new HashMap<>();
     private final SqlgElementElementPropertyRollback elementPropertyRollback;
     boolean removed = false;
     //Used in the SqlgBranchStepBarrier to sort the results by the start elements.

@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  * https://www.postgresql.org/docs/9.6/functions-array.html
  */
 public class ArrayOverlaps<T> implements BiPredicate<T[], T[]> {
-    private static Logger logger = LoggerFactory.getLogger(ArrayOverlaps.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArrayOverlaps.class);
 
     private final T[] values;
 
@@ -34,7 +34,7 @@ public class ArrayOverlaps<T> implements BiPredicate<T[], T[]> {
 
     @Override
     public boolean test(T[] lhs, T[] rhs) {
-        logger.warn("Using Java implementation of && (array overlaps) instead of database");
+        LOGGER.warn("Using Java implementation of && (array overlaps) instead of database");
         if (lhs.length == 0 && rhs.length == 0) {
             return true;
         }

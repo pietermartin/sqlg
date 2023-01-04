@@ -256,7 +256,7 @@ public class SchemaTreeBuilder {
 
     static class SchemaTreeSlickLazyTreeHelper implements ISlickLazyTree {
 
-        private Map<String, SlickLazyTree> initialEntryMap = new HashMap<>();
+        private final Map<String, SlickLazyTree> initialEntryMap = new HashMap<>();
 
         SchemaTreeSlickLazyTreeHelper(ListOrderedSet<SlickLazyTree> initialEntries) {
             for (SlickLazyTree initialEntry : initialEntries) {

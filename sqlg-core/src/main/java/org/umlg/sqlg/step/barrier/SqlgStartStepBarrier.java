@@ -104,8 +104,4 @@ public class SqlgStartStepBarrier<S> extends SqlgAbstractStep<S, S> implements T
         return StringFactory.stepString(this, this.start);
     }
 
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
 }

@@ -27,8 +27,8 @@ import java.util.stream.Stream;
 public abstract class SqlgBranchStepBarrier<S, E, M> extends SqlgAbstractStep<S, E> implements TraversalOptionParent<M, S, E> {
 
     protected Traversal.Admin<S, M> branchTraversal;
-    protected Map<Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = new HashMap<>();
-    protected List<Pair<Traversal.Admin, Traversal.Admin<S, E>>> traversalOptions = new ArrayList<>();
+    protected final Map<Pick, List<Traversal.Admin<S, E>>> traversalPickOptions = new HashMap<>();
+    protected final List<Pair<Traversal.Admin, Traversal.Admin<S, E>>> traversalOptions = new ArrayList<>();
 
 
     private boolean first = true;

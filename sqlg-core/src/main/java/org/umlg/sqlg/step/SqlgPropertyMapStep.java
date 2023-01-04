@@ -23,7 +23,7 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
     protected final PropertyType returnType;
     protected final int tokens;
     protected Traversal.Admin<Element, ? extends Property> propertyTraversal;
-    private TraversalRing<K, E> traversalRing;
+    private final TraversalRing<K, E> traversalRing;
 
     public SqlgPropertyMapStep(final Traversal.Admin traversal, final int tokens, final PropertyType propertyType,final TraversalRing<K, E> traversalRing,  final String... propertyKeys) {
         super(traversal);

@@ -90,11 +90,6 @@ public class SqlgAddVertexStartStep extends SqlgAbstractStep<Vertex, Vertex> imp
     }
 
     @Override
-    public void reset() {
-        super.reset();
-    }
-
-    @Override
     public String toString() {
         return StringFactory.stepString(this, this.parameters);
     }

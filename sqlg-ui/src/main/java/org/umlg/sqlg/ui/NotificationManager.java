@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class NotificationManager {
 
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-    public static NotificationManager INSTANCE = new NotificationManager();
+    public final static NotificationManager INSTANCE = new NotificationManager();
 
     private enum MessageType {
         NOTIFICATION,
