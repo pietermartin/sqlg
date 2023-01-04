@@ -2,7 +2,11 @@
 mysql -u root -p
 CREATE DATABASE sqlgraphdb;
 CREATE USER 'mariadb'@'%' IDENTIFIED BY 'mariadb';
+
 GRANT ALL PRIVILEGES ON *.* TO 'mariadb'@'%' IDENTIFIED BY 'mariadb' WITH GRANT OPTION;
+
+//seems need to include sqlgraphdb.*
+GRANT ALL PRIVILEGES ON sqlgraphdb.* TO 'mariadb'@'%' IDENTIFIED BY 'mariadb' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 ```
 

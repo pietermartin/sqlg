@@ -25,7 +25,7 @@ import static org.umlg.sqlg.structure.PropertyType.*;
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/07/07
  */
 @SuppressWarnings("unused")
@@ -1045,6 +1045,7 @@ public class MariadbDialect extends BaseSqlDialect {
         try (Statement statement = conn.createStatement()) {
             statement.execute("CREATE USER IF NOT EXISTS 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
             statement.execute("GRANT SELECT ON *.* TO 'sqlgReadOnly'@'%' IDENTIFIED BY 'sqlgReadOnly'");
+            statement.execute("GRANT CREATE TEMPORARY TABLES ON *.* TO 'sqlgReadOnly'@'%';");
             statement.executeQuery("FLUSH PRIVILEGES");
         } catch (SQLException e) {
             throw new RuntimeException(e);

@@ -7,7 +7,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/07/07
  */
 public class MariadbPlugin implements SqlgPlugin{
