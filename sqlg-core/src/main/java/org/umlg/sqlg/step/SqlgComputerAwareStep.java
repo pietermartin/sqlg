@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/14
  */
 public abstract class SqlgComputerAwareStep<S, E> extends SqlgAbstractStep<S, E> implements GraphComputing {

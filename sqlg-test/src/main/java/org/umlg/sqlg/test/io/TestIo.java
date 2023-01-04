@@ -33,7 +33,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/06/13
  */
 public class TestIo extends BaseTest {

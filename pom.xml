@@ -98,23 +98,23 @@
                 <version>3.0.0-M7</version>
                 <configuration>
                     <includes>
-                        <include>**/H2AllTest.java</include>
-                        <include>**/SqlgH2StructureStandardTest.java</include>
-                        <include>**/SqlgH2ProcessStandardTest.java</include>
-                        <include>**/H2FeatureTest.java</include>
+<!--                        <include>**/H2AllTest.java</include>-->
+<!--                        <include>**/SqlgH2StructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
+<!--                        <include>**/H2FeatureTest.java</include>-->
 
-                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
-                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
-                        <include>**/HsqldbAllTest.java</include>
+<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
+<!--                        <include>**/HsqldbAllTest.java</include>-->
 
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgPostgresProcessStandardTest.java</include>
-                        <include>**/PostgresAllTest.java</include>
-                        <include>**/TestSqlgGremlinServer.java</include>
-                        <include>**/PostgresFeatureTest.java</include>
+<!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
+<!--                        <include>**/PostgresAllTest.java</include>-->
+<!--                        <include>**/TestSqlgGremlinServer.java</include>-->
+<!--                        <include>**/PostgresFeatureTest.java</include>-->
 
-<!--                        <include>**/SqlgMariaDBProcessStandardTest.java</include>-->
-<!--                        <include>**/MariadbAllTest.java</include>-->
+                        <include>**/SqlgMariaDBProcessStandardTest.java</include>
+                        <include>**/MariadbAllTest.java</include>
 
                         <!--                        <include>**/SqlgMSSqlServerStructureStandardTest.java</include>-->
                         <!--                        <include>**/SqlgGraphMSSqlServerProcessStandardTest.java</include>-->
@@ -379,7 +379,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-text</artifactId>
-                <version>1.9</version>
+                <version>1.10.0</version>
             </dependency>
             <dependency>
                 <groupId>io.projectreactor</groupId>

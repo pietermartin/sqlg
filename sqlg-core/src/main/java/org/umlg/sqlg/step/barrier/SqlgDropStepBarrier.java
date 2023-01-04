@@ -25,7 +25,7 @@ import org.umlg.sqlg.structure.topology.VertexLabel;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/11/19
  */
 public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutating<Event> {

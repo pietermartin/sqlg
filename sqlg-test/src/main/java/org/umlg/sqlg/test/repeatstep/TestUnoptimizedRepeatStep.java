@@ -31,7 +31,7 @@ import java.util.function.Predicate;
 import static org.junit.Assert.assertFalse;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/06/06
  */
 public class TestUnoptimizedRepeatStep extends BaseTest {

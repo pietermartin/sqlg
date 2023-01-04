@@ -16,7 +16,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/03/31
  */
 public class TestUserSuppliedPKBulkMode extends BaseTest {

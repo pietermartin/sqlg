@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/27
  */
 public class TestAndStepBarrier extends BaseTest {

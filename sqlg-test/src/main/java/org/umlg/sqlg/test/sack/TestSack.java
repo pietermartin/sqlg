@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/05/02
  */
 public class TestSack extends BaseTest {

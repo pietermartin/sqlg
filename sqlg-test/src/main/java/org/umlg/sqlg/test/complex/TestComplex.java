@@ -16,7 +16,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/06/14
  */
 @SuppressWarnings({"DuplicatedCode", "unchecked", "rawtypes"})

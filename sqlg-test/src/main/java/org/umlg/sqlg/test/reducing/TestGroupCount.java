@@ -11,7 +11,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.Map;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/05/02
  */
 public class TestGroupCount extends BaseTest {

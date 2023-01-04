@@ -11,7 +11,7 @@ import java.util.*;
 import static org.umlg.sqlg.structure.topology.Topology.VERTEX_PREFIX;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/08/06
  */
 class SQLServerVertexCacheBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {

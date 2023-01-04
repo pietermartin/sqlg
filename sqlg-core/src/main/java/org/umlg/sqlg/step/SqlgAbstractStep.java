@@ -11,7 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/06/11
  */
 public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {

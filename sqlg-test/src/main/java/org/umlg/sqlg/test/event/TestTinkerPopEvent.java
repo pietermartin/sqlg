@@ -27,7 +27,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.unfold
 import static org.junit.Assert.assertEquals;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/06/13
  */
 public class TestTinkerPopEvent extends BaseTest {

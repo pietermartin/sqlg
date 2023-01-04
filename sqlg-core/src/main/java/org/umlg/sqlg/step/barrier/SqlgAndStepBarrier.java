@@ -17,7 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/26
  */
 public class SqlgAndStepBarrier<S> extends SqlgConnectiveStep<S> {

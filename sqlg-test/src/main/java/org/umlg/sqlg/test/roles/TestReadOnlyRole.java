@@ -26,7 +26,7 @@ import java.sql.Statement;
 import java.util.List;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/07/21
  */
 public class TestReadOnlyRole extends BaseTest {
@@ -116,15 +116,15 @@ public class TestReadOnlyRole extends BaseTest {
         TopologyGrantListener() {
         }
 
+        @SuppressWarnings("StatementWithEmptyBody")
         @Override
         public void change(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action) {
             switch (action) {
                 case CREATE:
-                    if (topologyInf instanceof VertexLabel) {
-                        VertexLabel vertexLabel = (VertexLabel) topologyInf;
+                    if (topologyInf instanceof VertexLabel vertexLabel) {
                         Connection conn = sqlgGraph.tx().getConnection();
                         try (Statement statement = conn.createStatement()) {
-                            String sql = "";
+                            String sql;
                             if (isPostgres()) {
                                  sql = "GRANT SELECT ON " +
                                         sqlgGraph.getSqlDialect().maybeWrapInQoutes(vertexLabel.getSchema().getName()) + "." +
@@ -153,11 +153,10 @@ public class TestReadOnlyRole extends BaseTest {
                         } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }
-                    } else if (topologyInf instanceof EdgeLabel) {
-                        EdgeLabel edgeLabel = (EdgeLabel) topologyInf;
+                    } else if (topologyInf instanceof EdgeLabel edgeLabel) {
                         Connection conn = sqlgGraph.tx().getConnection();
                         try (Statement statement = conn.createStatement()) {
-                            String sql = "";
+                            String sql;
                             if (isPostgres()) {
                                 sql = "GRANT SELECT ON " +
                                         sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeLabel.getSchema().getName()) + "." +
@@ -186,8 +185,7 @@ public class TestReadOnlyRole extends BaseTest {
                         } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }
-                    } else if (topologyInf instanceof Schema) {
-                        Schema schema = (Schema) topologyInf;
+                    } else if (topologyInf instanceof Schema schema) {
                         Connection conn = sqlgGraph.tx().getConnection();
                         try (Statement statement = conn.createStatement()) {
                             if (isPostgres()) {

@@ -12,7 +12,7 @@ import org.umlg.sqlg.structure.topology.VertexLabel;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/08/06
  */
 class SQLServerEdgeCacheBulkRecord extends SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {

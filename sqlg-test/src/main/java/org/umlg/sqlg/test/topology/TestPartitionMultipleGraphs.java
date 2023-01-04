@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/01/21
  */
 @SuppressWarnings("unused")

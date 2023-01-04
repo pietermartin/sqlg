@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/11/24
  */
 public class SqlgGroupStep<K, V> extends SqlgReducingStepBarrier<SqlgElement, Map<K, V>> {

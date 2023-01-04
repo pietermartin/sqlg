@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import static org.junit.Assert.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/06/24
  */
 @RunWith(Parameterized.class)

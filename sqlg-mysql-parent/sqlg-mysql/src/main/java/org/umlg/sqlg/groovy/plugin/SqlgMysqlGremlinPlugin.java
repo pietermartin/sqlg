@@ -7,7 +7,7 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/12/03
  */
 public class SqlgMysqlGremlinPlugin extends AbstractGremlinPlugin {

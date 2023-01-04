@@ -26,7 +26,7 @@ import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/09/28
  */
 @SuppressWarnings("unchecked")

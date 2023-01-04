@@ -23,7 +23,7 @@ import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2014/08/15
  */
 public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep implements SqlgStep {

@@ -25,7 +25,7 @@ import java.util.*;
  * test behavior on property values
  *
  * @author JP Moresmau
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  */
 public class TestPropertyValues extends BaseTest {
 

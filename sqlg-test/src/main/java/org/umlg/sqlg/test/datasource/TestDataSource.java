@@ -12,7 +12,7 @@ import java.net.URL;
 import java.sql.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/12/20
  */
 public class TestDataSource {

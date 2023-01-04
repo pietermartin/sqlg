@@ -14,7 +14,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/11/02
  */
 public class AndOrHasContainer {

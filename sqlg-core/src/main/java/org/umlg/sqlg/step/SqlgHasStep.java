@@ -12,7 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/13
  */
 public class SqlgHasStep<S extends Element> extends SqlgFilterStep<S> implements HasContainerHolder {

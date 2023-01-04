@@ -25,7 +25,7 @@ import java.sql.Statement;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2021/10/11
  */
 @SuppressWarnings("DuplicatedCode")

@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/05/02
  */
 public class TestSample extends BaseTest {

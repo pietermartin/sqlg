@@ -16,7 +16,7 @@ import java.net.URL;
 import java.util.List;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/06/05
  */
 public class NetAggregateTest extends BaseTest {

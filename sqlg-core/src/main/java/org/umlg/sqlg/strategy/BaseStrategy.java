@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/03/04
  */
 @SuppressWarnings({"rawtypes", "unchecked"})

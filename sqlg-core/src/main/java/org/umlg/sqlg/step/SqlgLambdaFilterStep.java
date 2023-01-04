@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import java.util.function.Predicate;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2020/09/13
  */
 public class SqlgLambdaFilterStep<S> extends SqlgFilterStep<S> {

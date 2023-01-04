@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/30
  */
 @SuppressWarnings({"DuplicatedCode", "unused", "resource"})

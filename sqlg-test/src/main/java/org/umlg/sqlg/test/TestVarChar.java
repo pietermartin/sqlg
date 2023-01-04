@@ -11,7 +11,7 @@ import org.umlg.sqlg.structure.topology.VertexLabel;
 import java.util.HashMap;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/07/21
  */
 public class TestVarChar extends BaseTest {

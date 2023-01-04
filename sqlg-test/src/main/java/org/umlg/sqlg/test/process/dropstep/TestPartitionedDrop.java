@@ -17,7 +17,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2019/08/26
  */
 public class TestPartitionedDrop extends BaseTest {

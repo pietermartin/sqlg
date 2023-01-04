@@ -21,7 +21,7 @@ import java.util.*;
 import static org.umlg.sqlg.structure.PropertyType.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/08/09
  */
 abstract class SQLServerBaseCacheBulkRecord implements ISQLServerBulkRecord {

@@ -14,7 +14,7 @@ import org.umlg.sqlg.structure.traverser.SqlgTraverser;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2019/08/12
  */
 public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implements TraversalParent, Step<S, E> {

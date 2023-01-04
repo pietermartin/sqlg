@@ -8,7 +8,7 @@ import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.test.BaseTest;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/06/30
  */
 public class TestLabelLength extends BaseTest {

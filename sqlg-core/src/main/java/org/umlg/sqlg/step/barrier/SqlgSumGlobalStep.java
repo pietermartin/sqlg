@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.util.NumberHelper;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2019/07/04
  */
 public class SqlgSumGlobalStep extends SqlgReducingStepBarrier<Number, Number> {

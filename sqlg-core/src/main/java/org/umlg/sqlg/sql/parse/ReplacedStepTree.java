@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/03/03
  */
 public class ReplacedStepTree<S, E> {

@@ -14,7 +14,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.List;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/11/06
  */
 public class TestOrStepAfterVertexStepBarrier extends BaseTest {

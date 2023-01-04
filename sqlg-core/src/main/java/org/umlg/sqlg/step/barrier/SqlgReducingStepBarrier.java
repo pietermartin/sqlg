@@ -12,7 +12,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2019/07/04
  */
 @SuppressWarnings("unchecked")

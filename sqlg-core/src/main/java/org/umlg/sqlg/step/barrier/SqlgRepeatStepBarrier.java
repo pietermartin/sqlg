@@ -25,7 +25,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/04/20
  */
 public class SqlgRepeatStepBarrier<S> extends SqlgComputerAwareStep<S, S> implements TraversalParent {

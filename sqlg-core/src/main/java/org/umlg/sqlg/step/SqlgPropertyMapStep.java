@@ -14,7 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/08/25
  */
 public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> implements TraversalParent {

@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2019/09/08
  */
 public class TestBatchUpdatePartitioning extends BaseTest {

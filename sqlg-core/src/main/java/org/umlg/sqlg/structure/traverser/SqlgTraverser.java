@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_NL_O_P_S_SE
 import java.util.HashSet;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/05/01
  */
 public class SqlgTraverser<T> extends B_LP_NL_O_P_S_SE_SL_Traverser<T> implements ISqlgTraverser {

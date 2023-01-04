@@ -3,7 +3,7 @@ package org.umlg.sqlg.structure.topology;
 import org.umlg.sqlg.structure.TopologyInf;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/11/14
  */
 public class Graph implements TopologyInf {

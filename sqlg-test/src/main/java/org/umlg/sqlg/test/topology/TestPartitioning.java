@@ -21,7 +21,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/01/13
  */
 @SuppressWarnings({"UnusedAssignment", "unused", "DuplicatedCode"})

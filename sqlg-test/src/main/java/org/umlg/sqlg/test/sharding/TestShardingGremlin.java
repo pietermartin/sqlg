@@ -19,7 +19,7 @@ import java.net.URL;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/04/11
  */
 public class TestShardingGremlin extends BaseTest {

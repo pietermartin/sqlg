@@ -11,7 +11,7 @@ import org.umlg.sqlg.structure.SchemaTable;
  * the vertex's 'ID'. If the vertex label has user defined primary keys there there will be many. One for each of the
  * composite keys.
  *
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/03/29
  */
 public class ForeignKey {

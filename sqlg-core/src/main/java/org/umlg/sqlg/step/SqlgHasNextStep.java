@@ -8,7 +8,7 @@ import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 import java.util.NoSuchElementException;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2020/09/13
  */
 public class SqlgHasNextStep<S> extends SqlgAbstractStep<S, Boolean> {

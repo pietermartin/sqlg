@@ -14,7 +14,7 @@ import org.umlg.sqlg.structure.topology.Schema;
 import java.util.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/04/30
  */
 public class TestRecordId extends BaseTest {

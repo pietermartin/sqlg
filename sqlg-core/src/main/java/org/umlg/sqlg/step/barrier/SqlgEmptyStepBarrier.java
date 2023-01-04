@@ -8,7 +8,7 @@ import org.umlg.sqlg.step.SqlgAbstractStep;
 import java.util.NoSuchElementException;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/26
  */
 public class SqlgEmptyStepBarrier<S> extends SqlgAbstractStep<S, S> {

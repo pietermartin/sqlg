@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.MeanGlobalStep;
 import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2019/07/04
  */
 public class SqlgAvgGlobalStep extends SqlgReducingStepBarrier<Pair<Number, Long>, Number> {

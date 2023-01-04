@@ -8,7 +8,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import java.util.Iterator;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/25
  */
 public abstract class SqlgFlatMapStep<S, E> extends SqlgAbstractStep<S, E> {

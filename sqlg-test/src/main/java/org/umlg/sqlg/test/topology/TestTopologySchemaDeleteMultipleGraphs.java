@@ -16,7 +16,7 @@ import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTe
 import java.net.URL;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/08/04
  */
 public class TestTopologySchemaDeleteMultipleGraphs extends BaseTest {

@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/11/11
  */
 @SuppressWarnings({"DuplicatedCode", "unchecked", "unused", "rawtypes"})

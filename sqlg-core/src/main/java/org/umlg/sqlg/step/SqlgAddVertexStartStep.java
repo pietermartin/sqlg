@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/08/26
  */
 public class SqlgAddVertexStartStep extends SqlgAbstractStep<Vertex, Vertex> implements Mutating<Event.VertexAddedEvent>, TraversalParent, Parameterizing, Scoping {

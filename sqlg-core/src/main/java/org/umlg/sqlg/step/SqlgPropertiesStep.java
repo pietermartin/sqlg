@@ -13,7 +13,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/25
  */
 public class SqlgPropertiesStep<E> extends SqlgFlatMapStep<Element, E> implements AutoCloseable {

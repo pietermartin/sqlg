@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/11/16
  */
 public class TestTopologyGraph extends BaseTest {

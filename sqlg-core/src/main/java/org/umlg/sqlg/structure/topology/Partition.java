@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/01/13
  */
 @SuppressWarnings("DuplicatedCode")

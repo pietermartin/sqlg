@@ -10,7 +10,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2017/10/10
  */
 public class SqlgExpandableStepIterator<S> implements Iterator<Traverser.Admin<S>>, Serializable {

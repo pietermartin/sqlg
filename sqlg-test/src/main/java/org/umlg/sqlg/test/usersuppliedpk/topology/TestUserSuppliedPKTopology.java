@@ -22,7 +22,7 @@ import java.util.*;
 import static org.umlg.sqlg.structure.topology.Topology.*;
 
 /**
- * @author Pieter Martin (https://github.com/pietermartin)
+ * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  * Date: 2018/03/17
  */
 @SuppressWarnings("unused")
