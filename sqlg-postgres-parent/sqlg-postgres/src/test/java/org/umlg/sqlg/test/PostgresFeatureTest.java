@@ -136,11 +136,4 @@ public class PostgresFeatureTest {
         }
     }
 
-//    public static final class WorldInjectorSource implements InjectorSource {
-//        @Override
-//        public Injector getInjector() {
-//            return Guice.createInjector(Stage.PRODUCTION, CucumberModules.createScenarioModule(), new ServiceModule());
-//        }
-//    }
-
 }
