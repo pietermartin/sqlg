@@ -302,7 +302,7 @@ public class Schema implements TopologyInf {
             final VertexLabel inVertexLabel,
             Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
-            @CheckForNull  EdgeDefinition edgeDefinition) {
+            @CheckForNull EdgeDefinition edgeDefinition) {
 
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
@@ -1126,9 +1126,10 @@ public class Schema implements TopologyInf {
             Element partitionParentParentElement,
             Vertex partitionParentVertex,
             Vertex subPartition,
-            Map<String, Partition> partitionMap) {
+            Map<String, Map<String, Partition>> partitionMap) {
 
         String schemaName = getName();
+        Map<String, Partition> partMap = partitionMap.computeIfAbsent(schemaName, (k) -> new HashMap<>());
         VertexLabel vertexLabel = this.vertexLabels.get(schemaName + "." + VERTEX_PREFIX + tableName);
         Preconditions.checkState(vertexLabel != null, "vertexLabel must be present when loading outEdges. Not found for \"%s\"", schemaName + "." + VERTEX_PREFIX + tableName);
         if (outEdgeVertex != null) {
@@ -1185,16 +1186,18 @@ public class Schema implements TopologyInf {
                 } else if (edgeIdentifierEdge != null && edgeIdentifierEdge.label().equals("edge_colocate")) {
                     Preconditions.checkState(edgePropertyPartitionVertex.label().equals("sqlg_schema.vertex"));
                     edgeLabel.addDistributionColocate(edgePropertyPartitionVertex);
-                } else if (!partitionMap.containsKey(edgePropertyPartitionVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME)) && (partitionParentParentElement == null || partitionParentParentElement.label().equals("edge_partition"))) {
+                } else if (!partMap.containsKey(edgePropertyPartitionVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME)) &&
+                        (partitionParentParentElement == null || partitionParentParentElement.label().equals("edge_partition"))) {
+
                     Partition partition = edgeLabel.addPartition(edgePropertyPartitionVertex);
-                    partitionMap.put(partition.getName(), partition);
+                    partMap.put(partition.getName(), partition);
                 }
             }
             if (subPartition != null) {
-                Partition partition = partitionMap.get(partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
+                Partition partition = partMap.get(partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
                 Preconditions.checkState(partition != null, "Partition %s not found", partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
                 Partition partition1 = partition.addPartition(subPartition);
-                partitionMap.put(partition1.getName(), partition1);
+                partMap.put(partition1.getName(), partition1);
             }
             this.outEdgeLabels.put(schemaName + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
         }
@@ -1204,12 +1207,14 @@ public class Schema implements TopologyInf {
             Vertex vertexVertex,
             Vertex vertexPropertyPartitionVertex,
             Edge edgeToIdentifierOrColocate,
-            Map<String, Partition> partitionMap,
             Element partitionParentParentElement,
             Vertex subPartition,
-            Vertex partitionParentVertex) {
+            Vertex partitionParentVertex,
+            Map<String, Map<String, Partition>> partitionMap) {
 
         String schemaName = getName();
+        Map<String, Partition> partMap = partitionMap.computeIfAbsent(schemaName, (k) -> new HashMap<>());
+
         String tableName = vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
         PartitionType partitionType = PartitionType.valueOf(vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE));
         VertexProperty<String> partitionExpression = vertexVertex.property(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION);
@@ -1244,18 +1249,20 @@ public class Schema implements TopologyInf {
             } else if (edgeToIdentifierOrColocate != null && edgeToIdentifierOrColocate.label().equals("vertex_colocate")) {
                 Preconditions.checkState(vertexPropertyPartitionVertex.label().equals("sqlg_schema.vertex"));
                 vertexLabel.addDistributionColocate(vertexPropertyPartitionVertex);
-            } else if (!partitionMap.containsKey(vertexPropertyPartitionVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME)) && (partitionParentParentElement == null || partitionParentParentElement.label().equals("vertex_partition"))) {
+            } else if (!partMap.containsKey(vertexPropertyPartitionVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME)) &&
+                    (partitionParentParentElement == null || partitionParentParentElement.label().equals("vertex_partition"))) {
+
                 Partition partition = vertexLabel.addPartition(vertexPropertyPartitionVertex);
-                partitionMap.put(partition.getName(), partition);
+                partMap.put(partition.getName(), partition);
             }
         }
         if (subPartition != null) {
-            Partition partition = partitionMap.get(partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
-            Preconditions.checkState(partition != null, "Partition %s not found", partitionParentVertex.<String>value(SQLG_SCHEMA_PARTITION_NAME));
+            String parentPartitionName = partitionParentVertex.value(SQLG_SCHEMA_PARTITION_NAME);
+            Partition partition = partMap.get(parentPartitionName);
+            Preconditions.checkState(partition != null, "Partition %s not found", parentPartitionName);
             Partition partition1 = partition.addPartition(subPartition);
-            partitionMap.put(partition1.getName(), partition1);
+            partMap.put(partition1.getName(), partition1);
         }
-
     }
 
     void loadVertexIndexes(Vertex vertexVertex, Vertex vertexIndex, Vertex propertyIndex) {

@@ -12,14 +12,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.util.ThreadLocalMap;
 
 import java.sql.Connection;
@@ -1192,7 +1193,7 @@ public class Topology {
 
     @SuppressWarnings("resource")
     void loadVertexOutEdgesAndProperties(GraphTraversalSource traversalSource) {
-        Map<String, Partition> partitionMap = new HashMap<>();
+        Map<String, Map<String, Partition>> partitionMap = new HashMap<>();
         List<Path> vertices = traversalSource
                 .V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
@@ -1263,10 +1264,10 @@ public class Topology {
                     vertexVertex,
                     vertexPropertyPartitionVertex,
                     edgeToIdentifierOrColocate,
-                    partitionMap,
                     partitionParentParentElement,
                     subPartition,
-                    partitionParentVertex);
+                    partitionParentVertex,
+                    partitionMap);
         }
 
         partitionMap.clear();
@@ -1358,7 +1359,6 @@ public class Topology {
                     partitionParentVertex,
                     subPartition,
                     partitionMap
-
             );
         }
 
