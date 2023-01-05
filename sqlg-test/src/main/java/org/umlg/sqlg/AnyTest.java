@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.roles.TestReadOnlyRole;
+import org.umlg.sqlg.test.schema.TestMultipleThreadMultipleJvm;
 
 /**
  * Date: 2014/07/16
@@ -10,13 +10,7 @@ import org.umlg.sqlg.test.roles.TestReadOnlyRole;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestReadOnlyRole.class
-//        TestUserSuppliedPKTopology.class,
-//        TestAddVertexViaMap.class,
-//        TestSchema.class,
-//        TestIndex.class
-//        TestLargeSchemaPerformance.class,
-//        TestGroovy.class
+        TestMultipleThreadMultipleJvm.class
 })
 public class AnyTest {
 }

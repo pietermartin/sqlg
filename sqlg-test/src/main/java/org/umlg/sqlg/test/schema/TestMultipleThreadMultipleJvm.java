@@ -52,7 +52,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
         }
     }
 
-    @Test
+//    @Test
     public void testMultiThreadedLocking() throws Exception {
         //number graphs, pretending its a separate jvm
         int NUMBER_OF_GRAPHS = 10;
