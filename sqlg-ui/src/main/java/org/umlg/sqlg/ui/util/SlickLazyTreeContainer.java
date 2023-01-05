@@ -7,8 +7,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Pieter Martin
@@ -57,7 +56,15 @@ public class SlickLazyTreeContainer {
     private ArrayNode flattenRoots() {
         ObjectMapper objectMapper = ObjectMapperFactory.INSTANCE.getObjectMapper();
         ArrayNode result = objectMapper.createArrayNode();
-        for (SlickLazyTree root : this.roots) {
+        List<SlickLazyTree> rootsAsList = new ArrayList<>(this.roots.asList());
+        rootsAsList.sort(Comparator.comparing(o -> {
+            if (o.getEntry().hasNonNull("title")) {
+                return o.getEntry().get("title").asText();
+            } else {
+                return o.getEntry().get("name").asText();
+            }
+        }));
+        for (SlickLazyTree root : rootsAsList) {
             walkChildren(root, result);
             root.getEntry().putNull("parent");
         }
@@ -69,7 +76,15 @@ public class SlickLazyTreeContainer {
         if (!parent.getChildren().isEmpty()) {
             parent.getEntry().put("_fetched", true);
         }
-        for (SlickLazyTree child : parent.getChildren()) {
+        List<SlickLazyTree> childrenAsList = new ArrayList<>(parent.getChildren().asList());
+        childrenAsList.sort(Comparator.comparing(o -> {
+            if (o.getEntry().hasNonNull("title")) {
+                return o.getEntry().get("title").asText();
+            } else {
+                return o.getEntry().get("name").asText();
+            }
+        }));
+        for (SlickLazyTree child : childrenAsList) {
             child.getEntry().put("parent", parent.getId());
             ArrayNode children = (ArrayNode) parent.getEntry().get("children");
             children.add(child.getId());
