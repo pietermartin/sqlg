@@ -82,6 +82,53 @@ public class TestPartitioning extends BaseTest {
     }
 
     @Test
+    public void testPartitionReloadDifferentSchemaSamePartitionName() {
+        Schema aSchema = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        Schema bSchema = this.sqlgGraph.getTopology().ensureSchemaExist("B");
+        VertexLabel a = aSchema.ensurePartitionedVertexLabelExist("A",
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("part", PropertyDefinition.of(PropertyType.INTEGER));
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("name", "part")),
+                PartitionType.LIST,
+                "\"part\""
+        );
+        a.ensureListPartitionExists("part", "'1'");
+        VertexLabel b = bSchema.ensurePartitionedVertexLabelExist("A",
+                new HashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING));
+                    put("part", PropertyDefinition.of(PropertyType.INTEGER));
+                }},
+                ListOrderedSet.listOrderedSet(Set.of("name", "part")),
+                PartitionType.LIST,
+                "\"part\""
+        );
+        b.ensureListPartitionExists("part", "'1'");
+        this.sqlgGraph.tx().commit();
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").orElseThrow();
+        Map<String, Partition> aPartitions = aVertexLabel.getPartitions();
+        Assert.assertEquals(1, aPartitions.size());
+
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getSchema("B").orElseThrow().getVertexLabel("A").orElseThrow();
+        Map<String, Partition> bPartitions = bVertexLabel.getPartitions();
+        Assert.assertEquals(1, bPartitions.size());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            aVertexLabel = sqlgGraph1.getTopology().getSchema("A").orElseThrow().getVertexLabel("A").orElseThrow();
+            aPartitions = aVertexLabel.getPartitions();
+            Assert.assertEquals(1, aPartitions.size());
+
+            bVertexLabel = sqlgGraph1.getTopology().getSchema("B").orElseThrow().getVertexLabel("A").orElseThrow();
+            bPartitions = bVertexLabel.getPartitions();
+            Assert.assertEquals(1, bPartitions.size());
+        }
+
+    }
+
+    @Test
     public void testReloadVertexLabelWithPartitions2() {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel a = publicSchema.ensurePartitionedVertexLabelExist(
@@ -1099,7 +1146,6 @@ public class TestPartitioning extends BaseTest {
 
         Assert.assertEquals(1, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
     }
-
 
     //the partitionExpression 'left(lower(name), 1)' is to complex for the query planner to optimize.
     //i.e. select * from Cities where name = 'asdasd' willscan all partitions.
