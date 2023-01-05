@@ -80,9 +80,16 @@
             <artifactId>sqlg-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.umlg</groupId>
-            <artifactId>sqlg-postgres</artifactId>
-            <scope>test</scope>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
         </dependency>
         <dependency>
             <groupId>com.auth0</groupId>
@@ -117,6 +124,18 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
+
+        <!-- TEST -->
+        <dependency>
+            <groupId>org.umlg</groupId>
+            <artifactId>sqlg-c3p0</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.umlg</groupId>
+            <artifactId>sqlg-postgres</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.umlg</groupId>
             <artifactId>sqlg-test</artifactId>
@@ -126,11 +145,6 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.umlg</groupId>
-            <artifactId>sqlg-hikari</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
