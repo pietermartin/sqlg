@@ -4,30 +4,7 @@ import io.javalin.Javalin;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
 
-public class JavalinResources /*implements SparkApplication*/ {
-
-//    @Override
-//    public void init() {
-//        Service http = Service.ignite();
-//        staticResources(http);
-//        resources(http);
-//        http.after("/sqlg/*", (request, response) -> {
-//            SqlgUI.INSTANCE.getSqlgGraph().tx().rollback();
-//        });
-//    }
-//
-//    public static void websocket(Service http) {
-//        http.webSocket("/sqlg/data/v1/websocket", SqlgWebsocket.class);
-//        http.after("/sqlg/*", (request, response) -> {
-//            response.header("Content-Encoding", "gzip");
-//            SqlgUI.INSTANCE.getSqlgGraph().tx().rollback();
-//        });
-//   }
-//
-//    public static void staticResources(Service http) {
-////        http.staticFiles.externalLocation("sqlg-ui/src/main/web/dist/dist");
-//        http.staticFiles.location("/dist");
-//    }
+public class JavalinResources {
 
     public static void resources(Javalin app) {
 

@@ -1,5 +1,7 @@
 import m from "mithril";
 import SlickLazyTree from "../../components/tree/m.slick.lazytree";
+import Stream from "mithril/stream";
+const [stream, scan] = [Stream, Stream.scan];
 
 function TopologyTree(ignore) {
 
@@ -8,7 +10,7 @@ function TopologyTree(ignore) {
     let defaultOptions = {
         id: "sqlgSchemaTreeId",
         showSpinner: true,
-        refreshData: false,
+        refreshData: stream(false),
         selectedItems: [],
         data: {
             columns: [{id: "title", name: "Title", field: "title", width: 220}],
@@ -99,7 +101,7 @@ function TopologyTree(ignore) {
         view: ({attrs: {state, actions}}) => {
             let {treeData} = state;
             defaultOptions.data.dataNormal = treeData.data;
-            defaultOptions.refreshData = treeData.refreshData;
+            defaultOptions.refreshData(treeData.refreshData);
             defaultOptions.showSpinner = treeData.spin;
             defaultOptions.selectedItem = treeData.selectedTreeItem;
             defaultOptions.refresh = actions.retrieveTopologyTree;

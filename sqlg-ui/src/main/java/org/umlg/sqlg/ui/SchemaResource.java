@@ -17,6 +17,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.*;
@@ -94,7 +95,7 @@ public class SchemaResource {
             ctx.status(HttpStatus.UNAUTHORIZED_401);
             response.put("status", "error");
             response.put("message", "authentication failed");
-            ctx.removeCookie("/", AuthUtil.SQLG_TOKEN);
+            ctx.removeCookie(AuthUtil.SQLG_TOKEN);
         }
         ctx.json(response);
     }
@@ -252,9 +253,19 @@ public class SchemaResource {
                     .setMinWidth(220)
                     .setEditable(true)
                     .build().toJson(objectMapper));
-            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("type", "sqlg type", PropertyType.STRING)
+            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("propertyType", "propertyType", PropertyType.STRING)
+                    .setMinWidth(120)
+                    .build().toJson(objectMapper));
+            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("checkConstraint", "checkConstraint", PropertyType.STRING)
                     .setMinWidth(220)
                     .build().toJson(objectMapper));
+            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("multiplicity", "multiplicity", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+            propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("defaultLiteral", "defaultLiteral", PropertyType.STRING)
+                    .setMinWidth(80)
+                    .build().toJson(objectMapper));
+
             propertyColumnsColumns.add(new SlickGridColumn.SlickGridColumnBuilder("sqlType", "sql type", PropertyType.STRING)
                     .setMinWidth(220)
                     .build().toJson(objectMapper));
@@ -356,7 +367,11 @@ public class SchemaResource {
                         ObjectNode propertyColumnObjectNode = objectMapper.createObjectNode();
                         propertyColumnObjectNode.put("id", schemaName + "_" + vertexLabel.getName() + "_" + propertyColumn.getName());
                         propertyColumnObjectNode.put("name", propertyColumn.getName());
-                        propertyColumnObjectNode.put("type", propertyColumn.getPropertyType().name());
+                        PropertyDefinition propertyDefinition = propertyColumn.getPropertyDefinition();
+                        propertyColumnObjectNode.put("propertyType", propertyDefinition.propertyType().name());
+                        propertyColumnObjectNode.put("checkConstraint", propertyDefinition.checkConstraint());
+                        propertyColumnObjectNode.put("multiplicity", propertyDefinition.multiplicity().toString());
+                        propertyColumnObjectNode.put("defaultLiteral", propertyDefinition.defaultLiteral());
                         ArrayNode sqlTypeArrayNode = objectMapper.createArrayNode();
                         String[] sqlType = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyColumn.getPropertyType());
                         for (String s : sqlType) {

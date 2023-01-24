@@ -708,6 +708,7 @@ function SqlgModel() {
                         spin: true
                     },
                 });
+                const s = states();
                 TopologyManager.retrieveTopologyTree(selectedItemId, function (result) {
                     let selectedItem;
                     for (let i = 0; i < result.length; i++) {

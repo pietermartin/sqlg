@@ -521,7 +521,7 @@ function SlickLazyTree(ignore) {
         },
         view: function (vnode) {
             refreshActive = vnode.attrs.refreshActive === true;
-            if (vnode.attrs.refreshData) {
+            if (vnode.attrs.refreshData()) {
                 data = vnode.attrs.data.dataNormal;
                 columns = vnode.attrs.data.columns;
                 let tmp = vnode.attrs.data.options ? vnode.attrs.data.options : {};
@@ -561,23 +561,23 @@ function SlickLazyTree(ignore) {
                     initializeSelectedItem();
                     grid.invalidateAllRows();
                     grid.render();
+                    vnode.attrs.refreshData(false);
                 } else if (isDomInitialized) {
                     let grid = initializeGrid(vnode);
                     if (vnode.attrs.slickLazyTreeCallBack) {
                         vnode.attrs.slickLazyTreeCallBack(grid);
                     }
                 }
-                vnode.attrs.refreshData = false;
                 filterFunction = vnode.attrs.filterFunction;
-                dataView.setRefreshHints({
-                    isFilterNarrowing: false,
-                    isFilterExpanding: false
-                });
-                dataView.setFilterArgs({
-                    showAll: false,
-                    fromTree: false,
-                    showSelectedOnly: false
-                });
+                // dataView.setRefreshHints({
+                //     isFilterNarrowing: false,
+                //     isFilterExpanding: false
+                // });
+                // dataView.setFilterArgs({
+                //     showAll: false,
+                //     fromTree: false,
+                //     showSelectedOnly: false
+                // });
             }
 
             if (vnode.attrs.resizeCanvas && grid) {

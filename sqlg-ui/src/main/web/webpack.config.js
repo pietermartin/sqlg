@@ -17,7 +17,8 @@ module.exports = {
         }),
         new HtmlWebpackPlugin({
             favicon: "sqlg/v1/src/favicon/favicon-16x16.png",
-            template: 'sqlg/v1/src/index.html'
+            template: 'sqlg/v1/src/index.html',
+            title: "Sqlg UI"
         })
     ],
     output: {

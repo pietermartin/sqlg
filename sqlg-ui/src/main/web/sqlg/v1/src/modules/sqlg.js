@@ -25,17 +25,12 @@ function Sqlg(ignore) {
             let params = m.route.param();
             let {treeId, view} = params;
             if (signedIn()) {
-                actions.navigateTo(Route.Sqlg({treeId: treeId, view: view !== undefined ? view : states().selectedTab}));
+                actions.navigateTo(Route.Sqlg({
+                    treeId: treeId,
+                    view: view !== undefined ? view : states().selectedTab
+                }));
             } else {
                 actions.navigateTo(Route.SqlgLogin({}));
-            }
-        },
-        oncreate: () => {
-            let params = m.route.param();
-            let {treeId} = params;
-            if (signedIn()) {
-                actions.retrieveGraphData();
-                actions.retrieveTopologyTree(treeId);
             }
         },
         onremove: () => {
