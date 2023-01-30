@@ -57,15 +57,15 @@ public final class SqlgC3P0DataSource implements SqlgDataSource {
             comboPooledDataSource.setMaxPoolSize(maxPoolSize);
         }
         comboPooledDataSource.setForceUseNamedDriverClass(true);
-        if (SqlgDataSource.isPostgres(configuration) || SqlgDataSource.isHsqldb(configuration) || SqlgDataSource.isH2(configuration)) {
-            comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("/") + 1));
-        } else if (SqlgDataSource.isMariaDb(configuration)) {
-            comboPooledDataSource.setDataSourceName("mariadb");
-        } else if (SqlgDataSource.isMysql(configuration)) {
-            comboPooledDataSource.setDataSourceName("mysql");
-        } else if (SqlgDataSource.isMsSqlServer(configuration)) {
-            comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("databaseName=") + "databaseName=".length()));
-        }
+//        if (SqlgDataSource.isPostgres(configuration) || SqlgDataSource.isHsqldb(configuration) || SqlgDataSource.isH2(configuration)) {
+//            comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("/") + 1));
+//        } else if (SqlgDataSource.isMariaDb(configuration)) {
+//            comboPooledDataSource.setDataSourceName("mariadb");
+//        } else if (SqlgDataSource.isMysql(configuration)) {
+//            comboPooledDataSource.setDataSourceName("mysql");
+//        } else if (SqlgDataSource.isMsSqlServer(configuration)) {
+//            comboPooledDataSource.setDataSourceName(jdbcUrl.substring(jdbcUrl.lastIndexOf("databaseName=") + "databaseName=".length()));
+//        }
         return new SqlgC3P0DataSource(jdbcUrl, comboPooledDataSource, sqlDialect);
     }
 
