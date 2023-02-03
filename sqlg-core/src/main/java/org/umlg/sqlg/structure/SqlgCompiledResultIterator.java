@@ -98,7 +98,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         try {
             while (true) {
                 switch (this.queryState) {
-                    case REGULAR:
+                    case REGULAR -> {
                         if (this.elements != null) {
                             return true;
                         } else {
@@ -132,13 +132,12 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         }
                                         this.queryState = QUERY.OPTIONAL;
                                         this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
-                                        break;
                                     }
                                 }
                             }
                         }
-                        break;
-                    case OPTIONAL:
+                    }
+                    case OPTIONAL -> {
                         if (this.elements != null) {
                             return true;
                         } else {
@@ -168,13 +167,12 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         }
                                         this.queryState = QUERY.EMIT;
                                         this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
-                                        break;
                                     }
                                 }
                             }
                         }
-                        break;
-                    case EMIT:
+                    }
+                    case EMIT -> {
                         if (this.elements != null) {
                             return true;
                         } else {
@@ -213,7 +211,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                 }
                             }
                         }
-                        break;
+                    }
                 }
             }
         } catch (SQLException e) {
