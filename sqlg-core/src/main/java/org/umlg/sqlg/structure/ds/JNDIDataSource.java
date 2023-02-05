@@ -40,6 +40,9 @@ public final class JNDIDataSource implements SqlgDataSource {
 
         SqlDialect sqlDialect;
         try (Connection conn = ds.getConnection()) {
+
+            SqlgPlugin sqlgPlugin = SqlgPlugin.load(conn.getMetaData());
+            url = sqlgPlugin.manageJdbcUrl(url);
             sqlDialect = SqlgPlugin.load(conn.getMetaData()).instantiateDialect();
         }
 

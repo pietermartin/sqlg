@@ -39,6 +39,7 @@ public final class SqlgHikariDataSource implements SqlgDataSource {
 
         String jdbcUrl = configuration.getString(SqlgGraph.JDBC_URL);
         SqlgPlugin sqlgPlugin = SqlgPlugin.load(jdbcUrl);
+        jdbcUrl = sqlgPlugin.manageJdbcUrl(jdbcUrl);
         SqlDialect sqlDialect = sqlgPlugin.instantiateDialect();
 
         String driver = sqlgPlugin.getDriverFor(jdbcUrl);
@@ -96,15 +97,6 @@ public final class SqlgHikariDataSource implements SqlgDataSource {
             this.dss.close();
             this.dss = null;
         }
-    }
-
-    /**
-     * This is only invoked for Postgresql on ddl statements.
-     * It will force the pool to close all connections which in turn will deallocate server side prepared statements.
-     */
-    @Override
-    public void softResetPool() {
-        //noop
     }
 
     @Override

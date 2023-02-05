@@ -9,6 +9,7 @@ import org.umlg.sqlg.test.complex.TestComplex;
 import org.umlg.sqlg.test.complex.TestGithub;
 import org.umlg.sqlg.test.datasource.TestCustomDataSource;
 import org.umlg.sqlg.test.datasource.TestJNDIInitialization;
+import org.umlg.sqlg.test.datasource.TestStalePreparedStatement;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.event.TestTinkerPopEvent;
@@ -305,7 +306,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestEdgeMultiplicityUnique.class,
         TestEdgeMultiplicityUniqueDistributed.class,
         TestNullProperties.class,
-        TestGroovy.class
+        TestGroovy.class,
+        TestStalePreparedStatement.class
 })
 public class AllTest {
 

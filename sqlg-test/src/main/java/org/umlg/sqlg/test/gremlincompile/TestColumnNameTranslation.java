@@ -65,31 +65,40 @@ public class TestColumnNameTranslation extends BaseTest {
         a3.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
 
-        testNameWithMultipleSameLabel_assert(this.sqlgGraph, a1, b1);
+        testNameWithMultipleSameLabel_assert(this.sqlgGraph, a1, a2, a3);
         if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
-            testNameWithMultipleSameLabel_assert(this.sqlgGraph1, a1, b1);
+            testNameWithMultipleSameLabel_assert(this.sqlgGraph1, a1, a2, a3);
         }
 
     }
 
-    private void testNameWithMultipleSameLabel_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1) {
+    private void testNameWithMultipleSameLabel_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3) {
         List<Map<String, Object>> result = sqlgGraph.traversal()
                 .V().as("a")
                 .out().as("b")
                 .in().as("c")
                 .select(Pop.all, "a", "a", "a")
                 .toList();
-        assertEquals(0, result.size());
-//        Object o1 = result.get(0).get("a");
-//        Assert.assertTrue(o1 instanceof List);
-//        @SuppressWarnings("unchecked") List<Vertex> ass = (List) o1;
-//        assertEquals(a1, ass.get(0));
-//        assertEquals("a1", ass.get(0).value("name"));
-//        assertEquals(b1, ass.get(1));
-//        assertEquals("b1", ass.get(1).value("name"));
-//        assertEquals(a1, ass.get(2));
-//        assertEquals("a1", ass.get(2).value("name"));
+        assertEquals(3, result.size());
+        Object o1 = result.get(0).get("a");
+        Assert.assertTrue(o1 instanceof List);
+        @SuppressWarnings("unchecked") List<Vertex> ass = (List) o1;
+        assertEquals(a1, ass.get(0));
+        assertEquals("a1", ass.get(0).value("name"));
+
+        Object o2 = result.get(1).get("a");
+        Assert.assertTrue(o2 instanceof List);
+        ass = (List) o2;
+        assertEquals(a2, ass.get(0));
+        assertEquals("a2", ass.get(0).value("name"));
+
+
+        Object o3 = result.get(2).get("a");
+        Assert.assertTrue(o3 instanceof List);
+        ass = (List) o3;
+        assertEquals(a3, ass.get(0));
+        assertEquals("a3", ass.get(0).value("name"));
     }
 
     @Test

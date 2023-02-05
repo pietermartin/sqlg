@@ -64,10 +64,6 @@ public class TestCustomDataSource extends BaseTest {
             delegate.close();
         }
 
-        public void softResetPool() {
-            delegate.softResetPool();
-        }
-
         public String getPoolStatsAsJson() {
             return delegate.getPoolStatsAsJson();
         }

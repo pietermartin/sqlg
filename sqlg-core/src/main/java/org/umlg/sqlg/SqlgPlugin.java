@@ -71,4 +71,11 @@ public interface SqlgPlugin {
         }
         throw new IllegalStateException("Could not find suitable Sqlg plugin for the database: " + metaData.getDatabaseProductName());
     }
+
+    /**
+     * Add additional properties to the jdbc url
+     */
+    default String manageJdbcUrl(String jdbcUrl) {
+        return jdbcUrl;
+    }
 }

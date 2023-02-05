@@ -26,7 +26,6 @@ import org.umlg.sqlg.util.ThreadLocalMap;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -538,10 +537,6 @@ public class Topology {
                 afterCommit();
             }
         });
-
-        if (this.sqlgGraph.getSqlDialect().isPostgresql()) {
-            registerListener((topologyInf, string, topologyChangeAction) -> deallocateAll());
-        }
 
     }
 
@@ -1098,22 +1093,6 @@ public class Topology {
             z_internalSqlWriteUnlock();
             this.schemaChanged.set(false);
         }
-    }
-
-    /**
-     * This is only needed for Postgresql.
-     */
-    private void deallocateAll() {
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement statement = conn.createStatement()) {
-            statement.execute("DEALLOCATE ALL");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        //Soft reset the pool will leave active connections running.
-        //All connections in the pool will be closed.
-        //Running connections will be closed when they reenter the pool.
-        this.sqlgGraph.getSqlgDataSource().softResetPool();
     }
 
     public void cacheTopology() {
