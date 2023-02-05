@@ -1759,7 +1759,7 @@ public class Topology {
 
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
         Preconditions.checkState(isSchemaChanged(), "Topology.getUncommittedSchemaTableForeignKeys must have schemaChanged = true");
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new ConcurrentHashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedSchemaTableForeignKeys());
