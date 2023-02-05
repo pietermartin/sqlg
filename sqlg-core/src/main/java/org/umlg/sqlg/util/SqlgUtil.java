@@ -1152,7 +1152,7 @@ public class SqlgUtil {
             case STRING_ORDINAL, VARCHAR_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
             case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
             case NULL_ORDINAL -> Preconditions.checkState(true);
-            default -> Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+            default -> Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
         }
 
     }
