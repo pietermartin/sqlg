@@ -706,7 +706,7 @@ public class Schema implements TopologyInf {
     private VertexLabel createVertexLabel(String vertexLabelName, Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
-        this.sqlgGraph.getSqlDialect().validateTableName(vertexLabelName);
+        this.sqlgGraph.getSqlDialect().validateTableName(VERTEX_PREFIX + vertexLabelName);
         for (String columnName : columns.keySet()) {
             this.sqlgGraph.getSqlDialect().validateColumnName(columnName);
         }
