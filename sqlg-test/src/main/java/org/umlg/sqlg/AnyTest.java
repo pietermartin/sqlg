@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.datasource.TestStalePreparedStatement;
+import org.umlg.sqlg.test.mergestep.TestMerge;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,7 @@ import org.umlg.sqlg.test.datasource.TestStalePreparedStatement;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestMerge.class
-        TestStalePreparedStatement.class
+        TestMerge.class
 })
 public class AnyTest {
 }

@@ -44,6 +44,7 @@ import org.umlg.sqlg.test.localdate.TestLocalDateArray;
 import org.umlg.sqlg.test.localvertexstep.*;
 import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
+import org.umlg.sqlg.test.mergestep.TestMerge;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.partition.TestJoinAcrossPartition;
 import org.umlg.sqlg.test.process.dropstep.*;
@@ -307,7 +308,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestEdgeMultiplicityUniqueDistributed.class,
         TestNullProperties.class,
         TestGroovy.class,
-        TestStalePreparedStatement.class
+        TestStalePreparedStatement.class,
+        TestMerge.class
 })
 public class AllTest {
 
