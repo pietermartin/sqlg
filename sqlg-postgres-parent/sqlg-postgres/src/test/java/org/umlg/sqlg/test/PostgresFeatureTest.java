@@ -31,7 +31,7 @@ import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData;
         tags = "not @RemoteOnly and not @MultiMetaProperties and not @GraphComputerOnly and not @AllowNullPropertyValues and not @UserSuppliedVertexPropertyIds and not @UserSuppliedEdgeIds and not @UserSuppliedVertexIds and not @TinkerServiceRegistry",
         glue = {"org.apache.tinkerpop.gremlin.features"},
         objectFactory = PostgresFeatureTest.SqlgGraphGuiceFactory.class,
-        features = {"classpath:/features"},
+        features = {"classpath:/org/apache/tinkerpop/gremlin/test/features"},
         plugin = {"progress", "junit:target/cucumber.xml"})
 public class PostgresFeatureTest {
 
@@ -50,8 +50,8 @@ public class PostgresFeatureTest {
 
 
     private final static Set<String> OPT_IN = Set.of(
-//            "g_V_repeatXoutX_timesX8X_count"
-//            "g_injectX1X_VX1_nullX"
+//            "g_V_mergeEXlabel_selfX_optionXonMatch_nullX",
+//            "g_V_mergeEXemptyX_optionXonCreate_nullX"
 //            "g_V_playlist_paths"
 //            g_V_shortestpath
     );
