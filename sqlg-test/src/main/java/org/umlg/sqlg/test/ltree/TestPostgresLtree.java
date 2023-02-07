@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.ltree;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
@@ -17,6 +18,7 @@ public class TestPostgresLtree extends BaseTest {
 
     @Test
     public void testLTree() {
+        Assume.assumeTrue(isPostgres());
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("Tree", new HashMap<>() {{
                     put("path", PropertyDefinition.of(PropertyType.LTREE));

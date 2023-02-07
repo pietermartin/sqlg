@@ -477,7 +477,9 @@ public interface SqlDialect {
 
     void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right);
 
-    void setPath(PreparedStatement preparedStatement, int parameterStartIndex, String path);
+    default void setPath(PreparedStatement preparedStatement, int parameterStartIndex, String path) {
+        throw new RuntimeException("ltree path extension is not supported.");
+    }
 
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
 
