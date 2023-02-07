@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.mergestep.TestMerge;
+import org.umlg.sqlg.test.select.TestSelect;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.mergestep.TestMerge;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestMerge.class
+        TestSelect.class
 })
 public class AnyTest {
 }
