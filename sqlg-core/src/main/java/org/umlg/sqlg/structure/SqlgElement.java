@@ -571,6 +571,7 @@ public abstract class SqlgElement implements Element {
                 } else {
                     return false;
                 }
+            case LTREE_ORDINAL:
             case STRING_ORDINAL:
                 String string = resultSet.getString(columnIndex);
                 if (!resultSet.wasNull()) {

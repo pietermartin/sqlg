@@ -477,6 +477,8 @@ public interface SqlDialect {
 
     void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right);
 
+    void setPath(PreparedStatement preparedStatement, int parameterStartIndex, String path);
+
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
 
     default void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
@@ -1317,6 +1319,8 @@ public interface SqlDialect {
             case PERIOD_ARRAY_ORDINAL:
                 break;
             case JSON_ARRAY_ORDINAL:
+                break;
+            case LTREE_ORDINAL:
                 break;
         }
         return "'" + value.toString() + "'";

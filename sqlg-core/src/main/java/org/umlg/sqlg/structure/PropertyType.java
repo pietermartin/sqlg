@@ -111,6 +111,8 @@ public class PropertyType {
     public static final PropertyType BIG_DECIMAL_ARRAY = new PropertyType("BIG_DECIMAL_ARRAY", BIG_DECIMAL_ARRAY_ORDINAL, BigDecimal[].class.getName(), new String[]{});
     public static final int NULL_ORDINAL = 46;
     public static final PropertyType NULL = new PropertyType("NULL", NULL_ORDINAL, null, new String[]{});
+    public static final int LTREE_ORDINAL = 47;
+    public static final PropertyType LTREE = new PropertyType("LTREE", LTREE_ORDINAL, null, new String[]{});
 
     public static PropertyType varChar(int length) {
         return new PropertyType(String.class.getName(), new String[]{}, length);
@@ -233,7 +235,8 @@ public class PropertyType {
                 PropertyType.ZONEDDATETIME_ARRAY,
                 PropertyType.DURATION_ARRAY,
                 PropertyType.PERIOD_ARRAY,
-                PropertyType.JSON_ARRAY
+                PropertyType.JSON_ARRAY,
+                PropertyType.LTREE
         };
     }
 

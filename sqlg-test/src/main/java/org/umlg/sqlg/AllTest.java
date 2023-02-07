@@ -42,6 +42,7 @@ import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.TestLocalDate;
 import org.umlg.sqlg.test.localdate.TestLocalDateArray;
 import org.umlg.sqlg.test.localvertexstep.*;
+import org.umlg.sqlg.test.ltree.TestPostgresLtree;
 import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mergestep.TestMerge;
@@ -309,7 +310,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestNullProperties.class,
         TestGroovy.class,
         TestStalePreparedStatement.class,
-        TestMerge.class
+        TestMerge.class,
+        TestPostgresLtree.class
 })
 public class AllTest {
 

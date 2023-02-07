@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.select.TestSelect;
+import org.umlg.sqlg.test.ltree.TestPostgresLtree;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.select.TestSelect;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSelect.class
+//        TestSelect.class
+        TestPostgresLtree.class
 })
 public class AnyTest {
 }

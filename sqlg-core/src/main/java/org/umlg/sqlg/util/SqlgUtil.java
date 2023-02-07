@@ -399,6 +399,10 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
                     parameterStartIndex++;
                 }
+                case LTREE_ORDINAL -> {
+                    sqlgGraph.getSqlDialect().setPath(preparedStatement, parameterStartIndex, (String)pair.getRight());
+                    parameterStartIndex++;
+                }
                 case POINT_ORDINAL, GEOGRAPHY_POINT_ORDINAL -> {
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
@@ -634,7 +638,7 @@ public class SqlgUtil {
      * This only gets called for array properties
      *
      * @param propertyDefinition The property's definition
-     * @param value The value
+     * @param value              The value
      * @return
      */
     private static Object[] transformArrayToInsertValue(PropertyDefinition propertyDefinition, Object value) {
@@ -1149,10 +1153,14 @@ public class SqlgUtil {
 
     public static void validateIncomingPropertyType(PropertyType incomingPropertyType, PropertyType propertyType) {
         switch (incomingPropertyType.ordinal()) {
-            case STRING_ORDINAL, VARCHAR_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
-            case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+            case STRING_ORDINAL, VARCHAR_ORDINAL, LTREE_ORDINAL -> Preconditions.checkState((
+                    propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL || propertyType.ordinal() == LTREE_ORDINAL
+            ), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+            case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL ->
+                    Preconditions.checkState((propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
             case NULL_ORDINAL -> Preconditions.checkState(true);
-            default -> Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
+            default ->
+                    Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
         }
 
     }

@@ -428,8 +428,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     sql.append("null::int");
                 }
                 break;
-            case VARCHAR_ORDINAL:
-            case STRING_ORDINAL:
+            case VARCHAR_ORDINAL, STRING_ORDINAL, LTREE_ORDINAL:
                 if (value != null) {
                     sql.append("'");
                     sql.append(escapeQuotes(value));
@@ -1713,6 +1712,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case PERIOD_ORDINAL -> new String[]{"INTEGER", "INTEGER", "INTEGER"};
             case DURATION_ORDINAL -> new String[]{"BIGINT", "INTEGER"};
             case STRING_ORDINAL -> new String[]{"TEXT"};
+            case LTREE_ORDINAL -> new String[]{"LTREE"};
             case JSON_ORDINAL -> new String[]{"JSONB"};
             case POINT_ORDINAL -> new String[]{"geometry(POINT)"};
             case LINESTRING_ORDINAL -> new String[]{"geometry(LINESTRING)"};
@@ -2109,6 +2109,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         try {
             jsonObject.setValue(json.toString());
             preparedStatement.setObject(parameterStartIndex, jsonObject);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void setPath(PreparedStatement preparedStatement, int parameterStartIndex, String path) {
+        PGobject pathObject = new PGobject();
+        pathObject.setType("ltree");
+        try {
+            pathObject.setValue(path);
+            preparedStatement.setObject(parameterStartIndex, pathObject);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -3617,7 +3629,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case DOUBLE_ARRAY_ORDINAL:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
-            case STRING_ORDINAL:
+            case LTREE_ORDINAL, STRING_ORDINAL:
                 return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case STRING_ARRAY_ORDINAL:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
@@ -3728,6 +3740,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case DOUBLE_ORDINAL:
                 return true;
             case STRING_ORDINAL:
+                return true;
+            case LTREE_ORDINAL:
                 return true;
             case LOCALDATE_ORDINAL:
                 return true;
