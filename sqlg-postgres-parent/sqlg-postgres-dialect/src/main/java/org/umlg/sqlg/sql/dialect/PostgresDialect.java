@@ -3629,7 +3629,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case DOUBLE_ARRAY_ORDINAL:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
-            case LTREE_ORDINAL, STRING_ORDINAL:
+            case STRING_ORDINAL:
+                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
+            case LTREE_ORDINAL:
                 return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case STRING_ARRAY_ORDINAL:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);

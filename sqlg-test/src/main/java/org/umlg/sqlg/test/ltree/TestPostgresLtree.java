@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.ltree;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -31,10 +32,30 @@ public class TestPostgresLtree extends BaseTest {
         List<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Tree").toList();
         Assert.assertEquals(3, tree.size());
         Set<String> paths = new HashSet<>(Set.of("one", "one.two", "one.two.three"));
-        for (Vertex t: tree) {
+        for (Vertex t : tree) {
             String path = t.value("path");
             paths.remove(path);
         }
         Assert.assertTrue(paths.isEmpty());
+    }
+
+    @Test
+    public void testLTreeWithin() {
+        Assume.assumeTrue(isPostgres());
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("Tree", new HashMap<>() {{
+                    put("path", PropertyDefinition.of(PropertyType.LTREE));
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.three");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.four");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> tree = this.sqlgGraph.traversal().V()
+                .hasLabel("Tree")
+                .has("path", P.within("one.two", "one.two.three", "one.two.four"))
+                .toList();
+        Assert.assertEquals(3, tree.size());
     }
 }

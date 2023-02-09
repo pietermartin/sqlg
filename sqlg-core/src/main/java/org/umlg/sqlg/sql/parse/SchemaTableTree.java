@@ -1256,6 +1256,7 @@ public class SchemaTableTree {
     private String bulkWithJoin() {
         StringBuilder sb = new StringBuilder();
         List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(this.sqlgGraph, h)).toList();
+        Map<String, PropertyDefinition> propertyDefinitionMap = this.filteredAllTables.get(toString());
         for (HasContainer hasContainer : bulkHasContainers) {
             P<List<Object>> predicate = (P<List<Object>>) hasContainer.getPredicate();
             Collection<Object> withInList = predicate.getValue();
@@ -1270,6 +1271,8 @@ public class SchemaTableTree {
             sb.append("(VALUES ");
             boolean first = true;
             int identifierCount = 1;
+
+            PropertyDefinition propertyDefinition = propertyDefinitionMap.get(hasContainer.getKey());
             for (Object withInOutValue : withInOuts) {
                 if (withInOutValue == null) {
                     continue;
@@ -1298,7 +1301,7 @@ public class SchemaTableTree {
                         sb.append(sqlgGraph.getSqlDialect().valueToValuesString(propertyType, withInOutValue));
                     }
                 } else {
-                    PropertyType propertyType = PropertyType.from(withInOutValue);
+                    PropertyType propertyType = propertyDefinition.propertyType();
                     sb.append(sqlgGraph.getSqlDialect().valueToValuesString(propertyType, withInOutValue));
                 }
                 sb.append(")");
