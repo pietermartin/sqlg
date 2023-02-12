@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.predicate.Lquery;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ColumnList;
@@ -400,7 +401,18 @@ public class SqlgUtil {
                     parameterStartIndex++;
                 }
                 case LTREE_ORDINAL -> {
-                    sqlgGraph.getSqlDialect().setPath(preparedStatement, parameterStartIndex, (String)pair.getRight());
+                    if (pair.getRight() instanceof Lquery.LqueryQuery) {
+                        //queries use Lquery.LqueryQuery
+                        if (((Lquery.LqueryQuery)pair.getRight()).lquery()) {
+                            //path ~ 'one.*'
+                            sqlgGraph.getSqlDialect().setLquery(preparedStatement, parameterStartIndex, ((Lquery.LqueryQuery)pair.getRight()).query());
+                        } else {
+                            //path <@ 'one'
+                            sqlgGraph.getSqlDialect().setLtree(preparedStatement, parameterStartIndex, ((Lquery.LqueryQuery)pair.getRight()).query());
+                        }
+                    } else {
+                        sqlgGraph.getSqlDialect().setLtree(preparedStatement, parameterStartIndex, (String)pair.getRight());
+                    }
                     parameterStartIndex++;
                 }
                 case POINT_ORDINAL, GEOGRAPHY_POINT_ORDINAL -> {

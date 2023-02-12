@@ -2115,9 +2115,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public void setPath(PreparedStatement preparedStatement, int parameterStartIndex, String path) {
+    public void setLtree(PreparedStatement preparedStatement, int parameterStartIndex, String path) {
         PGobject pathObject = new PGobject();
         pathObject.setType("ltree");
+        try {
+            pathObject.setValue(path);
+            preparedStatement.setObject(parameterStartIndex, pathObject);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void setLquery(PreparedStatement preparedStatement, int parameterStartIndex, String path) {
+        PGobject pathObject = new PGobject();
+        pathObject.setType("lquery");
         try {
             pathObject.setValue(path);
             preparedStatement.setObject(parameterStartIndex, pathObject);

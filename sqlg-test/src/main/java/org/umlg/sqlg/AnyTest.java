@@ -11,6 +11,7 @@ import org.umlg.sqlg.test.ltree.TestPostgresLtree;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestSelect.class
+//        TestGremlinCompileTextPredicate.class
         TestPostgresLtree.class
 })
 public class AnyTest {

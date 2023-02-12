@@ -157,6 +157,10 @@ public class WhereClause {
             prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             result.append(sqlgGraph.getSqlDialect().getFullTextQueryText(ft, prefix));
             return result.toString();
+        } else if (p.getBiPredicate() instanceof Lquery) {
+            prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            result.append(lqueryToSql(prefix, (Lquery) p.getBiPredicate()));
+            return result.toString();
         } else if (p.getBiPredicate() instanceof Existence) {
             result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
             result.append(" ").append(p.getBiPredicate().toString());
@@ -223,6 +227,10 @@ public class WhereClause {
             result.append(")");
         }
         return result.toString();
+    }
+
+    private static String lqueryToSql(String prefix, Lquery lquery) {
+        return prefix + lquery.getOperator() + " ?";
     }
 
     private static String textToSql(SqlDialect sqlDialect, String prefix, Text text) {
@@ -345,6 +353,10 @@ public class WhereClause {
                 propertyDefinition = PropertyDefinition.of(PropertyType.from(hasContainer.getValue()));
             }
             keyValueMapAgain.put(propertyDefinition, "%" + hasContainer.getValue());
+        } else if (this.p.getBiPredicate() instanceof Lquery) {
+            PropertyDefinition propertyDefinition = schemaTableTree.getPropertyDefinitions().get(hasContainer.getKey());
+            Objects.requireNonNull(propertyDefinition, "PropertyDefinition not found for " + hasContainer.getKey());
+            keyValueMapAgain.put(propertyDefinition, hasContainer.getValue());
         } else if (this.p.getBiPredicate() instanceof Existence) {
             // no value
         } else if (hasContainer.getKey().equals(T.id.getAccessor()) &&
