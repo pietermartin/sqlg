@@ -16,6 +16,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Lquery;
+import org.umlg.sqlg.predicate.LqueryArray;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ColumnList;
@@ -403,15 +404,20 @@ public class SqlgUtil {
                 case LTREE_ORDINAL -> {
                     if (pair.getRight() instanceof Lquery.LqueryQuery) {
                         //queries use Lquery.LqueryQuery
-                        if (((Lquery.LqueryQuery)pair.getRight()).lquery()) {
+                        if (((Lquery.LqueryQuery) pair.getRight()).lquery()) {
                             //path ~ 'one.*'
-                            sqlgGraph.getSqlDialect().setLquery(preparedStatement, parameterStartIndex, ((Lquery.LqueryQuery)pair.getRight()).query());
+                            sqlgGraph.getSqlDialect().setLquery(preparedStatement, parameterStartIndex, ((Lquery.LqueryQuery) pair.getRight()).query());
                         } else {
                             //path <@ 'one'
-                            sqlgGraph.getSqlDialect().setLtree(preparedStatement, parameterStartIndex, ((Lquery.LqueryQuery)pair.getRight()).query());
+                            sqlgGraph.getSqlDialect().setLtree(preparedStatement, parameterStartIndex, ((Lquery.LqueryQuery) pair.getRight()).query());
                         }
+                    } else if (pair.getRight() instanceof LqueryArray.LqueryQueryArray) {
+                        //queries use Lquery.LqueryQuery
+                        //path <@ 'one'
+                        java.sql.Array array = preparedStatement.getConnection().createArrayOf("ltree", ((LqueryArray.LqueryQueryArray) pair.getRight()).query());
+                        sqlgGraph.getSqlDialect().setLtreeArray(preparedStatement, parameterStartIndex, array);
                     } else {
-                        sqlgGraph.getSqlDialect().setLtree(preparedStatement, parameterStartIndex, (String)pair.getRight());
+                        sqlgGraph.getSqlDialect().setLtree(preparedStatement, parameterStartIndex, (String) pair.getRight());
                     }
                     parameterStartIndex++;
                 }

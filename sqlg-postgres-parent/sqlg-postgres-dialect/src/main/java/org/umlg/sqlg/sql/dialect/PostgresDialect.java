@@ -2139,6 +2139,24 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
+    public void setLtreeArray(PreparedStatement preparedStatement, int parameterStartIndex, Array paths) {
+        try {
+            preparedStatement.setArray(parameterStartIndex, paths);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void setLqueryArray(PreparedStatement preparedStatement, int parameterStartIndex, Array paths) {
+        try {
+            preparedStatement.setArray(parameterStartIndex, paths);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         Preconditions.checkArgument(point instanceof Point, "point must be an instance of " + Point.class.getName());
         try {
@@ -3137,8 +3155,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     @Override
-    public void setArray(PreparedStatement statement, int index, PropertyType type,
-                         Object[] values) throws SQLException {
+    public void setArray(PreparedStatement statement, int index, PropertyType type, Object[] values) throws SQLException {
         statement.setArray(index, createArrayOf(statement.getConnection(), type, values));
     }
 

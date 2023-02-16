@@ -4,18 +4,16 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.function.BiPredicate;
 
-public class Lquery implements BiPredicate<Lquery.LqueryQuery, Lquery.LqueryQuery> {
+public record Lquery(String operator) implements BiPredicate<Lquery.LqueryQuery, Lquery.LqueryQuery> {
 
     public record LqueryQuery(String query, boolean lquery) {}
 
-    private final String operator;
-
-    public static P<LqueryQuery> ancestorOfRightOrEquals(final String lquery) {
-        return new P<>(new Lquery("@>"), new LqueryQuery(lquery, false));
+    public static P<LqueryQuery> ancestorOfRightOrEquals(final String ltree) {
+        return new P<>(new Lquery("@>"), new LqueryQuery(ltree, false));
     }
     
-    public static P<LqueryQuery> descendantOfRightOrEquals(final String lquery) {
-        return new P<>(new Lquery("<@"), new LqueryQuery(lquery, false));
+    public static P<LqueryQuery> descendantOfRightOrEquals(final String ltree) {
+        return new P<>(new Lquery("<@"), new LqueryQuery(ltree, false));
     }
 
     public static P<LqueryQuery> lquery(final String lquery) {

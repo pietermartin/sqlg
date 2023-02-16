@@ -597,6 +597,7 @@ public abstract class BaseStrategy {
                     toRemoveHasContainers.addAll(optimizeTextContains(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeArray(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeLquery(this.currentReplacedStep, hasContainers));
+                    toRemoveHasContainers.addAll(optimizeLqueryArray(this.currentReplacedStep, hasContainers));
                     if (toRemoveHasContainers.size() == hasContainers.size()) {
                         if (!currentStep.getLabels().isEmpty()) {
                             final IdentityStep identityStep = new IdentityStep<>(this.traversal);
@@ -849,7 +850,8 @@ public abstract class BaseStrategy {
                                 || hasContainer.getBiPredicate() instanceof FullText
                                 || hasContainer.getBiPredicate() instanceof ArrayContains
                                 || hasContainer.getBiPredicate() instanceof ArrayOverlaps
-                                || hasContainer.getBiPredicate() instanceof Lquery) {
+                                || hasContainer.getBiPredicate() instanceof Lquery
+                                || hasContainer.getBiPredicate() instanceof LqueryArray) {
                             andOrHasContainer.addHasContainer(hasContainer);
                         } else {
                             return Optional.empty();
@@ -1117,6 +1119,17 @@ public abstract class BaseStrategy {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Lquery) {
+                replacedStep.addHasContainer(hasContainer);
+                result.add(hasContainer);
+            }
+        }
+        return result;
+    }
+
+    private List<HasContainer> optimizeLqueryArray(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
+        List<HasContainer> result = new ArrayList<>();
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof LqueryArray) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }

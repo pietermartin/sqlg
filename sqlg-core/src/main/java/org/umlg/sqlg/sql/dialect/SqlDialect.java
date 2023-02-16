@@ -485,6 +485,14 @@ public interface SqlDialect {
         throw new RuntimeException("ltree path extension is not supported.");
     }
 
+    default void setLtreeArray(PreparedStatement preparedStatement, int parameterStartIndex, Array paths) {
+        throw new RuntimeException("ltree path extension is not supported.");
+    }
+
+    default void setLqueryArray(PreparedStatement preparedStatement, int parameterStartIndex, Array paths) {
+        throw new RuntimeException("ltree path extension is not supported.");
+    }
+
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
 
     default void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {

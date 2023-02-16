@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.Lquery;
+import org.umlg.sqlg.predicate.LqueryArray;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.test.BaseTest;
@@ -18,6 +19,45 @@ import java.util.List;
 import java.util.Set;
 
 public class TestPostgresLtree extends BaseTest {
+
+    @Test
+    public void testLTreeLqueryArray() throws SQLException {
+        Assume.assumeTrue(isPostgres());
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("Tree", new HashMap<>() {{
+                    put("path", PropertyDefinition.of(PropertyType.LTREE));
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.one");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.two");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three.one");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three.two");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+                .has("path", Lquery.descendantOfRightOrEquals("one.two"))
+                .toList();
+        Assert.assertEquals(3, tree.size());
+
+        tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+                .has("path", Lquery.descendantOfRightOrEquals("one.three"))
+                .toList();
+        Assert.assertEquals(3, tree.size());
+
+        tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+                .has("path", LqueryArray.descendantOfRightOrEquals(new String[]{"one.two", "one.three"}))
+                .toList();
+        Assert.assertEquals(6, tree.size());
+
+        tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+                .has("path", LqueryArray.ancestorOfRightOrEquals(new String[]{"one.two", "one.three"}))
+                .toList();
+        Assert.assertEquals(3, tree.size());
+
+    }
 
     @Test
     public void testLTreeLquery() throws SQLException {
