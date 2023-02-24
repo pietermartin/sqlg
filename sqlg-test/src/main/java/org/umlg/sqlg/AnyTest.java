@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.ltree.TestPostgresLtree;
+import org.umlg.sqlg.test.TestHas;
 
 /**
  * Date: 2014/07/16
@@ -12,7 +12,8 @@ import org.umlg.sqlg.test.ltree.TestPostgresLtree;
 @Suite.SuiteClasses({
 //        TestSelect.class
 //        TestGremlinCompileTextPredicate.class
-        TestPostgresLtree.class
+//        TestPostgresLtree.class
+        TestHas.class
 })
 public class AnyTest {
 }

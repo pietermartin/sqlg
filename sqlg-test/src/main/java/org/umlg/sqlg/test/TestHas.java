@@ -3,6 +3,8 @@ package org.umlg.sqlg.test;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -11,6 +13,8 @@ import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.step.SqlgGraphStep;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,6 +26,34 @@ import java.util.List;
  */
 @SuppressWarnings({"DuplicatedCode", "unused"})
 public class TestHas extends BaseTest {
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testHasNull() {
+        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+        Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> persons = this.sqlgGraph.traversal().V().hasId(person1.id()).toList();
+        Assert.assertEquals(1, persons.size());
+
+        persons = this.sqlgGraph.traversal().V().hasId(null).toList();
+        Assert.assertEquals(0, persons.size());
+
+        DefaultTraversal<Vertex, Vertex> traversal = (DefaultTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
+                .hasId(null);
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep<?, ?> sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        ReplacedStep<?, ?> replacedStep = (ReplacedStep) sqlgGraphStep.getReplacedSteps().get(0);
+        HasContainer hasContainer = (HasContainer) replacedStep.getLabelHasContainers().get(0);
+        Assert.assertTrue(hasContainer.getValue() instanceof String);
+        String value = (String) hasContainer.getValue();
+        Assert.assertTrue(value.startsWith("fake."));
+        persons = traversal.toList();
+        Assert.assertEquals(0, persons.size());
+    }
 
     @SuppressWarnings("RedundantArrayCreation")
     @Test

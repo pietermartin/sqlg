@@ -36,6 +36,7 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.step.barrier.*;
+import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -49,6 +50,9 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.Compare.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.Contains.within;
+import static org.apache.tinkerpop.gremlin.process.traversal.Contains.without;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.*;
 
 /**
@@ -90,13 +94,13 @@ public abstract class BaseStrategy {
     public static final String SQLG_PATH_TEMP_FAKE_LABEL = "sqlgPathTempFakeLabel";
     public static final String SQLG_PATH_ORDER_RANGE_LABEL = "sqlgPathOrderRangeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
-            Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte
+            eq, neq, gt, gte, lt, lte
     );
     public static final List<BiPredicate> SUPPORTED_LABEL_BI_PREDICATE = Arrays.asList(
-            Compare.eq, Compare.neq, Contains.within, Contains.without
+            eq, neq, within, without
     );
     public static final List<BiPredicate> SUPPORTED_ID_BI_PREDICATE = Arrays.asList(
-            Compare.eq, Compare.neq, Contains.within, Contains.without
+            eq, neq, within, without
     );
 
     final Traversal.Admin<?, ?> traversal;
@@ -826,15 +830,15 @@ public abstract class BaseStrategy {
                         boolean hasContainerKeyNotIdOrLabel = hasContainerKeyNotIdOrLabel(hasContainer);
                         if (hasContainerKeyNotIdOrLabel && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
                             andOrHasContainer.addHasContainer(hasContainer);
-                        } else if (hasContainerKeyNotIdOrLabel && (hasContainer.getBiPredicate().equals(Contains.within) || hasContainer.getBiPredicate().equals(Contains.without))) {
+                        } else if (hasContainerKeyNotIdOrLabel && (hasContainer.getBiPredicate().equals(within) || hasContainer.getBiPredicate().equals(without))) {
                             andOrHasContainer.addHasContainer(hasContainer);
                         } else if (hasContainerKeyNotIdOrLabel && hasContainer.getPredicate() instanceof AndP) {
                             AndP<?> andP = (AndP) hasContainer.getPredicate();
                             List<? extends P<?>> predicates = andP.getPredicates();
                             if (predicates.size() == 2) {
-                                if (predicates.get(0).getBiPredicate() == Compare.gte && predicates.get(1).getBiPredicate() == Compare.lt) {
+                                if (predicates.get(0).getBiPredicate() == gte && predicates.get(1).getBiPredicate() == lt) {
                                     andOrHasContainer.addHasContainer(hasContainer);
-                                } else if (predicates.get(0).getBiPredicate() == Compare.gt && predicates.get(1).getBiPredicate() == Compare.lt) {
+                                } else if (predicates.get(0).getBiPredicate() == gt && predicates.get(1).getBiPredicate() == lt) {
                                     andOrHasContainer.addHasContainer(hasContainer);
                                 }
                             }
@@ -842,7 +846,7 @@ public abstract class BaseStrategy {
                             OrP<?> orP = (OrP) hasContainer.getPredicate();
                             List<? extends P<?>> predicates = orP.getPredicates();
                             if (predicates.size() == 2) {
-                                if (predicates.get(0).getBiPredicate() == Compare.lt && predicates.get(1).getBiPredicate() == Compare.gt) {
+                                if (predicates.get(0).getBiPredicate() == lt && predicates.get(1).getBiPredicate() == gt) {
                                     andOrHasContainer.addHasContainer(hasContainer);
                                 }
                             }
@@ -1003,11 +1007,35 @@ public abstract class BaseStrategy {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
             if (hasContainer.getKey() != null &&
-                    hasContainer.getValue() != null &&
+//                    hasContainer.getValue() != null &&
                     hasContainer.getKey().equals(T.id.getAccessor()) &&
                     SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
 
-                replacedStep.addIdHasContainer(hasContainer);
+//                eq, neq, within, without
+                if (hasContainer.getValue() == null) {
+                    BiPredicate<?, ?> bp = hasContainer.getBiPredicate();
+                    P<?> transformedBiPredicate;
+                    if (bp == eq) {
+                        transformedBiPredicate = P.eq(RecordId.fake());
+                    } else if (bp == neq) {
+                        transformedBiPredicate = P.neq(RecordId.fake());
+                    } else if (bp == within) {
+                        transformedBiPredicate = P.within(RecordId.fake());
+                    } else if (bp == without) {
+                        transformedBiPredicate = P.without(RecordId.fake());
+                    } else {
+                        throw new UnsupportedOperationException(String.format("Bipredicate %s is not supported", bp));
+                    }
+                    replacedStep.addIdHasContainer(
+                            new HasContainer(
+                                    hasContainer.getKey(),
+                                    transformedBiPredicate
+                            )
+                    );
+                } else {
+                    replacedStep.addIdHasContainer(hasContainer);
+
+                }
                 result.add(hasContainer);
             }
         }
@@ -1042,7 +1070,7 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeWithInOut(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainerKeyNotIdOrLabel(hasContainer) && (hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && (hasContainer.getBiPredicate() == without || hasContainer.getBiPredicate() == within)) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }
@@ -1058,7 +1086,7 @@ public abstract class BaseStrategy {
                 AndP<?> andP = (AndP) hasContainer.getPredicate();
                 List<? extends P<?>> predicates = andP.getPredicates();
                 if (predicates.size() == 2) {
-                    if (predicates.get(0).getBiPredicate() == Compare.gte && predicates.get(1).getBiPredicate() == Compare.lt) {
+                    if (predicates.get(0).getBiPredicate() == gte && predicates.get(1).getBiPredicate() == lt) {
                         replacedStep.addHasContainer(hasContainer);
                         result.add(hasContainer);
                     }
@@ -1075,7 +1103,7 @@ public abstract class BaseStrategy {
                 AndP<?> andP = (AndP) hasContainer.getPredicate();
                 List<? extends P<?>> predicates = andP.getPredicates();
                 if (predicates.size() == 2) {
-                    if (predicates.get(0).getBiPredicate() == Compare.gt && predicates.get(1).getBiPredicate() == Compare.lt) {
+                    if (predicates.get(0).getBiPredicate() == gt && predicates.get(1).getBiPredicate() == lt) {
                         replacedStep.addHasContainer(hasContainer);
                         result.add(hasContainer);
                     }
@@ -1092,7 +1120,7 @@ public abstract class BaseStrategy {
                 OrP<?> orP = (OrP) hasContainer.getPredicate();
                 List<? extends P<?>> predicates = orP.getPredicates();
                 if (predicates.size() == 2) {
-                    if (predicates.get(0).getBiPredicate() == Compare.lt && predicates.get(1).getBiPredicate() == Compare.gt) {
+                    if (predicates.get(0).getBiPredicate() == lt && predicates.get(1).getBiPredicate() == gt) {
                         replacedStep.addHasContainer(hasContainer);
                         result.add(hasContainer);
                     }
@@ -1175,8 +1203,7 @@ public abstract class BaseStrategy {
     }
 
     boolean canNotBeOptimized() {
-        @SuppressWarnings("unchecked")
-        final List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
+        @SuppressWarnings("unchecked") final List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
         final ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         List<Step<?, ?>> toCome = steps.subList(stepIterator.nextIndex(), steps.size());
         return toCome.stream().anyMatch(s ->
