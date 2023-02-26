@@ -47,68 +47,26 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public String valueToValuesString(PropertyType propertyType, Object value) {
         Preconditions.checkState(supportsType(propertyType), "PropertyType %s is not supported", propertyType.name());
-        switch (propertyType.ordinal()) {
-            case STRING_ORDINAL:
-                return "'" + escapeQuotes(value.toString()) + "'";
-            case STRING_ARRAY_ORDINAL:
-                return toValuesArray(true, value).toString();
-            case BYTE_ORDINAL:
-                return value.toString();
-            case byte_ARRAY_ORDINAL:
-                return StringConverter.byteArrayToSQLHexString((byte[]) value);
-            case BYTE_ARRAY_ORDINAL:
-                return StringConverter.byteArrayToSQLHexString(
-                        SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value)
-                );
-            case BOOLEAN_ORDINAL:
-                return value.toString();
-            case boolean_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case BOOLEAN_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case SHORT_ORDINAL:
-                return value.toString();
-            case short_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case SHORT_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case INTEGER_ORDINAL:
-                return value.toString();
-            case int_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case INTEGER_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case LONG_ORDINAL:
-                return value.toString();
-            case long_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case LONG_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case DOUBLE_ORDINAL:
-                return value.toString();
-            case double_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case DOUBLE_ARRAY_ORDINAL:
-                return toValuesArray(false, value).toString();
-            case LOCALDATE_ORDINAL:
-                return "'" + value.toString() + "'";
-            case LOCALDATE_ARRAY_ORDINAL:
-                return toValuesArray(true, getArrayDriverType(propertyType), value).toString();
-            case LOCALDATETIME_ORDINAL:
-                return "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime) value) + "'";
-            case LOCALDATETIME_ARRAY_ORDINAL:
-                return toLocalDateTimeArray(true, getArrayDriverType(propertyType), value).toString();
-            case LOCALTIME_ORDINAL:
-                return "TIME '" + Time.valueOf((LocalTime) value) + "'";
-            case LOCALTIME_ARRAY_ORDINAL:
-                return toLocalTimeArray(true, getArrayDriverType(propertyType), value).toString();
-            case JSON_ORDINAL:
-                return "'" + value.toString() + "'";
-            case JSON_ARRAY_ORDINAL:
-                return toValuesArray(true, value).toString();
-            default:
-                throw SqlgExceptions.invalidPropertyType(propertyType);
-        }
+        return switch (propertyType.ordinal()) {
+            case STRING_ORDINAL, VARCHAR_ORDINAL -> "'" + escapeQuotes(value.toString()) + "'";
+            case STRING_ARRAY_ORDINAL, JSON_ARRAY_ORDINAL -> toValuesArray(true, value).toString();
+            case BYTE_ORDINAL, SHORT_ORDINAL, INTEGER_ORDINAL, BOOLEAN_ORDINAL, LONG_ORDINAL, DOUBLE_ORDINAL ->
+                    value.toString();
+            case byte_ARRAY_ORDINAL -> StringConverter.byteArrayToSQLHexString((byte[]) value);
+            case BYTE_ARRAY_ORDINAL -> StringConverter.byteArrayToSQLHexString(
+                    SqlgUtil.convertObjectArrayToBytePrimitiveArray((Byte[]) value)
+            );
+            case boolean_ARRAY_ORDINAL, BOOLEAN_ARRAY_ORDINAL, short_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL, int_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, long_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, double_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL ->
+                    toValuesArray(false, value).toString();
+            case LOCALDATE_ORDINAL, JSON_ORDINAL -> "'" + value.toString() + "'";
+            case LOCALDATE_ARRAY_ORDINAL -> toValuesArray(true, getArrayDriverType(propertyType), value).toString();
+            case LOCALDATETIME_ORDINAL -> "TIMESTAMP '" + Timestamp.valueOf((LocalDateTime) value) + "'";
+            case LOCALDATETIME_ARRAY_ORDINAL ->
+                    toLocalDateTimeArray(true, getArrayDriverType(propertyType), value).toString();
+            case LOCALTIME_ORDINAL -> "TIME '" + Time.valueOf((LocalTime) value) + "'";
+            case LOCALTIME_ARRAY_ORDINAL -> toLocalTimeArray(true, getArrayDriverType(propertyType), value).toString();
+            default -> throw SqlgExceptions.invalidPropertyType(propertyType);
+        };
     }
 
     private StringBuilder toValuesArray(boolean quote, Object value) {
@@ -1039,6 +997,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case double_ARRAY_ORDINAL:
                 return true;
             case STRING_ORDINAL:
+                return true;
+            case VARCHAR_ORDINAL:
                 return true;
             case LOCALDATE_ORDINAL:
                 return true;

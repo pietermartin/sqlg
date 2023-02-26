@@ -2,7 +2,9 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestHas;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
+import org.umlg.sqlg.test.process.dropstep.TestDropStep;
+import org.umlg.sqlg.test.process.dropstep.TestDropStepPartition;
 
 /**
  * Date: 2014/07/16
@@ -13,7 +15,10 @@ import org.umlg.sqlg.test.TestHas;
 //        TestSelect.class
 //        TestGremlinCompileTextPredicate.class
 //        TestPostgresLtree.class
-        TestHas.class
+        TestGremlinCompileWithHas.class,
+        TestDropStep.class,
+        TestDropStepPartition.class
+//        TestIdStep.class
 })
 public class AnyTest {
 }

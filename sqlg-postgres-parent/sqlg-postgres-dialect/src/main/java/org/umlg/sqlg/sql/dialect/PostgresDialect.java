@@ -3610,71 +3610,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 return "'" + PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)) + "'::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case byte_ARRAY_ORDINAL:
                 return "'" + PGbytea.toPGString((byte[]) value) + "'::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case BOOLEAN_ORDINAL:
+            case BOOLEAN_ORDINAL, SHORT_ORDINAL, INTEGER_ORDINAL, LONG_ORDINAL, FLOAT_ORDINAL, DOUBLE_ORDINAL:
                 return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case boolean_ARRAY_ORDINAL:
                 StringBuilder sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
-            case BOOLEAN_ARRAY_ORDINAL:
+            case BOOLEAN_ARRAY_ORDINAL, double_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, short_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL, int_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, long_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, float_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL, LOCALDATE_ARRAY_ORDINAL, LOCALDATETIME_ARRAY_ORDINAL:
                 sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
                 return sb.toString();
-            case SHORT_ORDINAL:
-                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case short_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case SHORT_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case INTEGER_ORDINAL:
-                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case int_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case INTEGER_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case LONG_ORDINAL:
-                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case long_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case LONG_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case FLOAT_ORDINAL:
-                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case float_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case FLOAT_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case DOUBLE_ORDINAL:
-                return value.toString() + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case double_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case DOUBLE_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case STRING_ORDINAL:
+            case STRING_ORDINAL, VARCHAR_ORDINAL, LTREE_ORDINAL, LOCALDATE_ORDINAL, JSON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL, POLYGON_ORDINAL, LINESTRING_ORDINAL, POINT_ORDINAL, GEOGRAPHY_POINT_ORDINAL:
                 return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case LTREE_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case STRING_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
-            case LOCALDATE_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case LOCALDATE_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
             case LOCALDATETIME_ORDINAL:
                 return toRDBSStringLiteral(LOCALDATETIME, value) + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case LOCALDATETIME_ARRAY_ORDINAL:
-                sb = toValuesArray(this.propertyTypeToSqlDefinition(propertyType)[0], value);
-                return sb.toString();
             case LOCALTIME_ORDINAL:
                 LocalTime lt = (LocalTime) value;
                 return "'" + escapeQuotes(Time.valueOf(lt)) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
@@ -3704,8 +3651,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 throw new IllegalStateException("DURATION is not supported in within.");
             case DURATION_ARRAY_ORDINAL:
                 throw new IllegalStateException("DURATION_ARRAY is not supported in within.");
-            case JSON_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             case JSON_ARRAY_ORDINAL:
                 sb = new StringBuilder();
                 sb.append("'{");
@@ -3722,16 +3667,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 sb.append("}'::");
                 sb.append(this.propertyTypeToSqlDefinition(propertyType)[0]);
                 return sb.toString();
-            case POINT_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case LINESTRING_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case POLYGON_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case GEOGRAPHY_POINT_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
-            case GEOGRAPHY_POLYGON_ORDINAL:
-                return "'" + escapeQuotes(value) + "'" + "::" + this.propertyTypeToSqlDefinition(propertyType)[0];
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
         }
@@ -3757,93 +3692,19 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
 
     @Override
     public boolean supportsType(PropertyType propertyType) {
-        switch (propertyType.ordinal()) {
-            case BOOLEAN_ORDINAL:
-                return true;
-            case SHORT_ORDINAL:
-                return true;
-            case INTEGER_ORDINAL:
-                return true;
-            case LONG_ORDINAL:
-                return true;
-            case FLOAT_ORDINAL:
-                return true;
-            case DOUBLE_ORDINAL:
-                return true;
-            case STRING_ORDINAL:
-                return true;
-            case LTREE_ORDINAL:
-                return true;
-            case LOCALDATE_ORDINAL:
-                return true;
-            case LOCALDATETIME_ORDINAL:
-                return true;
-            case LOCALTIME_ORDINAL:
-                return true;
-            case ZONEDDATETIME_ORDINAL:
-                return true;
-            case PERIOD_ORDINAL:
-                return true;
-            case DURATION_ORDINAL:
-                return true;
-            case JSON_ORDINAL:
-                return true;
-            case POINT_ORDINAL:
-                return true;
-            case LINESTRING_ORDINAL:
-                return true;
-            case POLYGON_ORDINAL:
-                return true;
-            case GEOGRAPHY_POINT_ORDINAL:
-                return true;
-            case GEOGRAPHY_POLYGON_ORDINAL:
-                return true;
-            case boolean_ARRAY_ORDINAL:
-                return true;
-            case BOOLEAN_ARRAY_ORDINAL:
-                return true;
-            case byte_ARRAY_ORDINAL:
-                return true;
-            case BYTE_ARRAY_ORDINAL:
-                return true;
-            case short_ARRAY_ORDINAL:
-                return true;
-            case SHORT_ARRAY_ORDINAL:
-                return true;
-            case int_ARRAY_ORDINAL:
-                return true;
-            case INTEGER_ARRAY_ORDINAL:
-                return true;
-            case long_ARRAY_ORDINAL:
-                return true;
-            case LONG_ARRAY_ORDINAL:
-                return true;
-            case float_ARRAY_ORDINAL:
-                return true;
-            case FLOAT_ARRAY_ORDINAL:
-                return true;
-            case double_ARRAY_ORDINAL:
-                return true;
-            case DOUBLE_ARRAY_ORDINAL:
-                return true;
-            case STRING_ARRAY_ORDINAL:
-                return true;
-            case LOCALDATETIME_ARRAY_ORDINAL:
-                return true;
-            case LOCALDATE_ARRAY_ORDINAL:
-                return true;
-            case LOCALTIME_ARRAY_ORDINAL:
-                return true;
-            case ZONEDDATETIME_ARRAY_ORDINAL:
-                return true;
-            case DURATION_ARRAY_ORDINAL:
-                return true;
-            case PERIOD_ARRAY_ORDINAL:
-                return true;
-            case JSON_ARRAY_ORDINAL:
-                return true;
-        }
-        return false;
+        return switch (propertyType.ordinal()) {
+            case BOOLEAN_ORDINAL, SHORT_ORDINAL, INTEGER_ORDINAL, LONG_ORDINAL, FLOAT_ORDINAL, JSON_ARRAY_ORDINAL,
+                    PERIOD_ARRAY_ORDINAL, DURATION_ARRAY_ORDINAL, ZONEDDATETIME_ARRAY_ORDINAL, LOCALTIME_ARRAY_ORDINAL,
+                    LOCALDATE_ARRAY_ORDINAL, LOCALDATETIME_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL,
+                    double_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, float_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL,
+                    long_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, int_ARRAY_ORDINAL, SHORT_ARRAY_ORDINAL,
+                    short_ARRAY_ORDINAL, BYTE_ARRAY_ORDINAL, byte_ARRAY_ORDINAL, BOOLEAN_ARRAY_ORDINAL,
+                    boolean_ARRAY_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL, GEOGRAPHY_POINT_ORDINAL, POLYGON_ORDINAL,
+                    LINESTRING_ORDINAL, POINT_ORDINAL, JSON_ORDINAL, DURATION_ORDINAL, PERIOD_ORDINAL,
+                    ZONEDDATETIME_ORDINAL, LOCALTIME_ORDINAL, LOCALDATETIME_ORDINAL, LOCALDATE_ORDINAL,
+                    LTREE_ORDINAL, VARCHAR_ORDINAL, STRING_ORDINAL, DOUBLE_ORDINAL -> true;
+            default -> false;
+        };
     }
 
     @Override
