@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>sqlg-h2-parent</artifactId>
+    <name>sqlg :: h2-postgresql</name>
     <packaging>pom</packaging>
 
     <modules>
