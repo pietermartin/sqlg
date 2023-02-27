@@ -33,24 +33,6 @@
     </build>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>org.apache.tinkerpop</groupId>-->
-<!--            <artifactId>gremlin-groovy</artifactId>-->
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>org.apache.commons</groupId>-->
-<!--                    <artifactId>commons-lang3</artifactId>-->
-<!--                </exclusion>-->
-<!--                <exclusion>-->
-<!--                    <groupId>org.slf4j</groupId>-->
-<!--                    <artifactId>slf4j-api</artifactId>-->
-<!--                </exclusion>-->
-<!--                <exclusion>-->
-<!--                    <groupId>org.slf4j</groupId>-->
-<!--                    <artifactId>jcl-over-slf4j</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.umlg</groupId>
             <artifactId>sqlg-h2-dialect</artifactId>
