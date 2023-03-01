@@ -21,6 +21,10 @@
   }});
   ```
   i.e. wrapping the `PropertyType` with a `PropertyDefinition`
+* Added support for specifying `Multiplicy` on properties and edges.
+* Added `EdgeDefinition`. This supports enforcing one to many and unique many to many constraints.
+* Upgraded to `TinkerPop` `3.6.2`
+* Added support for `postgresql` `ltree` data type.
 
 ##2.1.6
 
