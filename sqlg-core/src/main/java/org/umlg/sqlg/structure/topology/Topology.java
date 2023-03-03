@@ -1940,8 +1940,8 @@ public class Topology {
     }
 
     public Map<String, Set<ForeignKey>> getEdgeForeignKeys() {
-        Map<String, Set<ForeignKey>> copy = new HashMap<>(this.edgeForeignKeyCache);
         if (isSchemaChanged()) {
+            Map<String, Set<ForeignKey>> copy = new HashMap<>(this.edgeForeignKeyCache);
             Map<String, Set<ForeignKey>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
             for (Map.Entry<String, Set<ForeignKey>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
                 Set<ForeignKey> committedForeignKeys = copy.get(uncommittedEntry.getKey());
@@ -1963,7 +1963,7 @@ public class Topology {
             }
             return Collections.unmodifiableMap(copy);
         } else {
-            return Collections.unmodifiableMap(copy);
+            return Collections.unmodifiableMap(this.edgeForeignKeyCache);
         }
     }
 
