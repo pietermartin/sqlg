@@ -570,6 +570,34 @@ public class SqlgUtil {
         return result;
     }
 
+    public static Map<String, Object> validateAndTransformVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues) {
+        Objects.requireNonNull(keyValues, "keyValues may not be null");
+        Map<String, Object> resultAllValues = new LinkedHashMap<>();
+
+        if (keyValues.length % 2 != 0)
+            throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
+
+        for (int i = 0; i < keyValues.length; i = i + 2) {
+            if (!(keyValues[i] instanceof String) && !(keyValues[i] instanceof T)) {
+                throw Element.Exceptions.providedKeyValuesMustHaveALegalKeyOnEvenIndices();
+            }
+            if (keyValues[i].equals(T.id)) {
+                throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+            }
+            if (!keyValues[i].equals(T.label)) {
+                @SuppressWarnings("DataFlowIssue")
+                String key = (String) keyValues[i];
+                sqlDialect.validateColumnName(key);
+                Object value = keyValues[i + 1];
+                ElementHelper.validateProperty(key, value);
+                sqlDialect.validateProperty(key, value);
+                resultAllValues.put(key, value);
+            }
+        }
+        return resultAllValues;
+
+    }
+
     /**
      * Validates the key values and converts it into a Triple with three maps.
      * The left  map is a map of keys together with their PropertyType.
@@ -596,6 +624,7 @@ public class SqlgUtil {
                 throw Vertex.Exceptions.userSuppliedIdsNotSupported();
             }
             if (!keyValues[i].equals(T.label)) {
+                @SuppressWarnings("DataFlowIssue")
                 String key = (String) keyValues[i];
                 sqlDialect.validateColumnName(key);
                 Object value = keyValues[i + 1];
@@ -610,6 +639,41 @@ public class SqlgUtil {
             }
         }
         return Pair.of(keyPropertyTypeMap, resultAllValues);
+    }
+
+    public static Map<String, Object> validateAndTransformVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
+        Objects.requireNonNull(keyValues, "keyValues may not be null");
+        Map<String, Object> resultAllValues = new LinkedHashMap<>();
+
+        if (keyValues.length % 2 != 0) {
+            throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
+        }
+
+        int keyCount = 0;
+        for (int i = 0; i < keyValues.length; i = i + 2) {
+            if (!(keyValues[i] instanceof String) && !(keyValues[i] instanceof T)) {
+                throw Element.Exceptions.providedKeyValuesMustHaveALegalKeyOnEvenIndices();
+            }
+            if (keyValues[i].equals(T.id)) {
+                throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+            }
+            if (!keyValues[i].equals(T.label)) {
+                Preconditions.checkState(keyValues[i] instanceof String);
+                String key = (String) keyValues[i];
+                sqlDialect.validateColumnName(key);
+                Object value = keyValues[i + 1];
+                if (value != null) {
+                    ElementHelper.validateProperty(key, value);
+                    sqlDialect.validateProperty(key, value);
+                }
+                resultAllValues.put(key, value);
+
+                if (previousBatchModeKeys != null && !previousBatchModeKeys.isEmpty() && !key.equals(previousBatchModeKeys.get(keyCount++))) {
+                    throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
+                }
+            }
+        }
+        return resultAllValues;
     }
 
     public static Pair<Map<String, PropertyDefinition>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
@@ -717,6 +781,7 @@ public class SqlgUtil {
             //Drop all the edges
             List<Triple<String, String, String>> edgeTables = sqlDialect.getEdgeTables(metadata);
             for (Triple<String, String, String> edgeTable : edgeTables) {
+                @SuppressWarnings("unused")
                 String db = edgeTable.getLeft();
                 String schema = edgeTable.getMiddle();
                 String table = edgeTable.getRight();
@@ -742,6 +807,7 @@ public class SqlgUtil {
             //Drop all the vertices
             List<Triple<String, String, String>> vertexTables = sqlDialect.getVertexTables(metadata);
             for (Triple<String, String, String> vertexTable : vertexTables) {
+                @SuppressWarnings("unused")
                 String db = vertexTable.getLeft();
                 String schema = vertexTable.getMiddle();
                 String table = vertexTable.getRight();
@@ -858,7 +924,7 @@ public class SqlgUtil {
             if (value[i] == null) {
                 throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
-            Array.set(target, i, value[i].byteValue());
+            Array.set(target, i, value[i]);
         }
         return target;
     }

@@ -6,14 +6,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.ThreadLocalMap;
@@ -1006,56 +1002,22 @@ public class Schema implements TopologyInf {
         return Collections.emptyMap();
     }
 
-    Map<String, PropertyDefinition> getTableFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", VERTEX_PREFIX, EDGE_PREFIX);
-        if (schemaTable.isVertexTable()) {
-            Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
-            if (vertexLabelOptional.isPresent()) {
-                return vertexLabelOptional.get().getPropertyDefinitionMap();
-            }
-        } else {
-            Optional<EdgeLabel> edgeLabelOptional = getEdgeLabel(schemaTable.withOutPrefix().getTable());
-            if (edgeLabelOptional.isPresent()) {
-                return edgeLabelOptional.get().getPropertyDefinitionMap();
-            }
-        }
-        return Collections.emptyMap();
-    }
-
     Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>(this.vertexLabels.size());
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
             String prefixedVertexName = VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
             SchemaTable schemaTable = SchemaTable.of(this.getName(), prefixedVertexName);
             result.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
         }
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedResult = new HashMap<>();
         if (this.topology.isSchemaChanged()) {
-            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-                Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
-                String prefixedVertexName = VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-                SchemaTable schemaTable = SchemaTable.of(this.getName(), prefixedVertexName);
-                uncommittedResult.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
-            }
-        }
-        //need to fromNotifyJson in the uncommitted table labels in.
-        for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedResult.entrySet()) {
-            SchemaTable schemaTable = schemaTablePairEntry.getKey();
-            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = schemaTablePairEntry.getValue();
-            Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = result.get(schemaTable);
-            if (foreignKeys != null) {
-                foreignKeys.getLeft().addAll(uncommittedForeignKeys.getLeft());
-                foreignKeys.getRight().addAll(uncommittedForeignKeys.getRight());
-            } else {
-                result.put(schemaTable, uncommittedForeignKeys);
-            }
+            Preconditions.checkState(this.uncommittedVertexLabels.isEmpty());
         }
         return result;
     }
 
     Map<String, Set<ForeignKey>> getAllEdgeForeignKeys() {
-        Map<String, Set<ForeignKey>> result = new ConcurrentHashMap<>();
+        Map<String, Set<ForeignKey>> result = new HashMap<>();
         for (Map.Entry<String, EdgeLabel> stringEdgeLabelEntry : getEdgeLabels().entrySet()) {
             String edgeSchemaAndLabel = stringEdgeLabelEntry.getKey();
             EdgeLabel edgeLabel = stringEdgeLabelEntry.getValue();
@@ -1361,90 +1323,6 @@ public class Schema implements TopologyInf {
             inVertexLabel.addToInEdgeRoles(new EdgeRole(inVertexLabel, outEdgeLabel, Direction.IN, true, multiplicity));
         }
 
-    }
-
-    @SuppressWarnings("resource")
-    void loadInEdgeLabels(GraphTraversalSource traversalSource, Vertex schemaVertex) {
-        //Load the in edges via the out edges. This is necessary as the out vertex is needed to know the schema the edge is in.
-        //As all edges are already loaded via the out edges this will only set the in edge association.
-        List<Path> inEdges = traversalSource
-                .V(schemaVertex)
-                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
-                //a vertex does not necessarily have properties so use optional.
-                .optional(
-                        __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
-                                .inE(SQLG_SCHEMA_IN_EDGES_EDGE).as("in_edge").otherV().as("inVertex")
-                                .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("inSchema")
-                )
-                .path()
-                .toList();
-        for (Path inEdgePath : inEdges) {
-            List<Set<String>> labelsList = inEdgePath.labels();
-            Vertex vertexVertex = null;
-            Edge inEdge = null;
-            Vertex outEdgeVertex = null;
-            Vertex inVertex = null;
-            Vertex inSchemaVertex = null;
-            for (Set<String> labels : labelsList) {
-                for (String label : labels) {
-                    switch (label) {
-                        case "vertex":
-                            vertexVertex = inEdgePath.get("vertex");
-                            break;
-                        case "in_edge":
-                            inEdge = inEdgePath.get("in_edge");
-                            break;
-                        case "outEdgeVertex":
-                            outEdgeVertex = inEdgePath.get("outEdgeVertex");
-                            break;
-                        case "inVertex":
-                            inVertex = inEdgePath.get("inVertex");
-                            break;
-                        case "inSchema":
-                            inSchemaVertex = inEdgePath.get("inSchema");
-                            break;
-                        case BaseStrategy.SQLG_PATH_FAKE_LABEL:
-                        case MARKER:
-                            break;
-                        default:
-                            throw new IllegalStateException(String.format("BUG: Only \"vertex\", \"outEdgeVertex\" and \"inVertex\" are expected as a label. Found %s", label));
-                    }
-                }
-            }
-            Preconditions.checkState(vertexVertex != null, "BUG: Topology vertex not found.");
-            String schemaName = schemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
-            String tableName = vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
-            VertexLabel vertexLabel = this.vertexLabels.get(schemaName + "." + VERTEX_PREFIX + tableName);
-            Preconditions.checkState(vertexLabel != null, "vertexLabel must be present when loading inEdges. Not found for %s", schemaName + "." + VERTEX_PREFIX + tableName);
-            if (outEdgeVertex != null) {
-                String edgeLabelName = outEdgeVertex.value(SQLG_SCHEMA_EDGE_LABEL_NAME);
-
-                //inVertex and inSchema must be present.
-                Preconditions.checkState(inVertex != null, "BUG: In vertex not found edge for \"%s\"", edgeLabelName);
-                Preconditions.checkState(inSchemaVertex != null, "BUG: In schema vertex not found for edge \"%s\"", edgeLabelName);
-
-                Optional<EdgeLabel> outEdgeLabelOptional = this.topology.getEdgeLabel(getName(), edgeLabelName);
-                Preconditions.checkState(outEdgeLabelOptional.isPresent(), "BUG: EdgeLabel for \"%s\" should already be loaded", getName() + "." + edgeLabelName);
-                EdgeLabel outEdgeLabel = outEdgeLabelOptional.get();
-
-                String inVertexLabelName = inVertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
-                String inSchemaVertexLabelName = inSchemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
-                Optional<VertexLabel> vertexLabelOptional = this.topology.getVertexLabel(inSchemaVertexLabelName, inVertexLabelName);
-                Preconditions.checkState(vertexLabelOptional.isPresent(), "BUG: VertexLabel not found for schema %s and label %s", inSchemaVertexLabelName, inVertexLabelName);
-                VertexLabel inVertexLabel = vertexLabelOptional.get();
-
-                Property<Long> lowerMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY);
-                Property<Long> upperMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY);
-                Property<Boolean> uniqueMultiplicityProperty = inEdge.property(SQLG_SCHEMA_IN_EDGES_UNIQUE);
-                Multiplicity multiplicity;
-                if (lowerMultiplicityProperty.value() != null && upperMultiplicityProperty.value() != null && uniqueMultiplicityProperty.value() != null) {
-                    multiplicity = Multiplicity.of(lowerMultiplicityProperty.value(), upperMultiplicityProperty.value(), uniqueMultiplicityProperty.value());
-                } else {
-                    multiplicity = Multiplicity.of(0, -1);
-                }
-                inVertexLabel.addToInEdgeRoles(new EdgeRole(inVertexLabel, outEdgeLabel, Direction.IN, true, multiplicity));
-            }
-        }
     }
 
     public JsonNode toJson() {

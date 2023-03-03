@@ -170,7 +170,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     public Map<String, EdgeLabel> getInEdgeLabels() {
-        Map<String, EdgeLabel> result = new HashMap<>();
+        Map<String, EdgeLabel> result = new HashMap<>(this.inEdgeRoles.size());
         for (Map.Entry<String, EdgeRole> stringEdgeRoleEntry : getInEdgeRoles().entrySet()) {
             result.put(stringEdgeRoleEntry.getKey(), stringEdgeRoleEntry.getValue().getEdgeLabel());
         }
@@ -178,34 +178,20 @@ public class VertexLabel extends AbstractLabel {
     }
 
     public Map<String, EdgeRole> getInEdgeRoles() {
-        Map<String, EdgeRole> result = new HashMap<>(this.inEdgeRoles);
         if (this.schema.getTopology().isSchemaChanged()) {
+            Map<String, EdgeRole> result = new HashMap<>(this.inEdgeRoles);
             result.putAll(this.uncommittedInEdgeRoles);
             for (String e : this.uncommittedRemovedInEdgeRoles.keySet()) {
                 result.remove(e);
             }
+            return Collections.unmodifiableMap(result);
+        } else {
+            return Collections.unmodifiableMap(this.inEdgeRoles);
         }
-        return Collections.unmodifiableMap(result);
     }
 
-//    public Map<String, EdgeRole> getInEdgeRoles() {
-//        Map<String, EdgeRole> result = new HashMap<>();
-//        for (String k : this.inEdgeRoles.keySet()) {
-//            result.put(k, new EdgeRole(this, this.inEdgeRoles.get(k), Direction.IN, true));
-//        }
-//        if (this.schema.getTopology().isSchemaChanged()) {
-//            for (String k : this.uncommittedInEdgeRoles.keySet()) {
-//                result.put(k, new EdgeRole(this, this.uncommittedInEdgeRoles.get(k), Direction.IN, false));
-//            }
-//            for (String e : this.uncommittedRemovedInEdgeRoles.keySet()) {
-//                result.remove(e);
-//            }
-//        }
-//        return Collections.unmodifiableMap(result);
-//    }
-
     public Map<String, EdgeLabel> getOutEdgeLabels() {
-        Map<String, EdgeLabel> result = new HashMap<>();
+        Map<String, EdgeLabel> result = new HashMap<>(this.outEdgeRoles.size());
         for (Map.Entry<String, EdgeRole> stringEdgeRoleEntry : getOutEdgeRoles().entrySet()) {
             result.put(stringEdgeRoleEntry.getKey(), stringEdgeRoleEntry.getValue().getEdgeLabel());
         }
@@ -222,22 +208,6 @@ public class VertexLabel extends AbstractLabel {
         }
         return Collections.unmodifiableMap(result);
     }
-
-//    public Map<String, EdgeRole> getOutEdgeRoles() {
-//        Map<String, EdgeRole> result = new HashMap<>();
-//        for (String k : this.outEdgeRoles.keySet()) {
-//            result.put(k, new EdgeRole(this, this.outEdgeRoles.get(k), Direction.OUT, true));
-//        }
-//        if (this.schema.getTopology().isSchemaChanged()) {
-//            for (String k : this.uncommittedOutEdgeRoles.keySet()) {
-//                result.put(k, new EdgeRole(this, this.uncommittedOutEdgeRoles.get(k), Direction.OUT, false));
-//            }
-//            for (String e : this.uncommittedRemovedOutEdgeRoles.keySet()) {
-//                result.remove(e);
-//            }
-//        }
-//        return Collections.unmodifiableMap(result);
-//    }
 
     /**
      * Out EdgeLabels are always in the same schema as the 'this' VertexLabel' schema.
@@ -413,22 +383,6 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-//    /**
-//     * Called via {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
-//     * This is called when the {@link EdgeLabel} does not exist and needs to be created.
-//     *
-//     * @param edgeLabelName The edge's label.
-//     * @param inVertexLabel The edge's in vertex.
-//     * @param properties    The edge's properties.
-//     * @return The new EdgeLabel.
-//     */
-//    EdgeLabel addEdgeLabel(
-//            String edgeLabelName,
-//            VertexLabel inVertexLabel,
-//            Map<String, PropertyDefinition> properties) {
-//        return addEdgeLabel(edgeLabelName, inVertexLabel, properties, new ListOrderedSet<>());
-//    }
-
     /**
      * Called via {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
      * This is called when the {@link EdgeLabel} does not exist and needs to be created.
@@ -507,7 +461,6 @@ public class VertexLabel extends AbstractLabel {
                 columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }
         }
-
     }
 
     public void ensureDistributed(int shardCount, PropertyColumn distributionPropertyColumn) {

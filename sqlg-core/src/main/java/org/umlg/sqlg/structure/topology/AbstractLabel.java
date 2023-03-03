@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
+import org.apache.commons.collections4.list.UnmodifiableList;
 import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -497,37 +498,43 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public Map<String, Partition> getPartitions() {
-        Map<String, Partition> result = new HashMap<>(this.partitions);
         if (getTopology().isSchemaChanged()) {
+            Map<String, Partition> result = new HashMap<>(this.partitions);
             result.putAll(this.uncommittedPartitions);
             for (String s : this.uncommittedRemovedPartitions) {
                 result.remove(s);
             }
+            return Collections.unmodifiableMap(result);
+        } else {
+            return Collections.unmodifiableMap(this.partitions);
         }
-        return result;
     }
 
     public Map<String, PropertyColumn> getProperties() {
-        Map<String, PropertyColumn> result = new HashMap<>(this.properties);
         if (getTopology().isSchemaChanged()) {
+            Map<String, PropertyColumn> result = new HashMap<>(this.properties);
             result.putAll(this.uncommittedProperties);
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
             }
+            return Collections.unmodifiableMap(result);
+        } else {
+            return Collections.unmodifiableMap(this.properties);
         }
-        return result;
     }
 
     public ListOrderedSet<String> getIdentifiers() {
-        ListOrderedSet<String> result = ListOrderedSet.listOrderedSet(new ArrayList<>(this.identifiers.asList()));
         if (getTopology().isSchemaChanged()) {
+            ListOrderedSet<String> result = ListOrderedSet.listOrderedSet(new ArrayList<>(this.identifiers.asList()));
             result.addAll(this.uncommittedIdentifiers);
             for (Pair<String, String> oldNew : this.renamedIdentifiers) {
                 result.remove(oldNew.getLeft());
                 result.add(oldNew.getRight());
             }
+            return result;
+        } else {
+            return ListOrderedSet.listOrderedSet(UnmodifiableList.unmodifiableList(this.identifiers.asList()));
         }
-        return result;
     }
 
     public Optional<PropertyColumn> getProperty(String key) {
@@ -540,14 +547,16 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public Map<String, Index> getIndexes() {
-        Map<String, Index> result = new HashMap<>(this.indexes);
         if (getTopology().isSchemaChanged()) {
+            Map<String, Index> result = new HashMap<>(this.indexes);
             result.putAll(this.uncommittedIndexes);
             for (String i : this.uncommittedRemovedIndexes) {
                 result.remove(i);
             }
+            return Collections.unmodifiableMap(result);
+        } else {
+            return Collections.unmodifiableMap(this.indexes);
         }
-        return result;
     }
 
     public Optional<Index> getIndex(String key) {
@@ -560,19 +569,25 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     Map<String, PropertyDefinition> getPropertyDefinitionMap() {
-        Map<String, PropertyDefinition> result = new HashMap<>();
-        for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
-            result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyDefinition());
-        }
         if (getTopology().isSchemaChanged()) {
+            Map<String, PropertyDefinition> result = new HashMap<>();
+            for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
+                result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyDefinition());
+            }
             for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
                 result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyDefinition());
             }
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
             }
+            return Collections.unmodifiableMap(result);
+        } else {
+            Map<String, PropertyDefinition> result = new HashMap<>();
+            for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
+                result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyDefinition());
+            }
+            return Collections.unmodifiableMap(result);
         }
-        return result;
     }
 
     Map<String, PropertyColumn> getUncommittedPropertyTypeMap() {

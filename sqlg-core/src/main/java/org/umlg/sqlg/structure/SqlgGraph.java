@@ -14,6 +14,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.IdentityRemovalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoVersion;
@@ -27,10 +28,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.strategy.barrier.*;
-import org.umlg.sqlg.structure.topology.IndexType;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.File;
@@ -424,19 +422,25 @@ public class SqlgGraph implements Graph {
         if (this.tx().isInStreamingWithLockBatchMode()) {
             return internalStreamVertex(keyValues);
         } else {
-            Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
-            final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-            SchemaTable schemaTablePair = SchemaTable.from(this, label);
-            this.tx().readWrite();
-            this.getTopology().threadWriteLock();
-            VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-            if (!vertexLabel.hasIDPrimaryKey()) {
-                Preconditions.checkArgument(columns.keySet().containsAll(vertexLabel.getIdentifiers()), "identifiers must be present %s", vertexLabel.getIdentifiers());
-            } else if (vertexLabel.isForeign()) {
-                throw SqlgExceptions.invalidMode("Foreign VertexLabel must have user defined identifiers to support addition.");
+            SchemaTable schemaTable = SchemaTable.from(this, label);
+            if (!this.tx().isTopologyLocked()) {
+                Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+                final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
+                this.tx().readWrite();
+                this.getTopology().threadWriteLock();
+                VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTable.getSchema(), schemaTable.getTable(), columns);
+                if (!vertexLabel.hasIDPrimaryKey()) {
+                    Preconditions.checkArgument(columns.keySet().containsAll(vertexLabel.getIdentifiers()), "identifiers must be present %s", vertexLabel.getIdentifiers());
+                } else if (vertexLabel.isForeign()) {
+                    throw SqlgExceptions.invalidMode("Foreign VertexLabel must have user defined identifiers to support addition.");
+                }
+                return new SqlgVertex(this, vertexLabel, schemaTable.getSchema(), schemaTable.getTable(), keyValueMapPair.getRight());
+            } else {
+                Map<String, Object> keyValueMap = SqlgUtil.validateAndTransformVertexKeysValues(this.sqlDialect, keyValues);
+                VertexLabel vertexLabel = this.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("Failed to find VertexLabel '%s'", schemaTable.getSchema() + "." + schemaTable.getTable())));
+                return new SqlgVertex(this, vertexLabel, schemaTable.getSchema(), schemaTable.getTable(), keyValueMap);
             }
-            return new SqlgVertex(this, false, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair.getRight());
         }
     }
 
@@ -449,7 +453,7 @@ public class SqlgGraph implements Graph {
         SchemaTable schemaTablePair = SchemaTable.from(this, label, true);
         final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
         this.getTopology().ensureTemporaryVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-        new SqlgVertex(this, true, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair.getRight());
+        new SqlgVertex(this, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair.getRight());
     }
 
     public void streamVertex(String label) {
@@ -511,25 +515,31 @@ public class SqlgGraph implements Graph {
     private SqlgVertex internalStreamVertex(Object... keyValues) {
         Preconditions.checkState(this.sqlDialect.supportsStreamingBatchMode(), "Streaming batch mode is not supported.");
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        SchemaTable schemaTablePair = SchemaTable.from(this, label);
+        SchemaTable schemaTable = SchemaTable.from(this, label);
 
         SchemaTable streamingBatchModeVertexSchemaTable = this.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable();
-        if (streamingBatchModeVertexSchemaTable != null && !streamingBatchModeVertexSchemaTable.toString().equals(schemaTablePair.toString())) {
+        if (streamingBatchModeVertexSchemaTable != null && !streamingBatchModeVertexSchemaTable.toString().equals(schemaTable.toString())) {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
+        VertexLabel streamingBatchModeVertexLabel = (VertexLabel) this.tx().getBatchManager().getStreamingBatchModeAbstractLabel();
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
-        Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
-        final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
         this.tx().readWrite();
-        //The VertexLabel must exist, streaming mode no longer supports lazily creating the table
-//        String schemaName = schemaTablePair.getSchema();
-//        Objects.requireNonNull(schemaName, "Given tables must not be null");
-//        Objects.requireNonNull(label, "Given table must not be null");
-//        Preconditions.checkArgument(!label.startsWith(Topology.VERTEX_PREFIX), "label may not be prefixed with %s", Topology.VERTEX_PREFIX);
-//        Preconditions.checkState(this.getTopology().getSchema(schemaName).isPresent());
-//        Preconditions.checkState(this.getTopology().getSchema(schemaName).get().getVertexLabel(label).isPresent());
-        this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-        return new SqlgVertex(this, false, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair.getRight());
+
+        if (!getTopology().isLocked()) {
+            Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
+            final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
+            if (streamingBatchModeVertexLabel == null) {
+                streamingBatchModeVertexLabel = this.getTopology().ensureVertexLabelExist(schemaTable.getSchema(), schemaTable.getTable(), columns);
+            }
+            return new SqlgVertex(this, streamingBatchModeVertexLabel, schemaTable, keyValueMapPair.getRight());
+        } else {
+            Map<String, Object> keyValueMap = SqlgUtil.validateAndTransformVertexKeysValues(this.sqlDialect, keyValues, keys);
+            if (streamingBatchModeVertexLabel == null) {
+                streamingBatchModeVertexLabel = getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(
+                        () -> new IllegalStateException(String.format("VertexLabel %s not found.", schemaTable)));
+            }
+            return new SqlgVertex(this, streamingBatchModeVertexLabel, schemaTable, keyValueMap);
+        }
     }
 
 

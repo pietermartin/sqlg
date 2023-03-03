@@ -64,7 +64,7 @@ public class Topology {
     //This cache is needed as too much time is taken building it on the fly.
     //The cache is invalidated on every topology change
     private final Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new ConcurrentHashMap<>();
-    private final Map<String, Set<ForeignKey>> edgeForeignKeyCache;
+    private final Map<String, Set<ForeignKey>> edgeForeignKeyCache = new ConcurrentHashMap<>();
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     private final Map<String, Schema> schemas = new ConcurrentHashMap<>();
 
@@ -521,7 +521,7 @@ public class Topology {
             );
         });
 
-        this.edgeForeignKeyCache = sqlgSchema.getAllEdgeForeignKeys();
+        this.edgeForeignKeyCache.putAll(sqlgSchema.getAllEdgeForeignKeys());
 
         if (this.distributed) {
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);

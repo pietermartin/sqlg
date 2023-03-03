@@ -73,7 +73,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 boolean lazy = this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY, true);
                 TransactionCache transactionCache;
                 if (supportsBatchMode()) {
-                    transactionCache = TransactionCache.of(connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect) this.sqlgGraph.getSqlDialect())), lazy);
+                    transactionCache = TransactionCache.of(
+                            connection,
+                            new BatchManager(this.sqlgGraph, ((SqlBulkDialect) this.sqlgGraph.getSqlDialect())),
+                            lazy
+                    );
                 } else {
                     transactionCache = TransactionCache.of(connection, lazy);
                 }
@@ -524,7 +528,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                     while (rs.next()) {
                         List<Comparable> identifiers = new ArrayList<>();
                         for (String identifier : vertexLabel.getIdentifiers()) {
-                            Comparable id = (Comparable)rs.getObject(identifier);
+                            Comparable id = (Comparable) rs.getObject(identifier);
                             identifiers.add(id);
                         }
                         long count = rs.getLong(vertexLabel.getIdentifiers().size() + 1);

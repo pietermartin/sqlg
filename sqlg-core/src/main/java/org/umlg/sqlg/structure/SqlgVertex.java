@@ -23,26 +23,60 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class SqlgVertex extends SqlgElement implements Vertex {
 
-    private static final Logger logger = LoggerFactory.getLogger(SqlgVertex.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgVertex.class);
 
     /**
-     * @param sqlgGraph       The graph.
-     * @param temporary       Indicates if it is a temporary vertex.
-     * @param streaming       Indicates if the vertex is being streamed in. This only works if the transaction is in streaming mode.
-     * @param schema          The database schema.
-     * @param table           The table name.
-     * @param keyValueMap     The properties.
+     * @param sqlgGraph   The graph.
+     * @param schema      The database schema.
+     * @param table       The table name.
+     * @param keyValueMap The properties.
      */
     public SqlgVertex(
             SqlgGraph sqlgGraph,
-            boolean temporary,
-            boolean streaming,
             String schema,
             String table,
             Map<String, Object> keyValueMap) {
 
         super(sqlgGraph, schema, table);
-        insertVertex(temporary, streaming, keyValueMap);
+        insertTemporaryVertex(keyValueMap);
+    }
+
+    /**
+     * @param sqlgGraph   The graph
+     * @param vertexLabel The vertex's VertexLabel
+     * @param schema      The vertex's schema
+     * @param table       The vertex's table
+     * @param keyValueMap The vertex's properties
+     */
+    public SqlgVertex(
+            SqlgGraph sqlgGraph,
+            VertexLabel vertexLabel,
+            String schema,
+            String table,
+            Map<String, Object> keyValueMap) {
+
+        super(sqlgGraph, schema, table);
+        insertVertex(vertexLabel, keyValueMap);
+    }
+
+    /**
+     * Used for streamingVertex
+     *
+     * @param sqlgGraph   The graph.
+     * @param schemaTable The SchemaTable being streamed into.
+     */
+    public SqlgVertex(
+            SqlgGraph sqlgGraph,
+            VertexLabel vertexLabel,
+            SchemaTable schemaTable,
+            Map<String, Object> keyValueMap) {
+
+        super(sqlgGraph, schemaTable.getSchema(), schemaTable.getTable());
+        Preconditions.checkState(
+                this.sqlgGraph.getSqlDialect().supportsBatchMode() &&
+                        (this.sqlgGraph.tx().isInStreamingBatchMode() || this.sqlgGraph.tx().isInStreamingWithLockBatchMode())
+        );
+        internalStreamBatchAddVertex(vertexLabel, schemaTable, keyValueMap);
     }
 
     SqlgVertex(SqlgGraph sqlgGraph, String table, Map<String, Object> keyValueMap) {
@@ -216,7 +250,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
-    protected Property emptyProperty() {
+    protected Property<?> emptyProperty() {
         return VertexProperty.empty();
     }
 
@@ -229,15 +263,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         GraphTraversalSource gts = Topology.SQLG_SCHEMA.equals(schema) ?
                 this.sqlgGraph.topology()
                 : this.sqlgGraph.traversal();
-        switch (direction) {
-            case OUT:
-                return gts.V(this).outE(labels);
-            case IN:
-                return gts.V(this).inE(labels);
-            case BOTH:
-                return gts.V(this).bothE(labels);
-        }
-        return Collections.emptyIterator();
+        return switch (direction) {
+            case OUT -> gts.V(this).outE(labels);
+            case IN -> gts.V(this).inE(labels);
+            case BOTH -> gts.V(this).bothE(labels);
+        };
     }
 
     @Override
@@ -299,8 +329,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -318,22 +348,39 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    private void insertVertex(boolean temporary, boolean streaming, Map<String, Object> keyValueMap) {
+    private void insertTemporaryVertex(Map<String, Object> keyValueMap) {
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddVertex(temporary, streaming, keyValueMap);
+            SchemaTable schemaTable = SchemaTable.of(getSchema(), getTable(), true);
+            internalBatchAddVertex(schemaTable, keyValueMap);
         } else {
-            internalAddVertex(temporary, keyValueMap);
+            internalAddVertex(true, null, keyValueMap);
         }
         //Cache the properties
         this.properties.putAll(keyValueMap);
     }
 
-    private void internalBatchAddVertex(boolean temporary, boolean streaming, Map<String, Object> keyValueMap) {
-        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
-        this.sqlgGraph.tx().getBatchManager().addVertex(temporary, streaming, this, keyValueMap);
+    private void insertVertex(VertexLabel vertexLabel, Map<String, Object> keyValueMap) {
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() && !this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
+            SchemaTable schemaTable = SchemaTable.of(getSchema(), getTable(), false);
+            internalBatchAddVertex(schemaTable, keyValueMap);
+        } else {
+            internalAddVertex(false, vertexLabel, keyValueMap);
+        }
+        //Cache the properties
+        this.properties.putAll(keyValueMap);
     }
 
-    private void internalAddVertex(boolean temporary, Map<String, Object> keyValueMap) {
+    private void internalStreamBatchAddVertex(VertexLabel vertexLabel, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+        this.sqlgGraph.tx().getBatchManager().streamVertex(this, vertexLabel, schemaTable, keyValueMap);
+    }
+
+    private void internalBatchAddVertex(SchemaTable schemaTable, Map<String, Object> keyValueMap) {
+        Preconditions.checkState(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+        this.sqlgGraph.tx().getBatchManager().addVertex(this, schemaTable, keyValueMap);
+    }
+
+    private void internalAddVertex(boolean temporary, VertexLabel vertexLabel, Map<String, Object> keyValueMap) {
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         //temporary tables have no schema
         if (!temporary || this.sqlgGraph.getSqlDialect().needsTemporaryTableSchema()) {
@@ -350,11 +397,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
         Map<String, Pair<PropertyDefinition, Object>> propertyDefinitionValueMap = new HashMap<>();
         Map<String, PropertyColumn> propertyColumns = null;
-        VertexLabel vertexLabel = null;
         if (!temporary) {
-            vertexLabel = this.sqlgGraph.getTopology()
-                    .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                    .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)));
+            Preconditions.checkNotNull(vertexLabel, "VertexLabel can not be null!");
             propertyColumns = vertexLabel.getProperties();
         }
         if (!keyValueMap.isEmpty()) {
@@ -385,8 +429,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
         }
         int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -396,7 +440,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (!temporary && !vertexLabel.getIdentifiers().isEmpty()) {
                 List<Comparable> identifiers = new ArrayList<>();
                 for (String identifier : vertexLabel.getIdentifiers()) {
-                    //noinspection unchecked
                     identifiers.add((Comparable) propertyDefinitionValueMap.get(identifier).getRight());
                 }
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), identifiers);
@@ -457,8 +500,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 sql.append(";");
             }
             Connection conn = this.sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 if (vertexLabel.hasIDPrimaryKey()) {
@@ -516,15 +559,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 this.sqlgGraph.topology()
                 : this.sqlgGraph.traversal();
         //for some very bezaar reason not adding toList().iterator() return one extra element.
-        switch (direction) {
-            case OUT:
-                return gts.V(this).out(edgeLabels).toList().iterator();
-            case IN:
-                return gts.V(this).in(edgeLabels).toList().iterator();
-            case BOTH:
-                return gts.V(this).both(edgeLabels).toList().iterator();
-        }
-        return Collections.emptyIterator();
+        return switch (direction) {
+            case OUT -> gts.V(this).out(edgeLabels).toList().iterator();
+            case IN -> gts.V(this).in(edgeLabels).toList().iterator();
+            case BOTH -> gts.V(this).both(edgeLabels).toList().iterator();
+        };
     }
 
     @Override
