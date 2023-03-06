@@ -1,6 +1,6 @@
 = Sqlg Documentation
 Pieter Martin
-Version 3.0.0, November 2022:
+Version 3.0.0, March 2023:
 :sectnums:
 :toc: left
 :toclevels: 4
