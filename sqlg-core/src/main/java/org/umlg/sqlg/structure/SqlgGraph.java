@@ -422,10 +422,10 @@ public class SqlgGraph implements Graph {
         if (this.tx().isInStreamingWithLockBatchMode()) {
             return internalStreamVertex(keyValues);
         } else {
-            final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-            SchemaTable schemaTable = SchemaTable.from(this, label);
             if (!this.tx().isTopologyLocked()) {
                 Pair<Map<String, PropertyDefinition>, Map<String, Object>> keyValueMapPair = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+                final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+                SchemaTable schemaTable = SchemaTable.from(this, label);
                 final Map<String, PropertyDefinition> columns = keyValueMapPair.getLeft();
                 this.tx().readWrite();
                 this.getTopology().threadWriteLock();
@@ -438,6 +438,8 @@ public class SqlgGraph implements Graph {
                 return new SqlgVertex(this, vertexLabel, schemaTable.getSchema(), schemaTable.getTable(), keyValueMapPair.getRight());
             } else {
                 Map<String, Object> keyValueMap = SqlgUtil.validateAndTransformVertexKeysValues(this.sqlDialect, keyValues);
+                final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+                SchemaTable schemaTable = SchemaTable.from(this, label);
                 VertexLabel vertexLabel = this.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("Failed to find VertexLabel '%s'", schemaTable.getSchema() + "." + schemaTable.getTable())));
                 return new SqlgVertex(this, vertexLabel, schemaTable.getSchema(), schemaTable.getTable(), keyValueMap);
             }
