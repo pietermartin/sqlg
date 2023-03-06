@@ -115,9 +115,9 @@ public class SchemaTableTree {
         this.stepDepth = stepDepth;
         this.hasContainers = new ArrayList<>();
         this.andOrHasContainers = new ArrayList<>();
+        this.replacedStepDepth = replacedStepDepth;
         this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
-        this.replacedStepDepth = replacedStepDepth;
         this.filteredAllTables = sqlgGraph.getTopology().getAllTables(Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         setIdentifiersAndDistributionColumn();
         this.hasIDPrimaryKey = this.identifiers.isEmpty();
