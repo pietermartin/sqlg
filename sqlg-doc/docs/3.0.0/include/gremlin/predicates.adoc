@@ -197,3 +197,123 @@ FROM
 WHERE
 	( "public"."V_Person"."born" >= ?) AND ( "public"."V_Person"."born" < ?)
 ----
+
+==== Ltree queries
+
+Postgresql's https://www.postgresql.org/docs/current/ltree.html[ltree] extension is supported.
+Sqlg includes two custom predicates to help query a `ltree` column.
+
+==== Lquery predicate
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testLTreeLquery() {
+    Assume.assumeTrue(isPostgres());
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Tree", new HashMap<>() {{
+                put("path", PropertyDefinition.of(PropertyType.LTREE)); <1>
+            }});
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.three"); <2>
+    this.sqlgGraph.tx().commit();
+    List<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", Lquery.descendantOfRightOrEquals("one.two")) <3>
+            .toList();
+    Assert.assertEquals(2, tree.size());
+
+    tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", Lquery.ancestorOfRightOrEquals("one.two")) <4>
+            .toList();
+    Assert.assertEquals(2, tree.size());
+
+    tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", Lquery.lquery("one.two.*")) <5>
+            .toList();
+    Assert.assertEquals(2, tree.size());
+}
+----
+<1> Create a table with a column of type `PropertyType.LTREE`
+<2> Insert some path hierarchical data.
+<3> Query the `path` using the `Lquery` predicate. In this case searching for descendants.
+<4> Query the `path` using the `Lquery` predicate. In this case searching for ancestors.
+<5> Query the `path` using the `Lquery` predicate. In this case using ltree's query syntax.
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" <@ ?)
+
+
+SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" @> ?)
+
+SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" ~ ?)
+
+----
+
+==== LqueryArray predicate
+
+[source,java,options="nowrap"]
+----
+@Test
+public void testLTreeLqueryArray() throws SQLException {
+    Assume.assumeTrue(isPostgres());
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Tree", new HashMap<>() {{
+                put("path", PropertyDefinition.of(PropertyType.LTREE));
+            }});
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.two");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three.one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three.two");
+    this.sqlgGraph.tx().commit();
+
+    List<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", LqueryArray.descendantOfRightOrEquals(new String[]{"one.two", "one.three"})) <1>
+            .toList();
+    Assert.assertEquals(6, tree.size());
+
+    tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", LqueryArray.ancestorOfRightOrEquals(new String[]{"one.two", "one.three"}))
+            .toList();
+    Assert.assertEquals(3, tree.size());
+}
+----
+
+<1> Use `LqueryArray` to do a ltree query passing in an array
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" <@ ?)
+----

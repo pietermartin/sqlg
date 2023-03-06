@@ -231,7 +231,13 @@
 |*Not supported*
 |*Not supported*
 |*Not supported*
+
+|String
+|Ltree
+|*Not supported*
+|*Not supported*
+|*Not supported*
 |===
 
 [NOTE]
-`java.time.LocalTime` drops the nano second precision.
+`java.time.LocalTime` drops the nanosecond precision.

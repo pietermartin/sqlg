@@ -2240,6 +2240,9 @@ p {
 <li><a href="#_text_predicate">10.3.3. Text predicate</a></li>
 <li><a href="#_full_text_search">10.3.4. Full text search</a></li>
 <li><a href="#_datetime_queries">10.3.5. DateTime queries</a></li>
+<li><a href="#_ltree_queries">10.3.6. Ltree queries</a></li>
+<li><a href="#_lquery_predicate">10.3.7. Lquery predicate</a></li>
+<li><a href="#_lqueryarray_predicate">10.3.8. LqueryArray predicate</a></li>
 </ul>
 </li>
 </ul>
@@ -3127,6 +3130,13 @@ gremlin&gt;</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ltree</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Not supported</strong></p></td>
+</tr>
 </tbody>
 </table>
 <div class="admonitionblock note">
@@ -3136,7 +3146,7 @@ gremlin&gt;</pre>
 <div class="title">Note</div>
 </td>
 <td class="content">
-<code>java.time.LocalTime</code> drops the nano second precision.
+<code>java.time.LocalTime</code> drops the nanosecond precision.
 </td>
 </tr>
 </table>
@@ -6606,6 +6616,148 @@ WHERE
 </div>
 </div>
 </div>
+<div class="sect3">
+<h4 id="_ltree_queries">10.3.6. Ltree queries</h4>
+<div class="paragraph">
+<p>Postgresql&#8217;s <a href="https://www.postgresql.org/docs/current/ltree.html">ltree</a> extension is supported.
+Sqlg includes two custom predicates to help query a <code>ltree</code> column.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_lquery_predicate">10.3.7. Lquery predicate</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testLTreeLquery() {
+    Assume.assumeTrue(isPostgres());
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Tree", new HashMap&lt;&gt;() {{
+                put("path", PropertyDefinition.of(PropertyType.LTREE)); <b class="conum">(1)</b>
+            }});
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.three"); <b class="conum">(2)</b>
+    this.sqlgGraph.tx().commit();
+    List&lt;Vertex&gt; tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", Lquery.descendantOfRightOrEquals("one.two")) <b class="conum">(3)</b>
+            .toList();
+    Assert.assertEquals(2, tree.size());
+
+    tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", Lquery.ancestorOfRightOrEquals("one.two")) <b class="conum">(4)</b>
+            .toList();
+    Assert.assertEquals(2, tree.size());
+
+    tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", Lquery.lquery("one.two.*")) <b class="conum">(5)</b>
+            .toList();
+    Assert.assertEquals(2, tree.size());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Create a table with a column of type <code>PropertyType.LTREE</code></p>
+</li>
+<li>
+<p>Insert some path hierarchical data.</p>
+</li>
+<li>
+<p>Query the <code>path</code> using the <code>Lquery</code> predicate. In this case searching for descendants.</p>
+</li>
+<li>
+<p>Query the <code>path</code> using the <code>Lquery</code> predicate. In this case searching for ancestors.</p>
+</li>
+<li>
+<p>Query the <code>path</code> using the <code>Lquery</code> predicate. In this case using ltree&#8217;s query syntax.</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" &lt;@ ?)
+
+
+SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" @&gt; ?)
+
+SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" ~ ?)</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_lqueryarray_predicate">10.3.8. LqueryArray predicate</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-java hljs" data-lang="java">@Test
+public void testLTreeLqueryArray() throws SQLException {
+    Assume.assumeTrue(isPostgres());
+    this.sqlgGraph.getTopology().getPublicSchema()
+            .ensureVertexLabelExist("Tree", new HashMap&lt;&gt;() {{
+                put("path", PropertyDefinition.of(PropertyType.LTREE));
+            }});
+    this.sqlgGraph.tx().commit();
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.two.two");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three.one");
+    this.sqlgGraph.addVertex(T.label, "Tree", "path", "one.three.two");
+    this.sqlgGraph.tx().commit();
+
+    List&lt;Vertex&gt; tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", LqueryArray.descendantOfRightOrEquals(new String[]{"one.two", "one.three"})) <b class="conum">(1)</b>
+            .toList();
+    Assert.assertEquals(6, tree.size());
+
+    tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+            .has("path", LqueryArray.ancestorOfRightOrEquals(new String[]{"one.two", "one.three"}))
+            .toList();
+    Assert.assertEquals(3, tree.size());
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Use <code>LqueryArray</code> to do a ltree query passing in an array</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="title">sql</div>
+<div class="content">
+<pre class="highlightjs highlight nowrap"><code class="language-sql hljs" data-lang="sql">SELECT
+	"public"."V_Tree"."ID" AS "alias1",
+	"public"."V_Tree"."path" AS "alias2"
+FROM
+	"public"."V_Tree"
+WHERE
+	( "public"."V_Tree"."path" &lt;@ ?)</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -8981,7 +9133,7 @@ globals &lt;&lt; [g : graph.traversal()]</pre>
 <div id="footer">
 <div id="footer-text">
 Version 3.0.0<br>
-Last updated 2022-11-06 15:16:40 +0200
+Last updated 2023-03-01 09:11:49 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
