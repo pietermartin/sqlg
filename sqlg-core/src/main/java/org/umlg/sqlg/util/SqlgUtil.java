@@ -1238,10 +1238,11 @@ public class SqlgUtil {
     public static void validateIncomingPropertyType(PropertyType incomingPropertyType, PropertyType propertyType) {
         switch (incomingPropertyType.ordinal()) {
             case STRING_ORDINAL, VARCHAR_ORDINAL, LTREE_ORDINAL -> Preconditions.checkState((
-                    propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL || propertyType.ordinal() == LTREE_ORDINAL
-            ), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
-            case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL ->
-                    Preconditions.checkState((propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL), "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", incomingPropertyType.name(), propertyType.name());
+                            propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL || propertyType.ordinal() == LTREE_ORDINAL),
+                    "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
+            case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((
+                            propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL),
+                    "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
             case NULL_ORDINAL -> Preconditions.checkState(true);
             default ->
                     Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
