@@ -272,7 +272,8 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 rootSchemaTableTree.resetColumnAliasMaps();
             }
         } else {
-            for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            if (!rootSchemaTableTrees.isEmpty()) {
+                SchemaTableTree rootSchemaTableTree = rootSchemaTableTrees.iterator().next();
                 try {
                     //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
                     if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
@@ -281,9 +282,6 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                     //Regular
                     List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
                     this.isForMultipleQueries = distinctQueries.size() > 1;
-                    if (this.isForMultipleQueries) {
-                        break;
-                    }
                 } finally {
                     rootSchemaTableTree.resetColumnAliasMaps();
                 }
