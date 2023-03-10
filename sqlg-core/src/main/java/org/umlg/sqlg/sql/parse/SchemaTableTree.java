@@ -230,7 +230,7 @@ public class SchemaTableTree {
         return result.toString();
     }
 
-    private static String constructOuterOrderByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
+    private static String constructOuterOrderByClause(List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         StringBuilder result = new StringBuilder();
         int countOuter = 1;
         // last table list with order as last step wins
@@ -238,7 +238,7 @@ public class SchemaTableTree {
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
             if (!subQueryLinkedList.isEmpty()) {
                 SchemaTableTree schemaTableTree = subQueryLinkedList.peekLast();
-                if (!schemaTableTree.getDbComparators().isEmpty()) {
+                if (!schemaTableTree.dbComparators.isEmpty()) {
                     winningOrder = countOuter;
                 }
             }
@@ -430,16 +430,15 @@ public class SchemaTableTree {
     /**
      * verify the "has" containers we have are valid with the schema table tree given
      *
-     * @param schemaTableTree
+     * @param schemaTableTree The schemaTableTree to invalidate
      * @return true if any has container does NOT match, false if everything is fine
      */
     @SuppressWarnings("unchecked")
     private static boolean invalidateByHas(SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_SQLG_SCHEMA) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX)) {
-                if (hasContainer.getKey().equals(label.getAccessor())) {
-                    Preconditions.checkState(false, "label hasContainers should have been removed by now.");
-                } else if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                Preconditions.checkState(!hasContainer.getKey().equals(label.getAccessor()), "label hasContainers should have been removed by now.");
+                if (hasContainer.getKey().equals(T.id.getAccessor())) {
                     if (hasContainer.getBiPredicate().equals(Compare.eq)) {
                         Object value = hasContainer.getValue();
                         SchemaTable hasContainerLabelSchemaTable = getIDContainerSchemaTable(schemaTableTree, value);
@@ -856,7 +855,7 @@ public class SchemaTableTree {
             lastOfPrevious = subQueryLinkedList.getLast();
         }
         singlePathSql.append(constructOuterGroupByClause(sqlgGraph, subQueryLinkedLists, isDrop()));
-        singlePathSql.append(constructOuterOrderByClause(sqlgGraph, subQueryLinkedLists));
+        singlePathSql.append(constructOuterOrderByClause(subQueryLinkedLists));
         String result = "SELECT\n\t" + constructOuterFromClause(subQueryLinkedLists);
         return result + singlePathSql;
     }
@@ -988,7 +987,7 @@ public class SchemaTableTree {
                 skipFirst = false;
                 continue;
             }
-            singlePathSql.append(constructJoinBetweenSchemaTables(this.sqlgGraph, previous, schemaTableTree));
+            singlePathSql.append(constructJoinBetweenSchemaTables(previous, schemaTableTree, false));
             previous = schemaTableTree;
         }
 
@@ -997,7 +996,7 @@ public class SchemaTableTree {
             if (previousLeftJoinSchemaTableTree == null || !previousLeftJoinSchemaTableTree.getSchemaTable().equals(schemaTableTree.getSchemaTable())) {
                 singlePathSql.append(constructJoinBetweenSchemaTables(previous, schemaTableTree, true));
             } else {
-                singlePathSql.append(appendToJoinBetweenSchemaTables(previous, schemaTableTree, true));
+                singlePathSql.append(appendToJoinBetweenSchemaTables(previous, schemaTableTree));
             }
             previousLeftJoinSchemaTableTree = schemaTableTree;
         }
@@ -1523,13 +1522,13 @@ public class SchemaTableTree {
     }
 
     private String toOrderByClause(MutableBoolean printedOrderBy, int counter) {
-        String result = "";
-        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.getDbComparators()) {
+        StringBuilder result = new StringBuilder();
+        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.dbComparators) {
             if (!printedOrderBy.booleanValue()) {
                 printedOrderBy.setTrue();
-                result += "\nORDER BY\n\t";
+                result.append("\nORDER BY\n\t");
             } else {
-                result += ",\n\t";
+                result.append(",\n\t");
             }
             if (comparator.getValue1() instanceof ElementValueComparator<?> elementValueComparator) {
                 String prefix = this.getSchemaTable().getSchema();
@@ -1544,11 +1543,11 @@ public class SchemaTableTree {
                 } else {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
-                result += " " + alias;
+                result.append(" ").append(alias);
                 if (elementValueComparator.getValueComparator() == Order.asc) {
-                    result += " ASC";
+                    result.append(" ASC");
                 } else if (elementValueComparator.getValueComparator() == Order.desc) {
-                    result += " DESC";
+                    result.append(" DESC");
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
                 }
@@ -1566,8 +1565,7 @@ public class SchemaTableTree {
                 prefix += this.getSchemaTable().getTable();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 String key;
-                if (t instanceof ValueTraversal) {
-                    ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal<?, ?>) t;
+                if (t instanceof ValueTraversal<?, ?> elementValueTraversal) {
                     key = elementValueTraversal.getPropertyKey();
                 } else {
                     TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
@@ -1591,11 +1589,11 @@ public class SchemaTableTree {
                 } else {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
-                result += " " + alias;
+                result.append(" ").append(alias);
                 if (comparator.getValue1() == Order.asc) {
-                    result += " ASC";
+                    result.append(" ASC");
                 } else if (comparator.getValue1() == Order.desc) {
-                    result += " DESC";
+                    result.append(" DESC");
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
                 }
@@ -1632,8 +1630,7 @@ public class SchemaTableTree {
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += selectSchemaTableTree.getSchemaTable().getTable();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
-                if (t instanceof ValueTraversal) {
-                    ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal<?, ?>) t;
+                if (t instanceof ValueTraversal<?, ?> elementValueTraversal) {
                     prefix += elementValueTraversal.getPropertyKey();
                 } else {
                     TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;
@@ -1655,17 +1652,17 @@ public class SchemaTableTree {
                 } else {
                     alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(rawAlias);
                 }
-                result += " " + alias;
+                result.append(" ").append(alias);
                 if (comparator.getValue1() == Order.asc) {
-                    result += " ASC";
+                    result.append(" ASC");
                 } else if (comparator.getValue1() == Order.desc) {
-                    result += " DESC";
+                    result.append(" DESC");
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.toString());
                 }
             }
         }
-        return result;
+        return result.toString();
     }
 
     private String toRangeClause(MutableBoolean mutableOrderBy) {
@@ -1673,7 +1670,7 @@ public class SchemaTableTree {
             if (this.sqlgRangeHolder.hasRange()) {
                 //This is MssqlServer, ugly but what to do???
                 String sql = "";
-                if (mutableOrderBy.isFalse() && sqlgGraph.getSqlDialect().isMssqlServer() && this.getDbComparators().isEmpty()) {
+                if (mutableOrderBy.isFalse() && sqlgGraph.getSqlDialect().isMssqlServer() && this.dbComparators.isEmpty()) {
                     sql = "\n\tORDER BY 1\n\t";
                 }
                 return sql + "\n" + sqlgGraph.getSqlDialect().getRangeClause(this.sqlgRangeHolder.getRange());
@@ -1702,7 +1699,7 @@ public class SchemaTableTree {
     /**
      * Checks if the stack has the same element more than once.
      *
-     * @param distinctQueryStack
+     * @param distinctQueryStack The stack to check for duplicates
      * @return true is there are duplicates else false
      */
 
@@ -1719,9 +1716,9 @@ public class SchemaTableTree {
     }
 
     /**
-     * Constructs the from clause with the required selected fields needed to make the join between the previous and the next SchemaTable
+     * Constructs the 'from' clause with the required selected fields needed to make the join between the previous and the next SchemaTable
      *
-     * @param columnList
+     * @param columnList  Contains the columns
      * @param distinctQueryStack      //     * @param firstSchemaTableTree    This is the first SchemaTable in the current sql stack. If it is an Edge table then its foreign key
      *                                //     *                                field to the previous table need to be in the select clause in order for the join statement to
      *                                //     *                                reference it.
@@ -2219,10 +2216,6 @@ public class SchemaTableTree {
         return queryCallStack;
     }
 
-    private String constructJoinBetweenSchemaTables(SqlgGraph sqlgGraph, SchemaTableTree fromSchemaTableTree, SchemaTableTree labelToTraversTree) {
-        return constructJoinBetweenSchemaTables(fromSchemaTableTree, labelToTraversTree, false);
-    }
-
     private String constructJoinBetweenSchemaTables(SchemaTableTree fromSchemaTableTree, SchemaTableTree labelToTraversTree, boolean leftJoin) {
         SchemaTable fromSchemaTable = fromSchemaTableTree.getSchemaTable();
         SchemaTable labelToTravers = labelToTraversTree.getSchemaTable();
@@ -2373,7 +2366,7 @@ public class SchemaTableTree {
         return joinSql.toString();
     }
 
-    private String appendToJoinBetweenSchemaTables(SchemaTableTree fromSchemaTableTree, SchemaTableTree labelToTraversTree, boolean leftJoin) {
+    private String appendToJoinBetweenSchemaTables(SchemaTableTree fromSchemaTableTree, SchemaTableTree labelToTraversTree) {
         SchemaTable fromSchemaTable = fromSchemaTableTree.getSchemaTable();
         SchemaTable labelToTravers = labelToTraversTree.getSchemaTable();
 
@@ -2547,6 +2540,7 @@ public class SchemaTableTree {
         return this.schemaTable.toString();
     }
 
+    @SuppressWarnings("unused")
     public String toTreeString() {
         StringBuilder result = new StringBuilder();
         internalToString(result);
@@ -2557,9 +2551,7 @@ public class SchemaTableTree {
         if (sb.length() > 0) {
             sb.append("\n");
         }
-        for (int i = 0; i < this.stepDepth; i++) {
-            sb.append("\t");
-        }
+        sb.append("\t".repeat(Math.max(0, this.stepDepth)));
         sb.append(this.schemaTable.toString()).append(" ")
                 .append(this.stepDepth).append(" ")
                 .append(this.hasContainers.toString()).append(" ")
@@ -2600,10 +2592,6 @@ public class SchemaTableTree {
         return this.sqlgComparatorHolder;
     }
 
-    public List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
-        return this.dbComparators;
-    }
-
     public int getStepDepth() {
         return stepDepth;
     }
@@ -2634,21 +2622,20 @@ public class SchemaTableTree {
         if (o == null) {
             return false;
         }
-        if (!(o instanceof SchemaTableTree)) {
+        if (!(o instanceof SchemaTableTree other)) {
             return false;
         }
         if (o == this) {
             return true;
         }
-        SchemaTableTree other = (SchemaTableTree) o;
         if (this.direction != other.direction) {
             return false;
         } else if (this.parent != null && other.parent == null) {
             return false;
         } else if (this.parent == null && other.parent != null) {
             return false;
-        } else if (this.parent == null && other.parent == null) {
-            return this.schemaTable.equals(other.parent);
+        } else if (this.parent == null) {
+            return false;
         } else {
             return this.parent.equals(other.parent) && this.schemaTable.equals(other.schemaTable);
         }
@@ -2812,19 +2799,12 @@ public class SchemaTableTree {
         }
     }
 
-    public String idProperty() {
-        if (this.idProperty == null) {
-            this.idProperty = this.stepDepth + ALIAS_SEPARATOR + schemaTable.getSchema() + SchemaTableTree.ALIAS_SEPARATOR + schemaTable.getTable() + SchemaTableTree.ALIAS_SEPARATOR + Topology.ID;
-        }
-        return this.idProperty;
-    }
-
     public boolean isLocalStep() {
         return this.localStep;
     }
 
-    void setLocalStep(boolean localStep) {
-        this.localStep = localStep;
+    void localStepTrue() {
+        this.localStep = true;
     }
 
     public boolean isIdStep() {
@@ -2937,7 +2917,7 @@ public class SchemaTableTree {
             return;
         }
         // we use aliases for ordering, so we need the property in the select clause
-        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.getDbComparators()) {
+        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.dbComparators) {
 
             if (comparator.getValue1() instanceof ElementValueComparator) {
                 this.restrictedProperties.add(((ElementValueComparator<?>) comparator.getValue1()).getPropertyKey());
@@ -2946,8 +2926,7 @@ public class SchemaTableTree {
                     && comparator.getValue1() instanceof Order) {
                 Traversal.Admin<?, ?> t = comparator.getValue0();
                 String key;
-                if (t instanceof ValueTraversal) {
-                    ValueTraversal<?, ?> elementValueTraversal = (ValueTraversal<?, ?>) t;
+                if (t instanceof ValueTraversal<?, ?> elementValueTraversal) {
                     key = elementValueTraversal.getPropertyKey();
                 } else {
                     TokenTraversal<?, ?> tokenTraversal = (TokenTraversal<?, ?>) t;

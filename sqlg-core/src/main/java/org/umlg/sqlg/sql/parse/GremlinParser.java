@@ -78,7 +78,7 @@ public class GremlinParser {
         replacedStepTree.walkReplacedSteps(schemaTableTrees);
         rootSchemaTableTree.removeNodesInvalidatedByHas();
         rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedStepTree.getDepth());
-        rootSchemaTableTree.setLocalStep(true);
+        rootSchemaTableTree.localStepTrue();
         rootSchemaTableTree.setLocalBarrierStep(isSqlgLocalStepBarrierChild);
         return rootSchemaTableTree;
     }
