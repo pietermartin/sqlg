@@ -115,7 +115,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                     //if there are duplicates in the stack we can not execute drop steps.
                                     //execute the query as per normal and the proper DropStep will do the rest.
-                                    if (this.currentDistinctQueryStack.getLast().isDrop() && !this.currentRootSchemaTableTree.duplicatesInStack(currentDistinctQueryStack)) {
+                                    if (this.currentDistinctQueryStack.getLast().isDrop() && !this.currentRootSchemaTableTree.duplicatesInStack(this.currentDistinctQueryStack)) {
                                         executeDropQuery();
                                     } else {
                                         executeRegularQuery();
@@ -231,11 +231,10 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     /**
      * return the next lazy results
      *
-     * @return
+     * @return The elements
      */
     @SuppressWarnings("unchecked")
     private E nextLazy() {
-        //noinspection unchecked
         List<Emit<SqlgElement>> result = this.elements;
         this.elements = null;
         return (E) result;
