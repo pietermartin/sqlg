@@ -266,25 +266,22 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
-        if (rootSchemaTableTrees.size() > 1) {
-            this.isForMultipleQueries = true;
+
+        if (!rootSchemaTableTrees.isEmpty()) {
             for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
-                rootSchemaTableTree.resetColumnAliasMaps();
+                Preconditions.checkState(rootSchemaTableTree.getColumnNameAliasMap().isEmpty() && rootSchemaTableTree.getAliasColumnNameMap().isEmpty());
             }
-        } else {
-            if (!rootSchemaTableTrees.isEmpty()) {
+            //TODO this really sucks, constructSql should not query, but alas it does for P.within and temp table jol
+            if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+                throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+            }
+            if (rootSchemaTableTrees.size() == 1) {
                 SchemaTableTree rootSchemaTableTree = rootSchemaTableTrees.iterator().next();
-                try {
-                    //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
-                    if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.getSqlDialect().supportsBatchMode() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
-                        throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
-                    }
-                    //Regular
-                    List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
-                    this.isForMultipleQueries = distinctQueries.size() > 1;
-                } finally {
-                    rootSchemaTableTree.resetColumnAliasMaps();
-                }
+                //Regular
+                List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
+                this.isForMultipleQueries = distinctQueries.size() > 1;
+            } else {
+                this.isForMultipleQueries = true;
             }
         }
         return rootSchemaTableTrees;
