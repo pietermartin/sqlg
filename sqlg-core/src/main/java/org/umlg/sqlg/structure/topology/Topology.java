@@ -1121,26 +1121,26 @@ public class Topology {
         StopWatch stopWatch1 = StopWatch.createStarted();
         loadVertexOutEdgesAndProperties(traversalSource);
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadVertexOutEdgesAndProperties took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadVertexOutEdgesAndProperties took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         stopWatch1.reset();
         stopWatch1.start();
         loadVertexIndices(traversalSource);
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadVertexIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadVertexIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         stopWatch1.reset();
         stopWatch1.start();
         loadEdgeIndices(traversalSource);
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadEdgeIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadEdgeIndices took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         //Now load the in edges
         stopWatch1.reset();
         stopWatch1.start();
         loadInEdgeLabels(traversalSource);
         stopWatch1.stop();
-        LOGGER.info("cacheTopology.loadInEdgeLabels took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
+        LOGGER.debug("cacheTopology.loadInEdgeLabels took: {} {}", sqlgGraph.getJdbcUrl(), stopWatch1);
 
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
