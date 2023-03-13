@@ -208,6 +208,7 @@
         <module>sqlg-ui</module>
         <module>sqlg-gremlin-server</module>
         <module>sqlg-jdbc-pool</module>
+        <module>sqlg-jmh</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -469,7 +470,7 @@
                         <version>3.4.1</version>
                         <configuration>
                             <failOnError>false</failOnError>
-                            <additionalparam>-Xdoclint:none</additionalparam>
+                            <additionalOptions>-Xdoclint:none</additionalOptions>
                         </configuration>
                         <executions>
                             <execution>
