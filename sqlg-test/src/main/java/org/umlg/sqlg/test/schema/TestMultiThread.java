@@ -32,7 +32,7 @@ import java.util.function.Consumer;
  */
 public class TestMultiThread extends BaseTest {
 
-    private final Logger logger = LoggerFactory.getLogger(TestMultiThread.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestMultiThread.class);
 
     /**
      * This test is a duplicate of TransactionTest.shouldSupportTransactionIsolationCommitCheck but with the schema created upfront else it deadlocks.
@@ -150,10 +150,10 @@ public class TestMultiThread extends BaseTest {
                             }
                         }
                         completedThreads.getAndAdd(1);
-                        logger.info("shouldExecuteWithCompetingThreads " + completedThreads.get());
+                        LOGGER.info("shouldExecuteWithCompetingThreads " + completedThreads.get());
 
                     } catch (Exception e) {
-                        logger.error("failure", e);
+                        LOGGER.error("failure", e);
                         Assert.fail(e.getMessage());
                     } finally {
                         countDownLatch.countDown();
@@ -195,7 +195,7 @@ public class TestMultiThread extends BaseTest {
                     sqlgGraph.tx().commit();
                     tables.add(finalJ);
                 } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                    LOGGER.error(e.getMessage(), e);
                     Assert.fail(e.getMessage());
                     sqlgGraph.tx().rollback();
                 }
@@ -203,12 +203,12 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         if (executorService.awaitTermination(6000, TimeUnit.SECONDS)) {
-            logger.info("normal termination");
+            LOGGER.info("normal termination");
         } else {
             Assert.fail("failed to terminate executor service normally");
         }
         for (Integer i : tables) {
-            logger.info(String.format("looking for 'Person%d'", i));
+            LOGGER.info(String.format("looking for 'Person%d'", i));
             Assert.assertTrue(String.format("Person%d not found", i), this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + i).isPresent());
             Assert.assertEquals(10, this.sqlgGraph.traversal().V().has(T.label, "Person" + i).has("name", String.valueOf(i)).count().next().intValue());
         }
@@ -321,7 +321,7 @@ public class TestMultiThread extends BaseTest {
                         sqlgGraph1.tx().commit();
                     }
                 } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                    LOGGER.error(e.getMessage(), e);
                     Assert.fail(e.getMessage());
                 }
             });
@@ -412,7 +412,7 @@ public class TestMultiThread extends BaseTest {
                     }
                     this.sqlgGraph.tx().commit();
                 } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+                    LOGGER.error(e.getMessage(), e);
                     Assert.fail(e.getMessage());
                 }
                 return current;
@@ -420,7 +420,7 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         for (Future<Integer> future : futureList) {
-            logger.info("Completed " + future.get());
+            LOGGER.info("Completed " + future.get());
         }
         boolean terminated = executorService.awaitTermination(1, TimeUnit.SECONDS);
         Preconditions.checkState(terminated, "executorService terminated via timeout");
@@ -475,7 +475,7 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         for (Future<Integer> integerFuture : futureList) {
-            logger.info("done " + integerFuture.get());
+            LOGGER.info("done " + integerFuture.get());
         }
         Assert.assertEquals(1000, this.sqlgGraph.getTopology().getPublicSchema().getVertexLabels().size());
     }
