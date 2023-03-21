@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentitySt
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.step.SqlgGraphStep;
@@ -30,6 +31,34 @@ import java.util.*;
 public class TestPropertyValues extends BaseTest {
 
     @Test
+    public void testRestrictedPropertiesAfterCache() {
+        Assume.assumeTrue(isPostgres());
+        this.sqlgGraph.addVertex(T.label, "A", "name", "john", "surname", "smith");
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, String> namesTraversal = this.sqlgGraph.traversal().V().hasLabel("A").<String>values("name");
+        String nameSql = getSQL(namesTraversal);
+        Assert.assertEquals("\nSELECT\n" +
+                "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
+                "\t\"public\".\"V_A\".\"name\" AS \"alias2\"\n" +
+                "FROM\n" +
+                "\t\"public\".\"V_A\"", nameSql);
+
+        List<String> names = namesTraversal.toList();
+        Assert.assertEquals(1, names.size());
+        Assert.assertEquals("john", names.get(0));
+        GraphTraversal<Vertex, String>  surnameTraversal = this.sqlgGraph.traversal().V().hasLabel("A").<String>values("surname");
+        String surnameSql = getSQL(surnameTraversal);
+        Assert.assertEquals("\nSELECT\n" +
+                "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
+                "\t\"public\".\"V_A\".\"surname\" AS \"alias2\"\n" +
+                "FROM\n" +
+                "\t\"public\".\"V_A\"", surnameSql);
+        List<String> surnames = surnameTraversal.toList();
+        Assert.assertEquals(1, surnames.size());
+        Assert.assertEquals("smith", surnames.get(0));
+    }
+
+    @Test
     public void testSelectFollowedByValues() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
@@ -46,7 +75,7 @@ public class TestPropertyValues extends BaseTest {
         c1.addEdge("cd", d1);
         c2.addEdge("cd", d2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal().V()
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>) this.sqlgGraph.traversal().V()
                 .hasLabel("C")
                 .has("yyyy", "y1")
                 .as("c")
@@ -68,7 +97,7 @@ public class TestPropertyValues extends BaseTest {
         List<String> names = traversal.toList();
         Assert.assertEquals(1, names.size());
         Assert.assertEquals("c1", names.get(0));
-        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0,  "xxxx");
+        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, "xxxx");
     }
 
     @Test
@@ -88,7 +117,7 @@ public class TestPropertyValues extends BaseTest {
         c1.addEdge("cd", d1);
         c2.addEdge("cd", d2);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal().V()
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>) this.sqlgGraph.traversal().V()
                 .hasLabel("C")
                 .has("yyyy", "y1")
                 .as("c")
@@ -106,7 +135,7 @@ public class TestPropertyValues extends BaseTest {
         List<String> names = traversal.toList();
         Assert.assertEquals(1, names.size());
         Assert.assertEquals("c1", names.get(0));
-        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0,  "xxxx");
+        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, "xxxx");
     }
 
     @Test
@@ -168,7 +197,7 @@ public class TestPropertyValues extends BaseTest {
         printTraversalForm(gt);
         Assert.assertTrue(gt.hasNext());
         Map<String, Object> m = gt.next();
-        Assert.assertEquals(new Integer(5), m.get("stars"));
+        Assert.assertEquals(Integer.valueOf(5), m.get("stars"));
         Assert.assertEquals("Joe", m.get("user"));
         Assert.assertEquals(id0, m.get("item"));
     }
@@ -288,7 +317,7 @@ public class TestPropertyValues extends BaseTest {
         loadModern();
         final Traversal<Vertex, Map<String, Object>> traversal = sqlgGraph.traversal().V().hasLabel("person").valueMap("name").as("b").select("b");
         checkColumnsNotPresent(traversal, "age");
-        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0,"name");
+        checkRestrictedProperties(SqlgGraphStep.class, traversal, 0, "name");
         Set<String> names = new HashSet<>();
         while (traversal.hasNext()) {
             Map<String, Object> m = traversal.next();
@@ -405,7 +434,7 @@ public class TestPropertyValues extends BaseTest {
         loadModern();
         final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal().V().<String>values("name").order().tail();
         printTraversalForm(traversal);
-        Assert.assertEquals(Arrays.asList("vadas"), traversal.toList());
+        Assert.assertEquals(List.of("vadas"), traversal.toList());
     }
 
     /**
