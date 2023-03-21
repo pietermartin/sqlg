@@ -50,8 +50,8 @@ public class PostgresFeatureTest {
 
 
     private final static Set<String> OPT_IN = Set.of(
-//            "g_V_mergeEXlabel_selfX_optionXonMatch_nullX",
-//            "g_V_mergeEXemptyX_optionXonCreate_nullX"
+//            "g_V_addVXanimalX_propertyXage_0X",
+//            "g_VX1X_addVXanimalX_propertyXage_selectXaX_byXageXX_propertyXname_puppyX"
 //            "g_V_playlist_paths"
 //            g_V_shortestpath
     );
@@ -78,7 +78,9 @@ public class PostgresFeatureTest {
             Map.entry("InjectX1dX_orXerror_errorX", "GremlinTypeErrorException"),
             Map.entry("InjectX1dX_notXerrorX", "GremlinTypeErrorException"),
             Map.entry("g_injectX10_20_null_20_10_10X_groupCountXxX_dedup_asXyX_projectXa_bX_by_byXselectXxX_selectXselectXyXXX", "Sqlg, requires a barrier step after the groupCount. //TODO a SqlgGroupCountStep one day"),
-            Map.entry("g_V_out_in_selectXall_a_a_aX_byXunfold_name_foldX", "//TODO, fix some bug in Sqlg")
+            Map.entry("g_V_out_in_selectXall_a_a_aX_byXunfold_name_foldX", "//TODO, fix some bug in Sqlg"),
+            Map.entry("g_withStrategiesXSeedStrategyX_V_coinX50X", "//requies order")
+
     );
 
     private static void readIntoGraph(final Graph graph, final GraphData graphData) {
