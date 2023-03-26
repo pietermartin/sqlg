@@ -12,6 +12,7 @@ import org.umlg.sqlg.strategy.barrier.SqlgVertexStepStrategy;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
+import java.io.Serial;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,24 +27,24 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
     /**
      *
      */
+    @Serial
     private static final long serialVersionUID = -2324356589627718575L;
 
     @SuppressWarnings("resource")
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if (traversal.getGraph().isEmpty() || !(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph)) {
+        if (traversal.getGraph().isEmpty() || !(traversal.getGraph().orElseThrow(IllegalStateException::new) instanceof SqlgGraph sqlgGraph)) {
             return;
         }
         if (!SqlgTraversalUtil.mayOptimize(traversal)) {
             return;
         }
-        SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().orElseThrow(IllegalStateException::new);
         //This is because in normal BatchMode the new vertices are cached with it edges.
         //The query will read from the cache if this is for a cached vertex
         if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
             sqlgGraph.tx().flush();
         }
-        @SuppressWarnings("unchecked") List<Step<?, ?>> steps = new ArrayList(traversal.asAdmin().getSteps());
+        List<Step<?, ?>> steps = new ArrayList(traversal.asAdmin().getSteps());
         ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
         Step<?, ?> previous = null;
         while (stepIterator.hasNext()) {
@@ -52,14 +53,12 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
             if (restrict != null) {
 
                 Object referTo = previous;
-                if (referTo instanceof SqlgGraphStep<?, ?>) {
-                    SqlgGraphStep<?, ?> sgs = (SqlgGraphStep<?, ?>) referTo;
+                if (referTo instanceof SqlgGraphStep<?, ?> sgs) {
                     if (sgs.getReplacedSteps().size() > 0) {
                         referTo = sgs.getReplacedSteps().get(sgs.getReplacedSteps().size() - 1);
                     }
                 }
-                if (referTo instanceof ReplacedStep<?, ?>) {
-                    ReplacedStep<?, ?> rs = (ReplacedStep<?, ?>) referTo;
+                if (referTo instanceof ReplacedStep<?, ?> rs) {
                     if (rs.getRestrictedProperties() == null) {
                         rs.setRestrictedProperties(new HashSet<>());
                     }
@@ -75,11 +74,9 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
 
     private Collection<String> getRestrictedProperties(Step<?, ?> step) {
         Collection<String> ret = null;
-        if (step instanceof PropertiesStep<?>) {
-            PropertiesStep<?> ps = (PropertiesStep<?>) step;
+        if (step instanceof PropertiesStep<?> ps) {
             ret = Arrays.asList(ps.getPropertyKeys());
-        } else if (step instanceof PropertyMapStep<?, ?>) {
-            PropertyMapStep<?, ?> pms = (PropertyMapStep<?, ?>) step;
+        } else if (step instanceof PropertyMapStep<?, ?> pms) {
             ret = Arrays.asList(pms.getPropertyKeys());
         }
         // if no property keys are provided, all properties should be returned

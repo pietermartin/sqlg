@@ -3,6 +3,8 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgVertex;
@@ -18,6 +20,111 @@ import java.util.Map;
  */
 public class TestTraversalPerformance extends BaseTest {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestTraversalPerformance.class);
+
+//    @Test
+//    public void testAddVNotCached() {
+//        List<Vertex> vertices = this.sqlgGraph.traversal().addV("animal").property("age", 0).toList();
+//        Assert.assertEquals(1, vertices.size());
+//    }
+//
+//
+//        Scenario: g_V_out_in_selectXall_a_a_aX_byXunfold_name_foldX
+//    Given the empty graph
+//    And the graph initializer of
+//      """
+//      g.addV("A").property("name", "a1").as("a1").
+//        addV("A").property("name", "a2").as("a2").
+//        addV("A").property("name", "a3").as("a3").
+//        addV("B").property("name", "b1").as("b1").
+//        addV("B").property("name", "b2").as("b2").
+//        addV("B").property("name", "b3").as("b3").
+//        addE("ab").from("a1").to("b1").
+//        addE("ab").from("a2").to("b2").
+//        addE("ab").from("a3").to("b3")
+//      """
+//    And the traversal of
+//      """
+//      g.V().as("a").out().as("a").in().as("a").
+//        select(Pop.all, "a", "a", "a").
+//          by(unfold().values('name').fold())
+//      """
+//    When iterated to list
+//    Then the result should be unordered
+//      | result |
+//            | m[{"a":["a1","b1","a1"]}] |
+//            | m[{"a":["a2","b2","a2"]}] |
+//            | m[{"a":["a3","b3","a3"]}] |
+//    @Test
+//    public void test() {
+//        this.sqlgGraph.traversal().addV("A").property("name", "a1").as("a1").iterate();
+//        this.sqlgGraph.traversal().addV("A").property("name", "a2").as("a2").iterate();
+//        this.sqlgGraph.traversal().addV("A").property("name", "a3").as("a3").iterate();
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.traversal().addV("A").property("name", "a1").as("a1").iterate();
+//        Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0L);
+//    }
+//
+    //    @Test
+//    public void testHasIdWithin() {
+//        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+//            put("col1", PropertyDefinition.of(PropertyType.INTEGER));
+//        }});
+//        this.sqlgGraph.tx().commit();
+//
+//        Vertex one = this.sqlgGraph.addVertex(T.label, "A", "col1", 1);
+//        Vertex two = this.sqlgGraph.addVertex(T.label, "A", "col1", 2);
+//        Vertex three = this.sqlgGraph.addVertex(T.label, "A", "col1", 3);
+//        Vertex four = this.sqlgGraph.addVertex(T.label, "A", "col1", 4);
+//        this.sqlgGraph.tx().commit();
+//
+//        List<Vertex> vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(one.id(), two.id(), three.id(), four.id())).toList();
+//        Assert.assertEquals(4, vertices.size());
+//        vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(four.id())).toList();
+//        Assert.assertEquals(1, vertices.size());
+//
+//    }
+//
+    //    @Test
+//    public void g_V_hasId() {
+//        loadModern();
+//        assertModernGraph(this.sqlgGraph, true, false);
+//        GraphTraversalSource g = this.sqlgGraph.traversal();
+//
+//        Object id = convertToVertexId("marko");
+//
+//        List<Vertex> traversala2 =  g.V().has(T.id, id).toList();
+//        Assert.assertEquals(1, traversala2.size());
+//        Assert.assertEquals(convertToVertex(this.sqlgGraph, "marko"), traversala2.get(0));
+//
+//        traversala2 =  g.V().hasId(id).toList();
+//        Assert.assertEquals(1, traversala2.size());
+//        Assert.assertEquals(convertToVertex(this.sqlgGraph, "marko"), traversala2.get(0));
+//    }
+//
+//    @Test
+//    public void test() {
+//        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+//            put("col1", PropertyDefinition.of(PropertyType.INTEGER));
+//        }});
+//        this.sqlgGraph.tx().commit();
+//
+//        Vertex one = this.sqlgGraph.addVertex(T.label, "A", "col1", 1);
+//        Vertex two= this.sqlgGraph.addVertex(T.label, "A", "col1", 2);
+//        Vertex three = this.sqlgGraph.addVertex(T.label, "A", "col1", 3);
+//        Vertex four = this.sqlgGraph.addVertex(T.label, "A", "col1", 4);
+//        this.sqlgGraph.tx().commit();
+//
+//        Vertex _one = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(1)).next();
+//        Assert.assertEquals(one, _one);
+//        Vertex _two = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(2)).next();
+//        Assert.assertEquals(two, _two);
+//        Vertex _three = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(3)).next();
+//        Assert.assertEquals(three, _three);
+//        Vertex _four = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(4)).next();
+//        Assert.assertEquals(four, _four);
+//    }
+//
     @Test
     public void testSpeedWithLargeSchemaFastQuery1() {
         StopWatch stopWatch = new StopWatch();
@@ -27,7 +134,8 @@ public class TestTraversalPerformance extends BaseTest {
             columns.put("property_" + i, PropertyDefinition.of(PropertyType.STRING));
         }
         //Create a large schema, it slows the maps  down
-        int NUMBER_OF_SCHEMA_ELEMENTS = 1_000;
+//        int NUMBER_OF_SCHEMA_ELEMENTS = 1_000;
+        int NUMBER_OF_SCHEMA_ELEMENTS = 1_0;
         for (int i = 0; i < NUMBER_OF_SCHEMA_ELEMENTS; i++) {
             VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person_" + i, columns);
             VertexLabel dog = this.sqlgGraph.getTopology().ensureVertexLabelExist("Dog_" + i, columns);
@@ -38,7 +146,7 @@ public class TestTraversalPerformance extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("done creating schema time taken " + stopWatch.toString());
+        LOGGER.info("done creating schema time taken: {}", stopWatch);
         stopWatch.reset();
         stopWatch.start();
 
@@ -53,15 +161,15 @@ public class TestTraversalPerformance extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("done inserting data time taken " + stopWatch.toString());
+        LOGGER.info("done inserting data time taken: {}", stopWatch);
 
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 10_000; i++) {
+        for (int i = 0; i < 300_000; i++) {
             Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person_0").out("pet_0").toList().size());
         }
         stopWatch.stop();
-        System.out.println("total query time " + stopWatch.toString());
+        LOGGER.info("total query time: {}", stopWatch);
 
     }
 

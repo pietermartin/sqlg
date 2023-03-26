@@ -25,6 +25,7 @@ import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -53,7 +54,6 @@ public class SchemaTableTree {
     private final Map<String, Map<String, PropertyDefinition>> filteredAllTables;
     private final int replacedStepDepth;
     private final boolean hasIDPrimaryKey;
-    private final List<ColumnList> columnListStack = new ArrayList<>();
     private SchemaTableTree parent;
     //The root node does not have a direction. For the other nodes it indicates the direction from its parent to it.
     private Direction direction;
@@ -80,7 +80,6 @@ public class SchemaTableTree {
     private int tmpTableAliasCounter = 1;
     //Cached for query load performance
     private Map<String, Pair<String, PropertyType>> columnNamePropertyName;
-    private String idProperty;
     private String labeledAliasId;
     private ListOrderedSet<String> identifiers;
     private String distributionColumn;
@@ -108,6 +107,8 @@ public class SchemaTableTree {
     //Indicates a IdStep, only the element id must be returned.
     private final boolean idOnly;
 
+    private boolean closed;
+    private int hashCode = -1;
 
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth) {
         this.sqlgGraph = sqlgGraph;
@@ -131,24 +132,24 @@ public class SchemaTableTree {
      * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
      * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
      */
-    SchemaTableTree(SqlgGraph sqlgGraph,
-                    SchemaTable schemaTable,
-                    int stepDepth,
-                    List<HasContainer> hasContainers,
-                    List<AndOrHasContainer> andOrHasContainers,
-                    SqlgComparatorHolder sqlgComparatorHolder,
-                    List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
-                    SqlgRangeHolder sqlgRangeHolder,
-                    STEP_TYPE stepType,
-                    boolean emit,
-                    boolean untilFirst,
-                    boolean optionalLeftJoin,
-                    boolean drop,
-                    int replacedStepDepth,
-                    Set<String> labels,
-                    Pair<String, List<String>> aggregateFunction,
-                    List<String> groupBy,
-                    boolean idOnly
+    public SchemaTableTree(SqlgGraph sqlgGraph,
+                           SchemaTable schemaTable,
+                           int stepDepth,
+                           List<HasContainer> hasContainers,
+                           List<AndOrHasContainer> andOrHasContainers,
+                           SqlgComparatorHolder sqlgComparatorHolder,
+                           List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
+                           SqlgRangeHolder sqlgRangeHolder,
+                           STEP_TYPE stepType,
+                           boolean emit,
+                           boolean untilFirst,
+                           boolean optionalLeftJoin,
+                           boolean drop,
+                           int replacedStepDepth,
+                           Set<String> labels,
+                           Pair<String, List<String>> aggregateFunction,
+                           List<String> groupBy,
+                           boolean idOnly
     ) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
@@ -675,10 +676,18 @@ public class SchemaTableTree {
     }
 
     void initializeAliasColumnNameMaps() {
-        this.aliasMapHolder = new AliasMapHolder();
+        this.getRoot().aliasMapHolder = new AliasMapHolder();
     }
 
-    private Map<String, String> getColumnNameAliasMap() {
+    public AliasMapHolder getAliasMapHolder() {
+        return getRoot().aliasMapHolder;
+    }
+
+    public void setAliasMapHolder(AliasMapHolder aliasMapHolder) {
+        this.getRoot().aliasMapHolder = aliasMapHolder;
+    }
+
+    public Map<String, String> getColumnNameAliasMap() {
         return this.getRoot().aliasMapHolder.getColumnNameAliasMap();
     }
 
@@ -732,9 +741,9 @@ public class SchemaTableTree {
     }
 
     public void resetColumnAliasMaps() {
-        this.aliasMapHolder.clear();
+        this.getRoot().aliasMapHolder.clear();
         this.rootAliasCounter = 1;
-        this.columnListStack.clear();
+//        this.columnListStack.clear();
     }
 
     public SchemaTable getSchemaTable() {
@@ -802,23 +811,18 @@ public class SchemaTableTree {
     public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
         Preconditions.checkState(this.parent == null, "constructDistinctQueries may only be called on the root object");
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
-        //noinspection Convert2streamapi
         for (SchemaTableTree leafNode : this.leafNodes) {
             if (leafNode.getStepDepth() == this.replacedStepDepth) {
                 result.add(leafNode.constructQueryStackFromLeaf());
             }
         }
-        for (LinkedList<SchemaTableTree> schemaTableTrees : result) {
-            if (schemaTableTrees.get(0).getParent() != null) {
-                throw new IllegalStateException("Expected root SchemaTableTree for the first SchemaTableTree in the LinkedList");
-            }
-        }
+        Preconditions.checkState(result.stream().noneMatch(schemaTableTrees -> schemaTableTrees.get(0).getParent() != null), "Expected root SchemaTableTree for the first SchemaTableTree in the LinkedList");
         return result;
     }
 
     /**
      * Construct a sql statement for one original path to a leaf node.
-     * As the path contains the same label more than once its been split into a List of Stacks.
+     * As the path contains the same label more than once it's been split into a List of Stacks.
      */
     private String constructDuplicatePathSql(List<LinkedList<SchemaTableTree>> subQueryLinkedLists, Set<SchemaTableTree> leftJoinOn) {
         StringBuilder singlePathSql = new StringBuilder("\nFROM (");
@@ -866,14 +870,15 @@ public class SchemaTableTree {
         boolean first = true;
         int i = 1;
         int columnStartIndex = 1;
-        boolean stackContainsAggregate = this.columnListStack.get(this.columnListStack.size() - 1).isContainsAggregate();
+        Preconditions.checkState(getRoot() == this);
+        boolean stackContainsAggregate = this.getAliasMapHolder().getColumnListStack().get(this.getAliasMapHolder().getColumnListStack().size() - 1).isContainsAggregate();
         if (stackContainsAggregate) {
-            for (ColumnList columnList : this.columnListStack) {
+            for (ColumnList columnList : this.getAliasMapHolder().getColumnListStack()) {
                 columnList.removeColumns(subQueryLinkedLists.get(subQueryLinkedLists.size() - 1).getLast());
             }
         }
 
-        for (ColumnList columnList : this.columnListStack) {
+        for (ColumnList columnList : this.getAliasMapHolder().getColumnListStack()) {
 
 
             if (first && subQueryLinkedLists.get(0).getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
@@ -886,7 +891,7 @@ public class SchemaTableTree {
             first = false;
             String from = columnList.toOuterFromString("a" + countOuter++, stackContainsAggregate);
             result.append(from);
-            if (i++ < this.columnListStack.size() && !from.isEmpty()) {
+            if (i++ < this.getAliasMapHolder().getColumnListStack().size() && !from.isEmpty()) {
                 result.append(", ");
             }
             columnStartIndex = columnList.reindexColumnsExcludeForeignKey(columnStartIndex, stackContainsAggregate);
@@ -923,8 +928,11 @@ public class SchemaTableTree {
             }
         }
         //columnList holds the columns per sub query.
-        ColumnList currentColumnList = new ColumnList(sqlgGraph, dropStep, this.getIdentifiers(), this.getFilteredAllTables());
-        this.columnListStack.add(currentColumnList);
+        ColumnList currentColumnList = new ColumnList(this.sqlgGraph, dropStep, this.getIdentifiers(), this.getFilteredAllTables());
+
+        Preconditions.checkState(getRoot() == this);
+        this.getAliasMapHolder().getColumnListStack().add(currentColumnList);
+
         int startIndexColumns = 1;
 
         StringBuilder singlePathSql = new StringBuilder("\nSELECT\n\t");
@@ -1247,7 +1255,7 @@ public class SchemaTableTree {
         return singlePathSql.toString();
     }
 
-    private boolean hasBulkWithinOrOut() {
+    public boolean hasBulkWithinOrOut() {
         return this.hasContainers.stream().anyMatch(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h));
     }
 
@@ -1718,7 +1726,7 @@ public class SchemaTableTree {
     /**
      * Constructs the 'from' clause with the required selected fields needed to make the join between the previous and the next SchemaTable
      *
-     * @param columnList  Contains the columns
+     * @param columnList              Contains the columns
      * @param distinctQueryStack      //     * @param firstSchemaTableTree    This is the first SchemaTable in the current sql stack. If it is an Edge table then its foreign key
      *                                //     *                                field to the previous table need to be in the select clause in order for the join statement to
      *                                //     *                                reference it.
@@ -2600,21 +2608,95 @@ public class SchemaTableTree {
         return replacedStepDepth;
     }
 
+    @SuppressWarnings("unused")
+    public int testHashCode() {
+        return //Objects.hashCode(this.parent) ^
+                Objects.hashCode(this.schemaTable) ^
+                        Objects.hashCode(this.direction) ^
+                        Objects.hashCode(this.stepDepth) ^
+                        Objects.hashCode(this.hasContainers) ^
+                        Objects.hashCode(this.andOrHasContainers) ^
+                        Objects.hashCode(this.sqlgComparatorHolder);
+//                Objects.hashCode(this.dbComparators) ^
+//                Objects.hashCode(this.sqlgRangeHolder) ^
+//                Objects.hashCode(this.stepType) ^
+//                Objects.hashCode(this.emit) ^
+//                Objects.hashCode(this.untilFirst) ^
+//                Objects.hashCode(this.optionalLeftJoin) ^
+//                Objects.hashCode(this.drop) ^
+//                Objects.hashCode(this.replacedStepDepth) ^
+//                Objects.hashCode(this.labels) ^
+//                Objects.hashCode(this.aggregateFunction) ^
+//                Objects.hashCode(this.groupBy) ^
+//                Objects.hashCode(this.idOnly);
+
+    }
+
+    /**
+     * closing the SchemaTableTree indicates that this SchemaTableTree is complete and that no moore changing of its
+     * state it allowed. This allows us to cache the hashCode for performance reasons.
+     */
+    public void close() {
+        assert !this.closed : "close may only be called on an open SchemaTableTree";
+        this.closed = true;
+        this.hashCode = internalHashCode();
+        for (SchemaTableTree child : this.children) {
+            child.close();
+        }
+    }
+
     @Override
     public int hashCode() {
-        if (this.parent != null) {
-            if (this.direction == null) {
-                return (this.schemaTable.toString() + this.parent.toString()).hashCode();
-            } else {
-                return (this.schemaTable.toString() + this.direction.name() + this.parent.toString()).hashCode();
-            }
+        if (this.closed) {
+            return this.hashCode;
         } else {
-            if (this.direction == null) {
-                return this.schemaTable.toString().hashCode();
+            if (this.parent != null) {
+                if (this.direction == null) {
+                    return (this.schemaTable.toString() + this.parent.toString()).hashCode();
+                } else {
+                    return (this.schemaTable.toString() + this.direction.name() + this.parent.toString()).hashCode();
+                }
             } else {
-                return (this.schemaTable.toString() + this.direction.name()).hashCode();
+                if (this.direction == null) {
+                    return this.schemaTable.toString().hashCode();
+                } else {
+                    return (this.schemaTable.toString() + this.direction.name()).hashCode();
+                }
             }
         }
+    }
+
+    private int internalHashCode() {
+        int hasContainerHashCode = 31;
+        for (HasContainer hasContainer : this.hasContainers) {
+            String key = hasContainer.getKey();
+            hasContainerHashCode = hasContainerHashCode ^ key.hashCode();
+            P<?> predicate = hasContainer.getPredicate();
+            BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
+            hasContainerHashCode = hasContainerHashCode ^ biPredicate.hashCode();
+        }
+        return Objects.hashCode(this.parent) ^
+                Objects.hashCode(this.schemaTable) ^
+                Objects.hashCode(this.direction) ^
+                Objects.hashCode(this.stepDepth) ^
+                hasContainerHashCode ^
+                Objects.hashCode(this.andOrHasContainers) ^
+                Objects.hashCode(this.sqlgComparatorHolder) ^
+                Objects.hashCode(this.dbComparators) ^
+                Objects.hashCode(this.sqlgRangeHolder) ^
+                Objects.hashCode(this.stepType) ^
+                Objects.hashCode(this.emit) ^
+                Objects.hashCode(this.untilFirst) ^
+                Objects.hashCode(this.optionalLeftJoin) ^
+                Objects.hashCode(this.drop) ^
+                Objects.hashCode(this.replacedStepDepth) ^
+                Objects.hashCode(this.labels) ^
+                Objects.hashCode(this.aggregateFunction) ^
+                Objects.hashCode(this.groupBy) ^
+                Objects.hashCode(this.idOnly) ^
+                Objects.hashCode(this.identifiers) ^
+                Objects.hashCode(this.parentIdsAndIndexes) ^
+                Objects.hashCode(this.restrictedProperties);
     }
 
     @Override
@@ -2628,17 +2710,43 @@ public class SchemaTableTree {
         if (o == this) {
             return true;
         }
-        if (this.direction != other.direction) {
-            return false;
-        } else if (this.parent != null && other.parent == null) {
-            return false;
-        } else if (this.parent == null && other.parent != null) {
-            return false;
-        } else if (this.parent == null) {
-            return false;
-        } else {
-            return this.parent.equals(other.parent) && this.schemaTable.equals(other.schemaTable);
+        boolean hasContainerEquals = this.hasContainers.size() == other.hasContainers.size();
+        if (hasContainerEquals) {
+            int count = 0;
+            for (HasContainer hasContainer : this.hasContainers) {
+                HasContainer otherHasContainer = other.hasContainers.get(count++);
+                String key = hasContainer.getKey();
+                String otherKey = otherHasContainer.getKey();
+                BiPredicate<?, ?> biPredicate = hasContainer.getPredicate().getBiPredicate();
+                BiPredicate<?, ?> otherBiPredicate = otherHasContainer.getPredicate().getBiPredicate();
+                hasContainerEquals = hasContainerEquals && key.equals(otherKey) && biPredicate.equals(otherBiPredicate);
+                if (!hasContainerEquals) {
+                    break;
+                }
+            }
         }
+        return Objects.equals(this.parent, other.parent) &&
+                Objects.equals(this.schemaTable, other.schemaTable) &&
+                Objects.equals(this.direction, other.direction) &&
+                Objects.equals(this.stepDepth, other.stepDepth) &&
+                hasContainerEquals &&
+                Objects.equals(this.andOrHasContainers, other.andOrHasContainers) &&
+                Objects.equals(this.sqlgComparatorHolder, other.sqlgComparatorHolder) &&
+                Objects.equals(this.dbComparators, other.dbComparators) &&
+                Objects.equals(this.sqlgRangeHolder, other.sqlgRangeHolder) &&
+                Objects.equals(this.stepType, other.stepType) &&
+                Objects.equals(this.emit, other.emit) &&
+                Objects.equals(this.untilFirst, other.untilFirst) &&
+                Objects.equals(this.optionalLeftJoin, other.optionalLeftJoin) &&
+                Objects.equals(this.drop, other.drop) &&
+                Objects.equals(this.replacedStepDepth, other.replacedStepDepth) &&
+                Objects.equals(this.labels, other.labels) &&
+                Objects.equals(this.aggregateFunction, other.aggregateFunction) &&
+                Objects.equals(this.groupBy, other.groupBy) &&
+                Objects.equals(this.idOnly, other.idOnly) &&
+                Objects.equals(this.identifiers, other.identifiers) &&
+                Objects.equals(this.parentIdsAndIndexes, other.parentIdsAndIndexes) &&
+                Objects.equals(this.restrictedProperties, other.restrictedProperties);
     }
 
     public Set<String> getLabels() {
@@ -2811,6 +2919,7 @@ public class SchemaTableTree {
         return isIdStep;
     }
 
+    @SuppressWarnings("unused")
     public void setIdStep(boolean idStep) {
         isIdStep = idStep;
     }
@@ -2867,7 +2976,7 @@ public class SchemaTableTree {
     }
 
     private List<ColumnList> getRootColumnListStack() {
-        return this.getRoot().columnListStack;
+        return this.getAliasMapHolder().getColumnListStack();
     }
 
     private boolean isDistributed() {

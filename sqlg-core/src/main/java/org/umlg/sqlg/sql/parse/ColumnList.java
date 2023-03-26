@@ -294,11 +294,13 @@ public class ColumnList {
         return result;
     }
 
-    public LinkedHashMap<Column, String> getFor(int stepDepth, SchemaTable schemaTable) {
-        LinkedHashMap<Column, String> result = new LinkedHashMap<>();
-        for (Column column : this.columns.keySet()) {
+    LinkedHashMap<Column, String> getFor(int stepDepth, SchemaTable schemaTable) {
+        LinkedHashMap<Column, String> result = new LinkedHashMap<>(this.columns.size());
+        for (Map.Entry<Column, String> columnStringEntry : this.columns.entrySet()) {
+            Column column = columnStringEntry.getKey();
+            String alias = columnStringEntry.getValue();
             if (column.isFor(stepDepth, schemaTable)) {
-                result.put(column, this.columns.get(column));
+                result.put(column, alias);
             }
         }
         return result;

@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallb
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.structure.SchemaTableTreeCache;
 import org.umlg.sqlg.structure.SqlgEdge;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -24,9 +25,11 @@ import java.util.Set;
  */
 public class SqlgSqlExecutor {
 
-    private static final Logger logger = LoggerFactory.getLogger(SqlgSqlExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgSqlExecutor.class);
 
-    public record DropQuery(SqlgSqlExecutor.DROP_QUERY dropQuery, String leafSql, String sql, Boolean addAdditionalPartitionHasContainer) {}
+    public record DropQuery(SqlgSqlExecutor.DROP_QUERY dropQuery, String leafSql, String sql,
+                            Boolean addAdditionalPartitionHasContainer) {
+    }
 
     private SqlgSqlExecutor() {
     }
@@ -46,7 +49,6 @@ public class SqlgSqlExecutor {
 
         sqlgGraph.getTopology().threadWriteLock();
         List<DropQuery> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
-//        List<Triple<DROP_QUERY, String, Boolean>> sqls = rootSchemaTableTree.constructDropSql(distinctQueryStack);
         for (DropQuery sqlPair : sqls) {
             DROP_QUERY dropQuery = sqlPair.dropQuery();
             String sql = sqlPair.sql();
@@ -69,7 +71,10 @@ public class SqlgSqlExecutor {
             SchemaTableTree rootSchemaTableTree,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
+        SchemaTableTreeCache CACHE = sqlgGraph.getSchemaTableTreeCache();
+        Pair<SchemaTableTree, LinkedList<SchemaTableTree>> p = Pair.of(rootSchemaTableTree, distinctQueryStack);
+        String sql = CACHE.sql(p);
+//        String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
         return executeQuery(sqlgGraph, sql, distinctQueryStack);
     }
 
@@ -100,8 +105,8 @@ public class SqlgSqlExecutor {
                 Preconditions.checkState(!distinctQueryStack.isEmpty() && !distinctQueryStack.peekFirst().getParentIdsAndIndexes().isEmpty());
             }
             Connection conn = sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql);
             }
             // explain plan can be useful for performance issues
             // uncomment if needed, don't think we need this in production
@@ -153,8 +158,8 @@ public class SqlgSqlExecutor {
                 Preconditions.checkState(!distinctQueryStack.peekFirst().getParentIdsAndIndexes().isEmpty());
             }
             Connection conn = sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql);
             }
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
             sqlgGraph.tx().add(preparedStatement);
@@ -165,8 +170,8 @@ public class SqlgSqlExecutor {
             } else {
                 deleteCount = preparedStatement.executeUpdate();
             }
-            if (logger.isDebugEnabled()) {
-                logger.debug("Deleted {} rows", deleteCount);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Deleted {} rows", deleteCount);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -176,8 +181,8 @@ public class SqlgSqlExecutor {
     public static void executeDropEdges(SqlgGraph sqlgGraph, EdgeLabel edgeLabel, String sql, List<EventCallback<Event>> mutatingCallbacks) {
         try {
             Connection conn = sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql);
             }
             try (Statement statement = conn.createStatement()) {
                 if (mutatingCallbacks.isEmpty()) {
@@ -203,8 +208,8 @@ public class SqlgSqlExecutor {
     public static void executeDrop(SqlgGraph sqlgGraph, String sql) {
         try {
             Connection conn = sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(sql);
             }
             try (Statement statement = conn.createStatement()) {
                 statement.execute(sql);

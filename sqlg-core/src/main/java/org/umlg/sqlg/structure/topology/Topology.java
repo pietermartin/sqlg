@@ -571,6 +571,7 @@ public class Topology {
         if (this.locked && this.sqlgGraph.tx().isTopologyLocked()) {
             throw new IllegalStateException("The topology is locked! Changes are not allowed, first unlock it. Either globally or for the transaction.");
         }
+        sqlgGraph.getSchemaTableTreeCache().clear();
         this.sqlgGraph.tx().readWrite();
         this.schemaChanged.set(true);
     }

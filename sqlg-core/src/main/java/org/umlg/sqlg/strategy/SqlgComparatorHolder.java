@@ -6,6 +6,7 @@ import org.javatuples.Pair;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
@@ -43,4 +44,23 @@ public class SqlgComparatorHolder {
         return !this.comparators.isEmpty();
     }
 
+    @Override
+    public int hashCode() {
+        return 1;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (!(o instanceof SqlgComparatorHolder other)) {
+            return false;
+        }
+        if (o == this) {
+            return true;
+        }
+        return Objects.equals(this.precedingSelectOneLabel, other.precedingSelectOneLabel) &&
+                Objects.equals(this.comparators, other.comparators);
+    }
 }

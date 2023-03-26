@@ -19,31 +19,24 @@ public class GremlinParser {
         this.sqlgGraph = sqlgGraph;
     }
 
-    public Set<SchemaTableTree> parse(ReplacedStepTree<?,?> replacedStepTree) {
+    public Set<SchemaTableTree> parse(ReplacedStepTree<?, ?> replacedStepTree) {
         ReplacedStep<?, ?> startReplacedStep = replacedStepTree.root().getReplacedStep();
         Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedStepTree.getDepth());
-        Set<SchemaTableTree> toRemove = new HashSet<>();
+        Set<SchemaTableTree> result = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
             schemaTableTrees.add(rootSchemaTableTree);
             replacedStepTree.walkReplacedSteps(schemaTableTrees);
             boolean remove = rootSchemaTableTree.removeNodesInvalidatedByHas();
-            if (remove) {
-                toRemove.add(rootSchemaTableTree);
-            }
-            remove = rootSchemaTableTree.removeNodesInvalidatedByRestrictedProperties();
-            if (remove) {
-                toRemove.add(rootSchemaTableTree);
-            }
+            remove = rootSchemaTableTree.removeNodesInvalidatedByRestrictedProperties() || remove;
             rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedStepTree.getDepth());
-            if (!rootSchemaTableTree.hasLeafNodes()) {
-                toRemove.add(rootSchemaTableTree);
+            if (!remove && rootSchemaTableTree.hasLeafNodes()) {
+                rootSchemaTableTree.close();
+                result.add(rootSchemaTableTree);
             }
         }
-        rootSchemaTableTrees.removeAll(toRemove);
-        return rootSchemaTableTrees;
-
+        return result;
     }
 
 
@@ -53,7 +46,7 @@ public class GremlinParser {
      * For each path Sqlg will executeRegularQuery a sql query. The union of the queries is the result the gremlin query.
      * The vertex labels can be calculated from the steps.
      *
-     * @param schemaTable The schema and table
+     * @param schemaTable      The schema and table
      * @param replacedStepTree The original VertexSteps and HasSteps that were replaced
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */

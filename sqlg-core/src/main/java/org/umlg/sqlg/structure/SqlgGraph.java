@@ -256,6 +256,7 @@ public class SqlgGraph implements Graph {
     private static final Logger logger = LoggerFactory.getLogger(SqlgGraph.class);
     private final SqlgTransaction sqlgTransaction;
     private final Topology topology;
+    private final SchemaTableTreeCache schemaTableTreeCache;
     private final GremlinParser gremlinParser;
     private final SqlDialect sqlDialect;
     private final String jdbcUrl;
@@ -365,6 +366,7 @@ public class SqlgGraph implements Graph {
         this.tx().readWrite();
         //Instantiating Topology will create the 'public' schema if it does not exist.
         this.topology = new Topology(this);
+        this.schemaTableTreeCache = new SchemaTableTreeCache();
         this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportsSchemas() && this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isEmpty()) {
             //This is for mariadb. Need to make sure a db called public exist
@@ -384,6 +386,10 @@ public class SqlgGraph implements Graph {
 
     public Topology getTopology() {
         return this.topology;
+    }
+
+    public SchemaTableTreeCache getSchemaTableTreeCache() {
+        return schemaTableTreeCache;
     }
 
     public GremlinParser getGremlinParser() {

@@ -366,7 +366,7 @@ public class ReplacedStep<S, E> {
 
         Set<SchemaTableTree> result = new HashSet<>();
         //add the child for schemaTableTo to the tree
-        SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
+        SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                 schemaTableTo,
                 direction,
                 Vertex.class,
@@ -375,8 +375,8 @@ public class ReplacedStep<S, E> {
         );
         SchemaTable schemaTable = SchemaTable.from(this.topology.getSqlgGraph(), schemaTableTo.toString());
         List<Multimap<BiPredicate<?, ?>, RecordId>> biPredicateRecordIs = groupedIds.get(schemaTable.withOutPrefix());
-        addIdHasContainers(schemaTableTree1, biPredicateRecordIs);
-        result.add(schemaTableTree1);
+        addIdHasContainers(schemaTableTreeChild, biPredicateRecordIs);
+        result.add(schemaTableTreeChild);
         return result;
     }
 
@@ -493,7 +493,8 @@ public class ReplacedStep<S, E> {
             }
             SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(VERTEX_PREFIX);
             if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
-                collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
+                SchemaTableTree schemaTableTree = collectSchemaTableTrees(sqlgGraph, replacedStepDepth, groupedIds, schemaTableWithPrefix.toString());
+                result.add(schemaTableTree);
             }
         } else {
             for (String table : filteredAllTables.keySet()) {
@@ -502,7 +503,8 @@ public class ReplacedStep<S, E> {
                         (isEdge && table.substring(table.indexOf(".") + 1).startsWith(EDGE_PREFIX))) {
 
                     if (passesLabelHasContainers(sqlgGraph, isVertex, table)) {
-                        collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, table);
+                        SchemaTableTree schemaTableTree = collectSchemaTableTrees(sqlgGraph, replacedStepDepth, groupedIds, table);
+                        result.add(schemaTableTree);
                     }
                 }
             }
@@ -510,10 +512,9 @@ public class ReplacedStep<S, E> {
         return result;
     }
 
-    private void collectSchemaTableTrees(
+    private SchemaTableTree collectSchemaTableTrees(
             SqlgGraph sqlgGraph,
             int replacedStepDepth,
-            Set<SchemaTableTree> result,
             Map<SchemaTable, List<Multimap<BiPredicate<?, ?>, RecordId>>> groupedIds,
             String table) {
 
@@ -564,7 +565,7 @@ public class ReplacedStep<S, E> {
                 idOnly
         );
         schemaTableTree.setRestrictedProperties(getRestrictedProperties());
-        result.add(schemaTableTree);
+        return schemaTableTree;
     }
 
     @SuppressWarnings("unchecked")
