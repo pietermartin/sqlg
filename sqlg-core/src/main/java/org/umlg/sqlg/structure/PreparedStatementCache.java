@@ -10,18 +10,18 @@ import java.util.Map;
  * Date: 2016/05/15
  * Time: 2:24 PM
  */
-public class PreparedStatementCache {
+public final class PreparedStatementCache {
 
-    private final Map<PreparedStatement,Boolean> cache = new IdentityHashMap<>();
+    private final Map<PreparedStatement, Boolean> cache = new IdentityHashMap<>();
 
     void add(PreparedStatement preparedStatement) {
-        this.cache.put(preparedStatement,Boolean.TRUE);
+        this.cache.put(preparedStatement, Boolean.TRUE);
     }
-    
+
     void remove(PreparedStatement preparedStatement) {
         this.cache.remove(preparedStatement);
     }
-    
+
     public void close() throws SQLException {
         for (PreparedStatement preparedStatement : this.cache.keySet()) {
             preparedStatement.close();
@@ -32,8 +32,8 @@ public class PreparedStatementCache {
     public boolean isEmpty() {
         return this.cache.isEmpty();
     }
-    
+
     public int size() {
-    	return this.cache.size();
+        return this.cache.size();
     }
 }
