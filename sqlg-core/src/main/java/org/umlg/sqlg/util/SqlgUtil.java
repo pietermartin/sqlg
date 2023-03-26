@@ -127,20 +127,29 @@ public class SqlgUtil {
     }
 
     //TODO the identifier logic here is very suboptimal
-    private static void populateIdCountMap(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> lastElementIdCountMap) throws SQLException {
+    private static void populateIdCountMap(
+            ResultSetMetaData resultSetMetaData,
+            SchemaTableTree rootSchemaTableTree,
+            Map<String, Integer> lastElementIdCountMap) throws SQLException {
+
         lastElementIdCountMap.clear();
         //First load all labeled entries from the resultSet
         //Translate the columns back from alias to meaningful column headings
-        Set<String> identifiers = new HashSet<>();
-        Set<String> allIdentifiers = rootSchemaTableTree.getAllIdentifiers();
-        for (String allIdentifier : allIdentifiers) {
-            identifiers.add(SchemaTableTree.ALIAS_SEPARATOR + allIdentifier);
+        Set<String> identifiers = null;
+        if (!rootSchemaTableTree.isHasIDPrimaryKey()) {
+            identifiers = new HashSet<>();
+            Set<String> allIdentifiers = rootSchemaTableTree.getAllIdentifiers();
+            for (String allIdentifier : allIdentifiers) {
+                identifiers.add(SchemaTableTree.ALIAS_SEPARATOR + allIdentifier);
+            }
         }
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
             String unAliased = rootSchemaTableTree.getAliasColumnNameMap().get(columnLabel);
             String mapKey = unAliased != null ? unAliased : columnLabel;
-            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID) || identifiers.stream().anyMatch(mapKey::endsWith)) {
+            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID) ||
+                    (identifiers != null && identifiers.stream().anyMatch(mapKey::endsWith))) {
+                
                 lastElementIdCountMap.put(mapKey, columnCount);
             }
         }
