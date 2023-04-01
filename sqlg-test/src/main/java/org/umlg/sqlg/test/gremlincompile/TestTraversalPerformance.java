@@ -1,6 +1,9 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -12,6 +15,7 @@ import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,7 +26,7 @@ public class TestTraversalPerformance extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTraversalPerformance.class);
 
-//    @Test
+    //    @Test
 //    public void testAddVNotCached() {
 //        List<Vertex> vertices = this.sqlgGraph.traversal().addV("animal").property("age", 0).toList();
 //        Assert.assertEquals(1, vertices.size());
@@ -102,30 +106,28 @@ public class TestTraversalPerformance extends BaseTest {
 //        Assert.assertEquals(convertToVertex(this.sqlgGraph, "marko"), traversala2.get(0));
 //    }
 //
-//    @Test
-//    public void test() {
-//        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
-//            put("col1", PropertyDefinition.of(PropertyType.INTEGER));
-//        }});
-//        this.sqlgGraph.tx().commit();
-//
-//        Vertex one = this.sqlgGraph.addVertex(T.label, "A", "col1", 1);
-//        Vertex two= this.sqlgGraph.addVertex(T.label, "A", "col1", 2);
-//        Vertex three = this.sqlgGraph.addVertex(T.label, "A", "col1", 3);
-//        Vertex four = this.sqlgGraph.addVertex(T.label, "A", "col1", 4);
-//        this.sqlgGraph.tx().commit();
-//
-//        Vertex _one = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(1)).next();
-//        Assert.assertEquals(one, _one);
-//        Vertex _two = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(2)).next();
-//        Assert.assertEquals(two, _two);
-//        Vertex _three = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(3)).next();
-//        Assert.assertEquals(three, _three);
-//        Vertex _four = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.eq(4)).next();
-//        Assert.assertEquals(four, _four);
-//    }
-//
     @Test
+    public void test() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+            put("col1", PropertyDefinition.of(PropertyType.INTEGER));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        Vertex one = this.sqlgGraph.addVertex(T.label, "A", "col1", 1);
+        Vertex two = this.sqlgGraph.addVertex(T.label, "A", "col1", 2);
+        Vertex three = this.sqlgGraph.addVertex(T.label, "A", "col1", 3);
+        Vertex four = this.sqlgGraph.addVertex(T.label, "A", "col1", 4);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.within(1)).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices.containsAll(List.of(one));
+        vertices = this.sqlgGraph.traversal().V().hasLabel("A").has("col1", P.within(1, 3)).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices.containsAll(List.of(one, three));
+    }
+
+//        @Test
     public void testSpeedWithLargeSchemaFastQuery1() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
