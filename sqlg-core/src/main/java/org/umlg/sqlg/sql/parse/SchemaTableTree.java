@@ -2673,6 +2673,11 @@ public class SchemaTableTree {
             hasContainerHashCode = hasContainerHashCode ^ key.hashCode();
             P<?> predicate = hasContainer.getPredicate();
             BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
+            if (biPredicate == Contains.within || biPredicate == Contains.without) {
+                //this logic is because of generating '?' for the parameters in the sql
+                List<?> values = (List<?>) predicate.getValue();
+                hasContainerHashCode = hasContainerHashCode ^ values.size();
+            }
             hasContainerHashCode = hasContainerHashCode ^ biPredicate.hashCode();
         }
         return Objects.hashCode(this.parent) ^
