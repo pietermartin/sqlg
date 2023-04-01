@@ -1617,6 +1617,8 @@ public class Topology {
                 Preconditions.checkState(logs.size() == 1, "There must be one and only be one log, found %s", logs.size());
                 int backEndPid = logs.get(0).value("pid");
                 Preconditions.checkState(backEndPid == pid, "notify pids do not match.");
+                //Clear the cache,
+                this.sqlgGraph.getSchemaTableTreeCache().clear();
                 ObjectNode log = logs.get(0).value("log");
                 fromNotifyJson(log);
             }
