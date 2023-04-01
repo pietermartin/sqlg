@@ -11,6 +11,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
@@ -23,6 +25,30 @@ import java.util.*;
  */
 @SuppressWarnings("DuplicatedCode")
 public class TestRepeatStepGraphBoth extends BaseTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestRepeatStepGraphBoth.class);
+
+    @Test
+    public void testUntil() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "name", "d1");
+        Vertex e1 = this.sqlgGraph.addVertex(T.label, "E", "name", "e1");
+        a1.addEdge("ab", b1);
+        b1.addEdge("bc", c1);
+        c1.addEdge("cd", d1);
+        d1.addEdge("de", e1);
+        this.sqlgGraph.tx().commit();
+        List<Path> paths = this.sqlgGraph.traversal().V(a1)
+                .repeat(__.both().simplePath())
+                .until(__.not(__.both().simplePath()))
+                .path()
+                .toList();
+
+        Assert.assertEquals(1, paths.size());
+        Assert.assertEquals(5, paths.get(0).size());
+    }
 
     @Test
     public void testEmitRepeatWithVertexStepAfter() {
