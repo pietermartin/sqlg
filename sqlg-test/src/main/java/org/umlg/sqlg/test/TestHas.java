@@ -3,6 +3,7 @@ package org.umlg.sqlg.test;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -24,8 +25,26 @@ import java.util.List;
  * Date: 2014/07/13
  * Time: 6:36 PM
  */
-@SuppressWarnings({"DuplicatedCode", "unused"})
+@SuppressWarnings({"DuplicatedCode", "unused", "unchecked"})
 public class TestHas extends BaseTest {
+
+    @Test
+    public void testHasOr() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "c");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+                .has("name", P.eq("a").or(P.eq("b")))
+                .toList();
+        Assert.assertEquals(2, persons.size());
+        persons = this.sqlgGraph.traversal().V().hasLabel("Person")
+                        .or(
+                                __.has("name", P.eq("a")),
+                                __.has("name", P.eq("b"))
+                        ).toList();
+        Assert.assertEquals(2, persons.size());
+    }
 
     @SuppressWarnings("rawtypes")
     @Test
