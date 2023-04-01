@@ -11,8 +11,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
@@ -23,10 +21,8 @@ import java.util.*;
  * Date: 2015/10/21
  * Time: 8:18 PM
  */
-@SuppressWarnings("DuplicatedCode")
+@SuppressWarnings({"DuplicatedCode", "resource"})
 public class TestRepeatStepGraphBoth extends BaseTest {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestRepeatStepGraphBoth.class);
 
     @Test
     public void testUntil() {
