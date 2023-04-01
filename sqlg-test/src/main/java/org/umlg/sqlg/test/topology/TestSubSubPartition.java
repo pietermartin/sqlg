@@ -110,8 +110,8 @@ public class TestSubSubPartition extends BaseTest {
 
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             assert_vertexLabelSubSubPartition(sqlgGraph1);
-            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
-            p2 = a.getPartition("int2").get();
+            a = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+            p2 = a.getPartition("int2").orElseThrow();
             p2.remove();
             Assert.assertEquals(1, a.getPartitions().size());
             Assert.assertEquals(7, sqlgGraph1.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
@@ -119,7 +119,7 @@ public class TestSubSubPartition extends BaseTest {
     }
 
     private void assert_vertexLabelSubSubPartition(SqlgGraph sqlgGraph1) {
-        List<Vertex> vertices;VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+        List<Vertex> vertices;VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
         Map<String, Partition> partitions = vertexLabel.getPartitions();
         Assert.assertEquals(2, partitions.size());
         Assert.assertTrue(partitions.containsKey("int1"));
@@ -240,7 +240,7 @@ public class TestSubSubPartition extends BaseTest {
         assert_edgePartitions(this.sqlgGraph1);
 
         Assert.assertEquals(12, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
-        EdgeLabel edgeLabel1 = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get();
+        EdgeLabel edgeLabel1 = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
         Optional<Partition> optionalPartition = edgeLabel1.getPartition("int1");
         Assert.assertTrue(optionalPartition.isPresent());
         Partition p = optionalPartition.get();
@@ -288,25 +288,25 @@ public class TestSubSubPartition extends BaseTest {
     }
 
     private void assert_edgePartitionsAfterRemove(SqlgGraph sqlgGraph1) {
-        EdgeLabel edgeLabel1 = sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get();
+        EdgeLabel edgeLabel1 = sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
         Optional<Partition> optionalPartition = edgeLabel1.getPartition("int2");
         Assert.assertTrue(optionalPartition.isPresent());
         Partition p = optionalPartition.get();
         optionalPartition = p.getPartition("int22");
-        Assert.assertTrue(!optionalPartition.isPresent());
+        Assert.assertFalse(optionalPartition.isPresent());
         Assert.assertEquals(10, sqlgGraph1.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
     }
 
     private void assert_edgePartitionsAfterRemove2(SqlgGraph sqlgGraph1) {
-        EdgeLabel edgeLabel1 = sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get();
+        EdgeLabel edgeLabel1 = sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
         Optional<Partition> optionalPartition = edgeLabel1.getPartition("int1");
         Assert.assertFalse(optionalPartition.isPresent());
         Assert.assertEquals(3, sqlgGraph1.topology().V().hasLabel("sqlg_schema.partition").count().next(), 0);
     }
 
     private void assert_edgePartitions(SqlgGraph sqlgGraph1) {
-        List<Edge> edges;VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
-        EdgeLabel edgeLabel = vertexLabel.getOutEdgeLabel("ab").get();
+        List<Edge> edges;VertexLabel vertexLabel = sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+        EdgeLabel edgeLabel = vertexLabel.getOutEdgeLabel("ab").orElseThrow();
 
         Map<String, Partition> partitions = edgeLabel.getPartitions();
         Assert.assertEquals(2, partitions.size());
@@ -412,10 +412,10 @@ public class TestSubSubPartition extends BaseTest {
         Assert.assertEquals(1, vertices.size());
 
         Thread.sleep(1000);
-        a = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get();
+        a = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
         Optional<Partition> int222 = a.getPartition("int222");
         Assert.assertTrue(int222.isPresent());
-        a = this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").get();
+        a = this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
         int222 = a.getPartition("int222");
         Assert.assertTrue(int222.isPresent());
     }
@@ -477,10 +477,10 @@ public class TestSubSubPartition extends BaseTest {
         Assert.assertEquals(1, vertices.size());
 
         Thread.sleep(1000);
-        ab = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get();
+        ab = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
         Optional<Partition> p = ab.getPartition("int222");
         Assert.assertTrue(p.isPresent());
-        ab = this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").get();
+        ab = this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
         p = ab.getPartition("int222");
         Assert.assertTrue(p.isPresent());
 
@@ -490,7 +490,8 @@ public class TestSubSubPartition extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
-        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        //noinspection EmptyTryBlock
+        try (@SuppressWarnings("unused") SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
         }
     }
 }
