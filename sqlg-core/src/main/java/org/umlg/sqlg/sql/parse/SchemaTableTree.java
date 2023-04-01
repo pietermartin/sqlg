@@ -108,6 +108,7 @@ public class SchemaTableTree {
     private final boolean idOnly;
 
     private boolean closed;
+    private boolean hasIdentifierPrimaryKeyInHierarchy;
     private int hashCode = -1;
 
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth) {
@@ -2640,8 +2641,26 @@ public class SchemaTableTree {
         assert !this.closed : "close may only be called on an open SchemaTableTree";
         this.closed = true;
         this.hashCode = internalHashCode();
+        this.hasIdentifierPrimaryKeyInHierarchy = hasIdentifierPrimaryKeyInHierarchy();
         for (SchemaTableTree child : this.children) {
             child.close();
+        }
+    }
+
+    public boolean isHasIdentifierPrimaryKeyInHierarchy() {
+        return hasIdentifierPrimaryKeyInHierarchy;
+    }
+
+    private boolean hasIdentifierPrimaryKeyInHierarchy() {
+        if (!this.hasIDPrimaryKey) {
+            return true;
+        } else {
+            for (SchemaTableTree child : this.children) {
+                if (child.hasIdentifierPrimaryKeyInHierarchy()) {
+                    return true;
+                };
+            }
+            return false;
         }
     }
 
@@ -2899,7 +2918,7 @@ public class SchemaTableTree {
         List<Comparable> identifierObjects = new ArrayList<>();
         for (String identifier : this.identifiers) {
             String labelledAliasIdentifier = labeledAliasIdentifier(identifier);
-            int count = idColumnCountMap.get(labelledAliasIdentifier);
+            Integer count = idColumnCountMap.get(labelledAliasIdentifier);
             identifierObjects.add((Comparable) resultSet.getObject(count));
         }
         return identifierObjects;

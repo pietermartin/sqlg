@@ -136,7 +136,7 @@ public class SqlgUtil {
         //First load all labeled entries from the resultSet
         //Translate the columns back from alias to meaningful column headings
         Set<String> identifiers = null;
-        if (!rootSchemaTableTree.isHasIDPrimaryKey()) {
+        if (rootSchemaTableTree.isHasIdentifierPrimaryKeyInHierarchy()) {
             identifiers = new HashSet<>();
             Set<String> allIdentifiers = rootSchemaTableTree.getAllIdentifiers();
             for (String allIdentifier : allIdentifiers) {
