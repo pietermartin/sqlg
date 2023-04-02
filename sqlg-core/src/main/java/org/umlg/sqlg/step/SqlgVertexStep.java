@@ -296,6 +296,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends SqlgAbstractStep impl
         rootSchemaTableTree.setParentIdsAndIndexes(this.schemaTableParentIds.get(schemaTable));
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
         rootSchemaTableTrees.add(rootSchemaTableTree);
+        rootSchemaTableTree.close();
         return new SqlgCompiledResultListIterator<>(new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true));
     }
 
