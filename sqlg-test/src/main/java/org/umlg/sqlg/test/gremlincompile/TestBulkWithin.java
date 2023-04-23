@@ -38,6 +38,18 @@ public class TestBulkWithin extends BaseTest {
     }
 
     @Test
+    public void testBulkWithinStringSet() {
+        for (int i = 0; i < 3; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        Set<String> valuesToSearch = Set.of("a0", "a1", "a2");
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A")
+                .has("name", P.within(valuesToSearch)).toList();
+        Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
     public void testBulkWithinString() {
         for (int i = 0; i < 3; i++) {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
@@ -693,7 +705,7 @@ public class TestBulkWithin extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        LOGGER.debug(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
         testBulkWithinWithPercentageInJoinProperties_assert(this.sqlgGraph, uuids);
@@ -702,7 +714,7 @@ public class TestBulkWithin extends BaseTest {
             testBulkWithinWithPercentageInJoinProperties_assert(this.sqlgGraph1, uuids);
         }
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        LOGGER.debug(stopWatch.toString());
     }
 
     private void testBulkWithinWithPercentageInJoinProperties_assert(SqlgGraph sqlgGraph, List<String> uuids) {

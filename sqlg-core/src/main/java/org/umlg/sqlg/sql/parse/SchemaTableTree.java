@@ -2694,7 +2694,7 @@ public class SchemaTableTree {
             BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
             if (biPredicate == Contains.within || biPredicate == Contains.without) {
                 //this logic is because of generating '?' for the parameters in the sql
-                List<?> values = (List<?>) predicate.getValue();
+                Collection<?> values = (Collection<?>) predicate.getValue();
                 hasContainerHashCode = hasContainerHashCode ^ values.size();
             }
             hasContainerHashCode = hasContainerHashCode ^ biPredicate.hashCode();
