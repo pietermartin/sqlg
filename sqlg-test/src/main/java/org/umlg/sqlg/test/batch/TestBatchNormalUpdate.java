@@ -10,8 +10,6 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.math.BigDecimal;
 
-import static java.lang.Thread.*;
-
 /**
  * Date: 2015/12/14
  * Time: 8:56 PM
@@ -59,7 +57,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testUpdateWithNullStringValuesAlreadyPresent_assert(this.sqlgGraph, a1, a2, a3);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testUpdateWithNullStringValuesAlreadyPresent_assert(this.sqlgGraph, a1, a2, a3);
         }
     }
@@ -96,7 +94,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testUpdateWithNullStringValuesNotAlreadyPresent_assert(this.sqlgGraph, a1, a2, a3);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testUpdateWithNullStringValuesNotAlreadyPresent_assert(this.sqlgGraph1, a1, a2, a3);
         }
     }
@@ -124,7 +122,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testUpdateWithNullInteger_assert(this.sqlgGraph, a1, a2, a3);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testUpdateWithNullInteger_assert(this.sqlgGraph1, a1, a2, a3);
         }
     }
@@ -162,7 +160,7 @@ public class TestBatchNormalUpdate extends BaseTest {
 
         testUpdateWithoutDots_assert(gts);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             gts = this.sqlgGraph1.traversal();
             testUpdateWithoutDots_assert(gts);
         }
@@ -206,7 +204,7 @@ public class TestBatchNormalUpdate extends BaseTest {
 
         testUpdateWithDots_assert(gts);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             gts = this.sqlgGraph1.traversal();
             testUpdateWithDots_assert(gts);
         }
@@ -257,7 +255,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testUpdateArrays_assert(this.sqlgGraph);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testUpdateArrays_assert(this.sqlgGraph1);
         }
     }
@@ -302,7 +300,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testUpdateArraysNoFloats_assert(this.sqlgGraph);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testUpdateArraysNoFloats_assert(this.sqlgGraph1);
         }
     }
@@ -328,7 +326,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testStringUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testStringUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -351,7 +349,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testStringUpdateEdge_assert(this.sqlgGraph, e1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testStringUpdateEdge_assert(this.sqlgGraph1, e1);
         }
     }
@@ -373,7 +371,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testBooleanUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testBooleanUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -398,7 +396,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testBooleanUpdateEdge_assert(this.sqlgGraph, e1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testBooleanUpdateEdge_assert(this.sqlgGraph1, e1);
         }
     }
@@ -421,7 +419,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testShortUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testShortUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -444,7 +442,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testShortUpdateEdge_assert(this.sqlgGraph, e1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testShortUpdateEdge_assert(this.sqlgGraph1, e1);
         }
     }
@@ -465,7 +463,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testIntegerUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testIntegerUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -488,7 +486,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testIntegerUpdateEdge_assert(this.sqlgGraph, e1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testIntegerUpdateEdge_assert(this.sqlgGraph1, e1);
         }
     }
@@ -509,7 +507,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testLongUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testLongUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -532,7 +530,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testLongUpdateEdge_assert(this.sqlgGraph, e1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testLongUpdateEdge_assert(this.sqlgGraph1, e1);
         }
     }
@@ -554,7 +552,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testFloatUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testFloatUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -578,7 +576,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testFloatUpdateEdge_assert(this.sqlgGraph, e1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testFloatUpdateEdge_assert(this.sqlgGraph1, e1);
         }
     }
@@ -599,7 +597,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testBigDecimalUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testBigDecimalUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -615,7 +613,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testDoubleUpdate_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testDoubleUpdate_assert(this.sqlgGraph1, v1);
         }
     }
@@ -643,7 +641,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         testDoubleUpdateEdge_assert(this.sqlgGraph, e1);
         if (this.sqlgGraph1 !=  null) {
-            sleep(SLEEP_TIME);
+            Thread.sleep(SLEEP_TIME);
             testDoubleUpdateEdge_assert(this.sqlgGraph1, e1);
         }
     }
