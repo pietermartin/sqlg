@@ -230,13 +230,23 @@ public class EdgeLabel extends AbstractLabel {
                 } else {
                     //Set the proper definition in the map;
                     if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
-                        SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
+                        SqlgUtil.validateIncomingPropertyType(
+                                column.getKey(),
+                                incomingPropertyType,
+                                getFullName() + "." + propertyColumn.getName(),
+                                propertyColumn.getPropertyDefinition().propertyType()
+                        );
                     }
                     columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
                 }
             } else {
                 //Set the proper definition in the map;
-                SqlgUtil.validateIncomingPropertyType(incomingPropertyType, propertyColumn.getPropertyDefinition().propertyType());
+                SqlgUtil.validateIncomingPropertyType(
+                        column.getKey(),
+                        incomingPropertyType,
+                        getFullName() + "." + propertyColumn.getName(),
+                        propertyColumn.getPropertyDefinition().propertyType()
+                );
                 columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }
         }

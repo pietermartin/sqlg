@@ -149,7 +149,7 @@ public class SqlgUtil {
             String mapKey = unAliased != null ? unAliased : columnLabel;
             if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID) ||
                     (identifiers != null && identifiers.stream().anyMatch(mapKey::endsWith))) {
-                
+
                 lastElementIdCountMap.put(mapKey, columnCount);
             }
         }
@@ -1264,17 +1264,17 @@ public class SqlgUtil {
         };
     }
 
-    public static void validateIncomingPropertyType(PropertyType incomingPropertyType, PropertyType propertyType) {
+    public static void validateIncomingPropertyType(String incomingPropertyDescription, PropertyType incomingPropertyType, String propertyDescription, PropertyType propertyType) {
         switch (incomingPropertyType.ordinal()) {
             case STRING_ORDINAL, VARCHAR_ORDINAL, LTREE_ORDINAL -> Preconditions.checkState((
                             propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL || propertyType.ordinal() == LTREE_ORDINAL),
-                    "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
+                    "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());
             case POLYGON_ORDINAL, GEOGRAPHY_POLYGON_ORDINAL -> Preconditions.checkState((
                             propertyType.ordinal() == POLYGON_ORDINAL || propertyType.ordinal() == GEOGRAPHY_POLYGON_ORDINAL),
-                    "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
+                    "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());
             case NULL_ORDINAL -> Preconditions.checkState(true);
             default ->
-                    Preconditions.checkState(incomingPropertyType == propertyType, "Column PropertyType '%s' and incoming PropertyType '%s' are incompatible.", propertyType.name(), incomingPropertyType.name());
+                    Preconditions.checkState(incomingPropertyType == propertyType, "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());
         }
 
     }
