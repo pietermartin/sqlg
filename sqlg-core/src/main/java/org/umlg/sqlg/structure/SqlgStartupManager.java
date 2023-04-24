@@ -651,9 +651,9 @@ class SqlgStartupManager {
             int column2Type = column2MetaData.getMiddle();
             if (column2Name.startsWith(columnName + "~~~")) {
                 if (column2Type == Types.VARCHAR) {
-                    propertyDefinition = new PropertyDefinition(PropertyType.ZONEDDATETIME);
+                    propertyDefinition = PropertyDefinition.of(PropertyType.ZONEDDATETIME);
                 } else if ((column2Type == Types.ARRAY && this.sqlDialect.sqlArrayTypeNameToPropertyType(typeName2, this.sqlgGraph, schema, table, column2Name, metaDataIter) == PropertyType.STRING_ARRAY)) {
-                    propertyDefinition = new PropertyDefinition(PropertyType.ZONEDDATETIME_ARRAY);
+                    propertyDefinition = PropertyDefinition.of(PropertyType.ZONEDDATETIME_ARRAY);
                 } else {
                     if (metaDataIter.hasNext()) {
                         Triple<String, Integer, String> column3MetaData = metaDataIter.next();
@@ -663,19 +663,19 @@ class SqlgStartupManager {
                         if (column3Name.startsWith(columnName + "~~~")) {
                             if (column3Type == Types.ARRAY) {
                                 Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName3, this.sqlgGraph, schema, table, column3Name, metaDataIter) == PropertyType.INTEGER_ARRAY, "Only Period have a third column and it must be a Integer");
-                                propertyDefinition = new PropertyDefinition(PropertyType.PERIOD_ARRAY);
+                                propertyDefinition = PropertyDefinition.of(PropertyType.PERIOD_ARRAY);
                             } else {
                                 Preconditions.checkState(column3Type == Types.INTEGER, "Only Period have a third column and it must be a Integer");
-                                propertyDefinition = new PropertyDefinition(PropertyType.PERIOD);
+                                propertyDefinition = PropertyDefinition.of(PropertyType.PERIOD);
                             }
                         } else {
                             metaDataIter.previous();
                             if (column2Type == Types.ARRAY) {
                                 Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName2, this.sqlgGraph, schema, table, column2Name, metaDataIter) == PropertyType.INTEGER_ARRAY, "Only Period have a third column and it must be a Integer");
-                                propertyDefinition = new PropertyDefinition(PropertyType.DURATION_ARRAY);
+                                propertyDefinition = PropertyDefinition.of(PropertyType.DURATION_ARRAY);
                             } else {
                                 Preconditions.checkState(column2Type == Types.INTEGER, "Only Duration and Period have a second column and it must be a Integer");
-                                propertyDefinition = new PropertyDefinition(PropertyType.DURATION);
+                                propertyDefinition = PropertyDefinition.of(PropertyType.DURATION);
                             }
                         }
                     }
@@ -685,7 +685,7 @@ class SqlgStartupManager {
             }
         }
         if (propertyDefinition == null) {
-            propertyDefinition = new PropertyDefinition(this.sqlDialect.sqlTypeToPropertyType(this.sqlgGraph, schema, table, columnName, columnType, typeName, metaDataIter));
+            propertyDefinition = PropertyDefinition.of(this.sqlDialect.sqlTypeToPropertyType(this.sqlgGraph, schema, table, columnName, columnType, typeName, metaDataIter));
         }
         columns.put(columnName, propertyDefinition);
     }

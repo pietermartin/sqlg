@@ -157,8 +157,9 @@ public class Schema implements TopologyInf {
         }
     }
 
-    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyDefinition> columns) {
-        return ensureVertexLabelExist(label, columns, new ListOrderedSet<>());
+    public VertexLabel ensureVertexLabelExist(final String label, Map<String, PropertyDefinition> columns) {
+        Map<String, PropertyDefinition> _columns = Collections.unmodifiableMap(columns);
+        return ensureVertexLabelExist(label, _columns, new ListOrderedSet<>());
     }
 
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers) {

@@ -128,7 +128,7 @@ public class ColumnList {
                 c.foreignKeyProperty = foreignKeyParts[2];
             }
         } else {
-            c.propertyDefinition = new PropertyDefinition(PropertyType.LONG);
+            c.propertyDefinition = PropertyDefinition.of(PropertyType.LONG);
             c.foreignKeyDirection = (column.endsWith(Topology.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT);
             c.foreignSchemaTable = SchemaTable.of(foreignKeyParts[0], foreignKeyParts[1].substring(0, foreignKeyParts[1].length() - Topology.IN_VERTEX_COLUMN_END.length()));
             c.foreignKeyProperty = null;

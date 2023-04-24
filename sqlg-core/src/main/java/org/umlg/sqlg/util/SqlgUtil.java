@@ -505,7 +505,7 @@ public class SqlgUtil {
                 case ZONEDDATETIME_ARRAY_ORDINAL -> {
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     if (mod) {
-                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(new PropertyDefinition(PropertyType.STRING_ARRAY), Arrays.stream((ZonedDateTime[]) pair.right).map(z -> z.getZone().getId()).toArray()));
+                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyDefinition.of(PropertyType.STRING_ARRAY), Arrays.stream((ZonedDateTime[]) pair.right).map(z -> z.getZone().getId()).toArray()));
                     }
                 }
                 case DURATION_ARRAY_ORDINAL -> {
@@ -590,9 +590,9 @@ public class SqlgUtil {
                 keys.add((String) key);
                 if (keyValue == null) {
                     //assume a String for null
-                    result.put((String) key, new PropertyDefinition(PropertyType.STRING));
+                    result.put((String) key, PropertyDefinition.of(PropertyType.STRING));
                 } else {
-                    result.put((String) key, new PropertyDefinition(PropertyType.from(keyValue)));
+                    result.put((String) key, PropertyDefinition.of(PropertyType.from(keyValue)));
                 }
             }
         }
@@ -660,9 +660,9 @@ public class SqlgUtil {
                 ElementHelper.validateProperty(key, value);
                 sqlDialect.validateProperty(key, value);
                 if (value != null) {
-                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
+                    keyPropertyTypeMap.put(key, PropertyDefinition.temp(PropertyType.from(value)));
                 } else {
-                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.NULL));
+                    keyPropertyTypeMap.put(key, PropertyDefinition.temp(PropertyType.NULL));
                 }
                 resultAllValues.put(key, value);
             }
@@ -731,9 +731,9 @@ public class SqlgUtil {
                     sqlDialect.validateProperty(key, value);
                 }
                 if (value != null) {
-                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.from(value)));
+                    keyPropertyTypeMap.put(key, PropertyDefinition.temp(PropertyType.from(value)));
                 } else {
-                    keyPropertyTypeMap.put(key, new PropertyDefinition(PropertyType.NULL));
+                    keyPropertyTypeMap.put(key, PropertyDefinition.temp(PropertyType.NULL));
                 }
                 resultAllValues.put(key, value);
 
@@ -1264,7 +1264,15 @@ public class SqlgUtil {
         };
     }
 
-    public static void validateIncomingPropertyType(String incomingPropertyDescription, PropertyType incomingPropertyType, String propertyDescription, PropertyType propertyType) {
+    public static void validateIncomingPropertyType(
+            String incomingPropertyDescription,
+            PropertyDefinition incomingPropertyDefinition,
+            String propertyDescription,
+            PropertyDefinition propertyDefinition) {
+
+        PropertyType incomingPropertyType = incomingPropertyDefinition.propertyType();
+        PropertyType propertyType = propertyDefinition.propertyType();
+
         switch (incomingPropertyType.ordinal()) {
             case STRING_ORDINAL, VARCHAR_ORDINAL, LTREE_ORDINAL -> Preconditions.checkState((
                             propertyType.ordinal() == STRING_ORDINAL || propertyType.ordinal() == VARCHAR_ORDINAL || propertyType.ordinal() == LTREE_ORDINAL),
@@ -1276,6 +1284,11 @@ public class SqlgUtil {
             default ->
                     Preconditions.checkState(incomingPropertyType == propertyType, "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());
         }
-
+        if (!incomingPropertyDefinition.temp()) {
+            Preconditions.checkState(
+                    incomingPropertyDefinition.multiplicity().equals(propertyDefinition.multiplicity()),
+                    "Column '%s' with multiplicity '%s' and incoming property '%s' with multiplicity '%s' are incompatible.", incomingPropertyDescription, propertyDefinition.multiplicity().toString(), propertyDescription, incomingPropertyDefinition.multiplicity().toString()
+            );
+        }
     }
 }

@@ -36,6 +36,7 @@ public class TestPropertyCheckConstraint extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "b");
             this.sqlgGraph.tx().commit();
         } catch (Exception e) {
+            e.printStackTrace();
             failure = true;
             this.sqlgGraph.tx().rollback();
         }

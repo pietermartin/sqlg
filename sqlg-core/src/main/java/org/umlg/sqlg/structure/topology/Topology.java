@@ -378,76 +378,76 @@ public class Topology {
         this.metaSchemas = Map.of(SQLG_SCHEMA, sqlgSchema);
 
         Map<String, PropertyDefinition> columns = new HashMap<>();
-        columns.put(SQLG_SCHEMA_GRAPH_VERSION, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_GRAPH_DB_VERSION, new PropertyDefinition(PropertyType.STRING));
-        columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
-        columns.put(UPDATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
+        columns.put(SQLG_SCHEMA_GRAPH_VERSION, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_GRAPH_DB_VERSION, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
+        columns.put(UPDATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
         sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_GRAPH, columns);
 
         columns.clear();
-        columns.put(SQLG_SCHEMA_PROPERTY_NAME, new PropertyDefinition(PropertyType.STRING));
-        columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);
 
         columns.clear();
-        columns.put(SQLG_SCHEMA_VERTEX_LABEL_NAME, new PropertyDefinition(PropertyType.STRING));
-        columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
-        columns.put(SCHEMA_VERTEX_DISPLAY, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT, new PropertyDefinition(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_NAME, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
+        columns.put(SCHEMA_VERTEX_DISPLAY, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_TYPE, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_PARTITION_EXPRESSION, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_VERTEX_LABEL_DISTRIBUTION_SHARD_COUNT, PropertyDefinition.of(PropertyType.INTEGER));
         VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
 
         columns.clear();
-        columns.put(SQLG_SCHEMA_PROPERTY_NAME, new PropertyDefinition(PropertyType.STRING));
-        columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
-        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT, new PropertyDefinition(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_TYPE, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_PARTITION_EXPRESSION, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_EDGE_LABEL_DISTRIBUTION_SHARD_COUNT, PropertyDefinition.of(PropertyType.INTEGER));
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
 
         VertexLabel partitionVertexLabel;
         columns.clear();
-        columns.put(SQLG_SCHEMA_PARTITION_NAME, new PropertyDefinition(PropertyType.STRING));
-        columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
-        columns.put(SQLG_SCHEMA_PARTITION_FROM, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_PARTITION_TO, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_PARTITION_IN, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_PARTITION_MODULUS, new PropertyDefinition(PropertyType.INTEGER));
-        columns.put(SQLG_SCHEMA_PARTITION_REMAINDER, new PropertyDefinition(PropertyType.INTEGER));
-        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_TYPE, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, new PropertyDefinition(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PARTITION_NAME, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
+        columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PARTITION_IN, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PARTITION_MODULUS, PropertyDefinition.of(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_PARTITION_REMAINDER, PropertyDefinition.of(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_TYPE, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PARTITION_PARTITION_EXPRESSION, PropertyDefinition.of(PropertyType.STRING));
         partitionVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PARTITION, columns);
 
         columns.clear();
-        columns.put(SQLG_SCHEMA_PROPERTY_NAME, new PropertyDefinition(PropertyType.STRING));
-        columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
-        columns.put(SQLG_SCHEMA_PROPERTY_TYPE, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, new PropertyDefinition(PropertyType.LONG));
-        columns.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, new PropertyDefinition(PropertyType.LONG));
-        columns.put(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, new PropertyDefinition(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
+        columns.put(SQLG_SCHEMA_PROPERTY_TYPE, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, PropertyDefinition.of(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, PropertyDefinition.of(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, PropertyDefinition.of(PropertyType.STRING));
         VertexLabel propertyVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PROPERTY, columns);
 
         columns.clear();
-        columns.put(SQLG_SCHEMA_INDEX_NAME, new PropertyDefinition(PropertyType.STRING));
-        columns.put(SQLG_SCHEMA_INDEX_INDEX_TYPE, new PropertyDefinition(PropertyType.STRING));
-        columns.put(CREATED_ON, new PropertyDefinition(PropertyType.LOCALDATETIME));
+        columns.put(SQLG_SCHEMA_INDEX_NAME, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_INDEX_INDEX_TYPE, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
         VertexLabel indexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_INDEX, columns);
 
         columns.clear();
         schemaVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
 
-        columns.put(SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
-        columns.put(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
-        columns.put(SQLG_SCHEMA_IN_EDGES_UNIQUE, new PropertyDefinition(PropertyType.BOOLEAN));
-        columns.put(SQLG_SCHEMA_IN_EDGES_ORDERED, new PropertyDefinition(PropertyType.BOOLEAN));
+        columns.put(SQLG_SCHEMA_IN_EDGES_LOWER_MULTIPLICITY, PropertyDefinition.of(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_IN_EDGES_UPPER_MULTIPLICITY, PropertyDefinition.of(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_IN_EDGES_UNIQUE, PropertyDefinition.of(PropertyType.BOOLEAN));
+        columns.put(SQLG_SCHEMA_IN_EDGES_ORDERED, PropertyDefinition.of(PropertyType.BOOLEAN));
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
         columns.clear();
-        columns.put(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
-        columns.put(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, new PropertyDefinition(PropertyType.LONG));
-        columns.put(SQLG_SCHEMA_OUT_EDGES_UNIQUE, new PropertyDefinition(PropertyType.BOOLEAN));
-        columns.put(SQLG_SCHEMA_OUT_EDGES_ORDERED, new PropertyDefinition(PropertyType.BOOLEAN));
+        columns.put(SQLG_SCHEMA_OUT_EDGES_LOWER_MULTIPLICITY, PropertyDefinition.of(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_OUT_EDGES_UPPER_MULTIPLICITY, PropertyDefinition.of(PropertyType.LONG));
+        columns.put(SQLG_SCHEMA_OUT_EDGES_UNIQUE, PropertyDefinition.of(PropertyType.BOOLEAN));
+        columns.put(SQLG_SCHEMA_OUT_EDGES_ORDERED, PropertyDefinition.of(PropertyType.BOOLEAN));
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
         columns.clear();
 
@@ -463,23 +463,23 @@ public class Topology {
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
 
-        columns.put(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE, new PropertyDefinition(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_VERTEX_IDENTIFIER_INDEX_EDGE, PropertyDefinition.of(PropertyType.INTEGER));
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_IDENTIFIER_EDGE, propertyVertexLabel, columns);
         columns.clear();
 
-        columns.put(SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, new PropertyDefinition(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_EDGE_IDENTIFIER_INDEX_EDGE, PropertyDefinition.of(PropertyType.INTEGER));
         edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_IDENTIFIER_EDGE, propertyVertexLabel, columns);
         columns.clear();
 
         vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertexLabel, columns);
         edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertexLabel, columns);
-        columns.put(SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE, new PropertyDefinition(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_INDEX_PROPERTY_EDGE_SEQUENCE, PropertyDefinition.of(PropertyType.INTEGER));
         indexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertexLabel, columns);
         columns.clear();
 
-        columns.put(SQLG_SCHEMA_LOG_TIMESTAMP, new PropertyDefinition(PropertyType.LOCALDATETIME));
-        columns.put(SQLG_SCHEMA_LOG_LOG, new PropertyDefinition(PropertyType.JSON));
-        columns.put(SQLG_SCHEMA_LOG_PID, new PropertyDefinition(PropertyType.INTEGER));
+        columns.put(SQLG_SCHEMA_LOG_TIMESTAMP, PropertyDefinition.of(PropertyType.LOCALDATETIME));
+        columns.put(SQLG_SCHEMA_LOG_LOG, PropertyDefinition.of(PropertyType.JSON));
+        columns.put(SQLG_SCHEMA_LOG_PID, PropertyDefinition.of(PropertyType.INTEGER));
         sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_LOG, columns);
 
         //add the public schema

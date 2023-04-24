@@ -234,7 +234,7 @@ public abstract class SqlgElement implements Element {
                     propertyDefinition = propertyColumnOptional.get().getPropertyDefinition();
                 } else {
                     vertexLabel.ensurePropertiesExist(new LinkedHashMap<>() {{
-                        put(key, new PropertyDefinition(PropertyType.from(value)));
+                        put(key, PropertyDefinition.of(PropertyType.from(value)));
                     }});
                     propertyDefinition = vertexLabel.getProperty(key).orElseThrow((Supplier<IllegalStateException>) () -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
                 }
@@ -252,7 +252,7 @@ public abstract class SqlgElement implements Element {
                     propertyDefinition = propertyColumnOptional.get().getPropertyDefinition();
                 } else {
                     edgeLabel.ensurePropertiesExist(new LinkedHashMap<>() {{
-                        put(key, new PropertyDefinition(PropertyType.from(value)));
+                        put(key, PropertyDefinition.of(PropertyType.from(value)));
                     }});
                     propertyDefinition = edgeLabel.getProperty(key).orElseThrow((Supplier<IllegalStateException>) () -> new IllegalStateException(String.format("The property '%s' must be present when setting it to 'null'", key))).getPropertyDefinition();
                 }

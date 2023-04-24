@@ -4,25 +4,18 @@ import org.apache.commons.configuration2.builder.fluent.Configurations;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.topology.IndexType;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Topology;
+import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import java.util.*;
 
 /**
  * Date: 2017/01/15
@@ -40,6 +33,64 @@ public class TestValidateTopology extends BaseTest {
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testChangingMultiplicityOnVertex() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
+            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(0, 1)));
+        try {
+            publicSchema.ensureVertexLabelExist("A", properties);
+        } catch (IllegalStateException e) {
+            if (isPostgres()) {
+                String message = String.format("Column '%s' with multiplicity '%s' and incoming property '%s' with multiplicity '%s' are incompatible.",
+                        "public.A.a", Multiplicity.of(1, 1), "public.A.a", Multiplicity.of(0, 1));
+                Assert.assertEquals(e.getMessage(), message);
+            } else if (isHsqldb() || isH2()) {
+                String message = String.format("Column '%s' with multiplicity '%s' and incoming property '%s' with multiplicity '%s' are incompatible.",
+                        "PUBLIC.A.a", Multiplicity.of(1, 1), "PUBLIC.A.a", Multiplicity.of(0, 1));
+                Assert.assertEquals(e.getMessage(), message);
+            }
+        }
+        this.sqlgGraph.tx().rollback();
+    }
+
+    @Test
+    public void testChangingMultiplicityOnEdge() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
+            put("a", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B", new HashMap<>() {{
+            put("b", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
+            put("ab", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        Map<String, PropertyDefinition> properties = new HashMap<>();
+        properties.put("ab", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(0, 1)));
+        try {
+            aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
+        } catch (IllegalStateException e) {
+            if (isPostgres()) {
+                String message = String.format("Column '%s' with multiplicity '%s' and incoming property '%s' with multiplicity '%s' are incompatible.",
+                        "public.ab.ab", Multiplicity.of(1, 1), "public.ab.ab", Multiplicity.of(0, 1));
+                Assert.assertEquals(e.getMessage(), message);
+            } else if (isHsqldb() || isH2()) {
+                String message = String.format("Column '%s' with multiplicity '%s' and incoming property '%s' with multiplicity '%s' are incompatible.",
+                        "PUBLIC.ab.ab", Multiplicity.of(1, 1), "PUBLIC.ab.ab", Multiplicity.of(0, 1));
+                Assert.assertEquals(e.getMessage(), message);
+            }
+        }
+        this.sqlgGraph.tx().rollback();
     }
 
     @Test
@@ -62,11 +113,11 @@ public class TestValidateTopology extends BaseTest {
             }
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
         }
     }
 
@@ -81,11 +132,11 @@ public class TestValidateTopology extends BaseTest {
                     (this.sqlgGraph.getSqlDialect().supportsCascade() ? " CASCADE " : ""));
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
         }
     }
 
@@ -99,14 +150,14 @@ public class TestValidateTopology extends BaseTest {
         try (Statement statement = conn.createStatement()) {
             statement.execute("DROP TABLE " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("A") + "." +
                     this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("E_ab") +
-                    (this.sqlgGraph.getSqlDialect().supportsCascade() ? " CASCADE ": ""));
+                    (this.sqlgGraph.getSqlDialect().supportsCascade() ? " CASCADE " : ""));
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
         }
     }
 
@@ -125,11 +176,11 @@ public class TestValidateTopology extends BaseTest {
             }
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
         }
     }
 
@@ -150,11 +201,11 @@ public class TestValidateTopology extends BaseTest {
             }
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
         }
     }
 
@@ -185,11 +236,11 @@ public class TestValidateTopology extends BaseTest {
             }
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getValidationErrors().size());
         }
     }
 

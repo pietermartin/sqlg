@@ -201,7 +201,7 @@ public class EdgeLabel extends AbstractLabel {
     //    @Override
     public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
         for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
-            PropertyType incomingPropertyType = column.getValue().propertyType();
+            PropertyDefinition incomingPropertyDefinition = column.getValue();
             PropertyColumn propertyColumn = this.properties.get(column.getKey());
             if (propertyColumn == null) {
                 Preconditions.checkState(!this.getSchema().isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
@@ -231,10 +231,10 @@ public class EdgeLabel extends AbstractLabel {
                     //Set the proper definition in the map;
                     if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
                         SqlgUtil.validateIncomingPropertyType(
-                                column.getKey(),
-                                incomingPropertyType,
+                                getFullName() + "." + column.getKey(),
+                                incomingPropertyDefinition,
                                 getFullName() + "." + propertyColumn.getName(),
-                                propertyColumn.getPropertyDefinition().propertyType()
+                                propertyColumn.getPropertyDefinition()
                         );
                     }
                     columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
@@ -242,10 +242,10 @@ public class EdgeLabel extends AbstractLabel {
             } else {
                 //Set the proper definition in the map;
                 SqlgUtil.validateIncomingPropertyType(
-                        column.getKey(),
-                        incomingPropertyType,
+                        getFullName() + "." + column.getKey(),
+                        incomingPropertyDefinition,
                         getFullName() + "." + propertyColumn.getName(),
-                        propertyColumn.getPropertyDefinition().propertyType()
+                        propertyColumn.getPropertyDefinition()
                 );
                 columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }

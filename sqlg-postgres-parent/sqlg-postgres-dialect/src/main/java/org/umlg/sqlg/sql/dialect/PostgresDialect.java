@@ -1134,7 +1134,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             // if we had an ID, we don't need the dummy field
             if (!needID) {
                 Map<String, PropertyDefinition> columns = new HashMap<>();
-                columns.put(COPY_DUMMY, new PropertyDefinition(PropertyType.from(0)));
+                columns.put(COPY_DUMMY, PropertyDefinition.of(PropertyType.from(0)));
                 sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                         schema,
                         table,
@@ -1273,7 +1273,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             //copy command needs at least one field.
             //check if the dummy field exist, if not createVertexLabel it
             Map<String, PropertyDefinition> columns = new HashMap<>();
-            columns.put(COPY_DUMMY, new PropertyDefinition(PropertyType.from(0)));
+            columns.put(COPY_DUMMY, PropertyDefinition.of(PropertyType.from(0)));
             sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                     schemaTable.getSchema(),
                     schemaTable.getTable(),
@@ -1322,7 +1322,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     PropertyDefinition propertyDefinition;
                     //noinspection StringEquality
                     if (key == Topology.ID) {
-                        propertyDefinition = new PropertyDefinition(PropertyType.LONG);
+                        propertyDefinition = PropertyDefinition.of(PropertyType.LONG);
                     } else {
                         propertyDefinition = vertexLabel.getProperties().get(key).getPropertyDefinition();
                     }
@@ -1350,9 +1350,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     Object value = entry.getValue();
                     PropertyDefinition propertyDefinition;
                     if (value == null) {
-                        propertyDefinition = new PropertyDefinition(PropertyType.STRING);
+                        propertyDefinition = PropertyDefinition.of(PropertyType.STRING);
                     } else {
-                        propertyDefinition = new PropertyDefinition(PropertyType.from(value));
+                        propertyDefinition = PropertyDefinition.of(PropertyType.from(value));
                     }
                     valueToStreamBytes(writer, propertyDefinition, value);
                 }
@@ -1414,7 +1414,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 Object value = entry.getValue();
                 PropertyDefinition propertyDefinition;
                 if (key.equals(Topology.ID)) {
-                    propertyDefinition = new PropertyDefinition(PropertyType.LONG);
+                    propertyDefinition = PropertyDefinition.of(PropertyType.LONG);
                 } else {
                     propertyDefinition = edgeLabel.getProperties().get(key).getPropertyDefinition();
                 }
@@ -2379,13 +2379,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             Map<String, PropertyDefinition> inProperties = sqlgGraph.getTopology().getTableFor(in.withPrefix(VERTEX_PREFIX));
             PropertyDefinition outPropertyDefinition;
             if (idFields.getLeft().equals(Topology.ID)) {
-                outPropertyDefinition = new PropertyDefinition(PropertyType.INTEGER);
+                outPropertyDefinition = PropertyDefinition.of(PropertyType.INTEGER);
             } else {
                 outPropertyDefinition = outProperties.get(idFields.getLeft());
             }
             PropertyDefinition inPropertyDefinition;
             if (idFields.getRight().equals(Topology.ID)) {
-                inPropertyDefinition = new PropertyDefinition(PropertyType.INTEGER);
+                inPropertyDefinition = PropertyDefinition.of(PropertyType.INTEGER);
             } else {
                 inPropertyDefinition = inProperties.get(idFields.getRight());
             }

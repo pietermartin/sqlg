@@ -4,24 +4,36 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.umlg.sqlg.structure.topology.Topology;
 
+/**
+ * Represents a Vertex or Edge property.
+ * @param propertyType The type of the property
+ * @param multiplicity The multiplicity of the property
+ * @param defaultLiteral The default value of the property
+ * @param checkConstraint A constraint on valid values for the property.
+ * @param temp Only to be used internally. If true then the multiplicity will not be validated.
+ */
 public record PropertyDefinition(PropertyType propertyType, Multiplicity multiplicity, String defaultLiteral,
-                                 String checkConstraint) {
+                                 String checkConstraint, boolean temp) {
     public PropertyDefinition {
         if (!propertyType.isArray() && multiplicity.isMany()) {
             throw new IllegalArgumentException("Multiplicity can only be a many for array types.");
         }
     }
 
-    public PropertyDefinition(PropertyType propertyType) {
-        this(propertyType, (propertyType.isArray() ? Multiplicity.of(0, -1) : Multiplicity.of()), null, null);
+    private PropertyDefinition(PropertyType propertyType) {
+        this(propertyType, (propertyType.isArray() ? Multiplicity.of(0, -1) : Multiplicity.of()), null, null, false);
     }
 
-    public PropertyDefinition(PropertyType propertyType, Multiplicity multiplicity) {
-        this(propertyType, multiplicity, null, null);
+    private PropertyDefinition(PropertyType propertyType, Multiplicity multiplicity) {
+        this(propertyType, multiplicity, null, null, false);
     }
 
     public static PropertyDefinition of(PropertyType propertyType) {
         return new PropertyDefinition(propertyType);
+    }
+
+    public static PropertyDefinition temp(PropertyType propertyType) {
+        return new PropertyDefinition(propertyType, (propertyType.isArray() ? Multiplicity.of(0, -1) : Multiplicity.of()), null, null, true);
     }
 
     public static PropertyDefinition of(PropertyType propertyType, Multiplicity multiplicity) {
@@ -29,11 +41,11 @@ public record PropertyDefinition(PropertyType propertyType, Multiplicity multipl
     }
 
     public static PropertyDefinition of(PropertyType propertyType, Multiplicity multiplicity, String defaultLiteral) {
-        return new PropertyDefinition(propertyType, multiplicity, defaultLiteral, null);
+        return new PropertyDefinition(propertyType, multiplicity, defaultLiteral, null, false);
     }
 
     public static PropertyDefinition of(PropertyType propertyType, Multiplicity multiplicity, String defaultLiteral, String checkConstraint) {
-        return new PropertyDefinition(propertyType, multiplicity, defaultLiteral, checkConstraint);
+        return new PropertyDefinition(propertyType, multiplicity, defaultLiteral, checkConstraint, false);
     }
 
     public ObjectNode toNotifyJson() {

@@ -2832,13 +2832,13 @@ public class SchemaTableTree {
                                 column.getColumnIndex() - 1,
                                 getColumnNameAliasMap(),
                                 this.stepDepth,
-                                new PropertyDefinition(PropertyType.DOUBLE),
+                                PropertyDefinition.of(PropertyType.DOUBLE),
                                 true);
 
                     } else if (column.getAggregateFunction() != null && column.getAggregateFunction().equalsIgnoreCase("sum")) {
                         PropertyDefinition becomes;
                         if (column.getPropertyDefinition().propertyType() == PropertyType.INTEGER || column.getPropertyDefinition().propertyType() == PropertyType.SHORT) {
-                            becomes = new PropertyDefinition(PropertyType.LONG);
+                            becomes = PropertyDefinition.of(PropertyType.LONG);
                         } else {
                             becomes = column.getPropertyDefinition();
                         }
@@ -2851,7 +2851,7 @@ public class SchemaTableTree {
                                 becomes
                         );
                     } else if (column.getAggregateFunction() != null && column.getAggregateFunction().equals(GraphTraversal.Symbols.count)) {
-                        PropertyDefinition becomes = new PropertyDefinition(PropertyType.LONG);
+                        PropertyDefinition becomes = PropertyDefinition.of(PropertyType.LONG);
                         settedProperty = sqlgElement.loadProperty(
                                 resultSet,
                                 propertyName,

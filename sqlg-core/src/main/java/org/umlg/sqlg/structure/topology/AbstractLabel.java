@@ -721,7 +721,7 @@ public abstract class AbstractLabel implements TopologyInf {
         PropertyColumn property = new PropertyColumn(
                 this,
                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME),
-                new PropertyDefinition(
+                PropertyDefinition.of(
                         PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)),
                         Multiplicity.of(
                                 propertyVertex.value(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER),
@@ -757,7 +757,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.distributionPropertyColumn = new PropertyColumn(
                 this,
                 distributionProperty.value(SQLG_SCHEMA_PROPERTY_NAME),
-                new PropertyDefinition(PropertyType.valueOf(distributionProperty.value(SQLG_SCHEMA_PROPERTY_TYPE)))
+                PropertyDefinition.of(PropertyType.valueOf(distributionProperty.value(SQLG_SCHEMA_PROPERTY_TYPE)))
         );
     }
 

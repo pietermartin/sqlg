@@ -429,7 +429,7 @@ public class VertexLabel extends AbstractLabel {
 
     public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
         for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
-            PropertyType incomingPropertyType = column.getValue().propertyType();
+            PropertyDefinition incomingPropertyDefinition = column.getValue();
             PropertyColumn propertyColumn = this.properties.get(column.getKey());
             if (propertyColumn == null) {
                 Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign VertexLabel!", this.label);
@@ -449,26 +449,26 @@ public class VertexLabel extends AbstractLabel {
                 } else {
                     //Set the proper definition in the map;
                     SqlgUtil.validateIncomingPropertyType(
-                            column.getKey(),
-                            incomingPropertyType,
+                            getFullName() + "." + column.getKey(),
+                            incomingPropertyDefinition,
                             getFullName() + "." + propertyColumn.getName(),
-                            propertyColumn.getPropertyDefinition().propertyType()
+                            propertyColumn.getPropertyDefinition()
                     );
-                    columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
+//                    columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
                 }
             } else {
                 if (!sqlgGraph.tx().isInStreamingBatchMode()) {
                     //Postgres will check if the types.
                     //For streaming the data may come csv in which case the csv must specify the correct literal.
                     SqlgUtil.validateIncomingPropertyType(
-                            column.getKey(),
-                            incomingPropertyType,
+                            getFullName() + "." + column.getKey(),
+                            incomingPropertyDefinition,
                             getFullName() + "." + propertyColumn.getName(),
-                            propertyColumn.getPropertyDefinition().propertyType()
+                            propertyColumn.getPropertyDefinition()
                     );
                 }
-                //Set the proper definition in the map;
-                columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
+//                //Set the proper definition in the map;
+//                columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }
         }
     }

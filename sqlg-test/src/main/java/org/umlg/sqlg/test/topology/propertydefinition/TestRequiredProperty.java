@@ -49,12 +49,12 @@ public class TestRequiredProperty extends BaseTest {
         Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
         VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A",
                 new HashMap<>() {{
-                    put("a", new PropertyDefinition(PropertyType.STRING));
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B",
                 new HashMap<>() {{
-                    put("a", new PropertyDefinition(PropertyType.STRING));
+                    put("a", PropertyDefinition.of(PropertyType.STRING));
                 }}
         );
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
