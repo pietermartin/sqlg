@@ -27,6 +27,25 @@ import java.util.*;
 public class TestTopology extends BaseTest {
 
     @Test
+    public void testEnsureAdditionalPropertyExist() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
+            put("a", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        this.sqlgGraph.tx().commit();
+        VertexLabel aVertexLabel = publicSchema.getVertexLabel("A").orElseThrow();
+        aVertexLabel.ensurePropertiesExist(new HashMap<>() {{
+            put("b", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        aVertexLabel = publicSchema.getVertexLabel("A").orElseThrow();
+        Assert.assertTrue(aVertexLabel.getProperty("a").isPresent());
+        Assert.assertTrue(aVertexLabel.getProperty("b").isPresent());
+    }
+
+    @Test
     public void testDotInLabelName() {
         Vertex hand = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a");
         Vertex finger = this.sqlgGraph.addVertex(T.label, "A.B.interface", "name", "b");
