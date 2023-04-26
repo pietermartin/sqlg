@@ -5,10 +5,15 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
+import org.umlg.sqlg.structure.Multiplicity;
+import org.umlg.sqlg.structure.PropertyDefinition;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 
 /**
  * Date: 2015/12/14
@@ -27,6 +32,27 @@ public class TestBatchNormalUpdate extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+    }
+
+    @Test
+    public void testBatchUpdateBooleanAsString() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        publicSchema.ensureVertexLabelExist("A", new HashMap<>() {{
+            put("active", PropertyDefinition.of(PropertyType.BOOLEAN, Multiplicity.of(1, 1)));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "A", "active", true);
+        this.sqlgGraph.tx().commit();
+        boolean t = this.sqlgGraph.traversal().V().hasLabel("A").<Boolean>values("active").toList().get(0);
+        Assert.assertTrue(t);
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex v = this.sqlgGraph.traversal().V().hasLabel("A").toList().get(0);
+        v.property("active", "false");
+        this.sqlgGraph.tx().commit();
+        boolean f = this.sqlgGraph.traversal().V().hasLabel("A").<Boolean>values("active").toList().get(0);
+        Assert.assertFalse(f);
     }
 
     @Test
@@ -640,7 +666,7 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1.property("name", Double.valueOf("2.2"));
         this.sqlgGraph.tx().commit();
         testDoubleUpdateEdge_assert(this.sqlgGraph, e1);
-        if (this.sqlgGraph1 !=  null) {
+        if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
             testDoubleUpdateEdge_assert(this.sqlgGraph1, e1);
         }
