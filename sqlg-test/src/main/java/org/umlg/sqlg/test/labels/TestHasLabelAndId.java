@@ -14,10 +14,7 @@ import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * Date: 2014/07/29
@@ -25,6 +22,24 @@ import java.util.List;
  */
 @SuppressWarnings({"rawtypes", "DuplicatedCode", "unused", "resource"})
 public class TestHasLabelAndId extends BaseTest {
+
+    @Test
+    public void testHasId() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "A", "a", "a1");
+        this.sqlgGraph.tx().commit();
+        Optional<Vertex> optionalVertex = this.sqlgGraph.traversal().V().hasId(v.id()).tryNext();
+        Assert.assertTrue(optionalVertex.isPresent());
+        Vertex vAgain = optionalVertex.get();
+        Assert.assertEquals("a1", vAgain.value("a"));
+
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "A", "a", "a1", "b", "b1");
+        this.sqlgGraph.tx().commit();
+        optionalVertex = this.sqlgGraph.traversal().V().hasId(v.id()).tryNext();
+        Assert.assertTrue(optionalVertex.isPresent());
+        vAgain = optionalVertex.get();
+        Assert.assertEquals("a1", vAgain.value("a"));
+        Assert.assertNull(vAgain.value("b"));
+    }
 
     @Test
     public void test1() {
