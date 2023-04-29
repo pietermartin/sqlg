@@ -21,6 +21,27 @@ import static org.junit.Assert.assertTrue;
 public class TestEdgeMultiplicity extends BaseTest {
 
     @Test
+    public void testUpperMinusOne() {
+        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+        VertexLabel aVertexLabel = publicSchema.ensureVertexLabelExist("A");
+        VertexLabel bVertexLabel = publicSchema.ensureVertexLabelExist("B");
+        VertexLabel cVertexLabel = publicSchema.ensureVertexLabelExist("C");
+        EdgeLabel testEdgeEdgeLabel = aVertexLabel.ensureEdgeLabelExist("testedge", bVertexLabel, EdgeDefinition.of(Multiplicity.of(1, 1), Multiplicity.of(1, -1)));
+        testEdgeEdgeLabel = aVertexLabel.ensureEdgeLabelExist("testedge", cVertexLabel, EdgeDefinition.of(Multiplicity.of(1, 1), Multiplicity.of(1, 1)));
+        this.sqlgGraph.tx().commit();
+
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C");
+        a.addEdge("testedge", b);
+
+        this.sqlgGraph.tx().checkMultiplicity(aVertexLabel, Direction.OUT, testEdgeEdgeLabel, bVertexLabel);
+        this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, testEdgeEdgeLabel, bVertexLabel);
+//        this.sqlgGraph.tx().checkMultiplicity(a, Direction.OUT, testEdgeEdgeLabel, cVertexLabel);
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
     public void testOneToOne() {
         VertexLabel computerVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Computer",
                 new LinkedHashMap<>() {{

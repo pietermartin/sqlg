@@ -401,7 +401,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             long count = this.sqlgGraph.traversal().V(vertex).to(direction, edgeLabel.getLabel())
                     .has(T.label, otherSide.getFullName())
                     .count().next();
-            if (count > upper) {
+            if (upper != -1 && count > upper) {
                 throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nUpper multiplicity is %d current upper multiplicity is %d", edgeLabel.getLabel(), upper, count));
             } else if (count < lower) {
                 throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails.\nLower multiplicity is %d current lower multiplicity is %d", edgeLabel.getLabel(), lower, count));
@@ -518,7 +518,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                         long id = rs.getLong(1);
                         long count = rs.getLong(2);
                         RecordId recordId = RecordId.from(SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getName()), id);
-                        if (count > upper) {
+                        if (upper  != -1 && count > upper) {
                             throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nUpper multiplicity is [%d] current multiplicity is [%d]", edgeLabel.getLabel(), recordId, upper, count));
                         } else if (count < lower) {
                             throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nLower multiplicity is [%d] current multiplicity is [%d]", edgeLabel.getLabel(), recordId, lower, count));
@@ -533,7 +533,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                         }
                         long count = rs.getLong(vertexLabel.getIdentifiers().size() + 1);
                         RecordId recordId = RecordId.from(SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getName()), identifiers);
-                        if (count > upper) {
+                        if (upper != -1 && count > upper) {
                             throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nUpper multiplicity is [%d] current upper multiplicity is [%d]", edgeLabel.getLabel(), recordId, upper, count));
                         } else if (count < lower) {
                             throw new IllegalStateException(String.format("Multiplicity check for EdgeLabel '%s' fails for '%s'.\nLower multiplicity is [%d] current lower multiplicity is [%d]", edgeLabel.getLabel(), recordId, lower, count));
