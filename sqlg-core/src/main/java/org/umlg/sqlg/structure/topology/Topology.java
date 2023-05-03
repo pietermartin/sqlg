@@ -567,9 +567,13 @@ public class Topology {
     /**
      * Global indicator to change the topology.
      */
-    void startSchemaChange() {
+    void startSchemaChange(String changeDescription) {
         if (this.locked && this.sqlgGraph.tx().isTopologyLocked()) {
-            throw new IllegalStateException("The topology is locked! Changes are not allowed, first unlock it. Either globally or for the transaction.");
+            if (changeDescription == null) {
+                throw new IllegalStateException("The topology is locked! Changes are not allowed, first unlock it. Either globally or for the transaction.");
+            } else {
+                throw new IllegalStateException(String.format("The topology is locked! Changes are not allowed, first unlock it. Either globally or for the transaction.\nChange description: '%s'", changeDescription));
+            }
         }
         sqlgGraph.getSchemaTableTreeCache().clear();
         this.sqlgGraph.tx().readWrite();
@@ -610,7 +614,9 @@ public class Topology {
         Optional<Schema> schemaOptional = this.getSchema(schemaName);
         Schema schema;
         if (schemaOptional.isEmpty()) {
-            this.startSchemaChange();
+            this.startSchemaChange(
+                    String.format("Topology ensureSchemaExist with '%s'", schemaName)
+            );
             //search again after the lock is obtained.
             schemaOptional = this.getSchema(schemaName);
             if (schemaOptional.isEmpty()) {
@@ -1098,7 +1104,9 @@ public class Topology {
 
     public void cacheTopology() {
         StopWatch stopWatch = StopWatch.createStarted();
-        this.startSchemaChange();
+        this.startSchemaChange(
+                "Topology cacheTopology"
+        );
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         //load the last log
         //the last timestamp is needed when just after obtaining the lock the log table is queried again to ensure that the last log is indeed
@@ -2127,7 +2135,9 @@ public class Topology {
      * @param preserveData should we preserve the SQL data?
      */
     void removeSchema(Schema schema, boolean preserveData) {
-        startSchemaChange();
+        startSchemaChange(
+                String.format("Topology removeSchema with '%s'", schema.getName())
+        );
         if (!this.uncommittedRemovedSchemas.contains(schema.getName())) {
             // remove edge roles in other schemas pointing to vertex labels in removed schema
             // TODO undo this in case of rollback?

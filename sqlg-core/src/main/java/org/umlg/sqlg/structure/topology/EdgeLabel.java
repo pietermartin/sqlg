@@ -208,7 +208,9 @@ public class EdgeLabel extends AbstractLabel {
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 propertyColumn = this.uncommittedProperties.get(column.getKey());
                 if (propertyColumn == null) {
-                    this.getSchema().getTopology().startSchemaChange();
+                    this.getSchema().getTopology().startSchemaChange(
+                            String.format("EdgeLabel '%s' ensurePropertiesExist with '%s'", getFullName(), columns.keySet().stream().reduce((a,b) -> a + "," + b).orElse(""))
+                    );
                     if (getProperty(column.getKey()).isEmpty()) {
                         TopologyManager.addEdgeColumn(
                                 this.sqlgGraph,
@@ -988,7 +990,7 @@ public class EdgeLabel extends AbstractLabel {
         return Collections.unmodifiableSet(result);
     }
 
-    void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel, VertexLabel otherSide, EdgeDefinition edgeDefinition) {
+    void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel, EdgeDefinition edgeDefinition) {
         //if the direction is OUT then the vertexLabel must be in the same schema as the edgeLabel (this)
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
@@ -996,7 +998,9 @@ public class EdgeLabel extends AbstractLabel {
         if (!foreignKeysContains(direction, vertexLabel, edgeDefinition)) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
-            schema.getTopology().startSchemaChange();
+            schema.getTopology().startSchemaChange(
+                    String.format("EdgeLabel '%s' ensureEdgeVertexLabelExist with '%s', '%s'", getFullName(), direction.name(), vertexLabel.getName())
+            );
             if (!foreignKeysContains(direction, vertexLabel, edgeDefinition)) {
                 SchemaTable foreignKeySchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
                 TopologyManager.addLabelToEdge(
@@ -1382,7 +1386,9 @@ public class EdgeLabel extends AbstractLabel {
 
     @Override
     void removeProperty(PropertyColumn propertyColumn, boolean preserveData) {
-        this.getSchema().getTopology().startSchemaChange();
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("EdgeLabel '%s' removeProperty with '%s'", getFullName(), propertyColumn.getName())
+        );
         if (!uncommittedRemovedProperties.contains(propertyColumn.getName())) {
             uncommittedRemovedProperties.add(propertyColumn.getName());
             TopologyManager.removeEdgeColumn(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName());
@@ -1395,7 +1401,9 @@ public class EdgeLabel extends AbstractLabel {
 
     @Override
     void renameProperty(String name, PropertyColumn propertyColumn) {
-        this.getSchema().getTopology().startSchemaChange();
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("EdgeLabel '%s' renameProperty with '%s' '%s'", getFullName(), name, propertyColumn.getName())
+        );
         String oldName = propertyColumn.getName();
         Pair<String, String> namePair = Pair.of(oldName, name);
         if (!this.uncommittedRemovedProperties.contains(name)) {
@@ -1619,7 +1627,9 @@ public class EdgeLabel extends AbstractLabel {
         Objects.requireNonNull(label, "Given label must not be null");
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not be prefixed with \"%s\"", EDGE_PREFIX);
         Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign table!", label);
-        this.getSchema().getTopology().startSchemaChange();
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("EdgeLabel '%s' rename with '%s'", getFullName(), label)
+        );
         this.getSchema().renameEdgeLabel(this, label);
     }
 

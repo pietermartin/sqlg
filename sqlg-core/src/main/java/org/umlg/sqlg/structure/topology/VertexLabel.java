@@ -437,7 +437,9 @@ public class VertexLabel extends AbstractLabel {
                 this.sqlgGraph.getSqlDialect().validateColumnName(column.getKey());
                 propertyColumn = this.uncommittedProperties.get(column.getKey());
                 if (propertyColumn == null) {
-                    this.schema.getTopology().startSchemaChange();
+                    this.schema.getTopology().startSchemaChange(
+                            String.format("VertexLabel '%s' ensurePropertiesExist with '%s'", getFullName(), columns.keySet().stream().reduce((a, b) -> a + "," + b).orElse(""))
+                    );
                     if (getProperty(column.getKey()).isEmpty()) {
                         TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
@@ -1167,7 +1169,9 @@ public class VertexLabel extends AbstractLabel {
 
     @Override
     void removeProperty(PropertyColumn propertyColumn, boolean preserveData) {
-        this.getSchema().getTopology().startSchemaChange();
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("VertexLabel '%s' removeProperty with '%s'", getFullName(), propertyColumn.getName())
+        );
         if (!this.uncommittedRemovedProperties.contains(propertyColumn.getName())) {
             this.uncommittedRemovedProperties.add(propertyColumn.getName());
             for (Index index : getIndexes().values()) {
@@ -1188,7 +1192,9 @@ public class VertexLabel extends AbstractLabel {
 
     @Override
     void renameProperty(String name, PropertyColumn propertyColumn) {
-        this.getSchema().getTopology().startSchemaChange();
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("VertexLabel '%s' renameProperty with '%s' '%s'", getFullName(), name, propertyColumn.getName())
+        );
         String oldName = propertyColumn.getName();
         Pair<String, String> namePair = Pair.of(oldName, name);
         if (!this.uncommittedRemovedProperties.contains(name)) {
@@ -1254,7 +1260,9 @@ public class VertexLabel extends AbstractLabel {
         if (inOutVertexLabels.size() == 1) {
             edgeRole.getEdgeLabel().remove(preserveData);
         } else {
-            getSchema().getTopology().startSchemaChange();
+            getSchema().getTopology().startSchemaChange(
+                    String.format("VertexLabel '%s' removeEdgeRole with '%s'", getFullName(), edgeRole.getName())
+            );
             EdgeLabel edgeLabel = edgeRole.getEdgeLabel();
             switch (edgeRole.getDirection()) {
                 // we don't support both
@@ -1322,7 +1330,9 @@ public class VertexLabel extends AbstractLabel {
         Objects.requireNonNull(label, "Given label must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with \"%s\"", VERTEX_PREFIX);
         Preconditions.checkState(!this.isForeignAbstractLabel, "'%s' is a read only foreign table!", label);
-        this.getSchema().getTopology().startSchemaChange();
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("VertexLabel '%s' rename with '%s'", getFullName(), label)
+        );
         VertexLabel renamedVertexLabel = this.getSchema().renameVertexLabel(this, label);
         Map<String, EdgeLabel> outEdgeLabels = getOutEdgeLabels();
         for (String outEdgeLabel : outEdgeLabels.keySet()) {

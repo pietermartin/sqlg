@@ -56,6 +56,31 @@ public class TestHashPartitioning extends BaseTest {
     }
 
     @Test
+    public void testHashPartitionTopologyLock() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
+                "A",
+                new LinkedHashMap<>() {{
+                    put("uid1", PropertyDefinition.of(PropertyType.INTEGER));
+                    put("uid2", PropertyDefinition.of(PropertyType.LONG));
+                    put("uid3", PropertyDefinition.of(PropertyType.STRING));
+                }},
+                ListOrderedSet.listOrderedSet(List.of("uid1", "uid2", "uid3")),
+                PartitionType.HASH,
+                "\"uid1\""
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+        try {
+            vertexLabel.ensureHashPartitionExists("hashPartition" + 0, 10, 0);
+            Assert.fail("excepted failure");
+        } catch (IllegalStateException e) {
+            Assert.assertEquals("The topology is locked! Changes are not allowed, first unlock it. Either globally or for the transaction.\n" +
+                    "Change description: 'AbstractLabel 'public.A' ensureHashPartitionExists with 'hashPartition0', '10', '0''", e.getMessage());
+        }
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
     public void testHashPartition() {
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensurePartitionedVertexLabelExist(
                 "A",
