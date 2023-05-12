@@ -1396,7 +1396,7 @@ public interface SqlDialect {
 
     /**
      * This is only needed for Hsqldb where we are unable to check for the existence of Sqlg's schemas
-     * @return
+     * @return true if the user can create schemas
      */
     default boolean canUserCreateSchemas(SqlgGraph sqlgGraph) {
         return true;
@@ -1433,4 +1433,5 @@ public interface SqlDialect {
     default byte[] toByteArray(Object object7) {
         return (byte[])object7;
     }
+
 }
