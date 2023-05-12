@@ -2658,7 +2658,7 @@ public class SchemaTableTree {
             for (SchemaTableTree child : this.children) {
                 if (child.hasIdentifierPrimaryKeyInHierarchy()) {
                     return true;
-                };
+                }
             }
             return false;
         }
@@ -2686,41 +2686,43 @@ public class SchemaTableTree {
     }
 
     private int internalHashCode() {
-        int hasContainerHashCode = 31;
+        int hasContainerHashCode = 1;
         for (HasContainer hasContainer : this.hasContainers) {
             String key = hasContainer.getKey();
-            hasContainerHashCode = hasContainerHashCode ^ key.hashCode();
+            hasContainerHashCode = 31 * hasContainerHashCode + (key == null ? 0 : key.hashCode());
             P<?> predicate = hasContainer.getPredicate();
             BiPredicate<?, ?> biPredicate = predicate.getBiPredicate();
             if (biPredicate == Contains.within || biPredicate == Contains.without) {
                 //this logic is because of generating '?' for the parameters in the sql
                 Collection<?> values = (Collection<?>) predicate.getValue();
-                hasContainerHashCode = hasContainerHashCode ^ values.size();
+                hasContainerHashCode = 31 * hasContainerHashCode + values.size();
             }
-            hasContainerHashCode = hasContainerHashCode ^ biPredicate.hashCode();
+            hasContainerHashCode = 31 * hasContainerHashCode + biPredicate.hashCode();
         }
-        return Objects.hashCode(this.parent) ^
-                Objects.hashCode(this.schemaTable) ^
-                Objects.hashCode(this.direction) ^
-                Objects.hashCode(this.stepDepth) ^
-                hasContainerHashCode ^
-                Objects.hashCode(this.andOrHasContainers) ^
-                Objects.hashCode(this.sqlgComparatorHolder) ^
-                Objects.hashCode(this.dbComparators) ^
-                Objects.hashCode(this.sqlgRangeHolder) ^
-                Objects.hashCode(this.stepType) ^
-                Objects.hashCode(this.emit) ^
-                Objects.hashCode(this.untilFirst) ^
-                Objects.hashCode(this.optionalLeftJoin) ^
-                Objects.hashCode(this.drop) ^
-                Objects.hashCode(this.replacedStepDepth) ^
-                Objects.hashCode(this.labels) ^
-                Objects.hashCode(this.aggregateFunction) ^
-                Objects.hashCode(this.groupBy) ^
-                Objects.hashCode(this.idOnly) ^
-                Objects.hashCode(this.identifiers) ^
-                Objects.hashCode(this.parentIdsAndIndexes) ^
-                Objects.hashCode(this.restrictedProperties);
+        return Objects.hash(
+                this.parent,
+                this.schemaTable,
+                this.direction,
+                this.stepDepth,
+                hasContainerHashCode,
+                this.andOrHasContainers,
+                this.sqlgComparatorHolder,
+                this.dbComparators,
+                this.sqlgRangeHolder,
+                this.stepType,
+                this.emit,
+                this.untilFirst,
+                this.optionalLeftJoin,
+                this.drop,
+                this.replacedStepDepth,
+                this.labels,
+                this.aggregateFunction,
+                this.groupBy,
+                this.idOnly,
+                this.identifiers,
+                this.parentIdsAndIndexes,
+                this.restrictedProperties
+        );
     }
 
     @Override
@@ -2743,7 +2745,7 @@ public class SchemaTableTree {
                 String otherKey = otherHasContainer.getKey();
                 BiPredicate<?, ?> biPredicate = hasContainer.getPredicate().getBiPredicate();
                 BiPredicate<?, ?> otherBiPredicate = otherHasContainer.getPredicate().getBiPredicate();
-                hasContainerEquals = hasContainerEquals && key.equals(otherKey) && biPredicate.equals(otherBiPredicate);
+                hasContainerEquals = key.equals(otherKey) && biPredicate.equals(otherBiPredicate);
                 if (!hasContainerEquals) {
                     break;
                 }
