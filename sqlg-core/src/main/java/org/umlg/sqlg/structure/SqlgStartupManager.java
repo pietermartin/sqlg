@@ -176,6 +176,10 @@ class SqlgStartupManager {
         if (v.isUnknownVersion() || v.compareTo(new Version(3, 0, 0, null, null, null)) < 0) {
             upgradeTo300();
         }
+        //this is to update the incorrect upgrade to 300
+        if (v.isUnknownVersion() || v.equals(new Version(3, 0, 0, null, null, null))) {
+            upgradeTo301();
+        }
     }
 
     private void upgradeTo300() {
@@ -200,6 +204,29 @@ class SqlgStartupManager {
         for (String addInEdgeDefinition : addInEdgeDefinitions) {
             try (Statement s = conn.createStatement()) {
                 s.execute(addInEdgeDefinition);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void upgradeTo301() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        List<String> sqls = List.of(
+                """
+                        update sqlg_schema."V_property"
+                        set "lowerMultiplicity" = 0
+                        where "lowerMultiplicity" = -1;
+                        """,
+                """
+                        update sqlg_schema."V_property"
+                        set "upperMultiplicity" = 1
+                        where "upperMultiplicity" = 0;
+                        """
+        );
+        for (String updateMultiplicitySql: sqls) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(updateMultiplicitySql);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

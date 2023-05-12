@@ -4325,19 +4325,25 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public List<String> addPropertyDefinitions() {
         return List.of(
-                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" BIGINT NOT NULL DEFAULT -1;",
-                "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" = \n" +
-                        "CASE\n" +
-                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
-                        "  ELSE 0\n" +
-                        "END;",
+//                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" BIGINT NOT NULL DEFAULT -1;",
+//                "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" = \n" +
+//                        "CASE\n" +
+//                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
+//                        "  ELSE 0\n" +
+//                        "END;",
+                "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + Topology.SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" BIGINT NOT NULL DEFAULT 0;",
                 "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ALTER COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER + "\" DROP DEFAULT;",
 
                 "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ADD COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" BIGINT NOT NULL DEFAULT -1;",
+//                "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" = \n" +
+//                        "CASE\n" +
+//                        "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
+//                        "  ELSE 0\n" +
+//                        "END;",
                 "UPDATE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" set \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" = \n" +
                         "CASE\n" +
                         "  WHEN \"type\" like '%_ARRAY' THEN -1\n" +
-                        "  ELSE 0\n" +
+                        "  ELSE 1\n" +
                         "END;",
                 "ALTER TABLE \"sqlg_schema\".\"V_" + SQLG_SCHEMA_PROPERTY + "\" ALTER COLUMN \"" + SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER + "\" DROP DEFAULT;",
 
