@@ -4383,4 +4383,35 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_ORDERED + "\" DROP DEFAULT;"
         );
     }
+    @Override
+    public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        String sql = "select pgc.conname as constraint_name\n" +
+                "from pg_constraint pgc\n" +
+                "         join pg_namespace nsp on nsp.oid = pgc.connamespace\n" +
+                "         join pg_class  cls on pgc.conrelid = cls.oid\n" +
+                "         left join information_schema.constraint_column_usage ccu\n" +
+                "                   on pgc.conname = ccu.constraint_name\n" +
+                "                       and nsp.nspname = ccu.constraint_schema\n" +
+                "where \n" +
+                "table_schema = ? and\n" +
+                "table_name = ? and\n" +
+                "column_name = ?\n" +
+                "order by pgc.conname;";
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, schema);
+            statement.setString(2, table);
+            statement.setString(3, column);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                String constraint = rs.getString(1);
+                Preconditions.checkState(!rs.next(), "Expected only one check constraint.");
+                return constraint;
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

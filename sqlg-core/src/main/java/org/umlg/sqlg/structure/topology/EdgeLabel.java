@@ -1400,6 +1400,30 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     @Override
+    void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition) {
+        Preconditions.checkState(propertyColumn.getPropertyDefinition().propertyType().equals(propertyDefinition.propertyType()),
+                "PropertyType must be the same for updatePropertyDefinition. Original: '%s', Updated: '%s' '%s'", propertyColumn.getPropertyDefinition().propertyType(), propertyDefinition.propertyType()
+        );
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("EdgeLabel '%s' updatePropertyDefinition with '%s' '%s'", getFullName(), propertyColumn.getName(), propertyDefinition.toString())
+        );
+        String name = propertyColumn.getName();
+        if (!this.uncommittedUpdatedProperties.containsKey(name)) {
+            PropertyColumn copy = new PropertyColumn(this, name, propertyDefinition);
+            this.uncommittedUpdatedProperties.put(name, copy);
+            TopologyManager.updateEdgeLabelPropertyColumn(
+                    this.sqlgGraph,
+                    getSchema().getName(),
+                    EDGE_PREFIX + getLabel(),
+                    name,
+                    propertyDefinition
+            );
+//            renameColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
+        }
+    }
+
+    @Override
     void renameProperty(String name, PropertyColumn propertyColumn) {
         this.getSchema().getTopology().startSchemaChange(
                 String.format("EdgeLabel '%s' renameProperty with '%s' '%s'", getFullName(), name, propertyColumn.getName())

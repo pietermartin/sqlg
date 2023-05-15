@@ -1096,6 +1096,30 @@ public class TopologyManager {
 
     }
 
+    static void updateVertexLabelPropertyColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String name, PropertyDefinition propertyDefinition) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(prefixedTable.startsWith(VERTEX_PREFIX), "prefixedTable must be for a vertex. prefixedTable = " + prefixedTable);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+
+            List<Vertex> propertiesToUpdate = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has(SQLG_SCHEMA_SCHEMA_NAME, schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, prefixedTable.substring(VERTEX_PREFIX.length()))
+                    .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                    .has(SQLG_SCHEMA_PROPERTY_NAME, name)
+                    .toList();
+            Preconditions.checkState(propertiesToUpdate.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, propertiesToUpdate, name, propertiesToUpdate.size()));
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, propertyDefinition.multiplicity().lower());
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, propertyDefinition.multiplicity().upper());
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, propertyDefinition.defaultLiteral());
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, propertyDefinition.checkConstraint());
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
     static void renameVertexLabelPropertyColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column, String newName) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
@@ -1113,6 +1137,32 @@ public class TopologyManager {
             Preconditions.checkState(propertiesToRename.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, propertiesToRename, column, propertiesToRename.size()));
             propertiesToRename.get(0).property(SQLG_SCHEMA_PROPERTY_NAME, newName);
 
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    static void updateEdgeLabelPropertyColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String name, PropertyDefinition propertyDefinition) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(prefixedTable.startsWith(EDGE_PREFIX), "prefixedTable must be for a edge. prefixedTable = " + prefixedTable);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+
+            List<Vertex> propertiesToUpdate = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has(SQLG_SCHEMA_SCHEMA_NAME, schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .has(SQLG_SCHEMA_EDGE_LABEL_NAME, prefixedTable.substring(EDGE_PREFIX.length()))
+                    .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                    .has(SQLG_SCHEMA_PROPERTY_NAME, name)
+                    .toList();
+            Preconditions.checkState(propertiesToUpdate.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, propertiesToUpdate, name, propertiesToUpdate.size()));
+
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, propertyDefinition.multiplicity().lower());
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, propertyDefinition.multiplicity().upper());
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, propertyDefinition.defaultLiteral());
+            propertiesToUpdate.get(0).property(SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, propertyDefinition.checkConstraint());
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

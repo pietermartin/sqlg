@@ -26,4 +26,8 @@ public interface TopologyInf {
     default void rename(String name) {
         throw SqlgExceptions.topologyRenameNotSupported(this.getClass().getSimpleName());
     }
+
+    default void updatePropertyDefinition(PropertyDefinition propertyDefinition) {
+        throw SqlgExceptions.topologyRenameNotSupported(this.getClass().getSimpleName());
+    }
 }

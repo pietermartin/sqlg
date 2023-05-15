@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestHashPartitioning;
+import org.umlg.sqlg.test.topology.TestTopologyPropertyColumnUpdate;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,9 @@ import org.umlg.sqlg.test.topology.TestHashPartitioning;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestHashPartitioning.class
+//        TestHashPartitioning.class
+//        TestUpgrade301.class
+        TestTopologyPropertyColumnUpdate.class
 })
 public class AnyTest {
 }

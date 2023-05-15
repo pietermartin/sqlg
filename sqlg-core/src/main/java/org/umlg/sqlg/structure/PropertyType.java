@@ -253,4 +253,11 @@ public class PropertyType {
         return this.name;
     }
 
+    @Override
+    public boolean equals(Object propertyType) {
+        if (!(propertyType instanceof PropertyType other)) {
+            return false;
+        }
+        return ordinal == other.ordinal;
+    }
 }

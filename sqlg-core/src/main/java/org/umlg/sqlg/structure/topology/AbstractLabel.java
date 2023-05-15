@@ -39,6 +39,8 @@ public abstract class AbstractLabel implements TopologyInf {
     final Map<String, PropertyColumn> uncommittedProperties = new ThreadLocalMap<>();
     final Set<String> uncommittedRemovedProperties = new ThreadLocalSet<>();
 
+    final Map<String, PropertyColumn> uncommittedUpdatedProperties = new ThreadLocalMap<>();
+
     private final TreeMap<Integer, String> identifierMap = new TreeMap<>();
     final ListOrderedSet<String> identifiers = new ListOrderedSet<>();
     private final Set<String> uncommittedIdentifiers = new ThreadLocalListOrderedSet<>();
@@ -841,6 +843,12 @@ public abstract class AbstractLabel implements TopologyInf {
             this.properties.remove(prop);
             it.remove();
         }
+        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, PropertyColumn> entry = it.next();
+            this.properties.put(entry.getKey(), entry.getValue());
+            entry.getValue().afterCommit();
+            it.remove();
+        }
         this.identifiers.addAll(this.uncommittedIdentifiers);
         int index = -1;
         for (Iterator<Pair<String, String>> it = this.renamedIdentifiers.iterator(); it.hasNext(); ) {
@@ -1166,6 +1174,262 @@ public abstract class AbstractLabel implements TopologyInf {
     abstract void renameProperty(String name, PropertyColumn propertyColumn);
 
     /**
+     * Updates the {@link PropertyDefinition}. Only the multiplicity, defaultLiteral and checkConstraint can be updated.
+     * The {@link PropertyType} of the property can not be updated.
+     *
+     * @param propertyColumn     The column to update.
+     * @param propertyDefinition The {@link PropertyDefinition} to update to.
+     */
+//    abstract void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition);
+//    @Override
+    void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition) {
+        PropertyDefinition currentPropertyDefinition = propertyColumn.getPropertyDefinition();
+        Preconditions.checkState(currentPropertyDefinition.propertyType().equals(propertyDefinition.propertyType()),
+                "PropertyType must be the same for updatePropertyDefinition. Original: '%s', Updated: '%s' '%s'", currentPropertyDefinition.propertyType(), propertyDefinition.propertyType()
+        );
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("VertexLabel '%s' updatePropertyDefinition with '%s' '%s'", getFullName(), propertyColumn.getName(), propertyDefinition)
+        );
+        String name = propertyColumn.getName();
+        if (!this.uncommittedUpdatedProperties.containsKey(name)) {
+            PropertyColumn copy = new PropertyColumn(this, name, propertyDefinition);
+            this.uncommittedUpdatedProperties.put(name, copy);
+            TopologyManager.updateVertexLabelPropertyColumn(
+                    this.sqlgGraph,
+                    getSchema().getName(),
+                    VERTEX_PREFIX + getLabel(),
+                    name,
+                    propertyDefinition
+            );
+            if (currentPropertyDefinition.multiplicity().isRequired() && !propertyDefinition.multiplicity().isRequired()) {
+                //remove NOT NULL
+                removeNotNull(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
+            }
+            if (!currentPropertyDefinition.multiplicity().isRequired() && propertyDefinition.multiplicity().isRequired()) {
+                //add NOT NULL
+                addNotNull(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
+            }
+            if (currentPropertyDefinition.defaultLiteral() != null && propertyDefinition.defaultLiteral() == null) {
+                //remove defaultLiteral
+                removeDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
+            }
+            if (currentPropertyDefinition.defaultLiteral() == null && propertyDefinition.defaultLiteral() != null) {
+                //add defaultLiteral
+                addDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.defaultLiteral());
+            }
+            if (currentPropertyDefinition.defaultLiteral() != null && propertyDefinition.defaultLiteral() != null &&
+                    !currentPropertyDefinition.defaultLiteral().equals(propertyDefinition.defaultLiteral())) {
+
+                //remove defaultLiteral
+                removeDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
+                //add defaultLiteral
+                addDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.defaultLiteral());
+            }
+            if (!currentPropertyDefinition.propertyType().isArray()) {
+                if (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() == null) {
+                    //remove checkConstraint
+                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                    Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                    removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
+                }
+                if (currentPropertyDefinition.checkConstraint() == null && propertyDefinition.checkConstraint() != null) {
+                    //add checkConstraint
+                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, null, propertyDefinition.checkConstraint());
+                }
+                if (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() != null &&
+                        !currentPropertyDefinition.checkConstraint().equals(propertyDefinition.checkConstraint())) {
+
+                    //add new checkConstraint
+                    //remove checkConstraint
+                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                    Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                    removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
+                    //add checkConstraint
+                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, null, propertyDefinition.checkConstraint());
+                }
+            } else {
+                //arrays
+                if ((currentPropertyDefinition.multiplicity().hasLimits() && !propertyDefinition.multiplicity().hasLimits()) ||
+                        (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() == null) ||
+                        (propertyDefinition.multiplicity().hasLimits() && !currentPropertyDefinition.multiplicity().equals(propertyDefinition.multiplicity())) ||
+                        (currentPropertyDefinition.checkConstraint() != null && !currentPropertyDefinition.checkConstraint().equals(propertyDefinition.checkConstraint()))) {
+                    //remove checkConstraint
+                }
+                if (propertyDefinition.multiplicity().hasLimits() && propertyDefinition.checkConstraint() != null) {
+                    if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
+                        //remove checkConstraint
+                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                        Preconditions.checkNotNull(checkConstraintName, "Failed to find check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                        removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
+                    }
+                    //add checkConstraint
+                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.multiplicity(), propertyDefinition.checkConstraint());
+                } else if (propertyDefinition.multiplicity().hasLimits()) {
+                    if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
+                        //remove checkConstraint
+                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                        Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                        removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
+                    }
+                    //add checkConstraint
+                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.multiplicity(), null);
+
+                } else if (propertyDefinition.checkConstraint() != null) {
+                    if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
+                        //remove checkConstraint
+                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                        Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                        removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
+                    }
+                    //add checkConstraint
+                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, null, propertyDefinition.checkConstraint());
+                }
+            }
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
+        }
+    }
+
+    void addDefaultLiteral(String schema, String table, String column, String defaultLiteral) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" ALTER COLUMN ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+        sql.append(" SET DEFAULT ");
+        sql.append(defaultLiteral);
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void addNotNull(String schema, String table, String column) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" ALTER COLUMN ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+        sql.append(" SET NOT NULL");
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void removeCheckConstraint(String schema, String table, String checkConstraintName) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" DROP CONSTRAINT ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(checkConstraintName));
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    void addCheckConstraint(String schema, String table, String column, Multiplicity multiplicity, String checkConstraint) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" ADD CONSTRAINT ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table + "_" + column));
+        if (multiplicity != null && checkConstraint != null) {
+            sql.append(" CHECK ").append("((").append(checkConstraint).append(") AND (");
+            sql.append(multiplicity.toCheckConstraint(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column))).append("))");
+        } else if (multiplicity != null) {
+            sql.append(" CHECK ").append("(").append(multiplicity.toCheckConstraint(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column))).append(")");
+        } else {
+            sql.append(" CHECK ").append("(").append(checkConstraint).append(")");
+
+        }
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+void removeDefaultLiteral(String schema, String table, String column) {
+    StringBuilder sql = new StringBuilder("ALTER TABLE ");
+    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+    sql.append(".");
+    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+    sql.append(" ALTER COLUMN ");
+    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+    sql.append(" DROP DEFAULT");
+    if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+        sql.append(";");
+    }
+    if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(sql.toString());
+    }
+    Connection conn = sqlgGraph.tx().getConnection();
+    try (Statement stmt = conn.createStatement()) {
+        stmt.execute(sql.toString());
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
+}
+
+    void removeNotNull(String schema, String table, String column) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" ALTER COLUMN ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+        sql.append(" DROP NOT NULL");
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * remove a column from the table
      *
      * @param schema the schema
@@ -1407,5 +1671,6 @@ public abstract class AbstractLabel implements TopologyInf {
     void setShardCount(int shardCount) {
         this.shardCount = shardCount;
     }
+
 
 }

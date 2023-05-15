@@ -18,6 +18,9 @@ public record PropertyDefinition(PropertyType propertyType, Multiplicity multipl
         if (!propertyType.isArray() && multiplicity.isMany()) {
             throw new IllegalArgumentException("Multiplicity can only be a many for array types.");
         }
+        if (!propertyType.isArray() && multiplicity.upper() != 1) {
+            throw new IllegalArgumentException("upper Multiplicity must be 1 for non array types.");
+        }
     }
 
     private PropertyDefinition(PropertyType propertyType) {

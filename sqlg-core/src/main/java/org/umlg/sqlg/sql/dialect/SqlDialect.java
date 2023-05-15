@@ -1434,4 +1434,7 @@ public interface SqlDialect {
         return (byte[])object7;
     }
 
+    default String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column) {
+        return null;
+    }
 }

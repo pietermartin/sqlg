@@ -1285,4 +1285,31 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_ORDERED + "\" DROP DEFAULT;"
         );
     }
+
+    @Override
+    public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        String sql = "SELECT a.CONSTRAINT_NAME FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE a JOIN\n" +
+                "INFORMATION_SCHEMA.CHECK_CONSTRAINTS b ON a.CONSTRAINT_NAME = b.CONSTRAINT_NAME\n" +
+                "WHERE a.TABLE_SCHEMA = ? and a.TABLE_NAME = ? AND a.COLUMN_NAME = ? AND b.CHECK_CLAUSE NOT LIKE '%NOT NULL%';";
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, schema);
+            statement.setString(2, table);
+            statement.setString(3, column);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                String checkConstraintName = rs.getString(1);
+                if (rs.next()) {
+                    String _checkConstraintName = rs.getString(1);
+                    System.out.println(_checkConstraintName);
+                }
+                Preconditions.checkState(!rs.next(), "Column '%s.%s' has more than one check constraint.", table, column);
+                return checkConstraintName;
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

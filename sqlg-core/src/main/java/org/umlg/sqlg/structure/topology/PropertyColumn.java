@@ -96,31 +96,31 @@ public class PropertyColumn implements TopologyInf {
         if (!(o instanceof PropertyColumn other)) {
             return false;
         }
-        if (this.abstractLabel.getSchema().getName().equals(other.abstractLabel.getSchema().getName())) {
-            if (this.abstractLabel.getLabel().equals(other.abstractLabel.getLabel())) {
-                return this.getName().equals(other.getName()) && this.getPropertyType() == other.getPropertyType();
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
+        return this.abstractLabel.getSchema().getName().equals(other.abstractLabel.getSchema().getName()) &&
+                this.abstractLabel.getLabel().equals(other.abstractLabel.getLabel()) &&
+                this.getName().equals(other.getName()) &&
+                this.getPropertyDefinition().equals(other.getPropertyDefinition());
     }
 
     @Override
     public String toString() {
         return this.abstractLabel.getSchema().getName() + "." + this.abstractLabel.getLabel() + "." + this.name;
     }
-    
-    
+
+
     @Override
     public void remove(boolean preserveData) {
-    	this.abstractLabel.removeProperty(this, preserveData);
+        this.abstractLabel.removeProperty(this, preserveData);
     }
 
     @Override
     public void rename(String name) {
         this.abstractLabel.renameProperty(name, this);
+    }
+
+    @Override
+    public void updatePropertyDefinition(PropertyDefinition propertyDefinition) {
+        this.abstractLabel.updatePropertyDefinition(this, propertyDefinition);
     }
 
     PropertyColumn readOnlyCopy(AbstractLabel abstractLabel) {
