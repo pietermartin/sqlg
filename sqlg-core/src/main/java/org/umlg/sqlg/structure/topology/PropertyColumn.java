@@ -16,7 +16,7 @@ public class PropertyColumn implements TopologyInf {
     private final AbstractLabel abstractLabel;
     private final String name;
     private boolean committed = true;
-    private final PropertyDefinition propertyDefinition;
+    private PropertyDefinition propertyDefinition;
     @SuppressWarnings("unused")
     private final boolean isForeignPropertyColumn;
 
@@ -50,6 +50,10 @@ public class PropertyColumn implements TopologyInf {
 
     public PropertyDefinition getPropertyDefinition() {
         return propertyDefinition;
+    }
+
+    void setPropertyDefinition(PropertyDefinition propertyDefinition) {
+        this.propertyDefinition = propertyDefinition;
     }
 
     public AbstractLabel getParentLabel() {

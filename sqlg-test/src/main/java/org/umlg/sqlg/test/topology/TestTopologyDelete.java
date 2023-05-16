@@ -48,8 +48,8 @@ public class TestTopologyDelete extends BaseTest {
         String[] schemas = new String[]{null, "MySchema"};
         boolean[] preserve = new boolean[]{true, false};
         boolean[] rollback = new boolean[]{true, false};
-//        String[] schemas = new String[]{"MySchema"};
-//        boolean[] preserve = new boolean[]{false};
+//        String[] schemas = new String[]{null};
+//        boolean[] preserve = new boolean[]{true};
 //        boolean[] rollback = new boolean[]{false};
         for (String s : schemas) {
             for (boolean p : preserve) {

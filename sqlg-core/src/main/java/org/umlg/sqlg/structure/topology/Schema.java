@@ -160,8 +160,7 @@ public class Schema implements TopologyInf {
     }
 
     public VertexLabel ensureVertexLabelExist(final String label, Map<String, PropertyDefinition> columns) {
-        Map<String, PropertyDefinition> _columns = Collections.unmodifiableMap(columns);
-        return ensureVertexLabelExist(label, _columns, new ListOrderedSet<>());
+        return ensureVertexLabelExist(label, columns, new ListOrderedSet<>());
     }
 
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers) {
@@ -315,6 +314,13 @@ public class Schema implements TopologyInf {
         this.sqlgGraph.getSqlDialect().validateTableName(edgeLabelName);
         for (String columnName : columns.keySet()) {
             this.sqlgGraph.getSqlDialect().validateColumnName(columnName);
+        }
+        
+        //remove temp on PropertyDefinition
+        for (String s : columns.keySet()) {
+            PropertyDefinition original = columns.get(s);
+            PropertyDefinition copy = new PropertyDefinition(original.propertyType(), original.multiplicity(), original.defaultLiteral(), original.checkConstraint(), false);
+            columns.put(s, copy);
         }
 
         for (String identifier : identifiers) {
@@ -715,6 +721,14 @@ public class Schema implements TopologyInf {
     private VertexLabel createVertexLabel(String vertexLabelName, Map<String, PropertyDefinition> columns, ListOrderedSet<String> identifiers) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
+
+        //remove temp on PropertyDefinition
+        for (String s : columns.keySet()) {
+            PropertyDefinition original = columns.get(s);
+            PropertyDefinition copy = new PropertyDefinition(original.propertyType(), original.multiplicity(), original.defaultLiteral(), original.checkConstraint(), false);
+            columns.put(s, copy);
+        }
+
         this.sqlgGraph.getSqlDialect().validateTableName(VERTEX_PREFIX + vertexLabelName);
         for (String columnName : columns.keySet()) {
             this.sqlgGraph.getSqlDialect().validateColumnName(columnName);

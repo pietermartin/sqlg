@@ -198,7 +198,7 @@ public class EdgeLabel extends AbstractLabel {
         return this.topology;
     }
 
-    //    @Override
+//        @Override
     public void ensurePropertiesExist(Map<String, PropertyDefinition> columns) {
         for (Map.Entry<String, PropertyDefinition> column : columns.entrySet()) {
             PropertyDefinition incomingPropertyDefinition = column.getValue();

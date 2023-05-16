@@ -57,6 +57,7 @@ public record PropertyDefinition(PropertyType propertyType, Multiplicity multipl
         propertyDefinitionObjectNode.set("multiplicity", multiplicity.toNotifyJson());
         propertyDefinitionObjectNode.put("defaultLiteral", defaultLiteral);
         propertyDefinitionObjectNode.put("checkConstraint", checkConstraint);
+        propertyDefinitionObjectNode.put("temp", temp);
         return propertyDefinitionObjectNode;
     }
 

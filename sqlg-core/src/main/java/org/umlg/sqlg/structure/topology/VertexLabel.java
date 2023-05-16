@@ -449,14 +449,14 @@ public class VertexLabel extends AbstractLabel {
                         this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
                     }
                 } else {
-                    //Set the proper definition in the map;
                     SqlgUtil.validateIncomingPropertyType(
                             getFullName() + "." + column.getKey(),
                             incomingPropertyDefinition,
                             getFullName() + "." + propertyColumn.getName(),
                             propertyColumn.getPropertyDefinition()
                     );
-//                    columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
+                    //Set the proper definition in the map;
+                    columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
                 }
             } else {
                 if (!sqlgGraph.tx().isInStreamingBatchMode()) {
@@ -468,9 +468,9 @@ public class VertexLabel extends AbstractLabel {
                             getFullName() + "." + propertyColumn.getName(),
                             propertyColumn.getPropertyDefinition()
                     );
+                    //Set the proper definition in the map;
+                    columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
                 }
-//                //Set the proper definition in the map;
-//                columns.put(column.getKey(), propertyColumn.getPropertyDefinition());
             }
         }
     }

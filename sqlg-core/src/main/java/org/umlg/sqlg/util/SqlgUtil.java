@@ -1284,6 +1284,7 @@ public class SqlgUtil {
             default ->
                     Preconditions.checkState(incomingPropertyType == propertyType, "Column '%s' with PropertyType '%s' and incoming property '%s' with PropertyType '%s' are incompatible.", incomingPropertyDescription, propertyType.name(), propertyDescription, incomingPropertyType.name());
         }
+        //temp = true for addVertex(...) where the multiplicity is not known.
         if (!incomingPropertyDefinition.temp()) {
             Preconditions.checkState(
                     incomingPropertyDefinition.multiplicity().equals(propertyDefinition.multiplicity()),

@@ -11,8 +11,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.Schema;
 import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
@@ -25,6 +27,25 @@ import java.util.*;
  * Time: 1:40 PM
  */
 public class TestTopology extends BaseTest {
+
+    @Test
+    public void testPropertyDefinitionTemp() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+            put("col1", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        this.sqlgGraph.addVertex(T.label, "A", "col1", "value1");
+        this.sqlgGraph.tx().commit();
+        PropertyColumn propertyColumn = this.sqlgGraph.getTopology().getPublicSchema()
+                .getVertexLabel("A").orElseThrow()
+                .getProperty("col1").orElseThrow();
+        Assert.assertFalse(propertyColumn.getPropertyDefinition().temp());
+        this.sqlgGraph.addVertex(T.label, "A", "col1", "asd");
+        propertyColumn = this.sqlgGraph.getTopology().getPublicSchema()
+                .getVertexLabel("A").orElseThrow()
+                .getProperty("col1").orElseThrow();
+        Assert.assertFalse(propertyColumn.getPropertyDefinition().temp());
+        this.sqlgGraph.tx().commit();
+    }
 
     @Test
     public void testEnsureAdditionalPropertyExist() {
