@@ -1084,7 +1084,7 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
-    public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column) {
+    public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column, String constraint) {
         Connection conn = sqlgGraph.tx().getConnection();
         String sql = "SELECT a.CONSTRAINT_NAME FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE a JOIN\n" +
                 "INFORMATION_SCHEMA.CHECK_CONSTRAINTS b ON a.CONSTRAINT_NAME = b.CONSTRAINT_NAME\n" +

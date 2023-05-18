@@ -316,13 +316,6 @@ public class Schema implements TopologyInf {
             this.sqlgGraph.getSqlDialect().validateColumnName(columnName);
         }
         
-        //remove temp on PropertyDefinition
-        for (String s : columns.keySet()) {
-            PropertyDefinition original = columns.get(s);
-            PropertyDefinition copy = new PropertyDefinition(original.propertyType(), original.multiplicity(), original.defaultLiteral(), original.checkConstraint(), false);
-            columns.put(s, copy);
-        }
-
         for (String identifier : identifiers) {
             Preconditions.checkState(columns.containsKey(identifier), "The identifiers must be in the specified columns. \"%s\" not found", identifier);
         }
@@ -682,6 +675,19 @@ public class Schema implements TopologyInf {
         Preconditions.checkArgument(this.topology.isSchemaChanged(), "Schema.createEdgeLabel must have schemaChanged = true");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
+
+        //remove temp on PropertyDefinition
+        for (String col : columns.keySet()) {
+            PropertyDefinition original = columns.get(col);
+            PropertyDefinition copy = new PropertyDefinition(
+                    original.propertyType(),
+                    original.multiplicity(),
+                    original.defaultLiteral(),
+                    original.checkConstraint(),
+                    false
+            );
+            columns.put(col, copy);
+        }
 
         Schema inVertexSchema = inVertexLabel.getSchema();
 
@@ -1411,6 +1417,7 @@ public class Schema implements TopologyInf {
                 if (notifyJsonOptional.isPresent()) {
                     JsonNode notifyJson = notifyJsonOptional.get();
                     if (notifyJson.get("uncommittedProperties") != null ||
+                            notifyJson.get("uncommittedUpdatedProperties") != null ||
                             notifyJson.get("uncommittedOutEdgeLabels") != null ||
                             notifyJson.get("uncommittedInEdgeLabels") != null ||
                             notifyJson.get("outEdgeLabels") != null ||

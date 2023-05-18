@@ -700,22 +700,51 @@ public abstract class AbstractLabel implements TopologyInf {
 
     void addColumn(String schema, String table, ImmutablePair<String, PropertyDefinition> keyValue) {
         int count = 1;
-        String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(keyValue.getRight().propertyType());
+        PropertyDefinition propertyDefinition = keyValue.getRight();
+        PropertyType propertyType = propertyDefinition.propertyType();
+        Multiplicity multiplicity = propertyDefinition.multiplicity();
+        String defaultLiteral = propertyDefinition.defaultLiteral();
+        String checkConstraint = propertyDefinition.checkConstraint();
+        String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyDefinition.propertyType());
         for (String sqlDefinition : propertyTypeToSqlDefinition) {
             StringBuilder sql = new StringBuilder("ALTER TABLE ");
             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sql.append(".");
             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
             sql.append(" ADD ");
+            String column;
             if (count > 1) {
-                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(keyValue.getLeft() + keyValue.getRight().propertyType().getPostFixes()[count - 2]));
+                column = keyValue.getLeft() + keyValue.getRight().propertyType().getPostFixes()[count - 2];
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
             } else {
                 //The first column existVertexLabel no postfix
-                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(keyValue.getLeft()));
+                column = keyValue.getLeft();
+                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
             }
+
             count++;
             sql.append(" ");
             sql.append(sqlDefinition);
+
+            if (defaultLiteral != null) {
+                sql.append(" DEFAULT ");
+                sql.append(defaultLiteral);
+            }
+            if (multiplicity.isRequired()) {
+                sql.append(" NOT NULL");
+            }
+            if (propertyType.isArray() && multiplicity.hasLimits()) {
+                if (checkConstraint != null) {
+                    sql.append(" CHECK ").append("((").append(checkConstraint).append(") AND (");
+                    sql.append(multiplicity.toCheckConstraint(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column))).append("))");
+                } else {
+                    sql.append(" CHECK ").append("(").append(multiplicity.toCheckConstraint(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column))).append(")");
+                }
+            } else {
+                if (checkConstraint != null) {
+                    sql.append(" CHECK ").append("(").append(checkConstraint).append(")");
+                }
+            }
 
             if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
@@ -943,6 +972,10 @@ public abstract class AbstractLabel implements TopologyInf {
             for (PropertyColumn property : this.uncommittedProperties.values()) {
                 propertyArrayNode.add(property.toNotifyJson());
             }
+            ArrayNode updatedPropertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (PropertyColumn property : this.uncommittedUpdatedProperties.values()) {
+                updatedPropertyArrayNode.add(property.toNotifyJson());
+            }
             ArrayNode removedPropertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String property : this.uncommittedRemovedProperties) {
                 removedPropertyArrayNode.add(property);
@@ -1000,6 +1033,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 removedIndexArrayNode.add(property);
             }
             result.set("uncommittedProperties", propertyArrayNode);
+            result.set("uncommittedUpdatedProperties", updatedPropertyArrayNode);
             result.set("uncommittedRemovedProperties", removedPropertyArrayNode);
             result.set("uncommittedIdentifiers", identifierArrayNode);
             result.set("renamedIdentifiers", renamedIdentifierArrayNode);
@@ -1017,7 +1051,7 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             result.set("uncommittedIndexes", indexArrayNode);
             result.set("uncommittedRemovedIndexes", removedIndexArrayNode);
-            if (propertyArrayNode.size() == 0 && removedPropertyArrayNode.size() == 0 &&
+            if (propertyArrayNode.size() == 0 && uncommittedUpdatedProperties.size() == 0 && removedPropertyArrayNode.size() == 0 &&
                     identifierArrayNode.size() == 0 &&
                     uncommittedPartitionArrayNode.size() == 0 && removedPartitionArrayNode.size() == 0 && committedPartitionArrayNode.size() == 0 &&
                     indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0 &&
@@ -1043,6 +1077,16 @@ public abstract class AbstractLabel implements TopologyInf {
                 PropertyColumn old = this.properties.put(propertyColumn.getName(), propertyColumn);
                 if (fire && old == null) {
                     this.getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
+                }
+            }
+        }
+        ArrayNode updatedPropertiesNode = (ArrayNode) vertexLabelJson.get("uncommittedUpdatedProperties");
+        if (updatedPropertiesNode != null) {
+            for (JsonNode propertyNode : updatedPropertiesNode) {
+                PropertyColumn propertyColumn = PropertyColumn.fromNotifyJson(this, propertyNode);
+                PropertyColumn old = this.properties.put(propertyColumn.getName(), propertyColumn);
+                if (fire && old == null) {
+                    this.getTopology().fire(propertyColumn, null, TopologyChangeAction.UPDATE);
                 }
             }
         }
@@ -1180,9 +1224,8 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param propertyColumn     The column to update.
      * @param propertyDefinition The {@link PropertyDefinition} to update to.
      */
-//    abstract void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition);
-//    @Override
     void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition) {
+        Preconditions.checkState(!sqlgGraph.getSqlDialect().isMariaDb(), "updatePropertyDefinition is not supported for mariadb. Dropping constraints is complicated so will only do if if requested.");
         PropertyDefinition currentPropertyDefinition = propertyColumn.getPropertyDefinition();
         Preconditions.checkState(currentPropertyDefinition.propertyType().equals(propertyDefinition.propertyType()),
                 "PropertyType must be the same for updatePropertyDefinition. Original: '%s', Updated: '%s' '%s'", currentPropertyDefinition.propertyType(), propertyDefinition.propertyType()
@@ -1207,7 +1250,7 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             if (!currentPropertyDefinition.multiplicity().isRequired() && propertyDefinition.multiplicity().isRequired()) {
                 //add NOT NULL
-                addNotNull(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
+                addNotNull(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, currentPropertyDefinition.propertyType());
             }
             if (currentPropertyDefinition.defaultLiteral() != null && propertyDefinition.defaultLiteral() == null) {
                 //remove defaultLiteral
@@ -1228,7 +1271,7 @@ public abstract class AbstractLabel implements TopologyInf {
             if (!currentPropertyDefinition.propertyType().isArray()) {
                 if (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() == null) {
                     //remove checkConstraint
-                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
                     Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
                     removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
                 }
@@ -1241,7 +1284,7 @@ public abstract class AbstractLabel implements TopologyInf {
 
                     //add new checkConstraint
                     //remove checkConstraint
-                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
                     Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
                     removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
                     //add checkConstraint
@@ -1258,7 +1301,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 if (propertyDefinition.multiplicity().hasLimits() && propertyDefinition.checkConstraint() != null) {
                     if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
                         //remove checkConstraint
-                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
                         Preconditions.checkNotNull(checkConstraintName, "Failed to find check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
                         removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
                     }
@@ -1267,7 +1310,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 } else if (propertyDefinition.multiplicity().hasLimits()) {
                     if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
                         //remove checkConstraint
-                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
                         Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
                         removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
                     }
@@ -1277,7 +1320,7 @@ public abstract class AbstractLabel implements TopologyInf {
                 } else if (propertyDefinition.checkConstraint() != null) {
                     if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
                         //remove checkConstraint
-                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name);
+                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
                         Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
                         removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
                     }
@@ -1312,23 +1355,14 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    void addNotNull(String schema, String table, String column) {
-        StringBuilder sql = new StringBuilder("ALTER TABLE ");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
-        sql.append(".");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
-        sql.append(" ALTER COLUMN ");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-        sql.append(" SET NOT NULL");
-        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
+    void addNotNull(String schema, String table, String column, PropertyType propertyType) {
+        String sql = this.sqlgGraph.getSqlDialect().addNotNullConstraint(this.sqlgGraph, schema, table, column, propertyType);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(sql.toString());
+            LOGGER.debug(sql);
         }
-        Connection conn = sqlgGraph.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
+            stmt.execute(sql);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1336,18 +1370,18 @@ public abstract class AbstractLabel implements TopologyInf {
 
     void removeCheckConstraint(String schema, String table, String checkConstraintName) {
         StringBuilder sql = new StringBuilder("ALTER TABLE ");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
         sql.append(".");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
         sql.append(" DROP CONSTRAINT ");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(checkConstraintName));
-        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(checkConstraintName));
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(sql.toString());
         }
-        Connection conn = sqlgGraph.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
@@ -1385,27 +1419,27 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-void removeDefaultLiteral(String schema, String table, String column) {
-    StringBuilder sql = new StringBuilder("ALTER TABLE ");
-    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
-    sql.append(".");
-    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
-    sql.append(" ALTER COLUMN ");
-    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-    sql.append(" DROP DEFAULT");
-    if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-        sql.append(";");
+    void removeDefaultLiteral(String schema, String table, String column) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" ALTER COLUMN ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+        sql.append(" DROP DEFAULT");
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
-    if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(sql.toString());
-    }
-    Connection conn = sqlgGraph.tx().getConnection();
-    try (Statement stmt = conn.createStatement()) {
-        stmt.execute(sql.toString());
-    } catch (SQLException e) {
-        throw new RuntimeException(e);
-    }
-}
 
     void removeNotNull(String schema, String table, String column) {
         StringBuilder sql = new StringBuilder("ALTER TABLE ");

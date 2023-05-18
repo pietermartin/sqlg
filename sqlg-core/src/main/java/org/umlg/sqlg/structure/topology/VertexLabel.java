@@ -781,6 +781,7 @@ public class VertexLabel extends AbstractLabel {
         Optional<JsonNode> abstractLabelNode = super.toNotifyJson();
         if (abstractLabelNode.isPresent()) {
             vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
+            vertexLabelNode.set("uncommittedUpdatedProperties", abstractLabelNode.get().get("uncommittedUpdatedProperties"));
             vertexLabelNode.set("uncommittedIdentifiers", abstractLabelNode.get().get("uncommittedIdentifiers"));
             vertexLabelNode.set("renamedIdentifiers", abstractLabelNode.get().get("renamedIdentifiers"));
             vertexLabelNode.set("uncommittedPartitions", abstractLabelNode.get().get("uncommittedPartitions"));
@@ -806,8 +807,6 @@ public class VertexLabel extends AbstractLabel {
             for (EdgeRole edgeRole : this.uncommittedOutEdgeRoles.values()) {
                 Optional<JsonNode> edgeRoleJsonOptional = edgeRole.toNotifyJson();
                 Preconditions.checkState(edgeRoleJsonOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
-//                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-//                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
                 outEdgeLabelsArrayNode.add(edgeRoleJsonOptional.get());
             }
             vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
@@ -831,10 +830,6 @@ public class VertexLabel extends AbstractLabel {
                 Optional<JsonNode> edgeRoleJsonNodeOptional = edgeRole.toNotifyJson();
                 Preconditions.checkState(edgeRoleJsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
                 inEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
-
-//                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-//                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
-//                inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
             }
             vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
         }
@@ -859,11 +854,6 @@ public class VertexLabel extends AbstractLabel {
                 foundOutEdgeLabel = true;
                 outEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
             }
-//            Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-//            if (jsonNodeOptional.isPresent()) {
-//                foundOutEdgeLabel = true;
-//                outEdgeLabelsArrayNode.add(jsonNodeOptional.get());
-//            }
         }
         if (foundOutEdgeLabel) {
             vertexLabelNode.set("outEdgeLabels", outEdgeLabelsArrayNode);
@@ -878,11 +868,6 @@ public class VertexLabel extends AbstractLabel {
                     foundInEdgeLabels = true;
                     inEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
                 }
-//                Optional<JsonNode> jsonNodeOptional = edgeRole.getEdgeLabel().toNotifyJson();
-//                if (jsonNodeOptional.isPresent()) {
-//                    foundInEdgeLabels = true;
-//                    inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
-//                }
             }
         }
         if (foundInEdgeLabels) {

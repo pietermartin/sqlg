@@ -14,10 +14,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.Multiplicity;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.topology.PropertyColumn;
-import org.umlg.sqlg.structure.topology.Schema;
-import org.umlg.sqlg.structure.topology.Topology;
-import org.umlg.sqlg.structure.topology.VertexLabel;
+import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -27,6 +24,56 @@ import java.util.*;
  * Time: 1:40 PM
  */
 public class TestTopology extends BaseTest {
+
+    @Test
+    public void testDefaultLiteralAndCheckConstraintOnNewColumn() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+            put("col1", PropertyDefinition.of(PropertyType.STRING));
+        }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "A", "col1", "value1");
+        this.sqlgGraph.tx().commit();
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+        aVertexLabel.ensurePropertiesExist(new HashMap<>() {{
+            put("col2", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), "'aaa'", "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("col2") + " <> 'a')"));
+        }});
+        this.sqlgGraph.tx().commit();
+
+        PropertyColumn col2PropertyColumn = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("col2").orElseThrow();
+        Assert.assertEquals("(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("col2") + " <> 'a')", col2PropertyColumn.getPropertyDefinition().checkConstraint());
+        Assert.assertEquals("'aaa'", col2PropertyColumn.getPropertyDefinition().defaultLiteral());
+
+        Vertex a = this.sqlgGraph.traversal().V().hasLabel("A").tryNext().orElseThrow();
+        Assert.assertEquals("aaa", a.value("col2"));
+
+        boolean failure = false;
+        try {
+            this.sqlgGraph.addVertex(T.label, "A", "col2", "a");
+        } catch (RuntimeException e) {
+            this.sqlgGraph.tx().rollback();
+            failure = true;
+        }
+        Assert.assertTrue(failure);
+
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B");
+        aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new HashMap<>() {{
+            put("col1", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        }});
+        this.sqlgGraph.tx().commit();
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+        a.addEdge("ab", b, "col1", "value1");
+        this.sqlgGraph.tx().commit();
+
+        EdgeLabel edgeLabel = aVertexLabel.getOutEdgeLabel("ab").orElseThrow();
+        edgeLabel.ensurePropertiesExist(new HashMap<>() {{
+            put("col2", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), "'aaa'", "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("col2") + " <> 'a')"));
+        }});
+
+        this.sqlgGraph.tx().commit();
+        Edge e = this.sqlgGraph.traversal().E().tryNext().orElseThrow();
+        Assert.assertEquals("value1", e.value("col1"));
+        Assert.assertEquals("aaa", e.value("col2"));
+    }
 
     @Test
     public void testPropertyDefinitionTemp() {
@@ -167,7 +214,7 @@ public class TestTopology extends BaseTest {
         Assert.assertEquals(2, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.property").in("vertex_property").count().next().intValue());
         Assert.assertEquals(1, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.property").in("edge_property").count().next().intValue());
 
-        Vertex v = this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").has("name", "public").next();
+        Vertex v = this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").has("name", this.sqlgGraph.getSqlDialect().getPublicSchema()).next();
         Assert.assertTrue(v.edges(Direction.OUT, "schema_vertex").hasNext());
 
         Assert.assertEquals(2, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").as("schema").select("schema").out("schema_vertex").count().next().intValue());

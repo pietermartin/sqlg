@@ -1,6 +1,8 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.mariadb.jdbc.MariaDbBlob;
@@ -1171,5 +1173,48 @@ public class MariadbDialect extends BaseSqlDialect {
         } catch (IOException | SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column, String constraint) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        constraint = StringUtils.removeStart(constraint, "(");
+        constraint = StringUtils.removeEnd(constraint, ")");
+        String sql = "SELECT CONSTRAINT_NAME FROM information_schema.CHECK_CONSTRAINTS" +
+                " WHERE TABLE_NAME = ? and CHECK_CLAUSE = ?";
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, table);
+            statement.setString(2, constraint);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                String checkConstraintName = rs.getString(1);
+                if (rs.next()) {
+                    String _checkConstraintName = rs.getString(1);
+                    System.out.println(_checkConstraintName);
+                }
+                Preconditions.checkState(!rs.next(), "Column '%s.%s' has more than one check constraint.", table, column);
+                return checkConstraintName;
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String addNotNullConstraint(SqlgGraph sqlgGraph, String schema, String table, String column, PropertyType propertyType) {
+        String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" MODIFY ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column)).append(" ").append(propertyTypeToSqlDefinition[0]);
+        sql.append(" NOT NULL");
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
     }
 }

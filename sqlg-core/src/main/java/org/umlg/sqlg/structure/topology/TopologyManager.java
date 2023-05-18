@@ -1065,6 +1065,8 @@ public class TopologyManager {
                     SQLG_SCHEMA_PROPERTY_TYPE, column.getValue().propertyType().name(),
                     SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, column.getValue().multiplicity().lower(),
                     SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, column.getValue().multiplicity().upper(),
+                    SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, column.getValue().defaultLiteral(),
+                    SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, column.getValue().checkConstraint(),
                     CREATED_ON, LocalDateTime.now()
             );
             vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
@@ -1418,6 +1420,8 @@ public class TopologyManager {
                     SQLG_SCHEMA_PROPERTY_TYPE, column.getValue().propertyType().name(),
                     SQLG_SCHEMA_PROPERTY_MULTIPLICITY_LOWER, column.getValue().multiplicity().lower(),
                     SQLG_SCHEMA_PROPERTY_MULTIPLICITY_UPPER, column.getValue().multiplicity().upper(),
+                    SQLG_SCHEMA_PROPERTY_DEFAULT_LITERAL, column.getValue().defaultLiteral(),
+                    SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT, column.getValue().checkConstraint(),
                     CREATED_ON, LocalDateTime.now()
             );
             edge.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);

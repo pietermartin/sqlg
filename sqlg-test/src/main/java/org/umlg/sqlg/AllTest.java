@@ -313,7 +313,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestMerge.class,
         TestPostgresLtree.class,
         TestSchemaTableTreeCache.class,
-        TestTopologyPropertyColumnUpdate.class
+        TestTopologyPropertyColumnUpdate.class,
+        TestTopologyPropertyColumnUpdateDistributed.class
 })
 public class AllTest {
 

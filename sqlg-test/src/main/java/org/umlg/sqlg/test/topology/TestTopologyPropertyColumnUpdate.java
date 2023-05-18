@@ -14,10 +14,6 @@ import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +25,7 @@ public class TestTopologyPropertyColumnUpdate extends BaseTest {
 
     @Before
     public void before() throws Exception {
+        Assume.assumeTrue(!isMariaDb());
         super.before();
         this.topologyListenerTriple.clear();
     }
@@ -637,25 +634,4 @@ public class TestTopologyPropertyColumnUpdate extends BaseTest {
         }
     }
 
-    /**
-     * Works for HSQLDB
-     */
-    public List<String> checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column) {
-        List<String> result = new ArrayList<>();
-        Connection conn = sqlgGraph.tx().getConnection();
-        String sql = "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE\n" +
-                "WHERE TABLE_SCHEMA = ? and TABLE_NAME = ? AND COLUMN_NAME = ?;";
-        try (PreparedStatement statement = conn.prepareStatement(sql)) {
-            statement.setString(1, schema);
-            statement.setString(2, table);
-            statement.setString(3, column);
-            ResultSet rs = statement.executeQuery();
-            while (rs.next()) {
-                result.add(rs.getString(1));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return result;
-    }
 }

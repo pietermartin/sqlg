@@ -4384,7 +4384,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         );
     }
     @Override
-    public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column) {
+    public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column, String constraint) {
         Connection conn = sqlgGraph.tx().getConnection();
         String sql = "select pgc.conname as constraint_name\n" +
                 "from pg_constraint pgc\n" +
@@ -4404,9 +4404,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             statement.setString(3, column);
             ResultSet rs = statement.executeQuery();
             if (rs.next()) {
-                String constraint = rs.getString(1);
+                String constraintName = rs.getString(1);
                 Preconditions.checkState(!rs.next(), "Expected only one check constraint.");
-                return constraint;
+                return constraintName;
             } else {
                 return null;
             }

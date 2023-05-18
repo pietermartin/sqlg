@@ -258,6 +258,10 @@ public class PropertyType {
         if (!(propertyType instanceof PropertyType other)) {
             return false;
         }
-        return ordinal == other.ordinal;
+        if (ordinal == VARCHAR_ORDINAL && other.ordinal == VARCHAR_ORDINAL) {
+            return length == other.length;
+        } else {
+            return ordinal == other.ordinal;
+        }
     }
 }

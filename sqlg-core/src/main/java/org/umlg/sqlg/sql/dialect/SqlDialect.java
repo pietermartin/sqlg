@@ -1434,7 +1434,21 @@ public interface SqlDialect {
         return (byte[])object7;
     }
 
-    default String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column) {
+    default String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column, String constraint) {
         return null;
+    }
+
+    default String addNotNullConstraint(SqlgGraph sqlgGraph, String schema, String table, String column, PropertyType propertyType) {
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(" ALTER COLUMN ");
+        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+        sql.append(" SET NOT NULL");
+        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
     }
 }
