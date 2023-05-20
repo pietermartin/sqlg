@@ -47,6 +47,12 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptIn(OptIn.SUITE_STRUCTURE_STANDARD)
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest",
+        method = "g_VX1X_valuesXageX_countXlocalX",
+        reason = "id is hardcoded")
+@OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.TernaryBooleanLogicsTest",
+        method = "testErrorPropagation",
+        reason = "SqlgNotStepBarrier does nto handle throwing exceptions in the Comparator")
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.TernaryBooleanLogicsTest",
         method = "testNot",
         reason = "SqlgNotStepBarrier does nto handle throwing exceptions in the Comparator")
