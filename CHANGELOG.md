@@ -1,3 +1,10 @@
+##3.0.1
+
+* Upgrade to TinkerPop 3.6.4
+* Fix #485 Add support to update `PropertyDefinition`
+* Fix incorrect defaulting of `multiplicity` in upgrade to 3.0.0
+* Improve error message on validation exceptions and topology locked exceptions.
+
 ##3.0.0
 
 * **!!!Breaking Release.** 
