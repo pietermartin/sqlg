@@ -5,6 +5,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,10 +16,12 @@ import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.EdgeDefinition;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.PropertyColumn;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import static org.junit.Assert.assertTrue;
@@ -46,6 +49,48 @@ public class DocTests extends BaseTest {
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testUpdatePropertyDefinition() {
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<>() {{
+            put("col1", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(0, 1)));
+        }});
+        this.sqlgGraph.tx().commit();
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+        a = this.sqlgGraph.traversal().V().hasLabel("A").tryNext().orElseThrow();
+        Assert.assertNull(a.value("col1"));
+        a.property("col1", "t");
+        this.sqlgGraph.tx().commit();
+
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
+        PropertyColumn propertyColumn = aVertexLabel.getProperty("col1").orElseThrow();
+        propertyColumn.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        this.sqlgGraph.tx().commit();
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "A");
+            Assert.fail("not null constraint expected");
+        } catch (Exception e) {
+            this.sqlgGraph.tx().rollback();
+        }
+
+        propertyColumn.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'test'"));
+        a = this.sqlgGraph.addVertex(T.label, "A");
+        Assert.assertEquals("test", a.value("col1"));
+        this.sqlgGraph.tx().commit();
+
+        propertyColumn.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), "'test'", "(starts_with(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("col1") + ", 't'))"));
+
+        try {
+            a = this.sqlgGraph.addVertex(T.label, "A", "col1", "x");
+            Assert.fail("check constraint expected");
+        } catch (Exception e) {
+            this.sqlgGraph.tx().rollback();
+        }
+        a = this.sqlgGraph.addVertex(T.label, "A", "col1", "taaa");
+        this.sqlgGraph.tx().commit();
     }
 
     //    @Test
@@ -866,52 +911,52 @@ public class DocTests extends BaseTest {
 //        this.sqlgGraph.tx().commit();
 //    }
 
-@Test
-public void testCheckMultiplicitiesPerVertexLabel() {
-    VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person",
-            new LinkedHashMap<>() {{
-                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
-            }}
-    );
-    VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address",
-            new LinkedHashMap<>() {{
-                put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
-            }}
-    );
-    EdgeLabel personAddressEdgeLabel = personVertexLabel.ensureEdgeLabelExist(
-            "address",
-            addressVertexLabel,
-            EdgeDefinition.of(
-                    Multiplicity.of(0, 1, true),
-                    Multiplicity.of(1, 3, true)
-            )
-    );
-    this.sqlgGraph.tx().commit();
-    this.sqlgGraph.getTopology().lock();
-    Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
-    Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
-    Vertex johnHomeAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "home");
-    Vertex johnWorkAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "work");
-    Vertex johnVacationAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "vacation");
-    john.addEdge("address", johnHomeAddress);
-    john.addEdge("address", johnWorkAddress);
-    john.addEdge("address", johnVacationAddress);
-    peter.addEdge("address", johnHomeAddress);
+    @Test
+    public void testCheckMultiplicitiesPerVertexLabel() {
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                }}
+        );
+        VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Address",
+                new LinkedHashMap<>() {{
+                    put("name", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+                }}
+        );
+        EdgeLabel personAddressEdgeLabel = personVertexLabel.ensureEdgeLabelExist(
+                "address",
+                addressVertexLabel,
+                EdgeDefinition.of(
+                        Multiplicity.of(0, 1, true),
+                        Multiplicity.of(1, 3, true)
+                )
+        );
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().lock();
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+        Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+        Vertex johnHomeAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "home");
+        Vertex johnWorkAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "work");
+        Vertex johnVacationAddress = this.sqlgGraph.addVertex(T.label, "Address", "name", "vacation");
+        john.addEdge("address", johnHomeAddress);
+        john.addEdge("address", johnWorkAddress);
+        john.addEdge("address", johnVacationAddress);
+        peter.addEdge("address", johnHomeAddress);
 
-    this.sqlgGraph.tx().checkMultiplicity(personVertexLabel, Direction.OUT, personAddressEdgeLabel, addressVertexLabel);
-    boolean fails = false;
-    try {
-        this.sqlgGraph.tx().checkMultiplicity(addressVertexLabel, Direction.IN, personAddressEdgeLabel, personVertexLabel);
-    } catch (RuntimeException e) {
-        fails = true;
-        if (isPostgres()) {
-            System.out.println(e.getMessage());
-            String msg = String.format("Multiplicity check for EdgeLabel 'address' fails for '%s'.\nUpper multiplicity is [1] current multiplicity is [2]", johnHomeAddress.id().toString());
-            System.out.println(msg);
-            assertTrue(e.getMessage().contains(msg));
+        this.sqlgGraph.tx().checkMultiplicity(personVertexLabel, Direction.OUT, personAddressEdgeLabel, addressVertexLabel);
+        boolean fails = false;
+        try {
+            this.sqlgGraph.tx().checkMultiplicity(addressVertexLabel, Direction.IN, personAddressEdgeLabel, personVertexLabel);
+        } catch (RuntimeException e) {
+            fails = true;
+            if (isPostgres()) {
+                System.out.println(e.getMessage());
+                String msg = String.format("Multiplicity check for EdgeLabel 'address' fails for '%s'.\nUpper multiplicity is [1] current multiplicity is [2]", johnHomeAddress.id().toString());
+                System.out.println(msg);
+                assertTrue(e.getMessage().contains(msg));
+            }
         }
+        assertTrue(fails);
+        this.sqlgGraph.tx().commit();
     }
-    assertTrue(fails);
-    this.sqlgGraph.tx().commit();
-}
 }

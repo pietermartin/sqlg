@@ -1,0 +1,86 @@
+== Sqlg ui
+
+Sqlg includes a basic ui to visualize and delete/remove schema elements.
+
+[WARNING]
+Sqlg' ui is very dangerous as it allows for deletion of schema elements including RDBMS schemas. Use with care and ideally do not expose to a wide audience.
+
+=== Startup
+
+The ui uses http://sparkjava.com[*Sparkjava*] as its web framework.
+
+There are two ways in which to start the ui.
+
+.Embedded
+
+To use a completely standalone Jetty you can run the following code,
+
+ //SqlgUI.initialize(); <1>
+ SqlgUI.initialize(8181);
+ SqlgUI.set(sqlgGraph);
+
+<1> The default port is `4567`
+
+To use an existing embedded Jetty you can use the following setup.
+
+----
+ //Define your filer
+FilterHolder filterHolderSqlgUI = contextHandler.addFilter("spark.servlet.SparkFilter", "/sqlg/*", EnumSet.of(DispatcherType.REQUEST));
+filterHolderSqlgUI.setInitParameter("applicationClass", "org.umlg.sqlg.ui.SparkResources");
+
+//Websocket servlet
+ServletHolder websocketServletHolder = new ServletHolder(new SqlgWebsocketServlet());
+websocketServletHolder.setName("Sqlg-ui websocket servlet");
+contextHandler.addServlet(websocketServletHolder, "/sqlg/data/v1/websocket");
+
+...
+
+SqlgUI.set(sqlgGraph);
+----
+
+.Webserver
+ <filter>
+   <filter-name>SparkFilter</filter-name>
+   <filter-class>spark.servlet.SparkFilter</filter-class>
+   <init-param>
+     <param-name>applicationClass</param-name>
+     <param-value>com.company.YourApplication</param-value>
+   </init-param>
+ </filter>
+ <filter-mapping>
+   <filter-name>SparkFilter</filter-name>
+   <url-pattern>/*</url-pattern>
+ </filter-mapping>
+
+[WARNING]
+The webserver mode has not been tested, nor do I know how the websocket will be made to work.
+
+The ui is accessible at
+
+----
+http://ip:port/sqlg/v1/
+----
+
+=== Authentication
+
+The ui uses cookie authentication.
+
+To define the users that are allowed to use the ui there must be a corresponding property in `sqlg.properties`
+
+----
+sqlg.ui.username.john=john_password
+sqlg.ui.username.peter=peter_password
+----
+
+For the user to be allowed to do any editing there must be the following property in `sqlg.properties`
+
+----
+sqlg.ui.username.john.edit=true
+sqlg.ui.username.peter.edit=true
+----
+
+There is one additional property which specifies how long the cookie remains valid for.
+
+----
+sqlg.ui.cookie.expiry=3600
+----

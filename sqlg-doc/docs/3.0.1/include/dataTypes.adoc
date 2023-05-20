@@ -1,0 +1,243 @@
+== Data types
+
+.Table Data types
+|===
+|Java |Postgresql |HSQLDB |H2 |MariaDB
+
+|Boolean
+|BOOLEAN
+|BOOLEAN
+|BOOLEAN
+|BOOLEAN
+
+|Byte
+|*Not supported*
+|TINYINT
+|TINYINT
+|TINYINT
+
+|Short
+|SMALLINT
+|SMALLINT
+|SMALLINT
+|SMALLINT
+
+|Integer
+|INTEGER
+|INTEGER
+|INT
+|INTEGER
+
+|Long
+|BIGINT
+|BIGINT
+|BIGINT
+|BIGINT
+
+|Float
+|REAL
+|*Not supported*
+|REAL
+|*Not supported*
+
+|Double
+|DOUBLE PRECISION
+|DOUBLE
+|DOUBLE
+|DOUBLE
+
+|BigDecimal
+|DOUBLE PRECISION
+|DOUBLE
+|DOUBLE
+|DOUBLE
+
+|String
+|TEXT
+|LONGVARCHAR
+|VARCHAR
+|LONGTEXT
+
+|String (fixed length)
+|VARCHAR(x)
+|VARCHAR(x)
+|VARCHAR(x)
+|VARCHAR(x)
+
+|UUID
+|UUID
+|UUID
+|UUID
+|*Not supported*
+
+|Boolean[]
+|BOOLEAN[]
+|BOOLEAN ARRAY DEFAULT ARRAY[]
+|ARRAY
+|BOOLEAN ARRAY DEFAULT ARRAY[]
+
+|Byte[]
+|BYTEA
+|LONGVARBINARY
+|BINARY
+|BLOB
+
+|Short[]
+|SMALLINT[]
+|SMALLINT ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|Integer[]
+|INTEGER[]
+|INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|Long[]
+|BIGINT[]
+|BIGINT ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|Float[]
+|REAL[]
+|*Not supported*
+|ARRAY
+|*Not supported*
+
+|Double[]
+|DOUBLE PRECISION[]
+|DOUBLE ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|String[]
+|TEXT[]
+|LONGVARCHAR ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|java.time.LocalDateTime
+|TIMESTAMP
+|TIMESTAMP
+|TIMESTAMP
+|DATETIME(3)
+
+|java.time.LocalDate
+|DATE
+|DATE
+|DATE
+|DATE
+
+|java.time.LocalTime
+|TIME
+|TIME
+|TIME
+|TIME
+
+|java.time.ZonedDateTime
+|TIMESTAMP, TEXT
+|TIMESTAMP, LONGVARCHAR
+|TIMESTAMP, VARCHAR
+|DATETIME(3), TINYTEXT
+
+|java.time.Period
+|INTEGER, INTEGER, INTEGER
+|INTEGER, INTEGER, INTEGER
+|INT, INT, INT
+|INTEGER, INTEGER, INTEGER
+
+|java.time.Duration
+|BIGINT, INTEGER
+|BIGINT, INTEGER
+|BIGINT, INT
+|BIGINT, INTEGER
+
+|java.time.LocalDateTime[]
+|TIMESTAMP[]
+|TIMESTAMP ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|java.time.LocalDate[]
+|DATE[]
+|DATE ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|java.time.LocalTime[]
+|TIME[]
+|TIME ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|java.time.ZonedDateTime[]
+|TIMESTAMP[], TEXT[]
+|TIMESTAMP ARRAY DEFAULT ARRAY[], LONGVARCHAR ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|java.time.Period[]
+|INTEGER[], INTEGER[], INTEGER[]
+|INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|java.time.Duration[]
+|BIGINT[], INTEGER[]
+|BIGINT ARRAY DEFAULT ARRAY[], INTEGER ARRAY DEFAULT ARRAY[]
+|ARRAY
+|*Not supported*
+
+|com.fasterxml.jackson.databind.JsonNode
+|JSONB
+|LONGVARCHAR
+|VARCHAR
+|LONGTEXT
+
+|com.fasterxml.jackson.databind.JsonNode[]
+|JSONB[]
+|ARRAY
+|ARRAY
+|*Not supported*
+
+|org.postgis.Point
+|geometry(POINT)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.umlg.sqlg.gis.GeographyPoint
+|geography(POINT, 4326)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.postgis.LineString
+|geometry(LINESTRING)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.postgis.Polygon
+|geometry(POLYGON)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|org.umlg.sqlg.gis.GeographyPolygon
+|geography(POLYGON, 4326)
+|*Not supported*
+|*Not supported*
+|*Not supported*
+
+|String
+|Ltree
+|*Not supported*
+|*Not supported*
+|*Not supported*
+|===
+
+[NOTE]
+`java.time.LocalTime` drops the nanosecond precision.

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.reducing.TestGroupCount;
+import org.umlg.sqlg.test.doc.DocTests;
 
 /**
  * Date: 2014/07/16
@@ -17,7 +17,7 @@ import org.umlg.sqlg.test.reducing.TestGroupCount;
 //        TestTopologyDelete.class,
 //        TestTopology.class,
 //        TestPropertyCheckConstraint.class
-        TestGroupCount.class
+        DocTests.class
 })
 public class AnyTest {
 }

@@ -1,0 +1,19 @@
+== Multiple JVMs
+
+It is possible to run many Sqlg instances pointing to the same underlying database. These instances can be in the same jvm
+but is primarily intended for separate jvm(s) pointing to the same underlying database.
+
+To make multiple graphs point to the same underlying database it is important to add in the `distributed` property to `sqlg.properties`.
+
+.sqlg.properties
+----
+distributed = true
+----
+
+[NOTE]
+Multiple JVMs is only supported for Postgresql.
+Hsqldb and H2 are primarily intended to run embedded so multiple JVMs do not make sense for them.
+Multiple JVM support has not been implemented for MariaDB and MSSqlServer.
+
+Postgresql's https://www.postgresql.org/docs/current/static/sql-notify.html[*notify*] mechanism is used to distribute the cached schema
+across multiple JVMs.
