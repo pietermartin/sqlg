@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyPropertyColumnUpdateDistributed;
+import org.umlg.sqlg.test.reducing.TestGroupCount;
 
 /**
  * Date: 2014/07/16
@@ -13,10 +13,11 @@ import org.umlg.sqlg.test.topology.TestTopologyPropertyColumnUpdateDistributed;
 //        TestHashPartitioning.class
 //        TestUpgrade301.class
 //        TestTopologyPropertyColumnUpdate.class,
-        TestTopologyPropertyColumnUpdateDistributed.class
+//        TestTopologyPropertyColumnUpdateDistributed.class
 //        TestTopologyDelete.class,
 //        TestTopology.class,
 //        TestPropertyCheckConstraint.class
+        TestGroupCount.class
 })
 public class AnyTest {
 }
