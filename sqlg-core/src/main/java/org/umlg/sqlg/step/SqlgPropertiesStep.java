@@ -7,10 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.PropertyType;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
@@ -52,10 +49,8 @@ public class SqlgPropertiesStep<E> extends SqlgFlatMapStep<Element, E> implement
     @Override
     public int hashCode() {
         int result = super.hashCode() ^ this.returnType.hashCode();
-        for (final String propertyKey : this.propertyKeys) {
-            result ^= propertyKey.hashCode();
-        }
-        return result;
+        //noinspection ConfusingArgumentToVarargsMethod
+        return result ^ Objects.hash(this.propertyKeys);
     }
 
     @Override

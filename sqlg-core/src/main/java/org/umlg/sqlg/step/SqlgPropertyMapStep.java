@@ -121,13 +121,11 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
     public int hashCode() {
         int result = super.hashCode() ^ this.returnType.hashCode() ^ Integer.hashCode(this.tokens);
         if (null == this.propertyTraversal) {
-            for (final String propertyKey : this.propertyKeys) {
-                result ^= propertyKey.hashCode();
-            }
+            //noinspection ConfusingArgumentToVarargsMethod
+            return result ^ Objects.hash(this.propertyKeys);
         } else {
-            result ^= this.propertyTraversal.hashCode();
+            return result ^ this.propertyTraversal.hashCode();
         }
-        return result;
     }
 
     @Override
