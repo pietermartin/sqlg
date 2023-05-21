@@ -27,7 +27,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public abstract class BaseSqlDialect implements SqlDialect, SqlBulkDialect, SqlSchemaChangeDialect {
 
-    final Logger logger = LoggerFactory.getLogger(getClass().getName());
+    final protected Logger logger = LoggerFactory.getLogger(getClass().getName());
 
     protected BaseSqlDialect() {
     }
