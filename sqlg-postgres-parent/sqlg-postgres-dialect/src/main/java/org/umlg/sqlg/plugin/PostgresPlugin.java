@@ -1,8 +1,9 @@
-package org.umlg.sqlg;
+package org.umlg.sqlg.plugin;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.dialect.PostgresDialect;
+import org.umlg.sqlg.SqlgPlugin;
+import org.umlg.sqlg.dialect.impl.PostgresDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.DatabaseMetaData;

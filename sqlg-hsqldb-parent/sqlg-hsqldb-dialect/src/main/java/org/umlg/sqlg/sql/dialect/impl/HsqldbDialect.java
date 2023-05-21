@@ -1,4 +1,4 @@
-package org.umlg.sqlg.sql.dialect;
+package org.umlg.sqlg.sql.dialect.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +8,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.hsqldb.jdbc.JDBCArrayBasic;
 import org.hsqldb.lib.StringConverter;
 import org.hsqldb.types.Type;
+import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
+import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgExceptions;

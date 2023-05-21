@@ -1,4 +1,4 @@
-package org.umlg.sqlg;
+package org.umlg.sqlg.dialect.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

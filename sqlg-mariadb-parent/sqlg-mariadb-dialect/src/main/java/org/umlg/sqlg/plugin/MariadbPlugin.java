@@ -1,6 +1,7 @@
-package org.umlg.sqlg;
+package org.umlg.sqlg.plugin;
 
-import org.umlg.sqlg.sql.dialect.MariadbDialect;
+import org.umlg.sqlg.SqlgPlugin;
+import org.umlg.sqlg.sql.dialect.impl.MariadbDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.DatabaseMetaData;
@@ -10,7 +11,7 @@ import java.sql.SQLException;
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
  *         Date: 2017/07/07
  */
-public class MariadbPlugin implements SqlgPlugin{
+public class MariadbPlugin implements SqlgPlugin {
 
     @Override
     public boolean canWorkWith(DatabaseMetaData metaData) throws SQLException {

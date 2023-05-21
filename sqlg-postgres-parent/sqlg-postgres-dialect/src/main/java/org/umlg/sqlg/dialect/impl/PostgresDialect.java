@@ -1,4 +1,4 @@
-package org.umlg.sqlg.sql.dialect;
+package org.umlg.sqlg.dialect.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +23,8 @@ import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
+import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;

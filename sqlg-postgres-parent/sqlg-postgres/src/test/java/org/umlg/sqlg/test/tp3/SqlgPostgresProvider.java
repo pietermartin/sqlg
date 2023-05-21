@@ -3,7 +3,7 @@ package org.umlg.sqlg.test.tp3;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.PostgresPlugin;
+import org.umlg.sqlg.plugin.PostgresPlugin;
 import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.structure.SqlgGraph;
 

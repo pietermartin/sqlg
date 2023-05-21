@@ -1,4 +1,4 @@
-package org.umlg.sqlg.sql.dialect;
+package org.umlg.sqlg.sql.dialect.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Preconditions;
@@ -6,6 +6,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.mariadb.jdbc.MariaDbBlob;
+import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgExceptions;

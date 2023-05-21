@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.HsqldbPlugin;
+import org.umlg.sqlg.plugin.HsqldbPlugin;
 import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.structure.SqlgGraph;
 

@@ -1,6 +1,7 @@
-package org.umlg.sqlg;
+package org.umlg.sqlg.plugin;
 
-import org.umlg.sqlg.sql.dialect.HsqldbDialect;
+import org.umlg.sqlg.SqlgPlugin;
+import org.umlg.sqlg.sql.dialect.impl.HsqldbDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.DatabaseMetaData;
