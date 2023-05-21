@@ -1,4 +1,4 @@
-package org.umlg.sqlg.structure.ds;
+package org.umlg.sqlg.structure.ds.hikari;
 
 import com.google.common.base.Preconditions;
 import com.zaxxer.hikari.HikariConfig;

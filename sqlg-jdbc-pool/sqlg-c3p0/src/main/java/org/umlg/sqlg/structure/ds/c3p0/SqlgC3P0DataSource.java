@@ -1,4 +1,4 @@
-package org.umlg.sqlg.structure.ds;
+package org.umlg.sqlg.structure.ds.c3p0;
 
 import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
