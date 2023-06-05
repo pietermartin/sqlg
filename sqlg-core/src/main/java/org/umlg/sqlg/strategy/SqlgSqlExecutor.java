@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.event.EventCallb
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.structure.SchemaTableTreeCache;
 import org.umlg.sqlg.structure.SqlgEdge;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
@@ -71,8 +70,8 @@ public class SqlgSqlExecutor {
             SchemaTableTree rootSchemaTableTree,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
-        SchemaTableTreeCache CACHE = sqlgGraph.getSchemaTableTreeCache();
-        Pair<SchemaTableTree, LinkedList<SchemaTableTree>> p = Pair.of(rootSchemaTableTree, distinctQueryStack);
+//        SchemaTableTreeCache CACHE = sqlgGraph.getSchemaTableTreeCache();
+//        Pair<SchemaTableTree, LinkedList<SchemaTableTree>> p = Pair.of(rootSchemaTableTree, distinctQueryStack);
 //        String sql = CACHE.sql(p);
         String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
         return executeQuery(sqlgGraph, sql, distinctQueryStack);
