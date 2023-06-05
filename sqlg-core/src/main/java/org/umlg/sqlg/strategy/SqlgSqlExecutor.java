@@ -73,8 +73,8 @@ public class SqlgSqlExecutor {
 
         SchemaTableTreeCache CACHE = sqlgGraph.getSchemaTableTreeCache();
         Pair<SchemaTableTree, LinkedList<SchemaTableTree>> p = Pair.of(rootSchemaTableTree, distinctQueryStack);
-        String sql = CACHE.sql(p);
-//        String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
+//        String sql = CACHE.sql(p);
+        String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
         return executeQuery(sqlgGraph, sql, distinctQueryStack);
     }
 
