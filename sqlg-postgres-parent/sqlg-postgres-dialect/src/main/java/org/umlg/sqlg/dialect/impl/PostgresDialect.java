@@ -3421,7 +3421,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         @Override
         public void run() {
             try {
-                Connection connection = this.sqlgGraph.tx().getConnection();
+                String jdbcUrl = sqlgGraph.configuration().getString("jdbc.url");
+                Properties props = new Properties();
+                props.setProperty("user", sqlgGraph.configuration().getString("jdbc.username"));
+                props.setProperty("password", sqlgGraph.configuration().getString("jdbc.password"));
+                Connection connection = DriverManager.getConnection(jdbcUrl, props);
+                connection.setAutoCommit(false);
                 while (run.get()) {
                     PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
                     Statement stmt = connection.createStatement();
@@ -3465,17 +3470,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     //noinspection BusyWait
                     Thread.sleep(500);
                 }
-                this.sqlgGraph.tx().rollback();
+                connection.close();
             } catch (SQLException e) {
                 logger.error(String.format("change listener on graph %s error", this.sqlgGraph), e);
-                this.sqlgGraph.tx().rollback();
                 throw new RuntimeException(e);
             } catch (InterruptedException e) {
                 if (run.get()) {
                     logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph));
                 }
-                this.sqlgGraph.tx().rollback();
                 //swallow
+            } finally {
+                this.sqlgGraph.tx().rollback();
             }
         }
     }
