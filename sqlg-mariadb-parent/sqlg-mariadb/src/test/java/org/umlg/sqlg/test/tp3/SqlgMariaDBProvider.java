@@ -19,11 +19,11 @@ import java.util.Properties;
  */
 public class SqlgMariaDBProvider extends SqlgAbstractGraphProvider {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgMariaDBProvider.class.getName());
+    private final static Logger LOGGER = LoggerFactory.getLogger(SqlgMariaDBProvider.class);
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
-        logger.info("MariaDB, Starting test: " + test.getSimpleName() + "." + testMethodName);
+        LOGGER.info("MariaDB, Starting test: " + test.getSimpleName() + "." + testMethodName);
         Map<String, Object> m = new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:mariadb://localhost:3306/?useSSL=false");
@@ -48,13 +48,10 @@ public class SqlgMariaDBProvider extends SqlgAbstractGraphProvider {
                     m.put(k, v);
                 }
             } catch (IOException ioe) {
-                LoggerFactory.getLogger(getClass()).error("Cannot read properties from sqlg.properties", ioe.getMessage());
+                LOGGER.error("Cannot read properties from sqlg.properties", ioe);
             }
-
         }
         return m;
-
-
     }
 
 
