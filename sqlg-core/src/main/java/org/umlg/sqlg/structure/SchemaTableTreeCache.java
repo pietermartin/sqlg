@@ -8,29 +8,30 @@ import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 
 import java.util.LinkedList;
-import java.util.Map;
 
 public final class SchemaTableTreeCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaTableTreeCache.class);
-    private final LRUMap<Pair<SchemaTableTree, LinkedList<SchemaTableTree>>, Pair<String, AliasMapHolder>> lruMap = new LRUMap<>(1_000);
+    private final LRUMap<Pair<SchemaTableTree, LinkedList<SchemaTableTree>>, Pair<String, AliasMapHolder>> lruMap;
 
-    private final Map<Pair<SchemaTableTree, LinkedList<SchemaTableTree>>, Pair<String, AliasMapHolder>> cache = lruMap;
+    SchemaTableTreeCache(int cacheSize) {
+        this.lruMap = new LRUMap<>(cacheSize);
+    }
 
     private void put(Pair<SchemaTableTree, LinkedList<SchemaTableTree>> key, Pair<String, AliasMapHolder> value) {
         if (this.lruMap.isFull()) {
             LOGGER.debug("LRUMap is full!!!");
         }
-        cache.put(key, value);
+        this.lruMap.put(key, value);
     }
 
     private Pair<String, AliasMapHolder> get(Pair<SchemaTableTree, LinkedList<SchemaTableTree>> key) {
-        return cache.get(key);
+        return this.lruMap.get(key);
     }
 
     public void clear() {
-        synchronized (this.cache) {
-            this.cache.clear();
+        synchronized (this.lruMap) {
+            this.lruMap.clear();
         }
     }
 
@@ -44,7 +45,7 @@ public final class SchemaTableTreeCache {
         } else {
             Pair<String, AliasMapHolder> sqlAliasMapHolder = get(p);
             if (sqlAliasMapHolder == null) {
-                synchronized (this.cache) {
+                synchronized (this.lruMap) {
                     sqlAliasMapHolder = get(p);
                     if (sqlAliasMapHolder == null) {
                         sql = rootSchemaTableTree.constructSql(distinctQueryStack);

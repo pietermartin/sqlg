@@ -27,6 +27,20 @@ public class TestSchemaTableTreeCache extends BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemaTableTreeCache.class);
 
+//    @Test
+//    public void testLRUCAche() {
+//        LRUMap<MutableInt, String> lruMap = new LRUMap<>(2);
+//        MutableInt mutableInt1 = new MutableInt(1);
+//        MutableInt mutableInt2 = new MutableInt(2);
+//        MutableInt mutableInt3 = new MutableInt(3);
+//        lruMap.put(mutableInt1, "1");
+//        lruMap.put(mutableInt2, "2");
+//        lruMap.get(mutableInt1);
+//        mutableInt1.setValue(33);
+//        lruMap.put(mutableInt3, "3");
+//        System.out.println("");
+//    }
+
     @Test
     public void testCacheResetOnSchemaChange() {
         Assume.assumeTrue(isPostgres());
