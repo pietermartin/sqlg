@@ -21,7 +21,7 @@ import java.util.Set;
 public class TestPostgresLtree extends BaseTest {
 
     @Test
-    public void testLTreeLqueryArray() throws SQLException {
+    public void testLTreeLqueryArray() {
         Assume.assumeTrue(isPostgres());
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("Tree", new HashMap<>() {{
