@@ -294,8 +294,12 @@ public class VertexLabel extends AbstractLabel {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, Collections.emptyMap(), edgeDefinition);
     }
 
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, EdgeDefinition edgeDefinition, Map<String, PropertyDefinition> properties) {
+        return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties, edgeDefinition);
+    }
+
     /**
-     * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exists.
+     * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exist.
      * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
      * This method is equivalent to {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
      *
