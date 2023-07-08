@@ -4,6 +4,7 @@
 * Fix #485 Add support to update `PropertyDefinition`
 * Fix incorrect defaulting of `multiplicity` in upgrade to 3.0.0
 * Improve error message on validation exceptions and topology locked exceptions.
+* Performance improvements, notably for bulk mode on tables with many columns.
 
 ##3.0.0
 
