@@ -1136,7 +1136,7 @@ public class TopologyManager {
                     .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
                     .has(SQLG_SCHEMA_PROPERTY_NAME, column)
                     .toList();
-            Preconditions.checkState(propertiesToRename.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, propertiesToRename, column, propertiesToRename.size()));
+            Preconditions.checkState(propertiesToRename.size() == 1, String.format("Expected exactly one property in %s.%s.%s. Found %d", schema, prefixedTable.substring(VERTEX_PREFIX.length()), column, propertiesToRename.size()));
             propertiesToRename.get(0).property(SQLG_SCHEMA_PROPERTY_NAME, newName);
 
         } finally {
