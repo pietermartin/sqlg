@@ -1024,7 +1024,7 @@ public class EdgeLabel extends AbstractLabel {
                 //TODO investigate user supplied id foreignKeys
                 SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
                 addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), vertexLabel, direction, foreignKey);
-                this.getSchema().getTopology().fire(this, vertexLabel, TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE);
+                this.getSchema().getTopology().fire(this, vertexLabel, TopologyChangeAction.ADD_IN_VERTEX_LABEL_TO_EDGE);
             }
         }
     }

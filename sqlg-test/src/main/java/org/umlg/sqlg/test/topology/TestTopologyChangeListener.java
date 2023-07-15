@@ -89,7 +89,7 @@ public class TestTopologyChangeListener extends BaseTest {
 
         assertEquals(edgeLabel, this.topologyListenerTriple.get(6).getLeft());
         assertEquals(bVertexLabel, this.topologyListenerTriple.get(6).getMiddle());
-        assertEquals(TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE, this.topologyListenerTriple.get(6).getRight());
+        assertEquals(TopologyChangeAction.ADD_IN_VERTEX_LABEL_TO_EDGE, this.topologyListenerTriple.get(6).getRight());
 
         assertEquals(index, this.topologyListenerTriple.get(7).getLeft());
         assertNull(this.topologyListenerTriple.get(7).getMiddle());

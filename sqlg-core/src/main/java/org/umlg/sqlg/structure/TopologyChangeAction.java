@@ -5,7 +5,7 @@ package org.umlg.sqlg.structure;
  */
 public enum TopologyChangeAction {
     CREATE,
-    ADD_IN_VERTEX_LABELTO_EDGE,
+    ADD_IN_VERTEX_LABEL_TO_EDGE,
     DELETE,
     UPDATE
 }

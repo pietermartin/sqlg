@@ -200,7 +200,7 @@ public class TestReadOnlyRole extends BaseTest {
                         }
                     }
                     break;
-                case ADD_IN_VERTEX_LABELTO_EDGE:
+                case ADD_IN_VERTEX_LABEL_TO_EDGE:
                     break;
                 case DELETE:
                     break;
