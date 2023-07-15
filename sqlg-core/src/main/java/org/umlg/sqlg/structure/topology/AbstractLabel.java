@@ -1085,8 +1085,8 @@ public abstract class AbstractLabel implements TopologyInf {
             for (JsonNode propertyNode : updatedPropertiesNode) {
                 PropertyColumn propertyColumn = PropertyColumn.fromNotifyJson(this, propertyNode);
                 PropertyColumn old = this.properties.put(propertyColumn.getName(), propertyColumn);
-                if (fire && old == null) {
-                    this.getTopology().fire(propertyColumn, null, TopologyChangeAction.UPDATE);
+                if (fire) {
+                    this.getTopology().fire(propertyColumn, old, TopologyChangeAction.UPDATE);
                 }
             }
         }
