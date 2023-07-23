@@ -624,7 +624,7 @@ public class Topology {
                 schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
                 this.uncommittedRemovedSchemas.remove(schemaName);
                 this.uncommittedSchemas.put(schemaName, schema);
-                fire(schema, null, TopologyChangeAction.CREATE);
+                fire(schema, null, TopologyChangeAction.CREATE, true);
                 return schema;
             } else {
                 return schemaOptional.get();
@@ -1649,7 +1649,7 @@ public class Topology {
                         //add to map
                         schema = Schema.instantiateSchema(this, schemaName);
                         this.schemas.put(schemaName, schema);
-                        fire(schema, null, TopologyChangeAction.CREATE);
+                        fire(schema, null, TopologyChangeAction.CREATE, false);
                     }
                 }
                 for (JsonNode jsonSchema : schemas) {
@@ -1679,7 +1679,7 @@ public class Topology {
                 String name = jsonSchema.asText();
                 Schema s = removeSchemaFromCaches(name);
                 if (s != null) {
-                    fire(s, s, TopologyChangeAction.DELETE);
+                    fire(s, s, TopologyChangeAction.DELETE, false);
                 }
             }
         }
@@ -2122,9 +2122,9 @@ public class Topology {
         this.topologyListeners.add(topologyListener);
     }
 
-    void fire(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action) {
+    void fire(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action, boolean beforeCommit) {
         for (TopologyListener topologyListener : this.topologyListeners) {
-            topologyListener.change(topologyInf, oldValue, action);
+            topologyListener.change(topologyInf, oldValue, action, beforeCommit);
         }
     }
 
@@ -2165,7 +2165,7 @@ public class Topology {
             if (!preserveData) {
                 schema.delete();
             }
-            fire(schema, schema, TopologyChangeAction.DELETE);
+            fire(schema, schema, TopologyChangeAction.DELETE, true);
         }
     }
 

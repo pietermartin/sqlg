@@ -450,7 +450,7 @@ public class VertexLabel extends AbstractLabel {
                         propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
-                        this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
+                        this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE, true);
                     }
                 } else {
                     SqlgUtil.validateIncomingPropertyType(
@@ -940,7 +940,7 @@ public class VertexLabel extends AbstractLabel {
                     );
                     // fire only applies to top level, fire for new edges
                     if (edgeLabelOptional.isEmpty()) {
-                        this.getSchema().getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE);
+                        this.getSchema().getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE, false);
                     }
                 }
             }
@@ -950,7 +950,7 @@ public class VertexLabel extends AbstractLabel {
             for (JsonNode n : uncommittedRemoveOutEdgeLabels) {
                 EdgeRole edgeRole = this.outEdgeRoles.remove(n.get("label").asText());
                 if (edgeRole != null) {
-                    EdgeRemoveType ert = EdgeRemoveType.valueOf(n.get("type").asText());
+                    EdgeRemoveType edgeRemoveType = EdgeRemoveType.valueOf(n.get("type").asText());
                     ForeignKey foreignKey;
                     if (this.hasIDPrimaryKey()) {
                         foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
@@ -968,14 +968,23 @@ public class VertexLabel extends AbstractLabel {
                             foreignKey
                     );
                     this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, edgeRole.getEdgeLabel());
-                    edgeRole.getEdgeLabel().outEdgeRoles.remove(edgeRole);
 
-                    switch (ert) {
-                        case EDGE_LABEL ->
-                                this.getSchema().getTopology().fire(edgeRole.getEdgeLabel(), edgeRole.getEdgeLabel(), TopologyChangeAction.DELETE);
-                        case EDGE_ROLE ->
-                                this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE);
+                    switch (edgeRemoveType) {
+                        case EDGE_LABEL -> {
+                            //noop, uncommittedRemovedEdgeLabels section will take care of the EdgeLabel
+                        }
+                        case EDGE_ROLE -> {
+                            edgeRole.getEdgeLabel().outEdgeRoles.remove(edgeRole);
+                            this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+                        }
                     }
+
+//                    switch (ert) {
+//                        case EDGE_LABEL ->
+//                                this.getSchema().getTopology().fire(edgeRole.getEdgeLabel(), edgeRole.getEdgeLabel(), TopologyChangeAction.DELETE, false);
+//                        case EDGE_ROLE ->
+//                                this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+//                    }
 
                 }
             }
@@ -1032,7 +1041,7 @@ public class VertexLabel extends AbstractLabel {
             for (JsonNode n : uncommittedRemoveInEdgeLabels) {
                 EdgeRole edgeRole = this.inEdgeRoles.remove(n.get("label").asText());
                 if (edgeRole != null) {
-                    EdgeRemoveType ert = EdgeRemoveType.valueOf(n.get("type").asText());
+                    EdgeRemoveType edgeRemoveType = EdgeRemoveType.valueOf(n.get("type").asText());
                     if (edgeRole.getEdgeLabel().isValid()) {
                         ForeignKey foreignKey;
                         if (this.hasIDPrimaryKey()) {
@@ -1049,14 +1058,23 @@ public class VertexLabel extends AbstractLabel {
                         );
                         this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, edgeRole.getEdgeLabel());
                     }
-                    edgeRole.getEdgeLabel().inEdgeRoles.remove(edgeRole);
 
-                    switch (ert) {
-                        case EDGE_LABEL ->
-                                this.getSchema().getTopology().fire(edgeRole.getEdgeLabel(), edgeRole.getEdgeLabel(), TopologyChangeAction.DELETE);
-                        case EDGE_ROLE ->
-                                this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE);
+                    switch (edgeRemoveType) {
+                        case EDGE_LABEL -> {
+                            //noop, uncommittedRemovedEdgeLabels section will take care of the EdgeLabel
+                        }
+                        case EDGE_ROLE -> {
+                            edgeRole.getEdgeLabel().inEdgeRoles.remove(edgeRole);
+                            this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+                        }
                     }
+
+//                    switch (ert) {
+//                        case EDGE_LABEL ->
+//                                this.getSchema().getTopology().fire(edgeRole.getEdgeLabel(), edgeRole.getEdgeLabel(), TopologyChangeAction.DELETE, false);
+//                        case EDGE_ROLE ->
+//                                this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+//                    }
 
                 }
             }
@@ -1175,7 +1193,7 @@ public class VertexLabel extends AbstractLabel {
             if (!preserveData) {
                 removeColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());
             }
-            this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE);
+            this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE, true);
         }
     }
 
@@ -1208,7 +1226,7 @@ public class VertexLabel extends AbstractLabel {
                 }
 
             }
-            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
         }
     }
 
@@ -1266,7 +1284,7 @@ public class VertexLabel extends AbstractLabel {
                 }
             }
 
-            this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE);
+            this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, true);
         }
     }
 

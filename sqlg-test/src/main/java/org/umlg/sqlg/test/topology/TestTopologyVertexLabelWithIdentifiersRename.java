@@ -52,11 +52,13 @@ public class TestTopologyVertexLabelWithIdentifiersRename extends BaseTest {
         Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").isPresent());
         Assert.assertTrue(this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").orElseThrow().getProperty("a").isPresent());
 
-        Assert.assertEquals(2, this.topologyListenerTriple.size());
+        Assert.assertEquals(3, this.topologyListenerTriple.size());
         Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(0).getRight());
-        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+        Assert.assertEquals(TopologyChangeAction.DELETE, this.topologyListenerTriple.get(1).getRight());
+        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(2).getRight());
+        Assert.assertEquals("A", this.topologyListenerTriple.get(0).getLeft().getName());
         Assert.assertEquals("A", this.topologyListenerTriple.get(1).getMiddle().getName());
-        Assert.assertEquals("B", this.topologyListenerTriple.get(1).getLeft().getName());
+        Assert.assertEquals("B", this.topologyListenerTriple.get(2).getLeft().getName());
     }
 
     @Test

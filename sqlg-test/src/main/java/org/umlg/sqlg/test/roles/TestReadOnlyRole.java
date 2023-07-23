@@ -118,7 +118,7 @@ public class TestReadOnlyRole extends BaseTest {
 
         @SuppressWarnings("StatementWithEmptyBody")
         @Override
-        public void change(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action) {
+        public void change(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action, boolean beforeCommit) {
             switch (action) {
                 case CREATE:
                     if (topologyInf instanceof VertexLabel vertexLabel) {

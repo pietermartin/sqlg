@@ -229,7 +229,7 @@ public class Partition implements TopologyInf {
             } else {
                 partition.detach();
             }
-            this.getAbstractLabel().getSchema().getTopology().fire(partition, partition, TopologyChangeAction.DELETE);
+            this.getAbstractLabel().getSchema().getTopology().fire(partition, partition, TopologyChangeAction.DELETE, true);
         }
     }
 
@@ -1075,7 +1075,7 @@ public class Partition implements TopologyInf {
                 String pName = jsonNode.asText();
                 Partition old = this.partitions.remove(pName);
                 if (fire && old != null) {
-                    this.getAbstractLabel().getSchema().getTopology().fire(old, old, TopologyChangeAction.DELETE);
+                    this.getAbstractLabel().getSchema().getTopology().fire(old, old, TopologyChangeAction.DELETE, false);
                 }
             }
         }
@@ -1184,7 +1184,7 @@ public class Partition implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createRangeSubPartition(this.sqlgGraph, this, name, from, to);
         this.uncommittedPartitions.put(name, partition);
-        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE);
+        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
 
@@ -1193,7 +1193,7 @@ public class Partition implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createListSubPartition(this.sqlgGraph, this, name, in);
         this.uncommittedPartitions.put(name, partition);
-        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE);
+        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
 
@@ -1202,7 +1202,7 @@ public class Partition implements TopologyInf {
         this.uncommittedPartitions.remove(name);
         Partition partition = Partition.createHashSubPartition(this.sqlgGraph, this, name, modulus, remainder);
         this.uncommittedPartitions.put(name, partition);
-        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE);
+        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
 
@@ -1224,7 +1224,7 @@ public class Partition implements TopologyInf {
                 partitionType,
                 partitionExpression);
         this.uncommittedPartitions.put(name, partition);
-        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE);
+        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
 
@@ -1244,7 +1244,7 @@ public class Partition implements TopologyInf {
                 partitionType,
                 partitionExpression);
         this.uncommittedPartitions.put(name, partition);
-        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE);
+        this.getAbstractLabel().getSchema().getTopology().fire(partition, null, TopologyChangeAction.CREATE, true);
         return partition;
     }
 

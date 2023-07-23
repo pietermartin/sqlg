@@ -227,7 +227,7 @@ public class EdgeLabel extends AbstractLabel {
                         propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
-                        this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE);
+                        this.getSchema().getTopology().fire(propertyColumn, null, TopologyChangeAction.CREATE, true);
                     }
                 } else {
                     //Set the proper definition in the map;
@@ -1024,7 +1024,7 @@ public class EdgeLabel extends AbstractLabel {
                 //TODO investigate user supplied id foreignKeys
                 SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? Topology.IN_VERTEX_COLUMN_END : Topology.OUT_VERTEX_COLUMN_END));
                 addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), vertexLabel, direction, foreignKey);
-                this.getSchema().getTopology().fire(this, vertexLabel, TopologyChangeAction.ADD_IN_VERTEX_LABEL_TO_EDGE);
+                this.getSchema().getTopology().fire(this, vertexLabel, TopologyChangeAction.ADD_IN_VERTEX_LABEL_TO_EDGE, true);
             }
         }
     }
@@ -1395,7 +1395,7 @@ public class EdgeLabel extends AbstractLabel {
             if (!preserveData) {
                 removeColumn(this.getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName());
             }
-            this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE);
+            this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE, true);
         }
     }
 
@@ -1419,7 +1419,7 @@ public class EdgeLabel extends AbstractLabel {
                     propertyDefinition
             );
 //            renameColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
-            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
         }
     }
 
@@ -1440,7 +1440,7 @@ public class EdgeLabel extends AbstractLabel {
                 Preconditions.checkState(!this.renamedIdentifiers.contains(namePair), "BUG! renamedIdentifiers may not yet contain '%s'", oldName);
                 this.renamedIdentifiers.add(namePair);
             }
-            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE);
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
         }
     }
 

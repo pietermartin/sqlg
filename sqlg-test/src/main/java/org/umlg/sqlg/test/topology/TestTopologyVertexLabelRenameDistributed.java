@@ -40,7 +40,7 @@ public class TestTopologyVertexLabelRenameDistributed extends BaseTest {
         boolean[] rollback = new boolean[]{true, false};
 //        String[] schema1s = new String[]{"A"};
 //        String[] schema2s = new String[]{"public"};
-//        boolean[] rollback = new boolean[]{true};
+//        boolean[] rollback = new boolean[]{false};
         for (String s1 : schema1s) {
             for (String s2 : schema2s) {
                 for (boolean r : rollback) {

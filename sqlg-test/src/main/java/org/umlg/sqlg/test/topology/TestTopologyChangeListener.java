@@ -111,7 +111,7 @@ public class TestTopologyChangeListener extends BaseTest {
         }
 
         @Override
-        public void change(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action) {
+        public void change(TopologyInf topologyInf, TopologyInf oldValue, TopologyChangeAction action, boolean beforeCommit) {
             String s = topologyInf.toString();
             assertNotNull(s);
             assertTrue(s + "does not contain " + topologyInf.getName(), s.contains(topologyInf.getName()));
