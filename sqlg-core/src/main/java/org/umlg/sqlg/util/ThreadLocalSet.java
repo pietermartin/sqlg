@@ -77,4 +77,9 @@ public class ThreadLocalSet<E> implements Set<E> {
     public void clear() {
         this.threadLocalSet.get().clear();
     }
+
+    @Override
+    public String toString() {
+        return this.threadLocalSet.get().toString();
+    }
 }
