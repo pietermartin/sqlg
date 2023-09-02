@@ -52,7 +52,7 @@ public record PropertyDefinition(PropertyType propertyType, Multiplicity multipl
     }
 
     public ObjectNode toNotifyJson() {
-        ObjectNode propertyDefinitionObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode propertyDefinitionObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
         propertyDefinitionObjectNode.put("propertyType", propertyType.name());
         propertyDefinitionObjectNode.set("multiplicity", multiplicity.toNotifyJson());
         propertyDefinitionObjectNode.put("defaultLiteral", defaultLiteral);

@@ -1538,8 +1538,8 @@ public class Topology {
     }
 
     public JsonNode toJson() {
-        ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-        ArrayNode schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+        ObjectNode topologyNode = OBJECT_MAPPER.createObjectNode();
+        ArrayNode schemaArrayNode = OBJECT_MAPPER.createArrayNode();
         List<Schema> schemas = new ArrayList<>(this.schemas.values());
         schemas.sort(Comparator.comparing(Schema::getName));
         for (Schema schema : schemas) {
@@ -1563,47 +1563,47 @@ public class Topology {
         ArrayNode committedSchemaArrayNode = null;
         ObjectNode topologyNode = null;
         for (Schema schema : this.schemas.values()) {
-            Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+           Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
             if (jsonNodeOptional.isPresent() && committedSchemaArrayNode == null) {
-                committedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                committedSchemaArrayNode = OBJECT_MAPPER.createArrayNode();
             }
             if (jsonNodeOptional.isPresent()) {
                 committedSchemaArrayNode.add(jsonNodeOptional.get());
             }
         }
         if (committedSchemaArrayNode != null) {
-            topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+            topologyNode = OBJECT_MAPPER.createObjectNode();
             topologyNode.set("schemas", committedSchemaArrayNode);
         }
         ArrayNode unCommittedSchemaArrayNode = null;
         if (isSchemaChanged()) {
             for (Schema schema : this.uncommittedSchemas.values()) {
                 if (unCommittedSchemaArrayNode == null) {
-                    unCommittedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                    unCommittedSchemaArrayNode = OBJECT_MAPPER.createArrayNode();
                 }
                 Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
                 if (jsonNodeOptional.isPresent()) {
                     unCommittedSchemaArrayNode.add(jsonNodeOptional.get());
                 } else {
-                    ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                    ObjectNode schemaNode = OBJECT_MAPPER.createObjectNode();
                     schemaNode.put("name", schema.getName());
                     unCommittedSchemaArrayNode.add(schemaNode);
                 }
             }
-            ArrayNode removed = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            ArrayNode removed = OBJECT_MAPPER.createArrayNode();
             for (String schema : this.uncommittedRemovedSchemas) {
                 removed.add(schema);
             }
-            if (removed.size() > 0) {
+            if (!removed.isEmpty()) {
                 if (topologyNode == null) {
-                    topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                    topologyNode = OBJECT_MAPPER.createObjectNode();
                 }
                 topologyNode.set("uncommittedRemovedSchemas", removed);
             }
         }
         if (unCommittedSchemaArrayNode != null) {
             if (topologyNode == null) {
-                topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                topologyNode = OBJECT_MAPPER.createObjectNode();
             }
             topologyNode.set("uncommittedSchemas", unCommittedSchemaArrayNode);
         }

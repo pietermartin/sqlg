@@ -84,7 +84,7 @@ public class IndexType {
 	 
     
 	public JsonNode toNotifyJson() {
-		 ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+		 ObjectNode result = Topology.OBJECT_MAPPER.createObjectNode();
 	     result.put("name", this.name);
 	     for (String k:properties.keySet()){
 	    	 result.put(k, properties.get(k));

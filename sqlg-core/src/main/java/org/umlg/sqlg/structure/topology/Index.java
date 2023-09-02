@@ -191,7 +191,7 @@ public class Index implements TopologyInf {
 
     Optional<JsonNode> toNotifyJson() {
         Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isSchemaChanged() && !this.uncommittedProperties.isEmpty());
-        ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode result = Topology.OBJECT_MAPPER.createObjectNode();
         result.put("name", this.name);
         result.set("indexType", this.uncommittedIndexType.toNotifyJson());
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());

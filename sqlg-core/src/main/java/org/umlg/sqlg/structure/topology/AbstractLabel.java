@@ -28,7 +28,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  * Date: 2016/09/14
  * Time: 11:19 AM
  */
-@SuppressWarnings("Duplicates")
+@SuppressWarnings({"Duplicates", "SqlSourceToSinkFlow"})
 public abstract class AbstractLabel implements TopologyInf {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLabel.class);
@@ -967,40 +967,40 @@ public abstract class AbstractLabel implements TopologyInf {
 
     Optional<JsonNode> toNotifyJson() {
         if (getTopology().isSchemaChanged()) {
-            ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ObjectNode result = Topology.OBJECT_MAPPER.createObjectNode();
+            ArrayNode propertyArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (PropertyColumn property : this.uncommittedProperties.values()) {
                 propertyArrayNode.add(property.toNotifyJson());
             }
-            ArrayNode updatedPropertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode updatedPropertyArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (PropertyColumn property : this.uncommittedUpdatedProperties.values()) {
                 updatedPropertyArrayNode.add(property.toNotifyJson());
             }
-            ArrayNode removedPropertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode removedPropertyArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String property : this.uncommittedRemovedProperties) {
                 removedPropertyArrayNode.add(property);
             }
-            ArrayNode identifierArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode identifierArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String identifier : this.uncommittedIdentifiers) {
                 identifierArrayNode.add(identifier);
             }
-            ArrayNode renamedIdentifierArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode renamedIdentifierArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (Pair<String, String> oldNew : this.renamedIdentifiers) {
-                ObjectNode renamedObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                ObjectNode renamedObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
                 renamedObjectNode.put("old", oldNew.getLeft());
                 renamedObjectNode.put("new", oldNew.getRight());
                 renamedIdentifierArrayNode.add(renamedObjectNode);
             }
-            ArrayNode uncommittedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode uncommittedPartitionArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (Partition partition : this.uncommittedPartitions.values()) {
                 Optional<ObjectNode> json = partition.toUncommittedPartitionNotifyJson();
                 json.ifPresent(uncommittedPartitionArrayNode::add);
             }
-            ArrayNode removedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode removedPartitionArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String partition : this.uncommittedRemovedPartitions) {
                 removedPartitionArrayNode.add(partition);
             }
-            ArrayNode committedPartitionArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode committedPartitionArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             //Need to check for nested uncommitted partitions
             for (Partition partition : this.partitions.values()) {
                 Optional<ObjectNode> json = partition.toCommittedPartitionNotifyJson();
@@ -1013,22 +1013,22 @@ public abstract class AbstractLabel implements TopologyInf {
             ObjectNode uncommittedDistributionColocateAbstractLabelObjectNode = null;
             if (this.uncommittedDistributionColocateAbstractLabel != null) {
                 String colocateLabel = this.uncommittedDistributionColocateAbstractLabel.label;
-                uncommittedDistributionColocateAbstractLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                uncommittedDistributionColocateAbstractLabelObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
                 uncommittedDistributionColocateAbstractLabelObjectNode.put("colocateLabel", colocateLabel);
             }
             ObjectNode uncommittedShardCountObjectNode = null;
             if (this.uncommittedShardCount != -1) {
-                uncommittedShardCountObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                uncommittedShardCountObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
                 uncommittedShardCountObjectNode.put("uncommittedShardCount", this.uncommittedShardCount);
             }
 
-            ArrayNode indexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode indexArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (Index index : this.uncommittedIndexes.values()) {
                 Optional<JsonNode> indexJsonOptional = index.toNotifyJson();
                 Preconditions.checkState(indexJsonOptional.isPresent());
                 indexArrayNode.add(indexJsonOptional.get());
             }
-            ArrayNode removedIndexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode removedIndexArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String property : this.uncommittedRemovedIndexes) {
                 removedIndexArrayNode.add(property);
             }
@@ -1051,10 +1051,10 @@ public abstract class AbstractLabel implements TopologyInf {
             }
             result.set("uncommittedIndexes", indexArrayNode);
             result.set("uncommittedRemovedIndexes", removedIndexArrayNode);
-            if (propertyArrayNode.size() == 0 && uncommittedUpdatedProperties.size() == 0 && removedPropertyArrayNode.size() == 0 &&
-                    identifierArrayNode.size() == 0 &&
-                    uncommittedPartitionArrayNode.size() == 0 && removedPartitionArrayNode.size() == 0 && committedPartitionArrayNode.size() == 0 &&
-                    indexArrayNode.size() == 0 && removedIndexArrayNode.size() == 0 &&
+            if (propertyArrayNode.isEmpty() && uncommittedUpdatedProperties.isEmpty() && removedPropertyArrayNode.isEmpty() &&
+                    identifierArrayNode.isEmpty() &&
+                    uncommittedPartitionArrayNode.isEmpty() && removedPartitionArrayNode.isEmpty() && committedPartitionArrayNode.isEmpty() &&
+                    indexArrayNode.isEmpty() && removedIndexArrayNode.isEmpty() &&
                     uncommittedDistributionPropertyColumnObjectNode == null && uncommittedShardCountObjectNode == null &&
                     uncommittedDistributionColocateAbstractLabelObjectNode == null) {
                 return Optional.empty();

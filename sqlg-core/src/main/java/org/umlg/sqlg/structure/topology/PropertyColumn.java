@@ -74,7 +74,7 @@ public class PropertyColumn implements TopologyInf {
     }
 
     ObjectNode toNotifyJson() {
-        ObjectNode propertyObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode propertyObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
         propertyObjectNode.put("name", this.name);
         propertyObjectNode.set("propertyDefinition", this.propertyDefinition.toNotifyJson());
         return propertyObjectNode;

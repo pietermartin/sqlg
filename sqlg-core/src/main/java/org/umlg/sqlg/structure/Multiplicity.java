@@ -66,7 +66,7 @@ public record Multiplicity(long lower, long upper, boolean unique, boolean order
     }
 
     public ObjectNode toNotifyJson() {
-        ObjectNode multiplicityObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode multiplicityObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
         multiplicityObjectNode.put("lower", lower);
         multiplicityObjectNode.put("upper", upper);
         multiplicityObjectNode.put("unique", unique);

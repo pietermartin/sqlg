@@ -918,7 +918,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     boolean isValid() {
-        return this.outEdgeRoles.size() > 0 || this.uncommittedOutEdgeRoles.size() > 0;
+        return !this.outEdgeRoles.isEmpty() || !this.uncommittedOutEdgeRoles.isEmpty();
     }
 
     public Set<VertexLabel> getOutVertexLabels() {
@@ -1260,7 +1260,7 @@ public class EdgeLabel extends AbstractLabel {
 
     @Override
     protected JsonNode toJson() {
-        ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode edgeLabelNode = Topology.OBJECT_MAPPER.createObjectNode();
         if (isValid()) {
             edgeLabelNode.put("schema", getSchema().getName());
         }
@@ -1271,7 +1271,7 @@ public class EdgeLabel extends AbstractLabel {
         SortedSet<VertexLabel> vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
         vertexLabels.addAll(this.outEdgeRoles.stream().map(EdgeRole::getVertexLabel).collect(Collectors.toSet()));
         for (VertexLabel outVertexLabel : vertexLabels) {
-            ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ObjectNode outVertexLabelObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
             outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
             outVertexLabelArrayNode.add(outVertexLabelObjectNode);
         }
@@ -1281,7 +1281,7 @@ public class EdgeLabel extends AbstractLabel {
         vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
         vertexLabels.addAll(this.inEdgeRoles.stream().map(EdgeRole::getVertexLabel).collect(Collectors.toSet()));
         for (VertexLabel inVertexLabel : vertexLabels) {
-            ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ObjectNode inVertexLabelObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
             inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
             inVertexLabelArrayNode.add(inVertexLabelObjectNode);
         }
@@ -1292,7 +1292,7 @@ public class EdgeLabel extends AbstractLabel {
             vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
             vertexLabels.addAll(this.uncommittedOutEdgeRoles.stream().map(EdgeRole::getVertexLabel).collect(Collectors.toSet()));
             for (VertexLabel outVertexLabel : vertexLabels) {
-                ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                ObjectNode outVertexLabelObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
                 outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
                 outVertexLabelArrayNode.add(outVertexLabelObjectNode);
             }
@@ -1302,7 +1302,7 @@ public class EdgeLabel extends AbstractLabel {
             vertexLabels = new TreeSet<>(Comparator.comparing(AbstractLabel::getName));
             vertexLabels.addAll(this.uncommittedInEdgeRoles.stream().map(EdgeRole::getVertexLabel).collect(Collectors.toSet()));
             for (VertexLabel inVertexLabel : vertexLabels) {
-                ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                ObjectNode inVertexLabelObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
                 inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
                 inVertexLabelArrayNode.add(inVertexLabelObjectNode);
             }
@@ -1316,7 +1316,7 @@ public class EdgeLabel extends AbstractLabel {
     protected Optional<JsonNode> toNotifyJson() {
 
         boolean foundSomething = false;
-        ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode edgeLabelNode = Topology.OBJECT_MAPPER.createObjectNode();
         edgeLabelNode.put("schema", getSchema().getName());
         edgeLabelNode.put("label", getLabel());
         edgeLabelNode.put("partitionType", this.partitionType.name());
@@ -1348,17 +1348,17 @@ public class EdgeLabel extends AbstractLabel {
             foundSomething = true;
         }
 
-        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedOutEdgeRoles.isEmpty()) {
-            foundSomething = true;
-        }
+//        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedOutEdgeRoles.isEmpty()) {
+//            foundSomething = true;
+//        }
 
         if (this.topology.isSchemaChanged() && !this.uncommittedInEdgeRoles.isEmpty()) {
             foundSomething = true;
         }
 
-        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedInEdgeRoles.isEmpty()) {
-            foundSomething = true;
-        }
+//        if (this.topology.isSchemaChanged() && !this.uncommittedRemovedInEdgeRoles.isEmpty()) {
+//            foundSomething = true;
+//        }
 
         if (foundSomething) {
             return Optional.of(edgeLabelNode);

@@ -852,7 +852,7 @@ public class Partition implements TopologyInf {
 
     private Optional<ObjectNode> toNotifyJson(boolean committed) {
         boolean foundSomething = false;
-        ObjectNode partitionObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode partitionObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
         partitionObjectNode.put("name", this.name);
         partitionObjectNode.put("from", this.from);
         partitionObjectNode.put("to", this.to);
@@ -899,7 +899,7 @@ public class Partition implements TopologyInf {
     }
 
     public Optional<ObjectNode> toJson() {
-        ObjectNode partitionObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode partitionObjectNode = Topology.OBJECT_MAPPER.createObjectNode();
         partitionObjectNode.put("name", this.name);
         partitionObjectNode.put("from", this.from);
         partitionObjectNode.put("to", this.to);
