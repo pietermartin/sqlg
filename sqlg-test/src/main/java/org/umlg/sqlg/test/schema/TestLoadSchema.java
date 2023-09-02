@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.schema;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -11,6 +10,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalDate;
@@ -87,8 +87,7 @@ public class TestLoadSchema extends BaseTest {
 
     @Test
     public void testLoadingJson() {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
         this.sqlgGraph.tx().commit();

@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.batch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -8,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.math.BigDecimal;
@@ -516,8 +516,7 @@ public class TestBatchStreamEdge extends BaseTest {
         List<Vertex> females = this.sqlgGraph.traversal().V().hasLabel("Female").toList();
         LinkedHashMap<String, Object> edgeKeyValues = new LinkedHashMap<>();
 
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
 
         edgeKeyValues.put("doc", json);

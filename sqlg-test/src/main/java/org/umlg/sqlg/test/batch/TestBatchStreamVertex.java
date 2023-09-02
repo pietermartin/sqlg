@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.batch;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -12,6 +11,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.*;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.Schema;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -591,8 +591,7 @@ public class TestBatchStreamVertex extends BaseTest {
 
     @Test
     public void testStreamJson() throws InterruptedException {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
         this.sqlgGraph.tx().streamingBatchModeOn();
         for (int i = 0; i < 10; i++) {
@@ -955,10 +954,9 @@ public class TestBatchStreamVertex extends BaseTest {
 
     @Test(expected = SqlgExceptions.InvalidPropertyTypeException.class)
     public void testStreamJsonAsArray() {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json1 = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json1 = Topology.OBJECT_MAPPER.createObjectNode();
         json1.put("username", "john1");
-        ObjectNode json2 = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json2 = Topology.OBJECT_MAPPER.createObjectNode();
         json2.put("username", "john2");
 
         JsonNode[] jsonNodes = new JsonNode[]{json1};

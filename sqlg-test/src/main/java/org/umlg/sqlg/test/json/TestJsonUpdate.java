@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -23,13 +24,12 @@ public class TestJsonUpdate extends BaseTest {
 
     @Test
     public void testUpdateJson() {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
         this.sqlgGraph.tx().commit();
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
-        json = new ObjectNode(objectMapper.getNodeFactory());
+        json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "peter");
         v1.property("doc", json);
         this.sqlgGraph.tx().commit();
@@ -62,21 +62,20 @@ public class TestJsonUpdate extends BaseTest {
 
     @Test
     public void testUpdateJsonArray() {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ArrayNode jsonArray = new ArrayNode(objectMapper.getNodeFactory());
-        ObjectNode john = new ObjectNode(objectMapper.getNodeFactory());
+        ArrayNode jsonArray = Topology.OBJECT_MAPPER.createArrayNode();
+        ObjectNode john = Topology.OBJECT_MAPPER.createObjectNode();
         john.put("username", "john");
-        ObjectNode pete = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode pete = Topology.OBJECT_MAPPER.createObjectNode();
         pete.put("username", "pete");
         jsonArray.add(john);
         jsonArray.add(pete);
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "users", jsonArray);
         this.sqlgGraph.tx().commit();
 
-        jsonArray = new ArrayNode(objectMapper.getNodeFactory());
-        john = new ObjectNode(objectMapper.getNodeFactory());
+        jsonArray = Topology.OBJECT_MAPPER.createArrayNode();
+        john = Topology.OBJECT_MAPPER.createObjectNode();
         john.put("username", "john1");
-        pete = new ObjectNode(objectMapper.getNodeFactory());
+        pete = Topology.OBJECT_MAPPER.createObjectNode();
         pete.put("username", "pete1");
         jsonArray.add(john);
         jsonArray.add(pete);
@@ -92,10 +91,9 @@ public class TestJsonUpdate extends BaseTest {
     @Test
     public void testUpdateJsonArraysForObjectNodes() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json1 = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json1 = Topology.OBJECT_MAPPER.createObjectNode();
         json1.put("username", "john1");
-        ObjectNode json2 = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json2 = Topology.OBJECT_MAPPER.createObjectNode();
         json2.put("username", "john2");
         ObjectNode[] objectNodes = new ObjectNode[]{json1, json2};
 
@@ -104,9 +102,9 @@ public class TestJsonUpdate extends BaseTest {
         JsonNode[] value = this.sqlgGraph.traversal().V(v1.id()).next().value("docs");
         Assert.assertArrayEquals(objectNodes, value);
 
-        json1 = new ObjectNode(objectMapper.getNodeFactory());
+        json1 = Topology.OBJECT_MAPPER.createObjectNode();
         json1.put("username", "john11");
-        json2 = new ObjectNode(objectMapper.getNodeFactory());
+        json2 = Topology.OBJECT_MAPPER.createObjectNode();
         json2.put("username", "john22");
         objectNodes = new ObjectNode[]{json1, json2};
 
@@ -121,19 +119,18 @@ public class TestJsonUpdate extends BaseTest {
     @Test
     public void testUpdateJsonArraysForArrayNode() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ArrayNode jsonArray1 = new ArrayNode(objectMapper.getNodeFactory());
-        ObjectNode john = new ObjectNode(objectMapper.getNodeFactory());
+        ArrayNode jsonArray1 = Topology.OBJECT_MAPPER.createArrayNode();
+        ObjectNode john = Topology.OBJECT_MAPPER.createObjectNode();
         john.put("username", "john");
-        ObjectNode pete = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode pete = Topology.OBJECT_MAPPER.createObjectNode();
         pete.put("username", "pete");
         jsonArray1.add(john);
         jsonArray1.add(pete);
 
-        ArrayNode jsonArray2 = new ArrayNode(objectMapper.getNodeFactory());
-        ObjectNode john2 = new ObjectNode(objectMapper.getNodeFactory());
+        ArrayNode jsonArray2 = Topology.OBJECT_MAPPER.createArrayNode();
+        ObjectNode john2 = Topology.OBJECT_MAPPER.createObjectNode();
         john2.put("username", "john2");
-        ObjectNode pete2 = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode pete2 = Topology.OBJECT_MAPPER.createObjectNode();
         pete2.put("username", "pete2");
         jsonArray2.add(john2);
         jsonArray2.add(pete2);
@@ -144,18 +141,18 @@ public class TestJsonUpdate extends BaseTest {
         JsonNode[] value = this.sqlgGraph.traversal().V(v1.id()).next().value("docs");
         Assert.assertArrayEquals(arrayNodes, value);
 
-        jsonArray1 = new ArrayNode(objectMapper.getNodeFactory());
-        john = new ObjectNode(objectMapper.getNodeFactory());
+        jsonArray1 = Topology.OBJECT_MAPPER.createArrayNode();
+        john = Topology.OBJECT_MAPPER.createObjectNode();
         john.put("username", "john");
-        pete = new ObjectNode(objectMapper.getNodeFactory());
+        pete = Topology.OBJECT_MAPPER.createObjectNode();
         pete.put("username", "pete");
         jsonArray1.add(john);
         jsonArray1.add(pete);
 
-        jsonArray2 = new ArrayNode(objectMapper.getNodeFactory());
-        john2 = new ObjectNode(objectMapper.getNodeFactory());
+        jsonArray2 = Topology.OBJECT_MAPPER.createArrayNode();
+        john2 = Topology.OBJECT_MAPPER.createObjectNode();
         john2.put("username", "john2");
-        pete2 = new ObjectNode(objectMapper.getNodeFactory());
+        pete2 = Topology.OBJECT_MAPPER.createObjectNode();
         pete2.put("username", "pete2");
         jsonArray2.add(john2);
         jsonArray2.add(pete2);

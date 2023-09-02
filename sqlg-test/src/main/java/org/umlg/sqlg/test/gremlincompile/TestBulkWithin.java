@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.LocalDate;
@@ -513,47 +514,46 @@ public class TestBulkWithin extends BaseTest {
     @Test
     public void testBulkWithinJsonArray() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJsonArrayValues());
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode json1_1 = objectMapper.createObjectNode();
+        ObjectNode json1_1 = Topology.OBJECT_MAPPER.createObjectNode();
         json1_1.put("test", "aaa");
-        ObjectNode json1_2 = objectMapper.createObjectNode();
+        ObjectNode json1_2 = Topology.OBJECT_MAPPER.createObjectNode();
         json1_2.put("test", "bbb");
-        ObjectNode json1_3 = objectMapper.createObjectNode();
+        ObjectNode json1_3 = Topology.OBJECT_MAPPER.createObjectNode();
         json1_3.put("test", "ccc");
-        ObjectNode json1_4 = objectMapper.createObjectNode();
+        ObjectNode json1_4 = Topology.OBJECT_MAPPER.createObjectNode();
         json1_4.put("test", "ddd");
 
         ObjectNode[] jsons1 = new ObjectNode[]{json1_1, json1_2, json1_3, json1_4};
 
-        ObjectNode json2_1 = objectMapper.createObjectNode();
+        ObjectNode json2_1 = Topology.OBJECT_MAPPER.createObjectNode();
         json2_1.put("test", "eee");
-        ObjectNode json2_2 = objectMapper.createObjectNode();
+        ObjectNode json2_2 = Topology.OBJECT_MAPPER.createObjectNode();
         json2_2.put("test", "fff");
-        ObjectNode json2_3 = objectMapper.createObjectNode();
+        ObjectNode json2_3 = Topology.OBJECT_MAPPER.createObjectNode();
         json2_3.put("test", "ggg");
-        ObjectNode json2_4 = objectMapper.createObjectNode();
+        ObjectNode json2_4 = Topology.OBJECT_MAPPER.createObjectNode();
         json2_4.put("test", "hhh");
 
         ObjectNode[] jsons2 = new ObjectNode[]{json2_1, json2_2, json2_3, json2_4};
 
-        ObjectNode json3_1 = objectMapper.createObjectNode();
+        ObjectNode json3_1 = Topology.OBJECT_MAPPER.createObjectNode();
         json3_1.put("test", "iii");
-        ObjectNode json3_2 = objectMapper.createObjectNode();
+        ObjectNode json3_2 = Topology.OBJECT_MAPPER.createObjectNode();
         json3_2.put("test", "jjj");
-        ObjectNode json3_3 = objectMapper.createObjectNode();
+        ObjectNode json3_3 = Topology.OBJECT_MAPPER.createObjectNode();
         json3_3.put("test", "kkk");
-        ObjectNode json3_4 = objectMapper.createObjectNode();
+        ObjectNode json3_4 = Topology.OBJECT_MAPPER.createObjectNode();
         json3_4.put("test", "lll");
 
         ObjectNode[] jsons3 = new ObjectNode[]{json3_1, json3_2, json3_3, json3_4};
 
-        ObjectNode json4_1 = objectMapper.createObjectNode();
+        ObjectNode json4_1 = Topology.OBJECT_MAPPER.createObjectNode();
         json4_1.put("test", "mmm");
-        ObjectNode json4_2 = objectMapper.createObjectNode();
+        ObjectNode json4_2 = Topology.OBJECT_MAPPER.createObjectNode();
         json4_2.put("test", "nnn");
-        ObjectNode json4_3 = objectMapper.createObjectNode();
+        ObjectNode json4_3 = Topology.OBJECT_MAPPER.createObjectNode();
         json4_3.put("test", "ooo");
-        ObjectNode json4_4 = objectMapper.createObjectNode();
+        ObjectNode json4_4 = Topology.OBJECT_MAPPER.createObjectNode();
         json4_4.put("test", "ppp");
 
         ObjectNode[] jsons4 = new ObjectNode[]{json4_1, json4_2, json4_3, json4_4};

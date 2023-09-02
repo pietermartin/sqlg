@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 import org.umlg.sqlg.structure.BatchManager;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -37,8 +38,7 @@ public class TestBatchJson extends BaseTest {
 
     @Test
     public void testJson() throws InterruptedException {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
         this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "doc", json);
@@ -56,8 +56,7 @@ public class TestBatchJson extends BaseTest {
 
     @Test
     public void batchJson() throws InterruptedException {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10; i++) {
@@ -81,8 +80,7 @@ public class TestBatchJson extends BaseTest {
 
     @Test
     public void batchUpdateJson() throws InterruptedException {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10; i++) {
@@ -94,7 +92,7 @@ public class TestBatchJson extends BaseTest {
         JsonNode value = vertices.get(0).value("doc");
         assertEquals(json, value);
         this.sqlgGraph.tx().normalBatchModeOn();
-        json = new ObjectNode(objectMapper.getNodeFactory());
+        json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "o'connor");
         for (Vertex vertex : vertices) {
             vertex.property("doc", json);
@@ -118,8 +116,7 @@ public class TestBatchJson extends BaseTest {
 
     @Test
     public void batchUpdateJsonWithNulls() throws InterruptedException {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode json = Topology.OBJECT_MAPPER.createObjectNode();
         json.put("username", "john");
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "Person", "doc1", json);
@@ -127,7 +124,7 @@ public class TestBatchJson extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "Person", "doc3", json);
         this.sqlgGraph.tx().commit();
 
-        ObjectNode jsonAgain = new ObjectNode(objectMapper.getNodeFactory());
+        ObjectNode jsonAgain = Topology.OBJECT_MAPPER.createObjectNode();
         jsonAgain.put("surname", "zzz");
         this.sqlgGraph.tx().normalBatchModeOn();
         a1.property("doc1", jsonAgain);
