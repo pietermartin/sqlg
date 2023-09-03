@@ -1679,17 +1679,24 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabel.uncommittedOutEdgeRoles.add(newOutEdgeRole);
             newOutEdgeRole.getVertexLabel().addToUncommittedOutEdgeRoles(edgeLabel.getSchema(), newOutEdgeRole);
             newOutEdgeRole.getVertexLabel().removeOutEdge(oldEdgeLabel);
+            schema.getTopology().fire(oldOutEdgeRole, oldOutEdgeRole, TopologyChangeAction.DELETE, true);
+            schema.getTopology().fire(oldOutEdgeRole, newOutEdgeRole, TopologyChangeAction.CREATE, true);
         }
         for (EdgeRole oldInEdgeRole : oldInEdgeRoles) {
             EdgeRole newInEdgeRole = new EdgeRole(oldInEdgeRole.getVertexLabel(), edgeLabel, oldInEdgeRole.getDirection(), false, oldInEdgeRole.getMultiplicity());
             edgeLabel.uncommittedInEdgeRoles.add(newInEdgeRole);
             newInEdgeRole.getVertexLabel().addToUncommittedInEdgeRoles(edgeLabel.getSchema(), newInEdgeRole);
             newInEdgeRole.getVertexLabel().removeInEdge(oldEdgeLabel);
+            schema.getTopology().fire(oldInEdgeRole, oldInEdgeRole, TopologyChangeAction.DELETE, true);
+            schema.getTopology().fire(oldInEdgeRole, newInEdgeRole, TopologyChangeAction.CREATE, true);
         }
         edgeLabel.renameEdgeLabelOnDb(oldEdgeLabel.getLabel(), newLabel);
         TopologyManager.renameEdgeLabel(sqlgGraph, schema.getName(), EDGE_PREFIX + oldEdgeLabel.getLabel(), EDGE_PREFIX + newLabel);
         edgeLabel.committed = false;
+        schema.getTopology().fire(oldEdgeLabel, oldEdgeLabel, TopologyChangeAction.DELETE, true);
+        schema.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE, true);
         return edgeLabel;
+
     }
 
     private void renameEdgeLabelOnDb(String oldLabel, String newLabel) {
