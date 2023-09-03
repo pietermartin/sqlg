@@ -202,8 +202,6 @@ public class Schema implements TopologyInf {
                 vertexLabel.getIdentifiers()
         );
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + label, renamedVertexLabel);
-        this.getTopology().fire(vertexLabel, vertexLabel, TopologyChangeAction.DELETE, true);
-        this.getTopology().fire(renamedVertexLabel, vertexLabel, TopologyChangeAction.CREATE, true);
         return renamedVertexLabel;
     }
 
@@ -214,6 +212,8 @@ public class Schema implements TopologyInf {
         Preconditions.checkState(!this.isSqlgSchema(), "renameEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "edge label may not start with " + EDGE_PREFIX);
         this.sqlgGraph.getSqlDialect().validateTableName(label);
+
+//        this.getTopology().fire(edgeLabel, edgeLabel, TopologyChangeAction.DELETE, true);
         this.uncommittedRemovedEdgeLabels.add(this.name + "." + EDGE_PREFIX + edgeLabel.label);
 
         Set<VertexLabel> outVertexLabels = edgeLabel.getOutVertexLabels();
@@ -230,8 +230,6 @@ public class Schema implements TopologyInf {
                 edgeLabel.getIdentifiers()
         );
         this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + label, renamedEdgeLabel);
-        this.getTopology().fire(renamedEdgeLabel, renamedEdgeLabel, TopologyChangeAction.DELETE, true);
-        this.getTopology().fire(renamedEdgeLabel, edgeLabel, TopologyChangeAction.CREATE, true);
     }
 
     public VertexLabel ensurePartitionedVertexLabelExist(
@@ -496,7 +494,7 @@ public class Schema implements TopologyInf {
                 PropertyType propertyType = propertyColumn.getPropertyType();
                 String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
                 int count = 1;
-                for (String ignored : propertyTypeToSqlDefinition) {
+                for (@SuppressWarnings("UnusedAssignment") String ignored : propertyTypeToSqlDefinition) {
                     if (count > 1) {
                         partitionExpression.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                                 foreignKeyVertexLabel.getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + (direction == Direction.OUT ? OUT_VERTEX_COLUMN_END : IN_VERTEX_COLUMN_END)
@@ -1361,9 +1359,9 @@ public class Schema implements TopologyInf {
     }
 
     public JsonNode toJson() {
-        ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode schemaNode = Topology.OBJECT_MAPPER.createObjectNode();
         schemaNode.put("name", this.getName());
-        ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ArrayNode vertexLabelArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
         List<VertexLabel> vertexLabels = new ArrayList<>(this.getVertexLabels().values());
         vertexLabels.sort(Comparator.comparing(VertexLabel::getName));
         for (VertexLabel vertexLabel : vertexLabels) {
@@ -1375,10 +1373,10 @@ public class Schema implements TopologyInf {
 
     Optional<JsonNode> toNotifyJson() {
         boolean foundVertexLabels = false;
-        ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ObjectNode schemaNode = Topology.OBJECT_MAPPER.createObjectNode();
         schemaNode.put("name", this.getName());
         if (this.topology.isSchemaChanged() && !this.getUncommittedVertexLabels().isEmpty()) {
-            ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode vertexLabelArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
                 //VertexLabel toNotifyJson always returns something even though it's an Optional.
                 //This is because it extends AbstractElement's toNotifyJson that does not always return something.
@@ -1393,7 +1391,7 @@ public class Schema implements TopologyInf {
             foundVertexLabels = true;
         }
         if (this.topology.isSchemaChanged() && !this.uncommittedRemovedVertexLabels.isEmpty()) {
-            ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode vertexLabelArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String s : this.uncommittedRemovedVertexLabels) {
                 //Do not send uncommitted removed if it has also been uncommitted added.
                 if (!this.getUncommittedVertexLabels().containsKey(s)) {
@@ -1404,7 +1402,7 @@ public class Schema implements TopologyInf {
             foundVertexLabels = true;
         }
         if (this.topology.isSchemaChanged() && !this.uncommittedRemovedEdgeLabels.isEmpty()) {
-            ArrayNode edgeLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            ArrayNode edgeLabelArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (String s : this.uncommittedRemovedEdgeLabels) {
                 edgeLabelArrayNode.add(s);
             }
@@ -1413,27 +1411,30 @@ public class Schema implements TopologyInf {
         }
 
         if (!this.vertexLabels.isEmpty()) {
-            ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-                Optional<JsonNode> notifyJsonOptional = vertexLabel.toNotifyJson();
-                if (notifyJsonOptional.isPresent()) {
-                    JsonNode notifyJson = notifyJsonOptional.get();
-                    if (notifyJson.get("uncommittedProperties") != null ||
-                            notifyJson.get("uncommittedUpdatedProperties") != null ||
-                            notifyJson.get("uncommittedOutEdgeLabels") != null ||
-                            notifyJson.get("uncommittedInEdgeLabels") != null ||
-                            notifyJson.get("outEdgeLabels") != null ||
-                            notifyJson.get("inEdgeLabels") != null ||
-                            notifyJson.get("uncommittedRemovedOutEdgeLabels") != null ||
-                            notifyJson.get("uncommittedRemovedInEdgeLabels") != null
-                    ) {
+            ArrayNode vertexLabelArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
+            for (String s : this.vertexLabels.keySet()) {
+                VertexLabel vertexLabel = this.vertexLabels.get(s);
+                if (!this.uncommittedRemovedVertexLabels.contains(s)) {
+                    Optional<JsonNode> notifyJsonOptional = vertexLabel.toNotifyJson();
+                    if (notifyJsonOptional.isPresent()) {
+                        JsonNode notifyJson = notifyJsonOptional.get();
+                        if (notifyJson.get("uncommittedProperties") != null ||
+                                notifyJson.get("uncommittedUpdatedProperties") != null ||
+                                notifyJson.get("uncommittedOutEdgeRoles") != null ||
+                                notifyJson.get("uncommittedInEdgeRoles") != null ||
+                                notifyJson.get("outEdgeLabels") != null ||
+                                notifyJson.get("inEdgeLabels") != null ||
+                                notifyJson.get("uncommittedRemovedOutEdgeRoles") != null ||
+                                notifyJson.get("uncommittedRemovedInEdgeRoles") != null
+                        ) {
 
-                        vertexLabelArrayNode.add(notifyJsonOptional.get());
-                        foundVertexLabels = true;
+                            vertexLabelArrayNode.add(notifyJsonOptional.get());
+                            foundVertexLabels = true;
+                        }
                     }
                 }
             }
-            if (vertexLabelArrayNode.size() > 0) {
+            if (!vertexLabelArrayNode.isEmpty()) {
                 schemaNode.set("vertexLabels", vertexLabelArrayNode);
             }
         }
@@ -1445,6 +1446,52 @@ public class Schema implements TopologyInf {
     }
 
     void fromNotifyJsonOutEdges(JsonNode jsonSchema) {
+
+        JsonNode rem = jsonSchema.get("uncommittedRemovedVertexLabels");
+        if (rem != null && rem.isArray()) {
+            ArrayNode an = (ArrayNode) rem;
+            for (int a = 0; a < an.size(); a++) {
+                String s = an.get(a).asText();
+                VertexLabel lbl = this.vertexLabels.remove(s);
+                if (lbl != null) {
+                    this.getTopology().removeVertexLabel(lbl);
+                    for (EdgeRole edgeRole : lbl.getOutEdgeRoles().values()) {
+                        this.getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+                        edgeRole.getEdgeLabel().outEdgeRoles.remove(edgeRole);
+                    }
+                    for (EdgeRole edgeRole : lbl.getInEdgeRoles().values()) {
+                        this.getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+                        edgeRole.getEdgeLabel().inEdgeRoles.remove(edgeRole);
+                    }
+                    this.getTopology().fire(lbl, lbl, TopologyChangeAction.DELETE, false);
+                }
+            }
+        }
+
+        rem = jsonSchema.get("uncommittedRemovedEdgeLabels");
+        if (rem != null && rem.isArray()) {
+            ArrayNode an = (ArrayNode) rem;
+            for (int a = 0; a < an.size(); a++) {
+                String s = an.get(a).asText();
+                EdgeLabel edgeLabel = this.outEdgeLabels.remove(s);
+                if (edgeLabel != null) {
+                    for (VertexLabel lbl : edgeLabel.getOutVertexLabels()) {
+                        if (edgeLabel.isValid()) {
+                            EdgeRole edgeRole = lbl.outEdgeRoles.get(edgeLabel.getFullName());
+                            this.getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+                        }
+                    }
+                    for (VertexLabel lbl : edgeLabel.getInVertexLabels()) {
+                        if (edgeLabel.isValid()) {
+                            EdgeRole edgeRole = lbl.inEdgeRoles.get(edgeLabel.getFullName());
+                            this.getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
+                        }
+                    }
+                    this.getTopology().fire(edgeLabel, edgeLabel, TopologyChangeAction.DELETE, false);
+                }
+            }
+        }
+
         for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
             JsonNode vertexLabels = jsonSchema.get(s);
             if (vertexLabels != null) {
@@ -1473,48 +1520,7 @@ public class Schema implements TopologyInf {
                 }
             }
         }
-        JsonNode rem = jsonSchema.get("uncommittedRemovedVertexLabels");
-        if (rem != null && rem.isArray()) {
-            ArrayNode an = (ArrayNode) rem;
-            for (int a = 0; a < an.size(); a++) {
-                String s = an.get(a).asText();
-                VertexLabel lbl = this.vertexLabels.remove(s);
-                if (lbl != null) {
-                    this.getTopology().removeVertexLabel(lbl);
-                    for (EdgeRole er : lbl.getOutEdgeRoles().values()) {
-                        er.getEdgeLabel().outEdgeRoles.remove(er);
-                    }
-                    for (EdgeRole er : lbl.getInEdgeRoles().values()) {
-                        er.getEdgeLabel().inEdgeRoles.remove(er);
-                    }
-                    this.getTopology().fire(lbl, lbl, TopologyChangeAction.DELETE, false);
 
-                }
-            }
-        }
-
-        rem = jsonSchema.get("uncommittedRemovedEdgeLabels");
-        if (rem != null && rem.isArray()) {
-            ArrayNode an = (ArrayNode) rem;
-            for (int a = 0; a < an.size(); a++) {
-                String s = an.get(a).asText();
-                EdgeLabel edgeLabel = this.outEdgeLabels.remove(s);
-                if (edgeLabel != null) {
-                    this.getTopology().fire(edgeLabel, edgeLabel, TopologyChangeAction.DELETE, false);
-                    for (VertexLabel lbl : edgeLabel.getOutVertexLabels()) {
-                        if (edgeLabel.isValid()) {
-                            lbl.outEdgeRoles.remove(edgeLabel.getFullName());
-                        }
-                    }
-                    for (VertexLabel lbl : edgeLabel.getInVertexLabels()) {
-                        if (edgeLabel.isValid()) {
-                            lbl.inEdgeRoles.remove(edgeLabel.getFullName());
-                        }
-                    }
-//                    this.getTopology().fire(edgeLabel, edgeLabel, TopologyChangeAction.DELETE, false);
-                }
-            }
-        }
     }
 
     void fromNotifyJsonInEdges(JsonNode jsonSchema) {
@@ -1693,6 +1699,7 @@ public class Schema implements TopologyInf {
         }
     }
 
+    @SuppressWarnings("SqlSourceToSinkFlow")
     public void createTempTable(String tableName, Map<String, PropertyDefinition> columns) {
         this.sqlgGraph.getSqlDialect().assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTemporaryTableStatement());
@@ -1707,7 +1714,7 @@ public class Schema implements TopologyInf {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" ");
         sql.append(this.sqlgGraph.getSqlDialect().getAutoIncrementPrimaryKeyConstruct());
-        if (columns.size() > 0) {
+        if (!columns.isEmpty()) {
             sql.append(", ");
         }
         AbstractLabel.buildColumns(this.sqlgGraph, new ListOrderedSet<>(), columns, sql);
