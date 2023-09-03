@@ -258,8 +258,9 @@ public class TopologyManager {
                     .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
                     .has(SQLG_SCHEMA_EDGE_LABEL_NAME, oldEdgeLabel.substring(EDGE_PREFIX.length()))
                     .toList();
-            Preconditions.checkState(edgeLabelsToRename.size() == 1, String.format("Expected exactly one VertexLabel in %s.%s. Found %d", schema, oldEdgeLabel, edgeLabelsToRename.size()));
-            edgeLabelsToRename.get(0).property(SQLG_SCHEMA_EDGE_LABEL_NAME, newEdgeLabel.substring(EDGE_PREFIX.length()));
+            for (Vertex edgeLabelToRename : edgeLabelsToRename) {
+                edgeLabelToRename.property(SQLG_SCHEMA_EDGE_LABEL_NAME, newEdgeLabel.substring(EDGE_PREFIX.length()));
+            }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
