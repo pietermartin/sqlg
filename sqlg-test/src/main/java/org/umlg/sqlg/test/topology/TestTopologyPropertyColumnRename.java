@@ -26,6 +26,24 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
     }
 
     @Test
+    public void testRenameEdgeLabelWithMultipleEdgeRolesPropertyColumn() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+        a.addEdge("ab", b, "name", "ab1");
+        Vertex aa = this.sqlgGraph.addVertex(T.label, "AA");
+        aa.addEdge("ab", b, "name", "ab1");
+        this.sqlgGraph.tx().commit();
+
+        EdgeLabel abEdgeLabel = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
+        PropertyColumn propertyColumn = abEdgeLabel.getProperty("name").orElseThrow();
+        propertyColumn.rename("abab");
+        this.sqlgGraph.tx().commit();
+        abEdgeLabel = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
+        Assert.assertTrue(abEdgeLabel.getProperty("name").isEmpty());
+        Assert.assertTrue(abEdgeLabel.getProperty("abab").isPresent());
+    }
+
+    @Test
     public void testPropertyRename() {
         TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
