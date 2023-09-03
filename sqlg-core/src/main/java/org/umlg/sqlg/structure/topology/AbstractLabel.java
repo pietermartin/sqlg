@@ -1224,112 +1224,94 @@ public abstract class AbstractLabel implements TopologyInf {
      * @param propertyColumn     The column to update.
      * @param propertyDefinition The {@link PropertyDefinition} to update to.
      */
-    void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition) {
-        Preconditions.checkState(!sqlgGraph.getSqlDialect().isMariaDb(), "updatePropertyDefinition is not supported for mariadb. Dropping constraints is complicated so will only do if if requested.");
-        PropertyDefinition currentPropertyDefinition = propertyColumn.getPropertyDefinition();
-        Preconditions.checkState(currentPropertyDefinition.propertyType().equals(propertyDefinition.propertyType()),
-                "PropertyType must be the same for updatePropertyDefinition. Original: '%s', Updated: '%s' '%s'", currentPropertyDefinition.propertyType(), propertyDefinition.propertyType()
-        );
-        this.getSchema().getTopology().startSchemaChange(
-                String.format("VertexLabel '%s' updatePropertyDefinition with '%s' '%s'", getFullName(), propertyColumn.getName(), propertyDefinition)
-        );
-        String name = propertyColumn.getName();
-        if (!this.uncommittedUpdatedProperties.containsKey(name)) {
-            PropertyColumn copy = new PropertyColumn(this, name, propertyDefinition);
-            this.uncommittedUpdatedProperties.put(name, copy);
-            TopologyManager.updateVertexLabelPropertyColumn(
-                    this.sqlgGraph,
-                    getSchema().getName(),
-                    VERTEX_PREFIX + getLabel(),
-                    name,
-                    propertyDefinition
-            );
-            if (currentPropertyDefinition.multiplicity().isRequired() && !propertyDefinition.multiplicity().isRequired()) {
-                //remove NOT NULL
-                removeNotNull(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
-            }
-            if (!currentPropertyDefinition.multiplicity().isRequired() && propertyDefinition.multiplicity().isRequired()) {
-                //add NOT NULL
-                addNotNull(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, currentPropertyDefinition.propertyType());
-            }
-            if (currentPropertyDefinition.defaultLiteral() != null && propertyDefinition.defaultLiteral() == null) {
-                //remove defaultLiteral
-                removeDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
-            }
-            if (currentPropertyDefinition.defaultLiteral() == null && propertyDefinition.defaultLiteral() != null) {
-                //add defaultLiteral
-                addDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.defaultLiteral());
-            }
-            if (currentPropertyDefinition.defaultLiteral() != null && propertyDefinition.defaultLiteral() != null &&
-                    !currentPropertyDefinition.defaultLiteral().equals(propertyDefinition.defaultLiteral())) {
+    abstract void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition);
 
-                //remove defaultLiteral
-                removeDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name);
-                //add defaultLiteral
-                addDefaultLiteral(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.defaultLiteral());
-            }
-            if (!currentPropertyDefinition.propertyType().isArray()) {
-                if (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() == null) {
-                    //remove checkConstraint
-                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
-                    Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
-                    removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
-                }
-                if (currentPropertyDefinition.checkConstraint() == null && propertyDefinition.checkConstraint() != null) {
-                    //add checkConstraint
-                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, null, propertyDefinition.checkConstraint());
-                }
-                if (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() != null &&
-                        !currentPropertyDefinition.checkConstraint().equals(propertyDefinition.checkConstraint())) {
-
-                    //add new checkConstraint
-                    //remove checkConstraint
-                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
-                    Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
-                    removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
-                    //add checkConstraint
-                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, null, propertyDefinition.checkConstraint());
-                }
-            } else {
-                //arrays
-                if ((currentPropertyDefinition.multiplicity().hasLimits() && !propertyDefinition.multiplicity().hasLimits()) ||
-                        (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() == null) ||
-                        (propertyDefinition.multiplicity().hasLimits() && !currentPropertyDefinition.multiplicity().equals(propertyDefinition.multiplicity())) ||
-                        (currentPropertyDefinition.checkConstraint() != null && !currentPropertyDefinition.checkConstraint().equals(propertyDefinition.checkConstraint()))) {
-                    //remove checkConstraint
-                }
-                if (propertyDefinition.multiplicity().hasLimits() && propertyDefinition.checkConstraint() != null) {
-                    if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
-                        //remove checkConstraint
-                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
-                        Preconditions.checkNotNull(checkConstraintName, "Failed to find check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
-                        removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
-                    }
-                    //add checkConstraint
-                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.multiplicity(), propertyDefinition.checkConstraint());
-                } else if (propertyDefinition.multiplicity().hasLimits()) {
-                    if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
-                        //remove checkConstraint
-                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
-                        Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
-                        removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
-                    }
-                    //add checkConstraint
-                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, propertyDefinition.multiplicity(), null);
-
-                } else if (propertyDefinition.checkConstraint() != null) {
-                    if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
-                        //remove checkConstraint
-                        String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), VERTEX_PREFIX + getName(), name, currentPropertyDefinition.checkConstraint());
-                        Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
-                        removeCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), checkConstraintName);
-                    }
-                    //add checkConstraint
-                    addCheckConstraint(getSchema().getName(), VERTEX_PREFIX + getLabel(), name, null, propertyDefinition.checkConstraint());
-                }
-            }
-            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
+    protected void internalUpdatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition, PropertyDefinition currentPropertyDefinition, String name, PropertyColumn copy) {
+        if (currentPropertyDefinition.multiplicity().isRequired() && !propertyDefinition.multiplicity().isRequired()) {
+            //remove NOT NULL
+            removeNotNull(getSchema().getName(), getPrefix() + getLabel(), name);
         }
+        if (!currentPropertyDefinition.multiplicity().isRequired() && propertyDefinition.multiplicity().isRequired()) {
+            //add NOT NULL
+            addNotNull(getSchema().getName(), getPrefix() + getLabel(), name, currentPropertyDefinition.propertyType());
+        }
+        if (currentPropertyDefinition.defaultLiteral() != null && propertyDefinition.defaultLiteral() == null) {
+            //remove defaultLiteral
+            removeDefaultLiteral(getSchema().getName(), getPrefix() + getLabel(), name);
+        }
+        if (currentPropertyDefinition.defaultLiteral() == null && propertyDefinition.defaultLiteral() != null) {
+            //add defaultLiteral
+            addDefaultLiteral(getSchema().getName(), getPrefix() + getLabel(), name, propertyDefinition.defaultLiteral());
+        }
+        if (currentPropertyDefinition.defaultLiteral() != null && propertyDefinition.defaultLiteral() != null &&
+                !currentPropertyDefinition.defaultLiteral().equals(propertyDefinition.defaultLiteral())) {
+
+            //remove defaultLiteral
+            removeDefaultLiteral(getSchema().getName(), getPrefix() + getLabel(), name);
+            //add defaultLiteral
+            addDefaultLiteral(getSchema().getName(), getPrefix() + getLabel(), name, propertyDefinition.defaultLiteral());
+        }
+        if (!currentPropertyDefinition.propertyType().isArray()) {
+            if (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() == null) {
+                //remove checkConstraint
+                String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), getPrefix() + getName(), name, currentPropertyDefinition.checkConstraint());
+                Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                removeCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), checkConstraintName);
+            }
+            if (currentPropertyDefinition.checkConstraint() == null && propertyDefinition.checkConstraint() != null) {
+                //add checkConstraint
+                addCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), name, null, propertyDefinition.checkConstraint());
+            }
+            if (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() != null &&
+                    !currentPropertyDefinition.checkConstraint().equals(propertyDefinition.checkConstraint())) {
+
+                //add new checkConstraint
+                //remove checkConstraint
+                String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), getPrefix() + getName(), name, currentPropertyDefinition.checkConstraint());
+                Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                removeCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), checkConstraintName);
+                //add checkConstraint
+                addCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), name, null, propertyDefinition.checkConstraint());
+            }
+        } else {
+            //arrays
+            if ((currentPropertyDefinition.multiplicity().hasLimits() && !propertyDefinition.multiplicity().hasLimits()) ||
+                    (currentPropertyDefinition.checkConstraint() != null && propertyDefinition.checkConstraint() == null) ||
+                    (propertyDefinition.multiplicity().hasLimits() && !currentPropertyDefinition.multiplicity().equals(propertyDefinition.multiplicity())) ||
+                    (currentPropertyDefinition.checkConstraint() != null && !currentPropertyDefinition.checkConstraint().equals(propertyDefinition.checkConstraint()))) {
+                //remove checkConstraint
+            }
+            if (propertyDefinition.multiplicity().hasLimits() && propertyDefinition.checkConstraint() != null) {
+                if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
+                    //remove checkConstraint
+                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), getPrefix() + getName(), name, currentPropertyDefinition.checkConstraint());
+                    Preconditions.checkNotNull(checkConstraintName, "Failed to find check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                    removeCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), checkConstraintName);
+                }
+                //add checkConstraint
+                addCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), name, propertyDefinition.multiplicity(), propertyDefinition.checkConstraint());
+            } else if (propertyDefinition.multiplicity().hasLimits()) {
+                if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
+                    //remove checkConstraint
+                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), getPrefix() + getName(), name, currentPropertyDefinition.checkConstraint());
+                    Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                    removeCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), checkConstraintName);
+                }
+                //add checkConstraint
+                addCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), name, propertyDefinition.multiplicity(), null);
+
+            } else if (propertyDefinition.checkConstraint() != null) {
+                if (currentPropertyDefinition.multiplicity().hasLimits() || currentPropertyDefinition.checkConstraint() != null) {
+                    //remove checkConstraint
+                    String checkConstraintName = sqlgGraph.getSqlDialect().checkConstraintName(sqlgGraph, getSchema().getName(), getPrefix() + getName(), name, currentPropertyDefinition.checkConstraint());
+                    Preconditions.checkNotNull(checkConstraintName, "Failed to fine check constraint for '%s', '%s' '%s'", getSchema().getName(), getName(), name);
+                    removeCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), checkConstraintName);
+                }
+                //add checkConstraint
+                addCheckConstraint(getSchema().getName(), getPrefix() + getLabel(), name, null, propertyDefinition.checkConstraint());
+            }
+        }
+        this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
     }
 
     void addDefaultLiteral(String schema, String table, String column, String defaultLiteral) {

@@ -1401,8 +1401,10 @@ public class EdgeLabel extends AbstractLabel {
 
     @Override
     void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition) {
-        Preconditions.checkState(propertyColumn.getPropertyDefinition().propertyType().equals(propertyDefinition.propertyType()),
-                "PropertyType must be the same for updatePropertyDefinition. Original: '%s', Updated: '%s' '%s'", propertyColumn.getPropertyDefinition().propertyType(), propertyDefinition.propertyType()
+        Preconditions.checkState(!sqlgGraph.getSqlDialect().isMariaDb(), "updatePropertyDefinition is not supported for mariadb. Dropping constraints is complicated so will only do if if requested.");
+        PropertyDefinition currentPropertyDefinition = propertyColumn.getPropertyDefinition();
+        Preconditions.checkState(currentPropertyDefinition.propertyType().equals(propertyDefinition.propertyType()),
+                "PropertyType must be the same for updatePropertyDefinition. Original: '%s', Updated: '%s' '%s'", currentPropertyDefinition.propertyType(), propertyDefinition.propertyType()
         );
         this.getSchema().getTopology().startSchemaChange(
                 String.format("EdgeLabel '%s' updatePropertyDefinition with '%s' '%s'", getFullName(), propertyColumn.getName(), propertyDefinition.toString())
@@ -1418,8 +1420,7 @@ public class EdgeLabel extends AbstractLabel {
                     name,
                     propertyDefinition
             );
-//            renameColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), oldName, name);
-            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
+            internalUpdatePropertyDefinition(propertyColumn, propertyDefinition, currentPropertyDefinition, name, copy);
         }
     }
 

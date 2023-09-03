@@ -1199,6 +1199,31 @@ public class VertexLabel extends AbstractLabel {
     }
 
     @Override
+    void updatePropertyDefinition(PropertyColumn propertyColumn, PropertyDefinition propertyDefinition) {
+        Preconditions.checkState(!sqlgGraph.getSqlDialect().isMariaDb(), "updatePropertyDefinition is not supported for mariadb. Dropping constraints is complicated so will only do if if requested.");
+        PropertyDefinition currentPropertyDefinition = propertyColumn.getPropertyDefinition();
+        Preconditions.checkState(currentPropertyDefinition.propertyType().equals(propertyDefinition.propertyType()),
+                "PropertyType must be the same for updatePropertyDefinition. Original: '%s', Updated: '%s' '%s'", currentPropertyDefinition.propertyType(), propertyDefinition.propertyType()
+        );
+        this.getSchema().getTopology().startSchemaChange(
+                String.format("VertexLabel '%s' updatePropertyDefinition with '%s' '%s'", getFullName(), propertyColumn.getName(), propertyDefinition)
+        );
+        String name = propertyColumn.getName();
+        if (!this.uncommittedUpdatedProperties.containsKey(name)) {
+            PropertyColumn copy = new PropertyColumn(this, name, propertyDefinition);
+            this.uncommittedUpdatedProperties.put(name, copy);
+            TopologyManager.updateVertexLabelPropertyColumn(
+                    this.sqlgGraph,
+                    getSchema().getName(),
+                    VERTEX_PREFIX + getLabel(),
+                    name,
+                    propertyDefinition
+            );
+            internalUpdatePropertyDefinition(propertyColumn, propertyDefinition, currentPropertyDefinition, name, copy);
+        }
+    }
+
+    @Override
     void renameProperty(String name, PropertyColumn propertyColumn) {
         this.getSchema().getTopology().startSchemaChange(
                 String.format("VertexLabel '%s' renameProperty with '%s' '%s'", getFullName(), name, propertyColumn.getName())
