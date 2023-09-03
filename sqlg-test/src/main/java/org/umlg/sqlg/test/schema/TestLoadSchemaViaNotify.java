@@ -383,7 +383,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Thread.sleep(1_000);
 
             // we're not getting property notification since we get vertex label notification, these include all properties committed
-            Assert.assertEquals(5, topologyListenerTriple.size());
+            Assert.assertEquals(6, topologyListenerTriple.size());
 
             Assert.assertEquals(schema, topologyListenerTriple.get(0).getLeft());
             Assert.assertNull(topologyListenerTriple.get(0).getMiddle());
@@ -408,9 +408,13 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Assert.assertNull(topologyListenerTriple.get(3).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());
 
-            Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());
+            Assert.assertEquals(edgeLabel.getOutEdgeRoles(aVertexLabel), topologyListenerTriple.get(4).getLeft());
             Assert.assertNull(topologyListenerTriple.get(4).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
+
+            Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(5).getLeft());
+            Assert.assertNull(topologyListenerTriple.get(5).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
         }
     }
 }
