@@ -285,6 +285,7 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTopologyVertexLabelRename.class,
         TestTopologyVertexLabelRenameDistributed.class,
         TestTopologyEdgeLabelRename.class,
+        TestTopologyEdgeLabelRenameMultipleRoles.class,
         TestTopologyVertexLabelWithIdentifiersRenameDistributed.class,
         TestTopologyVertexLabelWithIdentifiersRename.class,
         TestTopologyEdgeLabelWithIdentifiersRename.class,

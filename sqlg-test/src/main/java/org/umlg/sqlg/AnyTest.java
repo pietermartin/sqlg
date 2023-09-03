@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.ltree.TestPostgresLtree;
+import org.umlg.sqlg.test.topology.TestTopologyPropertyColumnUpdate;
 
 /**
  * Date: 2014/07/16
@@ -10,25 +10,13 @@ import org.umlg.sqlg.test.ltree.TestPostgresLtree;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestHashPartitioning.class
-//        TestUpgrade301.class
-//        TestTopologyPropertyColumnUpdate.class,
-//        TestTopologyPropertyColumnUpdateDistributed.class
-//        TestTopologyDelete.class,
-//        TestTopology.class,
-//        TestPropertyCheckConstraint.class
-//        DocTests.class
 //        TestTest.class
-//        TestTopology.class,
-//        TestTopologyChangeListener.class,
-//        TestTopologyDelete.class,
-//        TestTopologyDeleteEdgeRole.class,
-//        TestTopologyDeleteSpecific.class,
+//        TestBatch.class
+//        TestLoadSchemaViaNotify.class,
 //        TestTopologyEdgeLabelRename.class,
-//        TestTop
-//        TestTopologyVertexLabelRename.class,
-//        TestTopologyVertexLabelWithIdentifiersRename.class,
-        TestPostgresLtree.class
+//        TestTopologyActionEventsDistributed.class
+//        TestTopologyEdgeLabelRenameMultipleRoles.class
+        TestTopologyPropertyColumnUpdate.class
 })
 public class AnyTest {
 }
