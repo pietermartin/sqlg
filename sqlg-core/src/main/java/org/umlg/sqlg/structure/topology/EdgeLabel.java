@@ -1441,7 +1441,8 @@ public class EdgeLabel extends AbstractLabel {
                 Preconditions.checkState(!this.renamedIdentifiers.contains(namePair), "BUG! renamedIdentifiers may not yet contain '%s'", oldName);
                 this.renamedIdentifiers.add(namePair);
             }
-            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
+            this.getSchema().getTopology().fire(copy, copy, TopologyChangeAction.DELETE, true);
+            this.getSchema().getTopology().fire(propertyColumn, copy, TopologyChangeAction.CREATE, true);
         }
     }
 

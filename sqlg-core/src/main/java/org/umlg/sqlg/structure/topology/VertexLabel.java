@@ -1252,7 +1252,8 @@ public class VertexLabel extends AbstractLabel {
                 }
 
             }
-            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.UPDATE, true);
+            this.getSchema().getTopology().fire(copy, copy, TopologyChangeAction.DELETE, true);
+            this.getSchema().getTopology().fire(propertyColumn, copy, TopologyChangeAction.CREATE, true);
         }
     }
 
