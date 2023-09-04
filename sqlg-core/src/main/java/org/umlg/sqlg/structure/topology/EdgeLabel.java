@@ -1442,7 +1442,7 @@ public class EdgeLabel extends AbstractLabel {
                 this.renamedIdentifiers.add(namePair);
             }
             this.getSchema().getTopology().fire(propertyColumn, propertyColumn, TopologyChangeAction.DELETE, true);
-            this.getSchema().getTopology().fire(propertyColumn, copy, TopologyChangeAction.CREATE, true);
+            this.getSchema().getTopology().fire(copy, propertyColumn, TopologyChangeAction.CREATE, true);
         }
     }
 
