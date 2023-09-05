@@ -58,13 +58,15 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
         Optional<PropertyColumn> column1Optional = aVertexLabel.getProperty("column1");
         Preconditions.checkState(column1Optional.isPresent());
         PropertyColumn column1 = column1Optional.get();
+        this.topologyListenerTriple.clear();
         column1.rename("column2");
         this.sqlgGraph.tx().commit();
 
         Assert.assertEquals(2, this.topologyListenerTriple.size());
         Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
-        Assert.assertEquals(column1, this.topologyListenerTriple.get(1).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(1).getRight());
+        Assert.assertEquals(column1, this.topologyListenerTriple.get(0).getMiddle());
+        Assert.assertEquals(TopologyChangeAction.DELETE, this.topologyListenerTriple.get(0).getRight());
+        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(1).getRight());
         Optional<PropertyColumn> column2Optional = aVertexLabel.getProperty("column2");
         Preconditions.checkState(column2Optional.isPresent());
         PropertyColumn column2 = column2Optional.get();
@@ -105,17 +107,19 @@ public class TestTopologyPropertyColumnRename extends BaseTest {
         Optional<PropertyColumn> column1Optional = edgeLabel.getProperty("column1");
         Preconditions.checkState(column1Optional.isPresent());
         PropertyColumn column1 = column1Optional.get();
+        this.topologyListenerTriple.clear();
         column1.rename("column2");
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(4, this.topologyListenerTriple.size());
-        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(3).getLeft());
-        Assert.assertEquals(column1, this.topologyListenerTriple.get(3).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.UPDATE, this.topologyListenerTriple.get(3).getRight());
+        Assert.assertEquals(2, this.topologyListenerTriple.size());
+        Assert.assertNotEquals(column1, this.topologyListenerTriple.get(1).getLeft());
+        Assert.assertEquals(column1, this.topologyListenerTriple.get(0).getMiddle());
+        Assert.assertEquals(TopologyChangeAction.DELETE, this.topologyListenerTriple.get(0).getRight());
+        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(1).getRight());
         Optional<PropertyColumn> column2Optional = edgeLabel.getProperty("column2");
         Preconditions.checkState(column2Optional.isPresent());
         PropertyColumn column2 = column2Optional.get();
-        Assert.assertEquals(column2, this.topologyListenerTriple.get(3).getLeft());
+        Assert.assertEquals(column2, this.topologyListenerTriple.get(1).getLeft());
 
         List<String> propertyNames = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PROPERTY).<String>values(Topology.SQLG_SCHEMA_PROPERTY_NAME).toList();
         Assert.assertEquals(1, propertyNames.size());
