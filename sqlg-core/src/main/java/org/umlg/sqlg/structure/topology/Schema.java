@@ -315,7 +315,7 @@ public class Schema implements TopologyInf {
         for (String columnName : columns.keySet()) {
             this.sqlgGraph.getSqlDialect().validateColumnName(columnName);
         }
-        
+
         for (String identifier : identifiers) {
             Preconditions.checkState(columns.containsKey(identifier), "The identifiers must be in the specified columns. \"%s\" not found", identifier);
         }
@@ -869,14 +869,13 @@ public class Schema implements TopologyInf {
     private Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         if (this.topology.isSchemaChanged()) {
-            for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-                result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
-            }
-            for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
-                result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
-            }
-            for (String e : uncommittedRemovedEdgeLabels) {
-                result.remove(e);
+            result.putAll(this.uncommittedOutEdgeLabels);
+            for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
+                Map<String, PropertyColumn> propertyMap = edgeLabel.getUncommittedPropertyTypeMap();
+                if (!propertyMap.isEmpty() || !edgeLabel.getUncommittedRemovedProperties().isEmpty()) {
+                    result.put(edgeLabel.getLabel(), edgeLabel);
+                }
+
             }
         }
         return result;
@@ -1373,8 +1372,49 @@ public class Schema implements TopologyInf {
 
     Optional<JsonNode> toNotifyJson() {
         boolean foundVertexLabels = false;
+        boolean foundOutEdgeLabel = false;
         ObjectNode schemaNode = Topology.OBJECT_MAPPER.createObjectNode();
         schemaNode.put("name", this.getName());
+
+        //do EdgeLabels
+        if (this.topology.isSchemaChanged()) {
+            ArrayNode uncommittedEdgeLabelsArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
+            if (!this.uncommittedOutEdgeLabels.isEmpty()) {
+                for (String edgeLabelKey : this.uncommittedOutEdgeLabels.keySet()) {
+                    if (!this.uncommittedRemovedEdgeLabels.contains(edgeLabelKey)) {
+                        EdgeLabel edgeLabel = this.uncommittedOutEdgeLabels.get(edgeLabelKey);
+                        Optional<JsonNode> edgeLabelJsonNodeOptional = edgeLabel.toNotifyJson();
+                        if (edgeLabelJsonNodeOptional.isPresent()) {
+                            foundOutEdgeLabel = true;
+                            uncommittedEdgeLabelsArrayNode.add(edgeLabelJsonNodeOptional.get());
+                        }
+                    }
+                }
+            }
+            if (foundOutEdgeLabel) {
+                schemaNode.set("uncommittedEdgeLabels", uncommittedEdgeLabelsArrayNode);
+            }
+
+            foundOutEdgeLabel = false;
+            ArrayNode edgeLabelsArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
+            if (!this.outEdgeLabels.isEmpty()) {
+                for (String edgeLabelKey : this.outEdgeLabels.keySet()) {
+                    if (!this.uncommittedRemovedEdgeLabels.contains(edgeLabelKey)) {
+                        EdgeLabel edgeLabel = this.outEdgeLabels.get(edgeLabelKey);
+                        Optional<JsonNode> edgeLabelJsonNodeOptional = edgeLabel.toNotifyJson();
+                        if (edgeLabelJsonNodeOptional.isPresent()) {
+                            foundOutEdgeLabel = true;
+                            edgeLabelsArrayNode.add(edgeLabelJsonNodeOptional.get());
+                        }
+                    }
+                }
+            }
+            if (foundOutEdgeLabel) {
+                schemaNode.set("edgeLabels", edgeLabelsArrayNode);
+            }
+        }
+
+        //do VertexLabels
         if (this.topology.isSchemaChanged() && !this.getUncommittedVertexLabels().isEmpty()) {
             ArrayNode vertexLabelArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
@@ -1438,7 +1478,8 @@ public class Schema implements TopologyInf {
                 schemaNode.set("vertexLabels", vertexLabelArrayNode);
             }
         }
-        if (foundVertexLabels) {
+
+        if (foundVertexLabels || foundOutEdgeLabel) {
             return Optional.of(schemaNode);
         } else {
             return Optional.empty();
@@ -1446,6 +1487,41 @@ public class Schema implements TopologyInf {
     }
 
     void fromNotifyJsonOutEdges(JsonNode jsonSchema) {
+
+        ArrayNode uncommittedEdgeLabels = (ArrayNode) jsonSchema.get("uncommittedEdgeLabels");
+        if (uncommittedEdgeLabels != null) {
+            for (JsonNode uncommittedOutEdgeLabel : uncommittedEdgeLabels) {
+                String edgeLabelName = uncommittedOutEdgeLabel.get("label").asText();
+                Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
+                EdgeLabel edgeLabel;
+                if (edgeLabelOptional.isEmpty()) {
+                    PartitionType partitionType = PartitionType.valueOf(uncommittedOutEdgeLabel.get("partitionType").asText());
+                    if (partitionType.isNone()) {
+                        edgeLabel = new EdgeLabel(this.getTopology(), edgeLabelName);
+                    } else {
+                        String partitionExpression = uncommittedOutEdgeLabel.get("partitionExpression").asText();
+                        edgeLabel = new EdgeLabel(this.getTopology(), edgeLabelName, partitionType, partitionExpression);
+                    }
+                } else {
+                    edgeLabel = edgeLabelOptional.get();
+                }
+                //Do not load the properties here as the edgeLabel is inconsistent.
+                //The EdgeLabel needs its EdgeRole to be loaded before it is consistent and can be used in firing events.
+                this.addToAllEdgeCache(edgeLabel);
+            }
+        }
+
+        ArrayNode edgeLabels = (ArrayNode) jsonSchema.get("edgeLabels");
+        if (edgeLabels != null) {
+            for (JsonNode edgeLabelJson : edgeLabels) {
+                String edgeLabelName = edgeLabelJson.get("label").asText();
+                Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
+                Preconditions.checkState(edgeLabelOptional.isPresent(), "Failed to find EdgeLabel '%s'", edgeLabelName);
+                EdgeLabel edgeLabel = edgeLabelOptional.get();
+                edgeLabel.fromPropertyNotifyJson(edgeLabelJson, true);
+                this.addToAllEdgeCache(edgeLabel);
+            }
+        }
 
         JsonNode rem = jsonSchema.get("uncommittedRemovedVertexLabels");
         if (rem != null && rem.isArray()) {
@@ -1518,6 +1594,19 @@ public class Schema implements TopologyInf {
                     vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson, vertexLabelOptional.isPresent());
                     this.getTopology().addToAllTables(this.getName() + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel.getPropertyDefinitionMap());
                 }
+            }
+        }
+
+        //loop through all uncommittedEdgeLabels, this time loading the properties and firing the events as the EdgeLabel is now consistent.
+        uncommittedEdgeLabels = (ArrayNode) jsonSchema.get("uncommittedEdgeLabels");
+        if (uncommittedEdgeLabels != null) {
+            for (JsonNode uncommittedOutEdgeLabel : uncommittedEdgeLabels) {
+                String edgeLabelName = uncommittedOutEdgeLabel.get("label").asText();
+                Optional<EdgeLabel> edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
+                Preconditions.checkState(edgeLabelOptional.isPresent(), "Failed to find EdgeLabel '%s'", edgeLabelName);
+                EdgeLabel edgeLabel = edgeLabelOptional.get();
+                this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE, false);
+                edgeLabel.fromPropertyNotifyJson(uncommittedOutEdgeLabel, true);
             }
         }
 

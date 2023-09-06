@@ -126,15 +126,11 @@ public class EdgeRole implements TopologyInf {
     
     Optional<JsonNode> toNotifyJson() {
         ObjectNode edgeRoleNode = Topology.OBJECT_MAPPER.createObjectNode();
+        edgeRoleNode.put("schemaName", getEdgeLabel().getSchema().getName());
+        edgeRoleNode.put("edgeLabelName", getEdgeLabel().getName());
         edgeRoleNode.put("direction", direction.name());
         edgeRoleNode.set("multiplicity", multiplicity.toNotifyJson());
-        Optional<JsonNode> edgeLabel = getEdgeLabel().toNotifyJson();
-        if (edgeLabel.isPresent()) {
-            edgeRoleNode.set("edgeLabel", edgeLabel.get());
-            return Optional.of(edgeRoleNode);
-        } else {
-            return Optional.empty();
-        }
+        return Optional.of(edgeRoleNode);
     }
 
     @Override

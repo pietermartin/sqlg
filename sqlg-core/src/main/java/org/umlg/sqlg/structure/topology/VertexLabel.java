@@ -234,20 +234,23 @@ public class VertexLabel extends AbstractLabel {
     Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         for (Map.Entry<String, EdgeRole> stringEdgeRoleEntry : getUncommittedOutEdgeRoles().entrySet()) {
-            result.put(stringEdgeRoleEntry.getKey(), stringEdgeRoleEntry.getValue().getEdgeLabel());
+            String key = stringEdgeRoleEntry.getKey();
+            EdgeRole edgeRole = stringEdgeRoleEntry.getValue();
+            EdgeLabel edgeLabel = edgeRole.getEdgeLabel();
+            result.put(key, edgeLabel);
         }
+//        for (EdgeRole outEdgeRole : this.outEdgeRoles.values()) {
+//            Map<String, PropertyColumn> propertyMap = outEdgeRole.getEdgeLabel().getUncommittedPropertyTypeMap();
+//            if (!propertyMap.isEmpty() || !outEdgeRole.getEdgeLabel().getUncommittedRemovedProperties().isEmpty()) {
+//                result.put(outEdgeRole.getEdgeLabel().getLabel(), outEdgeRole.getEdgeLabel());
+//            }
+//        }
         return Collections.unmodifiableMap(result);
     }
 
     Map<String, EdgeRole> getUncommittedOutEdgeRoles() {
         if (this.schema.getTopology().isSchemaChanged()) {
             Map<String, EdgeRole> result = new HashMap<>(this.uncommittedOutEdgeRoles);
-            for (EdgeRole outEdgeRole : this.outEdgeRoles.values()) {
-                Map<String, PropertyColumn> propertyMap = outEdgeRole.getEdgeLabel().getUncommittedPropertyTypeMap();
-                if (!propertyMap.isEmpty() || !outEdgeRole.getEdgeLabel().getUncommittedRemovedProperties().isEmpty()) {
-                    result.put(outEdgeRole.getEdgeLabel().getLabel(), outEdgeRole);
-                }
-            }
             return Collections.unmodifiableMap(result);
         } else {
             return Collections.emptyMap();
@@ -827,7 +830,6 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedRemovedOutEdgeRoles", uncommittedOutEdgeRolesArrayNode);
         }
 
-
         if (this.schema.getTopology().isSchemaChanged() && !this.uncommittedInEdgeRoles.isEmpty()) {
             ArrayNode uncommittedInEdgeRolesArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
             for (EdgeRole edgeRole : this.uncommittedInEdgeRoles.values()) {
@@ -849,34 +851,6 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedRemovedInEdgeRoles", uncommittedInEdgeRolesArrayNode);
         }
 
-        //check for uncommittedProperties in existing edges
-        ArrayNode outEdgeLabelsArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
-        boolean foundOutEdgeLabel = false;
-        for (EdgeRole edgeRole : this.outEdgeRoles.values()) {
-            Optional<JsonNode> edgeRoleJsonNodeOptional = edgeRole.toNotifyJson();
-            if (edgeRoleJsonNodeOptional.isPresent()) {
-                foundOutEdgeLabel = true;
-                outEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
-            }
-        }
-        if (foundOutEdgeLabel) {
-            vertexLabelNode.set("outEdgeLabels", outEdgeLabelsArrayNode);
-        }
-
-        ArrayNode inEdgeLabelsArrayNode = Topology.OBJECT_MAPPER.createArrayNode();
-        boolean foundInEdgeLabels = false;
-        for (EdgeRole edgeRole : this.inEdgeRoles.values()) {
-            if (edgeRole.getEdgeLabel().isValid()) {
-                Optional<JsonNode> edgeRoleJsonNodeOptional = edgeRole.toNotifyJson();
-                if (edgeRoleJsonNodeOptional.isPresent()) {
-                    foundInEdgeLabels = true;
-                    inEdgeLabelsArrayNode.add(edgeRoleJsonNodeOptional.get());
-                }
-            }
-        }
-        if (foundInEdgeLabels) {
-            vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
-        }
         return Optional.of(vertexLabelNode);
     }
 
@@ -919,75 +893,46 @@ public class VertexLabel extends AbstractLabel {
                             this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
                         }
                     }
-
-//                    switch (ert) {
-//                        case EDGE_LABEL ->
-//                                this.getSchema().getTopology().fire(edgeRole.getEdgeLabel(), edgeRole.getEdgeLabel(), TopologyChangeAction.DELETE, false);
-//                        case EDGE_ROLE ->
-//                                this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
-//                    }
-
                 }
             }
         }
-        for (String s : Arrays.asList("uncommittedOutEdgeRoles", "outEdgeLabels")) {
-            ArrayNode uncommittedOutEdgeRoles = (ArrayNode) vertexLabelJson.get(s);
-            if (uncommittedOutEdgeRoles != null) {
-                for (JsonNode uncommittedOutEdgeRole : uncommittedOutEdgeRoles) {
+        ArrayNode uncommittedOutEdgeRoles = (ArrayNode) vertexLabelJson.get("uncommittedOutEdgeRoles");
+        if (uncommittedOutEdgeRoles != null) {
+            for (JsonNode uncommittedOutEdgeRole : uncommittedOutEdgeRoles) {
 
-                    Direction direction = Direction.valueOf(uncommittedOutEdgeRole.get("direction").asText());
-                    Preconditions.checkState(direction == Direction.OUT);
-                    Multiplicity multiplicity = Multiplicity.fromNotifyJson(uncommittedOutEdgeRole.get("multiplicity"));
-                    JsonNode uncommittedOutEdgeLabel = uncommittedOutEdgeRole.get("edgeLabel");
+                String edgeLabelName = uncommittedOutEdgeRole.get("edgeLabelName").asText();
+                Direction direction = Direction.valueOf(uncommittedOutEdgeRole.get("direction").asText());
+                Preconditions.checkState(direction == Direction.OUT);
+                Multiplicity multiplicity = Multiplicity.fromNotifyJson(uncommittedOutEdgeRole.get("multiplicity"));
 
-                    String schemaName = uncommittedOutEdgeLabel.get("schema").asText();
-                    Preconditions.checkState(schemaName.equals(getSchema().getName()), "out edges must be for the same schema that the edge specifies");
-                    String edgeLabelName = uncommittedOutEdgeLabel.get("label").asText();
-                    Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
-                    EdgeLabel edgeLabel;
-                    if (edgeLabelOptional.isEmpty()) {
-                        PartitionType partitionType = PartitionType.valueOf(uncommittedOutEdgeLabel.get("partitionType").asText());
-                        if (partitionType.isNone()) {
-                            edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);
-                        } else {
-                            String partitionExpression = uncommittedOutEdgeLabel.get("partitionExpression").asText();
-                            edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName, partitionType, partitionExpression);
-                        }
-                    } else {
-                        edgeLabel = edgeLabelOptional.get();
-                    }
-                    EdgeRole edgeRole = new EdgeRole(this, edgeLabel, Direction.OUT, true, multiplicity);
-                    edgeLabel.addToOutEdgeRole(edgeRole);
-                    //TODO get EdgeDefinition from json
-                    this.outEdgeRoles.put(schemaName + "." + edgeLabel.getLabel(), edgeRole);
-                    // fire if we didn't create the edge label
-                    edgeLabel.fromPropertyNotifyJson(uncommittedOutEdgeLabel, edgeLabelOptional.isPresent());
-                    //Babysit the cache
-                    this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyDefinitionMap());
-                    this.getSchema().addToAllEdgeCache(edgeLabel);
-                    this.getSchema().getTopology().addOutForeignKeysToVertexLabel(this, edgeLabel);
-                    ForeignKey foreignKey;
-                    if (this.hasIDPrimaryKey()) {
-                        foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
-                    } else {
-                        foreignKey = new ForeignKey();
-                        for (String identifier : this.getIdentifiers()) {
-                            if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
-                                //The distribution column needs to be ignored as its a regular property and not a __I or __O property
-                                foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
-                            }
+                Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
+                Preconditions.checkState(edgeLabelOptional.isPresent(), "Failed to find EdgeLabel '%s'", edgeLabelName);
+                EdgeLabel edgeLabel = edgeLabelOptional.get();
+                EdgeRole edgeRole = new EdgeRole(this, edgeLabel, Direction.OUT, true, multiplicity);
+                edgeLabel.addToOutEdgeRole(edgeRole);
+                //TODO get EdgeDefinition from json
+                this.outEdgeRoles.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeRole);
+                //Babysit the cache
+                this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyDefinitionMap());
+                this.getSchema().addToAllEdgeCache(edgeLabel);
+                this.getSchema().getTopology().addOutForeignKeysToVertexLabel(this, edgeLabel);
+                ForeignKey foreignKey;
+                if (this.hasIDPrimaryKey()) {
+                    foreignKey = ForeignKey.of(this.getFullName() + Topology.OUT_VERTEX_COLUMN_END);
+                } else {
+                    foreignKey = new ForeignKey();
+                    for (String identifier : this.getIdentifiers()) {
+                        if (!isDistributed() || !getDistributionPropertyColumn().getName().equals(identifier)) {
+                            //The distribution column needs to be ignored as its a regular property and not a __I or __O property
+                            foreignKey.add(this.getFullName(), identifier, Topology.OUT_VERTEX_COLUMN_END);
                         }
                     }
-                    this.getSchema().getTopology().addToEdgeForeignKeyCache(
-                            this.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
-                            foreignKey
-                    );
-                    // fire only applies to top level, fire for new edges
-                    if (edgeLabelOptional.isEmpty()) {
-                        this.getSchema().getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE, false);
-                    }
-                    this.getSchema().getTopology().fire(edgeRole, null, TopologyChangeAction.CREATE, false);
                 }
+                this.getSchema().getTopology().addToEdgeForeignKeyCache(
+                        this.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
+                        foreignKey
+                );
+                this.getSchema().getTopology().fire(edgeRole, null, TopologyChangeAction.CREATE, false);
             }
         }
     }
@@ -1001,10 +946,9 @@ public class VertexLabel extends AbstractLabel {
                     Direction direction = Direction.valueOf(uncommittedInEdgeRole.get("direction").asText());
                     Preconditions.checkState(direction == Direction.IN);
                     Multiplicity multiplicity = Multiplicity.fromNotifyJson(uncommittedInEdgeRole.get("multiplicity"));
-                    JsonNode uncommittedInEdgeLabel = uncommittedInEdgeRole.get("edgeLabel");
+                    String schemaName = uncommittedInEdgeRole.get("schemaName").asText();
+                    String edgeLabelName = uncommittedInEdgeRole.get("edgeLabelName").asText();
 
-                    String schemaName = uncommittedInEdgeLabel.get("schema").asText();
-                    String edgeLabelName = uncommittedInEdgeLabel.get("label").asText();
                     Optional<Schema> schemaOptional = getSchema().getTopology().getSchema(schemaName);
                     Preconditions.checkState(schemaOptional.isPresent(), "Schema %s must be present", schemaName);
                     Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(edgeLabelName);
@@ -1014,7 +958,7 @@ public class VertexLabel extends AbstractLabel {
                         EdgeRole edgeRole = new EdgeRole(this, edgeLabel, Direction.IN, true, multiplicity);
                         edgeLabel.addToInEdgeRole(edgeRole);
                         this.inEdgeRoles.put(schemaName + "." + edgeLabel.getLabel(), edgeRole);
-                        edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel, false);
+//                        edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel, false);
                         this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
                         ForeignKey foreignKey;
                         if (this.hasIDPrimaryKey()) {
@@ -1069,14 +1013,6 @@ public class VertexLabel extends AbstractLabel {
                             this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
                         }
                     }
-
-//                    switch (ert) {
-//                        case EDGE_LABEL ->
-//                                this.getSchema().getTopology().fire(edgeRole.getEdgeLabel(), edgeRole.getEdgeLabel(), TopologyChangeAction.DELETE, false);
-//                        case EDGE_ROLE ->
-//                                this.getSchema().getTopology().fire(edgeRole, edgeRole, TopologyChangeAction.DELETE, false);
-//                    }
-
                 }
             }
         }
