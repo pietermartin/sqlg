@@ -935,6 +935,11 @@ public abstract class AbstractLabel implements TopologyInf {
             entry.getValue().afterRollback();
             it.remove();
         }
+        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedUpdatedProperties.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, PropertyColumn> entry = it.next();
+            entry.getValue().afterRollback();
+            it.remove();
+        }
         this.uncommittedRemovedProperties.clear();
         this.uncommittedIdentifiers.clear();
         this.renamedIdentifiers.clear();

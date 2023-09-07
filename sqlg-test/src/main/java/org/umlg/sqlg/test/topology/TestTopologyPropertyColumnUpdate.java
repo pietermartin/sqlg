@@ -480,6 +480,76 @@ public class TestTopologyPropertyColumnUpdate extends BaseTest {
     }
 
     @Test
+    public void testPropertyUpdateAddCheckConstraintWithFailure() {
+        TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+        this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
+                    put(
+                            "name",
+                            PropertyDefinition.of(
+                                    PropertyType.varChar(10),
+                                    Multiplicity.of(0, 1),
+                                    null,
+                                    "(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')"
+                            )
+                    );
+                }});
+        this.sqlgGraph.tx().commit();
+
+        Optional<VertexLabel> aVertexLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
+        Preconditions.checkState(aVertexLabelOptional.isPresent());
+        VertexLabel aVertexLabel = aVertexLabelOptional.get();
+        Optional<PropertyColumn> column1Optional = aVertexLabel.getProperty("name");
+        Preconditions.checkState(column1Optional.isPresent());
+        PropertyColumn column1 = column1Optional.get();
+        //add the check constraint
+        try {
+            column1.updatePropertyDefinition(
+                    PropertyDefinition.of(
+                            PropertyType.varChar(10),
+                            Multiplicity.of(0, 1),
+                            null,
+                            "fail"
+                    )
+            );
+            Assert.fail();
+            this.sqlgGraph.tx().commit();
+        } catch (Exception e) {
+            this.sqlgGraph.tx().rollback();
+        }
+        column1Optional = aVertexLabel.getProperty("name");
+        Preconditions.checkState(column1Optional.isPresent());
+        column1 = column1Optional.get();
+        Assert.assertEquals(0, column1.getPropertyDefinition().multiplicity().lower());
+        Assert.assertEquals(1, column1.getPropertyDefinition().multiplicity().upper());
+        String checkConstraint = column1.getPropertyDefinition().checkConstraint();
+        Assert.assertEquals("(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')", checkConstraint);
+
+        //do it again, testing bug in not clearing updateProperties in rollback
+        try {
+            column1.updatePropertyDefinition(
+                    PropertyDefinition.of(
+                            PropertyType.varChar(10),
+                            Multiplicity.of(0, 1),
+                            null,
+                            "fail"
+                    )
+            );
+            Assert.fail("Code should not make it to here, expected db constraint failure");
+            this.sqlgGraph.tx().commit();
+        } catch (Exception e) {
+            this.sqlgGraph.tx().rollback();
+        }
+
+        if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+            List<String> checkConstraints = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PROPERTY).<String>values(Topology.SQLG_SCHEMA_PROPERTY_CHECK_CONSTRAINT).toList();
+            Assert.assertEquals(1, checkConstraints.size());
+            Assert.assertEquals("(" + sqlgGraph.getSqlDialect().maybeWrapInQoutes("name") + " <> 'a')", checkConstraints.get(0));
+        }
+    }
+
+    @Test
     public void testPropertyUpdateChangeCheckConstraint() {
         TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
