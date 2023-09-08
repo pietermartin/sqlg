@@ -269,7 +269,8 @@ public class TestLoadSchemaViaNotify extends BaseTest {
 
             //allow time for notification to happen
             Thread.sleep(1_000);
-            Assert.assertEquals("a", sqlgGraph1.traversal().E(petEdge.id()).next().<String>value("edgeProperty1"));
+            Edge e = sqlgGraph1.traversal().E(petEdge.id()).next();
+            Assert.assertEquals("a", e.<String>value("edgeProperty1"));
             sqlgGraph1.tx().rollback();
 
             //add an edge
@@ -383,7 +384,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Thread.sleep(1_000);
 
             // we're not getting property notification since we get vertex label notification, these include all properties committed
-            Assert.assertEquals(6, topologyListenerTriple.size());
+            Assert.assertEquals(7, topologyListenerTriple.size());
 
             Assert.assertEquals(schema, topologyListenerTriple.get(0).getLeft());
             Assert.assertNull(topologyListenerTriple.get(0).getMiddle());
@@ -400,21 +401,21 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Assert.assertNull(topologyListenerTriple.get(2).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(2).getRight());
 
-            Assert.assertEquals(edgeLabel, topologyListenerTriple.get(3).getLeft());
-            String s = topologyListenerTriple.get(3).getLeft().toString();
+            Assert.assertEquals(edgeLabel, topologyListenerTriple.get(5).getLeft());
+            String s = topologyListenerTriple.get(5).getLeft().toString();
             Assert.assertTrue(s.contains(edgeLabel.getSchema().getName()));
-            props = ((EdgeLabel) topologyListenerTriple.get(3).getLeft()).getProperties();
+            props = ((EdgeLabel) topologyListenerTriple.get(5).getLeft()).getProperties();
             Assert.assertTrue(props.containsKey("special"));
+            Assert.assertNull(topologyListenerTriple.get(5).getMiddle());
+            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
+
+            Assert.assertEquals(edgeLabel.getOutEdgeRoles(aVertexLabel), topologyListenerTriple.get(3).getLeft());
             Assert.assertNull(topologyListenerTriple.get(3).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());
 
-            Assert.assertEquals(edgeLabel.getOutEdgeRoles(aVertexLabel), topologyListenerTriple.get(4).getLeft());
+            Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());
             Assert.assertNull(topologyListenerTriple.get(4).getMiddle());
             Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
-
-            Assert.assertEquals(bVertexLabel, topologyListenerTriple.get(5).getLeft());
-            Assert.assertNull(topologyListenerTriple.get(5).getMiddle());
-            Assert.assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
         }
     }
 }
