@@ -1607,6 +1607,7 @@ public class Schema implements TopologyInf {
                 EdgeLabel edgeLabel = edgeLabelOptional.get();
                 this.getTopology().fire(edgeLabel, null, TopologyChangeAction.CREATE, false);
                 edgeLabel.fromPropertyNotifyJson(uncommittedOutEdgeLabel, true);
+                this.getTopology().addToAllTables(this.getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyDefinitionMap());
             }
         }
 
