@@ -1458,25 +1458,55 @@ public class TopologyManager {
             AbstractLabel abstractLabel = partition.getAbstractLabel();
             List<Vertex> partitions;
             if (abstractLabel instanceof VertexLabel) {
-                partitions = traversalSource.V()
-                        .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
-                        .has("name", abstractLabel.getSchema().getName())
-                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                        .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, abstractLabel.getName())
-                        .repeat(__.out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
-                        .until(__.has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()))
-                        .toList();
+//                partitions = traversalSource.V()
+//                        .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+//                        .has("name", abstractLabel.getSchema().getName())
+//                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+//                        .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, abstractLabel.getName())
+//                        .repeat(__.out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+//                        .until(__.has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()))
+//                        .toList();
 
-            } else {
                 partitions = traversalSource.V()
-                        .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION)
+                        .has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()).as("partition")
+                        .repeat(__.in(SQLG_SCHEMA_VERTEX_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                        .until(__.has(SQLG_SCHEMA_VERTEX_LABEL_NAME, abstractLabel.getName()))
+                        .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .has("name", abstractLabel.getSchema().getName())
-                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-                        .has(SQLG_SCHEMA_EDGE_LABEL_NAME, abstractLabel.getName())
-                        .repeat(__.out(SQLG_SCHEMA_EDGE_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
-                        .until(__.has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()))
+                        .<Vertex>select("partition")
                         .toList();
+//                Preconditions.checkState(_partitions.size() == 1);
+//                Vertex _partitionVertex  = _partitions.get(0);
+//                Preconditions.checkState(partitions.size() == 1);
+//                Vertex partitionVertex  = _partitions.get(0);
+//                Preconditions.checkState(_partitionVertex.equals(partitionVertex));
+            } else {
+//                List<Vertex> _partitions = traversalSource.V()
+//                        .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+//                        .has("name", abstractLabel.getSchema().getName())
+//                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+//                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+//                        .has(SQLG_SCHEMA_EDGE_LABEL_NAME, abstractLabel.getName())
+//                        .repeat(__.out(SQLG_SCHEMA_EDGE_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+//                        .until(__.has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()))
+//                        .toList();
+
+                partitions = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION)
+                        .has(SQLG_SCHEMA_PARTITION_NAME, partition.getName()).as("partition")
+                        .repeat(__.in(SQLG_SCHEMA_EDGE_PARTITION_EDGE, SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                        .until(__.has(SQLG_SCHEMA_EDGE_LABEL_NAME, abstractLabel.getName()))
+                        .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", abstractLabel.getSchema().getName())
+                        .<Vertex>select("partition")
+                        .toList();
+//                Preconditions.checkState(_partitions.size() == 1);
+//                Vertex _partitionVertex  = _partitions.get(0);
+//                Preconditions.checkState(partitions.size() == 1);
+//                Vertex partitionVertex  = _partitions.get(0);
+//                Preconditions.checkState(_partitionVertex.equals(partitionVertex));
             }
             Preconditions.checkState(partitions.size() == 1);
             Vertex partitionVertex = partitions.get(0);

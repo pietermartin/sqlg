@@ -418,6 +418,15 @@ public class TestSubSubPartition extends BaseTest {
         a = this.sqlgGraph1.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow();
         int222 = a.getPartition("int222");
         Assert.assertTrue(int222.isPresent());
+
+        //test remove partition
+        VertexLabel aVertexLabel = publicSchema.getVertexLabel("A").orElseThrow();
+        Optional<Partition> partitionOpt = aVertexLabel.getPartition("int1");
+        Assert.assertTrue(partitionOpt.isPresent());
+        partitionOpt.get().remove();
+        partitionOpt = aVertexLabel.getPartition("int1");
+        Assert.assertTrue(partitionOpt.isEmpty());
+
     }
 
     @Test
@@ -483,6 +492,15 @@ public class TestSubSubPartition extends BaseTest {
         ab = this.sqlgGraph1.getTopology().getPublicSchema().getEdgeLabel("ab").orElseThrow();
         p = ab.getPartition("int222");
         Assert.assertTrue(p.isPresent());
+
+        //test remove partition
+        EdgeLabel edgeLabel = publicSchema.getEdgeLabel("ab").orElseThrow();
+        Optional<Partition> partitionOpt = edgeLabel.getPartition("int1");
+        Assert.assertTrue(partitionOpt.isPresent());
+        partitionOpt.get().remove();
+        partitionOpt = edgeLabel.getPartition("int1");
+        Assert.assertTrue(partitionOpt.isEmpty());
+        this.sqlgGraph.tx().commit();
 
         //Delete the topology
         dropSqlgSchema(this.sqlgGraph);
