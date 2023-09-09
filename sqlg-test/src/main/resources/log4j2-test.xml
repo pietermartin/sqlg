@@ -9,8 +9,8 @@
     <Loggers>
 <!--        <Logger name="com.mchange" level="error" />-->
         <Logger name="com.mchange" level="info" />
-<!--        <Logger name="org.umlg.sqlg" level="info">-->
-        <Logger name="org.umlg.sqlg" level="debug">
+        <Logger name="org.umlg.sqlg" level="info">
+<!--        <Logger name="org.umlg.sqlg" level="debug">-->
             <AppenderRef ref="Log4j2TestAppender"/>
         </Logger>
         <Logger name="hsqldb.db" level="warn" />
