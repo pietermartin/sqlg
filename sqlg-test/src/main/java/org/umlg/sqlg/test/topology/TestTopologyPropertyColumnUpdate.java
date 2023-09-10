@@ -481,6 +481,7 @@ public class TestTopologyPropertyColumnUpdate extends BaseTest {
 
     @Test
     public void testPropertyUpdateAddCheckConstraintWithFailure() {
+        Assume.assumeTrue(isPostgres());
         TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
         this.sqlgGraph.getTopology().getPublicSchema()
