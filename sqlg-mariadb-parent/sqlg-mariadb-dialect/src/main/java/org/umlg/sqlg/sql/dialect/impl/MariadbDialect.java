@@ -585,7 +585,9 @@ public class MariadbDialect extends BaseSqlDialect {
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_partition` (" +
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`createdOn` DATETIME, " +
-                "`name` TEXT," +
+                "`schemaName` TEXT NOT NULL," +
+                "`abstractLabelName` TEXT NOT NULL," +
+                "`name` TEXT NOT NULL," +
                 "`from` TEXT, " +
                 "`to` TEXT, " +
                 "`in` TEXT, " +
@@ -596,7 +598,7 @@ public class MariadbDialect extends BaseSqlDialect {
         result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_property` (" +
                 "`ID` SERIAL PRIMARY KEY, " +
                 "`createdOn` DATETIME, " +
-                "`name` TEXT, " +
+                "`name` TEXT NOT NULL, " +
                 "`type` TEXT, " +
                 "`lowerMultiplicity` INTEGER NOT NULL," +
                 "`upperMultiplicity` INTEGER NOT NULL," +
@@ -1029,6 +1031,16 @@ public class MariadbDialect extends BaseSqlDialect {
         return List.of(
                 "ALTER TABLE `sqlg_schema`.`V_partition` ADD COLUMN `modulus` INTEGER;",
                 "ALTER TABLE `sqlg_schema`.`V_partition` ADD COLUMN `remainder` INTEGER;"
+        );
+    }
+
+    @Override
+    public List<String> addPartitionSchemaAbstractLabelColumns() {
+        return List.of(
+                "ALTER TABLE `sqlg_schema`.`V_partition` ADD COLUMN `schemaName` TEXT NOT NULL DEFAULT 'ORPHANED';",
+                "ALTER TABLE `sqlg_schema`.`V_partition` ADD COLUMN `abstractLabelName` TEXT NOT NULL DEFAULT 'ORPHANED';",
+                "ALTER TABLE `sqlg_schema`.`V_partition` CHANGE COLUMN `name` `name` TEXT NOT NULL;",
+                "CREATE UNIQUE INDEX IF NOT EXISTS `V_schema_abstractLabel_name_idx` ON `sqlg_schema`.`V_partition` (`schemaName`, `abstractLabelName`, `name`);"
         );
     }
 

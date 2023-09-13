@@ -7,7 +7,9 @@ import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -35,7 +37,7 @@ class SqlgStartupManager {
 
     private static final String APPLICATION_VERSION = "application.version";
     private static final String SQLG_APPLICATION_PROPERTIES = "sqlg.application.properties";
-    private static final Logger logger = LoggerFactory.getLogger(SqlgStartupManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlgStartupManager.class);
     private final SqlgGraph sqlgGraph;
     private final SqlDialect sqlDialect;
 
@@ -48,7 +50,7 @@ class SqlgStartupManager {
 
     void loadSqlgSchema() {
         try {
-            logger.debug("SchemaManager.loadSqlgSchema()...");
+            LOGGER.debug("SchemaManager.loadSqlgSchema()...");
             boolean canUserCreateSchemas = this.sqlgGraph.getSqlDialect().canUserCreateSchemas(this.sqlgGraph);
 
             //We need Connection.TRANSACTION_SERIALIZABLE here as the SqlgGraph can start up while other graphs are
@@ -79,7 +81,7 @@ class SqlgStartupManager {
             connection = this.sqlgGraph.tx().getConnection();
             connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
-            logger.debug(String.format("Time to createVertexLabel sqlg topology: %s", stopWatch));
+            LOGGER.debug(String.format("Time to createVertexLabel sqlg topology: %s", stopWatch));
             if (canUserCreateSchemas && !existSqlgSchema) {
                 addPublicSchema();
                 this.sqlgGraph.tx().commit();
@@ -88,16 +90,17 @@ class SqlgStartupManager {
                 connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 
             }
+            boolean updatePartitionSchemaAndAbstractLabelName = false;
             if (canUserCreateSchemas && !existSqlgSchema) {
                 //old versions of sqlg needs the topology populated from the information_schema table.
-                logger.debug("Upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
+                LOGGER.debug("Upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
                 StopWatch stopWatch2 = StopWatch.createStarted();
                 loadSqlgSchemaFromInformationSchema();
                 String version = getBuildVersion();
                 TopologyManager.addGraph(this.sqlgGraph, version);
                 stopWatch2.stop();
-                logger.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2);
-                logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
+                LOGGER.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2);
+                LOGGER.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             } else {
                 // make sure the index edge index property exist, this if for upgrading from 1.3.4 to 1.4.0
                 upgradeIndexEdgeSequenceToExist();
@@ -134,8 +137,14 @@ class SqlgStartupManager {
                 if (!oldVersion.equals(version)) {
                     updateTopology(oldVersion);
                 }
+                if (!oldVersion.equals(version) && version.startsWith("3.0.2")) {
+                    updatePartitionSchemaAndAbstractLabelName = true;
+                }
             }
             cacheTopology();
+            if (updatePartitionSchemaAndAbstractLabelName) {
+                updatePartitionSchemaAbstractLabelColumns();
+            }
             if (this.sqlgGraph.configuration().getBoolean("validate.topology", false)) {
                 validateTopology();
             }
@@ -179,6 +188,10 @@ class SqlgStartupManager {
         //this is to update the incorrect upgrade to 300
         if (v.isUnknownVersion() || v.equals(new Version(3, 0, 0, null, null, null))) {
             upgradeTo301();
+        }
+        //this is to update the partition table to include schemaName and abstractLabelName
+        if (v.isUnknownVersion() || v.equals(new Version(3, 0, 1, null, null, null))) {
+            addPartitionSchemaAbstractLabelColumns();
         }
     }
 
@@ -224,13 +237,183 @@ class SqlgStartupManager {
                         where "upperMultiplicity" = 0;
                         """
         );
-        for (String updateMultiplicitySql: sqls) {
+        for (String updateMultiplicitySql : sqls) {
             try (Statement s = conn.createStatement()) {
                 s.execute(updateMultiplicitySql);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void addPartitionSchemaAbstractLabelColumns() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        List<String> addPartitionColumns = this.sqlDialect.addPartitionSchemaAbstractLabelColumns();
+        for (String addPartitionColumn : addPartitionColumns) {
+            try (Statement s = conn.createStatement()) {
+                s.execute(addPartitionColumn);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void updatePartitionSchemaAbstractLabelColumns() {
+        StopWatch stopWatch = StopWatch.createStarted();
+        List<Map<String, Vertex>> schemaVertexMap = this.sqlgGraph.topology().V()
+                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+                .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE).as("partition")
+                .<Vertex>select("schema", "vertex", "partition")
+                .toList();
+        int count = 1;
+        this.sqlgGraph.tx().normalBatchModeOn();
+        LOGGER.info("updatePartitionSchemaAbstractLabelColumns [no subPartitions] {}", schemaVertexMap.size());
+        for (Map<String, Vertex> stringVertexMap : schemaVertexMap) {
+            Vertex schema = stringVertexMap.get("schema");
+            Vertex vertex = stringVertexMap.get("vertex");
+            Vertex partition = stringVertexMap.get("partition");
+            String schemaName = schema.value(SQLG_SCHEMA_SCHEMA_NAME);
+            String vertexLabelName = vertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
+            String partitionName = partition.value(SQLG_SCHEMA_PARTITION_NAME);
+
+            partition.property(SQLG_SCHEMA_PARTITION_SCHEMA_NAME, schemaName);
+            partition.property(SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, vertexLabelName);
+
+            if (count % 1000 == 0) {
+                this.sqlgGraph.tx().flush();
+                stopWatch.stop();
+                LOGGER.info("updatePartitionSchemaAbstractLabelColumns [no subPartitions] {} of {}, time: {}", count++, schemaVertexMap.size(), stopWatch);
+                stopWatch.reset();
+                stopWatch.start();
+            }
+            count++;
+        }
+        this.sqlgGraph.tx().flush();
+        stopWatch.stop();
+        LOGGER.info("updatePartitionSchemaAbstractLabelColumns [no subPartitions] complete, time: {}", stopWatch);
+
+        stopWatch.reset();
+        stopWatch.start();
+        List<Map<String, Vertex>> schemaVertexPartitionMap = this.sqlgGraph.topology().V()
+                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+                .out(SQLG_SCHEMA_VERTEX_PARTITION_EDGE).as("partition")
+                .out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE)
+                .<Vertex>select("schema", "vertex", "partition")
+                .toList();
+        LOGGER.info("updatePartitionSchemaAbstractLabelColumns [subPartitions] {}", schemaVertexPartitionMap.size());
+        count = 1;
+        for (Map<String, Vertex> stringVertexMap : schemaVertexPartitionMap) {
+            Vertex schema = stringVertexMap.get("schema");
+            Vertex vertex = stringVertexMap.get("vertex");
+            Vertex partition = stringVertexMap.get("partition");
+            String schemaName = schema.value(SQLG_SCHEMA_SCHEMA_NAME);
+            String vertexLabelName = vertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
+            String partitionName = partition.value(SQLG_SCHEMA_PARTITION_NAME);
+
+            List<Path> subPartitionPaths = this.sqlgGraph.topology().V(partition)
+                    .repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                    .emit()
+                    .path()
+                    .toList();
+            for (Path subPartitionPath : subPartitionPaths) {
+                for (Object path : subPartitionPath) {
+                    if (path instanceof Vertex pathVertex) {
+                        pathVertex.property(SQLG_SCHEMA_PARTITION_SCHEMA_NAME, schemaName);
+                        pathVertex.property(SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, vertexLabelName);
+                    }
+                }
+            }
+            if (count % 1000 == 0) {
+                this.sqlgGraph.tx().flush();
+                stopWatch.stop();
+                LOGGER.info("updatePartitionSchemaAbstractLabelColumns [subPartitions] {} of {}, time: {}", count++, schemaVertexPartitionMap.size(), stopWatch);
+                stopWatch.reset();
+                stopWatch.start();
+            }
+            count++;
+        }
+        this.sqlgGraph.tx().flush();
+        stopWatch.stop();
+        LOGGER.info("updatePartitionSchemaAbstractLabelColumns [subPartitions] complete, time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        count = 1;
+        List<Map<String, Vertex>> schemaVertexOutEdgeMap = this.sqlgGraph.topology().V()
+                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+                .out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("edge")
+                .out(SQLG_SCHEMA_EDGE_PARTITION_EDGE).as("partition")
+                .<Vertex>select("schema", "vertex", "edge", "partition")
+                .toList();
+        for (Map<String, Vertex> stringVertexMap : schemaVertexOutEdgeMap) {
+            Vertex schema = stringVertexMap.get("schema");
+            Vertex vertex = stringVertexMap.get("vertex");
+            Vertex edge = stringVertexMap.get("edge");
+            Vertex partition = stringVertexMap.get("partition");
+            String schemaName = schema.value(SQLG_SCHEMA_SCHEMA_NAME);
+            String vertexLabelName = vertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
+            String edgeLabelName = edge.value(SQLG_SCHEMA_EDGE_LABEL_NAME);
+            String partitionName = partition.value(SQLG_SCHEMA_PARTITION_NAME);
+
+            partition.property(SQLG_SCHEMA_PARTITION_SCHEMA_NAME, schemaName);
+            partition.property(SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, edgeLabelName);
+
+            if (count % 1000 == 0) {
+                LOGGER.info("updatePartitionSchemaAbstractLabelColumns {} of {}", count++, schemaVertexOutEdgeMap.size());
+                this.sqlgGraph.tx().flush();
+            }
+            count++;
+        }
+        this.sqlgGraph.tx().flush();
+        stopWatch.stop();
+        LOGGER.info("updatePartitionSchemaAbstractLabelColumns edge [no subPartitions] complete, time: {}", stopWatch);
+        stopWatch.reset();
+        stopWatch.start();
+
+        count = 1;
+        List<Map<String, Vertex>> schemaVertexOutEdgePartitionMap = this.sqlgGraph.topology().V()
+                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).as("schema")
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+                .out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("edge")
+                .out(SQLG_SCHEMA_EDGE_PARTITION_EDGE).as("partition")
+                .out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE)
+                .<Vertex>select("schema", "vertex", "edge", "partition")
+                .toList();
+        for (Map<String, Vertex> stringVertexMap : schemaVertexOutEdgePartitionMap) {
+            Vertex schema = stringVertexMap.get("schema");
+            Vertex vertex = stringVertexMap.get("vertex");
+            Vertex edge = stringVertexMap.get("edge");
+            Vertex partition = stringVertexMap.get("partition");
+            String schemaName = schema.value(SQLG_SCHEMA_SCHEMA_NAME);
+            String vertexLabelName = vertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
+            String edgeLabelName = edge.value(SQLG_SCHEMA_EDGE_LABEL_NAME);
+            String partitionName = partition.value(SQLG_SCHEMA_PARTITION_NAME);
+
+            List<Path> subPartitionPaths = this.sqlgGraph.topology().V(partition)
+                    .repeat(__.out(SQLG_SCHEMA_PARTITION_PARTITION_EDGE))
+                    .emit()
+                    .path()
+                    .toList();
+            for (Path subPartitionPath : subPartitionPaths) {
+                for (Object path : subPartitionPath) {
+                    if (path instanceof Vertex pathVertex) {
+                        pathVertex.property(SQLG_SCHEMA_PARTITION_SCHEMA_NAME, schemaName);
+                        pathVertex.property(SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, edgeLabelName);
+                    }
+                }
+            }
+            if (count % 1000 == 0) {
+                LOGGER.info("updatePartitionSchemaAbstractLabelColumns {} of {}", count++, schemaVertexOutEdgePartitionMap.size());
+                this.sqlgGraph.tx().flush();
+            }
+            count++;
+        }
+        this.sqlgGraph.tx().flush();
+        stopWatch.stop();
+        LOGGER.info("updatePartitionSchemaAbstractLabelColumns edge [subPartitions] complete, time: {}", stopWatch);
     }
 
     private void addPartitionSupportToSqlgSchema() {
@@ -300,8 +483,8 @@ class SqlgStartupManager {
         try (Statement statement = conn.createStatement()) {
             //Hsqldb can not do this in one go
             for (String script : result) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(script);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(script);
                 }
                 statement.execute(script);
             }
@@ -338,7 +521,7 @@ class SqlgStartupManager {
         this.sqlgGraph.getTopology().validateTopology();
         if (!this.sqlgGraph.getTopology().getValidationErrors().isEmpty()) {
             for (Topology.TopologyValidationError topologyValidationError : this.sqlgGraph.getTopology().getValidationErrors()) {
-                logger.warn(topologyValidationError.toString());
+                LOGGER.warn(topologyValidationError.toString());
             }
         }
     }
@@ -403,7 +586,7 @@ class SqlgStartupManager {
                 }
             }
         } catch (SQLException e) {
-            logger.error("Error upgrading index edge property to include a sequence column. Error swallowed.", e);
+            LOGGER.error("Error upgrading index edge property to include a sequence column. Error swallowed.", e);
         }
     }
 
@@ -731,8 +914,8 @@ class SqlgStartupManager {
             List<String> creationScripts = this.sqlDialect.sqlgTopologyCreationScripts();
             //Hsqldb can not do this in one go
             for (String creationScript : creationScripts) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(creationScript);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(creationScript);
                 }
                 statement.execute(creationScript);
             }

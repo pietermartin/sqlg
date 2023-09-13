@@ -2748,14 +2748,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "partition\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
-                "\"name\" TEXT, " +
+                "\"schemaName\" TEXT NOT NULL, " +
+                "\"abstractLabelName\" TEXT NOT NULL, " +
+                "\"name\" TEXT NOT NULL, " +
                 "\"from\" TEXT, " +
                 "\"to\" TEXT, " +
                 "\"in\" TEXT, " +
                 "\"modulus\" BIGINT, " +
                 "\"remainder\" BIGINT, " +
-                "\"partitionType\" TEXT, " +
+                "\"partitionType\" TEXT NOT NULL, " +
                 "\"partitionExpression\" TEXT);");
+        result.add("CREATE UNIQUE INDEX IF NOT EXISTS \"V_schema_abstractLabel_name_idx\" ON \"sqlg_schema\".\"V_partition\" (\"schemaName\", \"abstractLabelName\", \"name\");");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"" + Topology.VERTEX_PREFIX + "property\" (" +
                 "\"ID\" SERIAL PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP NOT NULL, " +
@@ -2953,6 +2956,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
         return List.of(
                 "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"modulus\" INTEGER;",
                 "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"remainder\" INTEGER;"
+        );
+    }
+
+    @Override
+    public List<String> addPartitionSchemaAbstractLabelColumns() {
+        return List.of(
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"schemaName\" TEXT NOT NULL DEFAULT 'ORPHANED';",
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"abstractLabelName\" TEXT NOT NULL DEFAULT 'ORPHANED';",
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ALTER COLUMN \"name\" SET NOT NULL;",
+                "CREATE UNIQUE INDEX IF NOT EXISTS \"V_schema_abstractLabel_name_idx\" ON \"sqlg_schema\".\"V_partition\" (\"schemaName\", \"abstractLabelName\", \"name\");"
         );
     }
 

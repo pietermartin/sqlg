@@ -33,6 +33,8 @@ public class Partition implements TopologyInf {
 
     private static final Logger logger = LoggerFactory.getLogger(Partition.class);
     private final SqlgGraph sqlgGraph;
+    private final String schemaName;
+    private final String abstractLabelName;
     private final String name;
     private String from;
     private String to;
@@ -61,6 +63,8 @@ public class Partition implements TopologyInf {
 
         this.sqlgGraph = sqlgGraph;
         this.abstractLabel = abstractLabel;
+        this.schemaName = abstractLabel.getSchema().getName();
+        this.abstractLabelName = abstractLabel.getName();
         this.name = name;
         this.from = from;
         this.to = to;
@@ -78,6 +82,8 @@ public class Partition implements TopologyInf {
 
         this.sqlgGraph = sqlgGraph;
         this.abstractLabel = abstractLabel;
+        this.schemaName = abstractLabel.getSchema().getName();
+        this.abstractLabelName = abstractLabel.getName();
         this.name = name;
         this.in = in;
         this.partitionType = partitionType;
@@ -95,6 +101,8 @@ public class Partition implements TopologyInf {
 
         this.sqlgGraph = sqlgGraph;
         this.abstractLabel = abstractLabel;
+        this.schemaName = abstractLabel.getSchema().getName();
+        this.abstractLabelName = abstractLabel.getName();
         this.name = name;
         this.modulus = modulus;
         this.remainder = remainder;
@@ -112,6 +120,8 @@ public class Partition implements TopologyInf {
             String partitionExpression) {
 
         this.sqlgGraph = sqlgGraph;
+        this.schemaName = parentPartition.getAbstractLabel().getSchema().getName();
+        this.abstractLabelName = parentPartition.getAbstractLabel().getName();
         this.name = name;
         this.from = from;
         this.to = to;
@@ -129,6 +139,8 @@ public class Partition implements TopologyInf {
             String partitionExpression) {
 
         this.sqlgGraph = sqlgGraph;
+        this.schemaName = parentPartition.getAbstractLabel().getSchema().getName();
+        this.abstractLabelName = parentPartition.getAbstractLabel().getName();
         this.name = name;
         this.in = in;
         this.parentPartition = parentPartition;
@@ -146,6 +158,8 @@ public class Partition implements TopologyInf {
             String partitionExpression) {
 
         this.sqlgGraph = sqlgGraph;
+        this.schemaName = parentPartition.getAbstractLabel().getSchema().getName();
+        this.abstractLabelName = parentPartition.getAbstractLabel().getName();
         this.name = name;
         this.modulus = modulus;
         this.remainder = remainder;
@@ -190,6 +204,14 @@ public class Partition implements TopologyInf {
     @Override
     public String getName() {
         return this.name;
+    }
+
+    public String getSchemaName() {
+        return schemaName;
+    }
+
+    public String getAbstractLabelName() {
+        return abstractLabelName;
     }
 
     public AbstractLabel getAbstractLabel() {

@@ -548,7 +548,9 @@ public class H2Dialect extends BaseSqlDialect {
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_partition\" (" +
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +
-                "\"name\" VARCHAR, " +
+                "\"schemaName\" VARCHAR NOT NULL, " +
+                "\"abstractLabelName\" VARCHAR NOT NULL, " +
+                "\"name\" VARCHAR NOT NULL, " +
                 "\"from\" VARCHAR, " +
                 "\"to\" VARCHAR, " +
                 "\"in\" VARCHAR, " +
@@ -556,6 +558,7 @@ public class H2Dialect extends BaseSqlDialect {
                 "\"remainder\" INTEGER, " +
                 "\"partitionType\" VARCHAR, " +
                 "\"partitionExpression\" VARCHAR);");
+        result.add("CREATE UNIQUE INDEX IF NOT EXISTS \"V_schema_abstractLabel_name_idx\" ON \"sqlg_schema\".\"V_partition\" (\"schemaName\", \"abstractLabelName\", \"name\");");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (" +
                 "\"ID\" IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" TIMESTAMP, " +

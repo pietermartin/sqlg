@@ -161,6 +161,9 @@ public class Topology {
      * The Partition's name.
      */
     public static final String SQLG_SCHEMA_PARTITION_NAME = "name";
+    public static final String SQLG_SCHEMA_PARTITION_SCHEMA_NAME = "schemaName";
+    public static final String SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME = "abstractLabelName";
+
     /**
      * The Partition's from spec.
      */
@@ -408,7 +411,10 @@ public class Topology {
 
         VertexLabel partitionVertexLabel;
         columns.clear();
-        columns.put(SQLG_SCHEMA_PARTITION_NAME, PropertyDefinition.of(PropertyType.STRING));
+        columns.put(SQLG_SCHEMA_PARTITION_NAME, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        columns.put(SQLG_SCHEMA_PARTITION_SCHEMA_NAME, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+        columns.put(SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+
         columns.put(CREATED_ON, PropertyDefinition.of(PropertyType.LOCALDATETIME));
         columns.put(SQLG_SCHEMA_PARTITION_FROM, PropertyDefinition.of(PropertyType.STRING));
         columns.put(SQLG_SCHEMA_PARTITION_TO, PropertyDefinition.of(PropertyType.STRING));
@@ -1563,7 +1569,7 @@ public class Topology {
         ArrayNode committedSchemaArrayNode = null;
         ObjectNode topologyNode = null;
         for (Schema schema : this.schemas.values()) {
-           Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+            Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
             if (jsonNodeOptional.isPresent() && committedSchemaArrayNode == null) {
                 committedSchemaArrayNode = OBJECT_MAPPER.createArrayNode();
             }

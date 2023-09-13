@@ -31,6 +31,7 @@ public class TestSubSubPartition extends BaseTest {
             configuration = configs.properties(sqlProperties);
             Assume.assumeTrue(isPostgres());
             configuration.addProperty("distributed", true);
+            configuration.addProperty("validate.topology", true);
             if (!configuration.containsKey("jdbc.url"))
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
 

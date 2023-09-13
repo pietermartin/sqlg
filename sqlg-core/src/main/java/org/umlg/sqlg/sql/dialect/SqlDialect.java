@@ -1195,6 +1195,10 @@ public interface SqlDialect {
         throw new IllegalStateException("Partitioning is not supported.");
     }
 
+    default List<String> addPartitionSchemaAbstractLabelColumns() {
+        throw new IllegalStateException("Partitioning is not supported.");
+    }
+
     default List<String> addPropertyDefinitions() {
         return List.of();
     }
