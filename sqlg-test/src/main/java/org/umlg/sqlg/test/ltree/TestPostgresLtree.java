@@ -97,6 +97,20 @@ public class TestPostgresLtree extends BaseTest {
     }
 
     @Test
+    public void testLTreeSetNull() {
+        Assume.assumeTrue(isPostgres());
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("Tree", new HashMap<>() {{
+                    put("path", PropertyDefinition.of(PropertyType.LTREE));
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", null);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Tree").toList();
+        Assert.assertEquals(1, tree.size());
+    }
+
+    @Test
     public void testLTree() {
         Assume.assumeTrue(isPostgres());
         this.sqlgGraph.getTopology().getPublicSchema()

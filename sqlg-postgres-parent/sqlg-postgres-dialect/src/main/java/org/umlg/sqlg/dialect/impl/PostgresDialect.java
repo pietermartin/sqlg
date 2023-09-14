@@ -1853,6 +1853,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             case JSON_ORDINAL ->
                 //TODO support other others like Geometry...
                     new int[]{Types.OTHER};
+            case LTREE_ORDINAL -> new int[]{Types.OTHER};
             case byte_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case boolean_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
             case BOOLEAN_ARRAY_ORDINAL -> new int[]{Types.ARRAY};
@@ -4403,6 +4404,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 "ALTER TABLE \"sqlg_schema\".\"E_" + SQLG_SCHEMA_IN_EDGES_EDGE + "\" ALTER COLUMN \"" + SQLG_SCHEMA_IN_EDGES_ORDERED + "\" DROP DEFAULT;"
         );
     }
+
     @Override
     public String checkConstraintName(SqlgGraph sqlgGraph, String schema, String table, String column, String constraint) {
         Connection conn = sqlgGraph.tx().getConnection();
