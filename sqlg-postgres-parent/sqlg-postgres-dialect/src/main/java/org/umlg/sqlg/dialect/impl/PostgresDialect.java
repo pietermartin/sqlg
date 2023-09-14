@@ -1248,7 +1248,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     private void appendKeyForBatchUpdate(PropertyDefinition propertyDefinition, StringBuilder sql, String key, boolean withV) {
         String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyDefinition.propertyType());
         int countPerKey = 1;
-        for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+        for (String ignore : sqlDefinitions) {
             if (countPerKey > 1) {
                 if (withV) {
                     sql.append("v.");
@@ -1671,7 +1671,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     /**
-     * this follows the PostgreSQL rules at https://www.postgresql.org/docs/current/static/sql-copy.html#AEN77663
+     * this follows the PostgreSQL rules at <a href="https://www.postgresql.org/docs/current/static/sql-copy.html#AEN77663">sql-copy</a>
      * "If the value contains the delimiter character, the QUOTE character, the NULL string, a carriage return,
      * or line feed character, then the whole value is prefixed and suffixed by the QUOTE character,
      * and any occurrence within the value of a QUOTE character or the ESCAPE character is preceded
@@ -1679,7 +1679,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      */
     private String escapeSpecialCharacters(String s) {
         StringBuilder sb = new StringBuilder();
-        boolean needEscape = s.length() == 0; // escape empty strings
+        boolean needEscape = s.isEmpty(); // escape empty strings
         for (int a = 0; a < s.length(); a++) {
             char c = s.charAt(a);
             if (c == '\n' || c == '\r' || c == 0 || c == COPY_COMMAND_DELIMITER.charAt(0)) {
@@ -1755,68 +1755,65 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      */
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
-        switch (sqlType) {
-            case Types.BIT:
-                return PropertyType.BOOLEAN;
-            case Types.SMALLINT:
-                return PropertyType.SHORT;
-            case Types.INTEGER:
-                return PropertyType.INTEGER;
-            case Types.BIGINT:
-                return PropertyType.LONG;
-            case Types.REAL:
-                return PropertyType.FLOAT;
-            case Types.DOUBLE:
-                return PropertyType.DOUBLE;
-            case Types.VARCHAR:
-                return PropertyType.STRING;
-            case Types.TIMESTAMP:
-                return PropertyType.LOCALDATETIME;
-            case Types.DATE:
-                return PropertyType.LOCALDATE;
-            case Types.TIME:
-                return PropertyType.LOCALTIME;
-            case Types.OTHER:
-                //this is a f up as only JSON can be used for other.
+        return switch (sqlType) {
+            case Types.BIT -> PropertyType.BOOLEAN;
+            case Types.SMALLINT -> PropertyType.SHORT;
+            case Types.INTEGER -> PropertyType.INTEGER;
+            case Types.BIGINT -> PropertyType.LONG;
+            case Types.REAL -> PropertyType.FLOAT;
+            case Types.DOUBLE -> PropertyType.DOUBLE;
+            case Types.VARCHAR -> PropertyType.STRING;
+            case Types.TIMESTAMP -> PropertyType.LOCALDATETIME;
+            case Types.DATE -> PropertyType.LOCALDATE;
+            case Types.TIME -> PropertyType.LOCALTIME;
+            case Types.OTHER ->
+                //this is an f up as only JSON can be used for other.
                 //means all the gis data types which are also OTHER are not supported
-                return switch (typeName) {
-                    case "jsonb" -> PropertyType.JSON;
-                    case "geometry" -> getPostGisGeometryType(sqlgGraph, schema, table, column);
-                    case "geography" -> getPostGisGeographyType(sqlgGraph, schema, table, column);
-                    default -> throw new RuntimeException("Other type not supported " + typeName);
-                };
-            case Types.BINARY:
-                return BYTE_ARRAY;
-            case Types.ARRAY:
-                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
-            default:
-                throw new IllegalStateException("Unknown sqlType " + sqlType);
-        }
+                    switch (typeName) {
+                        case "jsonb" -> PropertyType.JSON;
+                        case "geometry" -> getPostGisGeometryType(sqlgGraph, schema, table, column);
+                        case "geography" -> getPostGisGeographyType(sqlgGraph, schema, table, column);
+                        default -> throw new RuntimeException("Other type not supported " + typeName);
+                    };
+            case Types.BINARY -> BYTE_ARRAY;
+            case Types.ARRAY ->
+                    sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
+            default -> throw new IllegalStateException("Unknown sqlType " + sqlType);
+        };
     }
 
     @SuppressWarnings("Duplicates")
     @Override
     public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
-            case "_bool":
+            case "_bool" -> {
                 return BOOLEAN_ARRAY;
-            case "_int2":
+            }
+            case "_int2" -> {
                 return SHORT_ARRAY;
-            case "_int4":
+            }
+            case "_int4" -> {
                 return PropertyType.INTEGER_ARRAY;
-            case "_int8":
+            }
+            case "_int8" -> {
                 return PropertyType.LONG_ARRAY;
-            case "_float4":
+            }
+            case "_float4" -> {
                 return PropertyType.FLOAT_ARRAY;
-            case "_float8":
+            }
+            case "_float8" -> {
                 return PropertyType.DOUBLE_ARRAY;
-            case "_text":
+            }
+            case "_text" -> {
                 return PropertyType.STRING_ARRAY;
-            case "_date":
+            }
+            case "_date" -> {
                 return PropertyType.LOCALDATE_ARRAY;
-            case "_time":
+            }
+            case "_time" -> {
                 return PropertyType.LOCALTIME_ARRAY;
-            case "_timestamp":
+            }
+            case "_timestamp" -> {
                 //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
                 Triple<String, Integer, String> metaData = metaDataIter.next();
                 metaDataIter.previous();
@@ -1825,24 +1822,23 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 } else {
                     return PropertyType.LOCALDATETIME_ARRAY;
                 }
-            case "_jsonb":
+            }
+            case "_jsonb" -> {
                 return PropertyType.JSON_ARRAY;
-            default:
-                throw new RuntimeException("Array type not supported " + typeName);
+            }
+            default -> throw new RuntimeException("Array type not supported " + typeName);
         }
     }
 
     @Override
     public int[] propertyTypeToJavaSqlType(PropertyType propertyType) {
         return switch (propertyType.ordinal()) {
-            case BYTE_ORDINAL -> new int[]{Types.BOOLEAN};
-            case BOOLEAN_ORDINAL -> new int[]{Types.BOOLEAN};
+            case BYTE_ORDINAL, BOOLEAN_ORDINAL -> new int[]{Types.BOOLEAN};
             case SHORT_ORDINAL -> new int[]{Types.SMALLINT};
             case INTEGER_ORDINAL -> new int[]{Types.INTEGER};
             case LONG_ORDINAL -> new int[]{Types.BIGINT};
             case FLOAT_ORDINAL -> new int[]{Types.REAL};
-            case DOUBLE_ORDINAL -> new int[]{Types.DOUBLE};
-            case BIG_DECIMAL_ORDINAL -> new int[]{Types.DOUBLE};
+            case DOUBLE_ORDINAL, BIG_DECIMAL_ORDINAL -> new int[]{Types.DOUBLE};
             case STRING_ORDINAL -> new int[]{Types.CLOB};
             case LOCALDATETIME_ORDINAL -> new int[]{Types.TIMESTAMP};
             case LOCALDATE_ORDINAL -> new int[]{Types.DATE};
@@ -2202,32 +2198,26 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
         switch (propertyType.ordinal()) {
-            case POINT_ORDINAL:
-                properties.put(columnName, ((PGgeometry) o).getGeometry());
-                break;
-            case LINESTRING_ORDINAL:
-                properties.put(columnName, ((PGgeometry) o).getGeometry());
-                break;
-            case GEOGRAPHY_POINT_ORDINAL:
+            case POINT_ORDINAL -> properties.put(columnName, ((PGgeometry) o).getGeometry());
+            case LINESTRING_ORDINAL -> properties.put(columnName, ((PGgeometry) o).getGeometry());
+            case GEOGRAPHY_POINT_ORDINAL -> {
                 try {
                     Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
                     properties.put(columnName, new GeographyPoint((Point) geometry));
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
-                break;
-            case GEOGRAPHY_POLYGON_ORDINAL:
+            }
+            case GEOGRAPHY_POLYGON_ORDINAL -> {
                 try {
                     Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
                     properties.put(columnName, new GeographyPolygon((Polygon) geometry));
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
-                break;
-            case POLYGON_ORDINAL:
-                properties.put(columnName, ((PGgeometry) o).getGeometry());
-                break;
-            case JSON_ORDINAL:
+            }
+            case POLYGON_ORDINAL -> properties.put(columnName, ((PGgeometry) o).getGeometry());
+            case JSON_ORDINAL -> {
                 ObjectMapper objectMapper = new ObjectMapper();
                 try {
                     JsonNode jsonNode = objectMapper.readTree(((PGobject) o).getValue());
@@ -2235,9 +2225,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                break;
-            case BYTE_ARRAY_ORDINAL:
-                java.sql.Array array = (java.sql.Array) o;
+            }
+            case BYTE_ARRAY_ORDINAL -> {
+                Array array = (Array) o;
                 String arrayAsString = array.toString();
                 //remove the wrapping curly brackets
                 arrayAsString = arrayAsString.substring(1);
@@ -2251,9 +2241,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     result[count++] = Byte.parseByte("");
                 }
                 properties.put(columnName, result);
-                break;
-            default:
-                throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
+            }
+            default ->
+                    throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
         }
 //        if (o instanceof PGgeometry) {
 //            properties.put(columnName, ((PGgeometry) o).getGeometry());
@@ -2456,7 +2446,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     PropertyType propertyType = propertyColumn.getPropertyType();
                     String[] propertyTypeToSqlDefinition = propertyTypeToSqlDefinition(propertyType);
                     int count = 1;
-                    for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                    for (String ignore : propertyTypeToSqlDefinition) {
                         if (count > 1) {
                             sql.append(maybeWrapInQoutes(
                                     inVertexLabelOptional.get().getFullName() + "." + identifier + propertyType.getPostFixes()[count - 2] + Topology.IN_VERTEX_COLUMN_END)
@@ -2489,7 +2479,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     PropertyType propertyType = propertyColumn.getPropertyType();
                     String[] propertyTypeToSqlDefinition = propertyTypeToSqlDefinition(propertyType);
                     int count = 1;
-                    for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                    for (String ignore : propertyTypeToSqlDefinition) {
                         if (count > 1) {
                             sql.append(maybeWrapInQoutes(identifier + propertyType.getPostFixes()[count - 2]));
                             sql.append(" as ");
@@ -3106,44 +3096,46 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
         switch (propertyType.ordinal()) {
-            case BOOLEAN_ARRAY_ORDINAL:
+            case BOOLEAN_ARRAY_ORDINAL, INTEGER_ARRAY_ORDINAL, LONG_ARRAY_ORDINAL, DOUBLE_ARRAY_ORDINAL, FLOAT_ARRAY_ORDINAL, STRING_ARRAY_ORDINAL -> {
                 return array.getArray();
-            case boolean_ARRAY_ORDINAL:
+            }
+            case boolean_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
-            case SHORT_ARRAY_ORDINAL:
+            }
+            case SHORT_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectOfShortsArrayToShortArray((Object[]) array.getArray());
-            case short_ARRAY_ORDINAL:
+            }
+            case short_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectOfShortsArrayToShortPrimitiveArray((Object[]) array.getArray());
-            case INTEGER_ARRAY_ORDINAL:
-                return array.getArray();
-            case int_ARRAY_ORDINAL:
+            }
+            case int_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
-            case LONG_ARRAY_ORDINAL:
-                return array.getArray();
-            case long_ARRAY_ORDINAL:
+            }
+            case long_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
-            case DOUBLE_ARRAY_ORDINAL:
-                return array.getArray();
-            case BIG_DECIMAL_ARRAY_ORDINAL:
+            }
+            case BIG_DECIMAL_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectOfDoublesArrayToBigDecimalArray((Object[]) array.getArray());
-            case double_ARRAY_ORDINAL:
+            }
+            case double_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
-            case FLOAT_ARRAY_ORDINAL:
-                return array.getArray();
-            case float_ARRAY_ORDINAL:
+            }
+            case float_ARRAY_ORDINAL -> {
                 return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
-            case STRING_ARRAY_ORDINAL:
-                return array.getArray();
-            case LOCALDATETIME_ARRAY_ORDINAL:
+            }
+            case LOCALDATETIME_ARRAY_ORDINAL -> {
                 Timestamp[] timestamps = (Timestamp[]) array.getArray();
                 return SqlgUtil.copyToLocalDateTime(timestamps, new LocalDateTime[timestamps.length]);
-            case LOCALDATE_ARRAY_ORDINAL:
+            }
+            case LOCALDATE_ARRAY_ORDINAL -> {
                 Date[] dates = (Date[]) array.getArray();
                 return SqlgUtil.copyToLocalDate(dates, new LocalDate[dates.length]);
-            case LOCALTIME_ARRAY_ORDINAL:
+            }
+            case LOCALTIME_ARRAY_ORDINAL -> {
                 Time[] times = (Time[]) array.getArray();
                 return SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
-            case JSON_ARRAY_ORDINAL:
+            }
+            case JSON_ARRAY_ORDINAL -> {
                 String arrayAsString = array.toString();
                 //remove the wrapping curly brackets
                 arrayAsString = arrayAsString.substring(1);
@@ -3165,8 +3157,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     }
                 }
                 return jsonNodes;
-            default:
-                throw new IllegalStateException("Unhandled property type " + propertyType.name());
+            }
+            default -> throw new IllegalStateException("Unhandled property type " + propertyType.name());
         }
     }
 
@@ -3233,14 +3225,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 String type = resultSet.getString(1);
-                switch (type) {
-                    case "Point":
-                        return PropertyType.GEOGRAPHY_POINT;
-                    case "Polygon":
-                        return PropertyType.GEOGRAPHY_POLYGON;
-                    default:
-                        throw new IllegalStateException("Unhandled geography type " + type);
-                }
+                return switch (type) {
+                    case "Point" -> PropertyType.GEOGRAPHY_POINT;
+                    case "Polygon" -> PropertyType.GEOGRAPHY_POLYGON;
+                    default -> throw new IllegalStateException("Unhandled geography type " + type);
+                };
             } else {
                 throw new IllegalStateException("PostGis property type for column " + column + " not found");
             }
