@@ -190,7 +190,7 @@ class SqlgStartupManager {
             upgradeTo301();
         }
         //this is to update the partition table to include schemaName and abstractLabelName
-        if (v.isUnknownVersion() || v.equals(new Version(3, 0, 1, null, null, null))) {
+        if (v.isUnknownVersion() || v.compareTo(new Version(3, 0, 1, null, null, null)) <= 0) {
             addPartitionSchemaAbstractLabelColumns();
         }
     }
