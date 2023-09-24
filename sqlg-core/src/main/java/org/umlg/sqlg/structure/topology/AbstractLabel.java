@@ -532,6 +532,7 @@ public abstract class AbstractLabel implements TopologyInf {
         if (getTopology().isSchemaChanged()) {
             Map<String, PropertyColumn> result = new HashMap<>(this.properties);
             result.putAll(this.uncommittedProperties);
+            result.putAll(this.uncommittedUpdatedProperties);
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
             }

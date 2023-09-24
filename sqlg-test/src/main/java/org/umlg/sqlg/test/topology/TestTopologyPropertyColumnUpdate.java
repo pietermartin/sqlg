@@ -30,6 +30,24 @@ public class TestTopologyPropertyColumnUpdate extends BaseTest {
     }
 
     @Test
+    public void testPropertyColumnAfterUpdate() {
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
+                    put("a1", PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), "'a'"));
+                }});
+        this.sqlgGraph.tx().commit();
+
+        PropertyColumn propertyColumn = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a1").orElseThrow();
+        propertyColumn.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), "'b'"));
+
+        PropertyColumn _propertyColumn = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").orElseThrow().getProperty("a1").orElseThrow();
+        Assert.assertEquals("'b'", _propertyColumn.getPropertyDefinition().defaultLiteral());
+
+        this.sqlgGraph.tx().commit();
+
+    }
+
+    @Test
     public void testPropertyUpdateMultiplicityFrom1to0() {
         TestTopologyChangeListener.TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
