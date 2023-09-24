@@ -14,6 +14,9 @@ public record Multiplicity(long lower, long upper, boolean unique, boolean order
         if (upper < -1) {
             throw new IllegalArgumentException("Multiplicity.upper must be >= -1");
         }
+        if (upper != -1 && (lower > upper)) {
+            throw new IllegalArgumentException(String.format("Multiplicity.lower[%d] must be <= Multiplicity.upper[%d]", lower, upper));
+        }
     }
 
     public static Multiplicity of() {

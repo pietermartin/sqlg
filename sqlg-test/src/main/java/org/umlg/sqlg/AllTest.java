@@ -315,7 +315,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestPostgresLtree.class,
         TestSchemaTableTreeCache.class,
         TestTopologyPropertyColumnUpdate.class,
-        TestTopologyPropertyColumnUpdateDistributed.class
+        TestTopologyPropertyColumnUpdateDistributed.class,
+        TestPropertyDefinitionMultiplicity.class
 })
 public class AllTest {
 
