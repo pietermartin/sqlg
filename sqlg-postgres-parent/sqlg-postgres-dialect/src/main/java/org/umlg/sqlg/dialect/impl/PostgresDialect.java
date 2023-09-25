@@ -2953,8 +2953,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
     @Override
     public List<String> addPartitionSchemaAbstractLabelColumns() {
         return List.of(
-                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"schemaName\" TEXT NOT NULL DEFAULT 'ORPHANED';",
-                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN \"abstractLabelName\" TEXT NOT NULL DEFAULT 'ORPHANED';",
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN IF NOT EXISTS \"schemaName\" TEXT NOT NULL DEFAULT 'ORPHANED';",
+                "ALTER TABLE \"sqlg_schema\".\"V_partition\" ADD COLUMN IF NOT EXISTS \"abstractLabelName\" TEXT NOT NULL DEFAULT 'ORPHANED';",
                 "ALTER TABLE \"sqlg_schema\".\"V_partition\" ALTER COLUMN \"name\" SET NOT NULL;"
 //                "CREATE UNIQUE INDEX IF NOT EXISTS \"V_schema_abstractLabel_name_idx\" ON \"sqlg_schema\".\"V_partition\" (\"schemaName\", \"abstractLabelName\", \"name\");"
         );
