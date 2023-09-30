@@ -1,0 +1,166 @@
+==== Repeat Step
+
+link:{tinkerpop-docs}#repeat-step[`Repeat Step`]
+
+Sqlg optimizes the `RepeatStep` so long as the `until` modulator is *not* present.
+`RepeatStep` can be optimized with the modulator `emit` and `times`.
+
+===== Repeat Step with emit first
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showRepeatStepEmitFirst() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .emit()
+            .times(2)
+            .repeat(
+                    __.out()
+            )
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1]
+[a2]
+[a1, b1]
+[a1, b2]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <1>
+
+SELECT
+	"public"."V_A"."ID" AS "alias1",
+	"public"."V_A"."name" AS "alias2"
+FROM
+	"public"."V_A" <2>
+
+SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <3>
+----
+<1> Get the 'A's to emit.
+<2> Get the 'B's to emit.
+<3> Get the 'C's to emit.
+
+===== Repeat Step with emit last
+
+[source,java,options="nowrap"]
+----
+@Test
+public void showRepeatStepEmitLast() {
+    Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+    Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+    Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+    Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+    Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+    Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+    a1.addEdge("ab", b1);
+    a1.addEdge("ab", b2);
+    b1.addEdge("bc", c1);
+    b1.addEdge("bc", c2);
+    b1.addEdge("bc", c3);
+    this.sqlgGraph.tx().commit();
+
+    List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A")
+            .repeat(
+                    __.out()
+            )
+            .emit()
+            .times(2)
+            .path().by("name")
+            .toList();
+    for (Path path : paths) {
+        System.out.println(path);
+    }
+}
+----
+
+.output
+----
+[a1, b1, c3]
+[a1, b1, c2]
+[a1, b1, c1]
+[a1, b1]
+[a1, b2]
+----
+
+.sql
+[source,sql,options="nowrap"]
+----
+SELECT
+	"public"."V_C"."ID" AS "alias1",
+	"public"."V_C"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."V_B"."ID" AS "alias5",
+	"public"."V_B"."name" AS "alias6",
+	"public"."E_ab"."ID" AS "alias7",
+	"public"."E_bc"."ID" AS "alias8"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" INNER JOIN
+	"public"."E_bc" ON "public"."V_B"."ID" = "public"."E_bc"."public.B__O" INNER JOIN
+	"public"."V_C" ON "public"."E_bc"."public.C__I" = "public"."V_C"."ID" <1>
+
+SELECT
+	"public"."V_B"."ID" AS "alias1",
+	"public"."V_B"."name" AS "alias2",
+	"public"."V_A"."ID" AS "alias3",
+	"public"."V_A"."name" AS "alias4",
+	"public"."E_ab"."ID" AS "alias5"
+FROM
+	"public"."V_A" INNER JOIN
+	"public"."E_ab" ON "public"."V_A"."ID" = "public"."E_ab"."public.A__O" INNER JOIN
+	"public"."V_B" ON "public"."E_ab"."public.B__I" = "public"."V_B"."ID" <2>
+----
+<1> Get the 'C's to emit.
+<2> Get the 'B's to emit.
