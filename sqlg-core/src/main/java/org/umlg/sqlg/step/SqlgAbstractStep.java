@@ -57,6 +57,11 @@ public abstract class SqlgAbstractStep<S, E> implements Step<S, E> {
     }
 
     @Override
+    public void clearLabels() {
+        this.labels.clear();
+    }
+
+    @Override
     public Set<String> getLabels() {
         return Collections.unmodifiableSet(this.labels);
     }

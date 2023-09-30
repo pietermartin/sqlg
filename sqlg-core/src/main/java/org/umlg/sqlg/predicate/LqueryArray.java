@@ -1,10 +1,9 @@
 package org.umlg.sqlg.predicate;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 
-import java.util.function.BiPredicate;
-
-public record LqueryArray(String operator) implements BiPredicate<LqueryArray.LqueryQueryArray, LqueryArray.LqueryQueryArray> {
+public record LqueryArray(String operator) implements PBiPredicate<LqueryArray.LqueryQueryArray, LqueryArray.LqueryQueryArray> {
 
     public record LqueryQueryArray(String[] query, boolean lquery) {}
 

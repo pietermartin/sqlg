@@ -12,7 +12,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.postgis.*;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
@@ -3584,7 +3583,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                             //System.out.println(lastColumns);
                             //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
                             //} else {
-                            MultiMap.put(ret, lastKey, new IndexRef(lastIndexName, lastIndexType, lastColumns));
+                            Set<IndexRef> indexRefs = ret.computeIfAbsent(lastKey, (k) -> new HashSet<>());
+                            indexRefs.add(new IndexRef(lastIndexName, lastIndexType, lastColumns));
                         }
                         lastColumns.clear();
                         lastIndexName = indexName;
@@ -3598,7 +3598,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
                     //System.out.println(lastColumns);
                     //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
                     //} else {
-                    MultiMap.put(ret, lastKey, new IndexRef(lastIndexName, lastIndexType, lastColumns));
+                    Set<IndexRef> indexRefs = ret.computeIfAbsent(lastKey, (k) -> new HashSet<>());
+                    indexRefs.add(new IndexRef(lastIndexName, lastIndexType, lastColumns));
                 }
 
                 return ret;

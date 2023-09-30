@@ -1,13 +1,13 @@
 package org.umlg.sqlg.predicate;
 
-import java.util.function.BiPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 
 /**
  * abuse BiPredicate to represent nulls
  *
  * @author JP Moresmau
  */
-public enum Existence implements BiPredicate<String, String> {
+public enum Existence implements PBiPredicate<String, String> {
     NULL {
         @Override
         public boolean test(String t, String u) {

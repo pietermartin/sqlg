@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyPropertyColumnRename;
+import org.umlg.sqlg.test.union.TestUnion;
 
 /**
  * Date: 2014/07/16
@@ -10,6 +10,8 @@ import org.umlg.sqlg.test.topology.TestTopologyPropertyColumnRename;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+//        TestHasLabelAndId.class
+        TestUnion.class
 //        TestTest.class
 //        TestBatch.class
 //        TestLoadSchemaViaNotify.class,
@@ -17,7 +19,7 @@ import org.umlg.sqlg.test.topology.TestTopologyPropertyColumnRename;
 //        TestTopologyActionEventsDistributed.class
 //        TestTopologyEdgeLabelRenameMultipleRoles.class
 //        TestTopologyPropertyColumnUpdate.class
-        TestTopologyPropertyColumnRename.class
+//        TestTopologyPropertyColumnRename.class
 })
 public class AnyTest {
 }

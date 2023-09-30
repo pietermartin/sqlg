@@ -1,20 +1,20 @@
 package org.umlg.sqlg.predicate;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
-
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Postgres specific array data type operator to check if two arrays overlap.
  * https://www.postgresql.org/docs/9.6/functions-array.html
  */
-public class ArrayOverlaps<T> implements BiPredicate<T[], T[]> {
+public class ArrayOverlaps<T> implements PBiPredicate<T[], T[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArrayOverlaps.class);
 
     private final T[] values;

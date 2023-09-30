@@ -1,20 +1,20 @@
 package org.umlg.sqlg.predicate;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 /**
  * Postgres specific array data type operator to check if an array is fully contained in another.
  * <a href="https://www.postgresql.org/docs/9.6/functions-array.html">functions-array</a>
  */
-public record ArrayContains<T>(T[] values) implements BiPredicate<T[], T[]> {
+public record ArrayContains<T>(T[] values) implements PBiPredicate<T[], T[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArrayContains.class);
 
     public ArrayContains(T[] values) {

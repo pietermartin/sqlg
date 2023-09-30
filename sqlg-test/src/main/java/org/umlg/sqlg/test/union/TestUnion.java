@@ -2,8 +2,11 @@ package org.umlg.sqlg.test.union;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -15,9 +18,7 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.constant;
 
 /**
  * Date: 2016/05/30
@@ -27,21 +28,36 @@ import static org.junit.Assert.assertFalse;
 public class TestUnion extends BaseTest {
 
     @Test
+    public void g_unionXconstantX1X_constantX2X_constantX3XX() {
+        loadModern();
+//        And using the parameter xx1 defined as "d[1].i"
+//        And using the parameter xx2 defined as "d[2].i"
+//        And using the parameter xx3 defined as "d[3].i"
+        GraphTraversalSource g = sqlgGraph.traversal();
+        DefaultGraphTraversal<String, String> graphTraversal = (DefaultGraphTraversal<String, String>) g.union(constant("d[1].i"), constant("d[2].i"), constant("d[3].i"));
+        System.out.println(graphTraversal);
+        List<Step> steps = graphTraversal.getSteps();
+        List<String> result = graphTraversal.toList();
+        System.out.println(graphTraversal);
+        Assert.assertTrue(result.contains("d[1].i"));
+    }
+
+    @Test
     public void g_V_unionXrepeatXunionXoutXcreatedX__inXcreatedXX_timesX2X__repeatXunionXinXcreatedX__outXcreatedXX_timesX2XX_label_groupCount() {
         loadModern();
-        final Traversal<Vertex, Map<String, Long>> traversal =  (Traversal) this.sqlgGraph.traversal().V().union(
-                        repeat(union(
-                                out("created"),
-                                in("created"))).times(2),
-                        repeat(union(
-                                in("created"),
-                                out("created"))).times(2))
+        final Traversal<Vertex, Map<String, Long>> traversal = (Traversal) this.sqlgGraph.traversal().V().union(
+                        __.repeat(__.union(
+                                __.out("created"),
+                                __.in("created"))).times(2),
+                        __.repeat(__.union(
+                                __.in("created"),
+                                __.out("created"))).times(2))
                 .label().groupCount();
         final Map<String, Long> groupCount = traversal.next();
-        assertFalse(traversal.hasNext());
-        assertEquals(2, groupCount.size());
-        assertEquals(12L, groupCount.get("software").longValue());
-        assertEquals(20L, groupCount.get("person").longValue());
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, groupCount.size());
+        Assert.assertEquals(12L, groupCount.get("software").longValue());
+        Assert.assertEquals(20L, groupCount.get("person").longValue());
     }
 
     /**
@@ -265,12 +281,12 @@ public class TestUnion extends BaseTest {
     public void testUnionFailure() {
         loadModern();
         Traversal<Vertex, Map<String, Long>> traversal = this.sqlgGraph.traversal().V().union(
-                __.repeat(__.union(
-                        __.out("created"),
-                        __.in("created"))).times(2),
-                __.repeat(__.union(
-                        __.in("created"),
-                        __.out("created"))).times(2))
+                        __.repeat(__.union(
+                                __.out("created"),
+                                __.in("created"))).times(2),
+                        __.repeat(__.union(
+                                __.in("created"),
+                                __.out("created"))).times(2))
                 .label().groupCount();
         printTraversalForm(traversal);
         final Map<String, Long> groupCount = traversal.next();

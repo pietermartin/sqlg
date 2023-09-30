@@ -2,13 +2,12 @@ package org.umlg.sqlg.predicate;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-
-import java.util.function.BiPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 
 /**
  * Created by pieter on 2015/08/12.
  */
-public enum Text implements BiPredicate<String, String> {
+public enum Text implements PBiPredicate<String, String> {
 
     contains {
         @Override

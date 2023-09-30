@@ -1,15 +1,11 @@
 package org.umlg.sqlg.predicate;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.function.BiPredicate;
-
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.PBiPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 /**
  * Full text match predicate
@@ -19,7 +15,7 @@ import org.slf4j.LoggerFactory;
  * @author jpmoresmau
  *
  */
-public class FullText implements BiPredicate<String, String> {
+public class FullText implements PBiPredicate<String, String> {
 	private static final Logger logger = LoggerFactory.getLogger(FullText.class);
 	/**
 	 * full text configuration to use
