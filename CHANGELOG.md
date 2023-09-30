@@ -1,3 +1,9 @@
+##3.0.2
+
+* Added `schemaName` and `abstractLabelName` to `sqlg_schema.V_parition`. This is to optimize searching for nested partitions. This change will run a db upgrade script so testing it on your graph is strongly advised!
+* Fix #497 Take updatedProperty columns into account when searching for properties.
+* Fix #496, added lower multiplicity validation.
+
 ##3.0.1
 
 * Upgrade to TinkerPop 3.6.4
