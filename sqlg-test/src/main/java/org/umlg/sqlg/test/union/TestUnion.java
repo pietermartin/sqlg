@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.union;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -34,12 +33,16 @@ public class TestUnion extends BaseTest {
 //        And using the parameter xx2 defined as "d[2].i"
 //        And using the parameter xx3 defined as "d[3].i"
         GraphTraversalSource g = sqlgGraph.traversal();
-        DefaultGraphTraversal<String, String> graphTraversal = (DefaultGraphTraversal<String, String>) g.union(constant("d[1].i"), constant("d[2].i"), constant("d[3].i"));
-        System.out.println(graphTraversal);
-        List<Step> steps = graphTraversal.getSteps();
+        DefaultGraphTraversal<String, String> graphTraversal = (DefaultGraphTraversal<String, String>) g.union(
+                constant("d[1].i"),
+                constant("d[2].i"),
+                constant("d[3].i")
+        );
+        printTraversalForm(graphTraversal);
         List<String> result = graphTraversal.toList();
-        System.out.println(graphTraversal);
         Assert.assertTrue(result.contains("d[1].i"));
+        Assert.assertTrue(result.contains("d[2].i"));
+        Assert.assertTrue(result.contains("d[3].i"));
     }
 
     @Test

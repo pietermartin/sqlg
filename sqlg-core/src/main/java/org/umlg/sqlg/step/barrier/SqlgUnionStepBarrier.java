@@ -10,16 +10,19 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementExce
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.step.SqlgAbstractStep;
 import org.umlg.sqlg.structure.traverser.SqlgTraverser;
+import org.umlg.sqlg.structure.traverser.SqlgTraverserGenerator;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
  * @author <a href="https://github.com/pietermartin">Pieter Martin</a>
- *         Date: 2019/08/12
+ * Date: 2019/08/12
  */
 public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implements TraversalParent, Step<S, E> {
 
     private boolean first = true;
+    private boolean isStart;
     private final List<Traversal.Admin<S, E>> globalTraversals;
     private final List<Traversal.Admin<?, ?>> localTraversals;
     private final List<Traverser.Admin<E>> results = new ArrayList<>();
@@ -30,6 +33,13 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
         super(traversal);
         this.globalTraversals = unionStep.getGlobalChildren();
         this.localTraversals = unionStep.getLocalChildren();
+        try {
+            Field privateField = UnionStep.class.getDeclaredField("isStart");
+            privateField.setAccessible(true);
+            this.isStart = (Boolean)privateField.get(unionStep);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -58,7 +68,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
             requirements.addAll(localTraversal.getTraverserRequirements());
         }
         for (Traversal.Admin<S, E> globalTraversal : this.globalTraversals) {
-           requirements.addAll(globalTraversal.getTraverserRequirements());
+            requirements.addAll(globalTraversal.getTraverserRequirements());
         }
         return requirements;
     }
@@ -67,6 +77,12 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         if (this.first) {
             this.first = false;
+            if (isStart) {
+                isStart = false;
+                final SqlgTraverserGenerator generator = SqlgTraverserGenerator.instance();
+                Traverser.Admin<S> x = generator.generate(null, (Step) this, 1L, false, false);
+                addStart(x);
+            }
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 for (Traversal.Admin<S, E> globalTraversal : this.globalTraversals) {
@@ -116,7 +132,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
     public void setTraversal(final Traversal.Admin<?, ?> parentTraversal) {
         super.setTraversal(parentTraversal);
         for (Traversal.Admin<S, E> globalTraversal : globalTraversals) {
-           integrateChild(globalTraversal);
+            integrateChild(globalTraversal);
         }
     }
 
@@ -128,7 +144,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
     @Override
     public int hashCode() {
         int result = super.hashCode();
-            result ^= this.globalTraversals.hashCode();
+        result ^= this.globalTraversals.hashCode();
         return result;
     }
 }
