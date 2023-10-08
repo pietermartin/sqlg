@@ -191,11 +191,6 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
         reason = "Assertions are TinkerGraph specific.")
 
 @OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONV1d0Test",
-        method = "shouldSerializeTraversalMetrics",
-        reason = "Assertions are TinkerGraph specific.")
-
-@OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX3X_count",
         reason = "Takes too long, and too much memory at present.")
@@ -295,7 +290,10 @@ public class SqlgGraph implements Graph {
                                 new SqlgNotStepStepStrategy<>(),
                                 new SqlgHasStepStrategy(),
                                 new SqlgDropStepStrategy(),
+
+                                new SqlgSelectOneStepStrategy(),
                                 new SqlgRestrictPropertiesStrategy(),
+                                
                                 new SqlgAddVertexStartStepStrategy(),
                                 new SqlgUnionStepStrategy(),
                                 new SqlgStartStepStrategy(),
