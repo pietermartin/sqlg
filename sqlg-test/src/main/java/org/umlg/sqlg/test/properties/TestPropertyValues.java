@@ -481,7 +481,7 @@ public class TestPropertyValues extends BaseTest {
      * @param properties the properties
      */
     @SuppressWarnings({"resource", "unchecked"})
-    private void checkRestrictedProperties(Class<? extends Step> stepType, Traversal<?, ?> t, int replacedStepCount, String... properties) {
+    public static void checkRestrictedProperties(Class<? extends Step> stepType, Traversal<?, ?> t, int replacedStepCount, String... properties) {
         boolean found = false;
         for (Step<?, ?> s : ((Traversal.Admin<?, ?>) t).getSteps()) {
             if (stepType == SqlgGraphStep.class && s instanceof SqlgGraphStep) {

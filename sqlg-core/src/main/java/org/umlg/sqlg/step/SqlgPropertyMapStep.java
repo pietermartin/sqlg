@@ -91,18 +91,6 @@ public class SqlgPropertyMapStep<K, E> extends SqlgMapStep<Element, Map<K, E>> i
         return null == this.propertyTraversal ? Collections.emptyList() : Collections.singletonList(this.propertyTraversal);
     }
 
-    public void setPropertyTraversal(final Traversal.Admin<Element, ? extends Property> propertyTraversal) {
-        this.propertyTraversal = this.integrateChild(propertyTraversal);
-    }
-
-    public PropertyType getReturnType() {
-        return this.returnType;
-    }
-
-    public String[] getPropertyKeys() {
-        return propertyKeys;
-    }
-
     public String toString() {
         return null != this.propertyTraversal ?
                 StringFactory.stepString(this, this.propertyTraversal, this.returnType.name().toLowerCase()) :

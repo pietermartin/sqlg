@@ -77,6 +77,7 @@ public abstract class BaseStrategy {
             DropStep.class,
             PropertiesStep.class,
             PropertyMapStep.class,
+            ElementMapStep.class,
             MaxGlobalStep.class,
             MinGlobalStep.class,
             SumGlobalStep.class,
@@ -225,6 +226,8 @@ public abstract class BaseStrategy {
                 return handlePropertiesStep(this.currentReplacedStep, step);
             } else if (step instanceof PropertyMapStep) {
                 return handlePropertyMapStep(step);
+            } else if (step instanceof ElementMapStep<?,?>) {
+                return handleElementMapStep(this.currentReplacedStep, step);
             } else if (step instanceof IdStep) {
                 return handleIdStep(step);
             } else if (step instanceof MaxGlobalStep) {
@@ -382,6 +385,40 @@ public abstract class BaseStrategy {
         }
         PropertiesStep propertiesStep = (PropertiesStep) step;
         SqlgPropertiesStep sqlgPropertiesStep = new SqlgPropertiesStep(propertiesStep.getTraversal(), propertiesStep.getReturnType(), propertiesStep.getPropertyKeys());
+        for (String label : step.getLabels()) {
+            sqlgPropertiesStep.addLabel(label);
+        }
+        TraversalHelper.replaceStep((Step) step, sqlgPropertiesStep, t);
+        return true;
+    }
+
+    private boolean handleElementMapStep(ReplacedStep replacedStep, Step<?, ?> step) {
+        return handleElementMapStep(replacedStep, step, this.traversal);
+    }
+
+    private boolean handleElementMapStep(ReplacedStep replacedStep, Step<?, ?> step, Traversal.Admin<?, ?> t) {
+        Step<?, ?> dropStep = SqlgTraversalUtil.stepAfter(t, DropStep.class, step);
+        if (dropStep != null) {
+            return false;
+        }
+        Step<?, ?> orderGlobalStep = SqlgTraversalUtil.stepAfter(t, OrderGlobalStep.class, step);
+        if (orderGlobalStep != null) {
+            return false;
+        }
+        Step<?, ?> lambdaStep = SqlgTraversalUtil.lastLambdaHolderBefore(t, step);
+        if (lambdaStep != null) {
+            return false;
+        }
+        List<String> propertiesToRestrict = getRestrictedProperties(step);
+        if (propertiesToRestrict != null) {
+            if (replacedStep.getRestrictedProperties() == null) {
+                replacedStep.setRestrictedProperties(new HashSet<>(propertiesToRestrict));
+            } else {
+                replacedStep.getRestrictedProperties().addAll(propertiesToRestrict);
+            }
+        }
+        ElementMapStep elementMapStep = (ElementMapStep) step;
+        SqlgElementMapStep sqlgPropertiesStep = new SqlgElementMapStep(elementMapStep.getTraversal(), elementMapStep.getPropertyKeys());
         for (String label : step.getLabels()) {
             sqlgPropertiesStep.addLabel(label);
         }
@@ -1369,12 +1406,12 @@ public abstract class BaseStrategy {
 
     private List<String> getRestrictedProperties(Step<?, ?> step) {
         List<String> ret = null;
-        if (step instanceof PropertiesStep<?>) {
-            PropertiesStep<?> ps = (PropertiesStep<?>) step;
-            ret = Arrays.asList(ps.getPropertyKeys());
-        } else if (step instanceof PropertyMapStep<?, ?>) {
-            PropertyMapStep<?, ?> pms = (PropertyMapStep<?, ?>) step;
-            ret = Arrays.asList(pms.getPropertyKeys());
+        if (step instanceof PropertiesStep<?> propertiesStep) {
+            ret = Arrays.asList(propertiesStep.getPropertyKeys());
+        } else if (step instanceof PropertyMapStep<?, ?> propertyMapStep) {
+            ret = Arrays.asList(propertyMapStep.getPropertyKeys());
+        } else if (step instanceof ElementMapStep<?, ?> elementMapStep) {
+            ret = Arrays.asList(elementMapStep.getPropertyKeys());
         }
         // if no property keys are provided, all properties should be returned
         if (ret != null && ret.isEmpty()) {
