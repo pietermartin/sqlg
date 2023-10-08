@@ -53,16 +53,16 @@ public class SqlgRestrictPropertiesStrategy extends AbstractTraversalStrategy<Tr
             if (restrict != null) {
 
                 Object referTo = previous;
-                if (referTo instanceof SqlgGraphStep<?, ?> sgs) {
-                    if (sgs.getReplacedSteps().size() > 0) {
-                        referTo = sgs.getReplacedSteps().get(sgs.getReplacedSteps().size() - 1);
+                if (referTo instanceof SqlgGraphStep<?, ?> sqlgGraphStep) {
+                    if (!sqlgGraphStep.getReplacedSteps().isEmpty()) {
+                        referTo = sqlgGraphStep.getReplacedSteps().get(sqlgGraphStep.getReplacedSteps().size() - 1);
                     }
                 }
-                if (referTo instanceof ReplacedStep<?, ?> rs) {
-                    if (rs.getRestrictedProperties() == null) {
-                        rs.setRestrictedProperties(new HashSet<>());
+                if (referTo instanceof ReplacedStep<?, ?> replacedStep) {
+                    if (replacedStep.getRestrictedProperties() == null) {
+                        replacedStep.setRestrictedProperties(new HashSet<>());
                     }
-                    rs.getRestrictedProperties().addAll(restrict);
+                    replacedStep.getRestrictedProperties().addAll(restrict);
                 }
 
 
