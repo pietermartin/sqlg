@@ -29,7 +29,7 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
             put("jdbc.username", "postgres");
             put("jdbc.password", "postgres");
-            put("c3p0.maxPoolSize", 10);
+            put("c3p0.maxPoolSize", 20);
             put("dataSource.maximumPoolSize", 3);
         }};
 
