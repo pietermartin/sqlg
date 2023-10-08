@@ -17,8 +17,6 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.constant;
-
 /**
  * Date: 2016/05/30
  * Time: 9:01 PM
@@ -27,16 +25,27 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.consta
 public class TestUnion extends BaseTest {
 
     @Test
+    public void g_V_hasXperson_name_aliceX_propertyXsingle_age_unionXage_constantX1XX_sumX() {
+//        this.sqlgGraph.addVertex(T.label, "person", "name", "alice", "age", 50);
+        this.sqlgGraph.addVertex(T.label, "person", "name", "alice", "age", 50L);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices =  this.sqlgGraph.traversal().V().has("person","name","alice")
+                .property("age", __.union(__.values("age"), __.constant(1)).sum())
+                .toList();
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.traversal().V().has("person","age",50L).hasNext());
+        Assert.assertEquals(1L, this.sqlgGraph.traversal().V().has("person","age",51L).count().next(), 0);
+    }
+
+    @Test
     public void g_unionXconstantX1X_constantX2X_constantX3XX() {
         loadModern();
-//        And using the parameter xx1 defined as "d[1].i"
-//        And using the parameter xx2 defined as "d[2].i"
-//        And using the parameter xx3 defined as "d[3].i"
         GraphTraversalSource g = sqlgGraph.traversal();
         DefaultGraphTraversal<String, String> graphTraversal = (DefaultGraphTraversal<String, String>) g.union(
-                constant("d[1].i"),
-                constant("d[2].i"),
-                constant("d[3].i")
+                __.constant("d[1].i"),
+                __.constant("d[2].i"),
+                __.constant("d[3].i")
         );
         printTraversalForm(graphTraversal);
         List<String> result = graphTraversal.toList();
