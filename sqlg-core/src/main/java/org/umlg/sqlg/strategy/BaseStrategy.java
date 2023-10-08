@@ -125,7 +125,7 @@ public abstract class BaseStrategy {
     abstract void combineSteps();
 
     /**
-     * sqlgStep is either a {@link SqlgGraphStep} or {@link SqlgVertexStep}.
+     * this.sqlgStep is either a {@link SqlgGraphStep} or {@link SqlgVertexStep}.
      *
      * @return false if optimization must be terminated.
      */
@@ -178,8 +178,7 @@ public abstract class BaseStrategy {
                 handleOrderGlobalSteps(stepIterator, pathCount);
                 handleRangeGlobalSteps(step, stepIterator, pathCount);
                 //select step can not be followed by a PropertyStep
-                if (step instanceof SelectOneStep) {
-                    SelectOneStep selectOneStep = (SelectOneStep) step;
+                if (step instanceof SelectOneStep selectOneStep) {
                     String key = (String) selectOneStep.getScopeKeys().iterator().next();
                     if (stepIterator.hasNext()) {
                         Step<?, ?> next = stepIterator.next();
