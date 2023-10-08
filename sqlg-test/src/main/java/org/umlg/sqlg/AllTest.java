@@ -7,6 +7,7 @@ import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.complex.TestComplex;
 import org.umlg.sqlg.test.complex.TestGithub;
+import org.umlg.sqlg.test.concat.TestConcat;
 import org.umlg.sqlg.test.datasource.TestCustomDataSource;
 import org.umlg.sqlg.test.datasource.TestJNDIInitialization;
 import org.umlg.sqlg.test.datasource.TestStalePreparedStatement;
@@ -316,7 +317,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSchemaTableTreeCache.class,
         TestTopologyPropertyColumnUpdate.class,
         TestTopologyPropertyColumnUpdateDistributed.class,
-        TestPropertyDefinitionMultiplicity.class
+        TestPropertyDefinitionMultiplicity.class,
+        TestConcat.class
 })
 public class AllTest {
 
