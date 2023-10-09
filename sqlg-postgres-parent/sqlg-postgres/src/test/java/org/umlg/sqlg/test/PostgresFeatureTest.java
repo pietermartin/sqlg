@@ -81,8 +81,8 @@ public class PostgresFeatureTest {
             Map.entry("g_V_out_in_selectXall_a_a_aX_byXunfold_name_foldX", "//TODO, fix some bug in Sqlg"),
             Map.entry("g_withStrategiesXSeedStrategyX_V_coinX50X", "//requires order"),
             Map.entry("g_V_addVXanimalX_propertyXage_0X", "//intermittent failure, can't duplicate"),
-            Map.entry("g_V_hasXperson_name_aliceX_propertyXsingle_age_unionXage_constantX1XX_sumX", "sum to Long, question on discord"),
 
+            Map.entry("g_V_hasXperson_name_aliceX_propertyXsingle_age_unionXage_constantX1XX_sumX", "sum to Long, question on discord"),
             Map.entry("g_injectXa_bX_concat_Xinject_c_dX", "inject"),
             Map.entry("g_injectXaX_concat_Xinject_List_b_cX", "inject"),
             Map.entry("g_injectXhello_hiX_concat_XV_valuesXnameXX", "inject")
