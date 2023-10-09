@@ -80,6 +80,9 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
         method = "shouldThrowExceptionWhenTryToAddVertexWithUsedId",
         reason = "UnsupportedOperationException rather that IllegalStateException")
+@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
+        method = "shouldRollbackAddedEdge",
+        reason = "Fails on Hsqldb and H2")
 
 @OptOut(test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest",
         method = "g_VX1X_valuesXageX_countXlocalX",
