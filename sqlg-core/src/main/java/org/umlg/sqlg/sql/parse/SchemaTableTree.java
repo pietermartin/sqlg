@@ -74,6 +74,8 @@ public class SchemaTableTree {
     private boolean emit;
     //left join, as required by the optimized ChooseStep via the optional step
     private boolean optionalLeftJoin;
+    //indicates NotStep
+    private boolean outerLeftJoin;
     //Only root SchemaTableTrees have these maps;
     private AliasMapHolder aliasMapHolder;
     //This counter is used for the within predicate when aliasing the temporary table
@@ -581,6 +583,7 @@ public class SchemaTableTree {
                 replacedStep.isEmit(),
                 replacedStep.isUntilFirst(),
                 replacedStep.isLeftJoin(),
+                replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
                 labels);
     }
@@ -620,6 +623,7 @@ public class SchemaTableTree {
                 emit,
                 replacedStep.isUntilFirst(),
                 replacedStep.isLeftJoin(),
+                replacedStep.isOuterLeftJoin(),
                 replacedStep.isDrop(),
                 labels);
     }
@@ -641,6 +645,7 @@ public class SchemaTableTree {
             boolean emit,
             boolean untilFirst,
             boolean leftJoin,
+            boolean outerLeftJoin,
             boolean drop,
             Set<String> labels) {
 
@@ -661,6 +666,7 @@ public class SchemaTableTree {
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
         schemaTableTree.optionalLeftJoin = leftJoin;
+        schemaTableTree.outerLeftJoin = outerLeftJoin;
         schemaTableTree.drop = drop;
         schemaTableTree.setRestrictedProperties(restrictedProperties);
         schemaTableTree.aggregateFunction = aggregateFunction;
@@ -737,6 +743,10 @@ public class SchemaTableTree {
         return this.optionalLeftJoin;
     }
 
+    public boolean isOuterLeftJoin() {
+        return outerLeftJoin;
+    }
+
     void setOptionalLeftJoin(boolean optionalLeftJoin) {
         this.optionalLeftJoin = optionalLeftJoin;
     }
@@ -744,7 +754,6 @@ public class SchemaTableTree {
     public void resetColumnAliasMaps() {
         this.getRoot().aliasMapHolder.clear();
         this.rootAliasCounter = 1;
-//        this.columnListStack.clear();
     }
 
     public SchemaTable getSchemaTable() {
@@ -762,7 +771,14 @@ public class SchemaTableTree {
             return constructDuplicatePathSql(subQueryStacks, Collections.emptySet());
         } else {
             //If there are no duplicates in the path then one select statement will suffice.
-            return constructSinglePathSql(false, distinctQueryStack, null, null, Collections.emptySet(), false);
+            return constructSinglePathSql(
+                    false,
+                    distinctQueryStack,
+                    null,
+                    null,
+                    Collections.emptySet(),
+                    false
+            );
         }
     }
 
@@ -773,7 +789,14 @@ public class SchemaTableTree {
             return constructDuplicatePathSql(subQueryStacks, leftJoinOn);
         } else {
             //If there are no duplicates in the path then one select statement will suffice.
-            return constructSinglePathSql(false, innerJoinStack, null, null, leftJoinOn, false);
+            return constructSinglePathSql(
+                    false,
+                    innerJoinStack,
+                    null,
+                    null,
+                    leftJoinOn,
+                    false
+            );
         }
     }
 
@@ -793,8 +816,14 @@ public class SchemaTableTree {
             SchemaTableTree schemaTableTree = distinctQueryStack.getFirst();
             return this.sqlgGraph.getSqlDialect().sqlTruncate(this.sqlgGraph, schemaTableTree.getSchemaTable());
         } else {
-            String leafNodeToDelete = constructSinglePathSql(false, distinctQueryStack, null, null, Collections.emptySet(), true);
-//            resetColumnAliasMaps();
+            String leafNodeToDelete = constructSinglePathSql(
+                    false,
+                    distinctQueryStack,
+                    null,
+                    null,
+                    Collections.emptySet(),
+                    true
+            );
 
             Optional<String> edgesToDelete = Optional.empty();
             if (distinctQueryStack.size() > 1 && distinctQueryStack.getLast().getSchemaTable().isVertexTable()) {
@@ -802,7 +831,14 @@ public class SchemaTableTree {
                 leftJoin.add(distinctQueryStack.getLast());
                 LinkedList<SchemaTableTree> edgeSchemaTableTrees = new LinkedList<>(distinctQueryStack);
                 edgeSchemaTableTrees.removeLast();
-                edgesToDelete = Optional.of(constructSinglePathSql(false, edgeSchemaTableTrees, null, null, leftJoin, true));
+                edgesToDelete = Optional.of(constructSinglePathSql(
+                        false,
+                        edgeSchemaTableTrees,
+                        null,
+                        null,
+                        leftJoin,
+                        true
+                ));
             }
             return this.sqlgGraph.getSqlDialect().drop(this.sqlgGraph, leafNodeToDelete, edgesToDelete.orElse(null), distinctQueryStack);
         }
@@ -842,9 +878,23 @@ public class SchemaTableTree {
             String sql;
             if (last) {
                 //only the last step must have dropStep as true. As only the outer select needs only an ID in the select
-                sql = constructSinglePathSql(true, subQueryLinkedList, lastOfPrevious, null, leftJoinOn, false);
+                sql = constructSinglePathSql(
+                        true,
+                        subQueryLinkedList,
+                        lastOfPrevious,
+                        null,
+                        leftJoinOn,
+                        false
+                );
             } else {
-                sql = constructSinglePathSql(true, subQueryLinkedList, lastOfPrevious, firstOfNext, Collections.emptySet(), false);
+                sql = constructSinglePathSql(
+                        true,
+                        subQueryLinkedList,
+                        lastOfPrevious,
+                        firstOfNext,
+                        Collections.emptySet(),
+                        false
+                );
             }
             singlePathSql.append(sql);
             if (count == 1) {
@@ -936,7 +986,7 @@ public class SchemaTableTree {
 
         int startIndexColumns = 1;
 
-        StringBuilder singlePathSql = new StringBuilder("\nSELECT\n\t");
+        StringBuilder singlePathSql = new StringBuilder("SELECT\n\t");
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
 
@@ -1521,11 +1571,36 @@ public class SchemaTableTree {
         for (AndOrHasContainer andOrHasContainer : this.andOrHasContainers) {
             if (!printedWhere.booleanValue()) {
                 printedWhere.setTrue();
-                result.append("\nWHERE ");
+                result.append("\nWHERE\n\t");
             } else {
                 result.append(" AND ");
             }
             andOrHasContainer.toSql(sqlgGraph, this, result);
+        }
+        if (getParent() != null && !getParent().isOuterLeftJoin() && this.isOuterLeftJoin()) {
+            if (!printedWhere.booleanValue()) {
+                printedWhere.setTrue();
+                result.append("\nWHERE\n\t");
+            } else {
+                result.append(" AND ");
+            }
+            String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getSchema());
+            prefix += ".";
+            prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(getSchemaTable().getTable());
+
+            if (this.isHasIDPrimaryKey()) {
+                result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                result.append(" IS NULL");
+            } else {
+                int i = 1;
+                for (String identifier : this.getIdentifiers()) {
+                    result.append(prefix).append(".").append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(identifier));
+                    result.append(" IS NULL");
+                    if (i++ < this.getIdentifiers().size()) {
+                        result.append(" AND ");
+                    }
+                }
+            }
         }
         return result.toString();
     }
@@ -1912,7 +1987,7 @@ public class SchemaTableTree {
             if (!dropStep && lastSchemaTableTree.getSchemaTable().isEdgeTable() && !lastSchemaTableTree.hasAggregateFunction()) {
                 printEdgeInOutVertexIdFromClauseFor(firstSchemaTableTree, lastSchemaTableTree, columnList);
             }
-            if (!lastSchemaTableTree.hasLabels()) {
+            if (!lastSchemaTableTree.isOuterLeftJoin() && !lastSchemaTableTree.hasLabels()) {
                 lastSchemaTableTree.addLabel(lastSchemaTableTree.getStepDepth() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_TEMP_FAKE_LABEL);
             }
             constructAllLabeledFromClause(dropStep, distinctQueryStack, columnList);
@@ -2251,7 +2326,11 @@ public class SchemaTableTree {
         if (leftJoin) {
             joinSql = new StringBuilder(" LEFT JOIN\n\t");
         } else {
-            joinSql = new StringBuilder(" INNER JOIN\n\t");
+            if (labelToTraversTree.isOuterLeftJoin()) {
+                joinSql = new StringBuilder(" LEFT OUTER JOIN\n\t");
+            } else {
+                joinSql = new StringBuilder(" INNER JOIN\n\t");
+            }
         }
         if (fromSchemaTable.getTable().startsWith(VERTEX_PREFIX)) {
             joinSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema()));

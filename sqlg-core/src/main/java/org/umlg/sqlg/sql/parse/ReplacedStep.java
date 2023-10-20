@@ -54,6 +54,8 @@ public class ReplacedStep<S, E> {
     private boolean untilFirst;
     //indicate left join, coming from optional step optimization
     private boolean leftJoin;
+    //indicates NotStep
+    private boolean outerLeftJoin;
     private boolean fake;
     private boolean joinToLeftJoin;
     private boolean drop;
@@ -77,6 +79,9 @@ public class ReplacedStep<S, E> {
 
     //IDStep, i.e. only return the element's id.
     private boolean idOnly = false;
+
+    //NotStep, not(__.out())
+//    private what what
 
     private ReplacedStep() {
     }
@@ -699,6 +704,14 @@ public class ReplacedStep<S, E> {
 
     public boolean isLeftJoin() {
         return leftJoin;
+    }
+
+    public boolean isOuterLeftJoin() {
+        return outerLeftJoin;
+    }
+
+    public void setOuterLeftJoin(boolean outerLeftJoin) {
+        this.outerLeftJoin = outerLeftJoin;
     }
 
     public boolean isDrop() {

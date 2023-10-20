@@ -50,7 +50,7 @@ public class GremlinParser {
      * @param replacedStepTree The original VertexSteps and HasSteps that were replaced
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
-    public SchemaTableTree parse(SchemaTable schemaTable, ReplacedStepTree replacedStepTree, boolean isSqlgLocalStepBarrierChild) {
+    public SchemaTableTree parse(SchemaTable schemaTable, ReplacedStepTree<?, ?> replacedStepTree, boolean isSqlgLocalStepBarrierChild) {
         ReplacedStep<?, ?> rootReplacedStep = replacedStepTree.root().getReplacedStep();
         Preconditions.checkArgument(!rootReplacedStep.isGraphStep(), "Expected VertexStep, found GraphStep");
 

@@ -104,7 +104,8 @@ public class ReplacedStepTree<S, E> {
         List<TreeNode> leafNodes = this.leafNodes();
         for (TreeNode leafNode : leafNodes) {
             ReplacedStep<S, E> replacedStep = leafNode.getReplacedStep();
-            if (!replacedStep.isEmit() && !replacedStep.hasLabels() && !replacedStep.hasAggregateFunction()) {
+            if (!replacedStep.isEmit() && !replacedStep.hasLabels() &&
+                    !replacedStep.hasAggregateFunction() && !replacedStep.isOuterLeftJoin()) {
                 replacedStep.addLabel((leafNode.depth) + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
         }

@@ -3,7 +3,9 @@ package org.umlg.sqlg.strategy;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
@@ -29,7 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.PropertyType;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
-import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.predicate.*;
 import org.umlg.sqlg.sql.parse.AndOrHasContainer;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -85,7 +86,8 @@ public abstract class BaseStrategy {
             CountGlobalStep.class,
             GroupStep.class,
             GroupCountStep.class,
-            IdStep.class
+            IdStep.class,
+            NotStep.class
 //            FoldStep.class
     );
 
@@ -141,7 +143,7 @@ public abstract class BaseStrategy {
             return keepGoing;
         } else {
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
-                handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount);
+                handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount, false);
             } else if (step instanceof RepeatStep) {
                 if (!unoptimizableRepeatStep()) {
                     handleRepeatStep((RepeatStep<?>) step, pathCount);
@@ -226,7 +228,7 @@ public abstract class BaseStrategy {
                 return handlePropertiesStep(this.currentReplacedStep, step);
             } else if (step instanceof PropertyMapStep) {
                 return handlePropertyMapStep(step);
-            } else if (step instanceof ElementMapStep<?,?>) {
+            } else if (step instanceof ElementMapStep<?, ?>) {
                 return handleElementMapStep(this.currentReplacedStep, step);
             } else if (step instanceof IdStep) {
                 return handleIdStep(step);
@@ -251,12 +253,14 @@ public abstract class BaseStrategy {
                 } else {
                     return false;
                 }
-            } else if (step instanceof GroupStep) {
-                return handleGroupStep(this.currentReplacedStep, step);
-            } else if (step instanceof GroupCountStep) {
-                return handleGroupCountStep(this.currentReplacedStep, step);
+            } else if (step instanceof GroupStep groupStep) {
+                return handleGroupStep(this.currentReplacedStep, groupStep);
+            } else if (step instanceof GroupCountStep groupCountStep) {
+                return handleGroupCountStep(this.currentReplacedStep, groupCountStep);
 //            } else if (step instanceof FoldStep) {
 //                return handleFoldStep(this.currentReplacedStep, (FoldStep)step);
+            } else if (step instanceof NotStep notStep) {
+                return handleNotStep(notStep, pathCount);
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
             }
@@ -432,7 +436,7 @@ public abstract class BaseStrategy {
 
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
 
-    private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
+    private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount, boolean notStep) {
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),
                 step,
@@ -450,7 +454,8 @@ public abstract class BaseStrategy {
         if (index != -1) {
             this.traversal.removeStep(step);
         }
-        if (!this.currentReplacedStep.hasLabels()) {
+        //notSteps must not be labelled as they are going to make it to the select clause.
+        if (!notStep && !this.currentReplacedStep.hasLabels()) {
             //CountGlobalStep is special, as the select statement will contain no properties
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
             if (precedesPathStep) {
@@ -485,7 +490,7 @@ public abstract class BaseStrategy {
                         setupReplacedStepToEmit(repeatStep, pathCount, replacedStepToEmit, i == numberOfLoops - 1);
                         pathCount.increment();
                     }
-                    handleVertexStep(repeatStepIterator, (AbstractStep<?, ?>) internalRepeatStep, pathCount);
+                    handleVertexStep(repeatStepIterator, (AbstractStep<?, ?>) internalRepeatStep, pathCount, false);
                     pathCount.decrement();
                     if (!repeatStep.emitFirst) {
                         replacedStepToEmit = this.currentReplacedStep;
@@ -531,11 +536,11 @@ public abstract class BaseStrategy {
             Step internalOptionalStep = optionalStepsIterator.next();
             removeTinkerPopLabels(internalOptionalStep);
             if (internalOptionalStep instanceof VertexStep || internalOptionalStep instanceof EdgeVertexStep || internalOptionalStep instanceof EdgeOtherVertexStep) {
-                handleVertexStep(optionalStepsIterator, (AbstractStep<?, ?>) internalOptionalStep, pathCount);
+                handleVertexStep(optionalStepsIterator, (AbstractStep<?, ?>) internalOptionalStep, pathCount, false);
                 //if the chooseStepStack size is greater than the chooseStepNestedCount then it means the just executed
                 //handleVertexStep is after nested chooseSteps.
                 //This means that this VertexStep applies to the nested chooseSteps where the chooseStep was not chosen.
-                //I.e. there was no results for the chooseSteps traversal.
+                //I.e. there were no results for the chooseSteps traversal.
                 for (int i = optionalStepNestedCount; i < this.chooseStepStack.size(); i++) {
                     ReplacedStepTree.TreeNode treeNode = this.chooseStepStack.get(i);
                     this.currentReplacedStep.markAsJoinToLeftJoin();
@@ -581,11 +586,11 @@ public abstract class BaseStrategy {
         while (trueTraversalStepsIterator.hasNext()) {
             Step internalChooseStep = trueTraversalStepsIterator.next();
             if (internalChooseStep instanceof VertexStep || internalChooseStep instanceof EdgeVertexStep || internalChooseStep instanceof EdgeOtherVertexStep) {
-                handleVertexStep(trueTraversalStepsIterator, (AbstractStep<?, ?>) internalChooseStep, pathCount);
+                handleVertexStep(trueTraversalStepsIterator, (AbstractStep<?, ?>) internalChooseStep, pathCount, false);
                 //if the chooseStepStack size is greater than the chooseStepNestedCount then it means the just executed
                 //handleVertexStep is after nested chooseSteps.
                 //This means that this VertexStep applies to the nested chooseSteps where the chooseStep was not chosen.
-                //I.e. there was no results for the chooseSteps traversal.
+                //I.e. there were no results for the chooseSteps traversal.
                 for (int i = chooseStepNestedCount; i < this.chooseStepStack.size(); i++) {
                     ReplacedStepTree.TreeNode treeNode = this.chooseStepStack.get(i);
                     this.currentReplacedStep.markAsJoinToLeftJoin();
@@ -1330,16 +1335,16 @@ public abstract class BaseStrategy {
                 return true;
             }
         }
-        List<Step> localSteps = predicateSteps.stream().filter(p -> p.getClass().equals(LocalStep.class)).collect(Collectors.toList());
+        List<Step> localSteps = predicateSteps.stream().filter(p -> p.getClass().equals(LocalStep.class)).toList();
         if (!localSteps.isEmpty()) {
             return true;
         }
 
-        List<Step> rangeGlobalSteps = predicateSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).collect(Collectors.toList());
+        List<Step> rangeGlobalSteps = predicateSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).toList();
         if (rangeGlobalSteps.size() > 1) {
             return true;
         }
-        if (rangeGlobalSteps.size() > 0) {
+        if (!rangeGlobalSteps.isEmpty()) {
             Step rangeGlobalStep = rangeGlobalSteps.get(0);
             //Only if the rangeGlobalStep is the last step can it be optimized
             if (predicateSteps.get(predicateSteps.size() - 1) != rangeGlobalStep) {
@@ -1364,7 +1369,7 @@ public abstract class BaseStrategy {
             }
         }
 
-        List<Step> chooseSteps = globalChildTwo.getSteps().stream().filter(p -> p.getClass().equals(ChooseStep.class)).collect(Collectors.toList());
+        List<Step> chooseSteps = globalChildTwo.getSteps().stream().filter(p -> p.getClass().equals(ChooseStep.class)).toList();
         for (Step step : chooseSteps) {
             if (unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
                 return true;
@@ -1464,8 +1469,7 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    private boolean handleGroupCountStep(ReplacedStep<?, ?> replacedStep, Step<?, ?> step) {
-        GroupCountStep<?, ?> groupCountStep = (GroupCountStep<?, ?>) step;
+    private boolean handleGroupCountStep(ReplacedStep<?, ?> replacedStep, GroupCountStep<?, ?> groupCountStep) {
         List<? extends Traversal.Admin<?, ?>> localChildren = groupCountStep.getLocalChildren();
         if (localChildren.size() == 1) {
             List<String> groupByKeys = new ArrayList<>();
@@ -1488,15 +1492,14 @@ public abstract class BaseStrategy {
             replacedStep.setAggregateFunction(org.apache.commons.lang3.tuple.Pair.of(count, groupByKeys));
             SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, GraphTraversal.Symbols.count, false, SqlgGroupStep.REDUCTION.COUNT);
             //noinspection unchecked
-            TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
+            TraversalHelper.replaceStep((Step) groupCountStep, sqlgGroupStep, this.traversal);
             return true;
         } else {
             return false;
         }
     }
 
-    private boolean handleGroupStep(ReplacedStep<?, ?> replacedStep, Step<?, ?> step) {
-        GroupStep<?, ?, ?> groupStep = (GroupStep<?, ?, ?>) step;
+    private boolean handleGroupStep(ReplacedStep<?, ?> replacedStep, GroupStep<?, ?, ?> groupStep) {
         List<Traversal.Admin<?, ?>> localChildren = groupStep.getLocalChildren();
         if (localChildren.size() == 2) {
             Traversal.Admin<?, ?> groupByTraversal = localChildren.get(0);
@@ -1536,7 +1539,7 @@ public abstract class BaseStrategy {
                     }
                     SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, GraphTraversal.Symbols.count, isPropertiesStep, SqlgGroupStep.REDUCTION.COUNT);
                     //noinspection unchecked
-                    TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
+                    TraversalHelper.replaceStep((Step) groupStep, sqlgGroupStep, this.traversal);
                 }
             } else if (valueTraversalSteps.size() == 2) {
                 Step one = valueTraversalSteps.get(0);
@@ -1578,10 +1581,33 @@ public abstract class BaseStrategy {
                     }
                     SqlgGroupStep<?, ?> sqlgGroupStep = new SqlgGroupStep<>(this.traversal, groupByKeys, aggregationFunctionProperty.get(0), isPropertiesStep, reduction);
                     //noinspection unchecked
-                    TraversalHelper.replaceStep((Step) step, sqlgGroupStep, this.traversal);
+                    TraversalHelper.replaceStep((Step) groupStep, sqlgGroupStep, this.traversal);
                 }
             }
             return false;
+        }
+        return false;
+    }
+
+    private boolean handleNotStep(NotStep<?> notStep, MutableInt pathCount) {
+        Step<?, ?> previousStep = notStep.getPreviousStep();
+        Traversal.Admin<?, ?> notTraversal = notStep.getLocalChildren().get(0);
+        //we can only optimize on one out/in, outE/inE traversals, i.e. predicates on the notTraversal can not be optimized via the anti join LEFT OUTER JOIN technique
+        boolean hasOnlyOneVertexAndEdgeSteps = previousStep instanceof SqlgGraphStep<?, ?> &&
+                notTraversal.getSteps().size() == 1 &&
+                TraversalHelper.hasAllStepsOfClass(notTraversal, VertexStep.class);
+
+        if (hasOnlyOneVertexAndEdgeSteps) {
+            List<Step<?, ?>> notTraversalSteps = new ArrayList(notTraversal.getSteps());
+            ListIterator<Step<?, ?>> notTraversalStepsIterator = notTraversalSteps.listIterator();
+            Step notTraversalStep = notTraversal.getSteps().get(0);
+            Preconditions.checkState(notTraversalStep instanceof VertexStep<?>);
+            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+            handleVertexStep(notTraversalStepsIterator, (VertexStep<?>) notTraversalStep, pathCount, true);
+            this.currentReplacedStep.setOuterLeftJoin(true);
+            int index = TraversalHelper.stepIndex(notStep, this.traversal);
+            Preconditions.checkState(index > -1);
+            this.traversal.removeStep(notStep);
         }
         return false;
     }
