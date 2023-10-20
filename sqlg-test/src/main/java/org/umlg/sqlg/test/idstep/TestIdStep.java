@@ -29,20 +29,17 @@ public class TestIdStep extends BaseTest {
         Traversal<Vertex, Object> traversal = this.sqlgGraph.traversal().V().hasLabel("A").id();
         String sql = getSQL(traversal);
         if (isPostgres()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"public\".\"V_A\".\"ID\" AS \"alias1\"\n" +
                     "FROM\n" +
                     "\t\"public\".\"V_A\"", sql);
         } else if (isMariaDb()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t`PUBLIC`.`V_A`.`ID` AS `alias1`\n" +
                     "FROM\n" +
                     "\t`PUBLIC`.`V_A`", sql);
         } else if (isHsqldb() || isH2()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"PUBLIC\".\"V_A\".\"ID\" AS \"alias1\"\n" +
                     "FROM\n" +
                     "\t\"PUBLIC\".\"V_A\"", sql);
@@ -65,8 +62,7 @@ public class TestIdStep extends BaseTest {
         Traversal<Edge, Object> traversal = this.sqlgGraph.traversal().E().hasId(edge.id()).id();
         String sql = getSQL(traversal);
         if (isPostgres()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"public\".\"E_ab\".\"public.A__O\" AS \"alias1\",\n" +
                     "\t\"public\".\"E_ab\".\"public.B__I\" AS \"alias2\",\n" +
                     "\t\"public\".\"E_ab\".\"ID\" AS \"alias3\"\n" +
@@ -75,8 +71,7 @@ public class TestIdStep extends BaseTest {
                     "WHERE\n" +
                     "\t( \"public\".\"E_ab\".\"ID\" = ?)", sql);
         } else if (isHsqldb() || isH2()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals("SELECT\n" +
                     "\t\"PUBLIC\".\"E_ab\".\"PUBLIC.B__I\" AS \"alias1\",\n" +
                     "\t\"PUBLIC\".\"E_ab\".\"PUBLIC.A__O\" AS \"alias2\",\n" +
                     "\t\"PUBLIC\".\"E_ab\".\"ID\" AS \"alias3\"\n" +
@@ -85,8 +80,7 @@ public class TestIdStep extends BaseTest {
                     "WHERE\n" +
                     "\t( \"PUBLIC\".\"E_ab\".\"ID\" = ?)", sql);
         } else if (isMariaDb()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals("SELECT\n" +
                     "\t`PUBLIC`.`E_ab`.`PUBLIC.B__I` AS `alias1`,\n" +
                     "\t`PUBLIC`.`E_ab`.`PUBLIC.A__O` AS `alias2`,\n" +
                     "\t`PUBLIC`.`E_ab`.`ID` AS `alias3`\n" +
@@ -102,8 +96,7 @@ public class TestIdStep extends BaseTest {
         Traversal<Vertex, Object> traversalAgain = this.sqlgGraph.traversal().V().hasLabel("A").outE().id();
         sql = getSQL(traversalAgain);
         if (isPostgres()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"public\".\"E_ab\".\"public.A__O\" AS \"alias1\",\n" +
                     "\t\"public\".\"E_ab\".\"public.B__I\" AS \"alias2\",\n" +
                     "\t\"public\".\"E_ab\".\"ID\" AS \"alias3\"\n" +
@@ -165,20 +158,17 @@ public class TestIdStep extends BaseTest {
         Traversal<Vertex, Object> traversal = this.sqlgGraph.traversal().V().hasLabel("A").id();
         String sql = getSQL(traversal);
         if (isPostgres()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"public\".\"V_A\".\"uuid\" AS \"alias1\"\n" +
                     "FROM\n" +
                     "\t\"public\".\"V_A\"", sql);
         } else if (isHsqldb() || isH2()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"PUBLIC\".\"V_A\".\"uuid\" AS \"alias1\"\n" +
                     "FROM\n" +
                     "\t\"PUBLIC\".\"V_A\"", sql);
         } else if (isMariaDb()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t`PUBLIC`.`V_A`.`uuid` AS `alias1`\n" +
                     "FROM\n" +
                     "\t`PUBLIC`.`V_A`", sql);
@@ -189,8 +179,7 @@ public class TestIdStep extends BaseTest {
         traversal = this.sqlgGraph.traversal().V().hasLabel("A").outE().id();
         sql = getSQL(traversal);
         if (isPostgres()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"public\".\"E_ab\".\"public.A.uuid__O\" AS \"alias1\",\n" +
                     "\t\"public\".\"E_ab\".\"public.B.uuid__I\" AS \"alias2\",\n" +
                     "\t\"public\".\"E_ab\".\"uuid\" AS \"alias3\"\n" +
@@ -198,8 +187,7 @@ public class TestIdStep extends BaseTest {
                     "\t\"public\".\"V_A\" INNER JOIN\n" +
                     "\t\"public\".\"E_ab\" ON \"public\".\"V_A\".\"uuid\" = \"public\".\"E_ab\".\"public.A.uuid__O\"", sql);
         } else if (isHsqldb() || isH2()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t\"PUBLIC\".\"E_ab\".\"PUBLIC.B.uuid__I\" AS \"alias1\",\n" +
                     "\t\"PUBLIC\".\"E_ab\".\"PUBLIC.A.uuid__O\" AS \"alias2\",\n" +
                     "\t\"PUBLIC\".\"E_ab\".\"uuid\" AS \"alias3\"\n" +
@@ -207,8 +195,7 @@ public class TestIdStep extends BaseTest {
                     "\t\"PUBLIC\".\"V_A\" INNER JOIN\n" +
                     "\t\"PUBLIC\".\"E_ab\" ON \"PUBLIC\".\"V_A\".\"uuid\" = \"PUBLIC\".\"E_ab\".\"PUBLIC.A.uuid__O\"", sql);
         } else if (isMariaDb()) {
-            Assert.assertEquals("\n" +
-                    "SELECT\n" +
+            Assert.assertEquals( "SELECT\n" +
                     "\t`PUBLIC`.`E_ab`.`PUBLIC.B.uuid__I` AS `alias1`,\n" +
                     "\t`PUBLIC`.`E_ab`.`PUBLIC.A.uuid__O` AS `alias2`,\n" +
                     "\t`PUBLIC`.`E_ab`.`uuid` AS `alias3`\n" +

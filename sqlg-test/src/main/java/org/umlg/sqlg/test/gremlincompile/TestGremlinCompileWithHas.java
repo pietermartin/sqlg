@@ -74,7 +74,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
                 .toList();
         Assert.assertEquals(3, vertexList.size());
 
-        values1 = Arrays.asList("a1");
+        values1 = List.of("a1");
         values2 = Arrays.asList("a2", "b2", "c2");
         vertexList = this.sqlgGraph.traversal().V()
                 .hasLabel("TestHierarchy")

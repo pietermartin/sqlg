@@ -60,7 +60,7 @@ public class TestPropertyValues extends BaseTest {
         this.sqlgGraph.tx().commit();
         GraphTraversal<Vertex, String> namesTraversal = this.sqlgGraph.traversal().V().hasLabel("A").<String>values("name");
         String nameSql = getSQL(namesTraversal);
-        Assert.assertEquals("\nSELECT\n" +
+        Assert.assertEquals("SELECT\n" +
                 "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
                 "\t\"public\".\"V_A\".\"name\" AS \"alias2\"\n" +
                 "FROM\n" +
@@ -71,7 +71,7 @@ public class TestPropertyValues extends BaseTest {
         Assert.assertEquals("john", names.get(0));
         GraphTraversal<Vertex, String> surnameTraversal = this.sqlgGraph.traversal().V().hasLabel("A").<String>values("surname");
         String surnameSql = getSQL(surnameTraversal);
-        Assert.assertEquals("\nSELECT\n" +
+        Assert.assertEquals("SELECT\n" +
                 "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
                 "\t\"public\".\"V_A\".\"surname\" AS \"alias2\"\n" +
                 "FROM\n" +

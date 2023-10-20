@@ -48,7 +48,7 @@ public class TestSchemaTableTreeCache extends BaseTest {
         this.sqlgGraph.tx().commit();
         GraphTraversal<Vertex, Vertex> graphTraversal = this.sqlgGraph.traversal().V().hasLabel("A");
         String sql = getSQL(graphTraversal);
-        Assert.assertEquals("\nSELECT\n" +
+        Assert.assertEquals("SELECT\n" +
                 "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
                 "\t\"public\".\"V_A\".\"prop1\" AS \"alias2\"\n" +
                 "FROM\n" +
@@ -58,7 +58,7 @@ public class TestSchemaTableTreeCache extends BaseTest {
         this.sqlgGraph.tx().commit();
         graphTraversal = this.sqlgGraph.traversal().V().hasLabel("A");
         sql = getSQL(graphTraversal);
-        Assert.assertEquals("\nSELECT\n" +
+        Assert.assertEquals("SELECT\n" +
                 "\t\"public\".\"V_A\".\"ID\" AS \"alias1\",\n" +
                 "\t\"public\".\"V_A\".\"prop2\" AS \"alias2\",\n" +
                 "\t\"public\".\"V_A\".\"prop1\" AS \"alias3\"\n" +
