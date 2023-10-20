@@ -71,6 +71,7 @@ import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexEdgeGremlin;
 import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKTopology;
 import org.umlg.sqlg.test.uuid.TestUUID;
 import org.umlg.sqlg.test.vertex.*;
+import org.umlg.sqlg.test.vertexout.TestNotOutStep;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
 
@@ -318,7 +319,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTopologyPropertyColumnUpdate.class,
         TestTopologyPropertyColumnUpdateDistributed.class,
         TestPropertyDefinitionMultiplicity.class,
-        TestConcat.class
+        TestConcat.class,
+        TestNotOutStep.class
 })
 public class AllTest {
 
