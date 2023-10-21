@@ -320,7 +320,8 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestTopologyPropertyColumnUpdateDistributed.class,
         TestPropertyDefinitionMultiplicity.class,
         TestConcat.class,
-        TestNotOutStep.class
+        TestNotOutStep.class,
+        TestRemoveIdentifierProperty.class
 })
 public class AllTest {
 

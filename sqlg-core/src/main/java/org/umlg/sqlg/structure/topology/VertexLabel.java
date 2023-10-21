@@ -1113,6 +1113,7 @@ public class VertexLabel extends AbstractLabel {
 
     @Override
     void removeProperty(PropertyColumn propertyColumn, boolean preserveData) {
+        Preconditions.checkState(!this.getIdentifiers().contains(propertyColumn.getName()), "Identifier column '%s' may not be removed.", propertyColumn.getName());
         this.getSchema().getTopology().startSchemaChange(
                 String.format("VertexLabel '%s' removeProperty with '%s'", getFullName(), propertyColumn.getName())
         );
