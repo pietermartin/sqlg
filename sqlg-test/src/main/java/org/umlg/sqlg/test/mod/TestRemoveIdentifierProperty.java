@@ -19,8 +19,8 @@ public class TestRemoveIdentifierProperty extends BaseTest {
     public void testRemoveIdentifierPropertyFromVertexLabel() {
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("A", new LinkedHashMap<>() {{
-                            put("id1", PropertyDefinition.of(PropertyType.STRING));
-                            put("id2", PropertyDefinition.of(PropertyType.STRING));
+                            put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                            put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
                         }},
                         ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
                 );
@@ -41,8 +41,8 @@ public class TestRemoveIdentifierProperty extends BaseTest {
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A");
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B");
         aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, new LinkedHashMap<>() {{
-                    put("id1", PropertyDefinition.of(PropertyType.STRING));
-                    put("id2", PropertyDefinition.of(PropertyType.STRING));
+                    put("id1", PropertyDefinition.of(PropertyType.varChar(10)));
+                    put("id2", PropertyDefinition.of(PropertyType.varChar(10)));
                 }},
                 ListOrderedSet.listOrderedSet(List.of("id1", "id2"))
         );
