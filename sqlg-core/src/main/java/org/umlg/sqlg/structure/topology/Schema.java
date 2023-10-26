@@ -1750,13 +1750,13 @@ public class Schema implements TopologyInf {
         if (!this.uncommittedRemovedVertexLabels.contains(fn)) {
             this.sqlgGraph.traversal().V().hasLabel(this.name + "." + vertexLabel.getLabel()).drop().iterate();
             this.uncommittedRemovedVertexLabels.add(fn);
-            TopologyManager.removeVertexLabel(this.sqlgGraph, vertexLabel);
             for (EdgeRole er : vertexLabel.getOutEdgeRoles().values()) {
                 er.removeViaVertexLabelRemove(preserveData);
             }
             for (EdgeRole er : vertexLabel.getInEdgeRoles().values()) {
                 er.removeViaVertexLabelRemove(preserveData);
             }
+            TopologyManager.removeVertexLabel(this.sqlgGraph, vertexLabel);
             if (!preserveData) {
                 vertexLabel.delete();
             }
