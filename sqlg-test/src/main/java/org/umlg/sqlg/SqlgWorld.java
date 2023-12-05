@@ -33,7 +33,7 @@ public abstract class SqlgWorld implements World {
         else if (graphData == GraphData.CLASSIC)
             return classic.traversal();
         else if (graphData == GraphData.CREW)
-            throw new UnsupportedOperationException("The Crew dataset is not supported by Neo4j because it doesn't support mult/meta-properties");
+            throw new UnsupportedOperationException("The Crew dataset is not supported by Sqlg because it doesn't support multi/meta-properties");
         else if (graphData == GraphData.MODERN)
             return modern.traversal();
         else if (graphData == GraphData.SINK)

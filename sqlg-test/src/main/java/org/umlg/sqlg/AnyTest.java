@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.properties.TestElementMap;
+import org.umlg.sqlg.test.reducing.TestReducing;
 
 /**
  * Date: 2014/07/16
@@ -10,20 +10,9 @@ import org.umlg.sqlg.test.properties.TestElementMap;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestElementMap.class
-//        TestHasLabelAndId.class
-//        TestUnion.class,
-//        TestConcat.class
-//        TestMultipleThreadMultipleJvm.class
-//        TestPropertyValues.class
-//        TestTest.class
-//        TestBatch.class
-//        TestLoadSchemaViaNotify.class,
-//        TestTopologyEdgeLabelRename.class,
-//        TestTopologyActionEventsDistributed.class
-//        TestTopologyEdgeLabelRenameMultipleRoles.class
-//        TestTopologyPropertyColumnUpdate.class
-//        TestTopologyPropertyColumnRename.class
+//        TestTest.class,
+//        TestUnion.class
+        TestReducing.class
 })
 public class AnyTest {
 }

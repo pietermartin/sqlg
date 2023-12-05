@@ -86,7 +86,26 @@ public class H2FeatureTest {
             Map.entry("g_V_hasXperson_name_aliceX_propertyXsingle_age_unionXage_constantX1XX_sumX", "sum to Long, question on discord"),
             Map.entry("g_injectXa_bX_concat_Xinject_c_dX", "inject"),
             Map.entry("g_injectXaX_concat_Xinject_List_b_cX", "inject"),
-            Map.entry("g_injectXhello_hiX_concat_XV_valuesXnameXX", "inject")
+            Map.entry("g_injectXhello_hiX_concat_XV_valuesXnameXX", "inject"),
+
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_aXX_V_bothE_weight", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_bXX_V_bothE_weight", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_a_bXX_V_bothE_dedup_weight", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_cXX_V_bothE_weight", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_aXX_V_both_name", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_bXX_V_both_name", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_a_bXX_V_both_dedup_name", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_cXX_V_both_name", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_aXX_V_out_name", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_bXX_V_in_name", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_a_bXX_V_out_name", "int should be double"),
+            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_cXX_V_out_name", "int should be double"),
+
+            Map.entry("g_VX1X_formatXstrX_byXconstantXhelloXX_byXvaluesXnameXX", "id can not be an int"),
+
+            Map.entry("g_withSideEffectXc_created_YX_withSideEffectXm_matchedX_mergeEXlabel_knows_out_marko_in_vadasX_optionXonCreate_selectXcXX_optionXonMatch_sideEffectXpropertiesXweightX_dropX_selectXmXX_exists", "int should be double"),
+
+            Map.entry("g_unionXinjectX1X_injectX2X", "inject")
     );
 
     private static void readIntoGraph(final Graph graph, final GraphData graphData) {
@@ -118,6 +137,9 @@ public class H2FeatureTest {
         @Override
         public void beforeEachScenario(final Scenario scenario) {
             super.beforeEachScenario(scenario);
+            if (scenario.getSourceTagNames().contains("@MultiProperties") || scenario.getSourceTagNames().contains("@MetaProperties")) {
+                throw new AssumptionViolatedException(OPT_OUT.get(scenario.getName()));
+            }
             if (OPT_OUT.containsKey(scenario.getName())) {
                 throw new AssumptionViolatedException(OPT_OUT.get(scenario.getName()));
             }

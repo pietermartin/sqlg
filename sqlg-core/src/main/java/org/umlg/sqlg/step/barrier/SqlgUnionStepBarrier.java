@@ -81,6 +81,7 @@ public class SqlgUnionStepBarrier<S, E> extends SqlgAbstractStep<S, E> implement
                 isStart = false;
                 final SqlgTraverserGenerator generator = SqlgTraverserGenerator.instance();
                 Traverser.Admin<S> x = generator.generate(null, (Step) this, 1L, false, false);
+                x.dropPath();
                 addStart(x);
             }
             while (this.starts.hasNext()) {

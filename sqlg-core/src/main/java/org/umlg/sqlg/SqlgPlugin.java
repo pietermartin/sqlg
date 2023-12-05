@@ -47,7 +47,7 @@ public interface SqlgPlugin {
      * @return the plugin to use, never null
      * @throws IllegalStateException if no suitable Sqlg plugin could be found
      */
-    public static SqlgPlugin load(String connectionUrl) {
+    static SqlgPlugin load(String connectionUrl) {
         for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
             if (p.getDriverFor(connectionUrl) != null) {
                 return p;
@@ -63,7 +63,7 @@ public interface SqlgPlugin {
      * @return the plugin to use, never null
      * @throws IllegalStateException if no suitable Sqlg plugin could be found
      */
-    public static SqlgPlugin load(DatabaseMetaData metaData) throws SQLException {
+    static SqlgPlugin load(DatabaseMetaData metaData) throws SQLException {
         for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, SqlgPlugin.class.getClassLoader())) {
             if (p.canWorkWith(metaData)) {
                 return p;

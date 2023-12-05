@@ -17,7 +17,6 @@ import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.*;
 
-import javax.annotation.Nullable;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -826,7 +825,7 @@ public interface SqlDialect {
      * @return
      */
     @SuppressWarnings("Duplicates")
-    default List<SqlgSqlExecutor.DropQuery> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, @Nullable String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
+    default List<SqlgSqlExecutor.DropQuery> drop(SqlgGraph sqlgGraph, String leafElementsToDelete, String edgesToDelete, LinkedList<SchemaTableTree> distinctQueryStack) {
 
         List<SqlgSqlExecutor.DropQuery> sqls = new ArrayList<>();
         SchemaTableTree last = distinctQueryStack.getLast();

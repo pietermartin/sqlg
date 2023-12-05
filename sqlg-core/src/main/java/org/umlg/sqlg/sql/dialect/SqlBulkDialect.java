@@ -6,11 +6,9 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.topology.EdgeLabel;
 import org.umlg.sqlg.structure.topology.VertexLabel;
 
-import javax.annotation.Nullable;
 import java.io.Writer;
 import java.util.*;
 
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
 
 /**
  * Date: 2016/09/03
@@ -56,7 +54,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, @Nullable VertexLabel vertexLabel) {
+    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap, VertexLabel vertexLabel) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
@@ -77,7 +75,7 @@ public interface SqlBulkDialect extends SqlDialect {
     }
 
     default String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Set<String> keys) {
-        throw new UnsupportedOperationException(ERROR_MESSAGE + dialectName());
+        throw new UnsupportedOperationException(dialectName());
     }
 
     default Writer streamSql(SqlgGraph sqlgGraph, String sql) {

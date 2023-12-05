@@ -15,7 +15,6 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.ThreadLocalMap;
 import org.umlg.sqlg.util.ThreadLocalSet;
 
-import javax.annotation.CheckForNull;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -304,7 +303,7 @@ public class Schema implements TopologyInf {
             final VertexLabel inVertexLabel,
             Map<String, PropertyDefinition> columns,
             ListOrderedSet<String> identifiers,
-            @CheckForNull EdgeDefinition edgeDefinition) {
+            EdgeDefinition edgeDefinition) {
 
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
@@ -670,7 +669,7 @@ public class Schema implements TopologyInf {
             final VertexLabel inVertexLabel,
             final Map<String, PropertyDefinition> columns,
             final ListOrderedSet<String> identifiers,
-            @CheckForNull final EdgeDefinition edgeDefinition) {
+            final EdgeDefinition edgeDefinition) {
 
         Preconditions.checkArgument(this.topology.isSchemaChanged(), "Schema.createEdgeLabel must have schemaChanged = true");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);

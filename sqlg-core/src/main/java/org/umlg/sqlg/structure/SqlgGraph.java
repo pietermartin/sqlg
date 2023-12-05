@@ -48,39 +48,6 @@ import static org.apache.tinkerpop.gremlin.structure.Graph.OptOut;
 @OptIn(OptIn.SUITE_PROCESS_STANDARD)
 
 @OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleAddingPropertyWhenOtherTxDeleteEdge",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleAddingPropertyWhenOtherTxDeleteVertex",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldDeleteEdgeOnCommit",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleConcurrentChangeForProperty",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleAddingEdgeWhenOtherTxDeleteVertex",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleConcurrentVertexDelete",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleConcurrentChangeForVertexProperty",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleConcurrentDeleteEdge",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleAddingPropertyWhenOtherTxAttemptsDeleteThenRollsback",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldHandleAddingSameVertexInDifferentTx",
-        reason = "multi thread issue")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
-        method = "shouldThrowExceptionWhenTryToAddVertexWithUsedId",
-        reason = "UnsupportedOperationException rather that IllegalStateException")
-@OptOut(test = "org.apache.tinkerpop.gremlin.structure.TransactionMultiThreadedTest",
         method = "shouldRollbackAddedEdge",
         reason = "Fails on Hsqldb and H2")
 
@@ -333,6 +300,7 @@ public class SqlgGraph implements Graph {
                                 
                                 new SqlgAddVertexStartStepStrategy(),
                                 new SqlgUnionStepStrategy(),
+                                new SqlgUnionPathStrategy(),
                                 new SqlgStartStepStrategy(),
                                 new SqlgInjectStepStrategy(),
                                 new SqlgHasNextStepStrategy(),

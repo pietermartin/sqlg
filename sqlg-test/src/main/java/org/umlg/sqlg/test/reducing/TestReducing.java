@@ -1301,20 +1301,20 @@ public class TestReducing extends BaseTest {
 
         DefaultTraversal<Vertex, Integer> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().values("age").min();
         String sql = getSQL(traversal);
+        String s1 = """
+                SELECT
+                \tMIN("public"."V_B"."age") AS "alias1"
+                FROM
+                \t"public"."V_B"\
+                """;
+        String s2 = """
+                SELECT
+                \tMIN("public"."V_A"."age") AS "alias1"
+                FROM
+                \t"public"."V_A"\
+                """;
         if (isPostgres()) {
-            Assert.assertTrue("""
-                    SELECT
-                        MIN("public"."V_B"."age") AS "alias1"
-                    FROM
-                        "public"."V_B"\
-                    """.equals(sql) ||
-                    """
-                            SELECT
-                            	MIN("public"."V_A"."age") AS "alias1"
-                            FROM
-                            	"public"."V_A"\
-                            """.equals(sql)
-            );
+            Assert.assertTrue(s1.equals(sql) || s2.equals(sql));
         }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
@@ -1370,20 +1370,21 @@ public class TestReducing extends BaseTest {
         DefaultTraversal<Vertex, Double> traversal = (DefaultTraversal) this.sqlgGraph.traversal().V().values("age").mean();
         String sql = getSQL(traversal);
         if (isPostgres()) {
-            Assert.assertTrue(
-                    """
-                            SELECT
-                                AVG("public"."V_B"."age") AS "alias1", COUNT(1) AS "alias1_weight"
-                            FROM
-                                "public"."V_B"\
-                            """.equals(sql) ||
-                            """
-                                    SELECT
-                                    	AVG("public"."V_A"."age") AS "alias1", COUNT(1) AS "alias1_weight"
-                                    FROM
-                                    	"public"."V_A"\
-                                    """.equals(sql)
-            );
+            String s1 = """
+                    SELECT
+                    \tAVG("public"."V_B"."age") AS "alias1", COUNT(1) AS "alias1_weight"
+                    FROM
+                    \t"public"."V_B"\
+                    """;
+            String s2 = """
+                    SELECT
+                    \tAVG("public"."V_A"."age") AS "alias1", COUNT(1) AS "alias1_weight"
+                    FROM
+                    \t"public"."V_A"\
+                    """;
+            if (!(s1.equals(sql) || s2.equals(sql.trim()))) {
+                Assert.fail(sql);
+            }
         }
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);

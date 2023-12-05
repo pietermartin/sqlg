@@ -245,7 +245,7 @@ public class ColumnList {
         StringBuilder sb = new StringBuilder();
         List<String> fromAliases = this.aliases.keySet().stream()
                 .filter((alias) -> !alias.endsWith(Topology.IN_VERTEX_COLUMN_END) && !alias.endsWith(Topology.OUT_VERTEX_COLUMN_END))
-                .collect(Collectors.toList());
+                .toList();
         for (String alias : fromAliases) {
             Column c = this.aliases.get(alias);
             if (stackContainsAggregate && (c.isID() || c.isForeignKey())) {
