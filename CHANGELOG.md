@@ -1,3 +1,10 @@
+##3.0.3
+
+* Fix bug on UnionStep with PathStep
+* Upgrade to TinkerPop 3.7.1
+* Optimize `NotStep`
+* Make Sqlg's build use java modules for sqlg-postgres-dialect
+
 ##3.0.2
 
 * Added `schemaName` and `abstractLabelName` to `sqlg_schema.V_parition`. This is to optimize searching for nested partitions. This change will run a db upgrade script so testing it on your graph is strongly advised!
