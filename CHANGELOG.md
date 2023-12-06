@@ -1,3 +1,7 @@
+##3.0.4
+
+* build and release with java 17 not 21
+ 
 ##3.0.3
 
 * Fix bug on UnionStep with PathStep
