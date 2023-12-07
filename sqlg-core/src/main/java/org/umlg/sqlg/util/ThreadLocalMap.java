@@ -73,4 +73,8 @@ public class ThreadLocalMap<K, V> implements Map<K, V> {
         return this.threadLocalMap.get().entrySet();
     }
 
+    @Override
+    public String toString() {
+        return this.threadLocalMap.get().toString();
+    }
 }
