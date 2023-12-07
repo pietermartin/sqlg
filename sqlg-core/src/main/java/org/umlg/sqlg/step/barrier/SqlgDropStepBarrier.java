@@ -70,15 +70,13 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutatin
             while (this.starts.hasNext()) {
                 Traverser.Admin<S> start = this.starts.next();
                 Object object = start.get();
-                if (object instanceof SqlgElement) {
-                    SqlgElement sqlgElement = (SqlgElement) object;
+                if (object instanceof SqlgElement sqlgElement) {
                     RecordId recordId = (RecordId) sqlgElement.id();
                     SchemaTable schemaTable = recordId.getSchemaTable();
                     RecordId.ID id = recordId.getID();
-                    if (sqlgElement instanceof SqlgVertex) {
+                    if (sqlgElement instanceof SqlgVertex sqlgVertex) {
                         Optional<VertexLabel> vertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(schemaTable.getSchema(), schemaTable.getTable());
                         Preconditions.checkState(vertexLabelOptional.isPresent());
-                        SqlgVertex sqlgVertex = (SqlgVertex) sqlgElement;
                         boolean added = this.verticesToDelete.put(vertexLabelOptional.get(), id);
                         if (added && eventStrategy != null) {
                             final Event removeEvent = new Event.VertexRemovedEvent(eventStrategy.detach(sqlgVertex));
@@ -133,8 +131,7 @@ public class SqlgDropStepBarrier<S> extends SqlgFilterStep<S> implements Mutatin
                             this.callbackRegistry.getCallbacks().forEach(c -> c.accept(removeEvent));
                         }
                     }
-                } else if (object instanceof SqlgProperty) {
-                    SqlgProperty sqlgProperty = (SqlgProperty) object;
+                } else if (object instanceof SqlgProperty sqlgProperty) {
                     if (eventStrategy != null) {
                         final Event removeEvent;
                         if (sqlgProperty.element() instanceof Edge) {
