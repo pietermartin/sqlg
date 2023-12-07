@@ -263,7 +263,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
 
     private Set<SchemaTableTree> parseForStrategy() {
         this.isForMultipleQueries = false;
-        Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
+        Preconditions.checkState(!this.replacedSteps.isEmpty(), "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
 
