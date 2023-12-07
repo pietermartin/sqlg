@@ -885,7 +885,7 @@ public class TopologyManager {
                             .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                             .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
                             .has("name", edge.getName()).toList();
-            if (edges.size() > 0) {
+            if (!edges.isEmpty()) {
                 Vertex edgeV = edges.get(0);
 
                 traversalSource.V(edgeV)
