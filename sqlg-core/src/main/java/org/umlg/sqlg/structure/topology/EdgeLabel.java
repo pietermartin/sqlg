@@ -36,8 +36,8 @@ public class EdgeLabel extends AbstractLabel {
     final Set<EdgeRole> inEdgeRoles = ConcurrentHashMap.newKeySet();
     final Set<EdgeRole> uncommittedOutEdgeRoles = new ThreadLocalSet<>();
     final Set<EdgeRole> uncommittedInEdgeRoles = new ThreadLocalSet<>();
-    final Set<EdgeRole> uncommittedRemovedInEdgeRoles = new ThreadLocalSet<>();
     final Set<EdgeRole> uncommittedRemovedOutEdgeRoles = new ThreadLocalSet<>();
+    final Set<EdgeRole> uncommittedRemovedInEdgeRoles = new ThreadLocalSet<>();
 
     private final Topology topology;
 
