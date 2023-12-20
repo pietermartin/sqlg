@@ -1,6 +1,9 @@
 module sqlg.core {
+    
     requires gremlin.core;
     requires gremlin.shaded;
+//    requires org.apache.tinkerpop.gremlin.language;
+//    requires org.apache.tinkerpop.gremlin.core;
 
     requires java.sql;
     requires java.naming;

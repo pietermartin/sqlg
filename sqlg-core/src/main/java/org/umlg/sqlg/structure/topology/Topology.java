@@ -1081,6 +1081,11 @@ public class Topology {
                         }
                     }
                 }
+                for (Schema schema : getSchemas()) {
+                    for (String uncommittedRemovedEdgeLabel : schema.uncommittedRemovedEdgeLabels) {
+                        this.edgeForeignKeyCache.remove(uncommittedRemovedEdgeLabel);
+                    }
+                }
                 for (Schema schema : this.schemas.values()) {
                     schema.afterCommit();
                 }
@@ -1974,7 +1979,7 @@ public class Topology {
             for (Map.Entry<String, Set<ForeignKey>> uncommittedRemovedEntry : uncommittedRemovedEdgeForeignKeys.entrySet()) {
                 Set<ForeignKey> removedForeignKeys = uncommittedRemovedEntry.getValue();
                 Set<ForeignKey> committedForeignKeys = copy.get(uncommittedRemovedEntry.getKey());
-                if (committedForeignKeys != null) {
+                if (committedForeignKeys != null && !committedForeignKeys.isEmpty()) {
                     committedForeignKeys.removeAll(removedForeignKeys);
                 }
             }
@@ -2078,6 +2083,10 @@ public class Topology {
         if (foreignKeys != null && edgeLabel.isValid()) {
             foreignKeys.getLeft().remove(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
         }
+    }
+
+    void removeEdgeLabel(String edgeLabelName) {
+        this.allTableCache.remove(edgeLabelName);
     }
 
     /**

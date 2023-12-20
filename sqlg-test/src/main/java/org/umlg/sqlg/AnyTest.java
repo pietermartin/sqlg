@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.reducing.TestReducing;
+import org.umlg.sqlg.test.TestTest;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,8 @@ import org.umlg.sqlg.test.reducing.TestReducing;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTest.class,
-//        TestUnion.class
-        TestReducing.class
+//        TestMultiThread.class
+        TestTest.class
 })
 public class AnyTest {
 }

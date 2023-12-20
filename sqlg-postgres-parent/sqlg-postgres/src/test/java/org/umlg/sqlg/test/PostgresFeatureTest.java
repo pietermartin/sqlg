@@ -48,12 +48,8 @@ public class PostgresFeatureTest {
         readIntoGraph(grateful, GraphData.GRATEFUL);
     }
 
-
     private final static Set<String> OPT_IN = Set.of(
-//            "g_V_addVXanimalX_propertyXage_0X"
-//            "g_VX1X_addVXanimalX_propertyXage_selectXaX_byXageXX_propertyXname_puppyX"
-//            "g_V_playlist_paths"
-//            g_V_shortestpath
+//            "g_V_drop"
     );
 
     private final static Map<String, String> OPT_OUT = Map.ofEntries(
@@ -87,26 +83,11 @@ public class PostgresFeatureTest {
             Map.entry("g_injectXaX_concat_Xinject_List_b_cX", "inject"),
             Map.entry("g_injectXhello_hiX_concat_XV_valuesXnameXX", "inject"),
 
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_aXX_V_bothE_weight", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_bXX_V_bothE_weight", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_a_bXX_V_bothE_dedup_weight", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_cXX_V_bothE_weight", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_aXX_V_both_name", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_bXX_V_both_name", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_a_bXX_V_both_dedup_name", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_cXX_V_both_name", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_aXX_V_out_name", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_bXX_V_in_name", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_a_bXX_V_out_name", "int should be double"),
-            Map.entry("g_withStrategiesXPartitionStrategyXwrite_a_read_cXX_V_out_name", "int should be double"),
-
             Map.entry("g_VX1X_formatXstrX_byXconstantXhelloXX_byXvaluesXnameXX", "id can not be an int"),
 
             Map.entry("g_withSideEffectXc_created_YX_withSideEffectXm_matchedX_mergeEXlabel_knows_out_marko_in_vadasX_optionXonCreate_selectXcXX_optionXonMatch_sideEffectXpropertiesXweightX_dropX_selectXmXX_exists", "int should be double"),
 
             Map.entry("g_unionXinjectX1X_injectX2X", "inject")
-
-
     );
 
     private static void readIntoGraph(final Graph graph, final GraphData graphData) {

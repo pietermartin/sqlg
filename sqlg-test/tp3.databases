@@ -1,17 +1,21 @@
 MASTER_EXTERNAL_PORT=9700 COMPOSE_PROJECT_NAME=citus docker-compose up -d
 
 #tp3 databases needed for test suite
-g1
-g2
-readGraph
-standard
-temp
-temp1
-temp2
-subgraph
-prototype
-target
+create database g2;
+create database "readGraph";
+create database "standard";
+create database "temp";
+create database "temp1";
+create database "temp2";
+create database "subgraph";
+create database "prototype";
+create database "target";
 
+create database "MODERN";
+create database "CLASSIC";
+create database "SINK";
+create database "GRATEFUL";
+create database "EMPTY";
 
 Mssql Server collate
 CREATE DATABASE blah COLLATE SQL_Latin1_General_Cp1_CS_AS

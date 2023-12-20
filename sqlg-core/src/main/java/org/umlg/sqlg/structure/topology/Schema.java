@@ -1077,6 +1077,7 @@ public class Schema implements TopologyInf {
         }
         for (Iterator<String> it = uncommittedRemovedEdgeLabels.iterator(); it.hasNext(); ) {
             String s = it.next();
+            getTopology().removeEdgeLabel(s);
             this.outEdgeLabels.remove(s);
             it.remove();
         }

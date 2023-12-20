@@ -5,6 +5,8 @@ import org.apache.tinkerpop.gremlin.features.World;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.topology.EdgeLabel;
+import org.umlg.sqlg.structure.topology.VertexLabel;
 
 import java.io.File;
 
@@ -68,6 +70,12 @@ public abstract class SqlgWorld implements World {
         grateful.tx().commit();
         final GraphTraversalSource g = empty.traversal();
         g.V().drop().iterate();
+        for (EdgeLabel edgeLabel : empty.getTopology().getPublicSchema().getEdgeLabels().values()) {
+            edgeLabel.remove();
+        }
+        for (VertexLabel vertexLabel : empty.getTopology().getPublicSchema().getVertexLabels().values()) {
+            vertexLabel.remove();
+        }
         empty.tx().commit();
     }
 
