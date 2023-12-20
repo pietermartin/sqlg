@@ -1,9 +1,8 @@
 module sqlg.postgres.dialect {
 
     requires sqlg.core;
-    requires gremlin.core;
-//    requires org.apache.tinkerpop.gremlin.language;
-//    requires org.apache.tinkerpop.gremlin.core;
+    requires org.apache.tinkerpop.gremlin.language;
+    requires org.apache.tinkerpop.gremlin.core;
 
     requires java.sql;
     requires org.slf4j;
