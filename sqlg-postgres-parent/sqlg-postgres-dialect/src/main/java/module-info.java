@@ -1,8 +1,7 @@
 module sqlg.postgres.dialect {
 
     requires sqlg.core;
-    requires org.apache.tinkerpop.gremlin.language;
-    requires org.apache.tinkerpop.gremlin.core;
+    requires sqlg.tinkerpop.shaded;
 
     requires java.sql;
     requires org.slf4j;
@@ -14,7 +13,6 @@ module sqlg.postgres.dialect {
     requires com.fasterxml.jackson.annotation;
 
     requires org.apache.commons.lang3;
-    requires org.apache.commons.text;
     requires com.google.common;
 
     exports org.umlg.sqlg.dialect.impl;

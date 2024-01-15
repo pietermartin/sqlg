@@ -1,20 +1,14 @@
 module sqlg.core {
     
-//    requires gremlin.core;
-    requires org.apache.tinkerpop.gremlin.language;
-    requires org.apache.tinkerpop.gremlin.core;
-    requires gremlin.shaded;
+    requires transitive sqlg.tinkerpop.shaded;
 
     requires java.sql;
     requires java.naming;
     
     requires org.slf4j;
-    requires javatuples;
 
     requires org.apache.commons.lang3;
-    requires org.apache.commons.text;
     requires org.apache.commons.collections4;
-    requires org.apache.commons.configuration2;
 
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;

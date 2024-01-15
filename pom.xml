@@ -71,7 +71,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.3.0</version>
                 <executions>
                     <execution>
                         <id>enforce-all</id>
@@ -195,6 +195,7 @@
         </resources>
     </build>
     <modules>
+        <module>sqlg-tinkerpop-shaded</module>
         <module>sqlg-core</module>
         <module>sqlg-test</module>
         <module>sqlg-postgres-parent</module>
@@ -247,6 +248,11 @@
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-driver</artifactId>
                 <version>${tinkerpop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-tinkerpop-shaded</artifactId>
+                <version>${sqlg.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
