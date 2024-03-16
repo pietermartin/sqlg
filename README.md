@@ -1,7 +1,6 @@
 
 [![Maven Central](http://img.shields.io/maven-central/v/org.umlg/sqlg)](https://search.maven.org/search?q=g:org.umlg%20AND%20a:sqlg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build status](https://teamcity.sqlg.org/guestAuth/app/rest/builds/buildType:(id:Sqlg_Build),branch:sqlg3/statusIcon)](https://teamcity.sqlg.org/viewType.html?buildTypeId=Sqlg_Build)
 
 Sqlg
 ====
