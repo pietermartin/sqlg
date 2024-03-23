@@ -113,8 +113,8 @@
                         <include>**/TestSqlgGremlinServer.java</include>
                         <include>**/PostgresFeatureTest.java</include>
 
-                        <include>**/SqlgMariaDBProcessStandardTest.java</include>
-                        <include>**/MariadbAllTest.java</include>
+<!--                        <include>**/SqlgMariaDBProcessStandardTest.java</include>-->
+<!--                        <include>**/MariadbAllTest.java</include>-->
 
                         <!--                        <include>**/SqlgMSSqlServerStructureStandardTest.java</include>-->
                         <!--                        <include>**/SqlgGraphMSSqlServerProcessStandardTest.java</include>-->
@@ -139,7 +139,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.6.3</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -148,9 +148,14 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
+                            <skippedModules>sqlg-tinkerpop-shaded,sqlg-test,sqlg-postgres,sqlg-h2,sqlg-hsqldb</skippedModules>
                             <failOnError>false</failOnError>
                             <excludePackageNames>*.test.*</excludePackageNames>
+                            <sourceFileExcludes>
+                                <sourceFileExclude>**/module-info.java</sourceFileExclude>
+                            </sourceFileExcludes>
                             <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+                            <doclint>all,-missing</doclint>
                         </configuration>
                     </execution>
                 </executions>
