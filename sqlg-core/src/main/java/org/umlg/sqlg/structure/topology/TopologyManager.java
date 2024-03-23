@@ -284,20 +284,54 @@ public class TopologyManager {
                     .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                     .has("name", vertexLabel.getSchema().getName())
                     .toList();
-            if (schemas.size() > 0) {
+            if (!schemas.isEmpty()) {
                 Vertex schemaVertex = schemas.get(0);
                 List<Vertex> vertices = traversalSource.V(schemaVertex)
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .has(SQLG_SCHEMA_VERTEX_LABEL_NAME, vertexLabel.getLabel())
                         .toList();
-                if (vertices.size() > 0) {
+                if (!vertices.isEmpty()) {
                     Vertex vertex = vertices.get(0);
+                    //remove all vertex properties
                     traversalSource.V(vertex)
                             .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
                             .drop().iterate();
-                    vertex.remove();
+
+                    //remove all vertex indexes
+                    traversalSource.V(vertex)
+                            .out(SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                            .drop().iterate();
+
+                    //remove all edge properties
+                    traversalSource.V(vertex)
+                            .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                            .drop().iterate();
+
+                    //remove all edge indexes
+                    traversalSource.V(vertex)
+                            .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .out(SQLG_SCHEMA_EDGE_INDEX_EDGE)
+                            .drop().iterate();
+
+                    //remove all partitions
+                    traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_PARTITION)
+                            .has(SQLG_SCHEMA_PARTITION_SCHEMA_NAME, schemaVertex.<String>value(SQLG_SCHEMA_SCHEMA_NAME))
+                            .has(SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, vertex.<String>value(SQLG_SCHEMA_VERTEX_LABEL_NAME))
+                            .drop().iterate();
+
+                    //remove all edges
+                    traversalSource.V(vertex)
+                            .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .drop().iterate();
+
+                    //remove all vertices
+                    traversalSource.V(vertex)
+                            .drop().iterate();
+
                 }
             }
+
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

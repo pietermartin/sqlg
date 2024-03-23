@@ -100,9 +100,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestVertexCreation.class,
         TestVertexEdgeSameName.class,
         TestVertexNavToEdges.class,
-        // are these tests gone?
-        //TestByteArray.class,
-        //TestQuery.class,
         TestSchema.class,
         TestIndex.class,
         TestVertexOutWithHas.class,
@@ -112,11 +109,9 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestMultiThreadedBatch.class,
         TestMultiThread.class,
         TestMultipleThreadMultipleJvm.class,
-
         TestRemoveEdge.class,
         TestEdgeSchemaCreation.class,
         TestRollback.class,
-
         TestNewVertex.class,
         TestEdgeCache.class,
         TestTinkerpopBug.class,
@@ -198,8 +193,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestLoadingAdjacent.class,
         TestLabelsSchema.class,
         MidTraversalGraphTest.class,
-        //TODO fails, issue #65
-//        TestEdgeFromDifferentSchema.class
         TestBatchModeMultipleGraphs.class,
         TestDetachedEdge.class,
         TestSchemaEagerCreation.class,
@@ -261,15 +254,12 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestSimpleJoinGremlin.class,
         TestSimpleVertexEdgeGremlin.class,
         TestMultipleIDQuery.class,
-//        TestSharding.class,
-//        TestShardingGremlin.class,
         TestRecordId.class,
         TestPropertyValues.class,
         TestReadOnlyRole.class,
         TestVarChar.class,
         TestTopologySchemaDeleteMultipleGraphs.class,
         TestTraversalAddV.class,
-//        TestDataSource.class, this test is flaky on teamcity.
         TestCustomDataSource.class,
         TestJNDIInitialization.class,
         TestReducing.class,
