@@ -9,6 +9,10 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.topology.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -61,6 +65,14 @@ public class TestPartitionRemove extends BaseTest {
         Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION)
                 .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION_ABSTRACT_LABEL_NAME, P.eq("A"))
                 .hasNext());
+
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery("select * from " + Topology.SQLG_SCHEMA + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + Topology.SQLG_SCHEMA_PARTITION));
+            Assert.assertFalse(rs.next());
+        } catch (SQLException e) {
+            Assert.fail(e.getMessage());
+        }
     }
 
     @Test
@@ -109,5 +121,13 @@ public class TestPartitionRemove extends BaseTest {
         Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PROPERTY).hasNext());
         Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_INDEX).hasNext());
         Assert.assertFalse(this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_PARTITION).hasNext());
+        
+        Connection connection = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet rs = statement.executeQuery("select * from " + Topology.SQLG_SCHEMA + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + Topology.SQLG_SCHEMA_PARTITION));
+            Assert.assertFalse(rs.next());
+        } catch (SQLException e) {
+            Assert.fail(e.getMessage());
+        }
     }
 }
