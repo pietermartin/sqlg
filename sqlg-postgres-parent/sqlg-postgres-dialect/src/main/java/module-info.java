@@ -1,7 +1,7 @@
 module sqlg.postgres.dialect {
 
     requires sqlg.core;
-    requires sqlg.tinkerpop.shaded;
+//    requires sqlg.tinkerpop.shaded;
 
     requires java.sql;
     requires org.slf4j;
