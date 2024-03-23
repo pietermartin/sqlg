@@ -16,6 +16,7 @@ public class CountUpDownLatch {
      * <p>
      * Equivalent to {@code new}
      * {@link CountUpDownLatch(int) CountUpDownLatch}{@code (0)}
+     * </p>
      */
     public CountUpDownLatch() {
         this(0);
@@ -43,14 +44,13 @@ public class CountUpDownLatch {
      * <p>
      * If the current {@code count} is already zero, then this method returns
      * immediately.
-     * <p>
-     * <p>
+     * </p>
      * If the current {@code count} is greater than zero, then the current
      * thread becomes disabled for thread scheduling purposes and lies dormant
      * until either:
      * <ul>
-     * <li>The count reaches zero due an invocation of {@link #countDown()
-     * countDown()}, {@link  #countDown(int) countDown(int}}, or {@link * setCount(int) setCount(int)}.
+     * <li>The count reaches zero due an invocation of
+     * {@link #countDown() countDown()}, {@link  #countDown(int) countDown(int}}, or {@link #setCount(int) setCount(int)}.
      * <li>Some other thread {@linkplain Thread#interrupt interrupts} the
      * current thread.
      * </ul>
@@ -74,24 +74,21 @@ public class CountUpDownLatch {
      * unless the thread is {@linkplain Thread#interrupt interrupted}, or the
      * specified waiting time elapses.
      * <p>
-     * <p>
      * If the current {@code count} is zero, then this method returns
      * immediately with the value {@code true}.
-     * <p>
-     * <p>
+     * </p>
      * If the current {@code count} is greater than zero, then the current
      * thread becomes disabled for thread scheduling purposes and lies dormant
      * until either:
      * <ul>
      * <li>The {@code count} reaches zero due to an invocation of {@link
-     * #countDown countDown()}, {@link #countDown(int) countDown(int}}, or {@link * setCount(int) setCount(int)}
+     * #countDown countDown()}, {@link #countDown(int) countDown(int}}, or {@link #setCount(int) setCount(int)}
      * <li>Some other thread {@linkplain Thread#interrupt interrupts} the
      * current thread
      * <li>The specified waiting time elapses.
      * </ul>
      * If the count reaches zero then the method returns with the value
      * {@code true}.
-     * <p>
      * If the current thread:
      * <ul>
      * <li>has its interrupted status set on entry to this method; or
@@ -99,7 +96,6 @@ public class CountUpDownLatch {
      * </ul>
      * then {@link InterruptedException} is thrown and the current thread's
      * interrupted status is cleared.
-     * <p>
      * If the specified waiting time elapses then the value {@code false} is
      * returned. If the time is less than or equal to zero, the method will not
      * wait at all.
@@ -118,7 +114,6 @@ public class CountUpDownLatch {
 
     /**
      * Increments the count of the latch.
-     * <p>
      *
      * @return {@code true} if {@code count} transitioned from zero to a new
      * value
@@ -132,7 +127,6 @@ public class CountUpDownLatch {
 
     /**
      * Increments the count of the latch by the given {@code amount}.
-     * <p>
      *
      * @param amount by which to increment {@code count}
      * @return {@code true} if {@code count} transitioned from zero to a new
@@ -140,7 +134,7 @@ public class CountUpDownLatch {
      * @throws ArithmeticException      when the operation would otherwise cause
      *                                  a silent numeric overflow, resulting in
      *                                  a negative {@code count}.
-     * @throws IllegalArgumentException if {@code amount is less than one)
+     * @throws IllegalArgumentException if {@code amount is less than one}
      */
     public boolean countUp(int amount) {
         return sync.countUp(amount);
@@ -152,6 +146,7 @@ public class CountUpDownLatch {
      * <p>
      * If the current count is zero, no action occurs and false is returned
      * immediately;
+     * </p>
      *
      * @return {@code true} if {@code count} transitions to zero
      */
@@ -169,6 +164,7 @@ public class CountUpDownLatch {
      * {@code amount} is greater than current {@code count}, then new
      * {@code count} is zero, else new {@code count} is current {@code count}
      * minus {@code amount}.
+     * </p>
      *
      * @param amount by which to decrement the {@code count}
      * @return {@code true} if {@code count} transitions to zero
@@ -187,6 +183,7 @@ public class CountUpDownLatch {
      * testing purposes (e.g. to assert that the current count is the expected
      * count, given a set of know operations has occurred and given that it is
      * known no other threads could be updating the count)
+     * </p>
      *
      * @return the current count
      */
@@ -200,6 +197,7 @@ public class CountUpDownLatch {
      * <p>
      * If {@code newCount} is zero and the current }@code count is zero}, no
      * action occurs and false is returned immediately. immediately;
+     * </p>
      *
      * @param newCount to which to update {@code count}; must be non-negative.
      * @return {@code true} if {@code count} transitions to zero.
@@ -211,7 +209,6 @@ public class CountUpDownLatch {
 
     /**
      * Returns a string representation of this object.
-     * <p>
      *
      * @return a string identifying this latch, as well as its current
      * {@code count}.
@@ -264,6 +261,7 @@ public class CountUpDownLatch {
      * <p>
      * Uses {@link AbstractQueuedSynchronizer} {@code state} property to
      * represent count.
+     * </p>
      */
     private static class Sync extends AbstractQueuedSynchronizer {
 
@@ -289,6 +287,7 @@ public class CountUpDownLatch {
          * This implementation supports the required semantics of the
          * {@code await(...)} methods of the enclosing {@link CountUpDownLatch}
          * class.
+         * </p>
          *
          * @param ignored
          * @return -1 on failure; 1 if acquisition in shared mode succeeded and
@@ -306,6 +305,7 @@ public class CountUpDownLatch {
          * <p>
          * If {@code newCount} is zero and the current {@code count} is zero, no
          * action occurs and false is returned immediately. immediately;
+         * </p>
          *
          * @param newCount to which to update {@code count}; must be
          *                 non-negative.
