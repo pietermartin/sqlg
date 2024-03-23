@@ -29,3 +29,4 @@ src/test/db/
 /sqlg-ui/src/main/web/package-lock.json
 /sqlg-ui/src/main/web/dist/dist/sqlg
 /package-lock.json
+/sqlg-tinkerpop-shaded/dependency-reduced-pom.xml
