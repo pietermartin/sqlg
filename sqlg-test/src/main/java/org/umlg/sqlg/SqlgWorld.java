@@ -61,7 +61,6 @@ public abstract class SqlgWorld implements World {
         return "\"" + id.toString() + "\"";
     }
 
-
     private void cleanEmpty() {
         empty.tx().commit();
         classic.tx().commit();
