@@ -1,13 +1,13 @@
 module sqlg.core {
     
-    requires transitive sqlg.tinkerpop.shaded;
+    requires sqlg.tinkerpop.shaded;
 
     //start for intellij only
-    requires gremlin.core;
-    requires gremlin.shaded;
-    requires org.apache.commons.configuration2;
-    requires org.apache.commons.text;
-    requires javatuples;
+//    requires gremlin.core;
+//    requires gremlin.shaded;
+//    requires org.apache.commons.configuration2;
+//    requires org.apache.commons.text;
+//    requires javatuples;
     //end for intellij only
 
     requires java.sql;
