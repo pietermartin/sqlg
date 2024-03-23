@@ -182,9 +182,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlBulkDialect {
      * @param vertexCache A rather complex object.
      *                    The map's key is the vertex being cached.
      *                    The Triple holds,
-     *                    1) The in labels
-     *                    2) The out labels
-     *                    3) The properties as a map of key values
+     *                    <ul>
+     *                    <li>The in labels</li>
+     *                    <li>The out labels</li>
+     *                    <li>the properties as a map of key values</li>
+     *                    </ul>
      */
     @SuppressWarnings("Duplicates")
     @Override
