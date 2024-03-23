@@ -113,7 +113,7 @@ public class TestTreeStep extends BaseTest {
         Assert.assertEquals(5, traversal.getSteps().size());
         Vertex v = traversal.next();
         Assert.assertEquals(2, traversal.getSteps().size());
-        Assert.assertTrue(Matchers.isOneOf(c1, c2, c3).matches(v));
+        Assert.assertTrue(Matchers.is(Matchers.oneOf(c1, c2, c3)).matches(v));
     }
 
     @Test
