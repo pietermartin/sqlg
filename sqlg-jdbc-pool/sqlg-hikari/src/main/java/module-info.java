@@ -1,4 +1,4 @@
-module sqlg.c3p0 {
+module sqlg.hikari{
     requires sqlg.core;
 
     requires java.sql;
