@@ -27,7 +27,7 @@ public class TestTraversals extends BaseTest {
         loadModern();
         final Traversal<Vertex, Long> traversal = this.sqlgGraph.traversal().V().both().both().count();
         printTraversalForm(traversal);
-        assertEquals(new Long(30), traversal.next());
+        assertEquals(Long.valueOf(30), traversal.next());
         assertFalse(traversal.hasNext());
     }
 

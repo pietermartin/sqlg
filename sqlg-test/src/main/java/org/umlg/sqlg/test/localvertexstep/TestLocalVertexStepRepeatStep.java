@@ -704,8 +704,8 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
             }
             assertEquals(2, pathLengths.size());
             assertEquals(8, counter);
-            assertEquals(new Long(6), pathLengths.get(2));
-            assertEquals(new Long(2), pathLengths.get(3));
+            assertEquals(Long.valueOf(6), pathLengths.get(2));
+            assertEquals(Long.valueOf(2), pathLengths.get(3));
         });
     }
 
