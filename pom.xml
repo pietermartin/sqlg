@@ -103,24 +103,23 @@
                         <include>**/SqlgH2ProcessStandardTest.java</include>
                         <include>**/H2FeatureTest.java</include>
 
+                        <include>**/HsqldbAllTest.java</include>
                         <include>**/SqlgHsqldbStructureStandardTest.java</include>
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
-                        <include>**/HsqldbAllTest.java</include>
 
+                        <include>**/PostgresAllTest.java</include>
                         <include>**/SqlgPostgresStructureStandardTest.java</include>
                         <include>**/SqlgPostgresProcessStandardTest.java</include>
-                        <include>**/PostgresAllTest.java</include>
                         <include>**/TestSqlgGremlinServer.java</include>
                         <include>**/PostgresFeatureTest.java</include>
 
-<!--                        <include>**/SqlgMariaDBProcessStandardTest.java</include>-->
-<!--                        <include>**/MariadbAllTest.java</include>-->
-<!--                        <include>**/SqlgMSSqlServerStructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgGraphMSSqlServerProcessStandardTest.java</include>-->
-<!--                        <include>**/MSSqlServerAllTest.java</include>-->
-
                     </includes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.12.1</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -205,11 +204,6 @@
         <module>sqlg-postgres-parent</module>
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
-        <!--        <module>sqlg-mariadb-parent</module>-->
-        <!--        <module>sqlg-mysql-parent</module>-->
-        <!--        <module>sqlg-mssqlserver-parent</module>-->
-        <!-- sqlg-doc is failing the enforcer, some rubygem dependencies are not resolving. -->
-        <!--        <module>sqlg-doc</module>-->
         <module>sqlg-gremlin-server</module>
         <module>sqlg-jdbc-pool</module>
         <module>sqlg-jmh</module>
@@ -314,31 +308,6 @@
                 <artifactId>sqlg-h2-dialect</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
-<!--            <dependency>-->
-<!--                <groupId>org.umlg</groupId>-->
-<!--                <artifactId>sqlg-mariadb</artifactId>-->
-<!--                <version>${sqlg.version}</version>-->
-<!--            </dependency>-->
-<!--            <dependency>-->
-<!--                <groupId>org.umlg</groupId>-->
-<!--                <artifactId>sqlg-mariadb-dialect</artifactId>-->
-<!--                <version>${sqlg.version}</version>-->
-<!--            </dependency>-->
-<!--            <dependency>-->
-<!--                <groupId>org.umlg</groupId>-->
-<!--                <artifactId>sqlg-mysql-dialect</artifactId>-->
-<!--                <version>${sqlg.version}</version>-->
-<!--            </dependency>-->
-<!--            <dependency>-->
-<!--                <groupId>org.umlg</groupId>-->
-<!--                <artifactId>sqlg-mssqlserver</artifactId>-->
-<!--                <version>${sqlg.version}</version>-->
-<!--            </dependency>-->
-<!--            <dependency>-->
-<!--                <groupId>org.umlg</groupId>-->
-<!--                <artifactId>sqlg-mssqlserver-dialect</artifactId>-->
-<!--                <version>${sqlg.version}</version>-->
-<!--            </dependency>-->
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-test</artifactId>
