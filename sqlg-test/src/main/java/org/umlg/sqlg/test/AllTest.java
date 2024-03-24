@@ -1,8 +1,7 @@
-package org.umlg.sqlg;
+package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.complex.TestComplex;
@@ -264,7 +263,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestJNDIInitialization.class,
         TestReducing.class,
         TestReducingVertexStep.class,
-        TestPartitionedDrop.class,
         TestPartitionedDrop.class,
         TestDropStepPartition.class,
         TestBatchUpdatePartitioning.class,

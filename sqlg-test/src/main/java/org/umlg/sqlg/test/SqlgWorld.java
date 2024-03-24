@@ -1,4 +1,4 @@
-package org.umlg.sqlg;
+package org.umlg.sqlg.test;
 
 import io.cucumber.java.Scenario;
 import org.apache.tinkerpop.gremlin.features.World;

@@ -15,7 +15,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoResourceAccess;
 import org.junit.AssumptionViolatedException;
 import org.junit.runner.RunWith;
-import org.umlg.sqlg.SqlgWorld;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.io.File;

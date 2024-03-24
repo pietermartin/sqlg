@@ -1,8 +1,8 @@
-package org.umlg.sqlg;
+package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestTest;
+import org.umlg.sqlg.test.json.TestJson;
 
 /**
  * Date: 2014/07/16
@@ -11,7 +11,8 @@ import org.umlg.sqlg.test.TestTest;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestMultiThread.class
-        TestTest.class
+//        TestTest.class
+        TestJson.class
 })
 public class AnyTest {
 }

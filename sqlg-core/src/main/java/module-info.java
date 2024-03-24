@@ -1,14 +1,6 @@
 module sqlg.core {
     
-    requires sqlg.tinkerpop.shaded;
-
-    //start for intellij only
-//    requires gremlin.core;
-//    requires gremlin.shaded;
-//    requires org.apache.commons.configuration2;
-//    requires org.apache.commons.text;
-//    requires javatuples;
-    //end for intellij only
+    requires transitive sqlg.tinkerpop.shaded;
 
     requires java.sql;
     requires java.naming;
@@ -31,8 +23,8 @@ module sqlg.core {
     exports org.umlg.sqlg.sql.dialect;
     exports org.umlg.sqlg.predicate;
 
-    exports org.umlg.sqlg.sql.parse to sqlg.postgres.dialect;
-    exports org.umlg.sqlg.strategy to sqlg.postgres.dialect;
+    exports org.umlg.sqlg.sql.parse to sqlg.postgres.dialect,sqlg.h2.dialect;
+    exports org.umlg.sqlg.strategy to sqlg.postgres.dialect,sqlg.h2.dialect;
 
     uses org.umlg.sqlg.SqlgPlugin;
 }

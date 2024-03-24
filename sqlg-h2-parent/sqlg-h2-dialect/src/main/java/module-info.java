@@ -1,11 +1,10 @@
-module sqlg.postgres.dialect {
+module sqlg.h2.dialect {
 
     requires sqlg.core;
 
     requires java.sql;
     requires org.slf4j;
-    requires org.postgresql.jdbc;
-    requires postgis.jdbc;
+    requires com.h2database;
 
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
@@ -15,7 +14,6 @@ module sqlg.postgres.dialect {
     requires com.google.common;
 
     exports org.umlg.sqlg.dialect.impl;
-    exports org.umlg.sqlg.gis;
 
-    provides org.umlg.sqlg.SqlgPlugin with org.umlg.sqlg.plugin.PostgresPlugin;
+    provides org.umlg.sqlg.SqlgPlugin with org.umlg.sqlg.plugin.H2Plugin;
 }
