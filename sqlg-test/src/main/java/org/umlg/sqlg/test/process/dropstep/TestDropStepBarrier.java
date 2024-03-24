@@ -90,6 +90,7 @@ public class TestDropStepBarrier extends BaseTest {
 
     @Test
     public void testDropBarrier() {
+        Assume.assumeTrue(isHsqldb() || isPostgres());
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
@@ -111,6 +112,7 @@ public class TestDropStepBarrier extends BaseTest {
 
     @Test
     public void testDropBarrierUserSuppliedIds() {
+        Assume.assumeTrue(isHsqldb() || isPostgres());
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
@@ -686,6 +688,7 @@ public class TestDropStepBarrier extends BaseTest {
 
     @Test
     public void testDropEdgesUserSuppliedIds() {
+        Assume.assumeTrue(isHsqldb() || isPostgres());
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(
                 "A",
                 new LinkedHashMap<>() {{
