@@ -5,9 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.hsqldb.jdbc.JDBCArrayBasic;
 import org.hsqldb.lib.StringConverter;
-import org.hsqldb.types.Type;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.structure.PropertyType;
@@ -20,7 +18,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.*;
-import java.util.UUID;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.PropertyType.*;
@@ -862,29 +859,33 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
-        org.hsqldb.types.Type type = switch (propertyType.ordinal()) {
-            case STRING_ARRAY_ORDINAL -> Type.SQL_VARCHAR;
-            case long_ARRAY_ORDINAL -> Type.SQL_BIGINT;
-            case LONG_ARRAY_ORDINAL -> Type.SQL_BIGINT;
-            case int_ARRAY_ORDINAL -> Type.SQL_INTEGER;
-            case INTEGER_ARRAY_ORDINAL -> Type.SQL_INTEGER;
-            case SHORT_ARRAY_ORDINAL -> Type.SQL_SMALLINT;
-            case short_ARRAY_ORDINAL -> Type.SQL_SMALLINT;
-            case FLOAT_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
-            case float_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
-            case DOUBLE_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
-            case double_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
-            case BIG_DECIMAL_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
-            case BOOLEAN_ARRAY_ORDINAL -> Type.SQL_BIT;
-            case boolean_ARRAY_ORDINAL -> Type.SQL_BIT;
-            case LOCALDATETIME_ARRAY_ORDINAL -> Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
-            case LOCALDATE_ARRAY_ORDINAL -> Type.SQL_DATE;
-            case LOCALTIME_ARRAY_ORDINAL -> Type.SQL_TIME;
-            case ZONEDDATETIME_ARRAY_ORDINAL -> Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
-            case JSON_ARRAY_ORDINAL -> Type.SQL_VARCHAR;
+        String type = switch (propertyType.ordinal()) {
+            case STRING_ARRAY_ORDINAL -> "VARCHAR";
+            case long_ARRAY_ORDINAL -> "BIGINT";
+            case LONG_ARRAY_ORDINAL -> "BIGINT";
+            case int_ARRAY_ORDINAL -> "INT";
+            case INTEGER_ARRAY_ORDINAL -> "INT";
+            case SHORT_ARRAY_ORDINAL -> "SMALLINT";
+            case short_ARRAY_ORDINAL -> "SMALLINT";
+            case FLOAT_ARRAY_ORDINAL -> "FLOAT";
+            case float_ARRAY_ORDINAL -> "FLOAT";
+            case DOUBLE_ARRAY_ORDINAL -> "DOUBLE";
+            case double_ARRAY_ORDINAL -> "DOUBLE";
+            case BIG_DECIMAL_ARRAY_ORDINAL -> "DOUBLE";
+            case BOOLEAN_ARRAY_ORDINAL -> "BOOLEAN";
+            case boolean_ARRAY_ORDINAL -> "BOOLEAN";
+            case LOCALDATETIME_ARRAY_ORDINAL -> "SQL_TIMESTAMP_WITH_TIME_ZONE";
+            case LOCALDATE_ARRAY_ORDINAL -> "SQL_DATE";
+            case LOCALTIME_ARRAY_ORDINAL -> "LocalTime";
+            case ZONEDDATETIME_ARRAY_ORDINAL -> "SQL_TIMESTAMP_WITH_TIME_ZONE";
+            case JSON_ARRAY_ORDINAL -> "VARCHCHAR";
             default -> throw new IllegalStateException("Unhandled array type " + propertyType.name());
         };
-        return new JDBCArrayBasic(data, type);
+        try {
+            return conn.createArrayOf(type, data);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
