@@ -16,5 +16,5 @@ module sqlg.hsqldb.dialect {
     exports org.umlg.sqlg.sql.dialect.impl;
     exports org.umlg.sqlg.plugin;
 
-    provides org.umlg.sqlg.SqlgPlugin with org.umlg.sqlg.plugin.HsqlgdbPlugin;
+    provides org.umlg.sqlg.SqlgPlugin with org.umlg.sqlg.plugin.HsqldbPlugin;
 }
