@@ -1,7 +1,9 @@
 MASTER_EXTERNAL_PORT=9700 COMPOSE_PROJECT_NAME=citus docker-compose up -d
 
 #tp3 databases needed for test suite
+create database sqlgraphdb_fdw;
 create database sqlgraphdb;
+create database g1;
 create database g2;
 create database "readGraph";
 create database "standard";
