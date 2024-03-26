@@ -24,6 +24,15 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <artifactSet>
+                                <includes>
+                                    <include>org.apache.tinkerpop:gremlin-core</include>
+                                    <include>org.apache.tinkerpop:gremlin-language</include>
+                                    <include>org.apache.tinkerpop:gremlin-shaded</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -41,20 +50,6 @@
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mockito</groupId>
-                    <artifactId>mockito-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 	</dependencies>
 </project>

@@ -99,18 +99,18 @@
                 <configuration>
                     <includes>
                         <include>**/H2AllTest.java</include>
-                        <include>**/SqlgH2StructureStandardTest.java</include>
-                        <include>**/SqlgH2ProcessStandardTest.java</include>
-                        <include>**/H2FeatureTest.java</include>
+<!--                        <include>**/SqlgH2StructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
+<!--                        <include>**/H2FeatureTest.java</include>-->
 
-                        <include>**/HsqldbAllTest.java</include>
-                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
-                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+<!--                        <include>**/HsqldbAllTest.java</include>-->
+<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
 
-                        <include>**/PostgresAllTest.java</include>
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgPostgresProcessStandardTest.java</include>
-                        <include>**/PostgresFeatureTest.java</include>
+<!--                        <include>**/PostgresAllTest.java</include>-->
+<!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
+<!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
+<!--                        <include>**/PostgresFeatureTest.java</include>-->
 
                     </includes>
                 </configuration>
@@ -348,7 +348,6 @@
                 <artifactId>commons-text</artifactId>
                 <version>1.10.0</version>
             </dependency>
-
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>

@@ -9,6 +9,16 @@ module sqlg.core {
 
     requires org.apache.commons.lang3;
     requires org.apache.commons.collections4;
+    requires org.apache.commons.configuration2;
+    requires org.apache.commons.text;
+    requires commons.collections;
+    requires javatuples;
+    requires com.squareup.javapoet;
+    requires org.yaml.snakeyaml;
+    requires commons.beanutils;
+    requires hppc;
+    requires exp4j;
+    requires org.antlr.antlr4.runtime;
 
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
