@@ -878,7 +878,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case LOCALDATE_ARRAY_ORDINAL -> "SQL_DATE";
             case LOCALTIME_ARRAY_ORDINAL -> "LocalTime";
             case ZONEDDATETIME_ARRAY_ORDINAL -> "SQL_TIMESTAMP_WITH_TIME_ZONE";
-            case JSON_ARRAY_ORDINAL -> "VARCHCHAR";
+            case JSON_ARRAY_ORDINAL -> "VARCHAR";
             default -> throw new IllegalStateException("Unhandled array type " + propertyType.name());
         };
         try {
