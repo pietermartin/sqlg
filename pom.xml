@@ -200,6 +200,7 @@
         <module>sqlg-postgres-parent</module>
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
+        <module>sqlg-doc</module>
     </modules>
     <dependencyManagement>
         <dependencies>
