@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: org.umlg.sqlg.test.tp3.structure.SqlgH2StructureStandardTest
+-------------------------------------------------------------------------------
+Tests run: 932, Failures: 0, Errors: 0, Skipped: 374, Time elapsed: 60.12 s -- in org.umlg.sqlg.test.tp3.structure.SqlgH2StructureStandardTest

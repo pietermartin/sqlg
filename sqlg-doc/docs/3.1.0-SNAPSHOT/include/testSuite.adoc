@@ -1,0 +1,20 @@
+== Test Suite
+
+=== Postgresql
+
+include::../postgresql/tests/org.umlg.sqlg.test.PostgresAllTest.txt[]
+include::../postgresql/tests/org.umlg.sqlg.test.PostgresFeatureTest.txt[]
+include::../postgresql/tests/org.umlg.sqlg.test.tp3.process.SqlgPostgresProcessStandardTest.txt[]
+include::../postgresql/tests/org.umlg.sqlg.test.tp3.structure.SqlgPostgresStructureStandardTest.txt[]
+
+=== Hsqldb
+
+include::../hsqldb/tests/org.umlg.sqlg.test.HsqldbAllTest.txt[]
+include::../hsqldb/tests/org.umlg.sqlg.test.tp3.process.SqlgHsqldbProcessStandardTest.txt[]
+include::../hsqldb/tests/org.umlg.sqlg.test.tp3.structure.SqlgHsqldbStructureStandardTest.txt[]
+
+=== H2
+
+include::../h2/tests/org.umlg.sqlg.test.H2AllTest.txt[]
+include::../h2/tests/org.umlg.sqlg.test.tp3.process.SqlgH2ProcessStandardTest.txt[]
+include::../h2/tests/org.umlg.sqlg.test.tp3.structure.SqlgH2StructureStandardTest.txt[]

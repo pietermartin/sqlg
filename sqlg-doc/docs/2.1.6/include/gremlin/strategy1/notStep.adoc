@@ -1,3 +1,0 @@
-==== Not Step
-
-link:{tinkerpop-docs}#not-step[`Not Step`]s are folded into the <<Graph Step>> or <<Vertex Step>>.

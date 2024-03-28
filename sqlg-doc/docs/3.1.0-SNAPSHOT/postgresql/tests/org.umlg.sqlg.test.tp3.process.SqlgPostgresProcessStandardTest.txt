@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: org.umlg.sqlg.test.tp3.process.SqlgPostgresProcessStandardTest
+-------------------------------------------------------------------------------
+Tests run: 890, Failures: 0, Errors: 0, Skipped: 68, Time elapsed: 1341 s -- in org.umlg.sqlg.test.tp3.process.SqlgPostgresProcessStandardTest

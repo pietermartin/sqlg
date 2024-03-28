@@ -1,3 +1,0 @@
-== Limitations
-
-Postgresql schema, table and column names can not be more than 63 characters long.

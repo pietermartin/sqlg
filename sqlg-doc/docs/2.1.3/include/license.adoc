@@ -1,3 +1,0 @@
-== License
-
-image:github/SVG/law.svg[MIT] https://github.com/pietermartin/sqlg/blob/master/LICENSE[MIT]
