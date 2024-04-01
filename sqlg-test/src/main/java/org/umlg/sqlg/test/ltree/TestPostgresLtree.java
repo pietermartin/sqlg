@@ -12,7 +12,6 @@ import org.umlg.sqlg.structure.PropertyDefinition;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +59,7 @@ public class TestPostgresLtree extends BaseTest {
     }
 
     @Test
-    public void testLTreeLquery() throws SQLException {
+    public void testLTreeLquery() {
         Assume.assumeTrue(isPostgres());
         this.sqlgGraph.getTopology().getPublicSchema()
                 .ensureVertexLabelExist("Tree", new HashMap<>() {{
@@ -86,6 +85,11 @@ public class TestPostgresLtree extends BaseTest {
                 .toList();
         Assert.assertEquals(2, tree.size());
 
+        tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+                .has("path", Lquery.lquery("one.*{1}"))
+                .toList();
+        Assert.assertEquals(1, tree.size());
+
 //        Connection connection = sqlgGraph.tx().getConnection();
 //        try (PreparedStatement preparedStatement = connection.prepareStatement("select path from \"V_Tree\" where path ~ ?")) {
 //            sqlgGraph.getSqlDialect().setLquery(preparedStatement, 1, "one.*");
@@ -94,6 +98,39 @@ public class TestPostgresLtree extends BaseTest {
 //                System.out.println(rs.getString(1));
 //            }
 //        }
+    }
+
+    @Test
+    public void testLTreeLqueryUpToLevel() {
+        Assume.assumeTrue(isPostgres());
+        this.sqlgGraph.getTopology().getPublicSchema()
+                .ensureVertexLabelExist("Tree", new HashMap<>() {{
+                    put("path", PropertyDefinition.of(PropertyType.LTREE));
+                }});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one1");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one1.two11");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one1.two12");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one1.two13");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one1.two11.three111");
+
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one2");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one2.two12");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one2.two22");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one2.two23");
+        this.sqlgGraph.addVertex(T.label, "Tree", "path", "one2.two12.three121");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+                .has("path", Lquery.lquery("one1.*{1}"))
+                .toList();
+        Assert.assertEquals(3, tree.size());
+
+        tree = this.sqlgGraph.traversal().V().hasLabel("Tree")
+                .has("path", Lquery.lquery("*{0,2}"))
+                .toList();
+        Assert.assertEquals(8, tree.size());
+
     }
 
     @Test
