@@ -3,7 +3,7 @@ module sqlg.c3p0 {
 
     requires java.sql;
 
-    requires c3p0;
+    requires com.mchange.v2.c3p0;
     requires org.slf4j;
     requires com.google.common;
     requires org.apache.commons.lang3;
