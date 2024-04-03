@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.ltree;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -131,6 +132,13 @@ public class TestPostgresLtree extends BaseTest {
                 .toList();
         Assert.assertEquals(8, tree.size());
 
+        List<Vertex> theRestTreeItems = sqlgGraph.traversal().V().hasLabel("Tree")
+                .and(
+                        __.has("path", Lquery.lquery("*{0,2}")),
+                        __.has("path", P.neq("one2"))
+                )
+                .toList();
+        Assert.assertEquals(7, theRestTreeItems.size());
     }
 
     @Test
