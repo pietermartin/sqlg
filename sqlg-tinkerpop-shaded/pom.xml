@@ -31,6 +31,9 @@
                                     <include>org.apache.tinkerpop:gremlin-language</include>
                                     <include>org.apache.tinkerpop:gremlin-shaded</include>
                                 </includes>
+                                <excludes>
+                                    <exclude>module-info.class</exclude>
+                                </excludes>
                             </artifactSet>
                         </configuration>
                     </execution>
