@@ -1,2 +1,0 @@
-module sqlg.tinkerpop.shaded {
-}

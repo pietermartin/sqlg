@@ -192,7 +192,6 @@
         </resources>
     </build>
     <modules>
-        <module>sqlg-tinkerpop-shaded</module>
         <module>sqlg-core</module>
         <module>sqlg-jdbc-pool</module>
         <module>sqlg-jmh</module>
