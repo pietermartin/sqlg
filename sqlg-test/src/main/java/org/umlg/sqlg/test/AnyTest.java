@@ -2,7 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.json.TestJson;
+import org.umlg.sqlg.test.ltree.TestLtreeAsPrimaryKey;
 
 /**
  * Date: 2014/07/16
@@ -12,7 +12,7 @@ import org.umlg.sqlg.test.json.TestJson;
 @Suite.SuiteClasses({
 //        TestMultiThread.class
 //        TestTest.class
-        TestJson.class
+        TestLtreeAsPrimaryKey.class
 })
 public class AnyTest {
 }
