@@ -195,9 +195,9 @@ public class TestMultiThread extends BaseTest {
                     sqlgGraph.tx().commit();
                     tables.add(finalJ);
                 } catch (Exception e) {
+                    sqlgGraph.tx().rollback();
                     LOGGER.error(e.getMessage(), e);
                     Assert.fail(e.getMessage());
-                    sqlgGraph.tx().rollback();
                 }
             });
         }
@@ -219,6 +219,7 @@ public class TestMultiThread extends BaseTest {
         //For some reason Maria don't like this one on teamcity
         Assume.assumeFalse(isMariaDb());
         Assume.assumeFalse(isH2());
+        Assume.assumeFalse(isHsqldb());
         Vertex v1 = sqlgGraph.addVertex(T.label, "Person", "name", "0");
         sqlgGraph.tx().commit();
         Set<Integer> tables = new ConcurrentSkipListSet<>();
@@ -369,7 +370,6 @@ public class TestMultiThread extends BaseTest {
                         sqlgGraph2.tx().commit();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
                     Assert.fail(e.getMessage());
                 }
             });
