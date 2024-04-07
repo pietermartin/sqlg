@@ -29,7 +29,7 @@ import static org.umlg.sqlg.structure.topology.Topology.*;
  */
 public class Schema implements TopologyInf {
 
-    private static final Logger logger = LoggerFactory.getLogger(Schema.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Schema.class);
     private final SqlgGraph sqlgGraph;
     private final Topology topology;
     private final String name;
@@ -804,8 +804,8 @@ public class Schema implements TopologyInf {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -920,12 +920,15 @@ public class Schema implements TopologyInf {
     }
 
     public Map<String, VertexLabel> getVertexLabels() {
-        Map<String, VertexLabel> result = new HashMap<>(this.vertexLabels);
+        Map<String, VertexLabel> result;
         if (this.topology.isSchemaChanged()) {
+            result = new HashMap<>(this.vertexLabels);
             result.putAll(this.uncommittedVertexLabels);
             for (String e : uncommittedRemovedVertexLabels) {
                 result.remove(e);
             }
+        } else {
+            result = this.vertexLabels;
         }
         return Collections.unmodifiableMap(result);
     }
@@ -1778,14 +1781,14 @@ public class Schema implements TopologyInf {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
-            logger.error("schema deletion failed " + this.sqlgGraph, e);
+            LOGGER.error("schema deletion failed " + this.sqlgGraph, e);
             throw new RuntimeException(e);
         }
     }
@@ -1814,8 +1817,8 @@ public class Schema implements TopologyInf {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sql.toString());
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -1834,8 +1837,8 @@ public class Schema implements TopologyInf {
                     String sql = "DROP TEMPORARY TABLE " +
                             this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()) + "." +
                             this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tableName);
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(sql);
                     }
                     stmt.execute(sql);
                 } catch (SQLException e) {
