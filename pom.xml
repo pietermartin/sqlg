@@ -99,18 +99,18 @@
                 <configuration>
                     <includes>
                         <include>**/H2AllTest.java</include>
-<!--                        <include>**/SqlgH2StructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgH2ProcessStandardTest.java</include>-->
-<!--                        <include>**/H2FeatureTest.java</include>-->
+                        <include>**/SqlgH2StructureStandardTest.java</include>
+                        <include>**/SqlgH2ProcessStandardTest.java</include>
+                        <include>**/H2FeatureTest.java</include>
 
-<!--                        <include>**/HsqldbAllTest.java</include>-->
-<!--                        <include>**/SqlgHsqldbStructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgHsqldbProcessStandardTest.java</include>-->
+                        <include>**/HsqldbAllTest.java</include>
+                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
+                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
 
-<!--                        <include>**/PostgresAllTest.java</include>-->
-<!--                        <include>**/SqlgPostgresStructureStandardTest.java</include>-->
-<!--                        <include>**/SqlgPostgresProcessStandardTest.java</include>-->
-<!--                        <include>**/PostgresFeatureTest.java</include>-->
+                        <include>**/PostgresAllTest.java</include>
+                        <include>**/SqlgPostgresStructureStandardTest.java</include>
+                        <include>**/SqlgPostgresProcessStandardTest.java</include>
+                        <include>**/PostgresFeatureTest.java</include>
 
                     </includes>
                 </configuration>
@@ -140,7 +140,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <skippedModules>sqlg-tinkerpop-shaded,sqlg-test,sqlg-postgres,sqlg-h2,sqlg-hsqldb</skippedModules>
+                            <skippedModules>sqlg-test,sqlg-postgres,sqlg-h2,sqlg-hsqldb</skippedModules>
                             <failOnError>false</failOnError>
                             <excludePackageNames>*.test.*</excludePackageNames>
                             <sourceFileExcludes>
@@ -214,31 +214,15 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-groovy</artifactId>
+                <artifactId>gremlin-language</artifactId>
                 <version>${tinkerpop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-test</artifactId>
                 <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-groovy-test</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tinkerpop</groupId>
-                <artifactId>gremlin-driver</artifactId>
-                <version>${tinkerpop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.umlg</groupId>
-                <artifactId>sqlg-tinkerpop-shaded</artifactId>
-                <version>${sqlg.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
