@@ -874,12 +874,32 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlBulkDialect {
             case BIG_DECIMAL_ARRAY_ORDINAL -> "DOUBLE";
             case BOOLEAN_ARRAY_ORDINAL -> "BOOLEAN";
             case boolean_ARRAY_ORDINAL -> "BOOLEAN";
-            case LOCALDATETIME_ARRAY_ORDINAL -> "SQL_TIMESTAMP_WITH_TIME_ZONE";
-            case LOCALDATE_ARRAY_ORDINAL -> "SQL_DATE";
-            case LOCALTIME_ARRAY_ORDINAL -> "LocalTime";
-            case ZONEDDATETIME_ARRAY_ORDINAL -> "SQL_TIMESTAMP_WITH_TIME_ZONE";
+            case LOCALDATETIME_ARRAY_ORDINAL -> "TIMESTAMP WITH TIME ZONE";
+            case LOCALDATE_ARRAY_ORDINAL -> "DATE";
+            case LOCALTIME_ARRAY_ORDINAL -> "TIME";
+            case ZONEDDATETIME_ARRAY_ORDINAL -> "TIMESTAMP WITH TIME ZONE";
             case JSON_ARRAY_ORDINAL -> "VARCHAR";
             default -> throw new IllegalStateException("Unhandled array type " + propertyType.name());
+
+//            case STRING_ARRAY_ORDINAL -> Type.SQL_VARCHAR;
+//            case long_ARRAY_ORDINAL -> Type.SQL_BIGINT;
+//            case LONG_ARRAY_ORDINAL -> Type.SQL_BIGINT;
+//            case int_ARRAY_ORDINAL -> Type.SQL_INTEGER;
+//            case INTEGER_ARRAY_ORDINAL -> Type.SQL_INTEGER;
+//            case SHORT_ARRAY_ORDINAL -> Type.SQL_SMALLINT;
+//            case short_ARRAY_ORDINAL -> Type.SQL_SMALLINT;
+//            case FLOAT_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
+//            case float_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
+//            case DOUBLE_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
+//            case double_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
+//            case BIG_DECIMAL_ARRAY_ORDINAL -> Type.SQL_DOUBLE;
+//            case BOOLEAN_ARRAY_ORDINAL -> Type.SQL_BIT;
+//            case boolean_ARRAY_ORDINAL -> Type.SQL_BIT;
+//            case LOCALDATETIME_ARRAY_ORDINAL -> Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
+//            case LOCALDATE_ARRAY_ORDINAL -> Type.SQL_DATE;
+//            case LOCALTIME_ARRAY_ORDINAL -> Type.SQL_TIME;
+//            case ZONEDDATETIME_ARRAY_ORDINAL -> Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
+//            case JSON_ARRAY_ORDINAL -> Type.SQL_VARCHAR;
         };
         try {
             return conn.createArrayOf(type, data);
