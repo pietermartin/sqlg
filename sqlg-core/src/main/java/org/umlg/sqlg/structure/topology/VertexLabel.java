@@ -1020,7 +1020,7 @@ public class VertexLabel extends AbstractLabel {
 
     @Override
     public int hashCode() {
-        return (this.schema.getName() + this.getLabel()).hashCode();
+        return (this.schema.getName() + this.label).hashCode();
     }
 
     @Override
