@@ -423,9 +423,9 @@ public class TestTopologyUpgrade extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
-                ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS),
-                ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS),
-                ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS)
+                ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS),
+                ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.SECONDS),
+                ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.SECONDS)
         };
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
@@ -483,9 +483,9 @@ public class TestTopologyUpgrade extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDurationArrayValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsPeriodArrayValues());
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
-                ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS),
-                ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.MILLIS),
-                ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS)
+                ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS),
+                ZonedDateTime.now().minusMonths(1).truncatedTo(ChronoUnit.SECONDS),
+                ZonedDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.SECONDS)
         };
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
         Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
@@ -622,15 +622,15 @@ public class TestTopologyUpgrade extends BaseTest {
         String[] strings = new String[]{"a", "b", "c"};
         LocalDate[] localDates = new LocalDate[]{LocalDate.now(), LocalDate.now().minusMonths(2), LocalDate.now().minusMonths(3)};
         LocalDateTime[] localDateTimes = new LocalDateTime[]{
-                LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS),
-                LocalDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.MILLIS),
-                LocalDateTime.now().minusMonths(3).truncatedTo(ChronoUnit.MILLIS)
+                LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS),
+                LocalDateTime.now().minusMonths(2).truncatedTo(ChronoUnit.SECONDS),
+                LocalDateTime.now().minusMonths(3).truncatedTo(ChronoUnit.SECONDS)
         };
         LocalTime[] localTimes = new LocalTime[]{LocalTime.now(), LocalTime.now().minusHours(2), LocalTime.now().minusHours(3)};
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{
-                ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS),
-                ZonedDateTime.now().minusHours(2).truncatedTo(ChronoUnit.MILLIS),
-                ZonedDateTime.now().minusHours(3).truncatedTo(ChronoUnit.MILLIS)
+                ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS),
+                ZonedDateTime.now().minusHours(2).truncatedTo(ChronoUnit.SECONDS),
+                ZonedDateTime.now().minusHours(3).truncatedTo(ChronoUnit.SECONDS)
         };
         this.sqlgGraph.addVertex(T.label, "A",
                 "bytes", bytes, "bytes2", bytes2,

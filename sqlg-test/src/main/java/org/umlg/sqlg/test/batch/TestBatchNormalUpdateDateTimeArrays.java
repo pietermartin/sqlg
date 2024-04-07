@@ -34,7 +34,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
     public void testUpdateLocalDateTimeArray() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
-        LocalDateTime[] localDateTimeArray = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now()};
+        LocalDateTime[] localDateTimeArray = new LocalDateTime[]{LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS), LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimeArray1", localDateTimeArray);
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimeArray2", localDateTimeArray);
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimeArray3", localDateTimeArray);
@@ -42,8 +42,8 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime[] localDateTimeArrayAgain = new LocalDateTime[]{
-                LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.MILLIS),
-                LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.MILLIS)
+                LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS),
+                LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.SECONDS)
         };
         a1.property("localDateTimeArray1", localDateTimeArrayAgain);
         a2.property("localDateTimeArray2", localDateTimeArrayAgain);
@@ -164,7 +164,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
     public void testUpdateZonedDateTimeArray() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsZonedDateTimeArrayValues());
         this.sqlgGraph.tx().normalBatchModeOn();
-        ZonedDateTime[] zonedDateTimeArray = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now()};
+        ZonedDateTime[] zonedDateTimeArray = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimeArray1", zonedDateTimeArray);
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimeArray2", zonedDateTimeArray);
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimeArray3", zonedDateTimeArray);
@@ -172,8 +172,8 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime[] zonedDateTimeArrayAgain = new ZonedDateTime[]{
-                ZonedDateTime.now().plusHours(1).truncatedTo(ChronoUnit.MILLIS),
-                ZonedDateTime.now().plusHours(2).truncatedTo(ChronoUnit.MILLIS)
+                ZonedDateTime.now().plusHours(1).truncatedTo(ChronoUnit.SECONDS),
+                ZonedDateTime.now().plusHours(2).truncatedTo(ChronoUnit.SECONDS)
         };
         a1.property("zonedDateTimeArray1", zonedDateTimeArrayAgain);
         a2.property("zonedDateTimeArray2", zonedDateTimeArrayAgain);

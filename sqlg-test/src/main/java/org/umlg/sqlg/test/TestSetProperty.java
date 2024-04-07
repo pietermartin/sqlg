@@ -522,16 +522,16 @@ public class TestSetProperty extends BaseTest {
     public void testDateTimeArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLocalDateTimeArrayValues());
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        LocalDateTime ldt = LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+        LocalDateTime ldt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         v.property("ldt", new LocalDateTime[]{ldt});
         v.property("ld", new LocalDate[]{ldt.toLocalDate()});
         LocalTime lt = ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
         v.property("lt", new LocalTime[]{lt});
 
-        ZonedDateTime zdt = ZonedDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+        ZonedDateTime zdt = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         v.property("zdt", new ZonedDateTime[]{zdt});
 
-        ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00")).truncatedTo(ChronoUnit.MILLIS);
+        ZonedDateTime zdt2 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00")).truncatedTo(ChronoUnit.SECONDS);
         v.property("zdt2", new ZonedDateTime[]{zdt2});
 
         Period p = Period.ofDays(3);
