@@ -1,0 +1,164 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestLocalRepeatStep</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.localvertexstep</a>
+</div>
+
+<h1>Coverage Summary for Class: TestLocalRepeatStep (org.umlg.sqlg.test.localvertexstep)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestLocalRepeatStep</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/18)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.localvertexstep;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.function.Predicate;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;import static org.junit.Assert.assertTrue;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/05/08
+&nbsp; * Time: 10:28 AM
+&nbsp; */
+<b class="nc">&nbsp;public class TestLocalRepeatStep extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalRepeatStep() {
+<b class="nc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="nc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="nc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;Path&gt; paths = this.sqlgGraph.traversal().V(a1).local(__.&lt;Vertex&gt;emit().times(2).repeat(__.out())).path().toList();</b>
+<b class="nc">&nbsp;        assertEquals(3, paths.size());</b>
+<b class="nc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="nc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a1),</b>
+<b class="nc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1),</b>
+<b class="nc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1)</b>
+&nbsp;        );
+<b class="nc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="nc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="nc">&nbsp;            assertTrue(path.isPresent());</b>
+<b class="nc">&nbsp;            assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="nc">&nbsp;        assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

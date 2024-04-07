@@ -1,0 +1,865 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestGremlinOptional</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestGremlinOptional (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestGremlinOptional</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (80/80)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    60.3%
+  </span>
+  <span class="absValue">
+    (193/320)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (551/551)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.*;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;import java.util.function.Predicate;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/04/14
+&nbsp; * Time: 6:36 PM
+&nbsp; */
+&nbsp;@SuppressWarnings(&quot;DuplicatedCode&quot;)
+<b class="fc">&nbsp;public class TestGremlinOptional extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testAnotherOptionalWithSelect() {
+<b class="fc">&nbsp;        Vertex activityInstance = this.sqlgGraph.addVertex(T.label, &quot;ActivityInstance&quot;);</b>
+<b class="fc">&nbsp;        Vertex activityRecord1 = this.sqlgGraph.addVertex(T.label, &quot;ActivityRecord&quot;);</b>
+<b class="fc">&nbsp;        Vertex activityRecord2 = this.sqlgGraph.addVertex(T.label, &quot;ActivityRecord&quot;);</b>
+<b class="fc">&nbsp;        Vertex userRecord = this.sqlgGraph.addVertex(T.label, &quot;User&quot;);</b>
+<b class="fc">&nbsp;        activityInstance.addEdge(&quot;a_b&quot;, activityRecord1);</b>
+<b class="fc">&nbsp;        activityInstance.addEdge(&quot;a_b&quot;, activityRecord2);</b>
+<b class="fc">&nbsp;        userRecord.addEdge(&quot;b_c&quot;, activityRecord1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = this.sqlgGraph.traversal().V().hasId(activityInstance.id())</b>
+<b class="fc">&nbsp;                .out(&quot;a_b&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.in(&quot;b_c&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path()</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        for (Path path : paths) {</b>
+<b class="fc">&nbsp;            Vertex activityInstanceVertex = path.get(0);</b>
+<b class="fc">&nbsp;            Vertex activityRecordVertex = path.get(1);</b>
+<b class="fc">&nbsp;            if (path.size() == 3) {</b>
+<b class="fc">&nbsp;                Vertex userVertex = path.get(2);</b>
+<b class="fc">&nbsp;                System.out.println(userVertex);</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithSelect() {
+<b class="fc">&nbsp;        Vertex car1 = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;);</b>
+<b class="fc">&nbsp;        Vertex car2 = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;);</b>
+<b class="fc">&nbsp;        Vertex person = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        car1.addEdge(&quot;passenger&quot;, person);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = this.sqlgGraph.traversal().V().hasLabel(&quot;Car&quot;).as(&quot;cars&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;passenger&quot;).as(&quot;passenger&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path()</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(car1) &amp;&amp; p.get(1).equals(person),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(car2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+<b class="fc">&nbsp;        List&lt;Map&lt;String, Vertex&gt;&gt; result = sqlgGraph.traversal().V().hasLabel(&quot;Car&quot;).as(&quot;cars&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;passenger&quot;).as(&quot;passenger&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .&lt;Vertex&gt;select(&quot;cars&quot;, &quot;passenger&quot;)</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, result.size());</b>
+<b class="fc">&nbsp;        Map&lt;String, Vertex&gt; map = result.get(0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, map.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(map.containsKey(&quot;cars&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(car1, map.get(&quot;cars&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(map.containsKey(&quot;passenger&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(person, map.get(&quot;passenger&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMissingEdgeLabel() {
+<b class="fc">&nbsp;        GraphTraversalSource g = this.sqlgGraph.traversal();</b>
+<b class="fc">&nbsp;        Vertex a = g.addV(&quot;A&quot;).next();</b>
+<b class="fc">&nbsp;        Vertex b = g.addV(&quot;B&quot;).next();</b>
+<b class="fc">&nbsp;        Vertex c = g.addV(&quot;C&quot;).next();</b>
+<b class="fc">&nbsp;        g.addV(&quot;D&quot;).next();</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;a2b&quot;, b);</b>
+<b class="fc">&nbsp;        a.addEdge(&quot;a2c&quot;, c);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths= g.V().hasLabel(&quot;A&quot;).as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .optional(__.out(&quot;a2b&quot;))</b>
+<b class="fc">&nbsp;                .select(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .optional(__.out(&quot;a2c&quot;).out(&quot;c2d&quot;))</b>
+<b class="fc">&nbsp;                .path()</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+<b class="fc">&nbsp;        Path p = paths.get(0);</b>
+<b class="pc">&nbsp;        Assert.assertTrue(p.size() == 3 &amp;&amp; p.get(0).equals(a) &amp;&amp; p.get(1).equals(b) &amp;&amp; p.get(2).equals(a));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithNestedOptionalAndRepeat() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Path&gt; gt = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;ab&quot;).as(&quot;b&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.outE(&quot;bc&quot;).otherV().as(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                                .optional(</b>
+<b class="fc">&nbsp;                                        __.repeat(__.out(&quot;cd&quot;)).times(3)</b>
+&nbsp;                                )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = gt.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithHasContainer() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1).optional(</b>
+<b class="fc">&nbsp;                        __.out().hasLabel(&quot;B&quot;)</b>
+<b class="fc">&nbsp;                ).path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalWithHasContainer2() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1).optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out().hasLabel(&quot;C&quot;)</b>
+&nbsp;                        )
+<b class="fc">&nbsp;                ).path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c2),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptional() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out()</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalNested() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out()</b>
+&nbsp;                        )
+<b class="fc">&nbsp;                ).path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out()</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        paths = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+<b class="fc">&nbsp;        pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalMultipleEdgeLabels() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex bb1 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb2 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb2);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;ab&quot;, &quot;abb&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalNestedMultipleEdgeLabels() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex bb1 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb2 = this.sqlgGraph.addVertex(T.label, &quot;BB&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc1 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;abb&quot;, bb2);</b>
+<b class="fc">&nbsp;        bb1.addEdge(&quot;bbcc&quot;, cc1);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;ab&quot;, &quot;abb&quot;).optional(</b>
+<b class="fc">&nbsp;                                __.out(&quot;bc&quot;, &quot;bbcc&quot;)</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb1) &amp;&amp; p.get(2).equals(cc1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(bb2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalOnNonExistingEdgeLabel() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;ab&quot;, &quot;bb&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Collections.singletonList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;bb&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        paths = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+<b class="fc">&nbsp;        pathsToAssert = Collections.singletonList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a1)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMultipleNestedOptional() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc1 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;);</b>
+<b class="fc">&nbsp;        Vertex cc2 = this.sqlgGraph.addVertex(T.label, &quot;CC&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bcc&quot;, cc2);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ccc&quot;, cc1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;ab&quot;).optional(</b>
+<b class="fc">&nbsp;                                __.out(&quot;bc&quot;)</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;ab&quot;).optional(</b>
+<b class="fc">&nbsp;                                __.out(&quot;bc&quot;)</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .out()</b>
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        paths = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, paths.size());</b>
+<b class="fc">&nbsp;        pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 4 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1) &amp;&amp; p.get(3).equals(cc1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(cc2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalOutNotThere() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;knows&quot;, a1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;knows&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_VX2X_optionalXoutXknowsXX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+&nbsp;
+<b class="fc">&nbsp;        Object vadas = convertToVertexId(g, &quot;vadas&quot;);</b>
+<b class="fc">&nbsp;        Vertex vadasVertex = g.traversal().V(vadas).next();</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = g.traversal()</b>
+<b class="fc">&nbsp;                .V(vadasVertex)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;knows&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path()</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Collections.singletonList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(vadasVertex)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = g.traversal()</b>
+<b class="fc">&nbsp;                .V(vadasVertex)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out(&quot;knows&quot;)</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(vadasVertex, vertices.get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) g.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out()</b>
+&nbsp;                        )
+<b class="fc">&nbsp;                ).path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, paths.size());</b>
+<b class="fc">&nbsp;        pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;marko&quot;)) &amp;&amp; p.get(1).equals(convertToVertex(g, &quot;lop&quot;)),</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;marko&quot;)) &amp;&amp; p.get(1).equals(convertToVertex(g, &quot;vadas&quot;)),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;marko&quot;)) &amp;&amp; p.get(1).equals(convertToVertex(g, &quot;josh&quot;)) &amp;&amp; p.get(2).equals(convertToVertex(g, &quot;lop&quot;)),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;marko&quot;)) &amp;&amp; p.get(1).equals(convertToVertex(g, &quot;josh&quot;)) &amp;&amp; p.get(2).equals(convertToVertex(g, &quot;ripple&quot;)),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;vadas&quot;)),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;lop&quot;)),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;josh&quot;)) &amp;&amp; p.get(1).equals(convertToVertex(g, &quot;lop&quot;)),</b>
+<b class="fc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;josh&quot;)) &amp;&amp; p.get(1).equals(convertToVertex(g, &quot;ripple&quot;)),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;ripple&quot;)),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(convertToVertex(g, &quot;peter&quot;)) &amp;&amp; p.get(1).equals(convertToVertex(g, &quot;lop&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCurrentTreeLabelToSelf1() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;aa&quot;, a2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out()</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a2),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a2),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(b1)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCurrentTreeLabelToSelfSimple() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;aa&quot;, a1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out()</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(a1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCurrentTreeLabelToSelf() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;aa&quot;, a1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;aa&quot;, a1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out()</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(10, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(a1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(a1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(a1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(a1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(a1) &amp;&amp; p.get(2).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalLeftJoin() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;bd&quot;, d1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1)</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.out().optional(</b>
+<b class="fc">&nbsp;                                __.out()</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b2) &amp;&amp; p.get(2).equals(d1),</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b3)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalToSelf() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Edge e1 = a1.addEdge(&quot;aa&quot;, a2);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V(a1.id())</b>
+<b class="fc">&nbsp;                .optional(</b>
+<b class="fc">&nbsp;                        __.toE(Direction.BOTH, &quot;aa&quot;).otherV()</b>
+&nbsp;                )
+<b class="fc">&nbsp;                .path();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, paths.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Collections.singletonList(</b>
+<b class="pc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(e1) &amp;&amp; p.get(2).equals(a2)</b>
+&nbsp;        );
+<b class="fc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="fc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="fc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

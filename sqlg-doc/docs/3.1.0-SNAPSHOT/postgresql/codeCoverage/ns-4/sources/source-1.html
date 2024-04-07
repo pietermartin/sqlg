@@ -1,0 +1,444 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestColumnRefactor</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.columnRefactor</a>
+</div>
+
+<h1>Coverage Summary for Class: TestColumnRefactor (org.umlg.sqlg.test.columnRefactor)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestColumnRefactor</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/150)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestColumnRefactor$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestColumnRefactor$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestColumnRefactor$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/160)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.columnRefactor;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.step.SqlgVertexStep;
+&nbsp;import org.umlg.sqlg.step.barrier.SqlgLocalStepBarrier;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;import java.util.function.Predicate;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; * Date: 2019/01/13
+&nbsp; */
+&nbsp;@SuppressWarnings(&quot;Duplicates&quot;)
+<b class="nc">&nbsp;public class TestColumnRefactor extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void test() {
+<b class="nc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalLabel() {
+<b class="nc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="nc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Traversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).optional(__.out());</b>
+<b class="nc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="nc">&nbsp;        Assert.assertTrue(vertices.contains(b1));</b>
+<b class="nc">&nbsp;        Assert.assertTrue(vertices.contains(a2));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testRepeatLabel() {
+<b class="nc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="nc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Traversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).repeat(__.out()).emit();</b>
+<b class="nc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="nc">&nbsp;        Assert.assertTrue(vertices.contains(b1));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOptionalOptionalLabel() {
+<b class="nc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="nc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="nc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="nc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="nc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Traversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).optional(__.out().optional(__.out()));</b>
+<b class="nc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="nc">&nbsp;        Assert.assertTrue(vertices.contains(a2));</b>
+<b class="nc">&nbsp;        Assert.assertTrue(vertices.contains(b2));</b>
+<b class="nc">&nbsp;        Assert.assertTrue(vertices.contains(c1));</b>
+&nbsp;
+<b class="nc">&nbsp;        Traversal&lt;Vertex, Path&gt; pathTraversal = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).optional(__.out().optional(__.out())).path();</b>
+<b class="nc">&nbsp;        printTraversalForm(pathTraversal);</b>
+<b class="nc">&nbsp;        List&lt;Path&gt; paths = pathTraversal.toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMapUserSuppliedPK() {
+<b class="nc">&nbsp;        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema()</b>
+<b class="nc">&nbsp;                .ensureVertexLabelExist(</b>
+&nbsp;                        &quot;Person&quot;,
+<b class="nc">&nbsp;                        new HashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;                            put(&quot;uid&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="nc">&nbsp;                            put(&quot;name1&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="nc">&nbsp;                            put(&quot;name2&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="nc">&nbsp;                            put(&quot;name3&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                        }},
+<b class="nc">&nbsp;                        ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;uid&quot;))</b>
+&nbsp;                );
+<b class="nc">&nbsp;        Map&lt;String, Object&gt; map = new HashMap&lt;&gt;();</b>
+<b class="nc">&nbsp;        map.put(&quot;uid&quot;, UUID.randomUUID().toString());</b>
+<b class="nc">&nbsp;        map.put(&quot;name1&quot;, &quot;p1&quot;);</b>
+<b class="nc">&nbsp;        map.put(&quot;name2&quot;, &quot;p2&quot;);</b>
+<b class="nc">&nbsp;        map.put(&quot;name3&quot;, &quot;p3&quot;);</b>
+<b class="nc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(&quot;Person&quot;, map);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Vertex v2 = this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).next();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(v1, v2);</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;p1&quot;, v2.property(&quot;name1&quot;).value());</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;p2&quot;, v2.property(&quot;name2&quot;).value());</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;p3&quot;, v2.property(&quot;name3&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testTrivial() {
+<b class="nc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Vertex v2 = this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).next();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLocalOptionalNested() {
+<b class="nc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="nc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="nc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="nc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="nc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="nc">&nbsp;        a2.addEdge(&quot;ab&quot;, b2);</b>
+<b class="nc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Path&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Path&gt;) this.sqlgGraph.traversal()</b>
+<b class="nc">&nbsp;                .V().hasLabel(&quot;A&quot;)</b>
+<b class="nc">&nbsp;                .local(</b>
+<b class="nc">&nbsp;                        __.optional(</b>
+<b class="nc">&nbsp;                                __.out().optional(</b>
+<b class="nc">&nbsp;                                        __.out()</b>
+&nbsp;                                )
+&nbsp;                        )
+&nbsp;                )
+<b class="nc">&nbsp;                .path();</b>
+<b class="nc">&nbsp;        List&lt;Path&gt; paths = traversal.toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="nc">&nbsp;        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStepBarrier);</b>
+<b class="nc">&nbsp;        SqlgLocalStepBarrier&lt;?, ?&gt; localStep = (SqlgLocalStepBarrier) traversal.getSteps().get(1);</b>
+<b class="nc">&nbsp;        List&lt;SqlgVertexStep&gt; sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));</b>
+<b class="nc">&nbsp;        Assert.assertEquals(1, sqlgVertexStepCompileds.size());</b>
+<b class="nc">&nbsp;        SqlgVertexStep sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);</b>
+<b class="nc">&nbsp;        assertStep(sqlgVertexStepCompiled, false, false, true);</b>
+<b class="nc">&nbsp;        Assert.assertEquals(3, paths.size());</b>
+<b class="nc">&nbsp;        List&lt;Predicate&lt;Path&gt;&gt; pathsToAssert = Arrays.asList(</b>
+<b class="nc">&nbsp;                p -&gt; p.size() == 3 &amp;&amp; p.get(0).equals(a1) &amp;&amp; p.get(1).equals(b1) &amp;&amp; p.get(2).equals(c1),</b>
+<b class="nc">&nbsp;                p -&gt; p.size() == 2 &amp;&amp; p.get(0).equals(a2) &amp;&amp; p.get(1).equals(b2),</b>
+<b class="nc">&nbsp;                p -&gt; p.size() == 1 &amp;&amp; p.get(0).equals(a3)</b>
+&nbsp;        );
+<b class="nc">&nbsp;        for (Predicate&lt;Path&gt; pathPredicate : pathsToAssert) {</b>
+<b class="nc">&nbsp;            Optional&lt;Path&gt; path = paths.stream().filter(pathPredicate).findAny();</b>
+<b class="nc">&nbsp;            Assert.assertTrue(path.isPresent());</b>
+<b class="nc">&nbsp;            Assert.assertTrue(paths.remove(path.get()));</b>
+&nbsp;        }
+<b class="nc">&nbsp;        Assert.assertTrue(paths.isEmpty());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDuplicatePath() {
+<b class="nc">&nbsp;        VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist(</b>
+&nbsp;                &quot;Person&quot;,
+<b class="nc">&nbsp;                new HashMap&lt;&gt;(){{</b>
+<b class="nc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="nc">&nbsp;                    put(&quot;surname&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+&nbsp;                }},
+<b class="nc">&nbsp;                ListOrderedSet.listOrderedSet(Arrays.asList(&quot;name&quot;, &quot;surname&quot;))</b>
+&nbsp;        );
+&nbsp;        @SuppressWarnings(&quot;unused&quot;)
+<b class="nc">&nbsp;        EdgeLabel livesAt = person.ensureEdgeLabelExist(</b>
+&nbsp;                &quot;loves&quot;,
+&nbsp;                person,
+<b class="nc">&nbsp;                new HashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;                    put(&quot;country&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }}
+&nbsp;        );
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Vertex person1 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;, &quot;surname&quot;, &quot;Smith&quot;);</b>
+<b class="nc">&nbsp;        Vertex person2 = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;Suzi&quot;, &quot;surname&quot;, &quot;Lovenot&quot;);</b>
+<b class="nc">&nbsp;        person1.addEdge(&quot;loves&quot;, person2);</b>
+<b class="nc">&nbsp;        person2.addEdge(&quot;loves&quot;, person1);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).out().toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="nc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).in().toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;
+<b class="nc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).outE().inV().toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;
+<b class="nc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).outE().outV().toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void dropMultiplePathsToVertices() {
+<b class="nc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="nc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="nc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="nc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="nc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="nc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="nc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="nc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="nc">&nbsp;        Vertex c4 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c4&quot;);</b>
+<b class="nc">&nbsp;        Vertex c5 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c5&quot;);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="nc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="nc">&nbsp;        b1.addEdge(&quot;bc&quot;, c1);</b>
+<b class="nc">&nbsp;        b1.addEdge(&quot;bc&quot;, c2);</b>
+<b class="nc">&nbsp;        b1.addEdge(&quot;bc&quot;, c3);</b>
+<b class="nc">&nbsp;        b2.addEdge(&quot;bc&quot;, c3);</b>
+<b class="nc">&nbsp;        b2.addEdge(&quot;bc&quot;, c4);</b>
+<b class="nc">&nbsp;        b2.addEdge(&quot;bc&quot;, c5);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="nc">&nbsp;                .out()</b>
+<b class="nc">&nbsp;                .out()</b>
+<b class="nc">&nbsp;                .toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(6, vertices.size());</b>
+<b class="nc">&nbsp;        Assert.assertTrue(vertices.removeAll(Arrays.asList(c1, c2, c3, c4, c5)));</b>
+<b class="nc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="nc">&nbsp;        this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="nc">&nbsp;                .out()</b>
+<b class="nc">&nbsp;                .out()</b>
+<b class="nc">&nbsp;                .drop()</b>
+<b class="nc">&nbsp;                .iterate();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        Assert.assertEquals(0L, this.sqlgGraph.traversal().V().hasLabel(&quot;C&quot;).count().next(), 0L);</b>
+<b class="nc">&nbsp;        Assert.assertEquals(0L, this.sqlgGraph.traversal().E().hasLabel(&quot;bc&quot;).count().next(), 0L);</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

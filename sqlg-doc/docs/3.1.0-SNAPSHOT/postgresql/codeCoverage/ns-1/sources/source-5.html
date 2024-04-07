@@ -1,0 +1,197 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > SqlgWorld</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test</a>
+</div>
+
+<h1>Coverage Summary for Class: SqlgWorld (org.umlg.sqlg.test)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">SqlgWorld</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/34)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test;
+&nbsp;
+&nbsp;import io.cucumber.java.Scenario;
+&nbsp;import org.apache.tinkerpop.gremlin.features.World;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Element;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;
+&nbsp;import java.io.File;
+&nbsp;
+&nbsp;import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData;
+&nbsp;
+&nbsp;public abstract class SqlgWorld implements World {
+&nbsp;    private final SqlgGraph modern;
+&nbsp;    private final SqlgGraph classic;
+&nbsp;    private final SqlgGraph sink;
+&nbsp;    private final SqlgGraph grateful;
+&nbsp;    private final SqlgGraph empty;
+&nbsp;
+<b class="nc">&nbsp;    public SqlgWorld(final SqlgGraph modern, final SqlgGraph classic, SqlgGraph sink, SqlgGraph grateful, SqlgGraph empty) {</b>
+<b class="nc">&nbsp;        this.modern = modern;</b>
+<b class="nc">&nbsp;        this.classic = classic;</b>
+<b class="nc">&nbsp;        this.sink = sink;</b>
+<b class="nc">&nbsp;        this.grateful = grateful;</b>
+<b class="nc">&nbsp;        this.empty = empty;</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public GraphTraversalSource getGraphTraversalSource(final GraphData graphData) {
+<b class="nc">&nbsp;        if (null == graphData)</b>
+<b class="nc">&nbsp;            return empty.traversal();</b>
+<b class="nc">&nbsp;        else if (graphData == GraphData.CLASSIC)</b>
+<b class="nc">&nbsp;            return classic.traversal();</b>
+<b class="nc">&nbsp;        else if (graphData == GraphData.CREW)</b>
+<b class="nc">&nbsp;            throw new UnsupportedOperationException(&quot;The Crew dataset is not supported by Sqlg because it doesn&#39;t support multi/meta-properties&quot;);</b>
+<b class="nc">&nbsp;        else if (graphData == GraphData.MODERN)</b>
+<b class="nc">&nbsp;            return modern.traversal();</b>
+<b class="nc">&nbsp;        else if (graphData == GraphData.SINK)</b>
+<b class="nc">&nbsp;            return sink.traversal();</b>
+<b class="nc">&nbsp;        else if (graphData == GraphData.GRATEFUL)</b>
+<b class="nc">&nbsp;            return grateful.traversal();</b>
+&nbsp;        else
+<b class="nc">&nbsp;            throw new UnsupportedOperationException(&quot;GraphData not supported: &quot; + graphData.name());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public void beforeEachScenario(final Scenario scenario) {
+<b class="nc">&nbsp;        cleanEmpty();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public String changePathToDataFile(final String pathToFileFromGremlin) {
+<b class="nc">&nbsp;        return &quot;..&quot; + File.separator + pathToFileFromGremlin;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public String convertIdToScript(final Object id, final Class&lt;? extends Element&gt; type) {
+<b class="nc">&nbsp;        return &quot;\&quot;&quot; + id.toString() + &quot;\&quot;&quot;;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void cleanEmpty() {
+<b class="nc">&nbsp;        empty.tx().commit();</b>
+<b class="nc">&nbsp;        classic.tx().commit();</b>
+<b class="nc">&nbsp;        modern.tx().commit();</b>
+<b class="nc">&nbsp;        sink.tx().commit();</b>
+<b class="nc">&nbsp;        grateful.tx().commit();</b>
+<b class="nc">&nbsp;        final GraphTraversalSource g = empty.traversal();</b>
+<b class="nc">&nbsp;        g.V().drop().iterate();</b>
+<b class="nc">&nbsp;        for (EdgeLabel edgeLabel : empty.getTopology().getPublicSchema().getEdgeLabels().values()) {</b>
+<b class="nc">&nbsp;            edgeLabel.remove();</b>
+&nbsp;        }
+<b class="nc">&nbsp;        for (VertexLabel vertexLabel : empty.getTopology().getPublicSchema().getVertexLabels().values()) {</b>
+<b class="nc">&nbsp;            vertexLabel.remove();</b>
+&nbsp;        }
+<b class="nc">&nbsp;        empty.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

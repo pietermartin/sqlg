@@ -1,0 +1,185 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestLabelsSchema</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.labels</a>
+</div>
+
+<h1>Coverage Summary for Class: TestLabelsSchema (org.umlg.sqlg.test.labels)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestLabelsSchema</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (37/37)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.labels;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * Test label behaviors when we use schema.label
+&nbsp; *
+&nbsp; * @author jpmoresmau
+&nbsp; */
+<b class="fc">&nbsp;public class TestLabelsSchema extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLabelSchema() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;S1.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;S2.B&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(&quot;S1.A&quot;, v1.label());</b>
+<b class="fc">&nbsp;        assertEquals(&quot;S2.B&quot;, v2.label());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOrHasSchema() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;S1.A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;S2.B&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(2L, this.sqlgGraph.traversal().V().or(</b>
+<b class="fc">&nbsp;                __.hasLabel(&quot;S1.A&quot;)</b>
+<b class="fc">&nbsp;                , __.hasLabel(&quot;S2.B&quot;)</b>
+<b class="fc">&nbsp;        ).count().next().longValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabelSchema() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;S1.A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;S2.B&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(1L, this.sqlgGraph.traversal().V().hasLabel(&quot;S1.A&quot;)</b>
+<b class="fc">&nbsp;                .count().next().longValue());</b>
+<b class="fc">&nbsp;        assertEquals(1L, this.sqlgGraph.traversal().V().has(T.label, P.eq(&quot;S1.A&quot;))</b>
+<b class="fc">&nbsp;                .count().next().longValue());</b>
+<b class="fc">&nbsp;        assertEquals(1L, this.sqlgGraph.traversal().V().has(T.label, P.within(&quot;S1.A&quot;))</b>
+<b class="fc">&nbsp;                .count().next().longValue());</b>
+<b class="fc">&nbsp;        assertEquals(1L, this.sqlgGraph.traversal().V().hasLabel(&quot;S2.B&quot;)</b>
+<b class="fc">&nbsp;                .count().next().longValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Edge labels are NOT prefixed by schema
+&nbsp;     */
+&nbsp;    @Test
+&nbsp;    public void testLabelSchemaEdge() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.addVertex(T.label, &quot;S1.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = this.sqlgGraph.addVertex(T.label, &quot;S2.B&quot;);</b>
+<b class="fc">&nbsp;        Edge e1 = v1.addEdge(&quot;E1&quot;, v2, &quot;name&quot;, &quot;e1&quot;);</b>
+<b class="fc">&nbsp;        assertEquals(&quot;E1&quot;, e1.label());</b>
+<b class="fc">&nbsp;        assertEquals(1L, this.sqlgGraph.traversal().E().hasLabel(&quot;E1&quot;)</b>
+<b class="fc">&nbsp;                .count().next().longValue());</b>
+<b class="fc">&nbsp;        assertEquals(1L, this.sqlgGraph.traversal().E().has(T.label, P.eq(&quot;E1&quot;))</b>
+<b class="fc">&nbsp;                .count().next().longValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Edge labels are NOT prefixed by schema
+&nbsp;     */
+&nbsp;    @Test
+&nbsp;    public void testMultipleLabelSchemaEdge() {
+<b class="fc">&nbsp;        Vertex aa = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex ab = this.sqlgGraph.addVertex(T.label, &quot;A.B&quot;);</b>
+<b class="fc">&nbsp;        Vertex ba = this.sqlgGraph.addVertex(T.label, &quot;B.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex bb = this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;);</b>
+<b class="fc">&nbsp;        aa.addEdge(&quot;ab&quot;, ab);</b>
+<b class="fc">&nbsp;        ba.addEdge(&quot;ab&quot;, bb);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        assertEquals(2L, this.sqlgGraph.traversal().E().hasLabel(&quot;ab&quot;).count().next().longValue());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

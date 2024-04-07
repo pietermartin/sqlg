@@ -1,0 +1,208 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestTest</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test</a>
+</div>
+
+<h1>Coverage Summary for Class: TestTest (org.umlg.sqlg.test)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestTest</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/14)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+<b class="nc">&nbsp;public class TestTest extends BaseTest {</b>
+&nbsp;
+<b class="nc">&nbsp;    private static final Logger LOGGER = LoggerFactory.getLogger(TestTest.class);</b>
+&nbsp;
+&nbsp;    //    @BeforeClass
+&nbsp;//    public static void beforeClass() {
+&nbsp;//        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);
+&nbsp;//        try {
+&nbsp;//            Configurations configs = new Configurations();
+&nbsp;//            configuration = configs.properties(sqlProperties);
+&nbsp;//            Assume.assumeTrue(isPostgres());
+&nbsp;//            configuration.addProperty(SqlgGraph.DISTRIBUTED, true);
+&nbsp;//            if (!configuration.containsKey(SqlgGraph.JDBC_URL))
+&nbsp;//                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, SqlgGraph.JDBC_URL));
+&nbsp;//
+&nbsp;//        } catch (ConfigurationException e) {
+&nbsp;//            throw new IllegalStateException(e);
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;
+&nbsp;//    @Test
+&nbsp;//    public void test1() {
+&nbsp;//        loadModern();
+&nbsp;//        for (EdgeLabel edgeLabel : this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabels().values()) {
+&nbsp;//            edgeLabel.remove();
+&nbsp;//        }
+&nbsp;//        for (VertexLabel vertexLabel : this.sqlgGraph.getTopology().getPublicSchema().getVertexLabels().values()) {
+&nbsp;//            vertexLabel.remove();
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;a&quot;);
+&nbsp;//        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;b&quot;);
+&nbsp;//        a.addEdge(&quot;knows&quot;, b);
+&nbsp;//        this.sqlgGraph.traversal().V().drop().iterate();
+&nbsp;//        this.sqlgGraph.traversal().E().toList();
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void test2() {
+&nbsp;//        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;a&quot;);
+&nbsp;//        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;b&quot;);
+&nbsp;//        a.addEdge(&quot;knows&quot;, b);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        for (EdgeLabel edgeLabel : this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabels().values()) {
+&nbsp;//            edgeLabel.remove();
+&nbsp;//        }
+&nbsp;//        for (VertexLabel vertexLabel : this.sqlgGraph.getTopology().getPublicSchema().getVertexLabels().values()) {
+&nbsp;//            vertexLabel.remove();
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        Vertex alice = this.sqlgGraph.addVertex(T.label, &quot;person&quot;, &quot;name&quot;, &quot;alice&quot;);
+&nbsp;//        Vertex bob = this.sqlgGraph.addVertex(T.label, &quot;person&quot;, &quot;name&quot;, &quot;bob&quot;);
+&nbsp;//        alice.addEdge(&quot;knows&quot;, bob, &quot;weight&quot;, 1);
+&nbsp;//        List&lt;Integer&gt; weights = this.sqlgGraph.traversal().V().bothE().&lt;Integer&gt;values(&quot;weight&quot;).toList();
+&nbsp;//    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void test3() {
+<b class="nc">&nbsp;        loadModern();</b>
+<b class="nc">&nbsp;        for (EdgeLabel edgeLabel : this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabels().values()) {</b>
+<b class="nc">&nbsp;            edgeLabel.remove();</b>
+&nbsp;        }
+<b class="nc">&nbsp;        for (VertexLabel vertexLabel : this.sqlgGraph.getTopology().getPublicSchema().getVertexLabels().values()) {</b>
+<b class="nc">&nbsp;            vertexLabel.remove();</b>
+&nbsp;        }
+<b class="nc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;a&quot;);</b>
+<b class="nc">&nbsp;        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;b&quot;);</b>
+<b class="nc">&nbsp;        a.addEdge(&quot;knows&quot;, b);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.traversal().V().drop().iterate();</b>
+<b class="nc">&nbsp;        List&lt;Edge&gt; edges = this.sqlgGraph.traversal().E().hasLabel(&quot;knows&quot;).toList();</b>
+<b class="nc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+&nbsp;
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1150 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > DocTests</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.doc</a>
+</div>
+
+<h1>Coverage Summary for Class: DocTests (org.umlg.sqlg.test.doc)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">DocTests</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/67)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">DocTests$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">DocTests$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">DocTests$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/73)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.doc;
+&nbsp;
+&nbsp;import org.apache.commons.configuration2.builder.fluent.Configurations;
+&nbsp;import org.apache.commons.configuration2.ex.ConfigurationException;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Direction;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.structure.Multiplicity;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeDefinition;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.PropertyColumn;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.LinkedHashMap;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertTrue;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/12/26
+&nbsp; * Time: 9:54 PM
+&nbsp; */
+&nbsp;@SuppressWarnings(&quot;unused&quot;)
+<b class="nc">&nbsp;public class DocTests extends BaseTest {</b>
+&nbsp;
+<b class="nc">&nbsp;    private static final Logger LOGGER = LoggerFactory.getLogger(DocTests.class);</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="nc">&nbsp;        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            Configurations configs = new Configurations();</b>
+<b class="nc">&nbsp;            configuration = configs.properties(sqlProperties);</b>
+<b class="nc">&nbsp;            Assume.assumeTrue(isPostgres());</b>
+<b class="nc">&nbsp;            configuration.setProperty(&quot;implement.foreign.keys&quot;, false);</b>
+<b class="nc">&nbsp;            if (!configuration.containsKey(&quot;jdbc.url&quot;))</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, &quot;jdbc.url&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        } catch (ConfigurationException e) {</b>
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUpdatePropertyDefinition() {
+<b class="nc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;A&quot;, new HashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;            put(&quot;col1&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(0, 1)));</b>
+&nbsp;        }});
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        a = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).tryNext().orElseThrow();</b>
+<b class="nc">&nbsp;        Assert.assertNull(a.value(&quot;col1&quot;));</b>
+<b class="nc">&nbsp;        a.property(&quot;col1&quot;, &quot;t&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;A&quot;).orElseThrow();</b>
+<b class="nc">&nbsp;        PropertyColumn propertyColumn = aVertexLabel.getProperty(&quot;col1&quot;).orElseThrow();</b>
+<b class="nc">&nbsp;        propertyColumn.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="nc">&nbsp;            Assert.fail(&quot;not null constraint expected&quot;);</b>
+<b class="nc">&nbsp;        } catch (Exception e) {</b>
+<b class="nc">&nbsp;            this.sqlgGraph.tx().rollback();</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        propertyColumn.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), &quot;&#39;test&#39;&quot;));</b>
+<b class="nc">&nbsp;        a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="nc">&nbsp;        Assert.assertEquals(&quot;test&quot;, a.value(&quot;col1&quot;));</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="nc">&nbsp;        propertyColumn.updatePropertyDefinition(PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1), &quot;&#39;test&#39;&quot;, &quot;(starts_with(&quot; + sqlgGraph.getSqlDialect().maybeWrapInQoutes(&quot;col1&quot;) + &quot;, &#39;t&#39;))&quot;));</b>
+&nbsp;
+&nbsp;        try {
+<b class="nc">&nbsp;            a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, &quot;x&quot;);</b>
+<b class="nc">&nbsp;            Assert.fail(&quot;check constraint expected&quot;);</b>
+<b class="nc">&nbsp;        } catch (Exception e) {</b>
+<b class="nc">&nbsp;            this.sqlgGraph.tx().rollback();</b>
+&nbsp;        }
+<b class="nc">&nbsp;        a = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;col1&quot;, &quot;taaa&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    //    @Test
+&nbsp;//    public void showStreamingWithLockBulkEdgeCreation() {
+&nbsp;//        StopWatch stopWatch = new StopWatch();
+&nbsp;//        stopWatch.start();
+&nbsp;//        int count = 0;
+&nbsp;//        for (int i = 1; i &lt;= 10; i++) {
+&nbsp;//            List&lt;Vertex&gt; persons = new ArrayList&lt;&gt;();
+&nbsp;//            this.sqlgGraph.tx().streamingWithLockBatchModeOn();
+&nbsp;//            for (int j = 1; j &lt;= 1_000_000; j++) {
+&nbsp;//                Vertex person = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot; + count);
+&nbsp;//                persons.add(person);
+&nbsp;//            }
+&nbsp;//            this.sqlgGraph.tx().flush();
+&nbsp;//            List&lt;Vertex&gt; cars = new ArrayList&lt;&gt;();
+&nbsp;//            for (int j = 1; j &lt;= 1_000_000; j++) {
+&nbsp;//                Vertex car = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;Dodge&quot; + count++);
+&nbsp;//                cars.add(car);
+&nbsp;//            }
+&nbsp;//            this.sqlgGraph.tx().flush();
+&nbsp;//            Iterator&lt;Vertex&gt; carIter = cars.iterator();
+&nbsp;//            for (Vertex person : persons) {
+&nbsp;//                person.addEdge(&quot;drives&quot;, carIter.next());
+&nbsp;//            }
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;Time taken: &quot; + stopWatch);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showBulkEdgeCreation() {
+&nbsp;//        StopWatch stopWatch = new StopWatch();
+&nbsp;//        stopWatch.start();
+&nbsp;//        int count = 0;
+&nbsp;//        for (int i = 1; i &lt;= 10; i++) {
+&nbsp;//            List&lt;Pair&lt;String, String&gt;&gt; identifiers = new ArrayList&lt;&gt;();
+&nbsp;//            this.sqlgGraph.tx().streamingBatchModeOn();
+&nbsp;//            for (int j = 1; j &lt;= 1_000_000; j++) {
+&nbsp;//                this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot; + count, &quot;personUid&quot;, String.valueOf(count));
+&nbsp;//            }
+&nbsp;//            this.sqlgGraph.tx().flush();
+&nbsp;//            for (int j = 1; j &lt;= 1_000_000; j++) {
+&nbsp;//                this.sqlgGraph.streamVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;Dodge&quot; + count, &quot;carUid&quot;, String.valueOf(count));
+&nbsp;//                identifiers.add(Pair.of(String.valueOf(count), String.valueOf(count++)));
+&nbsp;//            }
+&nbsp;//            this.sqlgGraph.tx().flush();
+&nbsp;//            this.sqlgGraph.bulkAddEdges(&quot;Person&quot;, &quot;Car&quot;, &quot;drives&quot;, Pair.of(&quot;personUid&quot;, &quot;carUid&quot;), identifiers);
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        }
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;Time taken: &quot; + stopWatch);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showStreamingBatchMode() {
+&nbsp;//        StopWatch stopWatch = new StopWatch();
+&nbsp;//        stopWatch.start();
+&nbsp;//        //enable streaming mode
+&nbsp;//        this.sqlgGraph.tx().streamingBatchModeOn();
+&nbsp;//        for (int i = 1; i &lt;= 10_000_000; i++) {
+&nbsp;//            this.sqlgGraph.streamVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot; + i);
+&nbsp;//        }
+&nbsp;//        //flushing is needed before starting streaming Car. Only one label/table can stream at a time.
+&nbsp;//        this.sqlgGraph.tx().flush();
+&nbsp;//        for (int i = 1; i &lt;= 10_000_000; i++) {
+&nbsp;//            this.sqlgGraph.streamVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;Dodge&quot; + i);
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(stopWatch);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showNormalBatchMode() {
+&nbsp;//        StopWatch stopWatch = new StopWatch();
+&nbsp;//        stopWatch.start();
+&nbsp;//        this.sqlgGraph.tx().normalBatchModeOn();
+&nbsp;//        for (int i = 1; i &lt;= 10_000_000; i++) {
+&nbsp;//            Vertex person = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot; + i);
+&nbsp;//            Vertex car = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;Dodge&quot; + i);
+&nbsp;//            person.addEdge(&quot;drives&quot;, car);
+&nbsp;//            if (i % 100_000 == 0) {
+&nbsp;//                this.sqlgGraph.tx().flush();
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        stopWatch.stop();
+&nbsp;//        System.out.println(&quot;Time taken: &quot; + stopWatch);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testLimitOnVertexLabels() {
+&nbsp;//        for (int i = 0; i &lt; 100; i++) {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;person&quot; + i);
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        List&lt;String&gt; names = this.sqlgGraph.traversal()
+&nbsp;//                .V().hasLabel(&quot;Person&quot;)
+&nbsp;//                .order().by(&quot;name&quot;)
+&nbsp;//                .limit(3)
+&nbsp;//                .&lt;String&gt;values(&quot;name&quot;)
+&nbsp;//                .toList();
+&nbsp;//        assertEquals(3, names.size());
+&nbsp;//        assertEquals(&quot;person0&quot;, names.get(0));
+&nbsp;//        assertEquals(&quot;person1&quot;, names.get(1));
+&nbsp;//        assertEquals(&quot;person10&quot;, names.get(2));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testRangeOnVertexLabels() {
+&nbsp;//        for (int i = 0; i &lt; 100; i++) {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;person&quot; + i);
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        List&lt;String&gt; names = this.sqlgGraph.traversal()
+&nbsp;//                .V().hasLabel(&quot;Person&quot;)
+&nbsp;//                .order().by(&quot;name&quot;)
+&nbsp;//                .range(1, 4)
+&nbsp;//                .&lt;String&gt;values(&quot;name&quot;)
+&nbsp;//                .toList();
+&nbsp;//        assertEquals(3, names.size());
+&nbsp;//        assertEquals(&quot;person1&quot;, names.get(0));
+&nbsp;//        assertEquals(&quot;person10&quot;, names.get(1));
+&nbsp;//        assertEquals(&quot;person11&quot;, names.get(2));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @SuppressWarnings(&quot;resource&quot;)
+&nbsp;//    @Test
+&nbsp;//    public void testOptionalNested() {
+&nbsp;//        Vertex google = this.sqlgGraph.addVertex(T.label, &quot;Company&quot;, &quot;name&quot;, &quot;Google&quot;);
+&nbsp;//        Vertex apple = this.sqlgGraph.addVertex(T.label, &quot;Company&quot;, &quot;name&quot;, &quot;Apple&quot;);
+&nbsp;//        Vertex usa = this.sqlgGraph.addVertex(T.label, &quot;Country&quot;, &quot;name&quot;, &quot;USA&quot;);
+&nbsp;//        Vertex england = this.sqlgGraph.addVertex(T.label, &quot;Country&quot;, &quot;name&quot;, &quot;England&quot;);
+&nbsp;//        Vertex newYork = this.sqlgGraph.addVertex(T.label, &quot;City&quot;, &quot;name&quot;, &quot;New York&quot;);
+&nbsp;//        google.addEdge(&quot;activeIn&quot;, usa);
+&nbsp;//        google.addEdge(&quot;activeIn&quot;, england);
+&nbsp;//        usa.addEdge(&quot;capital&quot;, newYork);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        List&lt;Path&gt; paths = this.sqlgGraph.traversal()
+&nbsp;//                .V()
+&nbsp;//                .hasLabel(&quot;Company&quot;)
+&nbsp;//                .optional(
+&nbsp;//                        out().optional(
+&nbsp;//                                out()
+&nbsp;//                        )
+&nbsp;//                )
+&nbsp;//                .path()
+&nbsp;//                .toList();
+&nbsp;//        paths.forEach(p -&gt; System.out.println(p.toString()));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showRepeat() {
+&nbsp;//        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//        Vertex peterski = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;Peterski&quot;);
+&nbsp;//        Vertex paul = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;Paul&quot;);
+&nbsp;//        Vertex usa = this.sqlgGraph.addVertex(T.label, &quot;Country&quot;, &quot;name&quot;, &quot;USA&quot;);
+&nbsp;//        Vertex russia = this.sqlgGraph.addVertex(T.label, &quot;Country&quot;, &quot;name&quot;, &quot;Russia&quot;);
+&nbsp;//        Vertex washington = this.sqlgGraph.addVertex(T.label, &quot;City&quot;, &quot;name&quot;, &quot;Washington&quot;);
+&nbsp;//        john.addEdge(&quot;lives&quot;, usa);
+&nbsp;//        peterski.addEdge(&quot;lives&quot;, russia);
+&nbsp;//        usa.addEdge(&quot;capital&quot;, washington);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        List&lt;Path&gt; paths = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;Person&quot;)
+&nbsp;//                .emit().times(2).repeat(out(&quot;lives&quot;, &quot;capital&quot;))
+&nbsp;//                .path().by(&quot;name&quot;)
+&nbsp;//                .toList();
+&nbsp;//        for (Path path : paths) {
+&nbsp;//            System.out.println(path);
+&nbsp;//        }
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testOrderBy() {
+&nbsp;//        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;, &quot;surname&quot;, &quot;a&quot;);
+&nbsp;//        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;, &quot;surname&quot;, &quot;b&quot;);
+&nbsp;//        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;, &quot;surname&quot;, &quot;c&quot;);
+&nbsp;//        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;b&quot;, &quot;surname&quot;, &quot;a&quot;);
+&nbsp;//        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;b&quot;, &quot;surname&quot;, &quot;b&quot;);
+&nbsp;//        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;b&quot;, &quot;surname&quot;, &quot;c&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        List&lt;Vertex&gt; result = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)
+&nbsp;//                .order().by(&quot;name&quot;, Order.asc).by(&quot;surname&quot;, Order.desc)
+&nbsp;//                .toList();
+&nbsp;//
+&nbsp;//        assertEquals(6, result.size());
+&nbsp;//        assertEquals(a3, result.get(0));
+&nbsp;//        assertEquals(a2, result.get(1));
+&nbsp;//        assertEquals(a1, result.get(2));
+&nbsp;//        assertEquals(b3, result.get(3));
+&nbsp;//        assertEquals(b2, result.get(4));
+&nbsp;//        assertEquals(b1, result.get(5));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showSearchOnLocalDateTime() {
+&nbsp;//        LocalDateTime born1 = LocalDateTime.of(1990, 1, 1, 1, 1, 1);
+&nbsp;//        LocalDateTime born2 = LocalDateTime.of(1990, 1, 1, 1, 1, 2);
+&nbsp;//        LocalDateTime born3 = LocalDateTime.of(1990, 1, 1, 1, 1, 3);
+&nbsp;//        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;, &quot;born&quot;, born1);
+&nbsp;//        Vertex peter = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;Peter&quot;, &quot;born&quot;, born2);
+&nbsp;//        Vertex paul = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;Paul&quot;, &quot;born&quot;, born3);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;)
+&nbsp;//                .has(&quot;born&quot;, P.eq(born1))
+&nbsp;//                .toList();
+&nbsp;//        assertEquals(1, persons.size());
+&nbsp;//        assertEquals(john, persons.get(0));
+&nbsp;//
+&nbsp;//        persons = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;)
+&nbsp;//                .has(&quot;born&quot;, P.between(LocalDateTime.of(1990, 1, 1, 1, 1, 1), LocalDateTime.of(1990, 1, 1, 1, 1, 3)))
+&nbsp;//                .toList();
+&nbsp;//        //P.between is inclusive to exclusive
+&nbsp;//        assertEquals(2, persons.size());
+&nbsp;//        assertTrue(persons.contains(john));
+&nbsp;//        assertTrue(persons.contains(peter));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showTextPredicate() {
+&nbsp;//        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John XXX Doe&quot;);
+&nbsp;//        Vertex peter = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;Peter YYY Snow&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;Person&quot;)
+&nbsp;//                .has(&quot;name&quot;, Text.contains(&quot;XXX&quot;)).toList();
+&nbsp;//
+&nbsp;//        assertEquals(1, persons.size());
+&nbsp;//        assertEquals(john, persons.get(0));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showContainsPredicate() {
+&nbsp;//        List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;(10000);
+&nbsp;//        for (int i = 0; i &lt; 10000; i++) {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;number&quot;, i);
+&nbsp;//            numbers.add(i);
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        List&lt;Vertex&gt; persons = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;Person&quot;)
+&nbsp;//                .has(&quot;number&quot;, P.within(numbers))
+&nbsp;//                .toList();
+&nbsp;//
+&nbsp;//        assertEquals(10000, persons.size());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @SuppressWarnings(&quot;ResultOfMethodCallIgnored&quot;)
+&nbsp;//    @Test
+&nbsp;//    public void showComparePredicate() {
+&nbsp;//        Vertex easternUnion = this.sqlgGraph.addVertex(T.label, &quot;Organization&quot;, &quot;name&quot;, &quot;EasternUnion&quot;);
+&nbsp;//        Vertex legal = this.sqlgGraph.addVertex(T.label, &quot;Division&quot;, &quot;name&quot;, &quot;Legal&quot;);
+&nbsp;//        Vertex dispatch = this.sqlgGraph.addVertex(T.label, &quot;Division&quot;, &quot;name&quot;, &quot;Dispatch&quot;);
+&nbsp;//        Vertex newYork = this.sqlgGraph.addVertex(T.label, &quot;Office&quot;, &quot;name&quot;, &quot;NewYork&quot;);
+&nbsp;//        Vertex singapore = this.sqlgGraph.addVertex(T.label, &quot;Office&quot;, &quot;name&quot;, &quot;Singapore&quot;);
+&nbsp;//        easternUnion.addEdge(&quot;organization_division&quot;, legal);
+&nbsp;//        easternUnion.addEdge(&quot;organization_division&quot;, dispatch);
+&nbsp;//        legal.addEdge(&quot;division_office&quot;, newYork);
+&nbsp;//        dispatch.addEdge(&quot;division_office&quot;, singapore);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;Organization&quot;)
+&nbsp;//                .out()
+&nbsp;//                .out()
+&nbsp;//                .has(&quot;name&quot;, P.eq(&quot;Singapore&quot;));
+&nbsp;//        System.out.println(traversal);
+&nbsp;//        traversal.hasNext();
+&nbsp;//        System.out.println(traversal);
+&nbsp;//        List&lt;Vertex&gt; offices = traversal.toList();
+&nbsp;//        assertEquals(1, offices.size());
+&nbsp;//        assertEquals(singapore, offices.get(0));
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @SuppressWarnings(&quot;ResultOfMethodCallIgnored&quot;)
+&nbsp;//    @Test
+&nbsp;//    public void showHighLatency() {
+&nbsp;//        Vertex easternUnion = this.sqlgGraph.addVertex(T.label, &quot;Organization&quot;, &quot;name&quot;, &quot;EasternUnion&quot;);
+&nbsp;//        Vertex legal = this.sqlgGraph.addVertex(T.label, &quot;Division&quot;, &quot;name&quot;, &quot;Legal&quot;);
+&nbsp;//        Vertex dispatch = this.sqlgGraph.addVertex(T.label, &quot;Division&quot;, &quot;name&quot;, &quot;Dispatch&quot;);
+&nbsp;//        Vertex newYork = this.sqlgGraph.addVertex(T.label, &quot;Office&quot;, &quot;name&quot;, &quot;NewYork&quot;);
+&nbsp;//        Vertex singapore = this.sqlgGraph.addVertex(T.label, &quot;Office&quot;, &quot;name&quot;, &quot;Singapore&quot;);
+&nbsp;//        easternUnion.addEdge(&quot;organization_division&quot;, legal);
+&nbsp;//        easternUnion.addEdge(&quot;organization_division&quot;, dispatch);
+&nbsp;//        legal.addEdge(&quot;division_office&quot;, newYork);
+&nbsp;//        dispatch.addEdge(&quot;division_office&quot;, singapore);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;Organization&quot;)
+&nbsp;//                .out()
+&nbsp;//                .out();
+&nbsp;//        System.out.println(traversal);
+&nbsp;//        traversal.hasNext();
+&nbsp;//        System.out.println(traversal);
+&nbsp;//        List&lt;Vertex&gt; offices = traversal.toList();
+&nbsp;//        assertEquals(2, offices.size());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void createModernUpfront() {
+&nbsp;//        Topology topology = this.sqlgGraph.getTopology();
+&nbsp;//        VertexLabel personVertexLabel = topology.ensureVertexLabelExist(&quot;public&quot;, &quot;person&quot;, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//            put(&quot;age&quot;, PropertyDefinition.of(PropertyType.INTEGER));
+&nbsp;//        }});
+&nbsp;//        VertexLabel softwareVertexLabel = topology.ensureVertexLabelExist(&quot;public&quot;, &quot;software&quot;, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//            put(&quot;lang&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//        }});
+&nbsp;//        EdgeLabel createdEdgeLabel = personVertexLabel.ensureEdgeLabelExist(&quot;created&quot;, softwareVertexLabel, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;weight&quot;, PropertyDefinition.of(PropertyType.DOUBLE));
+&nbsp;//        }});
+&nbsp;//        EdgeLabel knowsEdgeLabel = personVertexLabel.ensureEdgeLabelExist(&quot;knows&quot;, personVertexLabel, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;weight&quot;, PropertyDefinition.of(PropertyType.DOUBLE));
+&nbsp;//        }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void generalTopologyCreationWithSchema() {
+&nbsp;//        Schema schema = this.sqlgGraph.getTopology().ensureSchemaExist(&quot;Humans&quot;);
+&nbsp;//        VertexLabel personVertexLabel = schema.ensureVertexLabelExist(&quot;Person&quot;, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//            put(&quot;date&quot;, PropertyDefinition.of(PropertyType.LOCALDATE));
+&nbsp;//        }});
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void queryCache() {
+&nbsp;//        loadModern();
+&nbsp;//        Optional&lt;Schema&gt; publicSchema = this.sqlgGraph.getTopology().getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema());
+&nbsp;//        assertTrue(publicSchema.isPresent());
+&nbsp;//        Schema publicSchemaViaShortCut = this.sqlgGraph.getTopology().getPublicSchema();
+&nbsp;//        Optional&lt;VertexLabel&gt; personVertexLabel = publicSchemaViaShortCut.getVertexLabel(&quot;person&quot;);
+&nbsp;//        assertTrue(personVertexLabel.isPresent());
+&nbsp;//        Optional&lt;EdgeLabel&gt; createEdgeLabel = personVertexLabel.get().getOutEdgeLabel(&quot;created&quot;);
+&nbsp;//        assertTrue(createEdgeLabel.isPresent());
+&nbsp;//        Optional&lt;EdgeLabel&gt; knowsEdgeLabel = personVertexLabel.get().getOutEdgeLabel(&quot;knows&quot;);
+&nbsp;//        assertTrue(knowsEdgeLabel.isPresent());
+&nbsp;//
+&nbsp;//        Optional&lt;PropertyColumn&gt; namePropertyColumn = personVertexLabel.get().getProperty(&quot;name&quot;);
+&nbsp;//        assertTrue(namePropertyColumn.isPresent());
+&nbsp;//        assertEquals(PropertyType.STRING, namePropertyColumn.get().getPropertyType());
+&nbsp;//        Optional&lt;PropertyColumn&gt; agePropertyColumn = personVertexLabel.get().getProperty(&quot;age&quot;);
+&nbsp;//        assertTrue(agePropertyColumn.isPresent());
+&nbsp;//        assertEquals(PropertyType.INTEGER, agePropertyColumn.get().getPropertyType());
+&nbsp;//        Optional&lt;PropertyColumn&gt; weightPropertyColumn = createEdgeLabel.get().getProperty(&quot;weight&quot;);
+&nbsp;//        assertTrue(weightPropertyColumn.isPresent());
+&nbsp;//        assertEquals(PropertyType.DOUBLE, weightPropertyColumn.get().getPropertyType());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void showTopologyTraversals() {
+&nbsp;//        Io.Builder&lt;GraphSONIo&gt; builder = GraphSONIo.build(GraphSONVersion.V3_0);
+&nbsp;//        final GraphReader reader = sqlgGraph.io(builder).reader().create();
+&nbsp;//        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream(&quot;/tinkerpop-modern-v3d0.json&quot;)) {
+&nbsp;//            reader.readGraph(stream, sqlgGraph);
+&nbsp;//        } catch (IOException e) {
+&nbsp;//            Assert.fail(e.getMessage());
+&nbsp;//        }
+&nbsp;//        System.out.println(&quot;//All vertex labels&quot;);
+&nbsp;//        sqlgGraph.topology().V()
+&nbsp;//                .hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+&nbsp;//                .forEachRemaining(
+&nbsp;//                        v -&gt; System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME))
+&nbsp;//                );
+&nbsp;//
+&nbsp;//        System.out.println(&quot;//All edge labels&quot;);
+&nbsp;//        sqlgGraph.topology().V()
+&nbsp;//                .hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+&nbsp;//                .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+&nbsp;//                .forEachRemaining(
+&nbsp;//                        v -&gt; System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME))
+&nbsp;//                );
+&nbsp;//
+&nbsp;//        System.out.println(&quot;//&#39;person&#39; properties&quot;);
+&nbsp;//        sqlgGraph.topology().V()
+&nbsp;//                .hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+&nbsp;//                .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, &quot;person&quot;)
+&nbsp;//                .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+&nbsp;//                .forEachRemaining(
+&nbsp;//                        v -&gt; {
+&nbsp;//                            System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + &quot; : &quot;);
+&nbsp;//                            System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+&nbsp;//                        }
+&nbsp;//                );
+&nbsp;//
+&nbsp;//        System.out.println(&quot;//&#39;software&#39; properties&quot;);
+&nbsp;//        sqlgGraph.topology().V()
+&nbsp;//                .hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+&nbsp;//                .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, &quot;software&quot;)
+&nbsp;//                .out(Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+&nbsp;//                .forEachRemaining(
+&nbsp;//                        v -&gt; {
+&nbsp;//                            System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + &quot; : &quot;);
+&nbsp;//                            System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+&nbsp;//                        }
+&nbsp;//                );
+&nbsp;//
+&nbsp;//        System.out.println(&quot;//&#39;created&#39; properties&quot;);
+&nbsp;//        sqlgGraph.topology().V()
+&nbsp;//                .hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+&nbsp;//                .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+&nbsp;//                .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, &quot;created&quot;)
+&nbsp;//                .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+&nbsp;//                .forEachRemaining(
+&nbsp;//                        v -&gt; {
+&nbsp;//                            System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + &quot; : &quot;);
+&nbsp;//                            System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+&nbsp;//                        }
+&nbsp;//                );
+&nbsp;//
+&nbsp;//        System.out.println(&quot;//&#39;knows&#39; properties&quot;);
+&nbsp;//        sqlgGraph.topology().V()
+&nbsp;//                .hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_VERTEX_LABEL)
+&nbsp;//                .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+&nbsp;//                .has(Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, &quot;knows&quot;)
+&nbsp;//                .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+&nbsp;//                .forEachRemaining(
+&nbsp;//                        v -&gt; {
+&nbsp;//                            System.out.print(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_NAME) + &quot; : &quot;);
+&nbsp;//                            System.out.println(v.&lt;String&gt;value(Topology.SQLG_SCHEMA_PROPERTY_TYPE));
+&nbsp;//                        }
+&nbsp;//                );
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void useAsPerNormal() {
+&nbsp;//        Vertex person = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//        Vertex address = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;street&quot;, &quot;13th&quot;);
+&nbsp;//        person.addEdge(&quot;livesAt&quot;, address, &quot;since&quot;, LocalDate.of(2010, 1, 21));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        List&lt;Vertex&gt; addresses = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).out(&quot;livesAt&quot;).toList();
+&nbsp;//        assertEquals(1, addresses.size());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testElementsInSchema() {
+&nbsp;//        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Manager&quot;, &quot;name&quot;, &quot;john&quot;);
+&nbsp;//        Vertex palace1 = this.sqlgGraph.addVertex(T.label, &quot;continent.House&quot;, &quot;name&quot;, &quot;palace1&quot;);
+&nbsp;//        Vertex corrola = this.sqlgGraph.addVertex(T.label, &quot;fleet.Car&quot;, &quot;model&quot;, &quot;corrola&quot;);
+&nbsp;//        palace1.addEdge(&quot;managedBy&quot;, john);
+&nbsp;//        corrola.addEdge(&quot;owner&quot;, john);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;Manager&quot;).count().next().intValue());
+&nbsp;//        assertEquals(0, this.sqlgGraph.traversal().V().hasLabel(&quot;House&quot;).count().next().intValue());
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;continent.House&quot;).count().next().intValue());
+&nbsp;//        assertEquals(0, this.sqlgGraph.traversal().V().hasLabel(&quot;Car&quot;).count().next().intValue());
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;fleet.Car&quot;).count().next().intValue());
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;managedBy&quot;).count().next().intValue());
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;owner&quot;).count().next().intValue());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testEdgeAcrossSchema() {
+&nbsp;//        Vertex a = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;);
+&nbsp;//        Vertex b = this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;);
+&nbsp;//        Vertex c = this.sqlgGraph.addVertex(T.label, &quot;C.C&quot;);
+&nbsp;//        a.addEdge(&quot;specialEdge&quot;, b);
+&nbsp;//        b.addEdge(&quot;specialEdge&quot;, c);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        assertEquals(2, this.sqlgGraph.traversal().E().hasLabel(&quot;specialEdge&quot;).count().next().intValue());
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;A.specialEdge&quot;).count().next().intValue());
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;B.specialEdge&quot;).count().next().intValue());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testIndex() {
+&nbsp;//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Person&quot;, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//        }});
+&nbsp;//        Optional&lt;PropertyColumn&gt; namePropertyOptional = personVertexLabel.getProperty(&quot;name&quot;);
+&nbsp;//        assertTrue(namePropertyOptional.isPresent());
+&nbsp;//        Index index = personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//        List&lt;Vertex&gt; johns = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;Person&quot;)
+&nbsp;//                .has(&quot;name&quot;, &quot;John&quot;)
+&nbsp;//                .toList();
+&nbsp;//        assertEquals(1, johns.size());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testCompositeIndex() {
+&nbsp;//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Person&quot;, new HashMap&lt;&gt;() {{
+&nbsp;//            put(&quot;firstName&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//            put(&quot;lastName&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//        }});
+&nbsp;//        personVertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, new ArrayList&lt;&gt;(personVertexLabel.getProperties().values()));
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;firstName&quot;, &quot;John&quot;, &quot;lastName&quot;, &quot;Smith&quot;);
+&nbsp;//        List&lt;Vertex&gt; johnSmiths = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;Person&quot;)
+&nbsp;//                .has(&quot;firstName&quot;, &quot;John&quot;)
+&nbsp;//                .has(&quot;lastName&quot;, &quot;Smith&quot;)
+&nbsp;//                .toList();
+&nbsp;//        assertEquals(1, johnSmiths.size());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testCheckConstraints() {
+&nbsp;//        this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;Person&quot;,
+&nbsp;//                        new HashMap&lt;&gt;() {{
+&nbsp;//                            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(), &quot;&#39;Peter&#39;&quot;, &quot;name &lt;&gt; &#39;John&#39;&quot;));
+&nbsp;//                        }}
+&nbsp;//                );
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        boolean failure = false;
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            LOGGER.error(e.getMessage(), e);
+&nbsp;//            failure = true;
+&nbsp;//        }
+&nbsp;//        assertTrue(failure);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testNameIsRequired() {
+&nbsp;//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema()
+&nbsp;//                .ensureVertexLabelExist(&quot;Person&quot;,
+&nbsp;//                        new HashMap&lt;&gt;() {{
+&nbsp;//                            put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                        }}
+&nbsp;//                );
+&nbsp;//        boolean failure = false;
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);
+&nbsp;//            this.sqlgGraph.tx().commit();
+&nbsp;//        } catch (Exception e) {
+&nbsp;//            LOGGER.error(e.getMessage(), e);
+&nbsp;//            failure = true;
+&nbsp;//        }
+&nbsp;//        assertTrue(failure);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testPartitioningRange() {
+&nbsp;//        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+&nbsp;//        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
+&nbsp;//                &quot;Measurement&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;date&quot;, PropertyDefinition.of(PropertyType.LOCALDATE));
+&nbsp;//                    put(&quot;temp&quot;, PropertyDefinition.of(PropertyType.INTEGER));
+&nbsp;//                }},
+&nbsp;//                ListOrderedSet.listOrderedSet(Collections.singletonList(&quot;date&quot;)),
+&nbsp;//                PartitionType.RANGE,
+&nbsp;//                &quot;date&quot;);
+&nbsp;//        partitionedVertexLabel.ensureRangePartitionExists(&quot;measurement1&quot;, &quot;&#39;2016-07-01&#39;&quot;, &quot;&#39;2016-08-01&#39;&quot;);
+&nbsp;//        partitionedVertexLabel.ensureRangePartitionExists(&quot;measurement2&quot;, &quot;&#39;2016-08-01&#39;&quot;, &quot;&#39;2016-09-01&#39;&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        LocalDate localDate1 = LocalDate.of(2016, 7, 1);
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;Measurement&quot;, &quot;date&quot;, localDate1);
+&nbsp;//        LocalDate localDate2 = LocalDate.of(2016, 8, 1);
+&nbsp;//        this.sqlgGraph.addVertex(T.label, &quot;Measurement&quot;, &quot;date&quot;, localDate2);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        assertEquals(2, this.sqlgGraph.traversal().V().hasLabel(&quot;Measurement&quot;).count().next(), 0);
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;Measurement&quot;).has(&quot;date&quot;, localDate1).count().next(), 0);
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;Measurement&quot;).has(&quot;date&quot;, localDate2).count().next(), 0);
+&nbsp;//
+&nbsp;//        Partition partition = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel(&quot;Measurement&quot;).get().getPartition(&quot;measurement1&quot;).get();
+&nbsp;//        partition.remove();
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;Measurement&quot;).count().next(), 0);
+&nbsp;//        assertEquals(0, this.sqlgGraph.traversal().V().hasLabel(&quot;Measurement&quot;).has(&quot;date&quot;, localDate1).count().next(), 0);
+&nbsp;//        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(&quot;Measurement&quot;).has(&quot;date&quot;, localDate2).count().next(), 0);
+&nbsp;//
+&nbsp;//        assertEquals(1, this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + &quot;.&quot; + Topology.SQLG_SCHEMA_PARTITION).count().next(), 0);
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testSubPartition() {
+&nbsp;//        Schema publicSchema = this.sqlgGraph.getTopology().getPublicSchema();
+&nbsp;//        VertexLabel partitionedVertexLabel = publicSchema.ensurePartitionedVertexLabelExist(
+&nbsp;//                &quot;User&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;username&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//                    put(&quot;country&quot;, PropertyDefinition.of(PropertyType.STRING));
+&nbsp;//                    put(&quot;age&quot;, PropertyDefinition.of(PropertyType.INTEGER));
+&nbsp;//                    put(&quot;dateOfBirth&quot;, PropertyDefinition.of(PropertyType.LOCALDATE));
+&nbsp;//                }},
+&nbsp;//                ListOrderedSet.listOrderedSet(List.of(&quot;username&quot;, &quot;country&quot;, &quot;age&quot;)),
+&nbsp;//                PartitionType.LIST,
+&nbsp;//                &quot;country&quot;);
+&nbsp;//        Partition usa = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists(&quot;USA&quot;, &quot;&#39;USA&#39;&quot;, PartitionType.RANGE, &quot;age&quot;);
+&nbsp;//        Partition sa = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists(&quot;SA&quot;, &quot;&#39;SA&#39;&quot;, PartitionType.RANGE, &quot;age&quot;);
+&nbsp;//        Partition gb = partitionedVertexLabel.ensureListPartitionWithSubPartitionExists(&quot;GB&quot;, &quot;&#39;GB&#39;&quot;, PartitionType.RANGE, &quot;age&quot;);
+&nbsp;//        usa.ensureRangePartitionExists(&quot;usa0to10&quot;, &quot;0&quot;, &quot;10&quot;);
+&nbsp;//        usa.ensureRangePartitionExists(&quot;usa10to20&quot;, &quot;10&quot;, &quot;20&quot;);
+&nbsp;//        sa.ensureRangePartitionExists(&quot;sa0to10&quot;, &quot;0&quot;, &quot;10&quot;);
+&nbsp;//        sa.ensureRangePartitionExists(&quot;sa10to20&quot;, &quot;10&quot;, &quot;20&quot;);
+&nbsp;//        gb.ensureRangePartitionExists(&quot;gb0to10&quot;, &quot;0&quot;, &quot;10&quot;);
+&nbsp;//        gb.ensureRangePartitionExists(&quot;gb10to20&quot;, &quot;10&quot;, &quot;20&quot;);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//
+&nbsp;//        LocalDate localDate = LocalDate.now();
+&nbsp;//        for (int age = 0; age &lt; 20; age++) {
+&nbsp;//            for (String country : List.of(&quot;USA&quot;, &quot;SA&quot;, &quot;GB&quot;)) {
+&nbsp;//                for (String username : List.of(&quot;John&quot;, &quot;Peter&quot;, &quot;David&quot;)) {
+&nbsp;//                    this.sqlgGraph.addVertex(
+&nbsp;//                            T.label, &quot;User&quot;,
+&nbsp;//                            &quot;username&quot;, username,
+&nbsp;//                            &quot;country&quot;, country,
+&nbsp;//                            &quot;age&quot;, age,
+&nbsp;//                            &quot;dateOfBirth&quot;, localDate.minusYears(age)
+&nbsp;//                    );
+&nbsp;//                }
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        List&lt;Vertex&gt; users = this.sqlgGraph.traversal().V()
+&nbsp;//                .hasLabel(&quot;User&quot;)
+&nbsp;//                .has(&quot;country&quot;, P.eq(&quot;USA&quot;))
+&nbsp;//                .has(&quot;age&quot;, 5).toList();
+&nbsp;//        assertEquals(3, users.size());
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testOneToOne() {
+&nbsp;//        VertexLabel computerVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Computer&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;serialNo&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        VertexLabel cpuVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Cpu&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;serialNo&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        computerVertexLabel.ensureEdgeLabelExist(
+&nbsp;//                &quot;cpu&quot;,
+&nbsp;//                cpuVertexLabel,
+&nbsp;//                EdgeDefinition.of(
+&nbsp;//                        Multiplicity.of(1, 1),
+&nbsp;//                        Multiplicity.of(1, 1)
+&nbsp;//                )
+&nbsp;//        );
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.getTopology().lock();
+&nbsp;//        Vertex computer1 = this.sqlgGraph.addVertex(T.label, &quot;Computer&quot;, &quot;serialNo&quot;, &quot;1111&quot;);
+&nbsp;//        Vertex cpu1 = this.sqlgGraph.addVertex(T.label, &quot;Cpu&quot;, &quot;serialNo&quot;, &quot;aaab&quot;);
+&nbsp;//        Vertex cpu2 = this.sqlgGraph.addVertex(T.label, &quot;Cpu&quot;, &quot;serialNo&quot;, &quot;aaac&quot;);
+&nbsp;//        computer1.addEdge(&quot;cpu&quot;, cpu1);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            computer1.addEdge(&quot;cpu&quot;, cpu2);
+&nbsp;//        } catch (RuntimeException e) {
+&nbsp;//            if (isPostgres()) {
+&nbsp;//                Assert.assertTrue(e.getMessage().contains(&quot;duplicate key value violates unique constraint&quot;));
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//        Vertex computer2 = this.sqlgGraph.addVertex(T.label, &quot;Computer&quot;, &quot;serialNo&quot;, &quot;2222&quot;);
+&nbsp;//        try {
+&nbsp;//            computer2.addEdge(&quot;cpu&quot;, cpu1);
+&nbsp;//        } catch (RuntimeException e) {
+&nbsp;//            if (isPostgres()) {
+&nbsp;//                Assert.assertTrue(e.getMessage().contains(&quot;duplicate key value violates unique constraint&quot;));
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testOneToMany() {
+&nbsp;//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Person&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        VertexLabel countryVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Country&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        personVertexLabel.ensureEdgeLabelExist(
+&nbsp;//                &quot;visited&quot;,
+&nbsp;//                countryVertexLabel,
+&nbsp;//                EdgeDefinition.of(
+&nbsp;//                        Multiplicity.of(0, 1),
+&nbsp;//                        Multiplicity.of(-1, -1, true)
+&nbsp;//                )
+&nbsp;//        );
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.getTopology().lock();
+&nbsp;//        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//        Vertex usa = this.sqlgGraph.addVertex(T.label, &quot;Country&quot;, &quot;name&quot;, &quot;USA&quot;);
+&nbsp;//        Vertex sa = this.sqlgGraph.addVertex(T.label, &quot;Country&quot;, &quot;name&quot;, &quot;SA&quot;);
+&nbsp;//        john.addEdge(&quot;visited&quot;, usa);
+&nbsp;//        john.addEdge(&quot;visited&quot;, sa);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            john.addEdge(&quot;visited&quot;, usa);
+&nbsp;//        } catch (RuntimeException e) {
+&nbsp;//            if (isPostgres()) {
+&nbsp;//                assertTrue(e.getMessage().contains(&quot;duplicate key value violates unique constraint&quot;));
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//        Vertex peter = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//        peter.addEdge(&quot;visited&quot;, usa);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testUniqueManyToMany() {
+&nbsp;//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Person&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        VertexLabel vehicleVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Vehicle&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        personVertexLabel.ensureEdgeLabelExist(
+&nbsp;//                &quot;drives&quot;,
+&nbsp;//                vehicleVertexLabel,
+&nbsp;//                EdgeDefinition.of(
+&nbsp;//                        Multiplicity.of(-1, -1, true),
+&nbsp;//                        Multiplicity.of(-1, -1, true)
+&nbsp;//                )
+&nbsp;//        );
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.getTopology().lock();
+&nbsp;//        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//        Vertex peter = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;Peter&quot;);
+&nbsp;//        Vertex toyota = this.sqlgGraph.addVertex(T.label, &quot;Vehicle&quot;, &quot;name&quot;, &quot;Toyota&quot;);
+&nbsp;//        Vertex kia = this.sqlgGraph.addVertex(T.label, &quot;Vehicle&quot;, &quot;name&quot;, &quot;Kia&quot;);
+&nbsp;//        john.addEdge(&quot;drives&quot;, toyota);
+&nbsp;//        john.addEdge(&quot;drives&quot;, kia);
+&nbsp;//        peter.addEdge(&quot;drives&quot;, toyota);
+&nbsp;//        peter.addEdge(&quot;drives&quot;, kia);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        try {
+&nbsp;//            john.addEdge(&quot;drives&quot;, toyota);
+&nbsp;//        } catch (RuntimeException e) {
+&nbsp;//            if (isPostgres()) {
+&nbsp;//                assertTrue(e.getMessage().contains(&quot;duplicate key value violates unique constraint&quot;));
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        this.sqlgGraph.tx().rollback();
+&nbsp;//    }
+&nbsp;//
+&nbsp;//    @Test
+&nbsp;//    public void testCheckMultiplicitiesPerVertex() {
+&nbsp;//        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Person&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Address&quot;,
+&nbsp;//                new LinkedHashMap&lt;&gt;() {{
+&nbsp;//                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));
+&nbsp;//                }}
+&nbsp;//        );
+&nbsp;//        EdgeLabel personAddressEdgeLabel = personVertexLabel.ensureEdgeLabelExist(
+&nbsp;//                &quot;address&quot;,
+&nbsp;//                addressVertexLabel,
+&nbsp;//                EdgeDefinition.of(
+&nbsp;//                        Multiplicity.of(0, 1, true),
+&nbsp;//                        Multiplicity.of(1, 3, true)
+&nbsp;//                )
+&nbsp;//        );
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//        this.sqlgGraph.getTopology().lock();
+&nbsp;//        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);
+&nbsp;//        Vertex peter = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;peter&quot;);
+&nbsp;//        Vertex johnHomeAddress = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;name&quot;, &quot;home&quot;);
+&nbsp;//        Vertex johnWorkAddress = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;name&quot;, &quot;work&quot;);
+&nbsp;//        Vertex johnVacationAddress = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;name&quot;, &quot;vacation&quot;);
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.tx().checkMultiplicity(john, Direction.OUT, personAddressEdgeLabel, addressVertexLabel);
+&nbsp;//        } catch (RuntimeException e) {
+&nbsp;//            if (isPostgres()) {
+&nbsp;//                assertTrue(e.getMessage().contains(&quot;Multiplicity check for EdgeLabel &#39;address&#39; fails.\n&quot; +
+&nbsp;//                        &quot;Lower multiplicity is 1 current lower multiplicity is 0&quot;));
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        john.addEdge(&quot;address&quot;, johnHomeAddress);
+&nbsp;//        john.addEdge(&quot;address&quot;, johnWorkAddress);
+&nbsp;//        john.addEdge(&quot;address&quot;, johnVacationAddress);
+&nbsp;//        this.sqlgGraph.tx().checkMultiplicity(john, Direction.OUT, personAddressEdgeLabel, addressVertexLabel);
+&nbsp;//
+&nbsp;//        peter.addEdge(&quot;address&quot;, johnHomeAddress);
+&nbsp;//        boolean fails = false;
+&nbsp;//        try {
+&nbsp;//            this.sqlgGraph.tx().checkMultiplicity(johnHomeAddress, Direction.IN, personAddressEdgeLabel, personVertexLabel);
+&nbsp;//        } catch (RuntimeException e) {
+&nbsp;//            fails = true;
+&nbsp;//            if (isPostgres()) {
+&nbsp;//                System.out.println(e.getMessage());
+&nbsp;//                assertTrue(e.getMessage().contains(&quot;Multiplicity check for EdgeLabel &#39;address&#39; fails.\n&quot; +
+&nbsp;//                        &quot;Upper multiplicity is 1 current upper multiplicity is 2&quot;));
+&nbsp;//            }
+&nbsp;//        }
+&nbsp;//        assertTrue(fails);
+&nbsp;//        this.sqlgGraph.tx().commit();
+&nbsp;//    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testCheckMultiplicitiesPerVertexLabel() {
+<b class="nc">&nbsp;        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Person&quot;,</b>
+<b class="nc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));</b>
+&nbsp;                }}
+&nbsp;        );
+<b class="nc">&nbsp;        VertexLabel addressVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(&quot;Address&quot;,</b>
+<b class="nc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="nc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING, Multiplicity.of(1, 1)));</b>
+&nbsp;                }}
+&nbsp;        );
+<b class="nc">&nbsp;        EdgeLabel personAddressEdgeLabel = personVertexLabel.ensureEdgeLabelExist(</b>
+&nbsp;                &quot;address&quot;,
+&nbsp;                addressVertexLabel,
+<b class="nc">&nbsp;                EdgeDefinition.of(</b>
+<b class="nc">&nbsp;                        Multiplicity.of(0, 1, true),</b>
+<b class="nc">&nbsp;                        Multiplicity.of(1, 3, true)</b>
+&nbsp;                )
+&nbsp;        );
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        this.sqlgGraph.getTopology().lock();</b>
+<b class="nc">&nbsp;        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;John&quot;);</b>
+<b class="nc">&nbsp;        Vertex peter = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;peter&quot;);</b>
+<b class="nc">&nbsp;        Vertex johnHomeAddress = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;name&quot;, &quot;home&quot;);</b>
+<b class="nc">&nbsp;        Vertex johnWorkAddress = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;name&quot;, &quot;work&quot;);</b>
+<b class="nc">&nbsp;        Vertex johnVacationAddress = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;, &quot;name&quot;, &quot;vacation&quot;);</b>
+<b class="nc">&nbsp;        john.addEdge(&quot;address&quot;, johnHomeAddress);</b>
+<b class="nc">&nbsp;        john.addEdge(&quot;address&quot;, johnWorkAddress);</b>
+<b class="nc">&nbsp;        john.addEdge(&quot;address&quot;, johnVacationAddress);</b>
+<b class="nc">&nbsp;        peter.addEdge(&quot;address&quot;, johnHomeAddress);</b>
+&nbsp;
+<b class="nc">&nbsp;        this.sqlgGraph.tx().checkMultiplicity(personVertexLabel, Direction.OUT, personAddressEdgeLabel, addressVertexLabel);</b>
+<b class="nc">&nbsp;        boolean fails = false;</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            this.sqlgGraph.tx().checkMultiplicity(addressVertexLabel, Direction.IN, personAddressEdgeLabel, personVertexLabel);</b>
+<b class="nc">&nbsp;        } catch (RuntimeException e) {</b>
+<b class="nc">&nbsp;            fails = true;</b>
+<b class="nc">&nbsp;            if (isPostgres()) {</b>
+<b class="nc">&nbsp;                System.out.println(e.getMessage());</b>
+<b class="nc">&nbsp;                String msg = String.format(&quot;Multiplicity check for EdgeLabel &#39;address&#39; fails for &#39;%s&#39;.\nUpper multiplicity is [1] current multiplicity is [2]&quot;, johnHomeAddress.id().toString());</b>
+<b class="nc">&nbsp;                System.out.println(msg);</b>
+<b class="nc">&nbsp;                assertTrue(e.getMessage().contains(msg));</b>
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        assertTrue(fails);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,397 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestAndandOrStep</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.filter.connectivestep</a>
+</div>
+
+<h1>Coverage Summary for Class: TestAndandOrStep (org.umlg.sqlg.test.filter.connectivestep)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestAndandOrStep</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (175/175)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.filter.connectivestep;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; * Date: 2017/11/05
+&nbsp; */
+&nbsp;@SuppressWarnings({&quot;unused&quot;, &quot;resource&quot;})
+<b class="fc">&nbsp;public class TestAndandOrStep extends BaseTest {</b>
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;unused&quot;)
+&nbsp;    @Test
+&nbsp;    public void testAndWithWithin() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;, &quot;surname&quot;, &quot;s1&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;, &quot;surname&quot;, &quot;s2&quot;, &quot;age&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;, &quot;surname&quot;, &quot;s3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex a4 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a4&quot;, &quot;surname&quot;, &quot;ss3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .and(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.eq(&quot;a1&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.eq(&quot;a3&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+<b class="fc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .and(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a1&quot;, &quot;a2&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a2&quot;, &quot;a4&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .and(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.without(&quot;a1&quot;, &quot;a2&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a3&quot;, &quot;a4&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * For simple HasContainers, sqlg optimizes within via a join statement.
+&nbsp;     * This does not work with nested AND/OR, so we skip the bulk logic
+&nbsp;     */
+&nbsp;    @SuppressWarnings(&quot;unused&quot;)
+&nbsp;    @Test
+&nbsp;    public void testAndWithWithinNotTriggeringBulkWithin() {
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot; +  i, &quot;surname&quot;, &quot;s&quot; + i, &quot;age&quot;, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .and(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.eq(&quot;a1&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.eq(&quot;a3&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .and(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a1&quot;, &quot;a2&quot;, &quot;a3&quot;, &quot;a4&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a2&quot;, &quot;a3&quot;, &quot;a4&quot;, &quot;a5&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="fc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .and(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.without(&quot;a1&quot;, &quot;a2&quot;, &quot;a3&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a3&quot;, &quot;a4&quot;, &quot;a5&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * For simple HasContainers, sqlg optimizes within via a join statement.
+&nbsp;     * This does not work with nested AND/OR, so we skip the bulk logic
+&nbsp;     */
+&nbsp;    @SuppressWarnings(&quot;unused&quot;)
+&nbsp;    @Test
+&nbsp;    public void testOrWithWithinNotTriggeringBulkWithin() {
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 100; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot; +  i, &quot;surname&quot;, &quot;s&quot; + i, &quot;age&quot;, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.eq(&quot;a1&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.eq(&quot;a3&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a1&quot;, &quot;a2&quot;, &quot;a3&quot;, &quot;a4&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a2&quot;, &quot;a3&quot;, &quot;a4&quot;, &quot;a5&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, vertices.size());</b>
+<b class="fc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.without(&quot;a1&quot;, &quot;a2&quot;, &quot;a3&quot;)),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, P.within(&quot;a3&quot;, &quot;a4&quot;, &quot;a5&quot;))</b>
+<b class="fc">&nbsp;                ).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(98, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testAndandOr() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;, &quot;surname&quot;, &quot;s1&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;, &quot;surname&quot;, &quot;s2&quot;, &quot;age&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;, &quot;surname&quot;, &quot;s3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex a4 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;, &quot;surname&quot;, &quot;ss3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, &quot;a1&quot;),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, &quot;a2&quot;),</b>
+<b class="fc">&nbsp;                        __.and(</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a3&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;surname&quot;, &quot;s3&quot;)</b>
+&nbsp;                        )
+&nbsp;                );
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testAndOr() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;, &quot;surname&quot;, &quot;s1&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;, &quot;surname&quot;, &quot;s2&quot;, &quot;age&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;, &quot;surname&quot;, &quot;s3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex a4 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;, &quot;surname&quot;, &quot;ss3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex a5 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a4&quot;, &quot;surname&quot;, &quot;s4&quot;, &quot;age&quot;, 4);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.and(</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a1&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;age&quot;, 1)</b>
+&nbsp;                        ),
+<b class="fc">&nbsp;                        __.and(</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a2&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;age&quot;, 3)</b>
+&nbsp;                        ),
+<b class="fc">&nbsp;                        __.or(</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a3&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a4&quot;)</b>
+&nbsp;                        )
+&nbsp;
+&nbsp;                );
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a3, a4, a5)));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testAndOrNested() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;, &quot;surname&quot;, &quot;s1&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;, &quot;surname&quot;, &quot;s2&quot;, &quot;age&quot;, 2);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;, &quot;surname&quot;, &quot;s3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex a4 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;, &quot;surname&quot;, &quot;ss3&quot;, &quot;age&quot;, 3);</b>
+<b class="fc">&nbsp;        Vertex a5 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a4&quot;, &quot;surname&quot;, &quot;s4&quot;, &quot;age&quot;, 4);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.and(</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a1&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;age&quot;, 1)</b>
+&nbsp;                        ),
+<b class="fc">&nbsp;                        __.and(</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a2&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;age&quot;, 3)</b>
+&nbsp;                        ),
+<b class="fc">&nbsp;                        __.or(</b>
+<b class="fc">&nbsp;                                __.or(</b>
+<b class="fc">&nbsp;                                        __.and(</b>
+<b class="fc">&nbsp;                                                __.has(&quot;name&quot;, &quot;a1&quot;),</b>
+<b class="fc">&nbsp;                                                __.has(&quot;name&quot;, &quot;a1&quot;)</b>
+&nbsp;                                        ),
+<b class="fc">&nbsp;                                        __.and(</b>
+<b class="fc">&nbsp;                                                __.has(&quot;name&quot;, &quot;a2&quot;),</b>
+<b class="fc">&nbsp;                                                __.has(&quot;age&quot;,2)</b>
+&nbsp;                                        )
+&nbsp;                                ),
+<b class="fc">&nbsp;                                __.or(</b>
+<b class="fc">&nbsp;                                        __.has(&quot;name&quot;, &quot;b1&quot;),</b>
+<b class="fc">&nbsp;                                        __.has(&quot;name&quot;, &quot;b1&quot;),</b>
+<b class="fc">&nbsp;                                        __.has(&quot;name&quot;, &quot;b1&quot;)</b>
+&nbsp;                                )
+&nbsp;                        )
+&nbsp;                );
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a2)));</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testAndWithHasNot() {
+<b class="fc">&nbsp;        Vertex v = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;, &quot;surname&quot;, &quot;s2&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .and(</b>
+<b class="fc">&nbsp;                        __.hasNot(&quot;surname&quot;),</b>
+<b class="fc">&nbsp;                        __.has(&quot;name&quot;, &quot;a1&quot;)</b>
+&nbsp;                );
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.contains(v));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testAndOrNestedWithHasAndHasNot() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;, &quot;surname&quot;, &quot;s2&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.and(</b>
+<b class="fc">&nbsp;                                __.hasNot(&quot;surname&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a1&quot;)</b>
+&nbsp;                        ),
+<b class="fc">&nbsp;                        __.and(</b>
+<b class="fc">&nbsp;                                __.has(&quot;surname&quot;),</b>
+<b class="fc">&nbsp;                                __.has(&quot;name&quot;, &quot;a2&quot;)</b>
+&nbsp;                        )
+&nbsp;                );
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(vertices.containsAll(Arrays.asList(a1, a2)));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasBeforeOr() {
+<b class="fc">&nbsp;        Vertex v1 = this.sqlgGraph.traversal().addV(&quot;V&quot;).property(&quot;start&quot;, 0).property(&quot;end&quot;, 10).next();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.traversal().addV(&quot;V&quot;).property(&quot;start&quot;, 1).next();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.traversal().tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = this.sqlgGraph.traversal().V().hasLabel(&quot;V&quot;)</b>
+<b class="fc">&nbsp;                .or(</b>
+<b class="fc">&nbsp;                        __.has(&quot;start&quot;, P.lte(-1))</b>
+<b class="fc">&nbsp;                                .or(</b>
+<b class="fc">&nbsp;                                        __.hasNot(&quot;end&quot;),</b>
+<b class="fc">&nbsp;                                        __.has(&quot;end&quot;, P.gte(-1))</b>
+&nbsp;                                ),
+<b class="fc">&nbsp;                        __.has(&quot;start&quot;, P.lte(0))</b>
+<b class="fc">&nbsp;                                .or(</b>
+<b class="fc">&nbsp;                                        __.hasNot(&quot;end&quot;),</b>
+<b class="fc">&nbsp;                                        __.has(&quot;end&quot;, P.gte(0))</b>
+&nbsp;                                )
+&nbsp;                );
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; result = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, result.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(v1, result.get(0));</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

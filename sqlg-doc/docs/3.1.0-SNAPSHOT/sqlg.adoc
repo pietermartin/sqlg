@@ -27,6 +27,9 @@ link:h2/apidocs/index.html[h2-dialect, window=\"_blank\"]
 
 Sqlg has an extensive <<Test Suite, test suite>>
 
+
+Code coverage link:postgresql/codeCoverage/index.html[code coverage, window=\"_blank\"],
+
 include::{includedir}/introduction.adoc[]
 
 include::{includedir}/license.adoc[]

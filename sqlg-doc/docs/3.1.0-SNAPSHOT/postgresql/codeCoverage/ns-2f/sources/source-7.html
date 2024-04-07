@@ -1,0 +1,375 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestSchema</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.schema</a>
+</div>
+
+<h1>Coverage Summary for Class: TestSchema (org.umlg.sqlg.test.schema)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestSchema</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (16/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    64.3%
+  </span>
+  <span class="absValue">
+    (9/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    92.7%
+  </span>
+  <span class="absValue">
+    (140/151)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.schema;
+&nbsp;
+&nbsp;import org.apache.commons.lang3.tuple.Pair;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.SchemaTable;
+&nbsp;import org.umlg.sqlg.structure.topology.ForeignKey;
+&nbsp;import org.umlg.sqlg.structure.topology.Schema;
+&nbsp;import org.umlg.sqlg.structure.topology.Topology;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.sql.Connection;
+&nbsp;import java.sql.SQLException;
+&nbsp;import java.sql.Statement;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.Optional;
+&nbsp;import java.util.Set;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2014/08/13
+&nbsp; * Time: 10:49 AM
+&nbsp; */
+<b class="fc">&nbsp;public class TestSchema extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSchemaReturnEmpty() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;, &quot;name&quot;, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Optional&lt;Schema&gt; schema = this.sqlgGraph.getTopology().getSchema(null);</b>
+<b class="fc">&nbsp;        Assert.assertFalse(schema.isPresent());</b>
+<b class="fc">&nbsp;        schema = this.sqlgGraph.getTopology().getSchema(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(schema.isPresent());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEscapingEscapeCharacterInNames() {
+<b class="fc">&nbsp;        String schemaName = &quot;TestDeleteDataSchema\&quot;;commit;drop database \&quot;TestSQLInjection&quot;;</b>
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().ensureSchemaExist(schemaName);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        String tableName = &quot;A\&quot;A&quot;;</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, schemaName + &quot;.&quot; + tableName);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(schemaName + &quot;.&quot; + tableName).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema(schemaName).isPresent());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema(schemaName).get().getVertexLabel(tableName).isPresent());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEdgeAcrossSchemaCreatesPropertyInAll() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C.C&quot;);</b>
+<b class="fc">&nbsp;        Edge ab1 = a1.addEdge(&quot;yourEdge&quot;, b1);</b>
+<b class="fc">&nbsp;        Edge bc1 = b1.addEdge(&quot;yourEdge&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        ab1.property(&quot;test&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(this.sqlgGraph.traversal().E(ab1.id()).next().property(&quot;test&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertFalse(this.sqlgGraph.traversal().E(bc1.id()).next().property(&quot;test&quot;).isPresent());</b>
+<b class="fc">&nbsp;        bc1.property(&quot;test&quot;, &quot;halo&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(this.sqlgGraph.traversal().E(bc1.id()).next().property(&quot;test&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEdgesAcrossSchema() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C.C&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;yourEdge&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;yourEdge&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = this.sqlgGraph.traversal().E().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+<b class="fc">&nbsp;        for (Edge edge : edges) {</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;yourEdge&quot;, edge.label());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;A.yourEdge&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;B.yourEdge&quot;).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSchema() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;TEST_SCHEMA1.Person&quot;, &quot;name&quot;, &quot;John&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    //TODO https://github.com/pietermartin/sqlg/issues/238
+&nbsp;    @Test
+&nbsp;    public void testEdgeBetweenSchemas() {
+<b class="fc">&nbsp;        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().isMssqlServer());</b>
+<b class="fc">&nbsp;        Vertex john = this.sqlgGraph.addVertex(T.label, &quot;TEST_SCHEMA1.Person&quot;, &quot;name&quot;, &quot;John&quot;);</b>
+<b class="fc">&nbsp;        Vertex tom = this.sqlgGraph.addVertex(T.label, &quot;TEST_SCHEMA2.Person&quot;, &quot;name&quot;, &quot;Tom&quot;);</b>
+<b class="fc">&nbsp;        Vertex ape = this.sqlgGraph.addVertex(T.label, &quot;TEST_SCHEMA2.Ape&quot;, &quot;name&quot;, &quot;Amuz&quot;);</b>
+<b class="fc">&nbsp;        john.addEdge(&quot;friend&quot;, tom);</b>
+<b class="fc">&nbsp;        john.addEdge(&quot;pet&quot;, ape);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, john).out(&quot;friend&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(tom, vertexTraversal(this.sqlgGraph, john).out(&quot;friend&quot;).next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(john, vertexTraversal(this.sqlgGraph, tom).in(&quot;friend&quot;).next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().E().count().next(), 0);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.traversal().E().has(T.label, &quot;friend&quot;).forEachRemaining(</b>
+&nbsp;                a -&gt; {
+<b class="fc">&nbsp;                    Assert.assertEquals(john, edgeTraversal(this.sqlgGraph, a).outV().next());</b>
+<b class="fc">&nbsp;                    Assert.assertEquals(tom, edgeTraversal(this.sqlgGraph, a).inV().next());</b>
+&nbsp;                }
+&nbsp;        );
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, john).out(&quot;friend&quot;).has(&quot;name&quot;, &quot;Tom&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, &quot;TEST_SCHEMA1.Person&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, &quot;TEST_SCHEMA2.Person&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, &quot;TEST_SCHEMA2.Ape&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, &quot;Ape&quot;).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testManySchemas() {
+<b class="fc">&nbsp;        Vertex previous = null;</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            for (int j = 0; j &lt; 100; j++) {</b>
+<b class="fc">&nbsp;                Vertex v = this.sqlgGraph.addVertex(T.label, &quot;Schema&quot; + i + &quot;.Person&quot;, &quot;name1&quot;, &quot;n&quot; + j, &quot;name2&quot;, &quot;n&quot; + j);</b>
+<b class="fc">&nbsp;                if (previous != null) {</b>
+<b class="fc">&nbsp;                    previous.addEdge(&quot;edge&quot;, v, &quot;name1&quot;, &quot;n&quot; + j, &quot;name2&quot;, &quot;n&quot; + j);</b>
+&nbsp;                }
+<b class="fc">&nbsp;                previous = v;</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100, this.sqlgGraph.traversal().V().has(T.label, &quot;Schema5.Person&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(999, this.sqlgGraph.traversal().E().count().next(), 0);</b>
+&nbsp;        // all schemas are now taken into account (see https://github.com/pietermartin/sqlg/issues/65)
+<b class="fc">&nbsp;        Assert.assertEquals(999, this.sqlgGraph.traversal().E().has(T.label, &quot;edge&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(100, this.sqlgGraph.traversal().E().has(T.label, &quot;Schema0.edge&quot;).count().next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(99, this.sqlgGraph.traversal().E().has(T.label, &quot;Schema9.edge&quot;).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLabelsForSchemaBeforeCommit() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, this.sqlgGraph.traversal().V().has(T.label, &quot;Person&quot;).count().next(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testGetAllTableLabels() {
+<b class="fc">&nbsp;        Vertex person = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;        Vertex address = this.sqlgGraph.addVertex(T.label, &quot;Address&quot;);</b>
+<b class="fc">&nbsp;        person.addEdge(&quot;person_address&quot;, address);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertNotNull(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;V_Person&quot;)));</b>
+&nbsp;
+<b class="fc">&nbsp;        Pair&lt;Set&lt;SchemaTable&gt;, Set&lt;SchemaTable&gt;&gt; labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;V_Person&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;E_person_address&quot;)));</b>
+&nbsp;
+<b class="fc">&nbsp;        Map&lt;String, Set&lt;ForeignKey&gt;&gt; edgeForeignKeys = this.sqlgGraph.getTopology().getEdgeForeignKeys();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;E_person_address&quot;).toString()));</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex car = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;);</b>
+<b class="fc">&nbsp;        person.addEdge(&quot;drives&quot;, car);</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex pet = this.sqlgGraph.addVertex(T.label, &quot;Pet&quot;);</b>
+<b class="fc">&nbsp;        person.addEdge(&quot;person_address&quot;, pet);</b>
+&nbsp;
+<b class="fc">&nbsp;        labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;V_Person&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;E_person_address&quot;)));</b>
+&nbsp;
+<b class="fc">&nbsp;        edgeForeignKeys = this.sqlgGraph.getTopology().getEdgeForeignKeys();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;E_person_address&quot;).toString()));</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().rollback();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSchemaPropertyEndingIn_ID() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;TRX Group ID&quot;, 1234);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;TRX Group ID&quot;, 1234);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;TRX Group ID&quot;, 1234);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(vertices.get(0).property(&quot;TRX Group ID&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(vertices.get(1).property(&quot;TRX Group ID&quot;).value());</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(vertices.get(2).property(&quot;TRX Group ID&quot;).value());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUnprefixedEdgeLabel() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;eee&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;eee&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel(&quot;A.eee&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().E().hasLabel(&quot;B.eee&quot;).count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, this.sqlgGraph.traversal().E().hasLabel(&quot;public.eee&quot;).count().next().intValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testUnprefixedEdgeLabelWithin() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B.B&quot;);</b>
+<b class="fc">&nbsp;        Edge eee = a1.addEdge(&quot;eee&quot;, b1);</b>
+<b class="fc">&nbsp;        Edge fff = a1.addEdge(&quot;fff&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = this.sqlgGraph.traversal().E().has(T.label, P.within(&quot;eee&quot;, &quot;fff&quot;));</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, edges.size());</b>
+<b class="pc">&nbsp;        Assert.assertTrue(edges.contains(eee) &amp;&amp; edges.contains(fff));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testEnsureSchema() {
+<b class="fc">&nbsp;        Topology mgr = this.sqlgGraph.getTopology();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A.A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertTrue(mgr.getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()).isPresent());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(mgr.getSchema(&quot;A&quot;).isPresent());</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(mgr.ensureSchemaExist(&quot;A&quot;));</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertFalse(mgr.getSchema(&quot;B&quot;).isPresent());</b>
+<b class="fc">&nbsp;        Assert.assertNotNull(mgr.ensureSchemaExist(&quot;B&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(mgr.getSchema(&quot;B&quot;).isPresent());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertTrue(mgr.getSchema(&quot;B&quot;).isPresent());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testExistingSchema() throws SQLException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsSchemaIfNotExists());</b>
+<b class="nc">&nbsp;        String schema = &quot;A&quot;;</b>
+<b class="nc">&nbsp;        Connection c = this.sqlgGraph.tx().getConnection();</b>
+<b class="nc">&nbsp;        try (Statement ps = c.createStatement()) {</b>
+<b class="nc">&nbsp;            ps.executeUpdate(&quot;create schema &quot; + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));</b>
+<b class="nc">&nbsp;        }</b>
+<b class="nc">&nbsp;        c.commit();</b>
+<b class="nc">&nbsp;        Topology mgr = this.sqlgGraph.getTopology();</b>
+&nbsp;
+<b class="nc">&nbsp;        Assert.assertFalse(mgr.getSchema(&quot;A&quot;).isPresent());</b>
+&nbsp;
+<b class="nc">&nbsp;        this.sqlgGraph.addVertex(T.label, schema + &quot;.A&quot;);</b>
+<b class="nc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="nc">&nbsp;        Assert.assertTrue(mgr.getSchema(&quot;A&quot;).isPresent());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

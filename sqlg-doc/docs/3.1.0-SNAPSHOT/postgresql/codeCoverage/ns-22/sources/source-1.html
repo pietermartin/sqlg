@@ -1,0 +1,243 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestMerge</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.mergestep</a>
+</div>
+
+<h1>Coverage Summary for Class: TestMerge (org.umlg.sqlg.test.mergestep)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestMerge</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (22/22)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestMerge$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestMerge$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">TestMerge$3</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (29/29)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.mergestep;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Merge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Property;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;
+<b class="fc">&nbsp;public class TestMerge extends BaseTest {</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMergeWithDefaultLabel() {
+<b class="fc">&nbsp;        this.sqlgGraph.traversal().mergeV(new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(&quot;name&quot;, &quot;Brandy&quot;);</b>
+<b class="fc">&nbsp;        }}).iterate();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMergeWithLabel() {
+<b class="fc">&nbsp;        this.sqlgGraph.traversal().mergeV(new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;            put(T.label, &quot;Person&quot;);</b>
+<b class="fc">&nbsp;            put(&quot;name&quot;, &quot;Brandy&quot;);</b>
+<b class="fc">&nbsp;        }}).iterate();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Person&quot;).has(&quot;name&quot;, &quot;Brandy&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Scenario: g_V_mergeEXlabel_selfX_optionXonMatch_nullX
+&nbsp;     * Given the empty graph
+&nbsp;     * And the graph initializer of
+&nbsp;     * &quot;&quot;&quot;
+&nbsp;     * g.addV(&quot;person&quot;).property(&quot;name&quot;, &quot;marko&quot;).property(&quot;age&quot;, 29).
+&nbsp;     * addE(&quot;self&quot;)
+&nbsp;     * &quot;&quot;&quot;
+&nbsp;     * And using the parameter xx1 defined as &quot;m[{\&quot;t[label]\&quot;: \&quot;self\&quot;}]&quot;
+&nbsp;     * And the traversal of
+&nbsp;     * &quot;&quot;&quot;
+&nbsp;     * g.V().mergeE(xx1).option(Merge.onMatch,null)
+&nbsp;     * &quot;&quot;&quot;
+&nbsp;     * When iterated to list
+&nbsp;     * Then the result should have a count of 1
+&nbsp;     * And the graph should return 1 for count of &quot;g.E()&quot;
+&nbsp;     * And the graph should return 0 for count of &quot;g.E().properties()&quot;
+&nbsp;     * And the graph should return 1 for count of &quot;g.V()&quot;
+&nbsp;     */
+&nbsp;    @Test
+&nbsp;    public void g_V_mergeEXlabel_selfX_optionXonMatch_nullX() {
+<b class="fc">&nbsp;        this.sqlgGraph.traversal().addV(&quot;person&quot;).property(&quot;name&quot;, &quot;marko&quot;).property(&quot;age&quot;, 29).addE(&quot;self&quot;).iterate();</b>
+<b class="fc">&nbsp;        List&lt;Edge&gt; edges = this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .mergeE(new HashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(T.label, &quot;self&quot;);</b>
+&nbsp;                }})
+<b class="fc">&nbsp;                .option(Merge.onMatch, (Map) null)</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, edges.size());</b>
+<b class="fc">&nbsp;        List&lt;? extends Property&lt;?&gt;&gt; properties = this.sqlgGraph.traversal().E().properties().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, properties.size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

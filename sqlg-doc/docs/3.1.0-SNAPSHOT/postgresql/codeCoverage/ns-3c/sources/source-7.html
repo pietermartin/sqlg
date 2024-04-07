@@ -1,0 +1,238 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestVertexEdges</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.vertex</a>
+</div>
+
+<h1>Coverage Summary for Class: TestVertexEdges (org.umlg.sqlg.test.vertex)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestVertexEdges</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (59/59)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.vertex;
+&nbsp;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Direction;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;import java.util.concurrent.atomic.AtomicInteger;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/12/13
+&nbsp; * Time: 4:36 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestVertexEdges extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+&nbsp;        //This test only works on postgres.
+&nbsp;        //it makes assumptions about iteration and query excution order.
+&nbsp;//        HSQLDB behaves differently.
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="fc">&nbsp;        Assume.assumeTrue(isPostgres());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexEdgesEager() {
+<b class="fc">&nbsp;        testVertexEdges(false);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexEdgesLazy() {
+<b class="fc">&nbsp;        testVertexEdges(true);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testVertexEdges(boolean lazy) {
+<b class="fc">&nbsp;        final Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        final Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        final Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().setLazyQueries(lazy);</b>
+<b class="fc">&nbsp;        AtomicInteger count = new AtomicInteger(0);</b>
+<b class="fc">&nbsp;        a1.edges(Direction.BOTH).forEachRemaining(e -&gt; count.incrementAndGet());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, count.get());</b>
+<b class="fc">&nbsp;        count.set(0);</b>
+<b class="fc">&nbsp;        a1.edges(Direction.BOTH).forEachRemaining(edge -&gt; {</b>
+<b class="fc">&nbsp;            a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;            count.getAndIncrement();</b>
+&nbsp;        });
+<b class="fc">&nbsp;        Assert.assertEquals(lazy ? 3 : 2, count.get());</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexEdgesTraversalEager() {
+<b class="fc">&nbsp;        testVertexEdgesTraversal(false);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexEdgesTraversalLazy() {
+<b class="fc">&nbsp;        testVertexEdgesTraversal(true);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testVertexEdgesTraversal(boolean lazy) {
+<b class="fc">&nbsp;        final Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        final Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        final Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().setLazyQueries(lazy);</b>
+<b class="fc">&nbsp;        AtomicInteger count = new AtomicInteger(0);</b>
+<b class="fc">&nbsp;        a1.edges(Direction.BOTH).forEachRemaining(e -&gt; count.incrementAndGet());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, count.get());</b>
+<b class="fc">&nbsp;        count.set(0);</b>
+<b class="fc">&nbsp;        vertexTraversal(this.sqlgGraph, a1).bothE().forEachRemaining(edge -&gt; {</b>
+<b class="fc">&nbsp;            a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;            count.getAndIncrement();</b>
+&nbsp;        });
+<b class="fc">&nbsp;        Assert.assertEquals(lazy ? 3 : 2, count.get());</b>
+&nbsp;
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBothEOnEdgeToSelf() {
+<b class="fc">&nbsp;        final Vertex v1 = this.sqlgGraph.addVertex(&quot;name&quot;, &quot;marko&quot;);</b>
+<b class="fc">&nbsp;        final Vertex v2 = this.sqlgGraph.addVertex(&quot;name&quot;, &quot;puppy&quot;);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;knows&quot;, v2, &quot;since&quot;, 2010);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;pets&quot;, v2);</b>
+<b class="fc">&nbsp;        v1.addEdge(&quot;walks&quot;, v2, &quot;location&quot;, &quot;arroyo&quot;);</b>
+<b class="fc">&nbsp;        v2.addEdge(&quot;knows&quot;, v1, &quot;since&quot;, 2010);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertexTraversal(this.sqlgGraph, v1).bothE().count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertexTraversal(this.sqlgGraph, v2).bothE().count().next().intValue());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().setLazyQueries(false);</b>
+<b class="fc">&nbsp;        v1.edges(Direction.BOTH).forEachRemaining(edge -&gt; {</b>
+<b class="fc">&nbsp;            v1.addEdge(&quot;livesWith&quot;, v2);</b>
+<b class="fc">&nbsp;            v1.addEdge(&quot;walks&quot;, v2, &quot;location&quot;, &quot;river&quot;);</b>
+<b class="fc">&nbsp;            edge.remove();</b>
+&nbsp;        });
+&nbsp;
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Edge&gt; edgeList = vertexTraversal(this.sqlgGraph, v1).outE().toList();</b>
+<b class="fc">&nbsp;        for (Edge edge : edgeList) {</b>
+<b class="fc">&nbsp;            System.out.println(edge);</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(8, vertexTraversal(this.sqlgGraph, v1).outE().count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, v2).outE().count().next().intValue());</b>
+<b class="fc">&nbsp;        v1.edges(Direction.BOTH).forEachRemaining(Edge::remove);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, v1).bothE().count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, v2).bothE().count().next().intValue());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

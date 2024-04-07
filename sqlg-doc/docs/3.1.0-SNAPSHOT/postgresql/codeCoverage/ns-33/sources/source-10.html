@@ -1,0 +1,253 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestTopologyDeleteSpecific</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.topology</a>
+</div>
+
+<h1>Coverage Summary for Class: TestTopologyDeleteSpecific (org.umlg.sqlg.test.topology)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestTopologyDeleteSpecific</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (74/74)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.topology;
+&nbsp;
+&nbsp;import org.apache.commons.configuration2.Configuration;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.Schema;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.Optional;
+&nbsp;
+&nbsp;import static org.junit.Assert.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * test deletion behavior in a specific scenarios
+&nbsp; *
+&nbsp; * @author JP Moresmau
+&nbsp; */
+<b class="fc">&nbsp;public class TestTopologyDeleteSpecific extends BaseTest {</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @see &lt;a href=&quot;https://github.com/pietermartin/sqlg/issues/306&quot;&gt;https://github.com/pietermartin/sqlg/issues/306&lt;/a&gt;
+&nbsp;     */
+&nbsp;    @Test
+&nbsp;    public void testDeleteSchemaWithEdgeRoleAcrossMultipleSchemas() {
+&nbsp;        //Schema deletion does not work on all databases.
+<b class="fc">&nbsp;        Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;        SqlgGraph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        Vertex a1 = g.addVertex(T.label, &quot;A.A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = g.addVertex(T.label, &quot;B.B&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        g.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex c1 = g.addVertex(T.label, &quot;A.C&quot;);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ab&quot;, a1);</b>
+<b class="fc">&nbsp;        g.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        g.getTopology().getSchema(&quot;A&quot;).ifPresent((Schema s) -&gt; s.remove(false));</b>
+<b class="fc">&nbsp;        g.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        assertFalse(g.getTopology().getSchema(&quot;A&quot;).isPresent());</b>
+<b class="fc">&nbsp;        assertEquals(1, g.traversal().V().count().next().intValue());</b>
+<b class="fc">&nbsp;        assertEquals(0, g.traversal().E().count().next().intValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * this failed with a NPE because we lost the table definition we&#39;re working on
+&nbsp;     */
+&nbsp;    @Test
+&nbsp;    public void testSchemaDelete() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());</b>
+<b class="fc">&nbsp;        String schema = &quot;willDelete&quot;;</b>
+<b class="fc">&nbsp;        sqlgGraph.addVertex(T.label, schema + &quot;.t1&quot;, &quot;name&quot;, &quot;n1&quot;, &quot;hello&quot;, &quot;world&quot;);</b>
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Configuration c = getConfigurationClone();</b>
+<b class="fc">&nbsp;        c.setProperty(SqlgGraph.DISTRIBUTED, true);</b>
+<b class="fc">&nbsp;        sqlgGraph = SqlgGraph.open(c);</b>
+<b class="fc">&nbsp;        sqlgGraph.getTopology().getSchema(schema).ifPresent((Schema s) -&gt; s.remove(false));</b>
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        Vertex v1 = sqlgGraph.addVertex(T.label, schema + &quot;.t1&quot;, &quot;name&quot;, &quot;n1&quot;);</b>
+<b class="fc">&nbsp;        Vertex v2 = sqlgGraph.addVertex(T.label, schema + &quot;.t2&quot;, &quot;name&quot;, &quot;n2&quot;);</b>
+<b class="fc">&nbsp;        Edge e1 = v1.addEdge(&quot;e1&quot;, v2);</b>
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        v1.property(&quot;hello&quot;, &quot;world&quot;);</b>
+&nbsp;        // this line was failing
+<b class="fc">&nbsp;        e1.property(&quot;hello&quot;, &quot;world&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        assertEquals(&quot;world&quot;, e1.value(&quot;hello&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @see &lt;a href=&quot;https://github.com/pietermartin/sqlg/issues/212&quot;&gt;https://github.com/pietermartin/sqlg/issues/212&lt;/a&gt;
+&nbsp;     */
+&nbsp;    @Test
+&nbsp;    public void testRemoveAndAddInSameTransaction() {
+&nbsp;        //remove it, it does not exist but duplicating work logic.
+<b class="fc">&nbsp;        Optional&lt;EdgeLabel&gt; aaEdgeLabelOpt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;aa&quot;);</b>
+<b class="fc">&nbsp;        aaEdgeLabelOpt.ifPresent(edgeLabel -&gt; edgeLabel.remove(false));</b>
+<b class="fc">&nbsp;        Optional&lt;VertexLabel&gt; aVertexLabelOpt = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;);</b>
+<b class="fc">&nbsp;        aVertexLabelOpt.ifPresent(vertexLabel -&gt; vertexLabel.remove(false));</b>
+&nbsp;
+<b class="fc">&nbsp;        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(&quot;aa&quot;, aVertexLabel);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        aaEdgeLabelOpt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;aa&quot;);</b>
+<b class="fc">&nbsp;        aaEdgeLabelOpt.ifPresent(edgeLabel -&gt; edgeLabel.remove(false));</b>
+<b class="fc">&nbsp;        aVertexLabelOpt = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;);</b>
+<b class="fc">&nbsp;        aVertexLabelOpt.ifPresent(vertexLabel -&gt; vertexLabel.remove(false));</b>
+&nbsp;
+<b class="fc">&nbsp;        aVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        aVertexLabel.ensureEdgeLabelExist(&quot;aa&quot;, aVertexLabel);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        aaEdgeLabelOpt = this.sqlgGraph.getTopology().getEdgeLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;aa&quot;);</b>
+<b class="fc">&nbsp;        assertTrue(aaEdgeLabelOpt.isPresent());</b>
+<b class="fc">&nbsp;        aVertexLabelOpt = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;);</b>
+<b class="fc">&nbsp;        assertTrue(aVertexLabelOpt.isPresent());</b>
+&nbsp;
+&nbsp;    }
+&nbsp;    
+&nbsp;    @Test
+&nbsp;    public void testRemoveSchemaWithCrossEdges() {
+<b class="fc">&nbsp;    	  Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDistribution());</b>
+<b class="fc">&nbsp;    	  Configuration c = getConfigurationClone();</b>
+<b class="fc">&nbsp;          c.setProperty(SqlgGraph.DISTRIBUTED, true);</b>
+<b class="fc">&nbsp;          sqlgGraph = SqlgGraph.open(c);</b>
+&nbsp;          
+<b class="fc">&nbsp;          String schema1 = &quot;willDelete1&quot;;</b>
+<b class="fc">&nbsp;          Vertex v1 = sqlgGraph.addVertex(T.label, schema1 + &quot;.t1&quot;, &quot;name&quot;, &quot;n1&quot;, &quot;hello&quot;, &quot;world&quot;);</b>
+<b class="fc">&nbsp;          String schema2 = &quot;willDelete2&quot;;</b>
+<b class="fc">&nbsp;          Vertex v2 = sqlgGraph.addVertex(T.label, schema2 + &quot;.t2&quot;, &quot;name&quot;, &quot;n2&quot;, &quot;hello&quot;, &quot;world&quot;);</b>
+<b class="fc">&nbsp;          Vertex v3 = sqlgGraph.addVertex(T.label, schema2 + &quot;.t3&quot;, &quot;name&quot;, &quot;n3&quot;, &quot;hello&quot;, &quot;world&quot;);</b>
+<b class="fc">&nbsp;          Vertex v4 = sqlgGraph.addVertex(T.label, schema2 + &quot;.t4&quot;, &quot;name&quot;, &quot;n4&quot;, &quot;hello&quot;, &quot;world&quot;);</b>
+&nbsp;          
+<b class="fc">&nbsp;          v1.addEdge(&quot;e1&quot;, v3, &quot;me&quot;,&quot;again&quot;);</b>
+<b class="fc">&nbsp;          v2.addEdge(&quot;e1&quot;, v3, &quot;me&quot;,&quot;again&quot;);</b>
+<b class="fc">&nbsp;          v1.addEdge(&quot;e1&quot;, v4, &quot;me&quot;,&quot;again&quot;);</b>
+<b class="fc">&nbsp;          v2.addEdge(&quot;e1&quot;, v4, &quot;me&quot;,&quot;again&quot;);</b>
+&nbsp;          
+&nbsp;          
+<b class="fc">&nbsp;          sqlgGraph.tx().commit();</b>
+&nbsp;          
+<b class="fc">&nbsp;          assertTrue(sqlgGraph.getTopology().getSchema(schema1).isPresent());</b>
+<b class="fc">&nbsp;          assertTrue(sqlgGraph.getTopology().getSchema(schema2).isPresent());</b>
+&nbsp;          
+<b class="fc">&nbsp;          sqlgGraph.getTopology().getSchema(schema1).ifPresent((Schema s) -&gt; s.remove(false));</b>
+<b class="fc">&nbsp;          sqlgGraph.tx().commit();</b>
+&nbsp;          
+<b class="fc">&nbsp;          assertFalse(sqlgGraph.getTopology().getSchema(schema1).isPresent());</b>
+&nbsp;          // this used to fail
+<b class="fc">&nbsp;          sqlgGraph.getTopology().getSchema(schema2).ifPresent((Schema s) -&gt; s.remove(false));</b>
+<b class="fc">&nbsp;          sqlgGraph.tx().commit();</b>
+&nbsp;        
+<b class="fc">&nbsp;          assertFalse(sqlgGraph.getTopology().getSchema(schema2).isPresent());</b>
+&nbsp;          
+&nbsp;          
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

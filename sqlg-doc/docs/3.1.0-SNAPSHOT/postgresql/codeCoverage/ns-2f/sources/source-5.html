@@ -1,0 +1,575 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestMultipleThreadMultipleJvm</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.schema</a>
+</div>
+
+<h1>Coverage Summary for Class: TestMultipleThreadMultipleJvm (org.umlg.sqlg.test.schema)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestMultipleThreadMultipleJvm</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    80%
+  </span>
+  <span class="absValue">
+    (12/15)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    62.9%
+  </span>
+  <span class="absValue">
+    (73/116)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    72%
+  </span>
+  <span class="absValue">
+    (188/261)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.schema;
+&nbsp;
+&nbsp;import org.apache.commons.configuration2.builder.fluent.Configurations;
+&nbsp;import org.apache.commons.configuration2.ex.ConfigurationException;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.slf4j.Logger;
+&nbsp;import org.slf4j.LoggerFactory;
+&nbsp;import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
+&nbsp;import org.umlg.sqlg.structure.PropertyDefinition;
+&nbsp;import org.umlg.sqlg.structure.PropertyType;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.structure.topology.EdgeLabel;
+&nbsp;import org.umlg.sqlg.structure.topology.Schema;
+&nbsp;import org.umlg.sqlg.structure.topology.VertexLabel;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.*;
+&nbsp;import java.util.concurrent.*;
+&nbsp;import java.util.concurrent.atomic.AtomicBoolean;
+&nbsp;
+&nbsp;import static org.junit.Assert.assertEquals;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/10/29
+&nbsp; * Time: 7:24 PM
+&nbsp; */
+<b class="fc">&nbsp;public class TestMultipleThreadMultipleJvm extends BaseTest {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = LoggerFactory.getLogger(TestMultipleThreadMultipleJvm.class.getName());</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            Configurations configs = new Configurations();</b>
+<b class="fc">&nbsp;            configuration = configs.properties(sqlProperties);</b>
+<b class="fc">&nbsp;            Assume.assumeTrue(isPostgres());</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;c3p0.maxPoolSize&quot;, 3);</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;dataSource.maximumPoolSize&quot;, 3);</b>
+<b class="pc">&nbsp;            if (!configuration.containsKey(&quot;jdbc.url&quot;))</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, &quot;jdbc.url&quot;));</b>
+&nbsp;
+<b class="nc">&nbsp;        } catch (ConfigurationException e) {</b>
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;//    @Test
+&nbsp;    public void testMultiThreadedLocking() throws Exception {
+&nbsp;        //number graphs, pretending its a separate jvm
+<b class="nc">&nbsp;        int NUMBER_OF_GRAPHS = 10;</b>
+<b class="nc">&nbsp;        ExecutorService sqlgGraphsExecutorService = Executors.newFixedThreadPool(100);</b>
+<b class="nc">&nbsp;        CompletionService&lt;Boolean&gt; sqlgGraphsExecutorCompletionService = new ExecutorCompletionService&lt;&gt;(sqlgGraphsExecutorService);</b>
+<b class="nc">&nbsp;        List&lt;SqlgGraph&gt; graphs = new ArrayList&lt;&gt;();</b>
+&nbsp;        try {
+&nbsp;            //Pre-create all the graphs
+<b class="nc">&nbsp;            for (int i = 0; i &lt; NUMBER_OF_GRAPHS; i++) {</b>
+<b class="nc">&nbsp;                graphs.add(SqlgGraph.open(configuration));</b>
+&nbsp;            }
+<b class="nc">&nbsp;            List&lt;Future&lt;Boolean&gt;&gt; results = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;            for (SqlgGraph sqlgGraphAsync : graphs) {</b>
+<b class="nc">&nbsp;                results.add(sqlgGraphsExecutorCompletionService.submit(() -&gt; {</b>
+<b class="nc">&nbsp;                    ((SqlSchemaChangeDialect) sqlgGraphAsync.getSqlDialect()).lock(sqlgGraphAsync);</b>
+<b class="nc">&nbsp;                    sqlgGraphAsync.tx().rollback();</b>
+<b class="nc">&nbsp;                    return true;</b>
+&nbsp;                }));
+&nbsp;            }
+<b class="nc">&nbsp;            sqlgGraphsExecutorService.shutdown();</b>
+<b class="nc">&nbsp;            for (Future&lt;Boolean&gt; result : results) {</b>
+<b class="nc">&nbsp;                result.get(10, TimeUnit.SECONDS);</b>
+&nbsp;            }
+&nbsp;        } finally {
+<b class="nc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="nc">&nbsp;                graph.close();</b>
+&nbsp;            }
+<b class="nc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMultiThreadedSchemaCreation() throws Exception {
+&nbsp;        //number graphs, pretending its a separate jvm
+<b class="fc">&nbsp;        int NUMBER_OF_GRAPHS = 10;</b>
+<b class="fc">&nbsp;        int NUMBER_OF_SCHEMAS = 200;</b>
+&nbsp;        //Pre-create all the graphs
+<b class="fc">&nbsp;        List&lt;SqlgGraph&gt; graphs = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; NUMBER_OF_GRAPHS; i++) {</b>
+<b class="fc">&nbsp;            graphs.add(SqlgGraph.open(configuration));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        logger.info(String.format(&quot;Done firing up %d graphs&quot;, NUMBER_OF_GRAPHS));</b>
+<b class="fc">&nbsp;        ExecutorService poolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);</b>
+<b class="fc">&nbsp;        CompletionService&lt;SqlgGraph&gt; poolPerGraphsExecutorCompletionService = new ExecutorCompletionService&lt;&gt;(poolPerGraph);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            List&lt;Future&lt;SqlgGraph&gt;&gt; results = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (final SqlgGraph sqlgGraphAsync : graphs) {</b>
+<b class="fc">&nbsp;                results.add(</b>
+<b class="fc">&nbsp;                        poolPerGraphsExecutorCompletionService.submit(() -&gt; {</b>
+<b class="fc">&nbsp;                                    for (int i = 0; i &lt; NUMBER_OF_SCHEMAS; i++) {</b>
+&nbsp;                                        //noinspection Duplicates
+&nbsp;                                        try {
+<b class="fc">&nbsp;                                            sqlgGraphAsync.getTopology().ensureSchemaExist(&quot;schema_&quot; + i);</b>
+<b class="fc">&nbsp;                                            final Random random = new Random();</b>
+<b class="fc">&nbsp;                                            if (random.nextBoolean()) {</b>
+<b class="fc">&nbsp;                                                logger.info(&quot;ensureSchemaExist &quot; + &quot;schema_&quot; + i);</b>
+<b class="fc">&nbsp;                                                sqlgGraphAsync.tx().commit();</b>
+&nbsp;                                            } else {
+<b class="fc">&nbsp;                                                sqlgGraphAsync.tx().rollback();</b>
+&nbsp;                                            }
+<b class="fc">&nbsp;                                        } catch (Exception e) {</b>
+<b class="fc">&nbsp;                                            sqlgGraphAsync.tx().rollback();</b>
+<b class="pc">&nbsp;                                            if (e.getCause().getClass().getSimpleName().equals(&quot;PSQLException&quot;)) {</b>
+&nbsp;                                                //swallow
+<b class="fc">&nbsp;                                                logger.warn(&quot;Rollback transaction due to schema creation failure.&quot;, e);</b>
+&nbsp;                                            } else {
+<b class="nc">&nbsp;                                                logger.error(String.format(&quot;got exception %s&quot;, e.getCause().getClass().getSimpleName()), e);</b>
+<b class="nc">&nbsp;                                                throw new RuntimeException(e);</b>
+&nbsp;                                            }
+&nbsp;                                        }
+&nbsp;                                    }
+<b class="fc">&nbsp;                                    return sqlgGraphAsync;</b>
+&nbsp;                                }
+&nbsp;                        )
+&nbsp;                );
+&nbsp;            }
+<b class="fc">&nbsp;            poolPerGraph.shutdown();</b>
+<b class="fc">&nbsp;            for (Future&lt;SqlgGraph&gt; result : results) {</b>
+<b class="fc">&nbsp;                result.get(1, TimeUnit.MINUTES);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            Thread.sleep(20_000);</b>
+<b class="fc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());</b>
+<b class="fc">&nbsp;                for (Schema schema : graph.getTopology().getSchemas()) {</b>
+<b class="fc">&nbsp;                    Assert.assertTrue(schema.isCommitted());</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        } finally {
+<b class="pc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                graph.close();</b>
+&nbsp;            }
+<b class="fc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMultiThreadedSchemaCreation2() throws Exception {
+&nbsp;        //number graphs, pretending its a separate jvm
+<b class="fc">&nbsp;        int NUMBER_OF_GRAPHS = 5;</b>
+<b class="fc">&nbsp;        int NUMBER_OF_SCHEMAS = 100;</b>
+&nbsp;        //Pre-create all the graphs
+<b class="fc">&nbsp;        List&lt;SqlgGraph&gt; graphs = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; NUMBER_OF_GRAPHS; i++) {</b>
+<b class="fc">&nbsp;            graphs.add(SqlgGraph.open(configuration));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        logger.info(String.format(&quot;Done firing up %d graphs&quot;, NUMBER_OF_GRAPHS));</b>
+&nbsp;
+<b class="fc">&nbsp;        ExecutorService poolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);</b>
+<b class="fc">&nbsp;        CompletionService&lt;SqlgGraph&gt; poolPerGraphsExecutorCompletionService = new ExecutorCompletionService&lt;&gt;(poolPerGraph);</b>
+&nbsp;        try {
+&nbsp;
+<b class="fc">&nbsp;            List&lt;Future&lt;SqlgGraph&gt;&gt; results = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (final SqlgGraph sqlgGraphAsync : graphs) {</b>
+&nbsp;
+<b class="fc">&nbsp;                for (int i = 0; i &lt; NUMBER_OF_SCHEMAS; i++) {</b>
+<b class="fc">&nbsp;                    final int count = i;</b>
+<b class="fc">&nbsp;                    results.add(</b>
+<b class="fc">&nbsp;                            poolPerGraphsExecutorCompletionService.submit(() -&gt; {</b>
+&nbsp;                                        //noinspection Duplicates
+&nbsp;                                        try {
+<b class="fc">&nbsp;                                            sqlgGraphAsync.getTopology().ensureSchemaExist(&quot;schema_&quot; + count);</b>
+<b class="fc">&nbsp;                                            final Random random = new Random();</b>
+<b class="fc">&nbsp;                                            if (random.nextBoolean()) {</b>
+<b class="fc">&nbsp;                                                sqlgGraphAsync.tx().commit();</b>
+&nbsp;                                            } else {
+<b class="fc">&nbsp;                                                sqlgGraphAsync.tx().rollback();</b>
+&nbsp;                                            }
+<b class="fc">&nbsp;                                        } catch (Exception e) {</b>
+<b class="fc">&nbsp;                                            sqlgGraphAsync.tx().rollback();</b>
+<b class="pc">&nbsp;                                            if (e.getCause().getClass().getSimpleName().equals(&quot;PSQLException&quot;)) {</b>
+&nbsp;                                                //swallow
+<b class="fc">&nbsp;                                                logger.warn(&quot;Rollback transaction due to schema creation failure.&quot;, e);</b>
+&nbsp;                                            } else {
+<b class="nc">&nbsp;                                                logger.error(String.format(&quot;got exception %s&quot;, e.getCause().getClass().getSimpleName()), e);</b>
+<b class="nc">&nbsp;                                                throw new RuntimeException(e);</b>
+&nbsp;                                            }
+&nbsp;                                        }
+<b class="fc">&nbsp;                                        return sqlgGraphAsync;</b>
+&nbsp;                                    }
+&nbsp;                            )
+&nbsp;                    );
+&nbsp;                }
+&nbsp;            }
+<b class="fc">&nbsp;            poolPerGraph.shutdown();</b>
+&nbsp;
+<b class="fc">&nbsp;            for (Future&lt;SqlgGraph&gt; result : results) {</b>
+<b class="fc">&nbsp;                result.get(1, TimeUnit.MINUTES);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            Thread.sleep(20_000);</b>
+<b class="fc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());</b>
+&nbsp;            }
+&nbsp;        } finally {
+<b class="pc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                graph.close();</b>
+&nbsp;            }
+<b class="fc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMultiThreadedVertexLabelCreation() throws Exception {
+&nbsp;        //number of graphs, pretending they are in separate jvms
+<b class="fc">&nbsp;        int NUMBER_OF_GRAPHS = 5;</b>
+<b class="fc">&nbsp;        int NUMBER_OF_SCHEMAS = 100;</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; successfulSchemas = new HashSet&lt;&gt;();</b>
+&nbsp;        //Pre-create all the graphs
+<b class="fc">&nbsp;        List&lt;SqlgGraph&gt; graphs = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; NUMBER_OF_GRAPHS; i++) {</b>
+<b class="fc">&nbsp;            graphs.add(SqlgGraph.open(configuration));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        logger.info(String.format(&quot;Done firing up %d graphs&quot;, NUMBER_OF_GRAPHS));</b>
+&nbsp;
+<b class="fc">&nbsp;        ExecutorService poolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);</b>
+<b class="fc">&nbsp;        CompletionService&lt;SqlgGraph&gt; poolPerGraphsExecutorCompletionService = new ExecutorCompletionService&lt;&gt;(poolPerGraph);</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            Map&lt;String, PropertyDefinition&gt; properties = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;            properties.put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+<b class="fc">&nbsp;            properties.put(&quot;age&quot;, PropertyDefinition.of(PropertyType.INTEGER));</b>
+<b class="fc">&nbsp;            List&lt;Future&lt;SqlgGraph&gt;&gt; results = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            for (final SqlgGraph sqlgGraphAsync : graphs) {</b>
+<b class="fc">&nbsp;                for (int i = 0; i &lt; NUMBER_OF_SCHEMAS; i++) {</b>
+<b class="fc">&nbsp;                    final int count = i;</b>
+<b class="fc">&nbsp;                    results.add(</b>
+<b class="fc">&nbsp;                            poolPerGraphsExecutorCompletionService.submit(() -&gt; {</b>
+&nbsp;                                        //noinspection Duplicates
+<b class="fc">&nbsp;                                        for (int j = 0; j &lt; 3; j++) {</b>
+&nbsp;                                            VertexLabel outVertexLabel;
+&nbsp;                                            VertexLabel inVertexLabel;
+&nbsp;                                            EdgeLabel edgeLabel;
+&nbsp;                                            try {
+<b class="fc">&nbsp;                                                outVertexLabel = sqlgGraphAsync.getTopology().ensureVertexLabelExist(&quot;schema_&quot; + count, &quot;tableOut_&quot; + count, properties);</b>
+<b class="fc">&nbsp;                                                logger.info(String.format(&quot;created %s.%s&quot;, &quot;schema_&quot; + count, &quot;tableOut_&quot; + count));</b>
+<b class="fc">&nbsp;                                                inVertexLabel = sqlgGraphAsync.getTopology().ensureVertexLabelExist(&quot;schema_&quot; + count, &quot;tableIn_&quot; + count, properties);</b>
+<b class="fc">&nbsp;                                                logger.info(String.format(&quot;created %s.%s&quot;, &quot;schema_&quot; + count, &quot;tableIn_&quot; + count));</b>
+<b class="fc">&nbsp;                                                edgeLabel = sqlgGraphAsync.getTopology().ensureEdgeLabelExist(&quot;edge_&quot; + count, outVertexLabel, inVertexLabel, properties);</b>
+<b class="fc">&nbsp;                                                logger.info(String.format(&quot;created %s&quot;, &quot;edge_&quot; + count));</b>
+<b class="fc">&nbsp;                                                Assert.assertNotNull(outVertexLabel);</b>
+<b class="fc">&nbsp;                                                Assert.assertNotNull(inVertexLabel);</b>
+<b class="fc">&nbsp;                                                Assert.assertNotNull(edgeLabel);</b>
+<b class="fc">&nbsp;                                                final Random random = new Random();</b>
+<b class="fc">&nbsp;                                                if (random.nextBoolean()) {</b>
+<b class="fc">&nbsp;                                                    sqlgGraphAsync.tx().commit();</b>
+<b class="fc">&nbsp;                                                    successfulSchemas.add(count);</b>
+&nbsp;                                                } else {
+<b class="fc">&nbsp;                                                    sqlgGraphAsync.tx().rollback();</b>
+&nbsp;                                                }
+&nbsp;                                                break;
+<b class="fc">&nbsp;                                            } catch (Exception e) {</b>
+<b class="fc">&nbsp;                                                sqlgGraphAsync.tx().rollback();</b>
+<b class="pc">&nbsp;                                                if (e.getCause().getClass().getSimpleName().equals(&quot;PSQLException&quot;)) {</b>
+&nbsp;                                                    //swallow
+<b class="fc">&nbsp;                                                    logger.warn(&quot;Rollback transaction due to schema creation failure.&quot;, e);</b>
+&nbsp;                                                } else {
+<b class="nc">&nbsp;                                                    logger.error(String.format(&quot;got exception %s&quot;, e.getCause().getClass().getSimpleName()), e);</b>
+<b class="nc">&nbsp;                                                    Assert.fail(e.getMessage());</b>
+&nbsp;                                                }
+&nbsp;                                            }
+&nbsp;                                        }
+<b class="fc">&nbsp;                                        return sqlgGraphAsync;</b>
+&nbsp;                                    }
+&nbsp;                            )
+&nbsp;                    );
+&nbsp;                }
+&nbsp;            }
+<b class="fc">&nbsp;            for (Future&lt;SqlgGraph&gt; result : results) {</b>
+<b class="fc">&nbsp;                result.get(5, TimeUnit.MINUTES);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            Thread.sleep(20_000);</b>
+<b class="pc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());</b>
+<b class="fc">&nbsp;                logger.info(graph.getTopology().toJson().toString());</b>
+<b class="fc">&nbsp;                assertEquals(&quot;this.sqlGraph schema sizes mismatch&quot;, successfulSchemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());</b>
+<b class="nc">&nbsp;                assertEquals(&quot;graph schema sizes mismatch&quot;, successfulSchemas.size() + 1, graph.getTopology().getSchemas().size());</b>
+<b class="nc">&nbsp;                if (!this.sqlgGraph.getTopology().toJson().equals(graph.getTopology().toJson())) {</b>
+<b class="nc">&nbsp;                    for (Schema schema : this.sqlgGraph.getTopology().getSchemas()) {</b>
+<b class="nc">&nbsp;                        Optional&lt;Schema&gt; otherSchema = graph.getTopology().getSchema(schema.getName());</b>
+<b class="nc">&nbsp;                        Assert.assertTrue(otherSchema.isPresent());</b>
+<b class="nc">&nbsp;                        if (!schema.toJson().equals(otherSchema.get().toJson())) {</b>
+<b class="nc">&nbsp;                            logger.debug(schema.toJson().toString());</b>
+<b class="nc">&nbsp;                            logger.debug(otherSchema.get().toJson().toString());</b>
+&nbsp;                        }
+&nbsp;                    }
+<b class="nc">&nbsp;                    Assert.fail(&quot;json not the same&quot;);</b>
+&nbsp;                }
+&nbsp;            }
+<b class="nc">&nbsp;            logger.info(&quot;starting inserting data&quot;);</b>
+&nbsp;
+<b class="nc">&nbsp;            for (final SqlgGraph sqlgGraphAsync : graphs) {</b>
+<b class="nc">&nbsp;                for (int i = 0; i &lt; NUMBER_OF_SCHEMAS; i++) {</b>
+<b class="nc">&nbsp;                    if (successfulSchemas.contains(i)) {</b>
+<b class="nc">&nbsp;                        final int count = i;</b>
+<b class="nc">&nbsp;                        results.add(</b>
+<b class="nc">&nbsp;                                poolPerGraphsExecutorCompletionService.submit(() -&gt; {</b>
+&nbsp;                                            //noinspection Duplicates
+&nbsp;                                            try {
+<b class="nc">&nbsp;                                                Vertex v1 = sqlgGraphAsync.addVertex(T.label, &quot;schema_&quot; + count + &quot;.&quot; + &quot;tableOut_&quot; + count, &quot;name&quot;, &quot;asdasd&quot;, &quot;age&quot;, 1);</b>
+<b class="nc">&nbsp;                                                Vertex v2 = sqlgGraphAsync.addVertex(T.label, &quot;schema_&quot; + count + &quot;.&quot; + &quot;tableIn_&quot; + count, &quot;name&quot;, &quot;asdasd&quot;, &quot;age&quot;, 1);</b>
+<b class="nc">&nbsp;                                                v1.addEdge(&quot;edge_&quot; + count, v2, &quot;name&quot;, &quot;asdasd&quot;, &quot;age&quot;, 1);</b>
+<b class="nc">&nbsp;                                                final Random random = new Random();</b>
+<b class="nc">&nbsp;                                                if (random.nextBoolean()) {</b>
+<b class="nc">&nbsp;                                                    sqlgGraphAsync.tx().rollback();</b>
+&nbsp;                                                } else {
+<b class="nc">&nbsp;                                                    sqlgGraphAsync.tx().commit();</b>
+&nbsp;                                                }
+<b class="nc">&nbsp;                                            } catch (Exception e) {</b>
+<b class="nc">&nbsp;                                                sqlgGraphAsync.tx().rollback();</b>
+<b class="nc">&nbsp;                                                throw new RuntimeException(e);</b>
+&nbsp;                                            }
+<b class="nc">&nbsp;                                            return sqlgGraphAsync;</b>
+&nbsp;                                        }
+&nbsp;                                )
+&nbsp;                        );
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+<b class="nc">&nbsp;            poolPerGraph.shutdown();</b>
+&nbsp;
+<b class="nc">&nbsp;            for (Future&lt;SqlgGraph&gt; result : results) {</b>
+<b class="nc">&nbsp;                result.get(30, TimeUnit.SECONDS);</b>
+&nbsp;            }
+&nbsp;            //Because of the rollBack logic the insert code may also create topology elements, so sleep a bit for notify to do its thing.
+<b class="nc">&nbsp;            Thread.sleep(20_000);</b>
+<b class="nc">&nbsp;            logger.info(&quot;starting querying data&quot;);</b>
+<b class="nc">&nbsp;            Set&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().out().toSet();</b>
+<b class="nc">&nbsp;            this.sqlgGraph.tx().rollback();</b>
+<b class="nc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="nc">&nbsp;                logger.info(&quot;assert querying data&quot;);</b>
+<b class="nc">&nbsp;                Set&lt;Vertex&gt; actual = graph.traversal().V().out().toSet();</b>
+<b class="nc">&nbsp;                logger.info(&quot;vertices.size = &quot; + vertices.size() + &quot; actual.size = &quot; + actual.size());</b>
+<b class="nc">&nbsp;                assertEquals(vertices, actual);</b>
+<b class="nc">&nbsp;                graph.tx().rollback();</b>
+&nbsp;            }
+&nbsp;        } finally {
+<b class="pc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                graph.close();</b>
+&nbsp;            }
+<b class="fc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testConcurrentModificationException() throws Exception {
+&nbsp;        //number graphs, pretending its a separate jvm
+<b class="fc">&nbsp;        int NUMBER_OF_GRAPHS = 3;</b>
+<b class="fc">&nbsp;        int NUMBER_OF_SCHEMAS = 100;</b>
+&nbsp;        //Pre-create all the graphs
+<b class="fc">&nbsp;        List&lt;SqlgGraph&gt; graphs = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; NUMBER_OF_GRAPHS; i++) {</b>
+<b class="fc">&nbsp;            graphs.add(SqlgGraph.open(configuration));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        logger.info(String.format(&quot;Done firing up %d graphs&quot;, NUMBER_OF_GRAPHS));</b>
+&nbsp;
+&nbsp;        try {
+<b class="fc">&nbsp;            ExecutorService insertPoolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);</b>
+<b class="fc">&nbsp;            CompletionService&lt;SqlgGraph&gt; insertPoolPerGraphsExecutorCompletionService = new ExecutorCompletionService&lt;&gt;(insertPoolPerGraph);</b>
+<b class="fc">&nbsp;            List&lt;Future&lt;SqlgGraph&gt;&gt; results = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            logger.info(&quot;starting inserting data&quot;);</b>
+<b class="fc">&nbsp;            for (final SqlgGraph sqlgGraphAsync : graphs) {</b>
+<b class="fc">&nbsp;                for (int i = 0; i &lt; NUMBER_OF_SCHEMAS; i++) {</b>
+<b class="fc">&nbsp;                    final int count = i;</b>
+<b class="fc">&nbsp;                    results.add(</b>
+<b class="fc">&nbsp;                            insertPoolPerGraphsExecutorCompletionService.submit(() -&gt; {</b>
+&nbsp;                                        //noinspection Duplicates
+&nbsp;                                        try {
+<b class="fc">&nbsp;                                            for (int j = 0; j &lt; 10; j++) {</b>
+<b class="fc">&nbsp;                                                Vertex v1 = sqlgGraphAsync.addVertex(T.label, &quot;schema_&quot; + count + &quot;.&quot; + &quot;tableOut_&quot; + count, &quot;name&quot;, &quot;asdasd&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;                                                Vertex v2 = sqlgGraphAsync.addVertex(T.label, &quot;schema_&quot; + count + &quot;.&quot; + &quot;tableIn_&quot; + count, &quot;name&quot;, &quot;asdasd&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;                                                v1.addEdge(&quot;edge_&quot; + count, v2, &quot;name&quot;, &quot;asdasd&quot;, &quot;age&quot;, 1);</b>
+<b class="fc">&nbsp;                                                sqlgGraphAsync.tx().commit();</b>
+&nbsp;                                            }
+<b class="fc">&nbsp;                                        } catch (Exception e) {</b>
+<b class="fc">&nbsp;                                            sqlgGraphAsync.tx().rollback();</b>
+<b class="pc">&nbsp;                                            if (e.getCause() == null) {</b>
+<b class="nc">&nbsp;                                                e.printStackTrace();</b>
+&nbsp;                                            }
+<b class="pc">&nbsp;                                            if (e.getCause().getClass().getSimpleName().equals(&quot;PSQLException&quot;)) {</b>
+&nbsp;                                                //swallow
+<b class="fc">&nbsp;                                                logger.warn(&quot;Rollback transaction due to schema creation failure.&quot;, e);</b>
+&nbsp;                                            } else {
+<b class="nc">&nbsp;                                                logger.error(String.format(&quot;got exception %s&quot;, e.getCause().getClass().getSimpleName()), e);</b>
+<b class="nc">&nbsp;                                                Assert.fail(e.getMessage());</b>
+&nbsp;                                            }
+&nbsp;                                        }
+<b class="fc">&nbsp;                                        return sqlgGraphAsync;</b>
+&nbsp;                                    }
+&nbsp;                            )
+&nbsp;                    );
+&nbsp;                }
+&nbsp;            }
+<b class="fc">&nbsp;            insertPoolPerGraph.shutdown();</b>
+&nbsp;
+<b class="fc">&nbsp;            AtomicBoolean keepReading = new AtomicBoolean(true);</b>
+<b class="fc">&nbsp;            ExecutorService readPoolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);</b>
+<b class="fc">&nbsp;            CompletionService&lt;SqlgGraph&gt; readPoolPerGraphsExecutorCompletionService = new ExecutorCompletionService&lt;&gt;(readPoolPerGraph);</b>
+<b class="fc">&nbsp;            List&lt;Future&lt;SqlgGraph&gt;&gt; readResults = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;            logger.info(&quot;starting reading data&quot;);</b>
+<b class="fc">&nbsp;            for (final SqlgGraph sqlgGraphAsync : graphs) {</b>
+<b class="fc">&nbsp;                for (int i = 0; i &lt; NUMBER_OF_SCHEMAS; i++) {</b>
+<b class="fc">&nbsp;                    readResults.add(</b>
+<b class="fc">&nbsp;                            readPoolPerGraphsExecutorCompletionService.submit(() -&gt; {</b>
+&nbsp;                                        try {
+<b class="fc">&nbsp;                                            while (keepReading.get()) {</b>
+<b class="fc">&nbsp;                                                sqlgGraphAsync.getTopology().getAllTables();</b>
+<b class="fc">&nbsp;                                                sqlgGraphAsync.getTopology().getEdgeForeignKeys();</b>
+&nbsp;                                                //noinspection BusyWait
+<b class="fc">&nbsp;                                                Thread.sleep(100);</b>
+&nbsp;                                            }
+<b class="nc">&nbsp;                                        } catch (Exception e) {</b>
+<b class="nc">&nbsp;                                            sqlgGraphAsync.tx().rollback();</b>
+<b class="nc">&nbsp;                                            throw new RuntimeException(e);</b>
+&nbsp;                                        }
+<b class="fc">&nbsp;                                        return sqlgGraphAsync;</b>
+&nbsp;                                    }
+&nbsp;                            )
+&nbsp;                    );
+&nbsp;                }
+&nbsp;            }
+<b class="fc">&nbsp;            readPoolPerGraph.shutdown();</b>
+&nbsp;
+<b class="fc">&nbsp;            for (Future&lt;SqlgGraph&gt; result : results) {</b>
+<b class="fc">&nbsp;                result.get(30, TimeUnit.SECONDS);</b>
+<b class="fc">&nbsp;                logger.info(&quot;graph results returned&quot;);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            keepReading.set(false);</b>
+<b class="fc">&nbsp;            for (Future&lt;SqlgGraph&gt; result : readResults) {</b>
+<b class="fc">&nbsp;                result.get(30, TimeUnit.SECONDS);</b>
+<b class="fc">&nbsp;                logger.info(&quot;graph readResults returned&quot;);</b>
+&nbsp;            }
+<b class="fc">&nbsp;            Thread.sleep(10_000);</b>
+<b class="fc">&nbsp;            logger.info(&quot;starting querying data&quot;);</b>
+<b class="fc">&nbsp;            Set&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().out().toSet();</b>
+<b class="fc">&nbsp;            this.sqlgGraph.tx().rollback();</b>
+<b class="fc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                logger.info(&quot;assert querying data&quot;);</b>
+<b class="fc">&nbsp;                Set&lt;Vertex&gt; other = graph.traversal().V().out().toSet();</b>
+<b class="fc">&nbsp;                Assert.assertEquals(vertices.size(), other.size());</b>
+<b class="fc">&nbsp;                Assert.assertEquals(vertices, other);</b>
+<b class="fc">&nbsp;                graph.tx().rollback();</b>
+&nbsp;            }
+&nbsp;        } finally {
+<b class="pc">&nbsp;            for (SqlgGraph graph : graphs) {</b>
+<b class="fc">&nbsp;                graph.close();</b>
+&nbsp;            }
+<b class="fc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,918 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestBatchNormalPrimitive</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.batch</a>
+</div>
+
+<h1>Coverage Summary for Class: TestBatchNormalPrimitive (org.umlg.sqlg.test.batch)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestBatchNormalPrimitive</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (59/59)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    79%
+  </span>
+  <span class="absValue">
+    (109/138)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (493/493)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.batch;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.CollectionUtils;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.junit.Assume;
+&nbsp;import org.junit.Before;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.lang.reflect.Array;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.util.HashSet;
+&nbsp;import java.util.Set;
+&nbsp;
+&nbsp;import static org.junit.Assert.*;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2016/05/22
+&nbsp; * Time: 9:13 AM
+&nbsp; */
+<b class="fc">&nbsp;public class TestBatchNormalPrimitive extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void beforeTest() {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testString() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            String s = &quot;name&quot; + i;</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, s));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(s);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testString_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testString_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testString_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;String&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; verticesName = sqlgGraph.traversal().V().&lt;String&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testStringEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            String s = &quot;name&quot; + i;</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, s));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(s);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testStringEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testStringEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testStringEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;String&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;String&gt; edgesName = sqlgGraph.traversal().E().&lt;String&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testBoolean() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Boolean&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            boolean b = i % 2 == 0;</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, Boolean.valueOf(b)));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(Boolean.valueOf(b));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBoolean_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBoolean_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBoolean_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;Boolean&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Boolean&gt; verticesName = sqlgGraph.traversal().V().&lt;Boolean&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testBooleanEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Boolean&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            boolean b = i % 2 == 0;</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, Boolean.valueOf(b)));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(Boolean.valueOf(b));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBooleanEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBooleanEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBooleanEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;Boolean&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Boolean&gt; edgesName = sqlgGraph.traversal().E().&lt;Boolean&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBooleanPrimitive() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        boolean[] vertexNameArray = new boolean[10];</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            boolean b = i % 2 == 0;</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, b);</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArray, i, b);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBooleanPrimitive_assert(this.sqlgGraph, vertexNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBooleanPrimitive_assert(this.sqlgGraph1, vertexNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBooleanPrimitive_assert(SqlgGraph sqlgGraph, boolean[] vertexNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = sqlgGraph.traversal().V();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        boolean[] vertexNameArrayToTest = new boolean[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(vertexNameArray, vertexNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBooleanPrimitiveEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        boolean[] edgeNameArray = new boolean[10];</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            boolean b = i % 2 == 0;</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, b);</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArray, i, b);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBooleanPrimitiveEdge_assert(this.sqlgGraph, edgeNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBooleanPrimitiveEdge_assert(this.sqlgGraph1, edgeNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBooleanPrimitiveEdge_assert(SqlgGraph sqlgGraph, boolean[] edgeNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = sqlgGraph.traversal().E();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        boolean[] edgeNameArrayToTest = new boolean[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(edgeNameArray, edgeNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInteger() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Integer i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testInteger_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testInteger_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testInteger_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;Integer&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; verticesName = sqlgGraph.traversal().V().&lt;Integer&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testIntegerEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Integer i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testIntegerEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testIntegerEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testIntegerEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;Integer&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Integer&gt; edgesName = sqlgGraph.traversal().E().&lt;Integer&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testIntegerPrimitive() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        int[] vertexNameArray = new int[10];</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArray, i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testIntegerPrimitive_assert(this.sqlgGraph, vertexNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testIntegerPrimitive_assert(this.sqlgGraph1, vertexNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testIntegerPrimitive_assert(SqlgGraph sqlgGraph, int[] vertexNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = sqlgGraph.traversal().V();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        int[] vertexNameArrayToTest = new int[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(vertexNameArray, vertexNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testIntegerPrimitiveEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        int[] edgeNameArray = new int[10];</b>
+<b class="fc">&nbsp;        for (int i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArray, i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testIntegerPrimitiveEdge_assert(this.sqlgGraph, edgeNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testIntegerPrimitiveEdge_assert(this.sqlgGraph1, edgeNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testIntegerPrimitiveEdge_assert(SqlgGraph sqlgGraph, int[] edgeNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = sqlgGraph.traversal().E();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        int[] edgeNameArrayToTest = new int[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(edgeNameArray, edgeNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testShort() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Short&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Short i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testShort_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testShort_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testShort_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;Short&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Short&gt; verticesName = sqlgGraph.traversal().V().&lt;Short&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testShortEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Short&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Short i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testShortEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testShortEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testShortEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;Short&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Short&gt; edgesName = sqlgGraph.traversal().E().&lt;Short&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testShortPrimitive() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        short[] vertexNameArray = new short[10];</b>
+<b class="fc">&nbsp;        for (short i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArray, i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testShortPrimitive_assert(this.sqlgGraph, vertexNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testShortPrimitive_assert(this.sqlgGraph1, vertexNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testShortPrimitive_assert(SqlgGraph sqlgGraph, short[] vertexNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = sqlgGraph.traversal().V();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        short[] vertexNameArrayToTest = new short[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(vertexNameArray, vertexNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testShortPrimitiveEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        short[] edgeNameArray = new short[10];</b>
+<b class="fc">&nbsp;        for (short i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArray, i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testShortPrimitiveEdge_assert(this.sqlgGraph, edgeNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testShortPrimitiveEdge_assert(this.sqlgGraph1, edgeNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testShortPrimitiveEdge_assert(SqlgGraph sqlgGraph, short[] edgeNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = sqlgGraph.traversal().E();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        short[] edgeNameArrayToTest = new short[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(edgeNameArray, edgeNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testLong() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Long&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (long i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, Long.valueOf(i)));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(Long.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testLong_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLong_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLong_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;Long&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Long&gt; verticesName = sqlgGraph.traversal().V().&lt;Long&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testLongEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Long&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (long i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, Long.valueOf(i)));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(Long.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testLongEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLongEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLongEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;Long&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Long&gt; edgesName = sqlgGraph.traversal().E().&lt;Long&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLongPrimitive() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        long[] vertexNameArray = new long[10];</b>
+<b class="fc">&nbsp;        for (long i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArray, (int) i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testLongPrimitive_assert(this.sqlgGraph, vertexNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLongPrimitive_assert(this.sqlgGraph1, vertexNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLongPrimitive_assert(SqlgGraph sqlgGraph, long[] vertexNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = sqlgGraph.traversal().V();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        long[] vertexNameArrayToTest = new long[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(vertexNameArray, vertexNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testLongPrimitiveEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        long[] edgeNameArray = new long[10];</b>
+<b class="fc">&nbsp;        for (long i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArray, (int) i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testLongPrimitiveEdge_assert(this.sqlgGraph, edgeNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testLongPrimitiveEdge_assert(this.sqlgGraph1, edgeNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testLongPrimitiveEdge_assert(SqlgGraph sqlgGraph, long[] edgeNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = sqlgGraph.traversal().E();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        long[] edgeNameArrayToTest = new long[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(edgeNameArray, edgeNameArrayToTest);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testFloat() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Float&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (float i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, Float.valueOf(i)));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(Float.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testFloat_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testFloat_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testFloat_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;Float&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Float&gt; verticesName = sqlgGraph.traversal().V().&lt;Float&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testFloatEdge() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Float&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (float i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, Float.valueOf(i)));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(Float.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testFloatEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testFloatEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testFloatEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;Float&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Float&gt; edgesName = sqlgGraph.traversal().E().&lt;Float&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testFloatPrimitive() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        float[] vertexNameArray = new float[10];</b>
+<b class="fc">&nbsp;        for (float i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArray, (int) i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testFloatPrimitive_assert(this.sqlgGraph, vertexNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testFloatPrimitive_assert(this.sqlgGraph1, vertexNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testFloatPrimitive_assert(SqlgGraph sqlgGraph, float[] vertexNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Vertex, Vertex&gt; traversal = sqlgGraph.traversal().V();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        float[] vertexNameArrayToTest = new float[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(vertexNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(vertexNameArray, vertexNameArrayToTest, 0F);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testFloatPrimitiveEdge() throws InterruptedException {
+<b class="fc">&nbsp;        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        float[] edgeNameArray = new float[10];</b>
+<b class="fc">&nbsp;        for (float i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArray, (int) i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testFloatPrimitiveEdge_assert(this.sqlgGraph, edgeNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testFloatPrimitiveEdge_assert(this.sqlgGraph1, edgeNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testFloatPrimitiveEdge_assert(SqlgGraph sqlgGraph, float[] edgeNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = sqlgGraph.traversal().E();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        float[] edgeNameArrayToTest = new float[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(edgeNameArray, edgeNameArrayToTest, 0F);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testDouble() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Double&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, Double.valueOf(i)));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(Double.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testDouble_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testDouble_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testDouble_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;Double&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Double&gt; verticesName = sqlgGraph.traversal().V().&lt;Double&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBigDecimal() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertexSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;BigDecimal&gt; vertexNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            vertexSet.add(this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, BigDecimal.valueOf(i)));</b>
+<b class="fc">&nbsp;            vertexNameSet.add(BigDecimal.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBigDecimal_assert(this.sqlgGraph, vertexSet, vertexNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBigDecimal_assert(this.sqlgGraph1, vertexSet, vertexNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBigDecimal_assert(SqlgGraph sqlgGraph, Set&lt;Vertex&gt; vertexSet, Set&lt;BigDecimal&gt; vertexNameSet) {
+<b class="fc">&nbsp;        Set&lt;Vertex&gt; vertices = sqlgGraph.traversal().V().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;BigDecimal&gt; verticesName = sqlgGraph.traversal().V().&lt;BigDecimal&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, vertices.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexSet, vertices));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(vertexNameSet, verticesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;UnnecessaryBoxing&quot;)
+&nbsp;    @Test
+&nbsp;    public void testDoubleEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;Double&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, Double.valueOf(i)));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(Double.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testDoubleEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testDoubleEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testDoubleEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;Double&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;Double&gt; edgesName = sqlgGraph.traversal().E().&lt;Double&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testBigDecimalEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edgeSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        Set&lt;BigDecimal&gt; edgeNameSet = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            edgeSet.add(vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, BigDecimal.valueOf(i)));</b>
+<b class="fc">&nbsp;            edgeNameSet.add(BigDecimal.valueOf(i));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testBigDecimalEdge_assert(this.sqlgGraph, edgeSet, edgeNameSet);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testBigDecimalEdge_assert(this.sqlgGraph1, edgeSet, edgeNameSet);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testBigDecimalEdge_assert(SqlgGraph sqlgGraph, Set&lt;Edge&gt; edgeSet, Set&lt;BigDecimal&gt; edgeNameSet) {
+<b class="fc">&nbsp;        Set&lt;Edge&gt; edges = sqlgGraph.traversal().E().toSet();</b>
+<b class="fc">&nbsp;        Set&lt;BigDecimal&gt; edgesName = sqlgGraph.traversal().E().&lt;BigDecimal&gt;values(&quot;name&quot;).toSet();</b>
+<b class="fc">&nbsp;        assertEquals(10, edges.size(), 0);</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeSet, edges));</b>
+<b class="fc">&nbsp;        assertTrue(CollectionUtils.isEqualCollection(edgeNameSet, edgesName));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDoublePrimitive() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        double[] edgeNameArray = new double[10];</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArray, (int) i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testDoublePrimitive_assert(this.sqlgGraph, edgeNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testDoublePrimitive_assert(this.sqlgGraph1, edgeNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testDoublePrimitive_assert(SqlgGraph sqlgGraph, double[] edgeNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = sqlgGraph.traversal().E();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        double[] edgeNameArrayToTest = new double[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(edgeNameArray, edgeNameArrayToTest, 0D);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testDoublePrimitiveEdge() throws InterruptedException {
+<b class="fc">&nbsp;        this.sqlgGraph.tx().normalBatchModeOn();</b>
+<b class="fc">&nbsp;        double[] edgeNameArray = new double[10];</b>
+<b class="fc">&nbsp;        for (double i = 0; i &lt; 10; i++) {</b>
+<b class="fc">&nbsp;            Vertex vertex1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            Vertex vertex2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;            vertex1.addEdge(&quot;test&quot;, vertex2, &quot;name&quot;, i);</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArray, (int) i, i);</b>
+&nbsp;        }
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        testDoublePrimitiveEdge_assert(this.sqlgGraph, edgeNameArray);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testDoublePrimitiveEdge_assert(this.sqlgGraph1, edgeNameArray);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testDoublePrimitiveEdge_assert(SqlgGraph sqlgGraph, double[] edgeNameArray) {
+<b class="fc">&nbsp;        GraphTraversal&lt;Edge, Edge&gt; traversal = sqlgGraph.traversal().E();</b>
+<b class="fc">&nbsp;        int count = 0;</b>
+<b class="fc">&nbsp;        double[] edgeNameArrayToTest = new double[10];</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Array.set(edgeNameArrayToTest, count++, traversal.next().value(&quot;name&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        assertArrayEquals(edgeNameArray, edgeNameArrayToTest, 0D);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

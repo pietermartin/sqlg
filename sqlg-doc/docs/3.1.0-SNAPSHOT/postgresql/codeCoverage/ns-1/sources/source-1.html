@@ -1,0 +1,420 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > AllTest</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test</a>
+</div>
+
+<h1>Coverage Summary for Class: AllTest (org.umlg.sqlg.test)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">AllTest</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test;
+&nbsp;
+&nbsp;import org.junit.runner.RunWith;
+&nbsp;import org.junit.runners.Suite;
+&nbsp;import org.umlg.sqlg.test.batch.*;
+&nbsp;import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
+&nbsp;import org.umlg.sqlg.test.complex.TestComplex;
+&nbsp;import org.umlg.sqlg.test.complex.TestGithub;
+&nbsp;import org.umlg.sqlg.test.concat.TestConcat;
+&nbsp;import org.umlg.sqlg.test.datasource.TestCustomDataSource;
+&nbsp;import org.umlg.sqlg.test.datasource.TestJNDIInitialization;
+&nbsp;import org.umlg.sqlg.test.datasource.TestStalePreparedStatement;
+&nbsp;import org.umlg.sqlg.test.edgehas.TestEdgeHas;
+&nbsp;import org.umlg.sqlg.test.edges.*;
+&nbsp;import org.umlg.sqlg.test.event.TestTinkerPopEvent;
+&nbsp;import org.umlg.sqlg.test.filter.and.TestAndStep;
+&nbsp;import org.umlg.sqlg.test.filter.and.barrier.TestAndStepBarrier;
+&nbsp;import org.umlg.sqlg.test.filter.connectivestep.TestAndandOrStep;
+&nbsp;import org.umlg.sqlg.test.filter.not.barrier.TestNotStepBarrier;
+&nbsp;import org.umlg.sqlg.test.filter.or.TestOrStep;
+&nbsp;import org.umlg.sqlg.test.filter.or.TestOrStepAfterVertexStepBarrier;
+&nbsp;import org.umlg.sqlg.test.filter.or.barrier.TestOrStepBarrier;
+&nbsp;import org.umlg.sqlg.test.fold.TestFoldStep;
+&nbsp;import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
+&nbsp;import org.umlg.sqlg.test.graph.TestEmptyGraph;
+&nbsp;import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
+&nbsp;import org.umlg.sqlg.test.gremlincompile.*;
+&nbsp;import org.umlg.sqlg.test.groovy.TestGroovy;
+&nbsp;import org.umlg.sqlg.test.idstep.TestIdStep;
+&nbsp;import org.umlg.sqlg.test.index.TestIndex;
+&nbsp;import org.umlg.sqlg.test.index.TestIndexOnPartition;
+&nbsp;import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
+&nbsp;import org.umlg.sqlg.test.inject.TestInject;
+&nbsp;import org.umlg.sqlg.test.io.TestIo;
+&nbsp;import org.umlg.sqlg.test.io.TestIoEdge;
+&nbsp;import org.umlg.sqlg.test.json.TestJson;
+&nbsp;import org.umlg.sqlg.test.json.TestJsonUpdate;
+&nbsp;import org.umlg.sqlg.test.labels.TestHasLabelAndId;
+&nbsp;import org.umlg.sqlg.test.labels.TestLabelLength;
+&nbsp;import org.umlg.sqlg.test.labels.TestLabelsSchema;
+&nbsp;import org.umlg.sqlg.test.labels.TestMultipleLabels;
+&nbsp;import org.umlg.sqlg.test.localdate.TestLocalDate;
+&nbsp;import org.umlg.sqlg.test.localdate.TestLocalDateArray;
+&nbsp;import org.umlg.sqlg.test.localvertexstep.*;
+&nbsp;import org.umlg.sqlg.test.ltree.TestPostgresLtree;
+&nbsp;import org.umlg.sqlg.test.match.TestMatch;
+&nbsp;import org.umlg.sqlg.test.memory.TestMemoryUsage;
+&nbsp;import org.umlg.sqlg.test.mergestep.TestMerge;
+&nbsp;import org.umlg.sqlg.test.mod.*;
+&nbsp;import org.umlg.sqlg.test.partition.TestJoinAcrossPartition;
+&nbsp;import org.umlg.sqlg.test.process.dropstep.*;
+&nbsp;import org.umlg.sqlg.test.properties.TestEscapedValues;
+&nbsp;import org.umlg.sqlg.test.properties.TestPropertyValues;
+&nbsp;import org.umlg.sqlg.test.reducing.*;
+&nbsp;import org.umlg.sqlg.test.remove.TestRemoveEdge;
+&nbsp;import org.umlg.sqlg.test.repeatstep.TestUnoptimizedRepeatStep;
+&nbsp;import org.umlg.sqlg.test.roles.TestReadOnlyRole;
+&nbsp;import org.umlg.sqlg.test.rollback.TestRollback;
+&nbsp;import org.umlg.sqlg.test.sack.TestSack;
+&nbsp;import org.umlg.sqlg.test.sample.TestSample;
+&nbsp;import org.umlg.sqlg.test.schema.*;
+&nbsp;import org.umlg.sqlg.test.topology.*;
+&nbsp;import org.umlg.sqlg.test.topology.edgeMultiplicity.*;
+&nbsp;import org.umlg.sqlg.test.topology.propertydefinition.*;
+&nbsp;import org.umlg.sqlg.test.travers.TestTraversals;
+&nbsp;import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
+&nbsp;import org.umlg.sqlg.test.usersuppliedpk.topology.TestMultipleIDQuery;
+&nbsp;import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleJoinGremlin;
+&nbsp;import org.umlg.sqlg.test.usersuppliedpk.topology.TestSimpleVertexEdgeGremlin;
+&nbsp;import org.umlg.sqlg.test.usersuppliedpk.topology.TestUserSuppliedPKTopology;
+&nbsp;import org.umlg.sqlg.test.uuid.TestUUID;
+&nbsp;import org.umlg.sqlg.test.vertex.*;
+&nbsp;import org.umlg.sqlg.test.vertexout.TestNotOutStep;
+&nbsp;import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
+&nbsp;import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2014/07/16
+&nbsp; * Time: 12:08 PM
+&nbsp; */
+&nbsp;@RunWith(Suite.class)
+&nbsp;@Suite.SuiteClasses({
+&nbsp;        TestAddVertexViaMap.class,
+&nbsp;        TestAllEdges.class,
+&nbsp;        TestAllVertices.class,
+&nbsp;        TestArrayProperties.class,
+&nbsp;        TestCountVerticesAndEdges.class,
+&nbsp;        TestDeletedVertex.class,
+&nbsp;        TestEdgeCreation.class,
+&nbsp;        TestEdgeToDifferentLabeledVertexes.class,
+&nbsp;        TestHas.class,
+&nbsp;        TestHasLabelAndId.class,
+&nbsp;        TestLoadArrayProperties.class,
+&nbsp;        TestLoadElementProperties.class,
+&nbsp;        TestLoadSchema.class,
+&nbsp;        TestPool.class,
+&nbsp;        TestRemoveElement.class,
+&nbsp;        TestSetProperty.class,
+&nbsp;        TestVertexCreation.class,
+&nbsp;        TestVertexEdgeSameName.class,
+&nbsp;        TestVertexNavToEdges.class,
+&nbsp;        TestSchema.class,
+&nbsp;        TestIndex.class,
+&nbsp;        TestVertexOutWithHas.class,
+&nbsp;        TestEdgeHas.class,
+&nbsp;        TestBatch.class,
+&nbsp;        TestBatchNormalUpdate.class,
+&nbsp;        TestMultiThreadedBatch.class,
+&nbsp;        TestMultiThread.class,
+&nbsp;        TestMultipleThreadMultipleJvm.class,
+&nbsp;        TestRemoveEdge.class,
+&nbsp;        TestEdgeSchemaCreation.class,
+&nbsp;        TestRollback.class,
+&nbsp;        TestNewVertex.class,
+&nbsp;        TestEdgeCache.class,
+&nbsp;        TestTinkerpopBug.class,
+&nbsp;        TestLoadSchemaViaNotify.class,
+&nbsp;        TestCreateEdgeBetweenVertices.class,
+&nbsp;        TestRemovedVertex.class,
+&nbsp;        TestCaptureSchemaTableEdges.class,
+&nbsp;        TestGremlinCompileWithHas.class,
+&nbsp;        TestGremlinCompileE.class,
+&nbsp;        TestEmptyGraph.class,
+&nbsp;        TestOutE.class,
+&nbsp;        TestForeignKeysAreOptional.class,
+&nbsp;        TestGremlinCompileWithAs.class,
+&nbsp;        TestGremlinCompileWithInOutV.class,
+&nbsp;        TestGremlinCompileV.class,
+&nbsp;        TestGremlinCompileGraphStep.class,
+&nbsp;        TestGremlinCompileGraphV.class,
+&nbsp;        TestGremlinCompileWhere.class,
+&nbsp;        TestGremlinCompileTextPredicate.class,
+&nbsp;        TestGremlinCompileFullTextPredicate.class,
+&nbsp;        TestGremlinCompileChoose.class,
+&nbsp;        TestGremlinCompileVertexStep.class,
+&nbsp;        TestGremlinCompileWhereLocalDate.class,
+&nbsp;        TestGremlinCompileArrayContains.class,
+&nbsp;        TestGremlinCompileArrayOverlaps.class,
+&nbsp;        TestColumnNameTranslation.class,
+&nbsp;        TestGraphStepOrderBy.class,
+&nbsp;        TestVertexStepOrderBy.class,
+&nbsp;        TestPathStep.class,
+&nbsp;        TestLocalDate.class,
+&nbsp;        TestLocalDateArray.class,
+&nbsp;        TestBatchStreamVertex.class,
+&nbsp;        TestBatchStreamEdge.class,
+&nbsp;        TestStreamingFromCsvImport.class,
+&nbsp;        TestJson.class,
+&nbsp;        TestSchemaManagerGetTablesFor.class,
+&nbsp;        TestBatchServerSideEdgeCreation.class,
+&nbsp;        TestBatchedStreaming.class,
+&nbsp;        TestBulkWithin.class,
+&nbsp;        TestBulkWithout.class,
+&nbsp;        TestRemoveProperty.class,
+&nbsp;        TestSchemaManagerGetTablesFor.class,
+&nbsp;        TestAggregate.class,
+&nbsp;        TestTreeStep.class,
+&nbsp;        TestRepeatStepGraphOut.class,
+&nbsp;        TestRepeatStepGraphIn.class,
+&nbsp;        TestRepeatStepVertexOut.class,
+&nbsp;        TestRepeatStepGraphBoth.class,
+&nbsp;        TestRepeatStepWithLabels.class,
+&nbsp;        TestGraphStepWithIds.class,
+&nbsp;        TestOtherVertex.class,
+&nbsp;        TestGremlinMod.class,
+&nbsp;        TestTopologyUpgrade.class,
+&nbsp;        TestTopologyMultipleGraphs.class,
+&nbsp;        TestTraversals.class,
+&nbsp;        TestGremlinOptional.class,
+&nbsp;        TestAlias.class,
+&nbsp;        TestGithub.class,
+&nbsp;        TestLocalVertexStepOptional.class,
+&nbsp;        TestLocalVertexStepRepeatStep.class,
+&nbsp;        TestLocalEdgeVertexStep.class,
+&nbsp;        TestLocalEdgeOtherVertexStep.class,
+&nbsp;        TestBatchNormalDateTime.class,
+&nbsp;        TestBatchEdgeDateTime.class,
+&nbsp;        TestBatchJson.class,
+&nbsp;        TestMemoryUsage.class,
+&nbsp;        TestBatchStreamTemporaryVertex.class,
+&nbsp;        TestBatchNormalPrimitiveArrays.class,
+&nbsp;        TestBatchNormalPrimitive.class,
+&nbsp;        TestBatchNormalUpdatePrimitiveArrays.class,
+&nbsp;        TestJsonUpdate.class,
+&nbsp;        TestBatchNormalUpdateDateTime.class,
+&nbsp;        TestOptionalWithOrder.class,
+&nbsp;        TestMultipleLabels.class,
+&nbsp;        TestColumnNamePropertyNameMapScope.class,
+&nbsp;        TestSchemaTableTreeAndHasContainer.class,
+&nbsp;        TestEscapedValues.class,
+&nbsp;        TestRepeatStepOnEdges.class,
+&nbsp;        TestLoadingAdjacent.class,
+&nbsp;        TestLabelsSchema.class,
+&nbsp;        MidTraversalGraphTest.class,
+&nbsp;        TestBatchModeMultipleGraphs.class,
+&nbsp;        TestDetachedEdge.class,
+&nbsp;        TestSchemaEagerCreation.class,
+&nbsp;        TestIndexTopologyTraversal.class,
+&nbsp;        TestNotifyJson.class,
+&nbsp;        TestVertexEdges.class,
+&nbsp;        TestSqlgSchema.class,
+&nbsp;        TestValidateTopology.class,
+&nbsp;        TestBatchNormalUpdateDateTimeArrays.class,
+&nbsp;        TestTopologyChangeListener.class,
+&nbsp;        TestRangeLimit.class,
+&nbsp;        TestReplacedStepEmitComparator.class,
+&nbsp;        TestLocalStepCompile.class,
+&nbsp;        TestLocalVertexStepLimit.class,
+&nbsp;        TestLocalVertexStepOptionalWithOrder.class,
+&nbsp;        TestOptionalWithRange.class,
+&nbsp;        TestRepeatWithOrderAndRange.class,
+&nbsp;        TestMatch.class,
+&nbsp;        TestSqlgBranchStep.class,
+&nbsp;        TestLocalVertexStepWithOrder.class,
+&nbsp;        TestMax.class,
+&nbsp;        TestGroupCount.class,
+&nbsp;        TestSack.class,
+&nbsp;        TestSample.class,
+&nbsp;        TestTopologyChangeListener.class,
+&nbsp;        TestTopologyDelete.class,
+&nbsp;        TestTopologyDeleteSpecific.class,
+&nbsp;        TestTopologyDeleteEdgeRole.class,
+&nbsp;        TestTinkerPopEvent.class,
+&nbsp;        TestIo.class,
+&nbsp;        TestComplex.class,
+&nbsp;        TestTopologyDeleteSpecific.class,
+&nbsp;        TestDeadLock.class,
+&nbsp;        TestLabelLength.class,
+&nbsp;        TestAddTemporaryVertex.class,
+&nbsp;        TestIoEdge.class,
+&nbsp;        TestBatchTemporaryVertex.class,
+&nbsp;        TestUnoptimizedRepeatStep.class,
+&nbsp;        TestTraversalFilterStepBarrier.class,
+&nbsp;        TestOrStepBarrier.class,
+&nbsp;        TestAndStepBarrier.class,
+&nbsp;        TestNotStepBarrier.class,
+&nbsp;        TestOrStep.class,
+&nbsp;        TestAndStep.class,
+&nbsp;        TestAndandOrStep.class,
+&nbsp;        TestOrStepAfterVertexStepBarrier.class,
+&nbsp;        TestDropStep.class,
+&nbsp;        TestDropStepBarrier.class,
+&nbsp;        TestDropStepTruncate.class,
+&nbsp;        TestTopologyGraph.class,
+&nbsp;        TestUnoptimizedRepeatStep.class,
+&nbsp;        TestPropertyReference.class,
+&nbsp;        TestPartitioning.class,
+&nbsp;        TestJoinAcrossPartition.class,
+&nbsp;        TestPartitionMultipleGraphs.class,
+&nbsp;        TestSubSubPartition.class,
+&nbsp;        TestIndexOnPartition.class,
+&nbsp;        TestUserSuppliedPKTopology.class,
+&nbsp;        TestSimpleJoinGremlin.class,
+&nbsp;        TestSimpleVertexEdgeGremlin.class,
+&nbsp;        TestMultipleIDQuery.class,
+&nbsp;        TestRecordId.class,
+&nbsp;        TestPropertyValues.class,
+&nbsp;        TestReadOnlyRole.class,
+&nbsp;        TestVarChar.class,
+&nbsp;        TestTopologySchemaDeleteMultipleGraphs.class,
+&nbsp;        TestTraversalAddV.class,
+&nbsp;        TestCustomDataSource.class,
+&nbsp;        TestJNDIInitialization.class,
+&nbsp;        TestReducing.class,
+&nbsp;        TestReducingVertexStep.class,
+&nbsp;        TestPartitionedDrop.class,
+&nbsp;        TestDropStepPartition.class,
+&nbsp;        TestBatchUpdatePartitioning.class,
+&nbsp;        TestLargeSchemaPerformance.class,
+&nbsp;        TestInject.class,
+&nbsp;        TestFoldStep.class,
+&nbsp;        TestForeignSchema.class,
+&nbsp;        TestTopologyPropertyColumnRename.class,
+&nbsp;        TestTopologyPropertyColumnRenameDistributed.class,
+&nbsp;        TestTopologyVertexLabelRename.class,
+&nbsp;        TestTopologyVertexLabelRenameDistributed.class,
+&nbsp;        TestTopologyEdgeLabelRename.class,
+&nbsp;        TestTopologyEdgeLabelRenameMultipleRoles.class,
+&nbsp;        TestTopologyVertexLabelWithIdentifiersRenameDistributed.class,
+&nbsp;        TestTopologyVertexLabelWithIdentifiersRename.class,
+&nbsp;        TestTopologyEdgeLabelWithIdentifiersRename.class,
+&nbsp;        TestTopologyEdgeLabelRenameDistributed.class,
+&nbsp;        TestUUID.class,
+&nbsp;        TestIdStep.class,
+&nbsp;        TestTopologyLock.class,
+&nbsp;        TestLoadEdgeWithSpecialCharacters.class,
+&nbsp;        TestRequiredProperty.class,
+&nbsp;        TestRequiredPropertyDistributed.class,
+&nbsp;        TestDefaultValue.class,
+&nbsp;        TestDefaultValueDistributed.class,
+&nbsp;        TestPropertyCheckConstraint.class,
+&nbsp;        TestPropertyCheckConstraintDistributed.class,
+&nbsp;        TestMultiplicityOnArrayTypes.class,
+&nbsp;        TestEdgeRole.class,
+&nbsp;        TestEdgeMultiplicity.class,
+&nbsp;        TestMultiplicityAddRemoveEdge.class,
+&nbsp;        TestEdgeMultiplicityDistributed.class,
+&nbsp;        TestMultiplicityAddRemoveEdgeUserDefinedID.class,
+&nbsp;        TestEdgeMultiplicityUnique.class,
+&nbsp;        TestEdgeMultiplicityUniqueDistributed.class,
+&nbsp;        TestNullProperties.class,
+&nbsp;        TestGroovy.class,
+&nbsp;        TestStalePreparedStatement.class,
+&nbsp;        TestMerge.class,
+&nbsp;        TestPostgresLtree.class,
+&nbsp;        TestSchemaTableTreeCache.class,
+&nbsp;        TestTopologyPropertyColumnUpdate.class,
+&nbsp;        TestTopologyPropertyColumnUpdateDistributed.class,
+&nbsp;        TestPropertyDefinitionMultiplicity.class,
+&nbsp;        TestConcat.class,
+&nbsp;        TestNotOutStep.class,
+&nbsp;        TestRemoveIdentifierProperty.class
+&nbsp;})
+<b class="nc">&nbsp;public class AllTest {</b>
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

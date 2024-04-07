@@ -1,0 +1,1353 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > TestGremlinCompileWithHas</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.gremlincompile</a>
+</div>
+
+<h1>Coverage Summary for Class: TestGremlinCompileWithHas (org.umlg.sqlg.test.gremlincompile)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestGremlinCompileWithHas</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (42/42)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    68.8%
+  </span>
+  <span class="absValue">
+    (33/48)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99%
+  </span>
+  <span class="absValue">
+    (892/901)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">TestGremlinCompileWithHas$1</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (43/43)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    68.8%
+  </span>
+  <span class="absValue">
+    (33/48)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99%
+  </span>
+  <span class="absValue">
+    (896/905)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.gremlincompile;
+&nbsp;
+&nbsp;import org.apache.commons.collections4.set.ListOrderedSet;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Pop;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Scope;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Edge;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Graph;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.T;
+&nbsp;import org.apache.tinkerpop.gremlin.structure.Vertex;
+&nbsp;import org.hamcrest.CoreMatchers;
+&nbsp;import org.junit.Assert;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.*;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.util.*;
+&nbsp;import java.util.stream.Collectors;
+&nbsp;
+&nbsp;/**
+&nbsp; * Date: 2015/01/19
+&nbsp; * Time: 6:22 AM
+&nbsp; */
+<b class="fc">&nbsp;public class TestGremlinCompileWithHas extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="fc">&nbsp;        BaseTest.beforeClass();</b>
+<b class="pc">&nbsp;        if (isPostgres()) {</b>
+<b class="fc">&nbsp;            configuration.addProperty(&quot;distributed&quot;, true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testMultipleHasWithinUserSuppliedIds() {
+<b class="fc">&nbsp;        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(</b>
+&nbsp;                &quot;TestHierarchy&quot;,
+<b class="fc">&nbsp;                new LinkedHashMap&lt;&gt;() {{</b>
+<b class="fc">&nbsp;                    put(&quot;column1&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;column2&quot;, PropertyDefinition.of(PropertyType.varChar(100)));</b>
+<b class="fc">&nbsp;                    put(&quot;name&quot;, PropertyDefinition.of(PropertyType.STRING));</b>
+&nbsp;                }},
+<b class="fc">&nbsp;                ListOrderedSet.listOrderedSet(Arrays.asList(&quot;column1&quot;, &quot;column2&quot;))</b>
+&nbsp;        );
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;TestHierarchy&quot;, &quot;column1&quot;, &quot;a1&quot;, &quot;column2&quot;, &quot;a2&quot;, &quot;name&quot;, &quot;name1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;TestHierarchy&quot;, &quot;column1&quot;, &quot;b1&quot;, &quot;column2&quot;, &quot;b2&quot;, &quot;name&quot;, &quot;name1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;TestHierarchy&quot;, &quot;column1&quot;, &quot;c1&quot;, &quot;column2&quot;, &quot;c2&quot;, &quot;name&quot;, &quot;name1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;TestHierarchy&quot;, &quot;column1&quot;, &quot;d1&quot;, &quot;column2&quot;, &quot;d2&quot;, &quot;name&quot;, &quot;name1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;String&gt; values1 = Collections.singletonList(&quot;&quot;);</b>
+<b class="fc">&nbsp;        List&lt;String&gt; values2 = Collections.singletonList(&quot;&quot;);</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertexList = this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;TestHierarchy&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;column1&quot;, P.within(values1))</b>
+<b class="fc">&nbsp;                .has(&quot;column2&quot;, P.within(values2))</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertexList.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        values1 = Arrays.asList(&quot;a1&quot;, &quot;b1&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        values2 = Arrays.asList(&quot;a2&quot;, &quot;b2&quot;, &quot;c2&quot;);</b>
+&nbsp;
+<b class="fc">&nbsp;        vertexList = this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;TestHierarchy&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;column1&quot;, P.within(values1))</b>
+<b class="fc">&nbsp;                .has(&quot;column2&quot;, P.within(values2))</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertexList.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        values1 = List.of(&quot;a1&quot;);</b>
+<b class="fc">&nbsp;        values2 = Arrays.asList(&quot;a2&quot;, &quot;b2&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        vertexList = this.sqlgGraph.traversal().V()</b>
+<b class="fc">&nbsp;                .hasLabel(&quot;TestHierarchy&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;column1&quot;, P.within(values1))</b>
+<b class="fc">&nbsp;                .has(&quot;column2&quot;, P.within(values2))</b>
+<b class="fc">&nbsp;                .toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertexList.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasPropertyWithLabel() {
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).has(&quot;name&quot;).as(&quot;a&quot;).&lt;Vertex&gt;select(&quot;a&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+<b class="fc">&nbsp;        vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;A&quot;).hasNot(&quot;name&quot;).as(&quot;a&quot;).&lt;Vertex&gt;select(&quot;a&quot;).toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasIdRecompilation() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testHasIdRecompilation_assert(this.sqlgGraph, a1);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testHasIdRecompilation_assert(this.sqlgGraph1, a1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testHasIdRecompilation_assert(SqlgGraph sqlgGraph, Vertex a1) {
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; gt1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(a1.id());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, gt1.getSteps().size());</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; gt2 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V().hasId(a1.id());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, gt2.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices1 = gt1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, gt1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices1.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, vertices1.get(0));</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices2 = gt2.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, gt2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices2.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(a1, vertices2.get(0));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(gt1, gt2);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasIdIn() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c4 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;ab&quot;, a1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a1);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;ab&quot;, a1);</b>
+<b class="fc">&nbsp;        b4.addEdge(&quot;ab&quot;, a1);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ac&quot;, a1);</b>
+<b class="fc">&nbsp;        c2.addEdge(&quot;ac&quot;, a1);</b>
+<b class="fc">&nbsp;        c3.addEdge(&quot;ac&quot;, a1);</b>
+<b class="fc">&nbsp;        c4.addEdge(&quot;ac&quot;, a1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testHasIdIn_assert(this.sqlgGraph);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testHasIdIn_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testHasIdIn_assert(SqlgGraph sqlgGraph) {
+<b class="fc">&nbsp;        long start = sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();</b>
+<b class="fc">&nbsp;        RecordId recordIda1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIda2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIda3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIdb2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIdc2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 3L);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).hasLabel(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal2 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal2.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal3 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal3.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal4 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal4.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal5 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal5.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal5.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal5.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal6 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).in().hasId(recordIdb1, recordIdb2, recordIdb3);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal6.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal6.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal6.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal7 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIda1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal7.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal7.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal7.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal8 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal8.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal8.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal8.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal9 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1, recordIdb2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal9.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal9.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal9.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal10 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal10.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal10.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal10.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal11 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdb2.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal11.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal11.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal11.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal12 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdc2.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal12.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal12.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal12.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasIdInJoin() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a4 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c4 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Vertex d3 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Vertex d4 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;ab&quot;, a1);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;ab&quot;, a2);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;ab&quot;, a3);</b>
+<b class="fc">&nbsp;        b4.addEdge(&quot;ab&quot;, a4);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ac&quot;, b1);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ac&quot;, b2);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ac&quot;, b3);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ac&quot;, b4);</b>
+<b class="fc">&nbsp;        d1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        d2.addEdge(&quot;ac&quot;, c2);</b>
+<b class="fc">&nbsp;        d3.addEdge(&quot;ac&quot;, c3);</b>
+<b class="fc">&nbsp;        d4.addEdge(&quot;ac&quot;, c4);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testHasIdInJoin_assert(this.sqlgGraph, a1, a2, a3, a4);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testHasIdInJoin_assert(this.sqlgGraph, a1, a2, a3, a4);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testHasIdInJoin_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Vertex a4) {
+<b class="fc">&nbsp;        long start = sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();</b>
+<b class="fc">&nbsp;        RecordId recordIda1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIda2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIda3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId recordIda4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIdb2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 3L);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).in().hasId(recordIdb1, recordIdb2, recordIdb3);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).in()</b>
+<b class="fc">&nbsp;                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal2 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(a1, a2, a3, a4).in()</b>
+<b class="fc">&nbsp;                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal2.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal3 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(a1, a2, a3, a4).in()</b>
+<b class="fc">&nbsp;                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal3.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasIdOutJoin() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex a4 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c4 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Vertex d2 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Vertex d3 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        Vertex d4 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a3.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        a4.addEdge(&quot;ab&quot;, b4);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c4);</b>
+<b class="fc">&nbsp;        c1.addEdge(&quot;ac&quot;, d1);</b>
+<b class="fc">&nbsp;        c2.addEdge(&quot;ac&quot;, d2);</b>
+<b class="fc">&nbsp;        c3.addEdge(&quot;ac&quot;, d3);</b>
+<b class="fc">&nbsp;        c4.addEdge(&quot;ac&quot;, d4);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testHasIdOutJoin_assert(this.sqlgGraph, a1, a2, a3, a4);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testHasIdOutJoin_assert(this.sqlgGraph1, a1, a2, a3, a4);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testHasIdOutJoin_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Vertex a4) {
+<b class="fc">&nbsp;        long start = sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();</b>
+<b class="fc">&nbsp;        RecordId recordIda1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIda2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIda3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId recordIda4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIdb2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 3L);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).out().hasId(recordIdb1, recordIdb2, recordIdb3);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).out()</b>
+<b class="fc">&nbsp;                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal2 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(a1, a2, a3, a4).out()</b>
+<b class="fc">&nbsp;                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal2.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal3 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(a1, a2, a3, a4).out()</b>
+<b class="fc">&nbsp;                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal3.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasIdOut() throws InterruptedException {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c2 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c3 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        Vertex c4 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ab&quot;, b4);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c3);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;ac&quot;, c4);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        testHasIdOut_assert(this.sqlgGraph);</b>
+<b class="pc">&nbsp;        if (this.sqlgGraph1 != null) {</b>
+<b class="fc">&nbsp;            Thread.sleep(SLEEP_TIME);</b>
+<b class="fc">&nbsp;            testHasIdOut_assert(this.sqlgGraph1);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    private void testHasIdOut_assert(SqlgGraph sqlgGraph) {
+<b class="fc">&nbsp;        long start = sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();</b>
+<b class="fc">&nbsp;        RecordId recordIda1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIda2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIda3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;A&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIdb2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId recordIdb3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;B&quot;), start + 3L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start);</b>
+<b class="fc">&nbsp;        RecordId recordIdc2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 1L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 2L);</b>
+<b class="fc">&nbsp;        RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), &quot;C&quot;), start + 3L);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).hasLabel(&quot;A&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; vertices = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal2 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal2.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal3 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal3.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal4 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal4.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal5 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal5.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal5.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal5.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal6 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).out().hasId(recordIdb1, recordIdb2, recordIdb3);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal6.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal6.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal6.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal7 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIda1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal7.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal7.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal7.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal8 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal8.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal8.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal8.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal9 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1, recordIdb2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal9.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal9.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal9.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal10 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal10.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal10.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal10.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal11 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdb2.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal11.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal11.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal11.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal12 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdc2.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal12.getSteps().size());</b>
+<b class="fc">&nbsp;        vertices = traversal12.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal12.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, vertices.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_asXaX_out_asXbX_selectXa_bX_byXnameX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Map&lt;String, String&gt;&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Map&lt;String, String&gt;&gt;) g.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;).out().aggregate(&quot;x&quot;).as(&quot;b&quot;).&lt;String&gt;select(&quot;a&quot;, &quot;b&quot;).by(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        final List&lt;Map&lt;String, String&gt;&gt; expected = makeMapList(2,</b>
+&nbsp;                &quot;a&quot;, &quot;marko&quot;, &quot;b&quot;, &quot;lop&quot;,
+&nbsp;                &quot;a&quot;, &quot;marko&quot;, &quot;b&quot;, &quot;vadas&quot;,
+&nbsp;                &quot;a&quot;, &quot;marko&quot;, &quot;b&quot;, &quot;josh&quot;,
+&nbsp;                &quot;a&quot;, &quot;josh&quot;, &quot;b&quot;, &quot;ripple&quot;,
+&nbsp;                &quot;a&quot;, &quot;josh&quot;, &quot;b&quot;, &quot;lop&quot;,
+&nbsp;                &quot;a&quot;, &quot;peter&quot;, &quot;b&quot;, &quot;lop&quot;);
+<b class="fc">&nbsp;        checkResults(expected, traversal);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_VX1AsStringX_out_hasXid_2AsStringX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V(convertToVertexId(&quot;marko&quot;)).out().hasId(convertToVertexId(&quot;vadas&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertThat(traversal.hasNext(), CoreMatchers.is(true));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(convertToVertexId(&quot;vadas&quot;), traversal.next().id());</b>
+<b class="fc">&nbsp;        Assert.assertThat(traversal.hasNext(), CoreMatchers.is(false));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_VX4X_out_asXhereX_hasXlang_javaX_selectXhereX_name() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        Object vertexId = convertToVertexId(&quot;josh&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, String&gt; traversal = (DefaultGraphTraversal&lt;Vertex, String&gt;) g.traversal().V(vertexId)</b>
+<b class="fc">&nbsp;                .out().as(&quot;here&quot;)</b>
+<b class="fc">&nbsp;                .has(&quot;lang&quot;, &quot;java&quot;)</b>
+<b class="fc">&nbsp;                .select(&quot;here&quot;).&lt;String&gt;values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="pc">&nbsp;        if (traversal.getSteps().size() != 3 &amp;&amp; traversal.getSteps().size() != 4) {</b>
+<b class="nc">&nbsp;            Assert.fail(&quot;expected 3 or 4 found &quot; + traversal.getSteps().size());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        final Set&lt;String&gt; names = new HashSet&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            counter++;</b>
+<b class="fc">&nbsp;            names.add(traversal.next());</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(2, counter);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, names.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(names.contains(&quot;ripple&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(names.contains(&quot;lop&quot;));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_asXaX_outXcreatedX_asXbX_inXcreatedX_asXcX_bothXknowsX_bothXknowsX_asXdX_whereXc__notXeqXaX_orXeqXdXXXX_selectXa_b_c_dX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Map&lt;String, Object&gt;&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out(&quot;created&quot;).as(&quot;b&quot;)</b>
+<b class="fc">&nbsp;                .in(&quot;created&quot;).as(&quot;c&quot;)</b>
+<b class="fc">&nbsp;                .both(&quot;knows&quot;)</b>
+<b class="fc">&nbsp;                .both(&quot;knows&quot;).as(&quot;d&quot;)</b>
+<b class="fc">&nbsp;                .where(&quot;c&quot;, P.not(P.eq(&quot;a&quot;).or(P.eq(&quot;d&quot;))))</b>
+<b class="fc">&nbsp;                .select(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(7, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        checkResults(makeMapList(4,</b>
+<b class="fc">&nbsp;                &quot;a&quot;, convertToVertex(this.sqlgGraph, &quot;marko&quot;), &quot;b&quot;, convertToVertex(this.sqlgGraph, &quot;lop&quot;), &quot;c&quot;, convertToVertex(this.sqlgGraph, &quot;josh&quot;), &quot;d&quot;, convertToVertex(this.sqlgGraph, &quot;vadas&quot;),</b>
+<b class="fc">&nbsp;                &quot;a&quot;, convertToVertex(this.sqlgGraph, &quot;peter&quot;), &quot;b&quot;, convertToVertex(this.sqlgGraph, &quot;lop&quot;), &quot;c&quot;, convertToVertex(this.sqlgGraph, &quot;josh&quot;), &quot;d&quot;, convertToVertex(this.sqlgGraph, &quot;vadas&quot;)), traversal);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;unchecked&quot;)
+&nbsp;    protected static &lt;T&gt; void checkResults(final List&lt;T&gt; expectedResults, final Traversal&lt;?, T&gt; traversal) {
+<b class="fc">&nbsp;        final List&lt;T&gt; results = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+<b class="pc">&nbsp;        if (expectedResults.size() != results.size()) {</b>
+<b class="nc">&nbsp;            System.err.println(&quot;Expected results: &quot; + expectedResults);</b>
+<b class="nc">&nbsp;            System.err.println(&quot;Actual results:   &quot; + results);</b>
+<b class="nc">&nbsp;            Assert.assertEquals(&quot;Checking result size&quot;, expectedResults.size(), results.size());</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        for (T t : results) {</b>
+<b class="pc">&nbsp;            if (t instanceof Map) {</b>
+<b class="fc">&nbsp;                Assert.assertTrue(&quot;Checking map result existence: &quot; + t, expectedResults.stream().filter(e -&gt; e instanceof Map).anyMatch(e -&gt; checkMap((Map) e, (Map) t)));</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                Assert.assertTrue(&quot;Checking result existence: &quot; + t, expectedResults.contains(t));</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        final Map&lt;T, Long&gt; expectedResultsCount = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        final Map&lt;T, Long&gt; resultsCount = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;Checking indexing is equivalent&quot;, expectedResultsCount.size(), resultsCount.size());</b>
+<b class="fc">&nbsp;        expectedResults.forEach(t -&gt; MapHelper.incr(expectedResultsCount, t, 1L));</b>
+<b class="fc">&nbsp;        results.forEach(t -&gt; MapHelper.incr(resultsCount, t, 1L));</b>
+<b class="fc">&nbsp;        expectedResultsCount.forEach((k, v) -&gt; Assert.assertEquals(&quot;Checking result group counts&quot;, v, resultsCount.get(k)));</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;Duplicates&quot;)
+&nbsp;    private static &lt;A, B&gt; boolean checkMap(final Map&lt;A, B&gt; expectedMap, final Map&lt;A, B&gt; actualMap) {
+<b class="fc">&nbsp;        final List&lt;Map.Entry&lt;A, B&gt;&gt; actualList = actualMap.entrySet().stream().sorted(Comparator.comparing(a -&gt; a.getKey().toString())).collect(Collectors.toList());</b>
+<b class="fc">&nbsp;        final List&lt;Map.Entry&lt;A, B&gt;&gt; expectedList = expectedMap.entrySet().stream().sorted(Comparator.comparing(a -&gt; a.getKey().toString())).collect(Collectors.toList());</b>
+&nbsp;
+<b class="pc">&nbsp;        if (expectedList.size() &gt; actualList.size()) {</b>
+<b class="nc">&nbsp;            return false;</b>
+<b class="pc">&nbsp;        } else if (actualList.size() &gt; expectedList.size()) {</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        for (int i = 0; i &lt; actualList.size(); i++) {</b>
+<b class="pc">&nbsp;            if (!actualList.get(i).getKey().equals(expectedList.get(i).getKey())) {</b>
+<b class="nc">&nbsp;                return false;</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (!actualList.get(i).getValue().equals(expectedList.get(i).getValue())) {</b>
+<b class="fc">&nbsp;                return false;</b>
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_asXaX_out_asXaX_out_asXaX_selectXaX_byXunfold_valuesXnameX_foldX_rangeXlocal_1_2X() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, String&gt; traversal = (DefaultGraphTraversal&lt;Vertex, String&gt;) g.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .&lt;List&lt;String&gt;&gt;select(Pop.all, &quot;a&quot;)</b>
+<b class="fc">&nbsp;                .by(__.unfold().values(&quot;name&quot;).fold())</b>
+<b class="fc">&nbsp;                .&lt;String&gt;range(Scope.local, 1, 2);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            final String s = traversal.next();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(&quot;josh&quot;, s);</b>
+<b class="fc">&nbsp;            counter++;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(2, counter);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_asXaX_out_asXaX_out_asXaX_selectXaX_byXunfold_valuesXnameX_foldX_rangeXlocal_1_2X_Simple() {
+<b class="fc">&nbsp;        loadModern();</b>
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, List&lt;Vertex&gt;&gt; traversal = (DefaultGraphTraversal&lt;Vertex, List&lt;Vertex&gt;&gt;) g.traversal()</b>
+<b class="fc">&nbsp;                .V().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .out().as(&quot;a&quot;)</b>
+<b class="fc">&nbsp;                .&lt;List&lt;Vertex&gt;&gt;select(Pop.all, &quot;a&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            final List&lt;Vertex&gt; s = traversal.next();</b>
+<b class="fc">&nbsp;            Assert.assertEquals(3, s.size());</b>
+<b class="fc">&nbsp;            System.out.println(s);</b>
+<b class="fc">&nbsp;            counter++;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(2, counter);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_hasXinXcreatedX_count_isXgte_2XX_valuesXnameX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, String&gt; traversal = (DefaultGraphTraversal&lt;Vertex, String&gt;) this.sqlgGraph.traversal()</b>
+<b class="fc">&nbsp;                .V()</b>
+<b class="fc">&nbsp;                .where(</b>
+<b class="fc">&nbsp;                        __.in(&quot;created&quot;)</b>
+<b class="fc">&nbsp;                                .count()</b>
+<b class="fc">&nbsp;                                .is(</b>
+<b class="fc">&nbsp;                                        P.gte(2L)</b>
+&nbsp;                                )
+&nbsp;                )
+<b class="fc">&nbsp;                .&lt;String&gt;values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;lop&quot;, traversal.next());</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_VX1X_out_hasXid_2X() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        Object marko = convertToVertexId(&quot;marko&quot;);</b>
+<b class="fc">&nbsp;        Object vadas = convertToVertexId(&quot;vadas&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V(marko).out().hasId(vadas);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertThat(traversal.hasNext(), CoreMatchers.is(true));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(convertToVertexId(&quot;vadas&quot;), traversal.next().id());</b>
+<b class="fc">&nbsp;        Assert.assertThat(traversal.hasNext(), CoreMatchers.is(false));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasLabelOut() {
+<b class="fc">&nbsp;        SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) this.sqlgGraph.traversal().V().both().has(T.label, &quot;B&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; softwares = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, softwares.size());</b>
+<b class="fc">&nbsp;        for (Vertex software : softwares) {</b>
+<b class="pc">&nbsp;            if (!software.label().equals(&quot;B&quot;)) {</b>
+<b class="nc">&nbsp;                Assert.fail(&quot;expected label B found &quot; + software.label());</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testSingleCompileWithHasLabelIn() {
+<b class="fc">&nbsp;        Vertex a1 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a1&quot;);</b>
+<b class="fc">&nbsp;        Vertex a2 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a2&quot;);</b>
+<b class="fc">&nbsp;        Vertex a3 = this.sqlgGraph.addVertex(T.label, &quot;A&quot;, &quot;name&quot;, &quot;a3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b1 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        Vertex b2 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        Vertex b3 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        Vertex b4 = this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b4&quot;);</b>
+<b class="fc">&nbsp;        Vertex d1 = this.sqlgGraph.addVertex(T.label, &quot;D&quot;, &quot;name&quot;, &quot;d1&quot;);</b>
+<b class="fc">&nbsp;        Vertex c1 = this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;outC&quot;, c1);</b>
+<b class="fc">&nbsp;        a2.addEdge(&quot;outB&quot;, b2);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;outC&quot;, c1);</b>
+<b class="fc">&nbsp;        a3.addEdge(&quot;outB&quot;, b3);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;outC&quot;, c1);</b>
+<b class="fc">&nbsp;        d1.addEdge(&quot;outB&quot;, b4);</b>
+<b class="fc">&nbsp;        b4.addEdge(&quot;outC&quot;, c1);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, vertexTraversal(this.sqlgGraph, c1).in().in().count().next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, vertexTraversal(this.sqlgGraph, c1).in().in().has(T.label, &quot;A&quot;).count().next().intValue());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutHasOutHas() {
+<b class="fc">&nbsp;        SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex b2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex b3 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b3);</b>
+<b class="fc">&nbsp;        SqlgVertex c1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c3 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c4 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c4&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c5 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c5&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c6 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c6&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c7 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c7&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c8 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c8&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c9 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c9&quot;);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;outC&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;outC&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;outC&quot;, c3);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;outC&quot;, c4);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;outC&quot;, c5);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;outC&quot;, c6);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;outC&quot;, c7);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;outC&quot;, c8);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;outC&quot;, c9);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Long&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Long&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b1&quot;).out().has(&quot;name&quot;, &quot;c1&quot;).count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b1&quot;).out().has(&quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c1, traversal1.next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Long&gt; traversal2 = (DefaultGraphTraversal&lt;Vertex, Long&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b2&quot;).out().has(&quot;name&quot;, &quot;c5&quot;).count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal2.next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal2.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal3 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b2&quot;).out().has(&quot;name&quot;, &quot;c5&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c5, traversal3.next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testOutHasOutHasNotParsed() {
+<b class="fc">&nbsp;        SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;A&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b1&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex b2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b2&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex b3 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;B&quot;, &quot;name&quot;, &quot;b3&quot;);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b1);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b2);</b>
+<b class="fc">&nbsp;        a1.addEdge(&quot;outB&quot;, b3);</b>
+<b class="fc">&nbsp;        SqlgVertex c1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c2&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c3 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c3&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c4 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c4&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c5 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c5&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c6 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c6&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c7 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c7&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c8 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c8&quot;);</b>
+<b class="fc">&nbsp;        SqlgVertex c9 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, &quot;C&quot;, &quot;name&quot;, &quot;c9&quot;);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;outC&quot;, c1);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;outC&quot;, c2);</b>
+<b class="fc">&nbsp;        b1.addEdge(&quot;outC&quot;, c3);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;outC&quot;, c4);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;outC&quot;, c5);</b>
+<b class="fc">&nbsp;        b2.addEdge(&quot;outC&quot;, c6);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;outC&quot;, c7);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;outC&quot;, c8);</b>
+<b class="fc">&nbsp;        b3.addEdge(&quot;outC&quot;, c9);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Long&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Long&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b1&quot;).out().has(&quot;name&quot;, &quot;c1&quot;).count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b1&quot;).out().has(&quot;name&quot;, &quot;c1&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(5, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(c1, traversal1.next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Long&gt; traversal2 = (DefaultGraphTraversal&lt;Vertex, Long&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b2&quot;).out().has(&quot;name&quot;, &quot;c5&quot;).count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal2.next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal2.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Long&gt; traversal3 = (DefaultGraphTraversal&lt;Vertex, Long&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b2&quot;).has(&quot;name&quot;, &quot;b2&quot;).out().has(&quot;name&quot;, P.within(Arrays.asList(&quot;c5&quot;, &quot;c6&quot;))).count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal3.next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal3.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Long&gt; traversal4 = (DefaultGraphTraversal&lt;Vertex, Long&gt;) vertexTraversal(this.sqlgGraph, a1)</b>
+<b class="fc">&nbsp;                .out().has(&quot;name&quot;, &quot;b2&quot;).has(&quot;name&quot;, &quot;b2&quot;).out().has(&quot;name&quot;, P.eq(&quot;c5&quot;)).count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal4.next().intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal4.getSteps().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testInOut() {
+<b class="fc">&nbsp;        Vertex v1 = sqlgGraph.addVertex();</b>
+<b class="fc">&nbsp;        Vertex v2 = sqlgGraph.addVertex();</b>
+<b class="fc">&nbsp;        Vertex v3 = sqlgGraph.addVertex();</b>
+<b class="fc">&nbsp;        Vertex v4 = sqlgGraph.addVertex();</b>
+<b class="fc">&nbsp;        sqlgGraph.addVertex();</b>
+<b class="fc">&nbsp;        Edge e1 = v1.addEdge(&quot;label1&quot;, v2);</b>
+<b class="fc">&nbsp;        Edge e2 = v2.addEdge(&quot;label2&quot;, v3);</b>
+<b class="fc">&nbsp;        v3.addEdge(&quot;label3&quot;, v4);</b>
+<b class="fc">&nbsp;        sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Long&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Long&gt;) vertexTraversal(this.sqlgGraph, v2).inE().count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.next(), 1);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Edge&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Edge&gt;) vertexTraversal(this.sqlgGraph, v2).inE();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(e1, traversal1.next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Long&gt; traversal2 = (DefaultGraphTraversal&lt;Edge, Long&gt;) edgeTraversal(this.sqlgGraph, e1).inV().count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1L, traversal2.next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal2.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Vertex&gt; traversal3 = (DefaultGraphTraversal&lt;Edge, Vertex&gt;) edgeTraversal(this.sqlgGraph, e1).inV();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(v2, traversal3.next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Long&gt; traversal4 = (DefaultGraphTraversal&lt;Edge, Long&gt;) edgeTraversal(this.sqlgGraph, e1).outV().count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1L, traversal4.next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal4.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Long&gt; traversal5 = (DefaultGraphTraversal&lt;Edge, Long&gt;) edgeTraversal(this.sqlgGraph, e1).outV().inE().count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal5.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0L, traversal5.next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal5.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Long&gt; traversal6 = (DefaultGraphTraversal&lt;Edge, Long&gt;) edgeTraversal(this.sqlgGraph, e2).inV().count();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal6.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1L, traversal6.next(), 0);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal6.getSteps().size());</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Vertex&gt; traversal7 = (DefaultGraphTraversal&lt;Edge, Vertex&gt;) edgeTraversal(this.sqlgGraph, e2).inV();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal7.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(v3, traversal7.next());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal7.getSteps().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testVertexOutWithHas() {
+<b class="fc">&nbsp;        Vertex marko = this.sqlgGraph.addVertex(T.label, &quot;Person&quot;, &quot;name&quot;, &quot;marko&quot;);</b>
+<b class="fc">&nbsp;        Vertex bmw1 = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;bmw&quot;, &quot;cc&quot;, 600);</b>
+<b class="fc">&nbsp;        Vertex bmw2 = this.sqlgGraph.addVertex(T.label, &quot;Car&quot;, &quot;name&quot;, &quot;bmw&quot;, &quot;cc&quot;, 800);</b>
+<b class="fc">&nbsp;        Vertex ktm1 = this.sqlgGraph.addVertex(T.label, &quot;Bike&quot;, &quot;name&quot;, &quot;ktm&quot;, &quot;cc&quot;, 200);</b>
+<b class="fc">&nbsp;        Vertex ktm2 = this.sqlgGraph.addVertex(T.label, &quot;Bike&quot;, &quot;name&quot;, &quot;ktm&quot;, &quot;cc&quot;, 200);</b>
+<b class="fc">&nbsp;        Vertex ktm3 = this.sqlgGraph.addVertex(T.label, &quot;Bike&quot;, &quot;name&quot;, &quot;ktm&quot;, &quot;cc&quot;, 400);</b>
+<b class="fc">&nbsp;        marko.addEdge(&quot;drives&quot;, bmw1);</b>
+<b class="fc">&nbsp;        marko.addEdge(&quot;drives&quot;, bmw2);</b>
+<b class="fc">&nbsp;        marko.addEdge(&quot;drives&quot;, ktm1);</b>
+<b class="fc">&nbsp;        marko.addEdge(&quot;drives&quot;, ktm2);</b>
+<b class="fc">&nbsp;        marko.addEdge(&quot;drives&quot;, ktm3);</b>
+<b class="fc">&nbsp;        this.sqlgGraph.tx().commit();</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, marko)</b>
+<b class="fc">&nbsp;                .out(&quot;drives&quot;).&lt;Vertex&gt;has(&quot;name&quot;, &quot;bmw&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; drivesBmw = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2L, drivesBmw.size(), 0);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal1 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, marko)</b>
+<b class="fc">&nbsp;                .out(&quot;drives&quot;).&lt;Vertex&gt;has(&quot;name&quot;, &quot;ktm&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; drivesKtm = traversal1.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal1.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3L, drivesKtm.size(), 0);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal2 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, marko)</b>
+<b class="fc">&nbsp;                .out(&quot;drives&quot;).&lt;Vertex&gt;has(&quot;cc&quot;, 600);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; cc600 = traversal2.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal2.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1L, cc600.size(), 0);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal3 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, marko)</b>
+<b class="fc">&nbsp;                .out(&quot;drives&quot;).&lt;Vertex&gt;has(&quot;cc&quot;, 800);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; cc800 = traversal3.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal3.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1L, cc800.size(), 0);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal4 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, marko)</b>
+<b class="fc">&nbsp;                .out(&quot;drives&quot;).&lt;Vertex&gt;has(&quot;cc&quot;, 200);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; cc200 = traversal4.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal4.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2L, cc200.size(), 0);</b>
+&nbsp;
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal5 = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) vertexTraversal(this.sqlgGraph, marko)</b>
+<b class="fc">&nbsp;                .out(&quot;drives&quot;).&lt;Vertex&gt;has(&quot;cc&quot;, 400);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal5.getSteps().size());</b>
+<b class="fc">&nbsp;        List&lt;Vertex&gt; cc400 = traversal5.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal5.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1L, cc400.size(), 0);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testg_EX11X_outV_outE_hasXid_10AsStringX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        final Object edgeId11 = convertToEdgeId(this.sqlgGraph, &quot;josh&quot;, &quot;created&quot;, &quot;lop&quot;);</b>
+<b class="fc">&nbsp;        final Object edgeId10 = convertToEdgeId(this.sqlgGraph, &quot;josh&quot;, &quot;created&quot;, &quot;ripple&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Edge, Edge&gt; traversal = (DefaultGraphTraversal&lt;Edge, Edge&gt;) g.traversal().E(edgeId11.toString())</b>
+<b class="fc">&nbsp;                .outV().outE().has(T.id, edgeId10.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        final Edge e = traversal.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(edgeId10.toString(), e.id().toString());</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_V_out_outE_inV_inE_inV_both_name() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+&nbsp;
+<b class="fc">&nbsp;        Object id = convertToVertexId(g, &quot;marko&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, String&gt; traversal = (DefaultGraphTraversal&lt;Vertex, String&gt;) g.traversal().V(id).out().outE().inV().inE().inV().both().&lt;String&gt;values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(8, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        int counter = 0;</b>
+<b class="fc">&nbsp;        final Map&lt;String, Integer&gt; counts = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            final String key = traversal.next();</b>
+<b class="fc">&nbsp;            final int previousCount = counts.getOrDefault(key, 0);</b>
+<b class="fc">&nbsp;            counts.put(key, previousCount + 1);</b>
+<b class="fc">&nbsp;            counter++;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertEquals(3, counts.size());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, counts.get(&quot;josh&quot;).intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, counts.get(&quot;marko&quot;).intValue());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, counts.get(&quot;peter&quot;).intValue());</b>
+&nbsp;
+<b class="fc">&nbsp;        Assert.assertEquals(10, counter);</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testHasWithStringIds() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        String marko = convertToVertexId(&quot;marko&quot;).toString();</b>
+<b class="fc">&nbsp;        String vadas = convertToVertexId(&quot;vadas&quot;).toString();</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) g.traversal().V(marko).out().hasId(vadas);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(convertToVertexId(&quot;vadas&quot;), traversal.next().id());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;Duplicates&quot;)
+&nbsp;    @Test
+&nbsp;    public void testHas() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        final Object id2 = convertToVertexId(&quot;vadas&quot;);</b>
+<b class="fc">&nbsp;        final Object id3 = convertToVertexId(&quot;lop&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId(&quot;marko&quot;), id2.toString(), id3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        assert_g_VX1X_out_hasXid_2_3X(id2, id3, traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @SuppressWarnings(&quot;Duplicates&quot;)
+&nbsp;    @Test
+&nbsp;    public void g_VX1X_out_hasXid_2AsString_3AsStringX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        final Object id2 = convertToVertexId(&quot;vadas&quot;);</b>
+<b class="fc">&nbsp;        final Object id3 = convertToVertexId(&quot;lop&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId(&quot;marko&quot;), id2.toString(), id3.toString());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        assert_g_VX1X_out_hasXid_2_3X(id2, id3, traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testX() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        final Object marko = convertToVertexId(&quot;marko&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Edge&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Edge&gt;) g.traversal().V(marko)</b>
+<b class="fc">&nbsp;                .outE(&quot;knows&quot;).has(&quot;weight&quot;, 1.0d).as(&quot;here&quot;).inV().has(&quot;name&quot;, &quot;josh&quot;).&lt;Edge&gt;select(&quot;here&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(6, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        final Edge edge = traversal.next();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(&quot;knows&quot;, edge.label());</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1.0d, edge.&lt;Double&gt;value(&quot;weight&quot;), 0.00001d);</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void g_VX1X_outE_hasXweight_inside_0_06X_inV() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, Vertex&gt; traversal = (DefaultGraphTraversal&lt;Vertex, Vertex&gt;) get_g_VX1X_outE_hasXweight_inside_0_06X_inV(g.traversal(), convertToVertexId(&quot;marko&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        while (traversal.hasNext()) {</b>
+<b class="fc">&nbsp;            Vertex vertex = traversal.next();</b>
+<b class="fc">&nbsp;            Assert.assertTrue(vertex.value(&quot;name&quot;).equals(&quot;vadas&quot;) || vertex.value(&quot;name&quot;).equals(&quot;lop&quot;));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void testY() {
+<b class="fc">&nbsp;        Graph g = this.sqlgGraph;</b>
+<b class="fc">&nbsp;        loadModern(this.sqlgGraph);</b>
+<b class="fc">&nbsp;        assertModernGraph(g, true, false);</b>
+<b class="fc">&nbsp;        Object marko = convertToVertexId(g, &quot;marko&quot;);</b>
+<b class="fc">&nbsp;        DefaultGraphTraversal&lt;Vertex, String&gt; traversal = (DefaultGraphTraversal&lt;Vertex, String&gt;) g.traversal().V(marko).outE(&quot;knows&quot;).bothV().&lt;String&gt;values(&quot;name&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, traversal.getSteps().size());</b>
+<b class="fc">&nbsp;        final List&lt;String&gt; names = traversal.toList();</b>
+<b class="fc">&nbsp;        Assert.assertEquals(4, names.size());</b>
+<b class="fc">&nbsp;        Assert.assertTrue(names.contains(&quot;marko&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(names.contains(&quot;josh&quot;));</b>
+<b class="fc">&nbsp;        Assert.assertTrue(names.contains(&quot;vadas&quot;));</b>
+<b class="fc">&nbsp;        names.remove(&quot;marko&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(3, names.size());</b>
+<b class="fc">&nbsp;        names.remove(&quot;marko&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(2, names.size());</b>
+<b class="fc">&nbsp;        names.remove(&quot;josh&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(1, names.size());</b>
+<b class="fc">&nbsp;        names.remove(&quot;vadas&quot;);</b>
+<b class="fc">&nbsp;        Assert.assertEquals(0, names.size());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private Traversal&lt;Vertex, Vertex&gt; get_g_VX1X_outE_hasXweight_inside_0_06X_inV(GraphTraversalSource g, final Object v1Id) {
+<b class="fc">&nbsp;        return g.V(v1Id).outE().has(&quot;weight&quot;, P.inside(0.0d, 0.6d)).inV();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private Traversal&lt;Vertex, Vertex&gt; get_g_VX1X_out_hasIdX2_3X(GraphTraversalSource g, final Object v1Id, final Object v2Id, final Object v3Id) {
+<b class="fc">&nbsp;        return g.V(v1Id).out().hasId(v2Id, v3Id);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    private void assert_g_VX1X_out_hasXid_2_3X(Object id2, Object id3, Traversal&lt;Vertex, Vertex&gt; traversal) {
+<b class="fc">&nbsp;        printTraversalForm(traversal);</b>
+<b class="fc">&nbsp;        Assert.assertTrue(traversal.hasNext());</b>
+<b class="fc">&nbsp;        Assert.assertThat(traversal.next().id(), CoreMatchers.anyOf(CoreMatchers.is(id2), CoreMatchers.is(id3)));</b>
+<b class="fc">&nbsp;        Assert.assertThat(traversal.next().id(), CoreMatchers.anyOf(CoreMatchers.is(id2), CoreMatchers.is(id3)));</b>
+<b class="fc">&nbsp;        Assert.assertFalse(traversal.hasNext());</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
+<b class="fc">&nbsp;        return graph.traversal().V().has(&quot;name&quot;, outVertexName).outE(edgeLabel).as(&quot;e&quot;).inV().has(&quot;name&quot;, inVertexName).&lt;Edge&gt;select(&quot;e&quot;).next().id();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>

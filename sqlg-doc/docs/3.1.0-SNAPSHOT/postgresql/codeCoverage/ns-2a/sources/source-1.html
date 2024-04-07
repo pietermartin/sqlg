@@ -1,0 +1,182 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > NetAggregateTest</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.umlg.sqlg.test.repeatstep</a>
+</div>
+
+<h1>Coverage Summary for Class: NetAggregateTest (org.umlg.sqlg.test.repeatstep)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">NetAggregateTest</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/26)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.umlg.sqlg.test.repeatstep;
+&nbsp;
+&nbsp;import org.apache.commons.configuration2.builder.fluent.Configurations;
+&nbsp;import org.apache.commons.configuration2.ex.ConfigurationException;
+&nbsp;import org.apache.commons.lang3.time.StopWatch;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.P;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.Path;
+&nbsp;import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+&nbsp;import org.junit.Before;
+&nbsp;import org.junit.BeforeClass;
+&nbsp;import org.junit.Test;
+&nbsp;import org.umlg.sqlg.structure.SqlgGraph;
+&nbsp;import org.umlg.sqlg.test.BaseTest;
+&nbsp;
+&nbsp;import java.net.URL;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * @author &lt;a href=&quot;https://github.com/pietermartin&quot;&gt;Pieter Martin&lt;/a&gt;
+&nbsp; * Date: 2017/06/05
+&nbsp; */
+<b class="nc">&nbsp;public class NetAggregateTest extends BaseTest {</b>
+&nbsp;
+&nbsp;    @BeforeClass
+&nbsp;    public static void beforeClass() {
+<b class="nc">&nbsp;        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource(&quot;sqlg.properties&quot;);</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            Configurations configs = new Configurations();</b>
+<b class="nc">&nbsp;            configuration = configs.properties(sqlProperties);</b>
+<b class="nc">&nbsp;            configuration.setProperty(&quot;cache.vertices&quot;, true);</b>
+<b class="nc">&nbsp;            if (!configuration.containsKey(&quot;jdbc.url&quot;)) {</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(String.format(&quot;SqlGraph configuration requires that the %s be set&quot;, &quot;jdbc.url&quot;));</b>
+&nbsp;            }
+<b class="nc">&nbsp;        } catch (ConfigurationException e) {</b>
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    @Before
+&nbsp;    public void before() {
+<b class="nc">&nbsp;        this.sqlgGraph = SqlgGraph.open(configuration);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    public void test2() {
+<b class="nc">&nbsp;        StopWatch stopWatch = new StopWatch();</b>
+<b class="nc">&nbsp;        stopWatch.start();</b>
+&nbsp;//        List&lt;Vertex&gt; vertices = this.sqlgGraph.traversal().V().hasLabel(&quot;Transmission&quot;).toList();
+<b class="nc">&nbsp;        List&lt;Path&gt; vertices = this.sqlgGraph.traversal()</b>
+<b class="nc">&nbsp;                .V()</b>
+<b class="nc">&nbsp;                .hasLabel(&quot;Transmission&quot;)</b>
+<b class="nc">&nbsp;                .repeat(__.both(&quot;link&quot;).simplePath())</b>
+<b class="nc">&nbsp;                .until(</b>
+<b class="nc">&nbsp;                        __.or(</b>
+<b class="nc">&nbsp;                                __.has(&quot;type&quot;, P.within(&quot;HubSite&quot;, &quot;ASwitch&quot;, &quot;BSwitch&quot;)),</b>
+<b class="nc">&nbsp;                                __.has(&quot;excluded&quot;, true),</b>
+<b class="nc">&nbsp;                                __.loops().is(12)</b>
+&nbsp;                        )
+&nbsp;                )
+<b class="nc">&nbsp;                .path()</b>
+<b class="nc">&nbsp;                .toList();</b>
+<b class="nc">&nbsp;        System.out.println(vertices.size());</b>
+<b class="nc">&nbsp;        stopWatch.stop();</b>
+<b class="nc">&nbsp;        System.out.println(stopWatch.toString());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-04-07 21:24</div>
+</div>
+</body>
+</html>
