@@ -25,7 +25,6 @@ import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
-import org.umlg.sqlg.test.groovy.TestGroovy;
 import org.umlg.sqlg.test.idstep.TestIdStep;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.index.TestIndexOnPartition;
@@ -299,7 +298,6 @@ import org.umlg.sqlg.test.where.TestTraversalFilterStepBarrier;
         TestEdgeMultiplicityUnique.class,
         TestEdgeMultiplicityUniqueDistributed.class,
         TestNullProperties.class,
-        TestGroovy.class,
         TestStalePreparedStatement.class,
         TestMerge.class,
         TestPostgresLtree.class,
