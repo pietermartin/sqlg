@@ -86,7 +86,8 @@ public class PostgresFeatureTest {
 
             Map.entry("g_withSideEffectXc_created_YX_withSideEffectXm_matchedX_mergeEXlabel_knows_out_marko_in_vadasX_optionXonCreate_selectXcXX_optionXonMatch_sideEffectXpropertiesXweightX_dropX_selectXmXX_exists", "int should be double"),
 
-            Map.entry("g_unionXinjectX1X_injectX2X", "inject")
+            Map.entry("g_unionXinjectX1X_injectX2X", "inject"),
+            Map.entry("g_V_hasXname_nullX", "use hasNot")
     );
 
     private static void readIntoGraph(final Graph graph, final GraphData graphData) {
